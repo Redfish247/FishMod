@@ -2025,10 +2025,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             cocoon.sub.add(SliderIntSetting("Alert Duration (ms)", "", FishSettings::slayerCocoonAlertDurationMs, 250, 8000, 250))
             slayer.features.add(cocoon)
 
-            val rngTitle = Feature("RNG Meter Title", FishSettings::slayerRngTitleEnabled)
-            rngTitle.sub.add(SubcategoryHeader("Shows the \"RNG Meter - ...\" chat line as an on-screen title"))
-            rngTitle.sub.add(ColorPickerSetting("Title Colour", "", { FishSettings.slayerRngTitleColor }, { v -> FishSettings.slayerRngTitleColor = v }, 0xFFFF55FF.toInt()))
-            rngTitle.sub.add(SliderIntSetting("Duration (ms)", "", FishSettings::slayerRngTitleDurationMs, 250, 8000, 250))
+            val rngTitle = Feature("RNG Meter HUD", FishSettings::slayerRngTitleEnabled)
+            rngTitle.sub.add(SubcategoryHeader("Last \"RNG Meter - ...\" value, updates after every boss  ·  drag position with Edit HUD"))
+            rngTitle.sub.add(ColorPickerSetting("Label Colour", "", { FishSettings.slayerRngTitleColor }, { v -> FishSettings.slayerRngTitleColor = v }, 0xFFFF55FF.toInt()))
+            rngTitle.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerRngHudScale, 0.5, 3.0))
             slayer.features.add(rngTitle)
 
             val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
@@ -2037,13 +2037,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             slayer.features.add(spawnHud)
 
             val statsHud = Feature("Slayer Stats HUD", FishSettings::slayerStatsHudEnabled)
-            statsHud.sub.add(SubcategoryHeader("Session XP / kills / rates  ·  drag position with Edit HUD"))
+            statsHud.sub.add(SubcategoryHeader("Total XP / kills per slayer  ·  drag position with Edit HUD"))
             statsHud.sub.add(ToggleSetting("Show XP", "", FishSettings::slayerStatsShowXp))
             statsHud.sub.add(ToggleSetting("Show Kills", "", FishSettings::slayerStatsShowKills))
-            statsHud.sub.add(ToggleSetting("Show XP/hr", "", FishSettings::slayerStatsShowXpHr))
-            statsHud.sub.add(ToggleSetting("Show Kills/hr", "", FishSettings::slayerStatsShowKillsHr))
             statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
-            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
+            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
             slayer.features.add(statsHud)
 
             val carry = Feature("Carry Tracker HUD", FishSettings::slayerCarryHudEnabled)
