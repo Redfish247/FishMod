@@ -111,6 +111,7 @@ public final class InventoryPage {
 	/** Accessory bag panel swapped to the missing accessories list via the top-right toggle. */
 	private boolean accessoryMissingView;
 	private MissingAccessories.Result missingResult;
+	private String missingHoverName;
 	private boolean missingPricedAtCompute;
 	private int missingScroll;
 	private int missingMaxScroll;
@@ -216,6 +217,7 @@ public final class InventoryPage {
 		this.pageHits.clear();
 		this.hoveredSlot = null;
 		this.hoveredStack = ItemStack.EMPTY;
+		this.missingHoverName = null;
 		this.gemHoverTip = null;
 		this.accessoryTuningsHover = false;
 		this.missingHoverTip = null;
@@ -557,6 +559,9 @@ public final class InventoryPage {
 	public boolean mouseClicked(double mx, double my) {
 		if (this.valueOverlay.isOpen()) {
 			return this.valueOverlay.mouseClicked(mx, my);
+		}
+		if (this.missingHoverName != null && fishmod.pv.gui.PvAhs.search(this.missingHoverName)) {
+			return true;
 		}
 		for (RunnableHit hit : this.pageHits) {
 			if (mx >= hit.x && mx < hit.x + hit.w && my >= hit.y && my < hit.y + hit.h) {
@@ -1014,6 +1019,7 @@ public final class InventoryPage {
 			if (hovered) {
 				PvDraw.fill(g, x, rowY, w, MISSING_ROW, PANEL_HOVER);
 				this.missingHoverTip = missingTooltip(entry);
+				this.missingHoverName = entry.name();
 			}
 			PvDraw.IconTextAlign align = PvDraw.IconTextAlign.of(rowY, MISSING_ROW, 16, font.lineHeight);
 			SkyBlockIconRenderer.draw(g, entry.id(), x + 1, align.iconY());
