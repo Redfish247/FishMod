@@ -409,19 +409,26 @@ public final class PvDraw {
 		}
 	}
 
-	/** Fast sliding rainbow across the bar; ends keep the rounded base fill. */
+	private static final long CHROMA_PERIOD_MS = 6000L;
+	private static final float CHROMA_SPAN_PX = 240F;
+	private static final float CHROMA_SLANT = 0.6F;
+
+	/** Slow, wide, slightly diagonal rainbow across the bar; ends keep the rounded base fill. */
 	private static void chromaSlices(GuiGraphicsExtractor g, int x, int y, int w, int h) {
 		int r = h / 2;
-		float t = (System.currentTimeMillis() % 1200L) / 1200F;
-		for (int sx = r; sx < w - r; sx += 2) {
-			g.fill(x + sx, y, x + Math.min(sx + 2, w - r), y + h, rainbowArgb(positiveModulo(sx / 60F - t, 1F)));
+		float t = (System.currentTimeMillis() % CHROMA_PERIOD_MS) / (float) CHROMA_PERIOD_MS;
+		for (int row = 0; row < h; row++) {
+			for (int sx = r; sx < w - r; sx++) {
+				float hue = (sx + row * CHROMA_SLANT) / CHROMA_SPAN_PX - t;
+				g.fill(x + sx, y + row, x + sx + 1, y + row + 1, rainbowArgb(positiveModulo(hue, 1F)));
+			}
 		}
 	}
 
 	/** User-picked maxed bar colour, or a cycling rainbow. */
 	public static int maxedColor() {
 		if (fishmod.features.extras.ExtrasSettings.pvMaxedRainbow) {
-			return rainbowArgb((System.currentTimeMillis() % 1200L) / 1200F);
+			return rainbowArgb((System.currentTimeMillis() % CHROMA_PERIOD_MS) / (float) CHROMA_PERIOD_MS);
 		}
 		return fishmod.features.extras.ExtrasSettings.pvMaxedColor;
 	}
