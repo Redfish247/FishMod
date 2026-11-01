@@ -50,7 +50,7 @@ object FishSettings {
     @ConfigValue @JvmField var guiSettings: Boolean = false
     @ConfigValue @JvmField var debugReports: Boolean = false
     @ConfigValue @JvmField var debugChatNotices: Boolean = true
-    @ConfigValue @JvmField var updateNotice: Boolean = true
+    @ConfigValue @JvmField var updateNotice: Boolean = false
     @ConfigValue @JvmField var updateNoticeStyle: String = "Chat Message"
     @ConfigValue @JvmField var dashboardMessagesEnabled: Boolean = true
     @ConfigValue @JvmField var boardReports: Boolean = true
@@ -519,7 +519,7 @@ object FishSettings {
     @ConfigValue @JvmField var leapHidePlayersSeconds: Double = 2.0
 
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
-    @ConfigValue @JvmField var recipeViewer: Boolean = true
+    @ConfigValue @JvmField var recipeViewer: Boolean = false
     @ConfigValue @JvmField var recipeViewerHoldTime: Int = 1200
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
 
