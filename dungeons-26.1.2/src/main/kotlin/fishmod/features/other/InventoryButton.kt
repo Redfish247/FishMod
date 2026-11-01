@@ -73,9 +73,9 @@ object InventoryButton {
     private var guideX: Int? = null
     private var guideY: Int? = null
 
-    // edit/add pills sit just above the inventory's top-right corner
-    private val EDIT = intArrayOf(INV_W - 34, -13, 34, 11)
-    private val ADD = intArrayOf(INV_W - 72, -13, 36, 11)
+    // edit/add pills sit just under the inventory's bottom-right corner
+    private val EDIT = intArrayOf(INV_W - 34, INV_H + 2, 34, 11)
+    private val ADD = intArrayOf(INV_W - 72, INV_H + 2, 36, 11)
 
     private fun load() {
         if (Buttons.buttonsJson == loadedJson) return
@@ -257,7 +257,7 @@ object InventoryButton {
             guideX?.let { context.fill(it, -400, it + 1, 600, GUIDE) }
             guideY?.let { context.fill(-400, it, 800, it + 1, GUIDE) }
             val font = Minecraft.getInstance().font
-            context.text(font, "Drag to move, right-click to edit (or with an item to set icon), Alt = no snap", -40, INV_H + 4, 0xFFFFFF55.toInt(), true)
+            context.text(font, "Drag to move, right-click to edit (or with an item to set icon), Alt = no snap", -40, INV_H + 16, 0xFFFFFF55.toInt(), true)
             pill(context, ADD, "+ Add", false, mouseX, mouseY)
         }
         pill(context, EDIT, if (editMode) "Done" else "Edit", editMode, mouseX, mouseY)
