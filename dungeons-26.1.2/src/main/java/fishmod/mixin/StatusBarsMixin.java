@@ -16,15 +16,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class StatusBarsMixin {
 
-    @Inject(method = "setOverlayMessage(Lnet/minecraft/network/chat/Component;Z)V", at = @At("HEAD"))
-    private void fishmod$statusBarsFeed(Component message, boolean tinted, CallbackInfo ci) {
-        try {
-            StatusBars.onActionBar(message);
-        } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("StatusBarsMixin.1", "status bars action bar feed failed", t);
-        }
-    }
-
     @Inject(method = "extractPlayerHealth", at = @At("HEAD"), cancellable = true)
     private void fishmod$statusBarsHideHealth(CallbackInfo ci) {
         if (StatusBars.hideVanilla()) ci.cancel();
