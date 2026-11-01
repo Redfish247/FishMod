@@ -1968,6 +1968,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsEnabled)
             f.sub.add(ToggleSetting("Prince Crown Icon", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince))
+            f.sub.add(ToggleSetting("Room Checkmarks", "Corner checkmark when a named room is cleared, recoloured when all secrets are done", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsChecks))
+            f.sub.add(ColorPickerSetting("Cleared Check", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomCheckClearedColor))
+            f.sub.add(ColorPickerSetting("Secrets Done Check", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomCheckSecretsColor))
             f.sub.add(SliderIntSetting("Darken Multiplier %", "",
                 { (fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier = v / 100.0f },
