@@ -30,6 +30,7 @@ object SlayerStatsTracker {
         var apiKills: Long = 0
         var sinceXp: Long = 0
         var sinceKills: Long = 0
+        var rank: Int = -1
     }
 
     private const val API_REFRESH_MS = 10 * 60_000L
@@ -57,6 +58,24 @@ object SlayerStatsTracker {
     @JvmStatic val xpGained: Long get() = cur()?.let { if (it.apiXp >= 0) it.apiXp + it.sinceXp else it.xpGained } ?: 0
     @JvmStatic val kills: Long get() = cur()?.let { if (it.apiXp >= 0) it.apiKills + it.sinceKills else it.kills.toLong() } ?: 0
     fun fromApi(): Boolean = (cur()?.apiXp ?: -1) >= 0
+    fun rank(): Int = cur()?.rank ?: -1
+
+    // Elite (elitebot.dev) keeps the public slayer XP leaderboards, e.g. spider-slayer
+    private fun fetchRanks(uuid: String, profileId: String) {
+        for (t in SlayerType.entries) {
+            val req = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create("https://api.elitebot.dev/leaderboard/${apiKey(t)}-slayer/$uuid/$profileId"))
+                .header("User-Agent", "FishMod")
+                .timeout(java.time.Duration.ofSeconds(15)).GET().build()
+            fishmod.utils.Http.CLIENT.sendAsync(req, java.net.http.HttpResponse.BodyHandlers.ofString()).thenAccept { r ->
+                if (r.statusCode() != 200) return@thenAccept
+                val rank = try {
+                    com.google.gson.JsonParser.parseString(r.body()).asJsonObject.get("rank")?.asInt ?: -1
+                } catch (e: Exception) { FishDiag.fail("SlayerStatsTracker.7", "bad Elite rank reply for $t: ${r.body().take(120)}", e); return@thenAccept }
+                Minecraft.getInstance().execute { of(t).rank = rank; save() }
+            }.exceptionally { e -> FishDiag.fail("SlayerStatsTracker.8", "Elite rank request failed for $t", e); null }
+        }
+    }
 
     private fun maybeFetchApi(mc: Minecraft) {
         val now = System.currentTimeMillis()
@@ -67,6 +86,7 @@ object SlayerStatsTracker {
         fishmod.utils.HypixelApi.fetchSelectedProfile(uuid) { profile ->
             val bosses = profile?.getAsJsonObject("members")?.getAsJsonObject(uuid)
                 ?.getAsJsonObject("slayer")?.getAsJsonObject("slayer_bosses")
+            profile?.get("profile_id")?.asString?.replace("-", "")?.let { fetchRanks(uuid, it) }
             mc.execute {
                 apiFetching = false
                 if (bosses == null) return@execute

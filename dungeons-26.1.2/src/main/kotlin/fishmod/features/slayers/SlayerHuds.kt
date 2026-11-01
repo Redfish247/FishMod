@@ -119,9 +119,11 @@ object SlayerHuds {
         if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea() || !SlayerStatsTracker.hasData()) return
 
         val lines = ArrayList<String>(7)
-        lines.add("§5§lSLAYER STATS")
+        val type = SlayerManager.type ?: return
+        lines.add("§5§l${type.displayName} ${roman(SlayerManager.tier)}")
         if (FishSettings.slayerStatsShowXp)
-            lines.add("§7XP: §f${SlayerStatsTracker.short(SlayerStatsTracker.xpGained.toDouble())}")
+            lines.add("§7XP: §f${SlayerStatsTracker.short(SlayerStatsTracker.xpGained.toDouble())}" +
+                SlayerStatsTracker.rank().let { if (it > 0) " §8(§e#${fishmod.utils.Fmt.grouped(it.toLong())} §8on leaderboard)" else "" })
         if (FishSettings.slayerStatsShowKills)
             lines.add("§7Kills: §f${fmt(SlayerStatsTracker.kills.toDouble())}")
         if (lines.size == 1) return
