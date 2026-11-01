@@ -64,7 +64,7 @@ object InvincibilityTracker {
             if (Dungeons.displayInvincibilityTimer) {
                 val s = TextStrip.plain(text.string).replace(WS, " ").trim()
                 val hit = Type.entries.firstOrNull { it.regex.matches(s) }
-                if (hit == null && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
+                if (hit == null && !s.contains(" > ") && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
                 hit?.let { t ->
                     t.proc()
                     FishDiag.guard("InvincibilityTracker.2", "invincibility proc title/sound failed for ${t.label}") { procTitle(t) }

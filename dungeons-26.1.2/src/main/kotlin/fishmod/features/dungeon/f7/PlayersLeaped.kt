@@ -51,9 +51,9 @@ object PlayersLeaped {
         val level = mc.level ?: return 0
         val me = mc.player ?: return 0
         val team = DungeonClass.getAll().keys
-        if (team.isEmpty()) FishDiag.fail("PlayersLeaped.1", "no dungeon teammates known while in F7 boss zone ${zone.label}")
+        // class map empty (tab not parsed yet): count any other player in the zone
         return level.players().count { p ->
-            p !== me && p.isAlive && p.gameProfile.name in team && zone.box.contains(p.position())
+            p !== me && p.isAlive && (team.isEmpty() || p.gameProfile.name in team) && zone.box.contains(p.position())
         }
     }
 
