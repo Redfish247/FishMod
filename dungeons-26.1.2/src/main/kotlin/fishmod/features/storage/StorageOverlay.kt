@@ -76,6 +76,8 @@ object StorageOverlay {
     private val dragActive get() = dragSlots.size >= 2
 
     var search = ""
+    // page switches reopen within ~1.5s and keep the search
+    private var closedAt = 0L
     private var searchFocused = false
 
     private val mc get() = Minecraft.getInstance()
@@ -291,6 +293,7 @@ object StorageOverlay {
 
     private fun renderInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!on(screen)) return
+        if (closedAt != 0L) { if (System.currentTimeMillis() - closedAt > 1500) search = ""; closedAt = 0L }
         UiRecorder.clear()
         pendingPaint = false
         carriedLayer = null
@@ -306,7 +309,7 @@ object StorageOverlay {
         lastMouseX = mouseX / s.toDouble()
         lastMouseY = mouseY / s.toDouble()
 
-        runCatching { ctx.blurBeforeThisStratum() }.onFailure { FishDiag.fail("StorageOverlay.1", "blurBeforeThisStratum failed", it) }
+        runCatching { ctx.blurBeforeThisStratum() }.onFailure { if (it !is IllegalStateException) FishDiag.fail("StorageOverlay.1", "blurBeforeThisStratum failed", it) } // already blurred this frame
         runCatching { ctx.nextStratum() }.onFailure { FishDiag.fail("StorageOverlay.2", "nextStratum failed", it) }
         rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0A0A12)
 
@@ -816,6 +819,7 @@ object StorageOverlay {
     @JvmStatic
     fun onClosed() {
         if (!FishSettings.storageRetainScroll) scroll = 0f
+        closedAt = System.currentTimeMillis()
         searchFocused = false
         knobGrabbed = false
         dragStartSlot = null
