@@ -84,11 +84,18 @@ object SlayerManager {
     )
 
     @Volatile private var correctArea: Boolean = false
+    // sticky until island change, so walking past a sub-area edge doesn't hide the HUDs
+    private var areaLatched = false
 
     private fun updateAreaMatch(lines: List<String>) {
         val t = type
-        correctArea = if (t == null) false else areaMatches(t, lines)
+        if (t == null) { correctArea = false; return }
+        if (areaMatches(t, lines)) areaLatched = true
+        correctArea = areaLatched && onSlayerIsland(t)
     }
+
+    private fun onSlayerIsland(t: SlayerType): Boolean =
+        AREA_RULES[t]?.any { Location.`in`(it.island) } ?: Location.`in`(t.island)
 
     private fun areaMatches(t: SlayerType, lines: List<String>): Boolean {
         val rules = FishDiag.notNull(AREA_RULES[t], "SlayerManager.7") { "no area rule for slayer $t" } ?: return Location.`in`(t.island)
@@ -136,6 +143,7 @@ object SlayerManager {
         Events.ON_LOCATION_CHANGE.register { _ ->
             bossEntity = null
             cocoonLatchedAt = 0L
+            areaLatched = false
             false
         }
 
@@ -389,6 +397,7 @@ object SlayerManager {
 
     private fun fullReset() {
         softReset()
+        areaLatched = false
         scanCounter = 0
     }
 
