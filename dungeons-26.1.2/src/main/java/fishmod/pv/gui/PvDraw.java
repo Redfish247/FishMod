@@ -411,16 +411,20 @@ public final class PvDraw {
 
 	private static final long CHROMA_PERIOD_MS = 6000L;
 	private static final float CHROMA_SPAN_PX = 240F;
-	private static final float CHROMA_SLANT = 0.6F;
+	private static final int CHROMA_STEP_PX = 2;
+	private static final int CHROMA_BAND_ROWS = 2;
 
-	/** Slow, wide, slightly diagonal rainbow across the bar; ends keep the rounded base fill. */
+	/** Slow, wide, slightly diagonal rainbow; each row band is shifted a whole pixel so seams stay even. */
 	private static void chromaSlices(GuiGraphicsExtractor g, int x, int y, int w, int h) {
 		int r = h / 2;
+		int end = w - r;
 		float t = (System.currentTimeMillis() % CHROMA_PERIOD_MS) / (float) CHROMA_PERIOD_MS;
-		for (int row = 0; row < h; row++) {
-			for (int sx = r; sx < w - r; sx++) {
-				float hue = (sx + row * CHROMA_SLANT) / CHROMA_SPAN_PX - t;
-				g.fill(x + sx, y + row, x + sx + 1, y + row + 1, rainbowArgb(positiveModulo(hue, 1F)));
+		for (int band = 0; band * CHROMA_BAND_ROWS < h; band++) {
+			int y0 = y + band * CHROMA_BAND_ROWS;
+			int y1 = Math.min(y0 + CHROMA_BAND_ROWS, y + h);
+			for (int sx = r; sx < end; sx += CHROMA_STEP_PX) {
+				float hue = (sx + band) / CHROMA_SPAN_PX - t;
+				g.fill(x + sx, y0, x + Math.min(sx + CHROMA_STEP_PX, end), y1, rainbowArgb(positiveModulo(hue, 1F)));
 			}
 		}
 	}
