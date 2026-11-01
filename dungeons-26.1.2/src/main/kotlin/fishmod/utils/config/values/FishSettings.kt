@@ -186,6 +186,7 @@ object FishSettings {
     @ConfigValue @JvmField var compactTabPinStaff: Boolean = false
     @ConfigValue @JvmField var compactTabFooterMode: String = "Hypixel"
     @ConfigValue @JvmField var compactTabFooterText: String = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot}"
+    @ConfigValue @JvmField var compactTabShowEffects: Boolean = false
 
     @ConfigValue @JvmField var partyCommandsEnabled: Boolean = false
     @ConfigValue @JvmField var pcAllinvite: Boolean = false
@@ -314,6 +315,7 @@ object FishSettings {
     @ConfigValue @JvmField var sessionStatsScale: Double = 1.0
     @ConfigValue @JvmField var petHudScale: Double = 1.0
     @ConfigValue @JvmField var soulflowHudScale: Double = 1.0
+    @ConfigValue @JvmField var hudTextShadowMode: String = "Per Feature"
     @ConfigValue @JvmField var pcSecrets: Boolean = false
     @ConfigValue @JvmField var pcRuns: Boolean = false
     @ConfigValue @JvmField var pcJoinFloor: Boolean = false
@@ -553,6 +555,17 @@ object FishSettings {
     @ConfigValue @JvmField var lavaToWaterTint: Boolean = false
     @ConfigValue @JvmField var lavaToWaterColor: Int = 0xFF3F76E4.toInt()
     @ConfigValue @JvmField var lavaToWaterHideFog: Boolean = true
+
+    @ConfigValue @JvmField var noFogEnabled: Boolean = false
+    @ConfigValue @JvmField var customWaterEnabled: Boolean = false
+    @ConfigValue @JvmField var customWaterColor: Int = 0xFF3F76E4.toInt()
+    @ConfigValue @JvmField var forceOthersSizeEnabled: Boolean = false
+    @ConfigValue @JvmField var forceOthersSizeScale: Double = 1.0
+    @ConfigValue @JvmField var corpseHighlightEnabled: Boolean = false
+    @ConfigValue @JvmField var corpseHighlightColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var ghostBoxEnabled: Boolean = false
+    @ConfigValue @JvmField var ghostBoxHideModel: Boolean = true
+    @ConfigValue @JvmField var ghostBoxColor: Int = 0xFFAAAAFF.toInt()
 
     @ConfigValue @JvmField var blockOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var blockOverlayMode: Int = 2
@@ -1007,6 +1020,8 @@ object FishSettings {
 
     @ConfigValue @JvmField var anitaProfitEnabled: Boolean = false
     @ConfigValue @JvmField var expProfitEnabled: Boolean = false
+    @ConfigValue @JvmField var bossDamageCalcEnabled: Boolean = false
+    @ConfigValue @JvmField var experimentSolverEnabled: Boolean = false
     @ConfigValue @JvmField var expProfitOnlyIsland: Boolean = true
     @ConfigValue @JvmField var expProfitLines: Int = 10
     @ConfigValue @JvmField var expProfitHudX: Int = 10

@@ -468,7 +468,10 @@ object CompactTab {
         else -> mdl.footer
     }
 
-    private fun fillStats(template: String, st: FooterStats): String = template
+    private val EFFECTS_PART = Regex("""\s*(?:&8\|\s*)?&aEffects &f\{effects\}|\s*(?:&8\|\s*)?\{effects\}""", RegexOption.IGNORE_CASE)
+
+    private fun fillStats(template: String, st: FooterStats): String =
+        (if (FishSettings.compactTabShowEffects) template else template.replace(EFFECTS_PART, ""))
         .replace("{cookie}", st.cookie, ignoreCase = true)
         .replace("{godpot}", st.godPot, ignoreCase = true)
         .replace("{effects}", st.effects, ignoreCase = true)
