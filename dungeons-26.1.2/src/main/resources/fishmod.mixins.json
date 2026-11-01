@@ -53,6 +53,8 @@
     "FluidStateModelSetMixin",
     "LavaFogEnvironmentMixin",
     "ItemModelBehaviorMixin",
+    "NoFogMixin",
+    "WaterColorMixin",
     "PlayerEntityRendererScaleMixin",
     "HandledScreenMixin",
     "InventoryScreenMixin",

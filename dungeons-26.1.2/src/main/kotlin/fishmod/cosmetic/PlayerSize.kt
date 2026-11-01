@@ -30,6 +30,10 @@ object PlayerSize {
             if (mc.curScreen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return IDENTITY
             return if (FishSettings.playerSizeEnabled) localSelfValue() else IDENTITY
         }
+        if (FishSettings.forceOthersSizeEnabled) {
+            val f = floorPos(FishSettings.forceOthersSizeScale.toFloat())
+            return floatArrayOf(f, f, f)
+        }
         if (!FishSettings.playerSizeShared) return IDENTITY
         val s = RemoteScales.get(p.getUUID().toString().replace("-", ""))
         return s ?: IDENTITY

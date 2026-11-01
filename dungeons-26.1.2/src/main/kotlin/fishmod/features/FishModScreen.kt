@@ -393,6 +393,28 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Twitch Bridge",
                 { FishSettings.twitchBridgeEnabled },
+        visuals.features.add(Feature("No Fog", FishSettings::noFogEnabled))
+        run {
+            val f = Feature("Corpse Highlight", FishSettings::corpseHighlightEnabled)
+            f.sub.add(SubcategoryHeader("Boxes Glacite Mineshaft corpses through walls"))
+            f.sub.add(ColorPickerSetting("Colour", "", FishSettings::corpseHighlightColor))
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Ghost Box", FishSettings::ghostBoxEnabled)
+            f.sub.add(ToggleSetting("Hide Ghost Model", "", FishSettings::ghostBoxHideModel))
+            f.sub.add(ColorPickerSetting("Colour", "", FishSettings::ghostBoxColor))
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Custom Water Colour",
+                { FishSettings.customWaterEnabled },
+                { v -> FishSettings.customWaterEnabled = v; net.minecraft.client.Minecraft.getInstance().levelRenderer.allChanged() })
+            f.sub.add(ColorPickerSetting("Water Colour", "",
+                { FishSettings.customWaterColor },
+                { v -> FishSettings.customWaterColor = v; net.minecraft.client.Minecraft.getInstance().levelRenderer.allChanged() }))
+            visuals.features.add(f)
+        }
                 { v -> twitchbridge.TwitchBridgeClient.setEnabled(v) })
             f.sub.add(SubcategoryHeader("Shows a Twitch channel's chat in the MC chat window — read-only, no login"))
             f.sub.add(InputSetting("Channel", "Twitch channel login name (e.g. shroud)",
@@ -1065,7 +1087,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Nametag Stats", FishSettings::nametagStatsEnabled)
             f.sub.add(SubcategoryHeader("Networth + skill avg everywhere; Cata level + secret avg in the Dungeon Hub"))
-            f.sub.add(ToggleSetting("Show Own", "", FishSettings::nametagStatsShowSelf))
             f.sub.add(DropdownSetting("Position", "", arrayOf("ABOVE", "BELOW"),
                 { if (FishSettings.nametagStatsAbove) "ABOVE" else "BELOW" },
                 { v -> FishSettings.nametagStatsAbove = v == "ABOVE" }))
@@ -1187,6 +1208,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting(".nuc", "", FishSettings::pcNuc))
             f.sub.add(ToggleSetting(".worm / .scatha", "", FishSettings::pcWorm))
             f.sub.add(ToggleSetting(".help / .?", "", FishSettings::pcHelp))
+        run {
+            val f = Feature("Force Others' Size", FishSettings::forceOthersSizeEnabled)
+            f.sub.add(SubcategoryHeader("Everyone else renders at this size, overriding shared sizes"))
+            f.sub.add(SliderDoubleSetting("Size", "", FishSettings::forceOthersSizeScale,
+                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
+            cosmetics.features.add(f)
+        }
             f.sub.add(SubcategoryHeader("Party Actions"))
             f.sub.add(ToggleSetting(".kick / .k", "", FishSettings::pcActionKick))
             f.sub.add(ToggleSetting(".warp / .w", "", FishSettings::pcActionWarp))
