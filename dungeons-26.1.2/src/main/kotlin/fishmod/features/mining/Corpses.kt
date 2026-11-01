@@ -59,7 +59,7 @@ object Corpses {
         }
     }
 
-    private fun typeOf(stand: ArmorStand): Type? {
+    fun typeOf(stand: ArmorStand): Type? {
         val id = ItemUtil.getId(stand.getItemBySlot(EquipmentSlot.HEAD)) ?: return null
         return Type.entries.firstOrNull { it.helmet == id }
     }

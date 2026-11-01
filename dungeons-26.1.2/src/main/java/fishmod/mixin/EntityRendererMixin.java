@@ -31,7 +31,6 @@ import java.util.List;
 public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> {
 
     @org.spongepowered.asm.mixin.Unique
-    private static final double NAMETAG_STATS_RANGE_SQ = 10.0 * 10.0;
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
@@ -90,10 +89,8 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
 
             List<Component> statLines = null;
             if (FishSettings.nametagStatsEnabled && state.nameTag != null && entity instanceof Player pl) {
-                boolean self = EntityUtil.isClientPlayer(pl);
-                Minecraft mc = Minecraft.getInstance();
-                boolean inRange = self || mc.player == null || pl.distanceToSqr(mc.player) <= NAMETAG_STATS_RANGE_SQ;
-                if ((!self || FishSettings.nametagStatsShowSelf) && inRange) {
+                // self only: other players cost an API call each
+                if (EntityUtil.isClientPlayer(pl)) {
                     String playerName = pl.getName().getString();
                     statLines = fishmod.features.NametagStats.linesFor(playerName);
                 }
@@ -133,6 +130,10 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
                                      CallbackInfoReturnable<Boolean> cir) {
         try {
             if (fishmod.features.rift.RiftMobs.INSTANCE.shouldHideSlime(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
+            if (fishmod.features.mining.MiningBoxes.hideGhost(entity)) {
                 cir.setReturnValue(false);
                 return;
             }
