@@ -247,7 +247,13 @@ class FishModInit : ClientModInitializer {
                 })
                 .then(ClientCommands.literal("import").executes {
                     fishmod.features.dungeon.DungeonWaypoints.importFromClipboard(); Constants.SUCCESS
-                })
+                }
+                    .then(ClientCommands.literal("odin").executes {
+                        fishmod.features.dungeon.OdinWaypointImport.importFromOdinConfig(); Constants.SUCCESS
+                    }
+                        .then(ClientCommands.literal("clipboard").executes {
+                            fishmod.features.dungeon.OdinWaypointImport.importFromClipboard(); Constants.SUCCESS
+                        })))
                 .then(ClientCommands.literal("reset").executes {
                     fishmod.features.dungeon.DungeonWaypoints.resetCurrentArea(); Constants.SUCCESS
                 })
