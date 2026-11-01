@@ -38,7 +38,7 @@ object ArrowHud {
     fun init() {
         FishHudEditor.register("Arrow HUD", { S.arrowHudX }, { S.arrowHudX = it }, { S.arrowHudY }, { S.arrowHudY = it }, 110, 10,
             { S.arrowHudScale }, { S.arrowHudScale = it })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "arrow_hud")) { ctx, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "arrow_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("ArrowHud.1", "arrow hud render failed", t) }
         }
         Events.ON_GAME_MESSAGE.register { text ->

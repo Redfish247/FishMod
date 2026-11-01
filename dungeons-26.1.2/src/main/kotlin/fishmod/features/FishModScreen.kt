@@ -1464,6 +1464,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Missing Warn", "", FishSettings::soulflowMissingNotifier))
             hud.features.add(f)
         }
+        run {
+            val f = Feature("HUD Text Shadow", null, null)
+            f.sub.add(DropdownSetting("Shadow", "Override text shadow on every FishMod HUD", arrayOf("Per Feature", "Always", "Never"),
+                { FishSettings.hudTextShadowMode },
+                { v -> FishSettings.hudTextShadowMode = v }))
+            hud.features.add(f)
+        }
 
         hud.features.add(Feature("Fire Freeze Timer", FishSettings::fireFreezeTimerEnabled))
         hud.features.add(Feature("Loadout Title", FishSettings::loadoutTitleEnabled))

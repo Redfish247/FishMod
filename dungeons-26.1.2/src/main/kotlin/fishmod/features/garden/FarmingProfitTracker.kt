@@ -77,7 +77,7 @@ object FarmingProfitTracker {
         FishHudEditor.register("Farming Profit", { S.gardenProfitHudX }, { S.gardenProfitHudX = it },
             { S.gardenProfitHudY }, { S.gardenProfitHudY = it }, 180, 120, { S.gardenProfitHudScale }, { S.gardenProfitHudScale = it },
             { S.gardenProfit })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_profit")) { ctx, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_profit")) { ctx, _ ->
             val mc = Minecraft.getInstance()
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
                 MiningHuds.draw(ctx, lines(), S.gardenProfitHudX, S.gardenProfitHudY, S.gardenProfitHudScale)

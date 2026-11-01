@@ -54,7 +54,7 @@ object DianaTitles {
         for (s in listOf(rare, warp)) {
             FishHudEditor.register(s.name, { s.x() }, { v -> s.sx(v) }, { s.y() }, { v -> s.sy(v) }, s.w, s.h,
                 { s.gs() }, { v -> s.ss(v) }, { true })
-            HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", s.id)) { ctx, _ ->
+            fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", s.id)) { ctx, _ ->
                 if (!FishHudEditor.isOpen()) {
                     val a = s.alpha(System.currentTimeMillis())
                     if (a > 0.02f) draw(ctx, s, s.main, s.sub, a)

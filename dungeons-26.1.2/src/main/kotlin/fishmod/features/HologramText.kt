@@ -32,7 +32,7 @@ object HologramText {
             shown = ArrayList(pending)
             pending.clear()
         }
-        HudElementRegistry.addFirst(Identifier.fromNamespaceAndPath("fishmod", "hologram_text")) { g, _ ->
+        fishmod.utils.rendering.FishHudLayer.addFirst(Identifier.fromNamespaceAndPath("fishmod", "hologram_text")) { g, _ ->
             if (shown.isEmpty()) return@addFirst
             try {
                 val font = Minecraft.getInstance().font

@@ -16,7 +16,7 @@ object MapHud {
     fun register() {
         ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register(ClientLevelEvents.AfterClientLevelChange { _, _ -> DungeonMap.reset() })
 
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_hud")) { g, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_hud")) { g, _ ->
             val mc = Minecraft.getInstance()
             if (!fishmod.features.FishHudEditor.isOpen() && DungeonMapSettings.mapEnabled && !mc.hudHidden && !mc.options.keyPlayerList.isDown && DungeonState.isInDungeon() &&
                 !fishmod.features.dungeon.LeapMenu.isOverlayOpen() &&

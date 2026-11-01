@@ -115,7 +115,7 @@ object RareMobs {
             { DianaSettings.dianaShurikenHudScale }, { v -> DianaSettings.dianaShurikenHudScale = v },
             { DianaSettings.dianaNoShuriken },
         )
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "diana_mythos_hp")) { ctx, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "diana_mythos_hp")) { ctx, _ ->
             if (!FishHudEditor.isOpen()) renderHud(ctx)
         }
 

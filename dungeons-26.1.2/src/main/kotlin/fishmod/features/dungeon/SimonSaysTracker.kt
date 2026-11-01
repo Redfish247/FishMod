@@ -130,7 +130,7 @@ object SimonSaysTracker {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
             try { debugTick(it); tick(it) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.3", "SS tracker tick threw (round=$round seqLen=$seqLen armed=$armed)", e) }
         })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "simon_says_tracker")) { ctx, tc ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "simon_says_tracker")) { ctx, tc ->
             if (!fishmod.features.FishHudEditor.isOpen()) try { renderHud(ctx, tc) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.4", "SS tracker HUD render threw", e) }
         }
 
