@@ -315,7 +315,11 @@ object FishSettings {
     @ConfigValue @JvmField var sessionStatsScale: Double = 1.0
     @ConfigValue @JvmField var petHudScale: Double = 1.0
     @ConfigValue @JvmField var soulflowHudScale: Double = 1.0
-    @ConfigValue @JvmField var hudTextShadowMode: String = "Off"
+    @ConfigValue @JvmField var textShadowEnabled: Boolean = false
+    @ConfigValue @JvmField var textShadowNametags: Boolean = true
+    @ConfigValue @JvmField var textShadowWorldText: Boolean = true
+    @JvmStatic fun worldTextShadow(nameTag: Boolean): Boolean =
+        textShadowEnabled && (if (nameTag) textShadowNametags else textShadowWorldText)
     @ConfigValue @JvmField var pcSecrets: Boolean = false
     @ConfigValue @JvmField var pcRuns: Boolean = false
     @ConfigValue @JvmField var pcJoinFloor: Boolean = false

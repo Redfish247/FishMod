@@ -1426,10 +1426,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
-            val f = Feature("Text Shadow", null, null)
-            f.sub.add(DropdownSetting("Shadow", "All Text = shadow on all in-game text (HUD, menus, tooltips)", arrayOf("Off", "All Text"),
-                { FishSettings.hudTextShadowMode },
-                { v -> FishSettings.hudTextShadowMode = v }))
+            val f = Feature("Text Shadow", FishSettings::textShadowEnabled)
+            f.sub.add(SubcategoryHeader("Drop shadow on in-world text (chat already has one)"))
+            f.sub.add(ToggleSetting("Nametags", "Player, mob and armor stand names", FishSettings::textShadowNametags))
+            f.sub.add(ToggleSetting("World Text", "Floating text displays / holograms", FishSettings::textShadowWorldText))
             hud.features.add(f)
         }
 
