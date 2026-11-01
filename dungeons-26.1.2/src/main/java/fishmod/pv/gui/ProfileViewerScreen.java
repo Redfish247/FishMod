@@ -1169,7 +1169,7 @@ public final class ProfileViewerScreen extends Screen {
 					this.dataLoader.ensureMuseum(true);
 					yield true;
 				}
-				yield false;
+				yield this.museumPage.clickCheapest();
 			}
 			case CRIMSON -> this.crimsonPage.mouseClicked(mx, my);
 			case RIFT -> this.riftPage.mouseClicked(mx, my, activeSub(PvSubTab.RIFT_OVERVIEW));

@@ -61,6 +61,7 @@ public final class PetsPage {
 	private int maxXpBarH;
 	private String maxXpHover;
 	private List<Component> hoverPetTip;
+	private String hoverMissingName;
 	private List<PvTooltip.Line> autopetTip;
 
 	private enum SortMode {
@@ -126,6 +127,7 @@ public final class PetsPage {
 		this.maxXpHover = null;
 		this.maxXpBarW = 0;
 		this.hoverPetTip = null;
+		this.hoverMissingName = null;
 		this.autopetTip = null;
 		// Compact pets grid (~56%) + wider details inspector (~44%).
 		int leftW = Math.max(140, (int) Math.round(w * 0.70));
@@ -165,6 +167,9 @@ public final class PetsPage {
 			this.sortMode = this.sortMode.next();
 			this.sorted = sortPets(this.sorted, this.sortMode);
 			this.selected = current == null ? this.selected : this.sorted.indexOf(current);
+			return true;
+		}
+		if (this.hoverMissingName != null && fishmod.pv.gui.PvAhs.search(this.hoverMissingName)) {
 			return true;
 		}
 		for (SlotHit hit : this.hits) {
@@ -386,10 +391,12 @@ public final class PetsPage {
 		int iy = sy + (slot - ITEM_ICON) / 2;
 		SkyBlockIconRenderer.draw(g, SkyBlockItemFactory.iconStack(pet.neuId()), pet.neuId(), ix, iy, ITEM_ICON);
 		if (hovered) {
+			this.hoverMissingName = pet.name();
 			int rarity = SkyBlockItemFactory.tierArgb(pet.tier()) & 0xFFFFFF;
 			this.hoverPetTip = List.of(
 				Component.literal(pet.name()).withColor(rarity),
-				Component.literal("Missing").withColor(0xFF5555)
+				Component.literal("Missing").withColor(0xFF5555),
+				Component.literal("Click to search /ahs").withColor(0xAAAAAA)
 			);
 		}
 	}

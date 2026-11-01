@@ -402,7 +402,15 @@ public final class PvDraw {
 		// Always round both ends of the fill, including incomplete bars.
 		// One scheme everywhere: gold when maxed, gray while still filling.
 		boolean maxed = maxedShiny || clamped >= 0.999f;
-		roundedFill(g, x, y, Math.max(filled, Math.min(w, h)), h, h / 2, maxed ? COLOR_GOLD : COLOR_BAR_PROGRESS);
+		roundedFill(g, x, y, Math.max(filled, Math.min(w, h)), h, h / 2, maxed ? maxedColor() : COLOR_BAR_PROGRESS);
+	}
+
+	/** User-picked maxed bar colour, or a cycling rainbow. */
+	public static int maxedColor() {
+		if (fishmod.features.extras.ExtrasSettings.pvMaxedRainbow) {
+			return rainbowArgb((System.currentTimeMillis() % 2800L) / 2800F);
+		}
+		return fishmod.features.extras.ExtrasSettings.pvMaxedColor;
 	}
 
 	/** Hue wheel colour; blends toward cosmetics purple so it still nods to the name gradient. */
