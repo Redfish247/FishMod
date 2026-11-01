@@ -66,6 +66,7 @@ object AchHooks {
     }
 
     private fun resetRun() {
+        flushRunEnd(-1)
         runStartMs = 0L; bloodSeen = false; mimicSeen = false; princeSeen = false
         sectionStartMs = 0L; inTerms = false; lavaDeaths = 0
     }
@@ -147,6 +148,7 @@ object AchHooks {
             AchBus.post(AchEvent.Drop(item, n, v, m.groupValues[1], Location.getCurrentLocation().name2))
             return
         }
+        TEAM_SCORE.find(s)?.let { flushRunEnd(it.groupValues[1].toInt()); return }
         when {
             s.startsWith("PUZZLE SOLVED!") && Location.inDungeon() -> {
                 if (s.contains("Water Board") && s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) {
@@ -167,9 +169,20 @@ object AchHooks {
     private fun onRunEnd() {
         if (PracticeMode.active) return
         val secs = if (runStartMs > 0) (System.currentTimeMillis() - runStartMs) / 1000.0 else parseElapsed(DungeonScore.elapsedTime)
-        AchBus.post(AchEvent.RunEnded(Phase.getFloor(), secs, DungeonScore.score, DungeonScore.deaths,
-            DungeonScore.secretsFound, !PartyUtil.isInParty(), DungeonScore.percentCleared))
+        flushRunEnd(-1)
+        // held until Hypixel's "Team Score" line, live score can lag the real one
+        pendingEnd = AchEvent.RunEnded(Phase.getFloor(), secs, DungeonScore.score, DungeonScore.deaths,
+            DungeonScore.secretsFound, !PartyUtil.isInParty(), DungeonScore.percentCleared)
         runStartMs = 0L
+    }
+
+    private var pendingEnd: AchEvent.RunEnded? = null
+    private val TEAM_SCORE = Regex("^Team Score: (\\d+)")
+
+    private fun flushRunEnd(chatScore: Int) {
+        val e = pendingEnd ?: return
+        pendingEnd = null
+        AchBus.post(if (chatScore > e.score) e.copy(score = chatScore) else e)
     }
 
     private fun parseElapsed(s: String): Double {
