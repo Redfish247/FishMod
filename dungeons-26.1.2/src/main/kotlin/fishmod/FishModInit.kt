@@ -522,6 +522,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.ach", "AchEngine.init() failed") { fishmod.features.achievements.AchEngine.init() }
         FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.f7.F7Huds.init() failed") { fishmod.features.dungeon.f7.F7Huds.init() }
         FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.Buttons.init() failed") { fishmod.utils.config.values.Buttons.init() }
+        FishDiag.guard("FishModInit.104b", "EquipmentDisplay.init() failed") { fishmod.features.other.EquipmentDisplay.init() }
         FishHudEditor.register("Tick Timer", fishmod.features.dungeon.f7.F7Huds.tickTimer)
         FishHudEditor.register("Crystal Spawn Time", fishmod.features.dungeon.f7.F7Huds.crystalSpawnTime)
         FishHudEditor.register("Crystal Reminder", fishmod.features.dungeon.f7.F7Huds.crystalReminder)
