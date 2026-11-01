@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -23,7 +24,7 @@ object ItemOverlays {
     @JvmStatic
     fun init() {
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
-            if (!Location.inSkyblock()) return@register
+            if (!S.overlayItemLevels || !Location.inSkyblock()) return@register
             try { draw(ctx, stack, x, y) } catch (t: Throwable) { FishDiag.fail("ItemOverlays.1", "item overlay draw failed", t) }
         }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
@@ -36,11 +37,13 @@ object ItemOverlays {
     private fun overlayText(stack: ItemStack): String? {
         val tag = stack.fishmodCustomDataTag() ?: return null
         val id = tag.getString("id").orElse("")
-        if (S.overlayBookLevel && id == "ENCHANTED_BOOK") {
+        if (S.overlayBookLevel && (id == "ENCHANTED_BOOK" || stack.`is`(Items.ENCHANTED_BOOK))) {
             val ench = tag.getCompound("enchantments").orElse(null) ?: return null
             val keys = ench.keySet()
             if (keys.size != 1) return null
-            return ench.getInt(keys.first()).orElse(0).takeIf { it > 0 }?.toString()
+            val key = keys.first()
+            val lvl = ench.getInt(key).orElse(0).takeIf { it > 0 } ?: ench.getString(key).orElse("").toIntOrNull() ?: return null
+            return lvl.toString()
         }
         if (S.overlayPetLevel && id == "PET") {
             return PET_LVL.find(stack.hoverName.string)?.groupValues?.get(1)

@@ -74,12 +74,13 @@ object ExtrasMenu {
         wp.sub.add(ButtonSetting("Clear Waypoints", "", "Clear") { PatcherWaypoints.clear() })
         col.features.add(wp)
 
-        val book = Feature("Book Level Overlay", S::overlayBookLevel)
-        book.sub.add(ColorPickerSetting("Overlay Text Color", "Shared by all item overlays", S::overlayTextColor))
-        col.features.add(book)
-        col.features.add(Feature("Pet Level Overlay", S::overlayPetLevel))
-        col.features.add(Feature("Minion Tier Overlay", S::overlayMinionTier))
-        col.features.add(Feature("Cake Year Overlay", S::overlayCakeYear))
+        val lvl = Feature("Item Level Overlay", S::overlayItemLevels)
+        lvl.sub.add(ToggleSetting("Book Level", "Single-enchant books", S::overlayBookLevel))
+        lvl.sub.add(ToggleSetting("Pet Level", "", S::overlayPetLevel))
+        lvl.sub.add(ToggleSetting("Minion Tier", "", S::overlayMinionTier))
+        lvl.sub.add(ToggleSetting("Cake Year", "New Year Cakes", S::overlayCakeYear))
+        lvl.sub.add(ColorPickerSetting("Text Color", "", S::overlayTextColor))
+        col.features.add(lvl)
         col.features.add(Feature("Click Suggestion For /ahs", S::suggestionClickAhs))
 
         return col
@@ -93,10 +94,7 @@ object ExtrasMenu {
         "Limbo Alert" -> "Title and sound when you get sent to Limbo"
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
-        "Book Level Overlay" -> "Enchant level on single-enchant books in slots"
-        "Pet Level Overlay" -> "Pet level in the slot corner"
-        "Minion Tier Overlay" -> "Minion tier in the slot corner"
-        "Cake Year Overlay" -> "New Year Cake year in the slot corner"
+        "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
         "Click Suggestion For /ahs" -> "Clicking a missing pet / museum suggestion in FishMod screens runs /ahs <item>"
         else -> null
     }
