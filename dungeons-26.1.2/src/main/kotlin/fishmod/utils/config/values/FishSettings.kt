@@ -851,6 +851,10 @@ object FishSettings {
     @ConfigValue @JvmField var keyNotifierChat: Boolean = false
     @ConfigValue @JvmField var keyNotifierSound: Boolean = true
     @ConfigValue @JvmField var keyNotifierDurationMs: Int = 2000
+    @ConfigValue @JvmField var keyHighlight: Boolean = false
+    @ConfigValue @JvmField var keyHighlightTracer: Boolean = false
+    @ConfigValue @JvmField var keyHighlightWitherColor: Int = 0xFF555555.toInt()
+    @ConfigValue @JvmField var keyHighlightBloodColor: Int = 0xFFFF5555.toInt()
 
     @ConfigValue @JvmField var leapMessagesTitle: Boolean = true
     @ConfigValue @JvmField var leapMessagesParty: Boolean = false
