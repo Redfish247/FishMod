@@ -29,7 +29,7 @@ object RiftGuide {
             { S.riftGuideScale }, { S.riftGuideScale = it }, { S.riftGuide })
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("RiftGuide.1", "guide scan failed") { scan(mc) } }
         fishmod.utils.events.Events.ON_WORLD_CHANGE.register { pages.clear(); rows = emptyList(); false }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "rift_guide")) { ctx, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "rift_guide")) { ctx, _ ->
             val mc = Minecraft.getInstance()
             if (!S.riftGuide || mc.player == null || mc.hudHidden || FishHudEditor.isOpen() || mc.curScreen is AbstractContainerScreen<*>) return@addLast
             if (!Rift.inRift() || rows.isEmpty()) return@addLast

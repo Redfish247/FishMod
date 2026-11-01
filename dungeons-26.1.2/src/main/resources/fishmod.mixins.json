@@ -35,6 +35,7 @@
     "CosmeticChatMixin",
     "CosmeticEntityNameMixin",
     "CosmeticGuiTextMixin",
+    "HudTextShadowMixin",
     "ClientPlayNetworkHandlerMixin",
     "PacketErrorGuardMixin",
     "ContainerScreenMixin",
