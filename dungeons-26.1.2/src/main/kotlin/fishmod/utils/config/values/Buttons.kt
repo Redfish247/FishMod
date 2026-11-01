@@ -106,6 +106,11 @@ object Buttons {
     @JvmField
     var showEquipment: Boolean = false
 
+    // last equipment seen in /stats, kept until it changes
+    @ConfigValue
+    @JvmField
+    var equipmentCache: String = ""
+
 
     @JvmStatic
     fun init() { }

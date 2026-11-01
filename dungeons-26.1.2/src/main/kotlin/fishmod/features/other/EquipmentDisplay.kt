@@ -1,5 +1,8 @@
 package fishmod.features.other
 
+import fishmod.features.storage.NBTInventory
+import fishmod.utils.config.FishConfig
+import fishmod.utils.config.values.Buttons
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
@@ -42,7 +45,22 @@ object EquipmentDisplay {
             val t = typeOf(st)
             if (t >= 0 && found[t] == null) found[t] = st.copy()
         }
-        if (found.any { it != null }) for (i in 0..3) cached[i] = found[i] ?: ItemStack.EMPTY
+        if (found.none { it != null }) return
+        val next = List(4) { found[it] ?: ItemStack.EMPTY }
+        if (loaded && (0..3).all { ItemStack.matches(cached[it] ?: ItemStack.EMPTY, next[it]) }) return
+        for (i in 0..3) cached[i] = next[i]
+        loaded = true
+        Buttons.equipmentCache = NBTInventory(next).encode()
+        runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("EquipmentDisplay.2", "saving equipment cache failed", it) }
+    }
+
+    private var loaded = false
+
+    // restore the saved equipment once a world (and its registries) exists
+    private fun ensureLoaded() {
+        if (loaded || Buttons.equipmentCache.isEmpty() || Minecraft.getInstance().level == null) return
+        loaded = true
+        NBTInventory.decode(Buttons.equipmentCache)?.stacks?.forEachIndexed { i, st -> if (i < 4) cached[i] = st }
     }
 
     private const val X = -19
@@ -57,6 +75,7 @@ object EquipmentDisplay {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, left: Int, top: Int) {
+        ensureLoaded()
         val x = X
         for (i in 0..3) {
             val y = 8 + i * 18
