@@ -2,13 +2,12 @@ package fishmod.mixin;
 
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.renderer.feature.NameTagFeatureRenderer;
-import net.minecraft.client.renderer.feature.TextFeatureRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-// Text Shadow: drop shadow on nametags and floating world text
-@Mixin({NameTagFeatureRenderer.class, TextFeatureRenderer.class})
+// Text Shadow: drop shadow on nametags (world text is in SubmitTextShadowMixin)
+@Mixin(NameTagFeatureRenderer.class)
 public abstract class WorldTextShadowMixin {
 
     @ModifyArg(method = "renderTranslucent", require = 0, index = 4, at = @At(value = "INVOKE",
