@@ -45,9 +45,19 @@ object EquipmentDisplay {
         if (found.any { it != null }) for (i in 0..3) cached[i] = found[i] ?: ItemStack.EMPTY
     }
 
+    private const val X = -19
+
+    // player clicked the column: open the equipment menu (one click = one command)
     @JvmStatic
-    fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        val x = -22
+    fun click(mouseX: Double, mouseY: Double): Boolean {
+        if (mouseX < X - 1 || mouseX >= X + 17 || mouseY < 7 || mouseY >= 8 + 72) return false
+        fishmod.utils.Misc.executeCommand("stats")
+        return true
+    }
+
+    @JvmStatic
+    fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, left: Int, top: Int) {
+        val x = X
         for (i in 0..3) {
             val y = 8 + i * 18
             ctx.fill(x - 1, y - 1, x + 17, y + 17, 0x90000000.toInt())
@@ -55,7 +65,7 @@ object EquipmentDisplay {
             if (st.isEmpty) continue
             ctx.item(st, x, y)
             if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16)
-                ctx.setTooltipForNextFrame(Minecraft.getInstance().font, st, mouseX, mouseY)
+                ctx.setTooltipForNextFrame(Minecraft.getInstance().font, st, mouseX + left, mouseY + top)
         }
         if (cached.all { it == null } && mouseX >= x && mouseX < x + 16 && mouseY >= 8 && mouseY < 8 + 72)
             ctx.text(Minecraft.getInstance().font, "Open /equipment once", x - 40, 8 + 74, 0xffaaaaaa.toInt(), true)
