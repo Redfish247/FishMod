@@ -60,10 +60,11 @@ object ExtrasSettings {
     @ConfigValue @JvmField var patcherWaypointTextScale: Double = 1.0
 
     // Item overlays + tooltip
-    @ConfigValue @JvmField var overlayBookLevel: Boolean = false
-    @ConfigValue @JvmField var overlayPetLevel: Boolean = false
-    @ConfigValue @JvmField var overlayMinionTier: Boolean = false
-    @ConfigValue @JvmField var overlayCakeYear: Boolean = false
+    @ConfigValue @JvmField var overlayItemLevels: Boolean = false
+    @ConfigValue @JvmField var overlayBookLevel: Boolean = true
+    @ConfigValue @JvmField var overlayPetLevel: Boolean = true
+    @ConfigValue @JvmField var overlayMinionTier: Boolean = true
+    @ConfigValue @JvmField var overlayCakeYear: Boolean = true
     @ConfigValue @JvmField var overlayTextColor: Int = 0xFFFFFFFF.toInt()
     @ConfigValue @JvmField var obtainedDateTooltip: Boolean = false
     @ConfigValue @JvmField var suggestionClickAhs: Boolean = true
