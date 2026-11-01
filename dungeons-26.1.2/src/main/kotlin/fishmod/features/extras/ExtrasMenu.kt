@@ -37,6 +37,22 @@ object ExtrasMenu {
         cal.sub.add(ColorPickerSetting("Time Color", "", S::calendarTimeColor))
         col.features.add(cal)
 
+        val bars = Feature("Status Bars", S::statusBars)
+        bars.sub.add(ToggleSetting("Hide Vanilla Bars", "Hearts, armor, food and XP level", S::statusBarsHideVanilla))
+        bars.sub.add(ToggleSetting("Health", "", S::statusBarsHealth))
+        bars.sub.add(ToggleSetting("Mana", "", S::statusBarsMana))
+        bars.sub.add(ToggleSetting("Defense", "", S::statusBarsDefense))
+        bars.sub.add(ToggleSetting("XP", "", S::statusBarsXp))
+        bars.sub.add(ColorPickerSetting("Health Color", "", S::statusBarsHealthColor))
+        bars.sub.add(ColorPickerSetting("Overflow Health Color", "Absorption above max health", S::statusBarsOverflowColor))
+        bars.sub.add(ColorPickerSetting("Mana Color", "", S::statusBarsManaColor))
+        bars.sub.add(ColorPickerSetting("Defense Color", "", S::statusBarsDefenseColor))
+        bars.sub.add(ColorPickerSetting("XP Color", "", S::statusBarsXpColor))
+        bars.sub.add(ColorPickerSetting("Text Color", "", S::statusBarsTextColor))
+        bars.sub.add(ToggleSetting("Text Shadow", "", S::statusBarsTextShadow))
+        bars.sub.add(SliderIntSetting("Background Opacity %", "", S::statusBarsBgOpacity, 0, 100, 5))
+        col.features.add(bars)
+
         val limbo = Feature("Limbo Alert", S::limboAlert)
         limbo.sub.add(InputSetting("Title", "& colour codes work", S::limboTitle))
         limbo.sub.add(SoundSearchSetting("Sound", "Type to search every game sound", { S.limboSound }, { S.limboSound = it }, { S.limboVolume }))
@@ -78,6 +94,7 @@ object ExtrasMenu {
         "Arrow HUD" -> "Selected arrow + quiver count, low/out warnings"
         "Quiver Warning" -> "Title + sound when the quiver runs low, without the Arrow HUD"
         "Calendar Real Times" -> "Real date + time next to every countdown in the /calendar menu"
+        "Status Bars" -> "Health / mana / defense / XP bars from the action bar; move them in the HUD editor"
         "Limbo Alert" -> "Title and sound when you get sent to Limbo"
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"

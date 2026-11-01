@@ -20,6 +20,25 @@ object ExtrasSettings {
     @ConfigValue @JvmField var calendarRealTimes: Boolean = false
     @ConfigValue @JvmField var calendarTimeColor: Int = 0xFF55FFFF.toInt()
 
+    // Status bars
+    @ConfigValue @JvmField var statusBars: Boolean = false
+    @ConfigValue @JvmField var statusBarsHideVanilla: Boolean = true
+    @ConfigValue @JvmField var statusBarsHealth: Boolean = true
+    @ConfigValue @JvmField var statusBarsMana: Boolean = true
+    @ConfigValue @JvmField var statusBarsDefense: Boolean = true
+    @ConfigValue @JvmField var statusBarsXp: Boolean = true
+    @ConfigValue @JvmField var statusBarsX: Int = 10
+    @ConfigValue @JvmField var statusBarsY: Int = 120
+    @ConfigValue @JvmField var statusBarsScale: Double = 1.0
+    @ConfigValue @JvmField var statusBarsHealthColor: Int = 0xFFE03C3C.toInt()
+    @ConfigValue @JvmField var statusBarsOverflowColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var statusBarsManaColor: Int = 0xFF3C78E0.toInt()
+    @ConfigValue @JvmField var statusBarsDefenseColor: Int = 0xFF3CB43C.toInt()
+    @ConfigValue @JvmField var statusBarsXpColor: Int = 0xFF80FF20.toInt()
+    @ConfigValue @JvmField var statusBarsTextColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var statusBarsTextShadow: Boolean = true
+    @ConfigValue @JvmField var statusBarsBgOpacity: Int = 50
+
     // Limbo alert
     @ConfigValue @JvmField var limboAlert: Boolean = false
     @ConfigValue @JvmField var limboTitle: String = "§cIN LIMBO"
