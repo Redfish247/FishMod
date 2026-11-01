@@ -25,6 +25,21 @@ object SlayerStatsTracker {
         var everStarted = false
         var rng: String? = null
         var rngStored: Long = -1
+        // lifetime totals from the profile API, plus what we counted since that pull
+        var apiXp: Long = -1
+        var apiKills: Long = 0
+        var sinceXp: Long = 0
+        var sinceKills: Long = 0
+    }
+
+    private const val API_REFRESH_MS = 10 * 60_000L
+    private var lastApiFetch = 0L
+    @Volatile private var apiFetching = false
+
+    // profile JSON key per slayer
+    private fun apiKey(t: SlayerType) = when (t) {
+        SlayerType.REVENANT -> "zombie"; SlayerType.TARANTULA -> "spider"; SlayerType.SVEN -> "wolf"
+        SlayerType.VOIDGLOOM -> "enderman"; SlayerType.INFERNO -> "blaze"
     }
 
     private val RNG_STORED = Regex("([\\d,]+) Stored XP")
@@ -39,8 +54,41 @@ object SlayerStatsTracker {
     private fun cur(): Stats? = SlayerManager.type?.let { byType[it.name] }
     private fun of(type: SlayerType): Stats = byType.getOrPut(type.name) { Stats() }
 
-    @JvmStatic val xpGained: Long get() = cur()?.xpGained ?: 0
-    @JvmStatic val kills: Int get() = cur()?.kills ?: 0
+    @JvmStatic val xpGained: Long get() = cur()?.let { if (it.apiXp >= 0) it.apiXp + it.sinceXp else it.xpGained } ?: 0
+    @JvmStatic val kills: Long get() = cur()?.let { if (it.apiXp >= 0) it.apiKills + it.sinceKills else it.kills.toLong() } ?: 0
+    fun fromApi(): Boolean = (cur()?.apiXp ?: -1) >= 0
+
+    private fun maybeFetchApi(mc: Minecraft) {
+        val now = System.currentTimeMillis()
+        if (apiFetching || now - lastApiFetch < API_REFRESH_MS) return
+        val uuid = mc.player?.uuid?.toString()?.replace("-", "") ?: return
+        lastApiFetch = now
+        apiFetching = true
+        fishmod.utils.HypixelApi.fetchSelectedProfile(uuid) { profile ->
+            val bosses = profile?.getAsJsonObject("members")?.getAsJsonObject(uuid)
+                ?.getAsJsonObject("slayer")?.getAsJsonObject("slayer_bosses")
+            mc.execute {
+                apiFetching = false
+                if (bosses == null) return@execute
+                FishDiag.guard("SlayerStatsTracker.6", "apply slayer API totals failed") { applyApi(bosses) }
+            }
+        }
+    }
+
+    private fun applyApi(bosses: com.google.gson.JsonObject) {
+        for (t in SlayerType.entries) {
+            val b = bosses.getAsJsonObject(apiKey(t)) ?: continue
+            val xp = b.get("xp")?.takeIf { it.isJsonPrimitive }?.asLong ?: continue
+            var k = 0L
+            for ((key, v) in b.entrySet()) if (key.startsWith("boss_kills_tier_") && v.isJsonPrimitive) k += v.asLong
+            val s = of(t)
+            // API lags a few minutes; only take it once it has caught up with our own count
+            if (s.apiXp < 0 || xp >= s.apiXp + s.sinceXp) {
+                s.apiXp = xp; s.apiKills = maxOf(k, s.apiKills + s.sinceKills); s.sinceXp = 0; s.sinceKills = 0
+            }
+        }
+        save()
+    }
 
     private var lastTickMs = 0L
     private var lastActivityMs = 0L
@@ -71,6 +119,7 @@ object SlayerStatsTracker {
         val p = mc.player
         val type = SlayerManager.type
         if (p != null && type != null && SlayerManager.isActiveSlayer()) {
+            if (FishSettings.slayerStatsHudEnabled) maybeFetchApi(mc)
             val x = p.x; val y = p.y; val z = p.z
             if (!havePos) {
                 lastX = x; lastY = y; lastZ = z; havePos = true
@@ -102,6 +151,8 @@ object SlayerStatsTracker {
         val s = of(type)
         s.kills++
         s.xpGained += type.bossXp(tier)
+        s.sinceKills++
+        s.sinceXp += type.bossXp(tier)
         s.everStarted = true
         lastActivityMs = System.currentTimeMillis()
         pendingType = type; pendingXp = type.bossXp(tier); pendingAt = lastActivityMs
@@ -118,6 +169,7 @@ object SlayerStatsTracker {
             val delta = stored - s.rngStored
             if (s.rngStored >= 0 && pendingType == type && System.currentTimeMillis() - pendingAt < RNG_WINDOW_MS && delta in 1..50_000) {
                 s.xpGained += delta - pendingXp
+                s.sinceXp += delta - pendingXp
                 pendingType = null
             }
             s.rngStored = stored
@@ -126,11 +178,13 @@ object SlayerStatsTracker {
     }
 
     fun rngText(): String? = cur()?.rng
-    fun hasData(): Boolean = cur()?.everStarted == true
+    fun hasData(): Boolean = cur()?.let { it.everStarted || it.apiXp >= 0 } == true
 
+    // clears our own counts; API totals stay and refresh on the next pull
     @JvmStatic
     fun reset() {
-        byType.clear()
+        for (s in byType.values) { s.xpGained = 0; s.kills = 0; s.activeMs = 0; s.everStarted = false }
+        lastApiFetch = 0L
         lastActivityMs = 0
         havePos = false
         save()

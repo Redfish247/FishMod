@@ -125,6 +125,7 @@ object SlayerHuds {
         if (FishSettings.slayerStatsShowKills)
             lines.add("§7Kills: §f${fmt(SlayerStatsTracker.kills.toDouble())}")
         if (lines.size == 1) return
+        if (!SlayerStatsTracker.fromApi()) lines.add("§8(session, API not loaded)")
 
         drawBlock(ctx, FishSettings.slayerStatsHudX, FishSettings.slayerStatsHudY,
             FishSettings.slayerStatsHudScale, lines)
