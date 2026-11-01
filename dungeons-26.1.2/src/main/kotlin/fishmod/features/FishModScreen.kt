@@ -587,8 +587,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Key & Room Timer",
-                { Dungeons.enableKeyNotifier || FishSettings.roomTimerEnabled },
-                { v -> Dungeons.enableKeyNotifier = v; FishSettings.roomTimerEnabled = v })
+                { Dungeons.enableKeyNotifier || FishSettings.roomTimerEnabled || FishSettings.keyHighlight },
+                { v -> Dungeons.enableKeyNotifier = v; FishSettings.roomTimerEnabled = v; FishSettings.keyHighlight = v })
             f.sub.add(SubcategoryHeader("Key Notifier"))
             f.sub.add(ToggleSetting("Key Notifier", "", Dungeons::enableKeyNotifier))
             f.sub.add(ToggleSetting("Title", "", FishSettings::keyNotifierTitle).gatedBy { Dungeons.enableKeyNotifier })
@@ -596,6 +596,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Sound", "", FishSettings::keyNotifierSound).gatedBy { Dungeons.enableKeyNotifier })
             f.sub.add(SliderIntSetting("Title Duration (ms)", "", FishSettings::keyNotifierDurationMs, 500, 8000, 250)
                 .gatedBy { Dungeons.enableKeyNotifier && FishSettings.keyNotifierTitle })
+            f.sub.add(SubcategoryHeader("Key Highlight"))
+            f.sub.add(ToggleSetting("Key Highlight", "Box dropped Wither and Blood keys through walls", FishSettings::keyHighlight))
+            f.sub.add(ToggleSetting("Tracer", "Line from your crosshair to the key", FishSettings::keyHighlightTracer).gatedBy { FishSettings.keyHighlight })
+            f.sub.add(ColorPickerSetting("Wither Key Color", "", FishSettings::keyHighlightWitherColor).gatedBy { FishSettings.keyHighlight })
+            f.sub.add(ColorPickerSetting("Blood Key Color", "", FishSettings::keyHighlightBloodColor).gatedBy { FishSettings.keyHighlight })
             f.sub.add(SubcategoryHeader("Room Timer"))
             f.sub.add(ToggleSetting("Room Timer", "On-screen title when the room you're in clears / all its secrets are done", FishSettings::roomTimerEnabled))
             f.sub.add(ToggleSetting("\"Cleared\" Title", "Show when the room's mobs are done", FishSettings::roomTimerClear).gatedBy { FishSettings.roomTimerEnabled })
