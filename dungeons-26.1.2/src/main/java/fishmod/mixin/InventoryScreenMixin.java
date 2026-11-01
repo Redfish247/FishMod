@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(InventoryScreen.class)
 public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<InventoryMenu> {
@@ -61,10 +62,10 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         return super.mouseDragged(click, dx, dy);
     }
 
-    @Override
-    public boolean mouseReleased(MouseButtonEvent click) {
-        if (InventoryButton.release()) return true;
-        return super.mouseReleased(click);
+    // InventoryScreen defines mouseReleased itself, so inject instead of overriding
+    @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
+    private void fishmod$releaseButtons(MouseButtonEvent click, CallbackInfoReturnable<Boolean> cir) {
+        if (InventoryButton.release()) cir.setReturnValue(true);
     }
 
     @Override
