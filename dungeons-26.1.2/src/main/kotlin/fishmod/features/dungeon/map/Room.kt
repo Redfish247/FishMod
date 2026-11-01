@@ -162,6 +162,17 @@ class Room(
                     context.blit(RenderPipelines.GUI_TEXTURED, MapTextures.PRINCE_CROWN, 0, 0, 0.0f, 0.0f, 10, 10, 10, 10, -1)
                     matrices.popMatrix()
                 }
+
+                // Names replace the centre check, so put a small one in the corner
+                if (DungeonMapSettings.mapRoomAdditionsEnabled && DungeonMapSettings.mapRoomAdditionsChecks && type != Type.FAIRY && data?.name != null
+                    && (state == State.CLEARED || state == State.GREEN)) {
+                    val tint = if (state == State.GREEN) DungeonMapSettings.mapRoomCheckSecretsColor else DungeonMapSettings.mapRoomCheckClearedColor
+                    matrices.pushMatrix()
+                    matrices.translate(topLeft.x + 1.0f, topLeft.z + 1.0f)
+                    matrices.scale(0.5f)
+                    context.blit(RenderPipelines.GUI_TEXTURED, MapTextures.WHITE_CHECK, 0, 0, 0.0f, 0.0f, 12, 12, 12, 12, tint)
+                    matrices.popMatrix()
+                }
             }
         }
     }
