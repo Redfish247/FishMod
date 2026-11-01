@@ -141,7 +141,8 @@ object LootIcons {
         val item = itemFor(material, dur) ?: run { FishDiag.fail("LootIcons.7", "no vanilla item for material '$material' (id=$id dur=$dur)"); return null }
         val stack = ItemStack(item)
         if (item == Items.PLAYER_HEAD) {
-            val skin = o.getAsJsonObject("skin")?.get("value")?.asString ?: run { FishDiag.fail("LootIcons.8", "player head $id has no skin value"); return null }
+            // some heads (e.g. SKELETON_TALISMAN) have no skin in the db; keep the plain head
+            val skin = o.getAsJsonObject("skin")?.get("value")?.asString ?: return stack
             val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", skin))
             val profile = com.mojang.authlib.GameProfile(java.util.UUID.nameUUIDFromBytes(id.toByteArray()), "fmloot", com.mojang.authlib.properties.PropertyMap(props))
             stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile))

@@ -29,6 +29,7 @@ object CroesusRewardParser {
         ITEM_REPLACEMENTS["Apex Dragon Shard"] = "SHARD_APEX_DRAGON"
         ITEM_REPLACEMENTS["Power Dragon Shard"] = "SHARD_POWER_DRAGON"
         ITEM_REPLACEMENTS["Scarf Shard"] = "SHARD_SCARF"
+        ITEM_REPLACEMENTS["Bonzo Shard"] = "SHARD_BONZO"
         ITEM_REPLACEMENTS["Necron Dye"] = "DYE_NECRON"
         ITEM_REPLACEMENTS["Livid Dye"] = "DYE_LIVID"
     }

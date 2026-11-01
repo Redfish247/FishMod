@@ -186,9 +186,12 @@ object DungeonPlayers {
         DungeonClass.HEALER -> 0xFF800080.toInt()
     }
 
+    // tab also shows non-class words (Customize, EMPTY); only report real-looking class names
+    private val KNOWN_CLASS_NAMES = setOf("ARCHER", "BERSERK", "BERSERKER", "MAGE", "TANK", "HEALER")
+
     private fun resolveClass(player: DungeonPlayer): DungeonClass? =
         runCatching { DungeonClass.valueOf(player.clazz.uppercase()) }.onFailure {
-            if (player.clazz != "Unknown" && player.clazz != "EMPTY") FishDiag.fail("DungeonPlayers.3", "unknown dungeon class '${player.clazz}' for ${player.name}", it)
+            if (player.clazz.uppercase() in KNOWN_CLASS_NAMES) FishDiag.fail("DungeonPlayers.3", "unknown dungeon class '${player.clazz}' for ${player.name}", it)
         }.getOrNull() ?: DungeonClass.getClass(player.name)
 
     private fun renderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {

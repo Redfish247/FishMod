@@ -110,9 +110,9 @@ object Scan {
     @JvmStatic
     fun scan(world: ClientLevel) {
         if (!DungeonState.isInDungeon()) return
-        // tab list lags a world change; trust a known non-dungeon location
+        // tab list lags a world change; only scan once location says dungeon (hub cores spammed Scan.5)
         val loc = fishmod.utils.Location.getCurrentLocation()
-        if (loc != fishmod.utils.Location.DUNGEON && loc != fishmod.utils.Location.UNKNOWN && !fishmod.utils.dungeon.PracticeMode.active) return
+        if (loc != fishmod.utils.Location.DUNGEON && !fishmod.utils.dungeon.PracticeMode.active) return
         if (!DungeonMap.anyFeatureEnabled()) return
 
         if (!RoomData.isLoaded()) {
