@@ -27,6 +27,12 @@ object ExtrasMenu {
         arrow.sub.add(SoundSearchSetting("Warning Sound", "Type to search every game sound", { S.arrowWarnSound }, { S.arrowWarnSound = it }))
         col.features.add(arrow)
 
+        val quiver = Feature("Quiver Warning", S::quiverWarning)
+        quiver.sub.add(SliderIntSetting("Low Threshold", "Shared with Arrow HUD", S::arrowLowThreshold, 16, 2048, 16))
+        quiver.sub.add(ToggleSetting("Low Arrows Warning", "", S::arrowLowWarn))
+        quiver.sub.add(ToggleSetting("Out Of Arrows Warning", "", S::arrowOutWarn))
+        col.features.add(quiver)
+
         val limbo = Feature("Limbo Alert", S::limboAlert)
         limbo.sub.add(InputSetting("Title", "& colour codes work", S::limboTitle))
         limbo.sub.add(SoundSearchSetting("Sound", "Type to search every game sound", { S.limboSound }, { S.limboSound = it }, { S.limboVolume }))
@@ -53,6 +59,7 @@ object ExtrasMenu {
 
     fun describe(name: String): String? = when (name) {
         "Arrow HUD" -> "Selected arrow + quiver count, low/out warnings"
+        "Quiver Warning" -> "Title + sound when the quiver runs low, without the Arrow HUD"
         "Limbo Alert" -> "Title and sound when you get sent to Limbo"
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"

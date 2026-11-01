@@ -16,6 +16,7 @@ object ExtrasSettings {
     @ConfigValue @JvmField var arrowLowThreshold: Int = 128
     @ConfigValue @JvmField var arrowOutWarn: Boolean = true
     @ConfigValue @JvmField var arrowWarnSound: String = "Note: Bass"
+    @ConfigValue @JvmField var quiverWarning: Boolean = false
 
     // Limbo alert
     @ConfigValue @JvmField var limboAlert: Boolean = false

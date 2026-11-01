@@ -42,10 +42,10 @@ object ArrowHud {
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("ArrowHud.1", "arrow hud render failed", t) }
         }
         Events.ON_GAME_MESSAGE.register { text ->
-            if (S.arrowHud) onChat(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim())
+            if (S.arrowHud || S.quiverWarning) onChat(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim())
             false
         }
-        ClientTickEvents.END_CLIENT_TICK.register { if (S.arrowHud && ++tickN % 10 == 0) scan() }
+        ClientTickEvents.END_CLIENT_TICK.register { if ((S.arrowHud || S.quiverWarning) && ++tickN % 10 == 0) scan() }
     }
 
     private fun onChat(s: String) {
@@ -110,11 +110,12 @@ object ArrowHud {
         count = n
         if (n > S.arrowLowThreshold) warnedLow = false
         if (n > 0) warnedOut = false
-        if (n == 0L && S.arrowOutWarn && !warnedOut) {
+        val warn = S.arrowHud || S.quiverWarning
+        if (warn && n == 0L && S.arrowOutWarn && !warnedOut) {
             warnedOut = true
             Misc.forceTitle(Component.literal("§cOUT OF ARROWS"), Component.empty(), 2000)
             ExtrasSounds.play(S.arrowWarnSound, 100, "fm_arrow_out")
-        } else if (n in 1..S.arrowLowThreshold.toLong() && S.arrowLowWarn && !warnedLow) {
+        } else if (n in 1..S.arrowLowThreshold.toLong() && warn && S.arrowLowWarn && !warnedLow) {
             warnedLow = true
             Misc.forceTitle(Component.empty(), Component.literal("§eLow arrows: §f$n"), 1500)
             ExtrasSounds.play(S.arrowWarnSound, 100, "fm_arrow_low")
