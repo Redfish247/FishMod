@@ -17,6 +17,8 @@ object ExtrasSettings {
     @ConfigValue @JvmField var arrowOutWarn: Boolean = true
     @ConfigValue @JvmField var arrowWarnSound: String = "Note: Bass"
     @ConfigValue @JvmField var quiverWarning: Boolean = false
+    @ConfigValue @JvmField var calendarRealTimes: Boolean = false
+    @ConfigValue @JvmField var calendarTimeColor: Int = 0xFF55FFFF.toInt()
 
     // Limbo alert
     @ConfigValue @JvmField var limboAlert: Boolean = false
