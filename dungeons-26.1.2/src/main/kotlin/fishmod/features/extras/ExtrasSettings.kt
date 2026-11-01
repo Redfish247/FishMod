@@ -37,4 +37,17 @@ object ExtrasSettings {
     @ConfigValue @JvmField var patcherWaypointBeam: Boolean = true
     @ConfigValue @JvmField var patcherWaypointRemoveNear: Boolean = true
     @ConfigValue @JvmField var patcherWaypointTextScale: Double = 1.0
+
+    // Item overlays + tooltip
+    @ConfigValue @JvmField var overlayBookLevel: Boolean = false
+    @ConfigValue @JvmField var overlayPetLevel: Boolean = false
+    @ConfigValue @JvmField var overlayMinionTier: Boolean = false
+    @ConfigValue @JvmField var overlayCakeYear: Boolean = false
+    @ConfigValue @JvmField var overlayTextColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var obtainedDateTooltip: Boolean = false
+    @ConfigValue @JvmField var suggestionClickAhs: Boolean = true
+
+    // PV maxed highlight
+    @ConfigValue @JvmField var pvMaxedColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var pvMaxedRainbow: Boolean = false
 }

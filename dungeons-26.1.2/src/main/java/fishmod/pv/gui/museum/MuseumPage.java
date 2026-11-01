@@ -105,6 +105,7 @@ public final class MuseumPage {
 	private long nextWeakRetryMs;
 	private List<Slot> missingView = List.of();
 	private List<CheapRow> cheapest = List.of();
+	private String hoverCheapName;
 	private double costToMax;
 	private double donatedValue;
 	private int donatedCount;
@@ -217,6 +218,11 @@ public final class MuseumPage {
 		this.cacheDirty = true;
 		this.hoverKey = "";
 		this.hoverTip = List.of();
+	}
+
+	/** Clicking a cheapest-missing row runs /ahs for it. */
+	public boolean clickCheapest() {
+		return this.hoverCheapName != null && fishmod.pv.gui.PvAhs.search(this.hoverCheapName);
 	}
 
 	/** Toggles the "Missing only" filter; true when the click landed on its button. */
@@ -435,6 +441,7 @@ public final class MuseumPage {
 		int lastIndex = Math.min(view.size() - 1, (lastRow + 1) * cols - 1);
 
 		String hoveredKey = null;
+		this.hoverCheapName = null;
 		g.enableScissor(lx, this.gridY, lx + lw + 3, this.gridY + this.gridH);
 		for (int i = firstIndex; i <= lastIndex; i++) {
 			Slot slot = view.get(i);
@@ -557,6 +564,7 @@ public final class MuseumPage {
 			PvDraw.text(g, font, price, lx + lw - priceW, textY, PvDraw.COLOR_GOLD);
 			if (hovered) {
 				hoveredKey = row.donationId();
+				this.hoverCheapName = row.name();
 			}
 		}
 		g.disableScissor();
