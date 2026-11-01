@@ -110,6 +110,8 @@ object BoardReport {
             addProperty("mod", modVersion())
             addProperty("mc", mcVersion())
             addProperty("loc", area())
+            // Manual reports name the sender so the board shows who asked; auto reports stay anonymous.
+            if (kind != "auto") try { addProperty("player", Minecraft.getInstance().user.name) } catch (_: Throwable) {}
             if (kind != "suggest") addProperty("log", scrub(FishDiag.recentLines(15).joinToString("\n")).take(4000))
         }
         val req = HttpRequest.newBuilder(URI.create(ENDPOINT))
