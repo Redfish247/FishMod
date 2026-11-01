@@ -403,9 +403,10 @@ public final class PvDraw {
 		// One scheme everywhere: gold when maxed, gray while still filling.
 		boolean maxed = maxedShiny || clamped >= 0.999f;
 		int fw = Math.max(filled, Math.min(w, h));
-		roundedFill(g, x, y, fw, h, h / 2, maxed ? maxedColor() : COLOR_BAR_PROGRESS);
 		if (maxed && fishmod.features.extras.ExtrasSettings.pvMaxedRainbow) {
 			chromaSlices(g, x, y, fw, h);
+		} else {
+			roundedFill(g, x, y, fw, h, h / 2, maxed ? maxedColor() : COLOR_BAR_PROGRESS);
 		}
 	}
 
@@ -419,6 +420,10 @@ public final class PvDraw {
 		int r = h / 2;
 		int end = w - r;
 		float t = (System.currentTimeMillis() % CHROMA_PERIOD_MS) / (float) CHROMA_PERIOD_MS;
+		// Round caps take the gradient colour at their spot so the ends match the bar
+		int mid = h / (2 * CHROMA_BAND_ROWS);
+		roundedFill(g, x, y, Math.min(2 * r, w), h, r, rainbowArgb(positiveModulo((r + mid) / CHROMA_SPAN_PX - t, 1F)));
+		roundedFill(g, x + Math.max(0, w - 2 * r), y, Math.min(2 * r, w), h, r, rainbowArgb(positiveModulo((end + mid) / CHROMA_SPAN_PX - t, 1F)));
 		for (int band = 0; band * CHROMA_BAND_ROWS < h; band++) {
 			int y0 = y + band * CHROMA_BAND_ROWS;
 			int y1 = Math.min(y0 + CHROMA_BAND_ROWS, y + h);
