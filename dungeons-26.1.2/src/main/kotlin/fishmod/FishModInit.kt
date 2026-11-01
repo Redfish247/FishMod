@@ -781,7 +781,8 @@ class FishModInit : ClientModInitializer {
                             // Per nearby player: live socket copy vs a direct /nicks fetch
                             Misc.addChatMessage(Component.literal("§b[fmnicktest] §7live ready: §f" + fishmod.cosmetic.CosmeticLive.ready + " §8|§7 rev: §f" + fishmod.cosmetic.CosmeticLive.rev))
                             val self = mc.player?.uuid
-                            mc.level?.players()?.filter { it.uuid != self }?.take(8)?.forEach { p ->
+                            val me = mc.player
+                            mc.level?.players()?.filter { it.uuid != self }?.sortedBy { if (me == null) 0.0 else it.distanceToSqr(me) }?.take(8)?.forEach { p ->
                                 val u = p.uuid.toString().replace("-", "")
                                 val live = fishmod.cosmetic.CosmeticLive.slice(setOf(u))?.nicks?.get(u)
                                 fishmod.utils.HypixelApi.fetchNicks(setOf(u)) { nicks ->
