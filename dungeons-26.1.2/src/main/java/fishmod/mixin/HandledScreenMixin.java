@@ -111,6 +111,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
     private void fishmod$slotLock(Slot slot, int slotId, int button, net.minecraft.world.inventory.ContainerInput input, CallbackInfo ci) {
         try {
+            fishmod.features.ExperimentSolver.onSlotClicked(slotId);
             if (fishmod.features.SlotLocking.onSlotClicked(slot, slotId, input)) ci.cancel();
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.13", "slot lock click check failed slotId=" + slotId, t);

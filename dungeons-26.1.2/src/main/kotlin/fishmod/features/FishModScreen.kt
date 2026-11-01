@@ -722,6 +722,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
+            val f = Feature("Boss Damage Calculator", FishSettings::bossDamageCalcEnabled)
+            f.sub.add(SubcategoryHeader("Run end: your estimated share of each boss's health (health drops right after your hits)"))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Extra Stats", FishSettings::extraStatsEnabled)
             f.sub.add(SubcategoryHeader("Replaces Hypixel's post-run stats block with a tidy summary"))
             f.sub.add(ToggleSetting("Show Bits", "", FishSettings::extraStatsBits))
@@ -1336,6 +1341,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
         run {
             hud.features.add(Feature("Anita Medal Profit", FishSettings::anitaProfitEnabled))
+            val s = Feature("Experiment Solver", FishSettings::experimentSolverEnabled)
+            s.sub.add(SubcategoryHeader("Highlights Chronomatron, Ultrasequencer and Superpairs slots. Never clicks."))
+            general.features.add(s)
             val f = Feature("Experiment Profit Tracker", FishSettings::expProfitEnabled)
             f.sub.add(SubcategoryHeader("Experimentation Table drops, value, Enchanting XP and XP per experiment  ·  drag with Edit HUD"))
             f.sub.add(ToggleSetting("Only On Private Island", "", FishSettings::expProfitOnlyIsland))
