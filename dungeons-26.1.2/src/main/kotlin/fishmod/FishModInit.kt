@@ -514,10 +514,10 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.99", "fishmod.features.dungeon.M7LeverWaypoints.init() failed") { fishmod.features.dungeon.M7LeverWaypoints.init() }
         FishDiag.guard("FishModInit.100", "fishmod.features.dungeon.DungeonWaypoints.init() failed") { fishmod.features.dungeon.DungeonWaypoints.init() }
         FishDiag.guard("FishModInit.101", "fishmod.features.dungeon.StarredMobHighlight.init() failed") { fishmod.features.dungeon.StarredMobHighlight.init() }
+        FishDiag.guard("FishModInit.MiningBoxes", "MiningBoxes.init() failed") { fishmod.features.mining.MiningBoxes.init() }
         FishDiag.guard("FishModInit.102", "fishmod.features.slayers.SlayerManager.init() failed") { fishmod.features.slayers.SlayerManager.init() }
         FishDiag.guard("FishModInit.156", "fishmod.features.diana.Diana.init() failed") { fishmod.features.diana.Diana.init() }
         FishDiag.guard("FishModInit.158", "TrackerResetButton.init() failed") { fishmod.features.other.TrackerResetButton.init() }
-        FishDiag.guard("FishModInit.MiningBoxes", "MiningBoxes.init() failed") { fishmod.features.mining.MiningBoxes.init() }
         FishDiag.guard("FishModInit.157", "fishmod.features.mining.Mining.init() failed") { fishmod.features.mining.Mining.init() }
         FishDiag.guard("FishModInit.157k", "fishmod.features.kuudra.Kuudra.init() failed") { fishmod.features.kuudra.Kuudra.init() }
         FishDiag.guard("FishModInit.R1", "fishmod.features.rift.Rift.init() failed") { fishmod.features.rift.Rift.init() }
