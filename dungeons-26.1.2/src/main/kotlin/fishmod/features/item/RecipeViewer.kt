@@ -44,6 +44,7 @@ object RecipeViewer {
     private val stacks = HashMap<String, ItemStack>()
 
     private var holdId: String? = null
+    private var holdSlot: Any? = null
     private var holdStart = 0L
     private var lastSeen = 0L
     private var fired = false
@@ -60,14 +61,15 @@ object RecipeViewer {
         if (!FishSettings.recipeViewer || !Location.inSkyblock() || stack.isEmpty) return
         val mc = Minecraft.getInstance()
         val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
-        if ((screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()?.item !== stack) return
+        val slot = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()
+        if (slot?.item !== stack) return
         val id = ItemUtil.getId(stack) ?: return
         NeuRepo.ensureLoaded()
         if (recipesFor(id).isEmpty() && NeuRepo.get(id) == null) return
 
         val now = System.currentTimeMillis()
         val shift = InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_RIGHT_SHIFT)
-        if (!shift || id != holdId || now - lastSeen > 200) { holdId = id; holdStart = now; fired = false }
+        if (!shift || id != holdId || slot !== holdSlot || now - lastSeen > 200) { holdId = id; holdSlot = slot; holdStart = now; fired = false }
         lastSeen = now
         if (!shift) {
             lines.add(Component.literal("§7Recipe §8" + "|".repeat(20) + " §8[§eShift§8]"))
