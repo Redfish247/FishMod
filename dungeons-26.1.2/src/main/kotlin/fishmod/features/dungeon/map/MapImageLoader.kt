@@ -102,10 +102,22 @@ object MapImageLoader {
         }
     }
 
+    private val BAD_WARNED = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val PNG_SIG = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+
+    private fun hasPngSignature(path: Path): Boolean = try {
+        Files.newInputStream(path).use { it.readNBytes(8).contentEquals(PNG_SIG) }
+    } catch (e: Exception) { false }
+
     private fun loadImage(path: Path, quiet: Boolean = false) {
         val fileName = nameWithoutExt(path.fileName.toString())
         if (!path.toString().lowercase(Locale.ROOT).endsWith(".png")) return
 
+        // not a real PNG (renamed jpg/webp): tell the player once, no error report
+        if (!hasPngSignature(path)) {
+            if (BAD_WARNED.add(fileName)) Misc.addChatMessage(Component.literal("§c[Map] '$fileName' is not a real PNG file, skipping"))
+            return
+        }
         try {
             Files.newInputStream(path).use { input ->
                 val img = NativeImage.read(input)

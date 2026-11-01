@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.reloadChunks
 import fishmod.compat.curScreen
 import fishmod.compat.showScreen
 
@@ -393,6 +394,28 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Twitch Bridge",
                 { FishSettings.twitchBridgeEnabled },
+        visuals.features.add(Feature("No Fog", FishSettings::noFogEnabled))
+        run {
+            val f = Feature("Corpse Highlight", FishSettings::corpseHighlightEnabled)
+            f.sub.add(SubcategoryHeader("Boxes Glacite Mineshaft corpses through walls"))
+            f.sub.add(ColorPickerSetting("Colour", "", FishSettings::corpseHighlightColor))
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Ghost Box", FishSettings::ghostBoxEnabled)
+            f.sub.add(ToggleSetting("Hide Ghost Model", "", FishSettings::ghostBoxHideModel))
+            f.sub.add(ColorPickerSetting("Colour", "", FishSettings::ghostBoxColor))
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Custom Water Colour",
+                { FishSettings.customWaterEnabled },
+                { v -> FishSettings.customWaterEnabled = v; net.minecraft.client.Minecraft.getInstance().reloadChunks() })
+            f.sub.add(ColorPickerSetting("Water Colour", "",
+                { FishSettings.customWaterColor },
+                { v -> FishSettings.customWaterColor = v; net.minecraft.client.Minecraft.getInstance().reloadChunks() }))
+            visuals.features.add(f)
+        }
         visuals.features.add(Feature("No Fog", FishSettings::noFogEnabled))
         run {
             val f = Feature("Corpse Highlight", FishSettings::corpseHighlightEnabled)

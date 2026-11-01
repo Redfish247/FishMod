@@ -47,13 +47,29 @@ class NBTInventory(val stacks: List<ItemStack>, private var encoded: String? = n
                 for (i in list.indices) {
                     val tag = list.getCompoundOrEmpty(i)
                     if (tag.isEmpty) { items.add(ItemStack.EMPTY); continue }
-                    val parsed = ItemStack.OPTIONAL_CODEC.parse(ops, tag)
+                    var parsed = ItemStack.OPTIONAL_CODEC.parse(ops, tag)
+                    // unknown registry entries (server-side enchants like "m7:hit"): retry without the bad components
+                    if (parsed.error().isPresent) parsed = ItemStack.OPTIONAL_CODEC.parse(ops, stripBadComponents(ops, tag))
                     parsed.error().ifPresent { err -> FishDiag.fail("NBTInventory.2", "failed to decode stored item $i: ${err.message()}") }
                     items.add(parsed.result().orElse(ItemStack.EMPTY))
                 }
                 NBTInventory(items, encoded)
             }
         }.onFailure { FishDiag.fail("NBTInventory.3", "failed to decode storage page (${encoded.length} chars)", it) }.getOrNull()
+
+        private fun stripBadComponents(ops: net.minecraft.resources.RegistryOps<Tag>, tag: CompoundTag): CompoundTag {
+            val comps = tag.getCompoundOrEmpty("components")
+            if (comps.isEmpty) return tag
+            val out = tag.copy()
+            val kept = CompoundTag()
+            for (key in comps.keySet()) {
+                val probe = tag.copy()
+                probe.put("components", CompoundTag().also { c -> comps.get(key)?.let { c.put(key, it) } })
+                if (ItemStack.OPTIONAL_CODEC.parse(ops, probe).result().isPresent) comps.get(key)?.let { kept.put(key, it) }
+            }
+            out.put("components", kept)
+            return out
+        }
 
         private fun registryOps() =
             (Minecraft.getInstance().connection?.registryAccess()
