@@ -9,7 +9,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
-// Skyblocker-style XP bar + health/mana bars above the hotbar, fed from the action bar
+// Skyblocker-style defense bar + health/mana bars above the hotbar, fed from the action bar
 object StatusBars {
     private val HEALTH = Regex("""([\d,]+)/([\d,]+)❤""")
     private val MANA = Regex("""([\d,]+)/([\d,]+)✎""")
@@ -55,16 +55,17 @@ object StatusBars {
     private fun render(ctx: GuiGraphicsExtractor) {
         if (!S.statusBars || !Location.inSkyblock()) return
         val mc = Minecraft.getInstance()
-        val p = mc.player ?: return
+        mc.player ?: return
         val sc = S.statusBarsScale.toFloat()
         ctx.pose().pushMatrix()
         try {
             ctx.pose().translate(x().toFloat(), y().toFloat())
             ctx.pose().scale(sc, sc)
-            // row 1: XP bar with the level centred on it
-            if (S.statusBarsXp) {
-                bar(ctx, 0, 6, W, 5, p.experienceProgress, 0f, S.statusBarsXpColor)
-                label(ctx, "${p.experienceLevel}", W / 2, 3, S.statusBarsXpColor)
+            // row 1: defense, fill = damage reduction def/(def+100)
+            if (S.statusBarsDefense && def >= 0) {
+                icon(ctx, "❈", 0, 3, S.statusBarsDefenseColor)
+                bar(ctx, 9, 5, W - 9, 5, def.toFloat() / (def + 100), 0f, S.statusBarsDefenseColor)
+                label(ctx, "$def", 9 + (W - 9) / 2, 3, S.statusBarsDefenseColor)
             }
             // row 2: health left, mana right
             if (S.statusBarsHealth && hpMax > 0) {
@@ -77,7 +78,6 @@ object StatusBars {
                 bar(ctx, HALF + 11, 13, W - HALF - 11, 8, mana.toFloat() / manaMax, 0f, S.statusBarsManaColor)
                 label(ctx, "$mana", HALF + 11 + (W - HALF - 11) / 2, 13, S.statusBarsManaColor)
             }
-            if (S.statusBarsDefense && def >= 0) label(ctx, "❈$def", W / 2, -6, S.statusBarsDefenseColor)
         } finally {
             ctx.pose().popMatrix()
         }

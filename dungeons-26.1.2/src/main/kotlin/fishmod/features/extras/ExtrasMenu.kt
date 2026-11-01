@@ -38,16 +38,15 @@ object ExtrasMenu {
         col.features.add(cal)
 
         val bars = Feature("Status Bars", S::statusBars)
-        bars.sub.add(ToggleSetting("Hide Vanilla Bars", "Hearts, armor, food and XP level", S::statusBarsHideVanilla))
+        bars.sub.add(ToggleSetting("Hide Vanilla Bars", "Hearts, armor and food", S::statusBarsHideVanilla))
         bars.sub.add(ToggleSetting("Health", "", S::statusBarsHealth))
         bars.sub.add(ToggleSetting("Mana", "", S::statusBarsMana))
         bars.sub.add(ToggleSetting("Defense", "", S::statusBarsDefense))
-        bars.sub.add(ToggleSetting("XP", "", S::statusBarsXp))
+        bars.sub.add(ToggleSetting("Hide Vanilla XP Bar", "", S::statusBarsXp))
         bars.sub.add(ColorPickerSetting("Health Color", "", S::statusBarsHealthColor))
         bars.sub.add(ColorPickerSetting("Overflow Health Color", "Absorption above max health", S::statusBarsOverflowColor))
         bars.sub.add(ColorPickerSetting("Mana Color", "", S::statusBarsManaColor))
         bars.sub.add(ColorPickerSetting("Defense Color", "", S::statusBarsDefenseColor))
-        bars.sub.add(ColorPickerSetting("XP Color", "", S::statusBarsXpColor))
         bars.sub.add(ColorPickerSetting("Text Color", "White = same colour as the bar", S::statusBarsTextColor))
         bars.sub.add(ToggleSetting("Text Outline", "", S::statusBarsTextShadow))
         bars.sub.add(SliderIntSetting("Background Opacity %", "", S::statusBarsBgOpacity, 0, 100, 5))
@@ -90,7 +89,7 @@ object ExtrasMenu {
         "Arrow HUD" -> "Selected arrow + quiver count, low/out warnings"
         "Quiver Warning" -> "Title + sound when the quiver runs low, without the Arrow HUD"
         "Calendar Real Times" -> "Real date + time next to every countdown in the /calendar menu"
-        "Status Bars" -> "XP + health/mana bars above the hotbar (replaces vanilla hearts); move in the HUD editor"
+        "Status Bars" -> "Defense + health/mana bars above the hotbar (replaces vanilla hearts); move in the HUD editor"
         "Limbo Alert" -> "Title and sound when you get sent to Limbo"
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"

@@ -1,11 +1,10 @@
 package fishmod.utils.rendering
 
-import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.resources.Identifier
 
-// Registers mod HUD layers; shadow() backs the global "shadow all text" option
+// Registers mod HUD layers and flags when one is drawing
 object FishHudLayer {
     @JvmField var inModHud = false
 
@@ -16,9 +15,5 @@ object FishHudLayer {
         val prev = inModHud
         inModHud = true
         try { el.extractRenderState(ctx, tick) } finally { inModHud = prev }
-    }
-
-    @JvmStatic fun shadow(orig: Boolean): Boolean {
-        return orig || FishSettings.hudTextShadowMode == "All Text"
     }
 }
