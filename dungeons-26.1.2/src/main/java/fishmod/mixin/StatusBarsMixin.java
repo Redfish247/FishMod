@@ -34,6 +34,18 @@ public class StatusBarsMixin {
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/contextualbar/ContextualBarRenderer;extractExperienceLevel(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;I)V"))
     private void fishmod$statusBarsHideXp(GuiGraphicsExtractor extractor, Font font, int level, Operation<Void> original) {
-        if (!StatusBars.hideVanilla()) original.call(extractor, font, level);
+        if (!StatusBars.hideVanillaXp()) original.call(extractor, font, level);
+    }
+
+    @WrapOperation(method = "extractHotbarAndDecorations",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/contextualbar/ContextualBarRenderer;extractBackground(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V"))
+    private void fishmod$statusBarsHideXpBg(net.minecraft.client.gui.contextualbar.ContextualBarRenderer bar, GuiGraphicsExtractor extractor, net.minecraft.client.DeltaTracker dt, Operation<Void> original) {
+        if (!StatusBars.hideVanillaXp()) original.call(bar, extractor, dt);
+    }
+
+    @WrapOperation(method = "extractHotbarAndDecorations",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/contextualbar/ContextualBarRenderer;extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V"))
+    private void fishmod$statusBarsHideXpFill(net.minecraft.client.gui.contextualbar.ContextualBarRenderer bar, GuiGraphicsExtractor extractor, net.minecraft.client.DeltaTracker dt, Operation<Void> original) {
+        if (!StatusBars.hideVanillaXp()) original.call(bar, extractor, dt);
     }
 }

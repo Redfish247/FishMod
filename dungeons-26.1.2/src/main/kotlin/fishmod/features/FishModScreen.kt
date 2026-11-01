@@ -193,28 +193,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Inventory Buttons", Buttons::enableInventoryButtons)
-            f.sub.add(SubcategoryHeader("Click the pencil above your inventory to drag buttons (snaps to a grid)"))
-            f.sub.add(makeButtonInput("Button 1 Command", Buttons::command1))
-            f.sub.add(InputSetting("Button 1 Name", "Text shown next to the icon", Buttons::name1))
-            f.sub.add(InputSetting("Button 1 Icon", "Item id, e.g. ender_chest", Buttons::icon1))
-            f.sub.add(makeButtonInput("Button 2 Command", Buttons::command2))
-            f.sub.add(InputSetting("Button 2 Name", "Text shown next to the icon", Buttons::name2))
-            f.sub.add(InputSetting("Button 2 Icon", "Item id, e.g. ender_chest", Buttons::icon2))
-            f.sub.add(makeButtonInput("Button 3 Command", Buttons::command3))
-            f.sub.add(InputSetting("Button 3 Name", "Text shown next to the icon", Buttons::name3))
-            f.sub.add(InputSetting("Button 3 Icon", "Item id, e.g. ender_chest", Buttons::icon3))
-            f.sub.add(makeButtonInput("Button 4 Command", Buttons::command4))
-            f.sub.add(InputSetting("Button 4 Name", "Text shown next to the icon", Buttons::name4))
-            f.sub.add(InputSetting("Button 4 Icon", "Item id, e.g. ender_chest", Buttons::icon4))
-            f.sub.add(makeButtonInput("Button 5 Command", Buttons::command5))
-            f.sub.add(InputSetting("Button 5 Name", "Text shown next to the icon", Buttons::name5))
-            f.sub.add(InputSetting("Button 5 Icon", "Item id, e.g. ender_chest", Buttons::icon5))
-            f.sub.add(makeButtonInput("Button 6 Command", Buttons::command6))
-            f.sub.add(InputSetting("Button 6 Name", "Text shown next to the icon", Buttons::name6))
-            f.sub.add(InputSetting("Button 6 Icon", "Item id, e.g. ender_chest", Buttons::icon6))
-            f.sub.add(makeButtonInput("Button 7 Command", Buttons::command7))
-            f.sub.add(InputSetting("Button 7 Name", "Text shown next to the icon", Buttons::name7))
-            f.sub.add(InputSetting("Button 7 Icon", "Item id, e.g. ender_chest", Buttons::icon7))
+            f.sub.add(SubcategoryHeader("Open your inventory and click Edit (top-right) to add, move and edit buttons"))
             general.features.add(f)
         }
         run {
@@ -478,6 +457,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { FishSettings.pvTheme },
                 { v -> FishSettings.pvTheme = v }))
             f.sub.add(ToggleSetting("Show Overflow Skill Levels", "Uncapped skill levels in the viewer; maxed bars stay gold but fill toward the next level", FishSettings::pvOverflowSkills))
+            f.sub.add(ColorPickerSetting("Maxed Color", "Fill colour of maxed bars", fishmod.features.extras.ExtrasSettings::pvMaxedColor))
+            f.sub.add(ToggleSetting("Maxed Chroma", "Maxed bars slide through every colour", fishmod.features.extras.ExtrasSettings::pvMaxedRainbow))
             general.features.add(f)
         }
         run {
@@ -1443,8 +1424,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
-            val f = Feature("HUD Text Shadow", null, null)
-            f.sub.add(DropdownSetting("Shadow", "Override text shadow on every FishMod HUD", arrayOf("Per Feature", "Always", "Never"),
+            val f = Feature("Text Shadow", null, null)
+            f.sub.add(DropdownSetting("Shadow", "All Text = shadow on all in-game text (HUD, menus, tooltips)", arrayOf("Off", "All Text"),
                 { FishSettings.hudTextShadowMode },
                 { v -> FishSettings.hudTextShadowMode = v }))
             hud.features.add(f)
