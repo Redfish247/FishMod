@@ -412,8 +412,8 @@ public final class PvDraw {
 
 	private static final long CHROMA_PERIOD_MS = 6000L;
 	private static final float CHROMA_SPAN_PX = 240F;
-	private static final int CHROMA_STEP_PX = 2;
-	private static final int CHROMA_BAND_ROWS = 2;
+	private static final int CHROMA_STEP_PX = 4;
+	private static final int CHROMA_BAND_ROWS = 3;
 
 	/** Slow, wide, slightly diagonal rainbow; each row band is shifted a whole pixel so seams stay even. */
 	private static void chromaSlices(GuiGraphicsExtractor g, int x, int y, int w, int h) {
