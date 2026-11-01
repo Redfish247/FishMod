@@ -63,7 +63,7 @@ object RecipeViewer {
         val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
         val slot = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()
         if (slot?.item !== stack) return
-        val id = ItemUtil.getId(stack) ?: return
+        val id = ItemUtil.getId(stack)?.let { if (it == "ENCHANTED_BOOK") bookId(stack) ?: it else it } ?: return
         NeuRepo.ensureLoaded()
         if (recipesFor(id).isEmpty() && NeuRepo.get(id) == null) return
 
@@ -83,6 +83,14 @@ object RecipeViewer {
             fired = true
             mc.execute { mc.showScreen(RecipeScreen(id, screen)) }
         }
+    }
+
+    // Single-enchant book -> NEU id like ICE_COLD;1
+    private fun bookId(stack: ItemStack): String? {
+        val ench = stack.fishmodCustomDataTag()?.getCompound("enchantments")?.orElse(null) ?: return null
+        val key = ench.keySet().singleOrNull() ?: return null
+        val lvl = ench.getIntOr(key, 0).takeIf { it > 0 } ?: return null
+        return "${key.uppercase()};$lvl"
     }
 
     fun recipesFor(id: String): List<Recipe> {
