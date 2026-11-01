@@ -48,8 +48,8 @@ object ExtrasMenu {
         bars.sub.add(ColorPickerSetting("Mana Color", "", S::statusBarsManaColor))
         bars.sub.add(ColorPickerSetting("Defense Color", "", S::statusBarsDefenseColor))
         bars.sub.add(ColorPickerSetting("XP Color", "", S::statusBarsXpColor))
-        bars.sub.add(ColorPickerSetting("Text Color", "", S::statusBarsTextColor))
-        bars.sub.add(ToggleSetting("Text Shadow", "", S::statusBarsTextShadow))
+        bars.sub.add(ColorPickerSetting("Text Color", "White = same colour as the bar", S::statusBarsTextColor))
+        bars.sub.add(ToggleSetting("Text Outline", "", S::statusBarsTextShadow))
         bars.sub.add(SliderIntSetting("Background Opacity %", "", S::statusBarsBgOpacity, 0, 100, 5))
         col.features.add(bars)
 
@@ -83,10 +83,6 @@ object ExtrasMenu {
         col.features.add(Feature("Obtained Date Tooltip", S::obtainedDateTooltip))
         col.features.add(Feature("Click Suggestion For /ahs", S::suggestionClickAhs))
 
-        val pvMax = Feature("PV Maxed Colour", S::pvMaxedRainbow)
-        pvMax.sub.add(ColorPickerSetting("Maxed Color", "Used when rainbow (the toggle) is off", S::pvMaxedColor))
-        col.features.add(pvMax)
-
         return col
     }
 
@@ -94,7 +90,7 @@ object ExtrasMenu {
         "Arrow HUD" -> "Selected arrow + quiver count, low/out warnings"
         "Quiver Warning" -> "Title + sound when the quiver runs low, without the Arrow HUD"
         "Calendar Real Times" -> "Real date + time next to every countdown in the /calendar menu"
-        "Status Bars" -> "Health / mana / defense / XP bars from the action bar; move them in the HUD editor"
+        "Status Bars" -> "XP + health/mana bars above the hotbar (replaces vanilla hearts); move in the HUD editor"
         "Limbo Alert" -> "Title and sound when you get sent to Limbo"
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
@@ -104,7 +100,6 @@ object ExtrasMenu {
         "Cake Year Overlay" -> "New Year Cake year in the slot corner"
         "Obtained Date Tooltip" -> "Adds when the item was obtained to its tooltip"
         "Click Suggestion For /ahs" -> "Clicking a missing pet / museum suggestion in FishMod screens runs /ahs <item>"
-        "PV Maxed Colour" -> "Toggle = rainbow maxed bars in the profile viewer; colour used otherwise"
         else -> null
     }
 }

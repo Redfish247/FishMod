@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-// Global text-shadow override for mod HUD layers (see FishHudLayer)
+// "Shadow all text" option (see FishHudLayer.shadow)
 @Mixin(GuiGraphicsExtractor.class)
 public abstract class HudTextShadowMixin {
 

@@ -5,7 +5,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.resources.Identifier
 
-// Registers mod HUD layers and flags them so the global text-shadow override only hits mod text
+// Registers mod HUD layers; shadow() backs the global "shadow all text" option
 object FishHudLayer {
     @JvmField var inModHud = false
 
@@ -19,7 +19,6 @@ object FishHudLayer {
     }
 
     @JvmStatic fun shadow(orig: Boolean): Boolean {
-        if (!inModHud) return orig
-        return when (FishSettings.hudTextShadowMode) { "Always" -> true; "Never" -> false; else -> orig }
+        return orig || FishSettings.hudTextShadowMode == "All Text"
     }
 }

@@ -9,25 +9,29 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
-// Skyblocker-style health / mana / defense / XP bars fed from the action bar
+// Skyblocker-style XP bar + health/mana bars above the hotbar, fed from the action bar
 object StatusBars {
     private val HEALTH = Regex("""([\d,]+)/([\d,]+)❤""")
     private val MANA = Regex("""([\d,]+)/([\d,]+)✎""")
     private val DEFENSE = Regex("""([\d,]+)❈""")
 
-    private const val W = 90
-    private const val H = 9
-    private const val GAP = 2
+    private const val W = 182
+    private const val H = 22
+    private const val HALF = 90
 
     private var hp = -1L; private var hpMax = -1L
     private var mana = -1L; private var manaMax = -1L
     private var def = -1L
 
+    // -1 = default spot right above the hotbar
+    private fun x(): Int = if (S.statusBarX >= 0) S.statusBarX else Minecraft.getInstance().window.guiScaledWidth / 2 - W / 2
+    private fun y(): Int = if (S.statusBarY >= 0) S.statusBarY else Minecraft.getInstance().window.guiScaledHeight - 24 - H
+
     fun init() {
-        FishHudEditor.register("Status Bars", { S.statusBarsX }, { S.statusBarsX = it }, { S.statusBarsY }, { S.statusBarsY = it },
-            W, H * 4 + GAP * 3, { S.statusBarsScale }, { S.statusBarsScale = it })
+        FishHudEditor.register("Status Bars", { x() }, { S.statusBarX = it }, { y() }, { S.statusBarY = it },
+            W, H, { S.statusBarsScale }, { S.statusBarsScale = it })
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "status_bars")) { ctx, _ ->
-            try { if (!FishHudEditor.isOpen()) render(ctx, false) } catch (t: Throwable) { FishDiag.fail("StatusBars.1", "status bars render failed", t) }
+            try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("StatusBars.1", "status bars render failed", t) }
         }
     }
 
@@ -45,43 +49,61 @@ object StatusBars {
     @JvmStatic
     fun hideVanilla(): Boolean = S.statusBars && S.statusBarsHideVanilla && Location.inSkyblock()
 
-    private fun render(ctx: GuiGraphicsExtractor, preview: Boolean) {
-        if (!S.statusBars) return
-        if (!preview && !Location.inSkyblock()) return
+    @JvmStatic
+    fun hideVanillaXp(): Boolean = hideVanilla() && S.statusBarsXp
+
+    private fun render(ctx: GuiGraphicsExtractor) {
+        if (!S.statusBars || !Location.inSkyblock()) return
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
         val sc = S.statusBarsScale.toFloat()
         ctx.pose().pushMatrix()
         try {
-            ctx.pose().translate(S.statusBarsX.toFloat(), S.statusBarsY.toFloat())
+            ctx.pose().translate(x().toFloat(), y().toFloat())
             ctx.pose().scale(sc, sc)
-            var y = 0
-            if (S.statusBarsHealth && (hpMax > 0 || preview)) {
-                val (c, m) = if (hpMax > 0) hp to hpMax else 80L to 100L
-                bar(ctx, y, c.toFloat() / m, S.statusBarsHealthColor, if (c > m) (c - m).toFloat() / m else 0f, "$c/$m")
-                y += H + GAP
+            // row 1: XP bar with the level centred on it
+            if (S.statusBarsXp) {
+                bar(ctx, 0, 6, W, 5, p.experienceProgress, 0f, S.statusBarsXpColor)
+                label(ctx, "${p.experienceLevel}", W / 2, 3, S.statusBarsXpColor)
             }
-            if (S.statusBarsMana && (manaMax > 0 || preview)) {
-                val (c, m) = if (manaMax > 0) mana to manaMax else 60L to 100L
-                bar(ctx, y, c.toFloat() / m, S.statusBarsManaColor, 0f, "$c/$m")
-                y += H + GAP
+            // row 2: health left, mana right
+            if (S.statusBarsHealth && hpMax > 0) {
+                icon(ctx, "❤", 0, 14, S.statusBarsHealthColor)
+                bar(ctx, 9, 13, HALF - 10, 8, hp.toFloat() / hpMax, if (hp > hpMax) (hp - hpMax).toFloat() / hpMax else 0f, S.statusBarsHealthColor)
+                label(ctx, "$hp", 9 + (HALF - 10) / 2, 13, S.statusBarsHealthColor)
             }
-            if (S.statusBarsDefense && (def >= 0 || preview)) {
-                bar(ctx, y, 1f, S.statusBarsDefenseColor, 0f, "${if (def >= 0) def else 0}❈")
-                y += H + GAP
+            if (S.statusBarsMana && manaMax > 0) {
+                icon(ctx, "✎", HALF + 2, 14, S.statusBarsManaColor)
+                bar(ctx, HALF + 11, 13, W - HALF - 11, 8, mana.toFloat() / manaMax, 0f, S.statusBarsManaColor)
+                label(ctx, "$mana", HALF + 11 + (W - HALF - 11) / 2, 13, S.statusBarsManaColor)
             }
-            if (S.statusBarsXp) bar(ctx, y, p.experienceProgress, S.statusBarsXpColor, 0f, "${p.experienceLevel}")
+            if (S.statusBarsDefense && def >= 0) label(ctx, "❈$def", W / 2, -6, S.statusBarsDefenseColor)
         } finally {
             ctx.pose().popMatrix()
         }
     }
 
-    private fun bar(ctx: GuiGraphicsExtractor, y: Int, frac: Float, color: Int, over: Float, label: String) {
-        val bg = (S.statusBarsBgOpacity * 255 / 100).coerceIn(0, 255) shl 24
-        ctx.fill(0, y, W, y + H, bg)
-        ctx.fill(1, y + 1, 1 + ((W - 2) * frac.coerceIn(0f, 1f)).toInt(), y + H - 1, color)
-        if (over > 0f) ctx.fill(1, y + 1, 1 + ((W - 2) * over.coerceIn(0f, 1f)).toInt(), y + H - 1, S.statusBarsOverflowColor)
+    private fun bar(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, frac: Float, over: Float, color: Int) {
+        val bg = ((S.statusBarsBgOpacity * 255 / 100).coerceIn(0, 255) shl 24) or 0x101010
+        ctx.fill(x, y, x + w, y + h, bg)
+        val inner = w - 2
+        val fill = (inner * frac.coerceIn(0f, 1f)).toInt()
+        ctx.fill(x + 1, y + 1, x + 1 + fill, y + h - 1, color)
+        // top highlight for a bit of depth
+        ctx.fill(x + 1, y + 1, x + 1 + fill, y + 2, 0x40FFFFFF)
+        if (over > 0f) ctx.fill(x + 1, y + 1, x + 1 + (inner * over.coerceIn(0f, 1f)).toInt(), y + h - 1, S.statusBarsOverflowColor)
+    }
+
+    private fun icon(ctx: GuiGraphicsExtractor, s: String, x: Int, y: Int, color: Int) {
+        ctx.text(Minecraft.getInstance().font, s, x, y, color or 0xFF000000.toInt(), true)
+    }
+
+    // Number in the bar colour (white Text Color = follow bar) with optional black outline
+    private fun label(ctx: GuiGraphicsExtractor, s: String, cx: Int, y: Int, color: Int) {
         val font = Minecraft.getInstance().font
-        ctx.text(font, label, (W - font.width(label)) / 2, y + 1, S.statusBarsTextColor, S.statusBarsTextShadow)
+        val x = cx - font.width(s) / 2
+        val c = if (S.statusBarsTextColor != 0xFFFFFFFF.toInt()) S.statusBarsTextColor else color or 0xFF000000.toInt()
+        if (S.statusBarsTextShadow) for ((dx, dy) in arrayOf(1 to 0, -1 to 0, 0 to 1, 0 to -1)) ctx.text(font, s, x + dx, y + dy, 0xFF000000.toInt(), false)
+        ctx.text(font, s, x, y, c, false)
     }
 }

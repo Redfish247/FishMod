@@ -315,7 +315,7 @@ object FishSettings {
     @ConfigValue @JvmField var sessionStatsScale: Double = 1.0
     @ConfigValue @JvmField var petHudScale: Double = 1.0
     @ConfigValue @JvmField var soulflowHudScale: Double = 1.0
-    @ConfigValue @JvmField var hudTextShadowMode: String = "Per Feature"
+    @ConfigValue @JvmField var hudTextShadowMode: String = "Off"
     @ConfigValue @JvmField var pcSecrets: Boolean = false
     @ConfigValue @JvmField var pcRuns: Boolean = false
     @ConfigValue @JvmField var pcJoinFloor: Boolean = false
