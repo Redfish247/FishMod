@@ -778,6 +778,19 @@ class FishModInit : ClientModInitializer {
                                     Misc.addChatMessage(Component.literal("§8  (…more)")); break
                                 }
                             }
+                            // Per nearby player: live socket copy vs a direct /nicks fetch
+                            Misc.addChatMessage(Component.literal("§b[fmnicktest] §7live ready: §f" + fishmod.cosmetic.CosmeticLive.ready + " §8|§7 rev: §f" + fishmod.cosmetic.CosmeticLive.rev))
+                            val self = mc.player?.uuid
+                            mc.level?.players()?.filter { it.uuid != self }?.take(8)?.forEach { p ->
+                                val u = p.uuid.toString().replace("-", "")
+                                val live = fishmod.cosmetic.CosmeticLive.slice(setOf(u))?.nicks?.get(u)
+                                fishmod.utils.HypixelApi.fetchNicks(setOf(u)) { nicks ->
+                                    mc.execute {
+                                        Misc.addChatMessage(Component.literal("§7  " + p.gameProfile.name() + " §8v" + p.uuid.version() +
+                                            " §7live: §f" + (live ?: "-") + " §7server: §f" + (nicks[u] ?: "-")))
+                                    }
+                                }
+                            }
                             if (cache.isEmpty()) {
                                 Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
                             } else {
