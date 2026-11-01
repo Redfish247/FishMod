@@ -73,6 +73,13 @@ object ExtrasMenu {
         wp.sub.add(ButtonSetting("Clear Waypoints", "", "Clear") { PatcherWaypoints.clear() })
         col.features.add(wp)
 
+        val fs = Feature("Fairy Soul Waypoints", S::fairySoulWaypoints)
+        fs.sub.add(ColorPickerSetting("Color", "", S::fairySoulColor))
+        fs.sub.add(ToggleSetting("Beacon Beam", "", S::fairySoulBeam))
+        fs.sub.add(ToggleSetting("Distance Text", "", S::fairySoulText))
+        fs.sub.add(ButtonSetting("Reset Island", "Show every soul on this island again", "Reset") { FairySouls.resetIsland() })
+        col.features.add(fs)
+
         val lvl = Feature("Item Level Overlay", S::overlayItemLevels)
         lvl.sub.add(ToggleSetting("Book Level", "Single-enchant books", S::overlayBookLevel))
         lvl.sub.add(ToggleSetting("Pet Level", "", S::overlayPetLevel))
