@@ -65,8 +65,8 @@ object LagTracker {
             } else if (active && RUN_END_PATTERN.matcher(s).find()) {
                 val wallSec = (System.currentTimeMillis() - startMs) / 1000.0
                 val tickSec = ticks * 0.05
-                val lag = wallSec - tickSec
-                FishDiag.check(lag > -2.0, "LagTracker.2") { "negative lag ${"%.2f".format(lag)}s (wall=$wallSec ticks=$ticks)" }
+                // ticks > wall means the tick counter outlived a world change; clamp
+                val lag = maxOf(0.0, wallSec - tickSec)
                 active = false
                 ended = true
 
@@ -85,6 +85,13 @@ object LagTracker {
                 if (fishmod.utils.Location.inDungeon() && (FishDiag.guard("LagTracker.3", "run time tab scan failed") { scoreboardRunSeconds() } ?: -1) > 0) start()
             }
             if (active) ticks++
+            false
+        }
+
+        Events.ON_WORLD_CHANGE.register {
+            active = false
+            ended = false
+            ticks = 0
             false
         }
 

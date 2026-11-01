@@ -271,11 +271,10 @@ object SessionStats {
     private fun runsPerHour(): Double {
         if (runs <= 0 || sessionStartMs <= 0) return 0.0
         val now = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
+        // pause from an older session loaded after a restart: clamp start to the pause
+        if (now < sessionStartMs) { sessionStartMs = now; return 0.0 }
         val elapsed = now - sessionStartMs
-        if (elapsed < 1000) {
-            FishDiag.check(elapsed >= 0, "SessionStats.7") { "negative session elapsed $elapsed (paused=$paused)" }
-            return 0.0
-        }
+        if (elapsed < 1000) return 0.0
         return runs * 3_600_000.0 / elapsed
     }
 

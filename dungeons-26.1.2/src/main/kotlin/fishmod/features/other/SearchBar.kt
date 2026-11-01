@@ -78,7 +78,7 @@ object SearchBar {
             return
         }
 
-        if (!parsedValue.isNaN()) {
+        if (parsedValue.isFinite()) {
             val expression = "  §e= §2" + RenderUtils.formatNumber(parsedValue.toFloat())
             val textRenderer: Font = Minecraft.getInstance().font ?: return
 
@@ -112,7 +112,7 @@ object SearchBar {
                 FishDiag.fail("SearchBar.1", "failed to read drop key binding", e)
             }
             if (input.key() == GLFW.GLFW_KEY_ENTER) {
-                if (!parsedValue.isNaN()) {
+                if (parsedValue.isFinite()) {
                     bar.value = RenderUtils.formatNumber(parsedValue.toFloat())
                 }
             } else if (input.key() != GLFW.GLFW_KEY_ESCAPE) {

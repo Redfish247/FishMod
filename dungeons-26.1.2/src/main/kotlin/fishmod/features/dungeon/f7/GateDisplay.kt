@@ -53,6 +53,7 @@ object GateDisplay {
             false
         }
         Events.ON_SECTION_CHANGE.register {
+            if (!Location.inDungeon()) return@register false
             val s = Section.getSection()
             FishDiag.check(s in 1..5, "GateDisplay.1") { "section change to out-of-range section $s" }
             if (s == 2 || s == 3) show(s - 1)
