@@ -33,6 +33,10 @@ object NeuRepo {
     private const val RETRY_MS = 5L * 60 * 1000L
     @Volatile private var retryAfter = 0L
 
+    // constants/fairy_souls.json: server mode -> ["x,y,z", ...]
+    @Volatile @JvmStatic var fairySouls: JsonObject? = null
+        private set
+
     @JvmStatic fun isLoaded(): Boolean = items.isNotEmpty()
 
     @JvmStatic fun get(id: String?): JsonObject? = id?.let { items[it] }
@@ -76,6 +80,10 @@ object NeuRepo {
                 val e = zip.nextEntry ?: break
                 val name = e.name
                 val slash = name.indexOf('/')
+                if (!e.isDirectory && slash >= 0 && name.startsWith("constants/fairy_souls.json", slash + 1)) {
+                    runCatching { fairySouls = JsonParser.parseString(String(zip.readAllBytes(), StandardCharsets.UTF_8)).asJsonObject }
+                    continue
+                }
                 if (e.isDirectory || slash < 0 || !name.startsWith("items/", slash + 1) || !name.endsWith(".json")) continue
                 try {
                     val o = JsonParser.parseString(String(zip.readAllBytes(), StandardCharsets.UTF_8)).asJsonObject

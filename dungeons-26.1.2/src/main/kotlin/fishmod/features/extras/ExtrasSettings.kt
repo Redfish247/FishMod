@@ -59,6 +59,12 @@ object ExtrasSettings {
     @ConfigValue @JvmField var patcherWaypointRemoveNear: Boolean = true
     @ConfigValue @JvmField var patcherWaypointTextScale: Double = 1.0
 
+    // Fairy soul waypoints
+    @ConfigValue @JvmField var fairySoulWaypoints: Boolean = false
+    @ConfigValue @JvmField var fairySoulColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var fairySoulBeam: Boolean = true
+    @ConfigValue @JvmField var fairySoulText: Boolean = true
+
     // Item overlays + tooltip
     @ConfigValue @JvmField var overlayItemLevels: Boolean = false
     @ConfigValue @JvmField var overlayBookLevel: Boolean = true

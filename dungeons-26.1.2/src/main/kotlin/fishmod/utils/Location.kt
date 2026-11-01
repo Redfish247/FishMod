@@ -45,12 +45,16 @@ enum class Location(val name2: String) {
         private var inSkyblockFlag: Boolean = false
         private var detectedNewLocation: Boolean = false
         private var lastChanged: Long = System.currentTimeMillis()
+        // Raw Hypixel server mode (e.g. "hub", "combat_1")
+        @JvmStatic var currentMode: String = ""
+            private set
 
         @JvmStatic
         fun init() {
             val instance = HypixelModAPI.getInstance()
             instance.createHandler(ClientboundLocationPacket::class.java) { packet ->
                 try {
+                    currentMode = packet.mode.orElse("")
                     packet.map.ifPresent { locationName ->
                         if (packet.serverType.isPresent) {
                             val serverType: ServerType = packet.serverType.get()

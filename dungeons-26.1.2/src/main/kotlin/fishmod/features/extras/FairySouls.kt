@@ -1,0 +1,97 @@
+package fishmod.features.extras
+import fishmod.compat.cam
+
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
+import fishmod.utils.IoExecutor
+import fishmod.utils.Location
+import fishmod.utils.data.NeuRepo
+import fishmod.utils.debug.FishDiag
+import fishmod.utils.events.Events
+import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.rendering.RenderingEvents
+import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
+import java.nio.file.Files
+import java.util.concurrent.ConcurrentHashMap
+import fishmod.features.extras.ExtrasSettings as S
+
+// Uncollected fairy soul waypoints (locations from NEU repo constants/fairy_souls.json, MIT)
+object FairySouls {
+    private val PATH = FabricLoader.getInstance().configDir.resolve("FishMod").resolve("fairy-souls-found.json")
+    private val gson = GsonBuilder().setPrettyPrinting().create()
+    // server mode -> found "x,y,z" keys
+    private val found = ConcurrentHashMap<String, MutableSet<String>>()
+
+    fun init() {
+        load()
+        Events.ON_GAME_MESSAGE.register { text ->
+            if (S.fairySoulWaypoints) onChat(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
+            false
+        }
+        RenderingEvents.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.fairySoulWaypoints && Location.inSkyblock()) render(ctx, ps, vc) }
+    }
+
+    private fun souls(mode: String): List<Pair<String, Vec3>> {
+        val arr = NeuRepo.fairySouls?.getAsJsonArray(mode) ?: run { NeuRepo.ensureLoaded(); return emptyList() }
+        return arr.mapNotNull { e ->
+            val p = e.asString.split(',').mapNotNull { it.trim().toIntOrNull() }
+            if (p.size == 3) e.asString to Vec3(p[0] + 0.5, p[1].toDouble(), p[2] + 0.5) else null
+        }
+    }
+
+    private fun onChat(s: String) {
+        if (!s.startsWith("SOUL! You found a Fairy Soul!") && !s.startsWith("You have already found that Fairy Soul!")) return
+        val mode = Location.currentMode
+        val p = Minecraft.getInstance().player ?: return
+        val done = found[mode] ?: emptySet()
+        val near = souls(mode).filter { it.first !in done }.minByOrNull { it.second.distanceTo(p.position()) } ?: return
+        if (near.second.distanceTo(p.position()) > 8.0) return
+        found.getOrPut(mode) { ConcurrentHashMap.newKeySet() }.add(near.first)
+        save()
+    }
+
+    fun resetIsland() { found.remove(Location.currentMode); save() }
+
+    private fun render(ctx: net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext, ps: com.mojang.blaze3d.vertex.PoseStack, vc: com.mojang.blaze3d.vertex.VertexConsumer) {
+        val mode = Location.currentMode
+        if (mode.isEmpty()) return
+        val done = found[mode] ?: emptySet()
+        val eye = Minecraft.getInstance().cam.position()
+        val argb = S.fairySoulColor
+        val rgb = argb and 0xFFFFFF
+        for ((key, pos) in souls(mode)) {
+            if (key in done) continue
+            val center = pos.add(0.0, 0.5, 0.0)
+            val d = center.distanceTo(eye)
+            val (c, k) = RenderUtils.pullIn(center, eye)
+            RenderUtils.fillBox(ps, vc, AABB.ofSize(c, k, k, k), (0x66 shl 24) or rgb)
+            if (S.fairySoulBeam) RenderUtils.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
+            if (S.fairySoulText) {
+                val (tp, pk) = RenderUtils.pullIn(Vec3(pos.x, pos.y + 1.5 + d / 25.0, pos.z), eye)
+                val px = (maxOf(0.035, d * 0.0035) * pk).toFloat()
+                RenderUtils.renderSeeThroughText(ctx, ps, Component.literal("Fairy Soul §7(${d.toInt()}m)"), tp, px, argb or (0xFF shl 24), true)
+            }
+        }
+    }
+
+    private fun load() {
+        try {
+            if (!Files.exists(PATH)) return
+            JsonParser.parseString(Files.readString(PATH)).asJsonObject.entrySet().forEach { (k, v) ->
+                found[k] = ConcurrentHashMap.newKeySet<String>().apply { v.asJsonArray.forEach { add(it.asString) } }
+            }
+        } catch (e: Exception) { FishDiag.fail("FairySouls.1", "fairy soul save unreadable", e) }
+    }
+
+    private fun save() {
+        val snap = found.mapValues { it.value.toList() }
+        IoExecutor.execute {
+            try { Files.createDirectories(PATH.parent); Files.writeString(PATH, gson.toJson(snap)) }
+            catch (e: Exception) { FishDiag.fail("FairySouls.2", "fairy soul save failed", e) }
+        }
+    }
+}
