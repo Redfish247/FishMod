@@ -18,20 +18,28 @@ object SlayerStatsTracker {
     private val SAVE_FILE: Path = Paths.get("config/fishmod/slayer_stats.json")
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    @JvmStatic @Volatile var xpGained: Long = 0; private set
-    @JvmStatic @Volatile var kills: Int = 0; private set
-    private var activeMs: Long = 0
-    private var everStarted = false
+    private class Stats {
+        var xpGained: Long = 0
+        var kills: Int = 0
+        var activeMs: Long = 0
+        var everStarted = false
+    }
+
+    // keyed by SlayerType.name so slayers don't share counters
+    private val byType = HashMap<String, Stats>()
+
+    private fun cur(): Stats? = SlayerManager.type?.let { byType[it.name] }
+    private fun of(type: SlayerType): Stats = byType.getOrPut(type.name) { Stats() }
+
+    @JvmStatic val xpGained: Long get() = cur()?.xpGained ?: 0
+    @JvmStatic val kills: Int get() = cur()?.kills ?: 0
 
     private var lastTickMs = 0L
     private var lastActivityMs = 0L
     private var lastX = 0.0; private var lastY = 0.0; private var lastZ = 0.0; private var havePos = false
 
     private class SaveData {
-        var xpGained: Long = 0
-        var kills: Int = 0
-        var activeMs: Long = 0
-        var everStarted = false
+        var byType: Map<String, Stats>? = null
     }
 
     @JvmStatic
@@ -53,7 +61,8 @@ object SlayerStatsTracker {
         if (!FishSettings.slayerAnyEnabled()) return
 
         val p = mc.player
-        if (p != null && SlayerManager.isActiveSlayer()) {
+        val type = SlayerManager.type
+        if (p != null && type != null && SlayerManager.isActiveSlayer()) {
             val x = p.x; val y = p.y; val z = p.z
             if (!havePos) {
                 lastX = x; lastY = y; lastZ = z; havePos = true
@@ -65,7 +74,7 @@ object SlayerStatsTracker {
             val idle = lastActivityMs > 0 && now - lastActivityMs > IDLE_MS
             if (!idle && prev > 0) {
                 val delta = (now - prev).coerceIn(0, MAX_TICK_MS)
-                if (delta > 0) { activeMs += delta; everStarted = true }
+                if (delta > 0) { val s = of(type); s.activeMs += delta; s.everStarted = true }
             }
         } else {
             havePos = false
@@ -82,14 +91,16 @@ object SlayerStatsTracker {
     fun onQuestEnded() { havePos = false }
 
     fun onBossKill(type: SlayerType, tier: Int) {
-        kills++
-        xpGained += type.bossXp(tier)
+        val s = of(type)
+        s.kills++
+        s.xpGained += type.bossXp(tier)
+        s.everStarted = true
         lastActivityMs = System.currentTimeMillis()
-        everStarted = true
         save()
     }
 
     private fun perHour(total: Double): Double {
+        val activeMs = cur()?.activeMs ?: 0L
         FishDiag.check(activeMs >= 0L, "SlayerStatsTracker.5") { "negative active slayer time $activeMs" }
         if (activeMs < 5_000L || total <= 0.0) return 0.0
         return total * 3_600_000.0 / activeMs
@@ -97,14 +108,11 @@ object SlayerStatsTracker {
 
     fun xpPerHour(): Double = perHour(xpGained.toDouble())
     fun killsPerHour(): Double = perHour(kills.toDouble())
-    fun hasData(): Boolean = everStarted
+    fun hasData(): Boolean = cur()?.everStarted == true
 
     @JvmStatic
     fun reset() {
-        xpGained = 0
-        kills = 0
-        activeMs = 0
-        everStarted = false
+        byType.clear()
         lastActivityMs = 0
         havePos = false
         save()
@@ -128,10 +136,7 @@ object SlayerStatsTracker {
         try {
             if (!Files.exists(SAVE_FILE)) return
             val d = FishDiag.notNull(GSON.fromJson(Files.readString(SAVE_FILE), SaveData::class.java), "SlayerStatsTracker.4") { "$SAVE_FILE decoded to null (empty file?)" } ?: return
-            xpGained = d.xpGained
-            kills = d.kills
-            activeMs = d.activeMs
-            everStarted = d.everStarted
+            d.byType?.let { byType.putAll(it) }
         } catch (e: Exception) {
             FishDiag.fail("SlayerStatsTracker.1", "failed to load $SAVE_FILE", e)
         }
@@ -140,10 +145,7 @@ object SlayerStatsTracker {
     @Synchronized
     private fun save() {
         val d = SaveData()
-        d.xpGained = xpGained
-        d.kills = kills
-        d.activeMs = activeMs
-        d.everStarted = everStarted
+        d.byType = HashMap(byType)
         val json = GSON.toJson(d)
         fishmod.utils.IoExecutor.execute {
             try {
