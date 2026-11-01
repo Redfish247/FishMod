@@ -30,12 +30,13 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$renderInventoryButtons(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
-        if (!Buttons.enableInventoryButtons) return;
+        if (!Buttons.enableInventoryButtons && !Buttons.showEquipment) return;
         Matrix3x2fStack stack = context.pose();
         stack.pushMatrix();
         stack.translate(this.leftPos, this.topPos);
         try {
-            InventoryButton.renderAll(context, mouseX, mouseY, deltaTicks);
+            if (Buttons.showEquipment) fishmod.features.other.EquipmentDisplay.render(context, mouseX - this.leftPos, mouseY - this.topPos);
+            if (Buttons.enableInventoryButtons) InventoryButton.renderAll(context, mouseX - this.leftPos, mouseY - this.topPos, deltaTicks);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("InventoryScreenMixin.1", "inventory buttons render failed", t);
         }
@@ -46,11 +47,29 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (Buttons.enableInventoryButtons) {
             try {
-                InventoryButton.parseClicks(click.x() - this.leftPos, click.y() - this.topPos);
+                if (InventoryButton.parseClicks(click.x() - this.leftPos, click.y() - this.topPos)) return true;
             } catch (Throwable t) {
                 fishmod.utils.debug.FishDiag.fail("InventoryScreenMixin.2", "inventory button click failed", t);
             }
         }
         return super.mouseClicked(click, doubled);
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent click, double dx, double dy) {
+        if (Buttons.enableInventoryButtons && InventoryButton.drag(click.x() - this.leftPos, click.y() - this.topPos)) return true;
+        return super.mouseDragged(click, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent click) {
+        if (InventoryButton.release()) return true;
+        return super.mouseReleased(click);
+    }
+
+    @Override
+    public void removed() {
+        InventoryButton.onClose();
+        super.removed();
     }
 }

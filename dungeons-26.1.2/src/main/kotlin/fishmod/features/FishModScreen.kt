@@ -193,14 +193,37 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Inventory Buttons", Buttons::enableInventoryButtons)
-            f.sub.add(makeButtonInput("Button 1", Buttons::command1))
-            f.sub.add(makeButtonInput("Button 2", Buttons::command2))
-            f.sub.add(makeButtonInput("Button 3", Buttons::command3))
-            f.sub.add(makeButtonInput("Button 4", Buttons::command4))
-            f.sub.add(makeButtonInput("Button 5", Buttons::command5))
-            f.sub.add(makeButtonInput("Button 6", Buttons::command6))
-            f.sub.add(makeButtonInput("Button 7", Buttons::command7))
+            f.sub.add(SubcategoryHeader("Click the pencil above your inventory to drag buttons (snaps to a grid)"))
+            f.sub.add(makeButtonInput("Button 1 Command", Buttons::command1))
+            f.sub.add(InputSetting("Button 1 Name", "Text shown next to the icon", Buttons::name1))
+            f.sub.add(InputSetting("Button 1 Icon", "Item id, e.g. ender_chest", Buttons::icon1))
+            f.sub.add(makeButtonInput("Button 2 Command", Buttons::command2))
+            f.sub.add(InputSetting("Button 2 Name", "Text shown next to the icon", Buttons::name2))
+            f.sub.add(InputSetting("Button 2 Icon", "Item id, e.g. ender_chest", Buttons::icon2))
+            f.sub.add(makeButtonInput("Button 3 Command", Buttons::command3))
+            f.sub.add(InputSetting("Button 3 Name", "Text shown next to the icon", Buttons::name3))
+            f.sub.add(InputSetting("Button 3 Icon", "Item id, e.g. ender_chest", Buttons::icon3))
+            f.sub.add(makeButtonInput("Button 4 Command", Buttons::command4))
+            f.sub.add(InputSetting("Button 4 Name", "Text shown next to the icon", Buttons::name4))
+            f.sub.add(InputSetting("Button 4 Icon", "Item id, e.g. ender_chest", Buttons::icon4))
+            f.sub.add(makeButtonInput("Button 5 Command", Buttons::command5))
+            f.sub.add(InputSetting("Button 5 Name", "Text shown next to the icon", Buttons::name5))
+            f.sub.add(InputSetting("Button 5 Icon", "Item id, e.g. ender_chest", Buttons::icon5))
+            f.sub.add(makeButtonInput("Button 6 Command", Buttons::command6))
+            f.sub.add(InputSetting("Button 6 Name", "Text shown next to the icon", Buttons::name6))
+            f.sub.add(InputSetting("Button 6 Icon", "Item id, e.g. ender_chest", Buttons::icon6))
+            f.sub.add(makeButtonInput("Button 7 Command", Buttons::command7))
+            f.sub.add(InputSetting("Button 7 Name", "Text shown next to the icon", Buttons::name7))
+            f.sub.add(InputSetting("Button 7 Icon", "Item id, e.g. ender_chest", Buttons::icon7))
             general.features.add(f)
+        }
+        run {
+            val f = Feature("Inventory Equipment", Buttons::showEquipment)
+            f.sub.add(SubcategoryHeader("Necklace/cloak/belt/gloves left of your inventory. Open /equipment once to load them."))
+            general.features.add(f)
+        }
+        run {
+            general.features.add(Feature("Hide Inventory Potion Effects", fishmod.utils.config.values.Visual::hideStatusOverLay))
         }
         run {
             val f = Feature("Wardrobe/Loadout Hotkeys", FishSettings::wardrobeHotkeysEnabled)
