@@ -963,8 +963,10 @@ object FishSettings {
     @ConfigValue @JvmField var slayerCocoonAlertDurationMs: Int = 2000
 
     @ConfigValue @JvmField var slayerRngTitleEnabled: Boolean = false
-    @ConfigValue @JvmField var slayerRngTitleDurationMs: Int = 2500
     @ConfigValue @JvmField var slayerRngTitleColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var slayerRngHudX: Int = 10
+    @ConfigValue @JvmField var slayerRngHudY: Int = 200
+    @ConfigValue @JvmField var slayerRngHudScale: Double = 1.0
 
     @ConfigValue @JvmField var slayerSpawnHudEnabled: Boolean = false
     @ConfigValue @JvmField var slayerSpawnHudX: Int = 10
@@ -975,8 +977,6 @@ object FishSettings {
     @ConfigValue @JvmField var slayerStatsHudEnabled: Boolean = false
     @ConfigValue @JvmField var slayerStatsShowXp: Boolean = true
     @ConfigValue @JvmField var slayerStatsShowKills: Boolean = true
-    @ConfigValue @JvmField var slayerStatsShowXpHr: Boolean = true
-    @ConfigValue @JvmField var slayerStatsShowKillsHr: Boolean = true
     @ConfigValue @JvmField var slayerStatsOpacity: Int = 50
     @ConfigValue @JvmField var slayerStatsHudX: Int = 10
     @ConfigValue @JvmField var slayerStatsHudY: Int = 170
@@ -1026,6 +1026,6 @@ object FishSettings {
     @JvmStatic
     fun slayerAnyEnabled(): Boolean =
         slayerSpawnAlertEnabled || slayerCocoonAlertEnabled || slayerSpawnHudEnabled ||
-            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled
+            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled || slayerRngTitleEnabled
 
 }

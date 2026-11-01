@@ -31,7 +31,7 @@ enum class SlayerType(
         setOf("Tarantula Vermin", "Tarantula Beast", "Mutant Tarantula", "Primordial Jockey", "Primordial Viscount"),
         Location.SPIDERS_DEN,
         Spider::class.java,
-        mapOf(1 to 5, 2 to 25, 3 to 100, 4 to 500),
+        mapOf(1 to 5, 2 to 25, 3 to 100, 4 to 500, 5 to 1500),
     ),
     SVEN(
         "Sven Packmaster",

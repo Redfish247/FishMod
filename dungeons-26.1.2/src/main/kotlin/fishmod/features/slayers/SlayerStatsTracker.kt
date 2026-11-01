@@ -23,7 +23,15 @@ object SlayerStatsTracker {
         var kills: Int = 0
         var activeMs: Long = 0
         var everStarted = false
+        var rng: String? = null
+        var rngStored: Long = -1
     }
+
+    private val RNG_STORED = Regex("([\\d,]+) Stored XP")
+    private const val RNG_WINDOW_MS = 10_000L
+    private var pendingType: SlayerType? = null
+    private var pendingXp = 0
+    private var pendingAt = 0L
 
     // keyed by SlayerType.name so slayers don't share counters
     private val byType = HashMap<String, Stats>()
@@ -96,18 +104,28 @@ object SlayerStatsTracker {
         s.xpGained += type.bossXp(tier)
         s.everStarted = true
         lastActivityMs = System.currentTimeMillis()
+        pendingType = type; pendingXp = type.bossXp(tier); pendingAt = lastActivityMs
         save()
     }
 
-    private fun perHour(total: Double): Double {
-        val activeMs = cur()?.activeMs ?: 0L
-        FishDiag.check(activeMs >= 0L, "SlayerStatsTracker.5") { "negative active slayer time $activeMs" }
-        if (activeMs < 5_000L || total <= 0.0) return 0.0
-        return total * 3_600_000.0 / activeMs
+    // RNG meter jump after a kill is the real slayer XP (boosts included), so it replaces the table value
+    fun onRng(value: String) {
+        val type = SlayerManager.type ?: return
+        val s = of(type)
+        s.rng = value
+        val stored = RNG_STORED.find(value)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()
+        if (stored != null) {
+            val delta = stored - s.rngStored
+            if (s.rngStored >= 0 && pendingType == type && System.currentTimeMillis() - pendingAt < RNG_WINDOW_MS && delta in 1..50_000) {
+                s.xpGained += delta - pendingXp
+                pendingType = null
+            }
+            s.rngStored = stored
+        }
+        save()
     }
 
-    fun xpPerHour(): Double = perHour(xpGained.toDouble())
-    fun killsPerHour(): Double = perHour(kills.toDouble())
+    fun rngText(): String? = cur()?.rng
     fun hasData(): Boolean = cur()?.everStarted == true
 
     @JvmStatic
