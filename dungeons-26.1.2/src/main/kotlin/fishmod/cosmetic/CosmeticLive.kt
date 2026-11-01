@@ -20,7 +20,9 @@ import java.util.concurrent.ConcurrentHashMap
 // Live cosmetics: one WebSocket to fishmod.dev/live; full set on connect, then pushed changes only.
 object CosmeticLive {
     private const val URL = "wss://fishmod.dev/live"
-    private const val PING_MS = 45_000L
+    private const val PING_MS = 30_000L
+    // No frame (pong included) for this long = half-open socket; drop it and reconnect
+    private const val DEAD_MS = 75_000L
     private const val MIN_BACKOFF_MS = 5_000L
     private const val MAX_BACKOFF_MS = 5 * 60_000L
 
@@ -46,6 +48,7 @@ object CosmeticLive {
     private var retryAt = 0L
     private var backoff = MIN_BACKOFF_MS
     private var lastPing = 0L
+    @Volatile private var lastRx = 0L
 
     @JvmStatic
     fun init() {
@@ -62,6 +65,13 @@ object CosmeticLive {
         val now = System.currentTimeMillis()
         val socket = ws
         if (socket != null) {
+            if (now - lastRx > DEAD_MS) {
+                FishDiag.fail("CosmeticLive.3", "live socket silent ${(now - lastRx) / 1000}s, reconnecting")
+                ws = null
+                try { socket.abort() } catch (_: Exception) {}
+                failed()
+                return
+            }
             if (now - lastPing >= PING_MS) { lastPing = now; socket.sendText("ping", true) }
             return
         }
@@ -76,6 +86,7 @@ object CosmeticLive {
                 if (t != null || s == null) { failed(); return@whenComplete }
                 ws = s
                 lastPing = System.currentTimeMillis()
+                lastRx = lastPing
                 backoff = MIN_BACKOFF_MS
             }
     }
@@ -148,6 +159,7 @@ object CosmeticLive {
         private val buf = StringBuilder()
 
         override fun onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage<*>? {
+            lastRx = System.currentTimeMillis()
             buf.append(data)
             if (last) {
                 val text = buf.toString()
