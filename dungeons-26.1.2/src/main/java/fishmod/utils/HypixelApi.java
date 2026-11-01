@@ -102,8 +102,6 @@ public class HypixelApi {
         return proxy(path, timeoutSec).GET().build();
     }
 
-    private static final HttpClient RAW_HTTP = fishmod.utils.Http.CLIENT;
-
     private static final CachingHttp HTTP = new CachingHttp();
 
     // Profile/networth GETs are shared + cached client-side so every feature asking about the same player reuses one proxy call.
@@ -135,7 +133,7 @@ public class HypixelApi {
             CompletableFuture<HttpResponse<String>> out = new CompletableFuture<>();
             Runnable task = () -> {
                 CompletableFuture<HttpResponse<String>> f;
-                try { f = RAW_HTTP.sendAsync(req, handler); }
+                try { f = fishmod.utils.Http.sendAsync(req, handler); }
                 catch (Throwable t) { release(); out.completeExceptionally(t); return; }
                 f.whenComplete((r, t) -> {
                     release();
@@ -2124,7 +2122,11 @@ public class HypixelApi {
             HttpRequest req = proxyGet("/sync?since=" + version + "&uuids=" + q, 10);
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                 try {
-                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    String body = r.body();
+                    com.google.gson.JsonElement el = body == null || body.isBlank() ? null : JsonParser.parseString(body);
+                    // Proxy can answer "null" or an error page; skip quietly and retry next sync.
+                    if (el == null || !el.isJsonObject()) { cb.onData(version, null, null, null, null, null, null); return; }
+                    JsonObject root = el.getAsJsonObject();
                     if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null, null, null, null, null); return; }
                     long ver = root.has("version") ? root.get("version").getAsLong() : version;
                     if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null, null, null, null, null); return; }

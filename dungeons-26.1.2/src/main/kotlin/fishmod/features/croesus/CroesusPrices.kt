@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 object CroesusPrices {
 
-    private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
+    private val HTTP = fishmod.utils.Http
 
     private const val TTL_MS = 5 * 60 * 1000L
     private const val FAIL_TTL_MS = 15 * 60 * 1000L
