@@ -65,7 +65,7 @@ object LagTracker {
             } else if (active && RUN_END_PATTERN.matcher(s).find()) {
                 val wallSec = (System.currentTimeMillis() - startMs) / 1000.0
                 val tickSec = ticks * 0.05
-                // ticks > wall means the tick counter outlived a world change; clamp
+                // Ping ticks can outrun wall time when the server catches up; clamp
                 val lag = maxOf(0.0, wallSec - tickSec)
                 active = false
                 ended = true
