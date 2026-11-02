@@ -151,7 +151,7 @@ class ProfileViewerScreen @JvmOverloads constructor(
 	fun forCoopMember(playerName: String?, coopProfileId: String?): ProfileViewerScreen {
 		val next = ProfileViewerScreen(playerName, tab)
 		next.subSelection.putAll(subSelection)
-		next.homeEssencePage.select(homeEssencePage.selectedEntry().def().id())
+		next.homeEssencePage.select(homeEssencePage.selectedEntry().def.id)
 		next.museumSort = museumSort
 		next.preferredProfileId = coopProfileId
 		return next
