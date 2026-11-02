@@ -33,12 +33,25 @@ object AchTrackers {
     private var runMimic = false
     private var runPrince = false
     private val slayerKills = ArrayDeque<Long>()
+    private val visitorTimes = ArrayDeque<Long>()
+    private val commissionTimes = ArrayDeque<Long>()
+    private val pestTimes = ArrayDeque<Long>()
+    private val slayerTypeKills = HashMap<String, Long>()
+    private val SLAYER_TYPES = listOf("REVENANT", "TARANTULA", "SVEN", "VOIDGLOOM", "INFERNO")
 
     fun init() {
         AchBus.on(::onEvent)
     }
 
     private fun secret(k: String) = AchStore.max("secret.$k", 1)
+
+    // Unlocks when `need` events land inside the sliding window
+    private fun burst(q: ArrayDeque<Long>, windowMs: Long, need: Int, k: String) {
+        val now = System.currentTimeMillis()
+        q.addLast(now)
+        while (now - q.first() > windowMs) q.removeFirst()
+        if (q.size >= need) secret(k)
+    }
 
     private fun onEvent(e: AchEvent) {
         val st = AchStore
@@ -77,6 +90,9 @@ object AchTrackers {
                 slayerKills.addLast(now)
                 while (now - slayerKills.first() > 300_000) slayerKills.removeFirst()
                 if (slayerKills.size >= 5) secret("slayerRush")
+                if (LocalTime.now().hour < 5) secret("nightSlayer")
+                slayerTypeKills[e.type] = now
+                if (SLAYER_TYPES.all { now - (slayerTypeKills[it] ?: 0L) <= 3_600_000 }) secret("slayerVariety")
                 when {
                     e.type == "REVENANT" && e.tier >= 5 -> st.inc("slayer.zombieT5")
                     e.type == "TARANTULA" && e.tier >= 5 -> st.inc("slayer.spiderT5")
@@ -93,8 +109,8 @@ object AchTrackers {
                 if (start > 0 && System.currentTimeMillis() - start <= 30_000) secret("speedBump")
             }
             AchEvent.FeastStarted -> st.inc("garden.feasts")
-            AchEvent.VisitorAccepted -> st.inc("garden.visitors")
-            AchEvent.CommissionDone -> st.inc("mining.commissions")
+            AchEvent.VisitorAccepted -> { st.inc("garden.visitors"); burst(visitorTimes, 600_000, 10, "visitorRush") }
+            AchEvent.CommissionDone -> { st.inc("mining.commissions"); burst(commissionTimes, 600_000, 5, "commissionRush") }
             is AchEvent.MarketFill -> st.inc(if (e.kind == "bz") "market.bzFilled" else "market.ahSold")
             is AchEvent.Unlocked -> {}
         }
@@ -251,7 +267,10 @@ object AchTrackers {
         if (lastKuudraChests >= 0 && chests > lastKuudraChests) repeat(chests - lastKuudraChests) { AchBus.post(AchEvent.ChestOpened("kuudra", true, 0.0)) }
         lastKuudraChests = chests
         val pk = Pests.killCount()
-        if (lastPestKills >= 0 && pk > lastPestKills) st.inc("garden.pests", (pk - lastPestKills).toLong())
+        if (lastPestKills >= 0 && pk > lastPestKills) {
+            st.inc("garden.pests", (pk - lastPestKills).toLong())
+            repeat(pk - lastPestKills) { burst(pestTimes, 600_000, 15, "pestRush") }
+        }
         lastPestKills = pk
         st.max("mining.corpses", MiningProfitTracker.totalCount("Corpses"))
         pollDiana()

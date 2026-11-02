@@ -126,7 +126,10 @@ object AchHooks {
         playtime(s)
         AchFlips.onChat(s)
         if (!s.contains(": ")) {
-            if (s.startsWith("TROPHY FISH!") && s.contains("Golden Fish")) AchStore.max("fish.golden", 1)
+            if (s.startsWith("TROPHY FISH!") && s.contains("Golden Fish")) {
+                AchStore.max("fish.golden", 1)
+                if (java.time.LocalTime.now().hour < 5) AchStore.max("secret.midnightGolden", 1)
+            }
             if (s.contains("Plhlegblast")) AchStore.max("fish.plhleg", 1)
         }
         if (s == MORT_START) {
