@@ -41,7 +41,7 @@ object M7Relics {
         PURPLE("Corrupted Purple Relic", Vec3(54.5, 7.5, 41.5), 0xC081006F.toInt(), "§5");
     }
 
-    private const val NAME = "Relic Spawn Timer"
+    private const val NAME = "Relic Countdown"
     // Necron death -> relic stands, measured by NoammAddons: 50-63t
     private const val SPAWN_TICKS = 55
     private val COLOR = FishConstants.STRIP_COLOR_REGEX

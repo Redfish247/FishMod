@@ -181,7 +181,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Melody Callout", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Section Cleared", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Players Leaped", doubleArrayOf(10.0, 90.0, 1.0)),
-            java.util.Map.entry("Relic Spawn Timer", doubleArrayOf(10.0, 180.0, 1.0)),
+            java.util.Map.entry("Relic Countdown", doubleArrayOf(10.0, 180.0, 1.0)),
             java.util.Map.entry("Goldor Splits", doubleArrayOf(10.0, 128.0, 1.0)),
             java.util.Map.entry("Run Splits", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Puzzles", doubleArrayOf(0.0, 0.0, 1.0)),
@@ -196,7 +196,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         )
 
         private val RESETTERS: Map<String, Runnable> = mapOf(
-            "Invincibility Timer" to Runnable { FishSettings.invincHudX = 10; FishSettings.invincHudY = 140; FishSettings.invincScale = 1.0 },
+            "Mask & Phoenix Timer" to Runnable { FishSettings.invincHudX = 10; FishSettings.invincHudY = 140; FishSettings.invincScale = 1.0 },
             "Dungeon Breaker" to Runnable { FishSettings.dungeonBreakerHudX = 10; FishSettings.dungeonBreakerHudY = 80; FishSettings.dungeonBreakerHudScale = 1.0 },
             "Secret Overlay" to Runnable { FishSettings.secretOverlayX = 10; FishSettings.secretOverlayY = 180; FishSettings.secretOverlayScale = 1.5 },
             "Quiz Timer" to Runnable { FishSettings.quizHudX = 10; FishSettings.quizHudY = 200; FishSettings.quizHudScale = 1.5 },
@@ -206,7 +206,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Veno Stack Count" to Runnable { FishSettings.venoStackHudX = 200; FishSettings.venoStackHudY = 140; FishSettings.venoStackScale = 1.5 },
             "Custom Scoreboard" to Runnable { FishSettings.customScoreboardHudX = -1; FishSettings.customScoreboardHudY = 2 },
             "Performance" to Runnable { FishSettings.perfHudX = 10; FishSettings.perfHudY = 60; FishSettings.perfHudScale = 1.0 },
-            "Chat Notifications" to Runnable { ChatRuleStore.setHudX(10); ChatRuleStore.setHudY(400); ChatRuleStore.setHudScale(1.0) },
+            "Chat Alerts" to Runnable { ChatRuleStore.setHudX(10); ChatRuleStore.setHudY(400); ChatRuleStore.setHudScale(1.0) },
             "Party Warp Timer" to Runnable { FishSettings.warpCooldownHudX = 10; FishSettings.warpCooldownHudY = 160; FishSettings.warpCooldownScale = 1.0 },
             "Tac Timer" to Runnable { FishSettings.tacTimerHudX = 10; FishSettings.tacTimerHudY = 180; FishSettings.tacTimerScale = 1.0 },
             "Rag Timer" to Runnable { FishSettings.ragnarockTimerHudX = 10; FishSettings.ragnarockTimerHudY = 150; FishSettings.ragnarockTimerScale = 1.5 },
@@ -216,7 +216,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
             "Dungeons" to listOf(
                 "Run Splits", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
-                "Spirit Bear", "Invincibility Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
+                "Spirit Bear", "Mask & Phoenix Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
             ),
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
             "Floor 7" to listOf(
@@ -224,10 +224,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Storm Kill Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crush Banner", "Pillar Blast Timer", "Terminals Open In",
                 "Section Count", "Goldor Splits", "Terminal Tracker", "P3 Section", "Device Done",
                 "Melody Callout", "Section Cleared", "Storm Over Alert", "Veno Stack Count", "Players Leaped",
-                "Relic Spawn Timer",
+                "Relic Countdown",
             ),
             "HUD & Overlays" to listOf(
-                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Notifications", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
+                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
             ),
             "Party & Social" to listOf("Party Finder List"),
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries"),
@@ -301,7 +301,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ),
             "Party Warp Timer" to s("§eWarp: §a23.4s"),
             "Blessings" to s("§4Power: §a34", "§5Time: §a5"),
-            "Invincibility Timer" to s("§eBonzo §7●", "§7Spirit §7●", "§7Phoenix §7✔"),
+            "Mask & Phoenix Timer" to s("§eBonzo §7●", "§7Spirit §7●", "§7Phoenix §7✔"),
             "Dungeon Breaker" to s("§cCharges: §e17§7/§e20§c⸕"),
             "Spirit Bear" to s("§cBear: §f18/25"),
             "Session Stats" to s("§7Runs: §a14", "§7Deaths: §c3", "§7R/hr: §e9.2", "§7Time: §f1h 31m", lineH = 12),
@@ -313,9 +313,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "§8· §fGoldorMain  §b§lF7 §8[§e2§7/5§8]  §7lv §f38  §8· §7wPB §fTechnoFish §f6:02",
                 "   §7need §aT §9M  §8· §7chill run",
             ),
-            "Relic Spawn Timer" to s("§dRelic §f1.85s"),
+            "Relic Countdown" to s("§dRelic §f1.85s"),
             "Wither Dragon Timer" to s("§53450ms"),
-            "Chat Notifications" to c("§e⚑ Wither Key Picked Up!", lineH = 11),
+            "Chat Alerts" to c("§e⚑ Wither Key Picked Up!", lineH = 11),
             "Soulflow" to s("§3Soulflow: §f12,345"),
             "Quiz Timer" to s("§dQuiz §7(§f2/3§7): §b8.4s"),
             "Secret Overlay" to s("§7Secrets: §e5§7/§e9"),

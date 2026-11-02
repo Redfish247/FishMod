@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component
 
 object GoldorSection {
     enum class SplitsShownIn(private val label: String) {
-        BOSS("Entire Boss"), TERMINALS_ONLY("Terminals");
+        BOSS("Whole Boss Fight"), TERMINALS_ONLY("Terminals");
 
         override fun toString(): String = label
     }
@@ -187,7 +187,7 @@ object GoldorSection {
         } else if (string == "The Core entrance is opening!") {
             currentSection = 5
             endAllSections()
-            FishDebug.sendDebugMessage(Component.literal("Core section"))
+            FishDebug.sendDebugMessage(Component.literal("§7[P3] §fcore reached"))
         }
 
         return shouldCancelMessage

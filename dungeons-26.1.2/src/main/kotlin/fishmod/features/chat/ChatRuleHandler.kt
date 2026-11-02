@@ -38,7 +38,7 @@ object ChatRuleHandler {
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "chat_notifications")) { ctx, tc -> if (!fishmod.features.FishHudEditor.isOpen()) renderHud(ctx, tc) }
 
         FishHudEditor.register(
-            "Chat Notifications",
+            "Chat Alerts",
             { ChatRuleStore.hudX() }, { v -> ChatRuleStore.setHudX(v) },
             { ChatRuleStore.hudY() }, { v -> ChatRuleStore.setHudY(v) },
             220, 14,

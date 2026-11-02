@@ -701,7 +701,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.leapMenuSort = sortByOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }).gatedBy { FishSettings.leapMenuSort == 0 })
-            f.sub.add(SubcategoryHeader("Hide Players"))
+            f.sub.add(SubcategoryHeader("Hide Nearby Players"))
             f.sub.add(ToggleSetting("Hide Players After Leap", "Hide other players for a moment after you leap", FishSettings::leapHidePlayers))
             f.sub.add(SliderDoubleSetting("Duration", "Seconds", FishSettings::leapHidePlayersSeconds, 0.5, 5.0).gatedBy { FishSettings.leapHidePlayers })
             f.sub.add(SubcategoryHeader("Message"))
@@ -789,7 +789,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Invincibility Timer", DungeonSettings::invincibilityTimerHud)
+            val f = Feature("Mask & Phoenix Timer", DungeonSettings::invincibilityTimerHud)
             f.sub.add(ToggleSetting("Announce Proc to Party", "", FishSettings::invincAnnounce))
             f.sub.add(ToggleSetting("Show Numeric Time", "X.Xs vs a dot", DungeonSettings::invincibilityHud))
             f.sub.add(ToggleSetting("State Colors", "Gold active / red cooldown / green ready", DungeonSettings::invincibilityStatusColor))
@@ -4514,7 +4514,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Sound Manager" -> "Master toggle & volume for FishMod cues"
                 "Boss Health Numbers" -> "Numeric HP on the M7 boss bar"
                 "Blessing Display" -> "Active dungeon blessings from the tab footer"
-                "Invincibility Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
+                "Mask & Phoenix Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
                 "Secret Clicked" -> "Box + chime when you click a dungeon secret"
                 "Puzzle Solvers" -> "In-world solutions for dungeon puzzles"
                 "Arrow Align" -> "F7 P3 arrow device — clicks needed per frame"
