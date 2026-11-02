@@ -1,234 +1,79 @@
 package fishmod.utils
 
-import java.util.Stack
-import fishmod.utils.debug.FishDiag
-import java.util.regex.Pattern
-
+// Small calculator for search boxes: + - * / ^, brackets, k/m/b suffixes. Anything malformed gives NaN.
 object ExprParser {
 
-    private val NUMBER_PATTERN: Pattern = Pattern.compile("^(?<num>-?\\d+)(?<decimal>\\.\\d+)?(?<unit>[bBmMkK])?")
-    private val TOKEN_PATTERN: Pattern = Pattern.compile("[()+\\-*/^]")
+    private class Reader(val src: String) {
+        var pos = 0
+        fun peek(): Char? = src.getOrNull(pos)
+        fun eat(c: Char): Boolean = (peek() == c).also { if (it) pos++ }
+        fun fail(): Nothing = throw IllegalArgumentException("bad expression at $pos")
+    }
 
     @JvmStatic
     fun parseExpression(string: String?): Double {
         if (string == null) return Double.NaN
-
-        val tokens: ArrayList<String>
-        try {
-            tokens = toTokens(string)
-        } catch (e: IllegalArgumentException) {
-            return Double.NaN
-        }
-
-        if (tokens.isEmpty()) return Double.NaN
-
-        if (tokens.size == 1) {
-            try {
-                return tokenToNum(tokens[0])
-            } catch (ignored: NumberFormatException) {
-                return Double.NaN
-            }
-        }
-
-        val rpnTokens = toRPN(tokens) ?: return Double.NaN
-
+        val r = Reader(string.replace(" ", ""))
+        if (r.src.isEmpty()) return Double.NaN
         return try {
-            parseRPN(rpnTokens)
-        } catch (e: RuntimeException) {
+            val v = sum(r)
+            if (r.pos != r.src.length) Double.NaN else v
+        } catch (e: IllegalArgumentException) {
             Double.NaN
         }
     }
 
-    private fun tokenToNum(token: String): Double {
-        val matcher = NUMBER_PATTERN.matcher(token)
-        if (!matcher.find()) {
-            throw NumberFormatException()
-        }
-
-        val num = matcher.group("num")
-        val decimal = matcher.group("decimal")
-        val unit = matcher.group("unit")
-
-        var value: Double = if (decimal != null) {
-            (num + decimal).toDouble()
-        } else {
-            num.toDouble()
-        }
-
-        if (unit != null) {
-            when (unit) {
-                "b", "B" -> value *= 1_000_000_000
-                "m", "M" -> value *= 1000_000
-                "k", "K" -> value *= 1000
-            }
-        }
-
-        return value
-    }
-
-    private fun handleTokenRPN(stack: Stack<Double>, token: String) {
-        try {
-            val value = tokenToNum(token)
-            stack.push(value)
-            return
-        } catch (ignored: NumberFormatException) {
-        }
-
-        if (stack.size < 2) {
-            if (stack.size == 1) {
-                if (token == "-") {
-                    stack.push(stack.pop() * -1)
-                    return
-                }
-            }
-
-            throw IllegalArgumentException("Invalid token")
-        }
-
-        val right = stack.pop()
-        val left = stack.pop()
-
-        when (token) {
-            "+" -> stack.push(left + right)
-            "-" -> stack.push(left - right)
-            "*" -> stack.push(left * right)
-            "/" -> stack.push(left / right)
-            "^" -> stack.push(Math.pow(left, right))
-            else -> {
-                FishDiag.fail("MathParser.1", "operator token '$token' reached RPN evaluation")
-                throw IllegalArgumentException("Invalid operator")
-            }
+    private fun sum(r: Reader): Double {
+        var v = product(r)
+        while (true) v = when {
+            r.eat('+') -> v + product(r)
+            r.eat('-') -> v - product(r)
+            else -> return v
         }
     }
 
-    private fun parseRPN(tokens: ArrayList<String>): Double {
-        val stack = Stack<Double>()
-
-        for (token in tokens) {
-            handleTokenRPN(stack, token)
-        }
-
-        // Leftover operands (e.g. "2(3)") mean a malformed expression.
-        if (stack.size != 1) return Double.NaN
-        return stack.pop()
-    }
-
-    private fun getPrecedence(token: String): Int {
-        return when (token) {
-            "^" -> 4
-            "*", "/" -> 3
-            "+", "-" -> 2
-            else -> -1
+    private fun product(r: Reader): Double {
+        var v = power(r)
+        while (true) v = when {
+            r.eat('*') -> v * power(r)
+            r.eat('/') -> v / power(r)
+            else -> return v
         }
     }
 
-    private fun getAssociative(token: String): String {
-        return when (token) {
-            "^" -> "right"
-            "*", "/", "+", "-" -> "left"
-            else -> ""
+    // right-associative: 2^3^2 = 2^9
+    private fun power(r: Reader): Double {
+        val base = operand(r)
+        return if (r.eat('^')) Math.pow(base, power(r)) else base
+    }
+
+    private fun operand(r: Reader): Double {
+        val c = r.peek() ?: r.fail()
+        return when {
+            c == '(' -> { r.pos++; sum(r).also { if (!r.eat(')')) r.fail() } }
+            c == '-' && r.src.getOrNull(r.pos + 1)?.isDigit() == true -> { r.pos++; -literal(r) }
+            c == '-' -> { r.pos++; -operand(r) }
+            c.isDigit() -> literal(r)
+            else -> r.fail()
         }
     }
 
-    private fun isANumber(token: String): Boolean {
-        val matcher = NUMBER_PATTERN.matcher(token)
-        return matcher.find()
-    }
-
-    private fun addToken(output: ArrayList<String>, stack: Stack<String>, token: String): Boolean {
-        if (isANumber(token)) {
-            output.add(token)
-            return true
-        } else if (getPrecedence(token) != -1) {
-            if (stack.isEmpty()) {
-                stack.push(token)
-                return true
-            }
-
-            var top = stack.peek()
-
-            while (top != "(" && (getPrecedence(top) > getPrecedence(token)
-                        || (getPrecedence(top) == getPrecedence(token) && getAssociative(token) == "left"))
-            ) {
-                output.add(stack.pop())
-                if (stack.isEmpty()) break
-                top = stack.peek()
-            }
-            stack.push(token)
-            return true
-        } else if (token == "(") {
-            stack.push(token)
-            return true
-        } else if (token == ")") {
-            if (stack.isEmpty()) return false
-            var top = stack.peek()
-            while (top != "(") {
-                output.add(stack.pop())
-                if (stack.isEmpty()) return false
-                top = stack.peek()
-            }
-
-            if (stack.isEmpty() || stack.peek() != "(") return false
-            stack.pop()
-            return true
-        } else {
-            return false
+    // 12, 1.5, 2k, 3.2m, 1b
+    private fun literal(r: Reader): Double {
+        val start = r.pos
+        while (r.peek()?.isDigit() == true) r.pos++
+        if (r.peek() == '.' && r.src.getOrNull(r.pos + 1)?.isDigit() == true) {
+            r.pos++
+            while (r.peek()?.isDigit() == true) r.pos++
         }
-    }
-
-    private fun toRPN(tokens: ArrayList<String>): ArrayList<String>? {
-        val output = ArrayList<String>()
-        val stack = Stack<String>()
-
-        for (token in tokens) {
-            if (!addToken(output, stack, token)) {
-                return null
-            }
+        val n = r.src.substring(start, r.pos).toDouble()
+        val scale = when (r.peek()?.lowercaseChar()) {
+            'k' -> 1e3
+            'm' -> 1e6
+            'b' -> 1e9
+            else -> return n
         }
-
-        while (!stack.isEmpty()) {
-            val token = stack.pop()
-            if (token == "(") return null
-            output.add(token)
-        }
-
-        return output
-    }
-
-    private fun toTokens(string: String): ArrayList<String> {
-        val output = ArrayList<String>()
-        var copiedString = string.replace(" ", "")
-
-        var wasPrevNum = false
-
-        while (copiedString.isNotEmpty()) {
-            var matcher = NUMBER_PATTERN.matcher(copiedString)
-            if (!wasPrevNum && matcher.find()) {
-                val token = matcher.group()
-                val index = copiedString.indexOf(token)
-                if (index == 0) {
-                    copiedString = copiedString.substring(token.length)
-                    output.add(token)
-                    wasPrevNum = true
-                    continue
-                }
-            }
-
-            matcher = TOKEN_PATTERN.matcher(copiedString)
-            if (matcher.find()) {
-                val token = matcher.group()
-                val index = copiedString.indexOf(token)
-                if (index == 0) {
-                    copiedString = copiedString.substring(token.length)
-                    output.add(token)
-                    wasPrevNum = token == ")"
-                    continue
-                }
-            }
-
-            throw IllegalArgumentException("String: $string has invalid token, ended at: $copiedString")
-        }
-
-        return output
+        r.pos++
+        return n * scale
     }
 }

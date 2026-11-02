@@ -145,7 +145,7 @@ object AchHooks {
             val id = ItemsDb.idFor(item)
             val unit = if (id != null) CroesusPrices.price(id) else 0.0
             val v = if (unit.isNaN() || unit < 0) 0.0 else unit * n
-            AchBus.post(AchEvent.Drop(item, n, v, m.groupValues[1], SkyblockLocation.getCurrentLocation().name2))
+            AchBus.post(AchEvent.Drop(item, n, v, m.groupValues[1], SkyblockLocation.getCurrentLocation().label))
             return
         }
         TEAM_SCORE.find(s)?.let { flushRunEnd(it.groupValues[1].toInt()); return }

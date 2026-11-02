@@ -25,7 +25,7 @@ object BossPhase {
 
     private val DUMMY_SPLIT = RunSplit("test split", "if this is called idk", "if this is called idk", 43690, 0.0)
 
-    private val FLOOR_SPLITS: HashMap<String, ArrayList<RunSplit>> = FishJson.readSplits("/data/fishmod_splits.json")
+    private val FLOOR_SPLITS: HashMap<String, ArrayList<RunSplit>> = FishJson.readSplits("/data/run_splits.json")
 
     private const val DUMMY_SIZE = 10
     const val SPLIT_LENGTH: Int = 165
