@@ -34,6 +34,7 @@ object FishDiag {
     }
     @Volatile private var lastChatAt = 0L
     @Volatile private var headerWritten = false
+    @Volatile private var diskFullLogged = false
 
     @JvmStatic
     fun fail(code: String, message: String) = record(code, message, null)
@@ -68,6 +69,13 @@ object FishDiag {
 
     private fun record(code: String, message: String, t: Throwable?) {
         if (isTransientNetwork(t)) return
+        if (isDiskFull(t)) {
+            if (!diskFullLogged) {
+                diskFullLogged = true
+                FishDebug.LOGGER.warn("[FishDiag {}] {}: disk is full, not reporting", code, message, t)
+            }
+            return
+        }
         try {
             val n = counts.computeIfAbsent(code) { AtomicInteger() }.incrementAndGet()
             if (n > FULL_LOGS_PER_CODE) {
@@ -167,6 +175,22 @@ object FishDiag {
                 c is java.nio.channels.ClosedChannelException || c is javax.net.ssl.SSLException ||
                 c is java.net.SocketException || c is java.io.EOFException) return true
             if (c is java.io.IOException && c.message?.contains("closed", ignoreCase = true) == true) return true
+            c = c.cause
+        }
+        return false
+    }
+
+    // Full disk is the player's machine, not a bug: local log only.
+    private fun isDiskFull(t: Throwable?): Boolean {
+        var c = t
+        var depth = 0
+        while (c != null && depth++ < 8) {
+            if (c is java.io.IOException) {
+                val msg = c.message.orEmpty()
+                if (msg.contains("not enough space on the disk", ignoreCase = true) ||
+                    msg.contains("No space left on device", ignoreCase = true) ||
+                    msg.contains("Disk quota exceeded", ignoreCase = true)) return true
+            }
             c = c.cause
         }
         return false
