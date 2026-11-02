@@ -59,7 +59,7 @@ object FarmingFortuneSummary {
 
 	/** Permanent bonuses in fixed category order, skipping empty categories. Totals add up to {@code permanentTotal}. */
 	@JvmStatic
-	fun permanentGroups(est: FarmingFortuneEstimate, garden: Garden?): List<Group> {
+	fun permanentGroups(est: FarmingFortuneEstimate, garden: Garden): List<Group> {
 		val byCategory = EnumMap<Category, MutableList<Line>>(Category::class.java)
 		for (line in est.permanentLines(garden)) {
 			if (line.kind != Kind.CONDITIONAL) {
