@@ -99,7 +99,7 @@ object WeightCalculator {
 
 		var skillAverage = 0.0
 		for (skill in SKILL_NAMES) {
-			skillAverage += lilySkills[skill]?.level()?.toInt() ?: 0
+			skillAverage += lilySkills[skill]?.level?.toInt() ?: 0
 		}
 		skillAverage /= SKILL_NAMES.size
 
@@ -156,7 +156,7 @@ object WeightCalculator {
 		val srwTable = arrayAt(weight, "lily.skills.ratio_weight.$skillName")
 		val overallEl = RepoData.path(weight, "lily.skills.overall")
 		if (srwTable == null || srwTable.isEmpty || overallEl == null || !overallEl.isJsonPrimitive) return Part.ZERO
-		val currentLevel = min(levelObj.level().toInt(), srwTable.size() - 1)
+		val currentLevel = min(levelObj.level.toInt(), srwTable.size() - 1)
 		val overall = overallEl.asDouble
 		val last = srwTable.get(srwTable.size() - 1).asDouble
 		var base = ((12 * (skillAverage / 60).pow(2.44780217148309)) * srwTable.get(currentLevel).asDouble * last) +
@@ -164,12 +164,12 @@ object WeightCalculator {
 		base *= overall
 
 		var overflow = 0.0
-		if (levelObj.totalXp() > SKILLS_LEVEL_60) {
+		if (levelObj.totalXp > SKILLS_LEVEL_60) {
 			val factorEl = RepoData.path(weight, "lily.skills.factors.$skillName")
 			val multEl = RepoData.path(weight, "lily.skills.overflow_multipliers.$skillName")
 			if (factorEl != null && factorEl.isJsonPrimitive && multEl != null && multEl.isJsonPrimitive) {
 				val factor = factorEl.asDouble
-				val effectiveOver = (levelObj.totalXp() - SKILLS_LEVEL_60).pow(factor)
+				val effectiveOver = (levelObj.totalXp - SKILLS_LEVEL_60).pow(factor)
 				val t = (effectiveOver / SKILLS_LEVEL_60) * multEl.asDouble
 				if (t > 0) overflow = overall * t
 			}
@@ -178,8 +178,8 @@ object WeightCalculator {
 	}
 
 	private fun lilySlayer(weight: JsonObject, levelObj: Leveling.Progress?, slayerName: String): Part {
-		if (levelObj == null || levelObj.totalXp() <= 0) return Part.ZERO
-		val currentSlayerXp = levelObj.totalXp().toInt()
+		if (levelObj == null || levelObj.totalXp <= 0) return Part.ZERO
+		val currentSlayerXp = levelObj.totalXp.toInt()
 		val d = currentSlayerXp / 100000.0
 		val score = if (currentSlayerXp >= 6416) {
 			val dd = (d - 3.0.pow(-5.0 / 2)) * (d + 3.0.pow(-5.0 / 2))
@@ -220,15 +220,15 @@ object WeightCalculator {
 	}
 
 	private fun lilyDungeonExperience(weight: JsonObject, catacombs: Leveling.Progress?): Double {
-		if (catacombs == null || catacombs.level() <= 0) return 0.0
+		if (catacombs == null || catacombs.level <= 0) return 0.0
 		val overallEl = RepoData.path(weight, "lily.dungeons.overall")
 		val overall = if (overallEl != null && overallEl.isJsonPrimitive) overallEl.asDouble else 1.0
-		if (catacombs.totalXp() < CATACOMBS_LEVEL_50_XP) {
+		if (catacombs.totalXp < CATACOMBS_LEVEL_50_XP) {
 			// Float division on purpose: level is a float
-			val n = 0.2 * (catacombs.level() / 50).toDouble().pow(1.538679118869934)
-			return overall * ((1.18340401286164044.pow((catacombs.level() + 1).toDouble()) - 1.05994990217254) * (1 + n))
+			val n = 0.2 * (catacombs.level / 50).toDouble().pow(1.538679118869934)
+			return overall * ((1.18340401286164044.pow((catacombs.level + 1).toDouble()) - 1.05994990217254) * (1 + n))
 		}
-		val extra = 500.0 * ((catacombs.totalXp() - CATACOMBS_LEVEL_50_XP) / 142452410.0).pow(1.0 / 1.781925776625157)
+		val extra = 500.0 * ((catacombs.totalXp - CATACOMBS_LEVEL_50_XP) / 142452410.0).pow(1.0 / 1.781925776625157)
 		return (4100 + extra) * 2
 	}
 
@@ -296,15 +296,15 @@ object WeightCalculator {
 
 	private fun senitherSkill(weight: JsonObject, levelObj: Leveling.Progress?, skillName: String): Part {
 		val curWeights = arrayAt(weight, "senither.skills.$skillName")
-		if (curWeights == null || curWeights.size() < 2 || levelObj == null || levelObj.totalXp() <= 0) return Part.ZERO
+		if (curWeights == null || curWeights.size() < 2 || levelObj == null || levelObj.totalXp <= 0) return Part.ZERO
 		val exponent = curWeights.get(0).asDouble
 		val divider = curWeights.get(1).asDouble
-		val level = levelObj.level().toDouble()
-		val maxLevel = if (levelObj.maxLevel() >= 60) 60 else 50
+		val level = levelObj.level.toDouble()
+		val maxLevel = if (levelObj.maxLevel >= 60) 60 else 50
 		val maxLevelExp = if (maxLevel == 50) SKILLS_LEVEL_50 else SKILLS_LEVEL_60
 		val base = (level * 10).pow(0.5 + exponent + (level / 100)) / 1250
-		if (levelObj.totalXp() <= maxLevelExp) return Part(base, 0.0)
-		return Part(Math.round(base).toDouble(), ((levelObj.totalXp() - maxLevelExp) / divider).pow(0.968))
+		if (levelObj.totalXp <= maxLevelExp) return Part(base, 0.0)
+		return Part(Math.round(base).toDouble(), ((levelObj.totalXp - maxLevelExp) / divider).pow(0.968))
 	}
 
 	private fun senitherSlayer(weight: JsonObject, levelObj: Leveling.Progress?, slayer: String): Part {
@@ -312,7 +312,7 @@ object WeightCalculator {
 		if (levelObj == null || curWeights == null || curWeights.size() < 2) return Part.ZERO
 		val divider = curWeights.get(0).asDouble
 		var modifier = curWeights.get(1).asDouble
-		val xp = levelObj.totalXp().toInt()
+		val xp = levelObj.totalXp.toInt()
 		if (xp <= 1_000_000) return Part(if (xp == 0) 0.0 else xp / divider, 0.0)
 		val base = 1_000_000 / divider
 		var remaining = (xp - 1_000_000).toDouble()
@@ -328,13 +328,13 @@ object WeightCalculator {
 	}
 
 	private fun senitherDungeon(weight: JsonObject, level: Leveling.Progress?, path: String): Part {
-		if (level == null || level.totalXp() <= 0) return Part.ZERO
+		if (level == null || level.totalXp <= 0) return Part.ZERO
 		val factorEl = RepoData.path(weight, path)
 		if (factorEl == null || !factorEl.isJsonPrimitive) return Part.ZERO
 		val factor = factorEl.asDouble
-		val base = level.level().toDouble().pow(4.5) * factor
-		if (level.totalXp() <= CATACOMBS_LEVEL_50_XP) return Part(base, 0.0)
-		val remaining = level.totalXp() - CATACOMBS_LEVEL_50_XP
+		val base = level.level.toDouble().pow(4.5) * factor
+		if (level.totalXp <= CATACOMBS_LEVEL_50_XP) return Part(base, 0.0)
+		val remaining = level.totalXp - CATACOMBS_LEVEL_50_XP
 		val splitter = (4 * CATACOMBS_LEVEL_50_XP) / max(0.0001, base)
 		return Part(floor(base), (remaining / splitter).pow(0.968))
 	}
