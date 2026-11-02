@@ -1,9 +1,9 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.minecraft.client.Minecraft
@@ -25,7 +25,7 @@ object ArrowAlign {
     private val recentClick = HashMap<Int, Long>()
 
     private fun inP3(): Boolean =
-        Phase.inP3() || (fishmod.utils.Location.inDungeon() && fishmod.features.dungeon.map.DungeonState.floorNumber() == 7 &&
+        BossPhase.inP3() || (fishmod.utils.SkyblockLocation.inDungeon() && fishmod.features.dungeon.map.DungeonState.floorNumber() == 7 &&
             Minecraft.getInstance().player?.let { it.y in 100.0..156.0 } == true)
 
     @JvmStatic
@@ -61,7 +61,7 @@ object ArrowAlign {
             InteractionResult.PASS
         })
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!FishSettings.arrowAlignEnabled || clicksRemaining.isEmpty() || !inP3()) return@register
             if (Minecraft.getInstance().level == null) return@register
             try {
@@ -69,7 +69,7 @@ object ArrowAlign {
                 if (need <= 0) continue
                 val color = if (need < 3) "§2" else if (need < 5) "§6" else "§c"
                 val p = framePos(index)
-                RenderUtils.gizmoText(
+                FishDraw.gizmoText(
                     Component.literal("$color$need"),
                     net.minecraft.world.phys.Vec3(p.x + 0.5, p.y + 0.6, p.z + 0.5), 1f, -0x1,
                 )

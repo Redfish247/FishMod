@@ -73,7 +73,7 @@ object AchUsage {
     @JvmStatic
     fun onHudSaved() {
         AchStore.inc("fm.hudSaves")
-        if (AchStore.data.hudAreas.add(fishmod.utils.Location.getCurrentLocation().name)) AchStore.changed()
+        if (AchStore.data.hudAreas.add(fishmod.utils.SkyblockLocation.getCurrentLocation().name)) AchStore.changed()
         AchStore.max("fm.hudAreas", AchStore.data.hudAreas.size.toLong())
     }
 

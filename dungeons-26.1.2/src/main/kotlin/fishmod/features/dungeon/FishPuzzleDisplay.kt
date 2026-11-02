@@ -1,11 +1,11 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -30,18 +30,18 @@ object FishPuzzleDisplay {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
-            if (!FishSettings.showPuzzles || client.player == null || bossReached || !fishmod.utils.Location.inDungeon()) return@EndTick
+            if (!FishSettings.showPuzzles || client.player == null || bossReached || !fishmod.utils.SkyblockLocation.inDungeon()) return@EndTick
             tickCounter++
             if (tickCounter < 25) return@EndTick
             tickCounter = 0
-            if (Phase.inBoss()) {
+            if (BossPhase.inBoss()) {
                 bossReached = true
                 puzzles.clear()
                 return@EndTick
             }
             try { updatePuzzles(client) } catch (e: Exception) { FishDiag.fail("FishPuzzleDisplay.1", "puzzle tab scan failed", e) }
         })
-        Events.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.ON_LOCATION_CHANGE.register { _ ->
             bossReached = false
             puzzles.clear()
             false
@@ -87,11 +87,11 @@ object FishPuzzleDisplay {
             val puzzle = puzzles[i]
             val color = when {
                 puzzle.startsWith("Puzzles:") -> 0xFFFFFFFF.toInt()
-                puzzle.contains("✔") -> Constants.GREEN
-                puzzle.contains("???") -> Constants.BLUE
-                else -> Constants.RED
+                puzzle.contains("✔") -> FishConstants.GREEN
+                puzzle.contains("???") -> FishConstants.BLUE
+                else -> FishConstants.RED
             }
-            context.text(client.font, puzzle, x, y + i * Constants.TEXT_HEIGHT, color, true)
+            context.text(client.font, puzzle, x, y + i * FishConstants.TEXT_HEIGHT, color, true)
         }
         } catch (e: Exception) {
             FishDiag.fail("FishPuzzleDisplay.3", "puzzle hud render failed (${puzzles.size} lines)", e)

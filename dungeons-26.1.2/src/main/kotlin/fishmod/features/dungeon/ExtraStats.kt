@@ -1,12 +1,12 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.TextStrip
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.DungeonClass
-import fishmod.utils.events.Events
+import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.ChatComponent
 import net.minecraft.network.chat.Component
@@ -63,14 +63,14 @@ object ExtraStats {
 
     @JvmStatic
     fun init() {
-        Events.ON_WORLD_CHANGE.register { resetRun(); false }
+        FishEvents.ON_WORLD_CHANGE.register { resetRun(); false }
 
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (!FishSettings.extraStatsEnabled || !Location.inDungeon()) return@register false
+        FishEvents.ON_GAME_MESSAGE.register { text ->
+            if (!FishSettings.extraStatsEnabled || !SkyblockLocation.inDungeon()) return@register false
             val s = TextStrip.plain(text.string)
 
             if (HEADER.containsMatchIn(s)) {
-                if (!requested) { requested = true; Misc.executeCommand("showextrastats") }
+                if (!requested) { requested = true; FishUtil.executeCommand("showextrastats") }
                 inBlock = true
                 return@register true
             }
@@ -152,19 +152,19 @@ object ExtraStats {
         lines.add(centered("§b$secrets§r-§c$deaths"))
 
         if (FishSettings.extraStatsTeammates) {
-            val mates = DungeonClass.getAll().entries.filter { it.key != Minecraft.getInstance().player?.gameProfile?.name }
+            val mates = DungeonRole.getAll().entries.filter { it.key != Minecraft.getInstance().player?.gameProfile?.name }
             lines.add(centered(if (mates.isEmpty()) "§3Solo" else mates.joinToString("§r, ") { "${colorOf(it.value)}${it.key}" }))
         }
 
         lines.add("")
         lines.add(chatBreak())
 
-        Misc.addChatMessage(Component.literal(lines.joinToString("\n")))
+        FishUtil.addChatMessage(Component.literal(lines.joinToString("\n")))
         reset()
     }
 
-    private fun colorOf(c: DungeonClass) = when (c) {
-        DungeonClass.ARCHER -> "§3"; DungeonClass.BERSERK -> "§c"; DungeonClass.HEALER -> "§d"
-        DungeonClass.MAGE -> "§b"; DungeonClass.TANK -> "§a"
+    private fun colorOf(c: DungeonRole) = when (c) {
+        DungeonRole.ARCHER -> "§3"; DungeonRole.BERSERK -> "§c"; DungeonRole.HEALER -> "§d"
+        DungeonRole.MAGE -> "§b"; DungeonRole.TANK -> "§a"
     }
 }

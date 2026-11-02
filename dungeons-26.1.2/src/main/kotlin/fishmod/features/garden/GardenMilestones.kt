@@ -1,9 +1,9 @@
 package fishmod.features.garden
 import fishmod.compat.curScreen
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.TabListCache
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
@@ -34,7 +34,7 @@ object GardenMilestones {
             if (tick % 10 == 5) scanMenu()
         }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> tooltip(stack, lines) })
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (S.gardenIconNumbers) try { drawNumber(ctx, stack, x, y) } catch (_: Throwable) {}
         }
         Garden.hud("Crop Milestone", "garden_milestone", 150, 36,
@@ -140,6 +140,6 @@ object GardenMilestones {
         val txt = if (tiers.isEmpty()) "no milestone data yet (open the Crop Milestones menu)"
         else tiers.entries.joinToString("\n") { "${it.key}: ${it.value}" } + "\nAverage: ${"%.2f".format(average())}"
         Minecraft.getInstance().keyboardHandler.clipboard = txt
-        Misc.addChatMessage(Component.literal("§aCopied milestone data (${tiers.size} crops)."))
+        FishUtil.addChatMessage(Component.literal("§aCopied milestone data (${tiers.size} crops)."))
     }
 }

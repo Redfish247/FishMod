@@ -19,7 +19,7 @@
 			"fishmod.FishModInit"
 		],
 		"modmenu": [
-			"fishmod.utils.config.ModMenu"
+			"fishmod.utils.config.FishModMenu"
 		]
 	},
 	"mixins": [

@@ -55,7 +55,7 @@ object AchMenu {
         lb.sub.add(InputDoubleSetting("Secrets Z", "", { S.achSecZ }, { v -> S.achSecZ = v }))
         lb.sub.add(SliderDoubleSetting("Scale", "", S::achLbScale, 0.5, 4.0))
         lb.sub.add(ToggleSetting("Hub Only", "Only show the board while in the Hub", S::achLbVillageOnly))
-        lb.sub.add(DropdownSetting("Area", "Only show in this area (Any = everywhere)", arrayOf("Any") + fishmod.utils.Location.values().map { it.name2 }.filter { it != "Unknown" }.toTypedArray(), { S.achLbArea }, { v -> S.achLbArea = v }))
+        lb.sub.add(DropdownSetting("Area", "Only show in this area (Any = everywhere)", arrayOf("Any") + fishmod.utils.SkyblockLocation.values().map { it.name2 }.filter { it != "Unknown" }.toTypedArray(), { S.achLbArea }, { v -> S.achLbArea = v }))
         lb.sub.add(ButtonSetting("Points Board To Me", "Same as /fm ach lb here points", "Here") { AchLeaderboard.here(false) })
         lb.sub.add(ButtonSetting("Secrets Board To Me", "Same as /fm ach lb here secrets", "Here") { AchLeaderboard.here(true) })
         lb.sub.add(ButtonSetting("Submit Score", "Send your totals now", "Submit") { AchLeaderboard.submit(true) })

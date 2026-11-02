@@ -1,11 +1,11 @@
 package fishmod.features.extras
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Location
-import fishmod.utils.Misc
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.Minecraft
@@ -41,8 +41,8 @@ object ArrowHud {
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "arrow_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("ArrowHud.1", "arrow hud render failed", t) }
         }
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (S.arrowHud || S.quiverWarning) onChat(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim())
+        FishEvents.ON_GAME_MESSAGE.register { text ->
+            if (S.arrowHud || S.quiverWarning) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim())
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register { if ((S.arrowHud || S.quiverWarning) && ++tickN % 10 == 0) scan() }
@@ -63,11 +63,11 @@ object ArrowHud {
     // Bow lore shows the active arrow; real arrow stacks (outside the quiver) are counted too
     private fun scan() {
         val p = Minecraft.getInstance().player ?: return
-        if (!Location.inSkyblock()) return
+        if (!SkyblockLocation.inSkyblock()) return
         if (slotNine(p)) return
         if (holdingBow()) {
             p.mainHandItem.get(DataComponents.LORE)?.lines()?.forEach { line ->
-                val m = LORE_ARROW.find(line.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()) ?: return@forEach
+                val m = LORE_ARROW.find(line.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()) ?: return@forEach
                 type = m.groupValues[1]
                 m.groupValues[2].replace(",", "").toLongOrNull()?.let { setCount(it) }
             }
@@ -76,7 +76,7 @@ object ArrowHud {
         for ((i, st) in p.inventory.nonEquipmentItems.withIndex()) {
             if (st.isEmpty) continue
             if (st.item == Items.ARROW || st.item == Items.TIPPED_ARROW || st.item == Items.SPECTRAL_ARROW
-                || ItemUtil.getId(st)?.endsWith("ARROW") == true) { inv += st.count; if (i != 8) loose += st.count }
+                || ItemTools.getId(st)?.endsWith("ARROW") == true) { inv += st.count; if (i != 8) loose += st.count }
         }
         extra = loose
         if (inv > 0 && count < 0) setCount(inv)
@@ -86,8 +86,8 @@ object ArrowHud {
     private fun slotNine(p: net.minecraft.world.entity.player.Player): Boolean {
         val st = p.inventory.getItem(8)
         if (st.isEmpty) return false
-        val name = fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(st.hoverName.string, "").trim()
-        val id = ItemUtil.getId(st)
+        val name = fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(st.hoverName.string, "").trim()
+        val id = ItemTools.getId(st)
         val arrowy = st.item == Items.ARROW || st.item == Items.TIPPED_ARROW || st.item == Items.SPECTRAL_ARROW ||
             id?.endsWith("ARROW") == true || name.contains("Arrow", true)
         if (!arrowy) return false
@@ -100,7 +100,7 @@ object ArrowHud {
     // "Arrows Remaining: 1,234" lore line is the real quiver count; the stack size caps at 64
     private fun remainingFromLore(st: net.minecraft.world.item.ItemStack): Long? {
         st.get(DataComponents.LORE)?.lines()?.forEach { line ->
-            val m = REMAINING.find(fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(line.string, "").trim()) ?: return@forEach
+            val m = REMAINING.find(fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(line.string, "").trim()) ?: return@forEach
             (m.groupValues[1].ifEmpty { m.groupValues[2] }).replace(",", "").toLongOrNull()?.let { return it }
         }
         return null
@@ -113,17 +113,17 @@ object ArrowHud {
         val warn = S.arrowHud || S.quiverWarning
         if (warn && n == 0L && S.arrowOutWarn && !warnedOut) {
             warnedOut = true
-            Misc.forceTitle(Component.literal("§cOUT OF ARROWS"), Component.empty(), 2000)
+            FishUtil.forceTitle(Component.literal("§cOUT OF ARROWS"), Component.empty(), 2000)
             ExtrasSounds.play(S.arrowWarnSound, 100, "fm_arrow_out")
         } else if (n in 1..S.arrowLowThreshold.toLong() && warn && S.arrowLowWarn && !warnedLow) {
             warnedLow = true
-            Misc.forceTitle(Component.empty(), Component.literal("§eLow arrows: §f$n"), 1500)
+            FishUtil.forceTitle(Component.empty(), Component.literal("§eLow arrows: §f$n"), 1500)
             ExtrasSounds.play(S.arrowWarnSound, 100, "fm_arrow_low")
         }
     }
 
     private fun render(ctx: net.minecraft.client.gui.GuiGraphicsExtractor) {
-        if (!S.arrowHud || !Location.inSkyblock()) return
+        if (!S.arrowHud || !SkyblockLocation.inSkyblock()) return
         if (S.arrowHudOnlyBow && !holdingBow()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null) return

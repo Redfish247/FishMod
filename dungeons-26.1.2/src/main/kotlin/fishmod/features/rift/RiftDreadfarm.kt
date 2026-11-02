@@ -1,9 +1,9 @@
 package fishmod.features.rift
 
 import fishmod.utils.Fmt
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -51,9 +51,9 @@ object RiftDreadfarm {
                 while ((seenTimes.peek() ?: now) < now - 5000L) seenTimes.poll()
             }
         }
-        Events.ON_WORLD_CHANGE.register { capPos = null; berbs.clear(); false }
-        Events.ON_PARTICLE.register { p -> anyParticles++; if (p.particle.type === ParticleTypes.FIREWORK) onParticle(p.particle.type, Vec3(p.x, p.y, p.z)); false }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        FishEvents.ON_WORLD_CHANGE.register { capPos = null; berbs.clear(); false }
+        FishEvents.ON_PARTICLE.register { p -> anyParticles++; if (p.particle.type === ParticleTypes.FIREWORK) onParticle(p.particle.type, Vec3(p.x, p.y, p.z)); false }
+        RenderHooks.GIZMO.register { _ -> render() }
     }
 
     private fun onParticle(type: net.minecraft.core.particles.ParticleType<*>, at: Vec3) {
@@ -98,7 +98,7 @@ object RiftDreadfarm {
             val at = Vec3(pos.x + 0.5, pos.y + 1.1, pos.z + 0.5)
             val left = S.riftAgaricusSeconds - (System.currentTimeMillis() - capStart) / 1000.0
             val t = if (capReady) "§c§lCLICK!" else "§b" + Fmt.f1(maxOf(left, 0.0)) + "s"
-            RenderUtils.gizmoText(Component.literal(t), at, 1.5f, -1, true)
+            FishDraw.gizmoText(Component.literal(t), at, 1.5f, -1, true)
         }
         if (!S.riftBerberis || !hasWand) return
         val me = Minecraft.getInstance().player ?: return
@@ -107,14 +107,14 @@ object RiftDreadfarm {
             if (b.y == 0.0 || me.distanceToSqr(b.pos) > 400.0) continue
             val box = cell(b.pos, b.y)
             if (!b.moving) {
-                RenderUtils.gizmoBox(box, (c and 0xFFFFFF) or 0x60000000, c, false)
-                RenderUtils.gizmoLine(RenderUtils.cameraLineStart(1.0), box.center, c, 2f, true)
+                FishDraw.gizmoBox(box, (c and 0xFFFFFF) or 0x60000000, c, false)
+                FishDraw.gizmoLine(FishDraw.cameraLineStart(1.0), box.center, c, 2f, true)
             } else {
-                RenderUtils.gizmoBox(box, 0x50FFFFFF, 0xFFFFFFFF.toInt(), false)
+                FishDraw.gizmoBox(box, 0x50FFFFFF, 0xFFFFFFFF.toInt(), false)
                 b.prev?.let { pv ->
                     val pb = cell(pv, b.y)
-                    RenderUtils.gizmoBox(pb, 0x30AAAAAA, 0xFFAAAAAA.toInt(), false)
-                    RenderUtils.gizmoLine(pb.center, box.center, 0xFFFFFFFF.toInt(), 3f, false)
+                    FishDraw.gizmoBox(pb, 0x30AAAAAA, 0xFFAAAAAA.toInt(), false)
+                    FishDraw.gizmoLine(pb.center, box.center, 0xFFFFFFFF.toInt(), 3f, false)
                 }
             }
         }

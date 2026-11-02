@@ -6,10 +6,10 @@ import fishmod.features.ItemRarityHotbar
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.storage.StorageOverlay
 import fishmod.mixin.accessors.HandledScreenAccessor
-import fishmod.utils.Location
-import fishmod.utils.Misc.abbr
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil.abbr
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -34,7 +34,7 @@ object ContainerValue {
     private val PLAIN_CHEST = setOf("Chest", "Large Chest", "Ender Chest", "Personal Vault")
 
     private val MOTES = Regex("Motes Sell Price:?\\s*([0-9,]+)")
-    private fun inRift() = Location.`in`(Location.THE_RIFT)
+    private fun inRift() = SkyblockLocation.`in`(SkyblockLocation.THE_RIFT)
 
     // Rift items are worth motes: read the "Motes Sell Price" lore line
     private fun motesValue(stack: ItemStack): Double {
@@ -61,7 +61,7 @@ object ContainerValue {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register {
-            if (!FishSettings.containerValueEnabled || !Location.inSkyblock()) return@register
+            if (!FishSettings.containerValueEnabled || !SkyblockLocation.inSkyblock()) return@register
             val now = System.currentTimeMillis()
             if (now - lastRefresh > 60_000L) {
                 lastRefresh = now
@@ -73,7 +73,7 @@ object ContainerValue {
     class SidebarRow(val name: String, val label: String, val value: String, val color: Int, val stack: ItemStack)
 
     @JvmStatic
-    fun storageSidebarEnabled(): Boolean = FishSettings.containerValueEnabled && Location.inSkyblock()
+    fun storageSidebarEnabled(): Boolean = FishSettings.containerValueEnabled && SkyblockLocation.inSkyblock()
 
     // Storage overlay draws these in its own fixed sidebar
     @JvmStatic
@@ -95,7 +95,7 @@ object ContainerValue {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
-        if (!FishSettings.containerValueEnabled || !Location.inSkyblock() || !eligible(screen)) return
+        if (!FishSettings.containerValueEnabled || !SkyblockLocation.inSkyblock() || !eligible(screen)) return
         if (StorageOverlay.isActive(screen)) return
         val font = Minecraft.getInstance().font
 
@@ -160,7 +160,7 @@ object ContainerValue {
             if (skipPlayerInv && slot.container is Inventory) continue
             val stack: ItemStack = slot.item
             if (stack.isEmpty) continue
-            if (ItemUtil.getId(stack) == null) continue
+            if (ItemTools.getId(stack) == null) continue
             val unit = if (inRift()) motesValue(stack) else ItemValue.estimate(stack)
             if (!FishDiag.check(!unit.isNaN() && !unit.isInfinite(), "ContainerValue.3") { "item value not finite for ${stack.hoverName.string}: $unit" }) continue
             if (unit <= 0.0) continue

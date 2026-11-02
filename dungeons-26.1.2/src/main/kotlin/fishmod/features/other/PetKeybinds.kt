@@ -3,10 +3,10 @@ import fishmod.compat.curScreen
 import fishmod.utils.TextStrip
 
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.Keybinds
-import fishmod.utils.Misc
+import fishmod.utils.FishKeys
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -38,7 +38,7 @@ object PetKeybinds {
 
     private fun handleInput(screen: AbstractContainerScreen<*>, matches: Predicate<KeyMapping>): Boolean {
         if (!FishSettings.petKeybindsEnabled || !isPetsMenu(screen)) return false
-        val binds = Keybinds.petKeybinds ?: return false
+        val binds = FishKeys.petKeybinds ?: return false
         val i = binds.indexOfFirst { !it.isUnbound && matches.test(it) }
         if (i < 0) return false
         if (!FishDiag.check(i < PETS.size, "PetKeybinds.1") { "pet keybind index $i but only ${PETS.size} pets" }) return false
@@ -62,7 +62,7 @@ object PetKeybinds {
             msg("§cYour §f$t§c isn't on this page.")
             return
         }
-        if (ItemUtil.containsLore(slot.item, "Click to despawn") && FishSettings.petKeybindsNoDespawn) {
+        if (ItemTools.containsLore(slot.item, "Click to despawn") && FishSettings.petKeybindsNoDespawn) {
             msg("§e$t§7 is already summoned.")
             return
         }
@@ -92,5 +92,5 @@ object PetKeybinds {
             ?.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, player)
     }
 
-    private fun msg(s: String) = Misc.addChatMessage(Component.literal(s))
+    private fun msg(s: String) = FishUtil.addChatMessage(Component.literal(s))
 }

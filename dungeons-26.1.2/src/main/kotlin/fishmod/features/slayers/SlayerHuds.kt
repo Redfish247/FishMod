@@ -3,8 +3,8 @@ import fishmod.compat.curScreen
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Constants
-import fishmod.utils.Location
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.DeltaTracker
@@ -196,7 +196,7 @@ object SlayerHuds {
         if (mc.player == null || mc.hudHidden) return false
         // keep drawing while chat is open so it can be clicked (SkyHanni behaviour)
         if (mc.curScreen != null && mc.curScreen !is net.minecraft.client.gui.screens.ChatScreen && !inInv) return false
-        if (!Location.inSkyblock() || !SlayerManager.inCorrectArea()) return false
+        if (!SkyblockLocation.inSkyblock() || !SlayerManager.inCorrectArea()) return false
         val type = SlayerManager.type ?: return false
         val tier = SlayerManager.tier
         if (!SlayerProfitTracker.hasData(type, tier)) return false
@@ -204,7 +204,7 @@ object SlayerHuds {
         val interactive = mc.curScreen is net.minecraft.client.gui.screens.ChatScreen
         val rows = SlayerProfitTracker.display(type, tier, interactive)
         val f = mc.font
-        val lh = Constants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT + 2
         // value column right-aligned, item text after it (Mining/Diana style)
         val colX = rows.maxOfOrNull { if (it.value.isEmpty()) 0 else f.width(it.value) + 6 } ?: 0
         var panelW = 0
@@ -318,7 +318,7 @@ object SlayerHuds {
         lines: List<String>,
     ) {
         val mc = Minecraft.getInstance()
-        val lh = Constants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT + 2
         val sc = scale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())

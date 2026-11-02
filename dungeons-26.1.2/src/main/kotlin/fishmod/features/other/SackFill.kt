@@ -2,8 +2,8 @@ package fishmod.features.other
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.FishMsg
-import fishmod.utils.Misc
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.FishUtil
+import fishmod.utils.data.ItemTools
 import net.minecraft.client.Minecraft
 
 // Odin-style "get from sacks" helper — mirrors Odin's /od twap (MainCommand.kt -> fillItemFromSack).
@@ -33,7 +33,7 @@ object SackFill {
         val inv = player.inventory
         for (i in 0 until inv.containerSize) {
             val stack = inv.getItem(i)
-            if (!stack.isEmpty && sack.id.equals(ItemUtil.getId(stack), ignoreCase = true)) have += stack.count
+            if (!stack.isEmpty && sack.id.equals(ItemTools.getId(stack), ignoreCase = true)) have += stack.count
         }
 
         if (have >= target) {
@@ -41,6 +41,6 @@ object SackFill {
             return
         }
         FishDiag.check(have >= 0, "SackFill.2") { "negative item count $have for ${sack.id}" }
-        Misc.executeCommand("gfs ${sack.id} ${target - have}")
+        FishUtil.executeCommand("gfs ${sack.id} ${target - have}")
     }
 }

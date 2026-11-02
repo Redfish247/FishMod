@@ -3,7 +3,7 @@ package fishmod.features.dungeon
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import java.util.regex.Pattern
 
 object LagTracker {
@@ -56,7 +56,7 @@ object LagTracker {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { message ->
+        FishEvents.ON_GAME_MESSAGE.register { message ->
             val s = message.string
 
             if (!active && !ended && s.contains(RUN_START_FRAGMENT)) {
@@ -79,23 +79,23 @@ object LagTracker {
             false
         }
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.ON_SERVER_TICK.register {
             if (!active && !ended && ++probeTick >= 20) {
                 probeTick = 0
-                if (fishmod.utils.Location.inDungeon() && (FishDiag.guard("LagTracker.3", "run time tab scan failed") { scoreboardRunSeconds() } ?: -1) > 0) start()
+                if (fishmod.utils.SkyblockLocation.inDungeon() && (FishDiag.guard("LagTracker.3", "run time tab scan failed") { scoreboardRunSeconds() } ?: -1) > 0) start()
             }
             if (active) ticks++
             false
         }
 
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.ON_WORLD_CHANGE.register {
             active = false
             ended = false
             ticks = 0
             false
         }
 
-        Events.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.ON_LOCATION_CHANGE.register { _ ->
             active = false
             ended = false
             startMs = 0

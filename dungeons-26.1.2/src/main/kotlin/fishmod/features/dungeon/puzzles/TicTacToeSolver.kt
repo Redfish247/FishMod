@@ -3,8 +3,8 @@ package fishmod.features.dungeon.puzzles
 import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.puzzles.odin.OdinScan
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -43,7 +43,7 @@ object TicTacToeSolver {
 
     fun shouldBlock(pos: BlockPos): Boolean {
         if (!FishSettings.tttSolver || !FishSettings.tttPreventMissClick) return false
-        if (OdinScan.currentRoomName != "Tic Tac Toe" || Phase.inBoss()) return false
+        if (OdinScan.currentRoomName != "Tic Tac Toe" || BossPhase.inBoss()) return false
         val level = Minecraft.getInstance().level ?: return false
         if (level.getBlockState(pos).block != Blocks.STONE_BUTTON) return false
         return bestMoves.isNotEmpty() && pos !in bestMoves
@@ -70,7 +70,7 @@ object TicTacToeSolver {
             val px = f.item.get(DataComponents.MAP_ID)?.let { level.getMapData(it) }?.colors?.get(8256)?.toInt()?.and(0xFF)
             "[${f.blockPosition().toShortString()} ${f.direction} px=$px]"
         }
-        if (diag != lastDiag) { lastDiag = diag; fishmod.utils.debug.Debug.LOGGER.info("[TTT] $diag") }
+        if (diag != lastDiag) { lastDiag = diag; fishmod.utils.debug.FishDebug.LOGGER.info("[TTT] $diag") }
 
         if (frames.size == 8) { reset(); return }
         if (frames.size % 2 == 0) return
@@ -152,7 +152,7 @@ object TicTacToeSolver {
             270 -> arrayOf(bx + 0.5 - hw, bx + 0.5 + hw, bz + 1.0 - th, bz + 1.0)
             else -> { FishDiag.fail("TicTacToeSolver.2", "tic tac toe room rotation not a right angle: $rot"); return }
         }
-        RenderUtils.gizmoBox(AABB(minX, minY, minZ, maxX, maxY, maxZ), argb, 0)
+        FishDraw.gizmoBox(AABB(minX, minY, minZ, maxX, maxY, maxZ), argb, 0)
     }
 
     private const val UNPLAYED = '\u0000'

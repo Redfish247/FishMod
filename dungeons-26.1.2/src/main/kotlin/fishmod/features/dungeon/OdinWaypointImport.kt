@@ -3,7 +3,7 @@ package fishmod.features.dungeon
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.waypoints.DungeonWaypointStore
 import fishmod.utils.dungeon.waypoints.StoredWaypoint
@@ -29,7 +29,7 @@ object OdinWaypointImport {
         val files = File(PACKS_DIR).listFiles { f -> f.extension == "json" }?.sortedBy { it.name }.orEmpty()
             .ifEmpty { listOfNotNull(File(LEGACY_FILE).takeIf { it.exists() }) }
         if (files.isEmpty()) {
-            Misc.addChatMessage(Component.literal("§cNo Odin waypoint config found in config/odin/."))
+            FishUtil.addChatMessage(Component.literal("§cNo Odin waypoint config found in config/odin/."))
             return
         }
         val merged = LinkedHashMap<String, MutableList<StoredWaypoint>>()
@@ -53,7 +53,7 @@ object OdinWaypointImport {
             convert(JsonParser.parseString(json))
         } catch (e: Exception) { null }
         if (parsed == null) {
-            Misc.addChatMessage(Component.literal("§cClipboard doesn't look like an Odin waypoint export (/dwp export)."))
+            FishUtil.addChatMessage(Component.literal("§cClipboard doesn't look like an Odin waypoint export (/dwp export)."))
             return
         }
         finish(parsed, "clipboard")
@@ -63,7 +63,7 @@ object OdinWaypointImport {
         val total = entries.values.sumOf { it.size }
         val added = DungeonWaypointStore.addAll(entries, 0.05)
         DungeonWaypoints.refreshLive()
-        Misc.addChatMessage(Component.literal(
+        FishUtil.addChatMessage(Component.literal(
             "§aImported $added Odin waypoint${if (added == 1) "" else "s"} from $source across ${entries.size} rooms" +
                 if (total > added) " §7(${total - added} duplicates skipped)" else ""
         ))

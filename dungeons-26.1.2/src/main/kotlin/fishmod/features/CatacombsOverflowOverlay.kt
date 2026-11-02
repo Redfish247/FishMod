@@ -3,11 +3,11 @@ package fishmod.features
 import fishmod.utils.debug.FishDiag
 import com.google.gson.JsonObject
 import fishmod.utils.HypixelApi
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -41,7 +41,7 @@ object CatacombsOverflowOverlay {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { client ->
-            if (!FishSettings.catacombsOverflowEnabled || client.player == null || !Location.inSkyblock()) {
+            if (!FishSettings.catacombsOverflowEnabled || client.player == null || !SkyblockLocation.inSkyblock()) {
                 return@register
             }
             val now = System.currentTimeMillis()
@@ -56,7 +56,7 @@ object CatacombsOverflowOverlay {
             }
         }
 
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!FishSettings.catacombsOverflowEnabled) return@register
             try { draw(ctx, stack, x, y) } catch (t: Throwable) { FishDiag.fail("CatacombsOverflowOverlay.2", "cata overflow slot draw failed", t) }
         }
@@ -84,7 +84,7 @@ object CatacombsOverflowOverlay {
                 }
             }
         } catch (ex: Exception) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[CatacombsOverflowOverlay] failed to parse member JSON: {}", ex.message)
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[CatacombsOverflowOverlay] failed to parse member JSON: {}", ex.message)
             FishDiag.fail("CatacombsOverflowOverlay.3", "member dungeons JSON parse failed", ex)
         }
     }
@@ -102,7 +102,7 @@ object CatacombsOverflowOverlay {
 
         val xp = if (isCata) selfCataXp else selfClassXp.getOrDefault(key, -1L)
         if (xp <= HypixelApi.XP_FOR_50) return
-        if (!ItemUtil.containsIgnoreCaseLore(stack, "level")) return
+        if (!ItemTools.containsIgnoreCaseLore(stack, "level")) return
 
         val levelStr = HypixelApi.formatLevel(xp)
         val mc = Minecraft.getInstance()
@@ -126,6 +126,6 @@ object CatacombsOverflowOverlay {
         if (lore != null) {
             for (line in lore.lines()) sb.append("\n§7  ").append(line.string)
         }
-        Misc.addChatMessage(Component.literal(sb.toString()))
+        FishUtil.addChatMessage(Component.literal(sb.toString()))
     }
 }

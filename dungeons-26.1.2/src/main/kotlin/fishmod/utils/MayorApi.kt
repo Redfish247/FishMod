@@ -2,7 +2,7 @@ package fishmod.utils
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import java.net.URI
@@ -97,14 +97,14 @@ object MayorApi {
                 lastFetch = System.currentTimeMillis()
             } catch (e: Exception) {
                 FishDiag.fail("MayorApi.2", "election response parse failed", e)
-                Debug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
+                FishDebug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
                 lastFetch = failStamp()
             } finally {
                 fetching = false
             }
         }.exceptionally { e ->
             FishDiag.fail("MayorApi.3", "election request failed", e)
-            Debug.LOGGER.warn("MayorApi: fetch failed - {}", e.message)
+            FishDebug.LOGGER.warn("MayorApi: fetch failed - {}", e.message)
             lastFetch = failStamp()
             fetching = false
             null

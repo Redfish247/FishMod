@@ -3,9 +3,9 @@ package fishmod.features.rift
 import fishmod.compat.CB
 import fishmod.compat.CI
 
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.core.BlockPos
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
@@ -44,16 +44,16 @@ object RiftSnake {
     }
 
     fun init() {
-        Events.ON_PACKET.register { packet ->
+        FishEvents.ON_PACKET.register { packet ->
             if (S.riftSnake && Rift.inArea("Living Cave", "Living Stillness")) when (packet) {
                 is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                 is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, st -> onBlock(p, st) }
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { snakes.clear(); added.clear(); removed.clear(); false }
+        FishEvents.ON_WORLD_CHANGE.register { snakes.clear(); added.clear(); removed.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { try { tick() } catch (_: Throwable) { snakes.clear() } }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        RenderHooks.GIZMO.register { _ -> render() }
     }
 
     private fun onBlock(pos: BlockPos, state: BlockState) {
@@ -98,5 +98,5 @@ object RiftSnake {
         }
     }
 
-    private fun box(pos: BlockPos, c: Int) = RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, false)
+    private fun box(pos: BlockPos, c: Int) = FishDraw.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, false)
 }

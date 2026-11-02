@@ -2,10 +2,10 @@ package fishmod.features.dungeon
 import fishmod.compat.curScreen
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Constants
-import fishmod.utils.Location
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -113,9 +113,9 @@ object SessionStats {
             {
                 if (!FishSettings.sessionStatsEnabled) false
                 else {
-                    val loc = Location.getCurrentLocation()
-                    (loc == Location.DUNGEON && FishSettings.sessionStatsInDungeon)
-                        || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
+                    val loc = SkyblockLocation.getCurrentLocation()
+                    (loc == SkyblockLocation.DUNGEON && FishSettings.sessionStatsInDungeon)
+                        || (loc == SkyblockLocation.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
                 }
             })
 
@@ -131,8 +131,8 @@ object SessionStats {
 
     private fun onTick(client: Minecraft) {
         run {
-            val loc = Location.getCurrentLocation()
-            if (loc != Location.DUNGEON) {
+            val loc = SkyblockLocation.getCurrentLocation()
+            if (loc != SkyblockLocation.DUNGEON) {
                 havePos = false
                 autoPause(1, System.currentTimeMillis())
                 return
@@ -155,7 +155,7 @@ object SessionStats {
 
     private fun registerRest() {
 
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.ON_WORLD_CHANGE.register {
             havePos = false
             autoPause(1, System.currentTimeMillis())
             false
@@ -165,12 +165,12 @@ object SessionStats {
             if (FishSettings.sessionStatsResetOnRelog) FishDiag.guard("SessionStats.11", "session stats reset on join failed") { reset() }
         }
 
-        Events.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.ON_LOCATION_CHANGE.register { _ ->
             havePos = false
             false
         }
 
-        Events.ON_RUN_END.register {
+        FishEvents.ON_RUN_END.register {
             if (!FishSettings.sessionStatsEnabled) return@register false
             if (paused && !autoPaused) return@register false
             val now = System.currentTimeMillis()
@@ -181,9 +181,9 @@ object SessionStats {
             false
         }
 
-        Events.ON_GAME_MESSAGE.register { message ->
+        FishEvents.ON_GAME_MESSAGE.register { message ->
             if (!FishSettings.sessionStatsEnabled) return@register false
-            val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+            val s = message.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
             if (s.startsWith("☠ ") && !DEATH_PAT.matcher(s).find() && (s.contains(" killed") || s.contains(" died"))) FishDiag.fail("SessionStats.3", "death line not matched: '$s'")
 
             if (s == MORT_START) {
@@ -195,9 +195,9 @@ object SessionStats {
             }
 
             if (paused && !autoPaused) return@register false
-            val loc = Location.getCurrentLocation()
-            val track = (loc == Location.DUNGEON && FishSettings.sessionStatsInDungeon)
-                || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
+            val loc = SkyblockLocation.getCurrentLocation()
+            val track = (loc == SkyblockLocation.DUNGEON && FishSettings.sessionStatsInDungeon)
+                || (loc == SkyblockLocation.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
             if (!track) return@register false
             if (DEATH_PAT.matcher(s).find()) {
                 if (sessionStartMs < 0) sessionStartMs = System.currentTimeMillis()
@@ -320,15 +320,15 @@ object SessionStats {
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
         if (mc.curScreen != null && mc.curScreen !is net.minecraft.client.gui.screens.ChatScreen) return
-        val loc = Location.getCurrentLocation()
-        val show = (loc == Location.DUNGEON && FishSettings.sessionStatsInDungeon)
-            || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
+        val loc = SkyblockLocation.getCurrentLocation()
+        val show = (loc == SkyblockLocation.DUNGEON && FishSettings.sessionStatsInDungeon)
+            || (loc == SkyblockLocation.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
         if (!show) return
         if (mc.curScreen !== lastCountedScreen) { lastCountedScreen = mc.curScreen; fishmod.features.achievements.AchStore.inc("fm.statsOpened") }
 
         val x = FishSettings.sessionStatsHudX
         val y = FishSettings.sessionStatsHudY
-        val lh = Constants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT + 2
         val lines = buildLines()
         val sc = FishSettings.sessionStatsScale.toFloat()
         ctx.pose().pushMatrix()
@@ -351,14 +351,14 @@ object SessionStats {
     private fun renderInScreenInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val mc = Minecraft.getInstance()
         if (mc.curScreen !is AbstractContainerScreen<*>) return
-        val loc = Location.getCurrentLocation()
-        val show = (loc == Location.DUNGEON && FishSettings.sessionStatsInDungeon)
-            || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
+        val loc = SkyblockLocation.getCurrentLocation()
+        val show = (loc == SkyblockLocation.DUNGEON && FishSettings.sessionStatsInDungeon)
+            || (loc == SkyblockLocation.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
         if (!show) return
 
         val x = FishSettings.sessionStatsHudX
         val y = FishSettings.sessionStatsHudY
-        val lh = Constants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT + 2
         val lines = buildLines()
         val sc = FishSettings.sessionStatsScale.toFloat()
 
@@ -371,7 +371,7 @@ object SessionStats {
         val localBtnY = lh * lines.size - 2
         val localResetW = resetW + padX * 2
         val localPauseW = pauseW + padX * 2
-        val localBtnH = Constants.TEXT_HEIGHT + padY * 2 + 1
+        val localBtnH = FishConstants.TEXT_HEIGHT + padY * 2 + 1
         val gap = 4
         btnX = x
         btnY = y + (localBtnY * sc).toInt()

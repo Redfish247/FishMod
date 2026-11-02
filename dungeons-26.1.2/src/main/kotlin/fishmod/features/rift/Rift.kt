@@ -1,7 +1,7 @@
 package fishmod.features.rift
 
-import fishmod.utils.Constants
-import fishmod.utils.Location
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.Entity
@@ -12,7 +12,7 @@ import fishmod.features.rift.RiftSettings as S
 // Shared Rift state + init of every Rift helper
 object Rift {
 
-    fun inRift(): Boolean = Location.`in`(Location.THE_RIFT)
+    fun inRift(): Boolean = SkyblockLocation.`in`(SkyblockLocation.THE_RIFT)
 
     private val KNOWN = listOf(
         "Dreadfarm", "Living Cave", "Living Stillness", "West Village", "Infested House", "Wyld Woods", "Mirrorverse",
@@ -43,11 +43,11 @@ object Rift {
     // Current Rift area name (e.g. "Dreadfarm")
     fun area(): String = cachedArea
 
-    fun heldId(): String? = Minecraft.getInstance().player?.mainHandItem?.let { fishmod.utils.data.ItemUtil.getId(it) }
+    fun heldId(): String? = Minecraft.getInstance().player?.mainHandItem?.let { fishmod.utils.data.ItemTools.getId(it) }
 
     fun inArea(vararg names: String): Boolean = inRift() && names.any { area().contains(it, ignoreCase = true) }
 
-    fun strip(s: String) = s.replace(Constants.STRIP_COLOR_REGEX, "")
+    fun strip(s: String) = s.replace(FishConstants.STRIP_COLOR_REGEX, "")
 
     // Named armor stands within r blocks of the player
     fun namedStands(r: Double): List<Pair<ArmorStand, String>> {
@@ -65,7 +65,7 @@ object Rift {
             .minByOrNull { it.distanceToSqr(stand) }
     }
 
-    private fun say(t: String) = fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(t))
+    private fun say(t: String) = fishmod.utils.FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal(t))
 
     // /fm rift debug: local-only state dump
     private fun debugDump() {
@@ -97,7 +97,7 @@ object Rift {
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player != null && tick++ % 20 == 0) { if (inRift()) pollArea() else cachedArea = "" }
         }
-        fishmod.utils.events.Events.ON_WORLD_CHANGE.register { cachedArea = ""; false }
+        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { cachedArea = ""; false }
         FishDiag.guard("Rift.1", "RiftNametag init failed") { RiftNametag.init() }
         FishDiag.guard("Rift.2", "RiftDreadfarm init failed") { RiftDreadfarm.init() }
         FishDiag.guard("Rift.3", "RiftMobs init failed") { RiftMobs.init() }

@@ -1,9 +1,9 @@
 package fishmod.features.extras
 import fishmod.compat.cam
 
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -21,13 +21,13 @@ object PatcherWaypoints {
     private val list = CopyOnWriteArrayList<Wp>()
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (S.patcherWaypoints) onChat(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
+        FishEvents.ON_GAME_MESSAGE.register { text ->
+            if (S.patcherWaypoints) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, ""))
             false
         }
-        Events.ON_WORLD_CHANGE.register { list.clear(); false }
+        FishEvents.ON_WORLD_CHANGE.register { list.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
-        RenderingEvents.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.patcherWaypoints && list.isNotEmpty()) render(ctx, ps, vc) }
+        RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.patcherWaypoints && list.isNotEmpty()) render(ctx, ps, vc) }
     }
 
     private fun onChat(s: String) {
@@ -59,12 +59,12 @@ object PatcherWaypoints {
         for (w in list) {
             val center = w.pos.add(0.0, 0.5, 0.0)
             val d = center.distanceTo(eye)
-            val (c, k) = RenderUtils.pullIn(center, eye)
-            RenderUtils.fillBox(ps, vc, AABB.ofSize(c, k, k, k), (0x66 shl 24) or rgb)
-            if (S.patcherWaypointBeam) RenderUtils.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
-            val (tp, pk) = RenderUtils.pullIn(Vec3(w.pos.x, w.pos.y + 1.5 + d / 25.0, w.pos.z), eye)
+            val (c, k) = FishDraw.pullIn(center, eye)
+            FishDraw.fillBox(ps, vc, AABB.ofSize(c, k, k, k), (0x66 shl 24) or rgb)
+            if (S.patcherWaypointBeam) FishDraw.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
+            val (tp, pk) = FishDraw.pullIn(Vec3(w.pos.x, w.pos.y + 1.5 + d / 25.0, w.pos.z), eye)
             val px = (S.patcherWaypointTextScale * maxOf(0.035, d * 0.0035) * pk).toFloat()
-            RenderUtils.renderSeeThroughText(ctx, ps, Component.literal("${w.label} §7(${d.toInt()}m)"), tp, px, argb or (0xFF shl 24), true)
+            FishDraw.renderSeeThroughText(ctx, ps, Component.literal("${w.label} §7(${d.toInt()}m)"), tp, px, argb or (0xFF shl 24), true)
         }
     }
 }

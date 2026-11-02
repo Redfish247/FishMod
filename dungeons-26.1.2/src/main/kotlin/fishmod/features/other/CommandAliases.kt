@@ -3,9 +3,9 @@ package fishmod.features.other
 import fishmod.utils.debug.FishDiag
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
-import fishmod.utils.Constants
-import fishmod.utils.Misc
-import fishmod.utils.config.FolderUtility
+import fishmod.utils.FishConstants
+import fishmod.utils.FishUtil
+import fishmod.utils.config.FishPaths
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import java.io.IOException
@@ -20,7 +20,7 @@ object CommandAliases {
         fun command(): String = commandValue
     }
 
-    private val FILE: Path = Paths.get(FolderUtility.CONFIG_PATH + "command_aliases.txt")
+    private val FILE: Path = Paths.get(FishPaths.CONFIG_PATH + "command_aliases.txt")
     private val entries: MutableList<Entry> = ArrayList()
     private var loaded = false
 
@@ -60,12 +60,12 @@ object CommandAliases {
         try {
         dispatcher.register(
             ClientCommands.literal(alias)
-                .executes { _ -> Misc.executeCommand(target); Constants.SUCCESS }
+                .executes { _ -> FishUtil.executeCommand(target); FishConstants.SUCCESS }
                 .then(
                     ClientCommands.argument("args", StringArgumentType.greedyString())
                         .executes { ctx ->
-                            Misc.executeCommand(target + " " + StringArgumentType.getString(ctx, "args"))
-                            Constants.SUCCESS
+                            FishUtil.executeCommand(target + " " + StringArgumentType.getString(ctx, "args"))
+                            FishConstants.SUCCESS
                         }
                 )
         )

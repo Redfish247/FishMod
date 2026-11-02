@@ -4,7 +4,7 @@ import fishmod.compat.showScreen
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import fishmod.features.achievements.AchRegistry.Ach
 import fishmod.utils.FishMsg
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
@@ -42,12 +42,12 @@ object AchEngine {
             }
         }
         ClientLifecycleEvents.CLIENT_STOPPING.register { AchStore.saveNow() }
-        fishmod.utils.events.Events.ON_WORLD_CHANGE.register { skyblockSinceMs = 0L; false }
+        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { skyblockSinceMs = 0L; false }
     }
 
     private fun autoSync(mc: Minecraft) {
         if (syncedThisLogin || !AchSettings.achApiSyncOnLogin || mc.player == null) return
-        if (!Location.inSkyblock()) return
+        if (!SkyblockLocation.inSkyblock()) return
         val now = System.currentTimeMillis()
         if (skyblockSinceMs == 0L) { skyblockSinceMs = now; return }
         if (now - skyblockSinceMs < 15_000) return

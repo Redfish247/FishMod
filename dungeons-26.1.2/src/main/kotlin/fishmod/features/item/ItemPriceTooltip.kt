@@ -1,11 +1,11 @@
 package fishmod.features.item
 
 import fishmod.features.croesus.CroesusPrices
-import fishmod.utils.Location
-import fishmod.utils.Misc.abbr
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil.abbr
 import fishmod.utils.networth.ItemsDb
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
@@ -26,7 +26,7 @@ object ItemPriceTooltip {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register {
-            if (!FishSettings.itemTooltipPrices || !Location.inSkyblock()) return@register
+            if (!FishSettings.itemTooltipPrices || !SkyblockLocation.inSkyblock()) return@register
             val now = System.currentTimeMillis()
             if (now - lastRefresh < 60_000L) return@register
             lastRefresh = now
@@ -39,7 +39,7 @@ object ItemPriceTooltip {
 
         ItemTooltipCallback.EVENT.addPhaseOrdering(net.fabricmc.fabric.api.event.Event.DEFAULT_PHASE, LAST_PHASE)
         ItemTooltipCallback.EVENT.register(LAST_PHASE, ItemTooltipCallback { stack, _, _, lines ->
-            if (!FishSettings.itemTooltipPrices || !Location.inSkyblock() || stack.isEmpty) return@ItemTooltipCallback
+            if (!FishSettings.itemTooltipPrices || !SkyblockLocation.inSkyblock() || stack.isEmpty) return@ItemTooltipCallback
 
             val now = System.currentTimeMillis()
             if (cachedStack === stack && now - cachedAt < CACHE_TTL_MS) {
@@ -48,7 +48,7 @@ object ItemPriceTooltip {
             }
 
             try {
-                val id = ItemUtil.getId(stack) ?: return@ItemTooltipCallback
+                val id = ItemTools.getId(stack) ?: return@ItemTooltipCallback
                 val count = stack.count
                 val built = ArrayList<Component>(4)
 

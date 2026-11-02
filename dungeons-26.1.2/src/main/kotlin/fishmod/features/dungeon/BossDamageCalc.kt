@@ -1,11 +1,11 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Location
-import fishmod.utils.Misc
-import fishmod.utils.Scheduler
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
+import fishmod.utils.TickScheduler
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback
 import net.fabricmc.fabric.api.event.player.UseItemCallback
@@ -33,7 +33,7 @@ object BossDamageCalc {
 
     @JvmStatic
     fun init() {
-        Events.ON_WORLD_CHANGE.register { bosses.clear(); false }
+        FishEvents.ON_WORLD_CHANGE.register { bosses.clear(); false }
         AttackEntityCallback.EVENT.register { _, level, _, entity, _ ->
             if (level.isClientSide) { lastActionTick = ticks; lastTargetId = entity.id }
             InteractionResult.PASS
@@ -44,12 +44,12 @@ object BossDamageCalc {
         })
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             ticks++
-            if (!FishSettings.bossDamageCalcEnabled || !Location.inDungeon()) return@register
+            if (!FishSettings.bossDamageCalcEnabled || !SkyblockLocation.inDungeon()) return@register
             FishDiag.guard("BossDamageCalc.1", "boss health scan failed") { scan(mc) }
         }
-        Events.ON_RUN_END.register {
-            if (FishSettings.bossDamageCalcEnabled && Location.inDungeon())
-                Scheduler.scheduleTask(Runnable { FishDiag.guard("BossDamageCalc.2", "boss damage print failed") { print() } }, 20)
+        FishEvents.ON_RUN_END.register {
+            if (FishSettings.bossDamageCalcEnabled && SkyblockLocation.inDungeon())
+                TickScheduler.scheduleTask(Runnable { FishDiag.guard("BossDamageCalc.2", "boss damage print failed") { print() } }, 20)
             false
         }
     }
@@ -84,7 +84,7 @@ object BossDamageCalc {
                 .append("%.0f".format(b.mine)).append("§7/§e").append("%.0f".format(b.maxHp))
                 .append(" §7HP (§a").append("%.1f".format(pct)).append("%§7)")
         }
-        Misc.addChatMessage(Component.literal(sb.toString()))
+        FishUtil.addChatMessage(Component.literal(sb.toString()))
         bosses.clear()
     }
 }

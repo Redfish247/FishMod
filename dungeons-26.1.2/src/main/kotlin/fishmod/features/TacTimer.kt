@@ -3,13 +3,13 @@ import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -37,26 +37,26 @@ object TacTimer {
             { FishSettings.tacTimerScale }, { v -> FishSettings.tacTimerScale = v }
         )
 
-        Events.ON_SOUND.register { event, _, pitch ->
-            if (!FishSettings.tacTimerEnabled || !Location.inSkyblock()) return@register false
+        FishEvents.ON_SOUND.register { event, _, pitch ->
+            if (!FishSettings.tacTimerEnabled || !SkyblockLocation.inSkyblock()) return@register false
             if (event.location != FLINT || abs(pitch - CAST_PITCH) > 1e-4f) return@register false
             val p = Minecraft.getInstance().player ?: return@register false
-            val held = FishDiag.guard("TacTimer.1", "tac held item id lookup failed") { ItemUtil.getId(p.mainHandItem) }
+            val held = FishDiag.guard("TacTimer.1", "tac held item id lookup failed") { ItemTools.getId(p.mainHandItem) }
             if (held != "TACTICAL_INSERTION") return@register false
             ticks = 60
             pos = if (FishSettings.tacTimerWaypoint) p.blockPosition() else null
             false
         }
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.ON_SERVER_TICK.register {
             if (ticks > 0) ticks-- else pos = null
             false
         }
 
-        Events.ON_WORLD_CHANGE.register { ticks = 0; pos = null; false }
+        FishEvents.ON_WORLD_CHANGE.register { ticks = 0; pos = null; false }
 
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> renderWaypoint(m, vc, fill = true) }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> renderWaypoint(m, vc, fill = false) }
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc -> renderWaypoint(m, vc, fill = true) }
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc -> renderWaypoint(m, vc, fill = false) }
     }
 
     private fun renderWaypoint(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
@@ -64,9 +64,9 @@ object TacTimer {
         val bp = pos ?: return
         val box = AABB(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble(), bp.x + 1.0, bp.y + 1.0, bp.z + 1.0)
         try {
-            val col = RenderUtils.toFloats(FishSettings.tacTimerColor)
-            if (fill) RenderUtils.renderFilled(matrices, vc, box, floatArrayOf(col[0], col[1], col[2], col[3] * 0.25f))
-            else RenderUtils.renderOutline(matrices, vc, box, col)
+            val col = FishDraw.toFloats(FishSettings.tacTimerColor)
+            if (fill) FishDraw.renderFilled(matrices, vc, box, floatArrayOf(col[0], col[1], col[2], col[3] * 0.25f))
+            else FishDraw.renderOutline(matrices, vc, box, col)
         } catch (e: Exception) {
             FishDiag.fail("TacTimer.2", "tac waypoint render failed at $bp", e)
         }

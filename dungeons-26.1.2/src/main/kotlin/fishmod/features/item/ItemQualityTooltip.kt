@@ -1,6 +1,6 @@
 package fishmod.features.item
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
@@ -11,7 +11,7 @@ object ItemQualityTooltip {
     @JvmStatic
     fun init() {
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
-            if (!FishSettings.itemQualityTooltip || !Location.inSkyblock()) return@ItemTooltipCallback
+            if (!FishSettings.itemQualityTooltip || !SkyblockLocation.inSkyblock()) return@ItemTooltipCallback
             try {
                 val tag = stack.fishmodCustomDataTag() ?: return@ItemTooltipCallback
                 val boost = tag.getInt("baseStatBoostPercentage").orElse(0)

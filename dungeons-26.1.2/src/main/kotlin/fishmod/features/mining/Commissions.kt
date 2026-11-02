@@ -1,8 +1,8 @@
 package fishmod.features.mining
 import fishmod.compat.curScreen
 
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -24,7 +24,7 @@ object Commissions {
 
     fun init() {
         // e.g. "AQUAMARINE GEMSTONE COLLECTOR Commission Complete! Visit the King..."
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if ((S.miningCommissions && S.miningCommTitle)) COMPLETE.find(Mining.strip(text.string).trim())?.let { m ->
                 val name = m.groupValues[1].lowercase().split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
                 Mining.title(S.miningCommTitleText, "§e$name", 2000, true)
@@ -42,11 +42,11 @@ object Commissions {
             { S.miningCommHudScale }, { S.miningCommHudScale = it },
             { (S.miningCommissions && S.miningCommHud) && current.isNotEmpty() }, { (S.miningCommissions && S.miningCommHud) }, ::lines)
 
-        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             if (!(S.miningCommissions && S.miningCommHighlight) || stack.isEmpty) return@register
             val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return@register
             if (scr.title.string != "Commissions") return@register
-            val slot = DrawEvents.currentSlot ?: return@register
+            val slot = DrawHooks.currentSlot ?: return@register
             if (slot.container === Minecraft.getInstance().player?.inventory) return@register
             val lore = stack.get(DataComponents.LORE) ?: return@register
             if (lore.lines().any { it.string.contains("COMPLETED") })

@@ -46,7 +46,7 @@ object RunHistory {
     }
 
     @JvmStatic
-    fun saveSplits(floor: String?, splits: List<Split>?) {
+    fun saveSplits(floor: String?, splits: List<RunSplit>?) {
         if (floor == null || splits == null || splits.isEmpty()) return
 
         synchronized(lock) {
@@ -109,7 +109,7 @@ object RunHistory {
                     if (FishDiag.check(loaded != null, "RunHistory.3") { "fishmod-runs.json parsed to null (${file.length()} bytes)" }) data = loaded!!
                 }
             } catch (e: Exception) {
-                fishmod.utils.debug.Debug.LOGGER.warn("[RunHistory] load failed: {}", e.toString())
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[RunHistory] load failed: {}", e.toString())
                 FishDiag.fail("RunHistory.4", "load $FILE_PATH", e)
             }
             if (FishDiag.guard("RunHistory.5", "prune invalid run history") { pruneInvalid() } == true) save()
@@ -146,7 +146,7 @@ object RunHistory {
                 file.parentFile?.mkdirs()
                 FileWriter(file).use { writer -> writer.write(json) }
             } catch (e: Exception) {
-                fishmod.utils.debug.Debug.LOGGER.warn("[RunHistory] save failed: {}", e.toString())
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[RunHistory] save failed: {}", e.toString())
                 FishDiag.fail("RunHistory.6", "save $FILE_PATH", e)
             }
         }

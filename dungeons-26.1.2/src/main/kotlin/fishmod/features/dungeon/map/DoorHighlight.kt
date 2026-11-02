@@ -6,8 +6,8 @@ import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.DungeonMapSettings
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
@@ -20,14 +20,14 @@ object DoorHighlight {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.Events.ON_WORLD_CHANGE.register { lastRoom = null; outlineCache = emptyList(); outlineCacheAt = 0L; false }
-        RenderingEvents.GIZMO.register { _ ->
+        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { lastRoom = null; outlineCache = emptyList(); outlineCacheAt = 0L; false }
+        RenderHooks.GIZMO.register { _ ->
             try { renderGizmo() } catch (e: Exception) { FishDiag.fail("DoorHighlight.1", "door highlight gizmo render failed doors=${Scan.doors.size}", e) }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, matrices, vc ->
             try { render(matrices, vc, depthTested = false, fill = true) } catch (e: Exception) { FishDiag.fail("DoorHighlight.2", "door highlight fill render failed doors=${Scan.doors.size}", e) }
         }
-        RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { _, matrices, vc ->
             try { render(matrices, vc, depthTested = false, fill = false) } catch (e: Exception) { FishDiag.fail("DoorHighlight.3", "door highlight line render failed doors=${Scan.doors.size}", e) }
         }
     }
@@ -190,8 +190,8 @@ object DoorHighlight {
     private fun doorWidth(): Double = DungeonMapSettings.mapDoorHighlightWidth.toDouble().coerceIn(1.0, 10.0) / 100.0
 
     private fun doorBox(box: net.minecraft.world.phys.AABB, fill: Int, line: Int) {
-        RenderUtils.gizmoBox(box, fill, 0)
-        RenderUtils.gizmoThickOutline(box, line, doorWidth())
+        FishDraw.gizmoBox(box, fill, 0)
+        FishDraw.gizmoThickOutline(box, line, doorWidth())
     }
 
     private fun renderGizmo() {
@@ -218,7 +218,7 @@ object DoorHighlight {
                 doorBox(box(door), fillColor(door), lineColor(door))
             } else {
                 val quad = faceQuad(door, hereTile) ?: continue
-                RenderUtils.gizmoQuad(quad, fillColor(door), lineColor(door))
+                FishDraw.gizmoQuad(quad, fillColor(door), lineColor(door))
             }
         }
     }
@@ -230,10 +230,10 @@ object DoorHighlight {
                 if (outlineThroughWall(door) == depthTested) continue
                 val key = keyDoor(door)
                 if (fill) {
-                    if (key) RenderUtils.renderFilled(matrices, vc, box(door), RenderUtils.toFloats(keyFill(door)))
+                    if (key) FishDraw.renderFilled(matrices, vc, box(door), FishDraw.toFloats(keyFill(door)))
                 } else {
                     val c = if (key) keyLine(door) else DungeonMapSettings.mapDoorOutlineColor
-                    RenderUtils.renderThickOutline(matrices, vc, box(door), RenderUtils.toFloats(c), doorWidth())
+                    FishDraw.renderThickOutline(matrices, vc, box(door), FishDraw.toFloats(c), doorWidth())
                 }
             }
             return
@@ -246,16 +246,16 @@ object DoorHighlight {
             val hereTile = facingRoomTile(door)
 
             val isWither = door.type == Door.Type.WITHER
-            val fillC = RenderUtils.toFloats(if (isWither) witherFill(door) else fillColor(door))
-            val lineC = RenderUtils.toFloats(if (isWither) witherLine(door) else lineColor(door))
+            val fillC = FishDraw.toFloats(if (isWither) witherFill(door) else fillColor(door))
+            val lineC = FishDraw.toFloats(if (isWither) witherLine(door) else lineColor(door))
             if (fullBox || isWither || fairy || hereTile == null) {
                 val box = box(door)
-                if (fill) RenderUtils.renderFilled(matrices, vc, box, fillC)
-                else RenderUtils.renderThickOutline(matrices, vc, box, lineC, doorWidth())
+                if (fill) FishDraw.renderFilled(matrices, vc, box, fillC)
+                else FishDraw.renderThickOutline(matrices, vc, box, lineC, doorWidth())
             } else {
                 val quad = faceQuad(door, hereTile) ?: continue
-                if (fill) RenderUtils.renderFilledQuad(matrices, vc, quad, fillC)
-                else RenderUtils.renderQuadOutline(matrices, vc, quad, lineC)
+                if (fill) FishDraw.renderFilledQuad(matrices, vc, quad, fillC)
+                else FishDraw.renderQuadOutline(matrices, vc, quad, lineC)
             }
         }
     }

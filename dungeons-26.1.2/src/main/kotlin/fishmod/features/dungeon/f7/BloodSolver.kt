@@ -2,16 +2,16 @@ package fishmod.features.dungeon.f7
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.PingTracker
-import fishmod.utils.Scheduler
-import fishmod.utils.config.values.Floor7
-import fishmod.utils.data.EntityUtil
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.TickScheduler
+import fishmod.utils.config.values.Floor7Settings
+import fishmod.utils.data.EntityTools
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.Minecraft
 import net.minecraft.core.component.DataComponents
@@ -51,10 +51,10 @@ object BloodSolver {
 
     @JvmStatic
     fun init() {
-        Events.ON_LOCATION_CHANGE.register { _ -> resetRun(); false }
-        Events.ON_WORLD_CHANGE.register { resetRun(); false }
+        FishEvents.ON_LOCATION_CHANGE.register { _ -> resetRun(); false }
+        FishEvents.ON_WORLD_CHANGE.register { resetRun(); false }
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.ON_SERVER_TICK.register {
             dungeonTick++
             val w = watcher
             if (w != null && w.isRemoved) { watcher = null; bloodMobs.clear() }
@@ -63,21 +63,21 @@ object BloodSolver {
             false
         }
 
-        Events.ON_GAME_MESSAGE.register { message ->
+        FishEvents.ON_GAME_MESSAGE.register { message ->
             when (message.string) {
-                OPEN_MESSAGE -> if (bloodOpenTick < 0 && Location.inDungeon()) bloodOpenTick = dungeonTick
-                WATCHER_MESSAGE -> if (Floor7.bloodSolverEnabled && Location.inDungeon()) {
+                OPEN_MESSAGE -> if (bloodOpenTick < 0 && SkyblockLocation.inDungeon()) bloodOpenTick = dungeonTick
+                WATCHER_MESSAGE -> if (Floor7Settings.bloodSolverEnabled && SkyblockLocation.inDungeon()) {
                     try { onWatcherSpawn() } catch (e: Exception) { FishDiag.fail("BloodSolver.3", "watcher spawn handler threw", e) }
                 }
             }
             false
         }
 
-        Events.ON_PACKET.register { packet ->
+        FishEvents.ON_PACKET.register { packet ->
             try {
             when (packet) {
                 is ClientboundSetEquipmentPacket -> {
-                    if (watcher == null && Location.inDungeon()) {
+                    if (watcher == null && SkyblockLocation.inDungeon()) {
                         val head = packet.slots.firstOrNull { it.first == EquipmentSlot.HEAD }?.second
                         if (head != null && !head.isEmpty && head.`is`(Items.PLAYER_HEAD)
                             && skullTexture(head) in WATCHER_SKULLS
@@ -96,8 +96,8 @@ object BloodSolver {
             false
         }
 
-        RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, vc ->
-            if (Floor7.bloodSolverEnabled && Location.inDungeon() && !Phase.inBoss() && bloodMobs.isNotEmpty()) {
+        RenderHooks.NO_DEPTH_LINE.register { ctx, matrices, vc ->
+            if (Floor7Settings.bloodSolverEnabled && SkyblockLocation.inDungeon() && !BossPhase.inBoss() && bloodMobs.isNotEmpty()) {
                 try { render(ctx, matrices, vc) } catch (e: Exception) { FishDiag.fail("BloodSolver.2", "blood solver render threw (mobs=${bloodMobs.size})", e) }
             }
         }
@@ -117,7 +117,7 @@ object BloodSolver {
         val seconds = (dungeonTick - bloodOpenTick) / 20
         if (seconds !in 1..120) return // stale or uninitialised timestamps: no reliable delay
 
-        if (Floor7.bloodSolverKillTitle) {
+        if (Floor7Settings.bloodSolverKillTitle) {
             val moveTicks = when (seconds) {
                 in 31..33 -> 36
                 in 28..30 -> 33
@@ -126,22 +126,22 @@ object BloodSolver {
                 in 1..21 -> 24
                 else -> seconds + 3
             }
-            Misc.addChatMessage(Component.literal("§bWatcher will move in §e${"%.2f".format(moveTicks / 20f)}s§b."))
-            Scheduler.scheduleTask(Runnable { Misc.forceTitle(Component.literal("§c§lKill Mobs"), Component.empty()) }, moveTicks)
+            FishUtil.addChatMessage(Component.literal("§bWatcher will move in §e${"%.2f".format(moveTicks / 20f)}s§b."))
+            TickScheduler.scheduleTask(Runnable { FishUtil.forceTitle(Component.literal("§c§lKill Mobs"), Component.empty()) }, moveTicks)
         }
 
-        if (Floor7.bloodSolverSpeedAlert) {
+        if (Floor7Settings.bloodSolverSpeedAlert) {
             val title = if (seconds < 22) "§4§lFAST WATCHER" else if (seconds < 25) "§cNormal Watcher" else "§8Slow Watcher"
             val sound = if (seconds < 22) SoundEvents.TRIDENT_THUNDER.value()
             else if (seconds < 25) SoundEvents.WARDEN_DEATH else SoundEvents.VILLAGER_DEATH
-            repeat(5) { Scheduler.scheduleSound(sound, 0.25f, 1f) }
-            Misc.forceTitle(Component.literal(title), Component.empty())
-            if (Floor7.bloodSolverSpeedAlertParty) Misc.executeCommand("pc $title")
+            repeat(5) { TickScheduler.scheduleSound(sound, 0.25f, 1f) }
+            FishUtil.forceTitle(Component.literal(title), Component.empty())
+            if (Floor7Settings.bloodSolverSpeedAlertParty) FishUtil.executeCommand("pc $title")
         }
     }
 
     private fun onMobMove(packet: ClientboundMoveEntityPacket) {
-        if (!Floor7.bloodSolverEnabled || Phase.inBoss()) return
+        if (!Floor7Settings.bloodSolverEnabled || BossPhase.inBoss()) return
         if (packet.xa.toInt() == 0 && packet.ya.toInt() == 0 && packet.za.toInt() == 0) return
         val level = Minecraft.getInstance().level ?: return
         val w = watcher ?: return
@@ -170,9 +170,9 @@ object BloodSolver {
     }
 
     private fun render(ctx: LevelRenderContext, matrices: PoseStack, vc: VertexConsumer) {
-        val decimals = Floor7.bloodSolverDecimals.coerceIn(0, 2)
+        val decimals = Floor7Settings.bloodSolverDecimals.coerceIn(0, 2)
         val ping = PingTracker.latest()
-        val lineRgba = RenderUtils.toFloats(Floor7.bloodSolverLineColor)
+        val lineRgba = FishDraw.toFloats(Floor7Settings.bloodSolverLineColor)
 
         for ((stand, data) in bloodMobs) {
             val end = data.endVector ?: continue
@@ -183,19 +183,19 @@ object BloodSolver {
             if (secondsLeft <= 0.0) continue
 
             val box = AABB(end.x - 0.5, end.y + 1.5, end.z - 0.5, end.x + 0.5, end.y + 2.5, end.z + 0.5)
-            var boxColor = Floor7.bloodSolverBoxColor
+            var boxColor = Floor7Settings.bloodSolverBoxColor
             if (ping > 0 && ping > time * 50) boxColor = boxColor xor 0x00FFFFFF
 
-            RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(boxColor))
-            RenderUtils.renderLine(
+            FishDraw.renderOutline(matrices, vc, box, FishDraw.toFloats(boxColor))
+            FishDraw.renderLine(
                 matrices, vc,
-                EntityUtil.getLerpedPos(stand).add(0.0, 2.0, 0.0), end.add(0.0, 2.0, 0.0), lineRgba
+                EntityTools.getLerpedPos(stand).add(0.0, 2.0, 0.0), end.add(0.0, 2.0, 0.0), lineRgba
             )
 
             val label = if (decimals > 0) "%.${decimals}f".format(secondsLeft) else ceil(secondsLeft).toInt().toString()
-            RenderUtils.renderText(
+            FishDraw.renderText(
                 ctx, matrices,
-                Component.literal(label).withColor(Floor7.bloodSolverTimerColor and 0xFFFFFF),
+                Component.literal(label).withColor(Floor7Settings.bloodSolverTimerColor and 0xFFFFFF),
                 end.add(0.0, 2.0, 0.0), 1.5f
             )
         }

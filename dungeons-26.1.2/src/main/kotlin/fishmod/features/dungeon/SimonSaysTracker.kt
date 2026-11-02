@@ -1,7 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -72,9 +72,9 @@ object SimonSaysTracker {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.Events.ON_LOCATION_CHANGE.register { reset(); false }
+        fishmod.utils.events.FishEvents.ON_LOCATION_CHANGE.register { reset(); false }
 
-        fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
+        fishmod.utils.events.FishEvents.ON_GAME_MESSAGE.register { message ->
             if (!FishSettings.simonSaysEnabled) return@register false
             try { onChat(message.string) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.1", "SS tracker chat handler threw (round=$round)", e) }
             false
@@ -85,7 +85,7 @@ object SimonSaysTracker {
 
     private fun onChat(raw: String) {
         run {
-            val s = raw.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+            val s = raw.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
 
             if (!armed && s.lowercase().contains(GOLDOR_INTRO)) {
                 armed = true
@@ -104,7 +104,7 @@ object SimonSaysTracker {
                         round = SS_ROUNDS
                         doneAtMs = System.currentTimeMillis()
                         if (!completed && falseFailSent) {
-                            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
+                            FishUtil.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
                         }
                         completed = true
                         completeLatched = true
@@ -217,7 +217,7 @@ object SimonSaysTracker {
         doneAtMs = System.currentTimeMillis()
         announceRound(SS_ROUNDS)
         if (falseFailSent) {
-            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
+            FishUtil.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
             if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc Simon Says: actually completed, ignore the FAILED above")
         }
         completed = true
@@ -231,13 +231,13 @@ object SimonSaysTracker {
     @JvmStatic
     fun onTitle(title: String?) {
         if (!FishSettings.simonSaysEnabled || title == null) return
-        val s = title.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase()
+        val s = title.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").lowercase()
         if (s.contains("device") && s.contains("complete")) tryComplete()
     }
 
     private fun announceRound(r: Int) {
         val label = "$r/$SS_ROUNDS" + (if (r >= SS_ROUNDS) " (done)" else "")
-        Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§bSimon Says: §a" + label))
+        FishUtil.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§bSimon Says: §a" + label))
         val (custom, text) = if (r >= SS_ROUNDS) FishSettings.simon5Enabled to FishSettings.simon5Message else when (r) {
             1 -> FishSettings.simon1Enabled to FishSettings.simon1Message
             2 -> FishSettings.simon2Enabled to FishSettings.simon2Message
@@ -308,7 +308,7 @@ object SimonSaysTracker {
 
         if (FishSettings.simonSaysFailEnabled) {
             falseFailSent = true
-            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§c" + FishSettings.simonSaysFailMessage))
+            FishUtil.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§c" + FishSettings.simonSaysFailMessage))
             if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc " + FishSettings.simonSaysFailMessage)
         }
     }
@@ -365,8 +365,8 @@ object SimonSaysTracker {
     }
 
     private fun log(line: String) {
-        fishmod.utils.debug.Debug.LOGGER.info("[SS] {}", line)
-        Misc.addChatMessage(Component.literal("§e[SS] $line"))
+        fishmod.utils.debug.FishDebug.LOGGER.info("[SS] {}", line)
+        FishUtil.addChatMessage(Component.literal("§e[SS] $line"))
     }
 
     private fun debugTick(client: Minecraft) {

@@ -1,7 +1,7 @@
 package fishmod.compat
 
 import com.mojang.blaze3d.vertex.PoseStack
-import fishmod.utils.config.values.Visual
+import fishmod.utils.config.values.VisualSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.Minecraft
@@ -15,7 +15,7 @@ import org.joml.Matrix4f
 import org.joml.Vector3f
 import org.joml.Vector4f
 
-// 26.2 side. Late mode (Visual.lateWorldText): the label is projected to the screen and drawn in the HUD, after water/glass/leaves.
+// 26.2 side. Late mode (VisualSettings.lateWorldText): the label is projected to the screen and drawn in the HUD, after water/glass/leaves.
 // Otherwise text goes to the submit collector, which drains before translucent terrain.
 object WorldText {
     @JvmField var collector: SubmitNodeCollector? = null
@@ -68,14 +68,14 @@ object WorldText {
     // `ps` is already translated, rotated and scaled; text is centred on x = 0.
     fun draw(ps: PoseStack, text: Component, argb: Int, shadow: Boolean) {
         val font = Minecraft.getInstance().font
-        if (Visual.lateWorldText) {
+        if (VisualSettings.lateWorldText) {
             val m = ps.last().pose()
             val rel = m.transformPosition(Vector3f())
             val size = m.transformDirection(Vector3f(1f, 0f, 0f)).length()
             // Gizmo mode hands us world coords (identity stack); the collect pass hands camera-relative ones
             val cam = Minecraft.getInstance().cam.position()
             val p = Vec3(rel.x.toDouble(), rel.y.toDouble(), rel.z.toDouble())
-            val world = if (Visual.gizmoOverlays) p else cam.add(p)
+            val world = if (VisualSettings.gizmoOverlays) p else cam.add(p)
             val camRel = world.subtract(cam)
             pending += Item(Vector3f(camRel.x.toFloat(), camRel.y.toFloat(), camRel.z.toFloat()), world, size, text, argb, shadow)
             return

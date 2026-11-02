@@ -1,7 +1,7 @@
 package fishmod.utils
 
 import fishmod.features.dungeon.ChatCommandState
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -26,7 +26,7 @@ object ChatQueue {
                 FishDiag.fail("ChatQueue.1", "chat queue flush failed (${pending.size} pending)", e)
             }
         }
-        Events.ON_WORLD_CHANGE.register { synchronized(pending) { pending.clear() }; false }
+        FishEvents.ON_WORLD_CHANGE.register { synchronized(pending) { pending.clear() }; false }
     }
 
     @JvmStatic

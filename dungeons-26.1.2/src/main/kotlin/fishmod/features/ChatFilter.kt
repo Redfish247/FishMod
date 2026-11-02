@@ -110,7 +110,7 @@ object ChatFilter {
         FishSettings.cfCustomPatterns = encode(entries)
         FishSettings.cfCustom = true
         fishmod.features.chat.ChatRuleStore.save()
-        fishmod.utils.Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() +
+        fishmod.utils.FishUtil.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() +
             "Chat Filter: imported ${rules.size} hide-only notification rules (originals disabled)."))
     }
 

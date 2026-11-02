@@ -4,7 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import fishmod.features.item.ArmorTrimCache;
 import fishmod.features.item.ItemCustomizationStore;
 import fishmod.features.item.NeuItems;
-import fishmod.utils.data.ItemUtil;
+import fishmod.utils.data.ItemTools;
 import net.minecraft.core.component.DataComponentHolder;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
@@ -25,7 +25,7 @@ public interface ItemTrimMixin {
         if (type != DataComponents.TRIM && type != DataComponents.ITEM_MODEL && type != DataComponents.PROFILE) return original;
         if (!(((Object) this) instanceof ItemStack stack)) return original;
         try {
-            String uuid = ItemUtil.getUuid(stack);
+            String uuid = ItemTools.getUuid(stack);
             if (uuid == null) return original;
             if (type == DataComponents.TRIM) {
                 ItemCustomizationStore.ArmorTrimId trimId = ItemCustomizationStore.getArmorTrim(uuid);

@@ -1,0 +1,24 @@
+package fishmod.utils.config.values
+
+import fishmod.shaded.practicalconfig.manager.ConfigValue
+import fishmod.utils.FishConstants
+
+object MiscSettings {
+    @ConfigValue @JvmField var disableAbilityCooldownSound: Boolean = true
+
+    @ConfigValue @JvmField var textPrefix: String = ""
+
+    @ConfigValue @JvmField var disableScrollHotbar: Boolean = false
+
+    @ConfigValue @JvmField var disableRecipeBook: Boolean = false
+
+    @ConfigValue @JvmField var copyChat: Boolean = false
+
+    @ConfigValue @JvmField var removeColorCodes: Boolean = false
+
+    @ConfigValue @JvmField var replaceColorChars: Boolean = false
+
+    @ConfigValue @JvmField var copyLineOnly: Boolean = false
+
+    @ConfigValue @JvmField var timerPrefixColor: Int = FishConstants.DARK_PURPLE
+}

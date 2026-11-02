@@ -5,10 +5,10 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.features.dungeon.map.DungeonMap
 import fishmod.features.dungeon.map.Room as MapRoom
-import fishmod.utils.Location
-import fishmod.utils.debug.Debug
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.debug.FishDebug
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -27,7 +27,7 @@ object OdinScan {
                 list.associateBy { it.name }
             }
         } catch (e: Exception) {
-            Debug.LOGGER.error("rooms.json failed to load for OdinScan", e)
+            FishDebug.LOGGER.error("rooms.json failed to load for OdinScan", e)
             FishDiag.fail("OdinScan.1", "rooms.json failed to load for puzzle room lookup", e)
             emptyMap()
         }
@@ -49,18 +49,18 @@ object OdinScan {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             try { tick(mc) } catch (e: Exception) { FishDiag.fail("OdinScan.7", "puzzle room tracking tick failed current='${currentRoom?.data?.name}'", e) }
         }
-        Events.ON_WORLD_CHANGE.register { setRoom(null); false }
+        FishEvents.ON_WORLD_CHANGE.register { setRoom(null); false }
     }
 
     @Volatile private var lastDiag = 0L
     private fun diag(msg: String) {
         val now = System.currentTimeMillis()
-        if (now - lastDiag > 3000) { lastDiag = now; Debug.LOGGER.debug("[OdinScan] {}", msg) }
+        if (now - lastDiag > 3000) { lastDiag = now; FishDebug.LOGGER.debug("[OdinScan] {}", msg) }
     }
 
     private fun tick(mc: Minecraft) {
         if (mc.player == null || mc.level == null) return
-        if (!Location.inDungeon() || Phase.inBoss()) {
+        if (!SkyblockLocation.inDungeon() || BossPhase.inBoss()) {
             if (currentRoom != null) setRoom(null)
             return
         }
@@ -68,7 +68,7 @@ object OdinScan {
         val map = DungeonMap.roomPlayerIn()?.owner
         val mapName = map?.data?.name
         if (map == null || mapName == null || map.rotation == MapRoom.Rotation.NONE) {
-            if (Debug.LOGGER.isDebugEnabled) diag("transient miss (map=${map != null} name=$mapName rot=${map?.rotation}) — keeping '${currentRoom?.data?.name}'")
+            if (FishDebug.LOGGER.isDebugEnabled) diag("transient miss (map=${map != null} name=$mapName rot=${map?.rotation}) — keeping '${currentRoom?.data?.name}'")
             return
         }
 

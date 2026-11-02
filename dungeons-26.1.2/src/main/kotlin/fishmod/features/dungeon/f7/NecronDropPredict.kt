@@ -1,22 +1,22 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.shaded.practicalconfig.hud.HUDComponent
-import fishmod.utils.Constants
-import fishmod.utils.Location
-import fishmod.utils.config.values.Floor7
-import fishmod.utils.debug.Debug
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.config.values.Floor7Settings
+import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.hypot
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -78,7 +78,7 @@ object NecronDropPredict {
         p.setNoGravity(true)
         p.deltaMovement = Vec3.ZERO
         testTick = 0
-        Misc.addChatMessage(Component.literal("§b[necrondrag] §7start §f%.1f %.1f %.1f §7target §f%.1f %.1f %.1f".format(testStart.x, testStart.y, testStart.z, testTarget.x, testTarget.y, testTarget.z)))
+        FishUtil.addChatMessage(Component.literal("§b[necrondrag] §7start §f%.1f %.1f %.1f §7target §f%.1f %.1f %.1f".format(testStart.x, testStart.y, testStart.z, testTarget.x, testTarget.y, testTarget.z)))
     }
 
     private fun testStep() {
@@ -93,12 +93,12 @@ object NecronDropPredict {
             p.setNoGravity(false)
             val pred = landing
             val reached = testDist(TEST_TICKS) >= full.length()
-            Misc.addChatMessage(Component.literal("§b[necrondrag] §7ended at §f%.1f %.1f %.1f §7(%s)%s".format(p.x, p.y, p.z, if (reached) "reached target" else "fell short",
+            FishUtil.addChatMessage(Component.literal("§b[necrondrag] §7ended at §f%.1f %.1f %.1f §7(%s)%s".format(p.x, p.y, p.z, if (reached) "reached target" else "fell short",
                 if (pred != null) " §7predicted off by §f%.1f §7blocks".format(hypot(pred.x - p.x, pred.z - p.z)) else " §cno prediction")))
         }
     }
 
-    private fun active() = testTick != -1 || Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() in 8..9
+    private fun active() = testTick != -1 || Floor7Settings.enableNecronDropPredict && SkyblockLocation.inDungeon() && BossPhase.isInFloor7() && BossPhase.getPhase() in 8..9
 
     private fun reset() { phaseTicks = 0; prev = null; start = null; landing = null; dragTicks = 0; lastMoveTick = 0; dragOver = false; locked = false }
 
@@ -109,18 +109,18 @@ object NecronDropPredict {
             if (testTick == -2) { try { tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
             if (testTick >= 0) { try { tick(); testStep() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
         }
-        Events.ON_SERVER_TICK.register {
+        FishEvents.ON_SERVER_TICK.register {
             if (testTick != -1) return@register false
             try { tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.3", "necron drop tick threw", e) }
             false
         }
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             val s = landing ?: return@register
             if (!active() || dragOver) return@register
             try {
-                val color = Floor7.necronDropColor
-                if (Floor7.necronDropStyle == "Beacon") RenderUtils.gizmoBox(AABB(s.x - 0.15, s.y - 40.0, s.z - 0.15, s.x + 0.15, s.y + 300.0, s.z + 0.15), color and 0x60FFFFFF, 0)
-                else RenderUtils.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 1.8, s.z + 0.3), color and 0x40FFFFFF, color, true)
+                val color = Floor7Settings.necronDropColor
+                if (Floor7Settings.necronDropStyle == "Beacon") FishDraw.gizmoBox(AABB(s.x - 0.15, s.y - 40.0, s.z - 0.15, s.x + 0.15, s.y + 300.0, s.z + 0.15), color and 0x60FFFFFF, 0)
+                else FishDraw.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 1.8, s.z + 0.3), color and 0x40FFFFFF, color, true)
             } catch (e: Exception) { FishDiag.fail("NecronDropPredict.1", "necron drop predict render threw", e) }
         }
     }
@@ -131,7 +131,7 @@ object NecronDropPredict {
         val p = mc.player ?: return
         val pos = Vec3(p.x, p.y, p.z)
         phaseTicks++
-        if (phaseTicks <= 200) Debug.LOGGER.info("[NecronDropTrace] t=%d pos=%.2f,%.2f,%.2f ground=%s".format(phaseTicks, pos.x, pos.y, pos.z, p.onGround()))
+        if (phaseTicks <= 200) FishDebug.LOGGER.info("[NecronDropTrace] t=%d pos=%.2f,%.2f,%.2f ground=%s".format(phaseTicks, pos.x, pos.y, pos.z, p.onGround()))
         if (locked) {
             dragTicks++
             val before = prev
@@ -166,7 +166,7 @@ object NecronDropPredict {
         dragTicks = phaseTicks - startTick
         if (early) return
         locked = true
-        Debug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
+        FishDebug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
     }
 
     // First non-air block under the landing: true = lava, false = platform, null = nothing loaded/found.
@@ -184,23 +184,23 @@ object NecronDropPredict {
     }
 
     @JvmStatic
-    fun displayLanding(): Boolean = active() && Floor7.necronDropLavaPopup && landing != null && !dragOver
+    fun displayLanding(): Boolean = active() && Floor7Settings.necronDropLavaPopup && landing != null && !dragOver
 
     @JvmStatic
     fun renderLanding(component: HUDComponent, context: GuiGraphicsExtractor) {
         FishDiag.guard("NecronDropPredict.5", "necron landing popup render threw") {
             val text = when (overLava()) { true -> "§c§lAbove Lava!"; false -> "§a§lAbove Platform"; null -> "§7Landing: ?" }
-            RenderUtils.drawCenteredText(context, component, Component.literal(text))
+            FishDraw.drawCenteredText(context, component, Component.literal(text))
         }
     }
 
     @JvmStatic
-    fun display(): Boolean = active() && Floor7.enableTickTimers && landing != null && dragTicks <= DRAG_TICKS
+    fun display(): Boolean = active() && Floor7Settings.enableTickTimers && landing != null && dragTicks <= DRAG_TICKS
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         FishDiag.guard("NecronDropPredict.2", "necron drag timer render threw") {
-            RenderUtils.drawPrefixedText(component, context, "Dragged", Constants.DECIMAL_FORMAT.format(dragTicks * Constants.TICK_DURATION))
+            FishDraw.drawPrefixedText(component, context, "Dragged", FishConstants.DECIMAL_FORMAT.format(dragTicks * FishConstants.TICK_DURATION))
         }
     }
 }

@@ -3,7 +3,7 @@ package fishmod.cosmetic
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.utils.HypixelApi
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -142,12 +142,12 @@ object CosmeticLive {
             if (seenMsgs.size > 200) seenMsgs.remove(seenMsgs.first())
         }
         Minecraft.getInstance().execute {
-            Misc.addChatMessage(
+            FishUtil.addChatMessage(
                 Component.literal("[FishMod] ").withStyle(ChatFormatting.AQUA)
                     .append(Component.literal("$from: ").withStyle(ChatFormatting.GOLD))
                     .append(Component.literal(text).withStyle(ChatFormatting.WHITE))
             )
-            Misc.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.5f, 1.2f)
+            FishUtil.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.5f, 1.2f)
         }
     }
 

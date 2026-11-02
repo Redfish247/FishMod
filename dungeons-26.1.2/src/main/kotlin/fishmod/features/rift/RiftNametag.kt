@@ -2,8 +2,8 @@ package fishmod.features.rift
 
 import com.google.gson.JsonObject
 import fishmod.utils.HypixelApi
-import fishmod.utils.events.Events
-import fishmod.utils.Location
+import fishmod.utils.events.FishEvents
+import fishmod.utils.SkyblockLocation
 import net.minecraft.network.chat.Component
 import java.util.concurrent.ConcurrentHashMap
 import fishmod.features.rift.RiftSettings as S
@@ -21,11 +21,11 @@ object RiftNametag {
     @Volatile private var lastKick = 0L
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (Rift.inRift()) PUNCHED.find(Rift.strip(text.string).trim())?.let { punched.add(it.groupValues[1].lowercase()) }
             false
         }
-        Events.ON_LOCATION_CHANGE.register { loc -> if (loc != Location.THE_RIFT) punched.clear(); false }
+        FishEvents.ON_LOCATION_CHANGE.register { loc -> if (loc != SkyblockLocation.THE_RIFT) punched.clear(); false }
     }
 
     // Replaces the normal stat lines while in the Rift; null = not handled

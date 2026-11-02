@@ -1,6 +1,6 @@
 package fishmod.features.dungeon.map
 
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import net.minecraft.resources.Identifier
 
 object MapTextures {
@@ -11,5 +11,5 @@ object MapTextures {
     @JvmField val PRINCE_CROWN: Identifier = id("map/prince_crown_ziyno.png")
     @JvmField val QUESTION: Identifier = id("map/question.png")
 
-    private fun id(path: String): Identifier = Identifier.fromNamespaceAndPath(Constants.NAMESPACE, path)
+    private fun id(path: String): Identifier = Identifier.fromNamespaceAndPath(FishConstants.NAMESPACE, path)
 }

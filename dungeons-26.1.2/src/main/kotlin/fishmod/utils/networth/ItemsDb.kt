@@ -70,7 +70,7 @@ object ItemsDb {
                 Thread(ItemsDb::loadAndRefresh, "FishMod-ItemsDb").apply { isDaemon = true }.start()
             } catch (e: Throwable) {
                 fetching.set(false)
-                fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] failed to start fetch thread: {}", e.toString())
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[ItemsDb] failed to start fetch thread: {}", e.toString())
                 FishDiag.fail("ItemsDb.1", "start items fetch thread", e)
             }
         }
@@ -83,7 +83,7 @@ object ItemsDb {
                 try {
                     loadFromDisk()
                 } catch (e: Exception) {
-                    fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] loadFromDisk failed: {}", e.toString())
+                    fishmod.utils.debug.FishDebug.LOGGER.warn("[ItemsDb] loadFromDisk failed: {}", e.toString())
                     FishDiag.fail("ItemsDb.2", "load cached items.json", e)
                 }
             }
@@ -140,7 +140,7 @@ object ItemsDb {
                 FishDiag.fail("ItemsDb.9", "items API HTTP ${r.statusCode()}")
             }
         } catch (e: Exception) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] fetch: {}", e.toString())
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[ItemsDb] fetch: {}", e.toString())
             FishDiag.fail("ItemsDb.10", "fetch items API", e)
         }
     }
@@ -175,7 +175,7 @@ object ItemsDb {
             items = next
             nameToId = nextNames
             npcSellPrice = nextNpc
-            fishmod.utils.debug.Debug.LOGGER.info("[ItemsDb] indexed {} items ({} names, {} with NPC sell price)", next.size, nextNames.size, nextNpc.size)
+            fishmod.utils.debug.FishDebug.LOGGER.info("[ItemsDb] indexed {} items ({} names, {} with NPC sell price)", next.size, nextNames.size, nextNpc.size)
             FishDiag.guard("ItemsDb.14", "apply croesus price mode after items index") { fishmod.features.croesus.CroesusPrices.applyPriceMode() }
         }
     }

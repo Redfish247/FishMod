@@ -70,7 +70,7 @@ object TabListCache {
         for (info in online) {
             val raw = info.tabListDisplayName?.string ?: ""
             sig = sig * 31 + raw.hashCode()
-            val stripped = if (raw.isEmpty()) "" else Constants.STRIP_COLOR_REGEX.replace(raw, "")
+            val stripped = if (raw.isEmpty()) "" else FishConstants.STRIP_COLOR_REGEX.replace(raw, "")
             built.add(Entry(info, stripped))
         }
         if (sig == lastSig) return

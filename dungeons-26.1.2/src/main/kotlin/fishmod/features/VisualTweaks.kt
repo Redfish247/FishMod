@@ -1,6 +1,6 @@
 package fishmod.features
 
-import fishmod.utils.config.values.Visual
+import fishmod.utils.config.values.VisualSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.client.Minecraft
@@ -19,7 +19,7 @@ object VisualTweaks {
     fun init() {
         UseBlockCallback.EVENT.register(UseBlockCallback { player, level, hand, hit ->
             try {
-                if (Visual.renderOptimizer && Visual.stopShovelFlattening
+                if (VisualSettings.renderOptimizer && VisualSettings.stopShovelFlattening
                     && player === Minecraft.getInstance().player
                     && player.getItemInHand(hand).item is ShovelItem
                     && level.getBlockState(hit.blockPos).block in FLATTENABLE

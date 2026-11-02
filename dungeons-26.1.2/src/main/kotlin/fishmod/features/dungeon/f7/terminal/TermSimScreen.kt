@@ -315,7 +315,7 @@ class TermSimScreen private constructor(
             SELECT_MATS.mapNotNull { BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath("minecraft", "${color}_$it")) }
                 .ifEmpty { FishDiag.fail("TermSimScreen.7", "no items found for sim colour '$color'"); listOf(CI.WHITE_WOOL) }
 
-        private fun plain(s: ItemStack): String = s.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
+        private fun plain(s: ItemStack): String = s.hoverName.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
 
         private fun hyTitle(t: TerminalType, letter: String, color: String): String = when (t) {
             TerminalType.PANES -> "Correct all the panes!"

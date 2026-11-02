@@ -5,12 +5,12 @@ import fishmod.compat.hudHidden
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.FishHudEditor
-import fishmod.utils.Constants
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.TabListCache
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.Minecraft
@@ -41,25 +41,25 @@ object Mining {
     private var lastSwingMs = 0L
     private var tick = 0
 
-    fun inMiningIsland(): Boolean = Location.`in`(Location.DWARVEN_MINES) || Location.`in`(Location.CRYSTAL_HOLLOWS) ||
-        Location.`in`(Location.MINESHAFT) || Location.`in`(Location.GOLD_MINE) || Location.`in`(Location.DEEP_CAVERNS)
-    fun inHollows(): Boolean = Location.`in`(Location.CRYSTAL_HOLLOWS)
-    fun inShaft(): Boolean = Location.`in`(Location.MINESHAFT)
-    fun inTunnels(): Boolean = Location.`in`(Location.DWARVEN_MINES) &&
+    fun inMiningIsland(): Boolean = SkyblockLocation.`in`(SkyblockLocation.DWARVEN_MINES) || SkyblockLocation.`in`(SkyblockLocation.CRYSTAL_HOLLOWS) ||
+        SkyblockLocation.`in`(SkyblockLocation.MINESHAFT) || SkyblockLocation.`in`(SkyblockLocation.GOLD_MINE) || SkyblockLocation.`in`(SkyblockLocation.DEEP_CAVERNS)
+    fun inHollows(): Boolean = SkyblockLocation.`in`(SkyblockLocation.CRYSTAL_HOLLOWS)
+    fun inShaft(): Boolean = SkyblockLocation.`in`(SkyblockLocation.MINESHAFT)
+    fun inTunnels(): Boolean = SkyblockLocation.`in`(SkyblockLocation.DWARVEN_MINES) &&
         (area.contains("Glacite") || area.contains("Base Camp") || area.contains("Fossil Research") || tabLine("Glacite Mineshafts:") != null)
     fun inGlacite(): Boolean = inTunnels() || inShaft()
 
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> onTick(mc) }
-        Events.ON_PACKET.register { packet ->
+        FishEvents.ON_PACKET.register { packet ->
             if (inMiningIsland()) when (packet) {
                 is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                 is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, s -> onBlock(p, s) }
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { recentTargets.clear(); area = ""; false }
+        FishEvents.ON_WORLD_CHANGE.register { recentTargets.clear(); area = ""; false }
 
         NucleusHighlight.init()
         MineshaftPity.init()
@@ -141,11 +141,11 @@ object Mining {
 
     fun tabLine(prefix: String): String? = TabListCache.entries.firstOrNull { it.stripped.trim().startsWith(prefix) }?.stripped?.trim()
 
-    fun strip(s: String) = s.replace(Constants.STRIP_COLOR_REGEX, "")
+    fun strip(s: String) = s.replace(FishConstants.STRIP_COLOR_REGEX, "")
 
     fun title(text: String, sub: String, ms: Int, sound: Boolean = false) {
-        Misc.forceTitle(Component.literal(text), Component.literal(sub), ms)
-        if (sound) Misc.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
+        FishUtil.forceTitle(Component.literal(text), Component.literal(sub), ms)
+        if (sound) FishUtil.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
     }
 
     fun alpha(rgb: Int, pct: Int) = ((pct.coerceIn(0, 100) * 255 / 100) shl 24) or (rgb and 0xFFFFFF)
@@ -158,9 +158,9 @@ object Mining {
     // 12 camera-facing edges of a box
     fun outline(ps: PoseStack, vc: VertexConsumer, b: AABB, argb: Int, px: Float) {
         val xs = doubleArrayOf(b.minX, b.maxX); val ys = doubleArrayOf(b.minY, b.maxY); val zs = doubleArrayOf(b.minZ, b.maxZ)
-        for (y in ys) for (z in zs) RenderUtils.screenLine(ps, vc, Vec3(b.minX, y, z), Vec3(b.maxX, y, z), argb, px)
-        for (x in xs) for (z in zs) RenderUtils.screenLine(ps, vc, Vec3(x, b.minY, z), Vec3(x, b.maxY, z), argb, px)
-        for (x in xs) for (y in ys) RenderUtils.screenLine(ps, vc, Vec3(x, y, b.minZ), Vec3(x, y, b.maxZ), argb, px)
+        for (y in ys) for (z in zs) FishDraw.screenLine(ps, vc, Vec3(b.minX, y, z), Vec3(b.maxX, y, z), argb, px)
+        for (x in xs) for (z in zs) FishDraw.screenLine(ps, vc, Vec3(x, b.minY, z), Vec3(x, b.maxY, z), argb, px)
+        for (x in xs) for (y in ys) FishDraw.screenLine(ps, vc, Vec3(x, y, b.minZ), Vec3(x, y, b.maxZ), argb, px)
     }
 
     fun short(v: Double): String = fishmod.features.diana.DianaTracker.short(v)

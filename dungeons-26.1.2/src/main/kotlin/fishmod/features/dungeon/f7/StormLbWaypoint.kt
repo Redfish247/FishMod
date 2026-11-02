@@ -1,11 +1,11 @@
 package fishmod.features.dungeon.f7
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.DungeonClass
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
@@ -36,7 +36,7 @@ object StormLbWaypoint {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!FishSettings.stormLbWaypointEnabled && testSpot == null) return@register
             try { render() } catch (e: Exception) { FishDiag.fail("StormLbWaypoint.1", "storm LB waypoint render threw", e) }
         }
@@ -56,23 +56,23 @@ object StormLbWaypoint {
     }
 
     private fun spot(): Spot? = testSpot ?: when {
-        DungeonClass.isClass(DungeonClass.ARCHER) -> ARCHER
-        DungeonClass.isClass(DungeonClass.HEALER) -> HEALER
+        DungeonRole.isClass(DungeonRole.ARCHER) -> ARCHER
+        DungeonRole.isClass(DungeonRole.HEALER) -> HEALER
         else -> null
     }
 
     private fun render() {
-        if (testSpot == null && (!Location.inDungeon() || !Phase.inP2() || Phase.stormDead())) return
+        if (testSpot == null && (!SkyblockLocation.inDungeon() || !BossPhase.inP2() || BossPhase.stormDead())) return
         val player = Minecraft.getInstance().player ?: return
         val s = spot() ?: return
         val color = FishSettings.stormLbWaypointColor
 
-        RenderUtils.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 0.05, s.z + 0.3), color and 0x40FFFFFF, color, true)
+        FishDraw.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 0.05, s.z + 0.3), color and 0x40FFFFFF, color, true)
 
         // Fixed aim point; only shows while standing on the pad.
         val pos = player.getPosition(Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(true))
         if (abs(pos.x - s.x) > PAD_RADIUS || abs(pos.z - s.z) > PAD_RADIUS || abs(pos.y - s.y) > 1.5) return
         val aim = s.aim
-        RenderUtils.gizmoBox(AABB(aim.x - 0.1, aim.y - 0.1, aim.z - 0.1, aim.x + 0.1, aim.y + 0.1, aim.z + 0.1), color and 0x60FFFFFF, color, true)
+        FishDraw.gizmoBox(AABB(aim.x - 0.1, aim.y - 0.1, aim.z - 0.1, aim.x + 0.1, aim.y + 0.1, aim.z + 0.1), color and 0x60FFFFFF, color, true)
     }
 }

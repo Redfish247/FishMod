@@ -3,7 +3,7 @@ package fishmod.features.dungeon.puzzles.odin
 import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.world.phys.Vec3
@@ -24,7 +24,7 @@ object IceFillSolver {
             Gson().fromJson(InputStreamReader(s, StandardCharsets.UTF_8), IceFillData::class.java)
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Ice Fill floors failed to load", e)
+        FishDebug.LOGGER.error("Ice Fill floors failed to load", e)
         FishDiag.fail("IceFillSolver.1", "iceFillFloors.json failed to load", e)
         IceFillData()
     }

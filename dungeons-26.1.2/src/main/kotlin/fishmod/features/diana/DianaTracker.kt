@@ -6,11 +6,11 @@ import com.google.gson.GsonBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.item.fishmodCustomDataTag
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.FishMsg
-import fishmod.utils.Misc
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
+import fishmod.utils.FishUtil
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
@@ -172,14 +172,14 @@ object DianaTracker {
         CroesusPrices.refreshIfStale()
         ClientTickEvents.END_CLIENT_TICK.register { tick(it) }
         ClientLifecycleEvents.CLIENT_STOPPING.register { flushSave(true) }
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.ON_WORLD_CHANGE.register {
             flushSave(true); lastActivityMs = 0L; sinceActivityMs = 0L; afk = true; hiltBaseline = false; seenHilts.clear()
             invBaseline = false; shurikenCount = -1
             false
         }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (!Diana.inHub()) return@register false
-            val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
+            val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
             if (DianaSettings.dianaTracker && s.startsWith("[Sacks]")) onSacks(text)
             if (DianaSettings.dianaTracker) onChat(s) else hideOnly(s)
         }
@@ -350,14 +350,14 @@ object DianaTracker {
         val lsS = if (ls) " (LS)" else ""
         val custom = custom(d, mf, ls, count, price, took)
         if (DianaSettings.dianaRareDropChat) {
-            if (custom != null) Misc.addChatMessage(Component.literal(custom))
+            if (custom != null) FishUtil.addChatMessage(Component.literal(custom))
             else FishMsg.send("§lRARE DROP! §r${d.color}${d.name}§b$mfS§d$lsS§e$countS${priceSuffix(d.key)}")
         }
         if (DianaSettings.dianaLootScreen) {
-            Misc.forceTitle(Component.literal("${d.color}§l${d.name}$lsS!"), Component.literal(if (price > 0) "§6${short(price)} coins" else ""))
+            FishUtil.forceTitle(Component.literal("${d.color}§l${d.name}$lsS!"), Component.literal(if (price > 0) "§6${short(price)} coins" else ""))
         }
         if (DianaSettings.dianaLootParty && d.party) {
-            val msg = custom?.replace(Constants.STRIP_COLOR_REGEX, "")
+            val msg = custom?.replace(FishConstants.STRIP_COLOR_REGEX, "")
                 ?: ("[FishMod] RARE DROP! ${d.name}$mfS$lsS$countS" + if (price > 0) " (+${short(price)} coins)" else "")
             fishmod.utils.ChatQueue.enqueue("pc $msg")
         }
@@ -526,7 +526,7 @@ object DianaTracker {
     private fun scanStackDrops(mc: Minecraft, p: net.minecraft.world.entity.player.Player) {
         val cur = HashMap<String, Int>()
         for (st in p.inventory.nonEquipmentItems) {
-            val id = ItemUtil.getId(st) ?: continue
+            val id = ItemTools.getId(st) ?: continue
             if (id in STACK_DROPS) cur[id] = (cur[id] ?: 0) + st.count
         }
         val menu = mc.curScreen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
@@ -546,8 +546,8 @@ object DianaTracker {
     // Shurikens used: stack shrinks outside menus while one was in hand
     private fun scanShurikens(menu: Boolean, p: net.minecraft.world.entity.player.Player) {
         var n = 0
-        for (st in p.inventory.nonEquipmentItems) if (ItemUtil.getId(st)?.contains("SHURIKEN") == true) n += st.count
-        val held = ItemUtil.getId(p.mainHandItem)?.contains("SHURIKEN") == true
+        for (st in p.inventory.nonEquipmentItems) if (ItemTools.getId(st)?.contains("SHURIKEN") == true) n += st.count
+        val held = ItemTools.getId(p.mainHandItem)?.contains("SHURIKEN") == true
         if (menu) { shurikenCount = -1; shurikenHeld = held; return }
         if (shurikenCount >= 0 && n < shurikenCount && (held || shurikenHeld) && Diana.inHub()) track("SHURIKENS_USED", (shurikenCount - n).toLong())
         shurikenCount = n; shurikenHeld = held
@@ -559,7 +559,7 @@ object DianaTracker {
         // Several parts of the line carry the same hover, so collect each distinct text once
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
-            (c.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string.replace(Constants.STRIP_COLOR_REGEX, "") }
+            (c.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string.replace(FishConstants.STRIP_COLOR_REGEX, "") }
             c.siblings.forEach(::walk)
         }
         walk(text)
@@ -588,8 +588,8 @@ object DianaTracker {
     private fun scanHilts(p: net.minecraft.world.entity.player.Player) {
         val cur = ArrayList<Pair<String, Long>>()
         for (st in p.inventory.nonEquipmentItems) {
-            if (ItemUtil.getId(st) != "HILT_OF_REVELATIONS") continue
-            val u = ItemUtil.getUuid(st) ?: continue
+            if (ItemTools.getId(st) != "HILT_OF_REVELATIONS") continue
+            val u = ItemTools.getUuid(st) ?: continue
             cur += u to (st.fishmodCustomDataTag()?.getLongOr("timestamp", 0L) ?: 0L)
         }
         if (!hiltBaseline) { cur.forEach { seenHilts.add(it.first) }; hiltBaseline = true; return }

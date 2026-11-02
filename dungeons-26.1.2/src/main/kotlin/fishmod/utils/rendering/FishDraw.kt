@@ -1,0 +1,599 @@
+package fishmod.utils.rendering
+import fishmod.compat.cam
+
+import com.mojang.blaze3d.vertex.ByteBufferBuilder
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.utils.FishConstants
+import fishmod.utils.config.values.MiscSettings
+import fishmod.utils.config.values.Floor7Settings
+import fishmod.utils.data.EntityTools
+import fishmod.utils.debug.FishDiag
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.compat.WorldText
+import net.minecraft.gizmos.Gizmos
+import net.minecraft.gizmos.GizmoStyle
+import net.minecraft.gizmos.TextGizmo
+import net.minecraft.network.chat.Component
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
+import org.joml.Vector3f
+
+object FishDraw {
+
+    private const val TEXT_SCALE = 0.025f
+
+
+    @JvmStatic
+    fun toFloats(argb: Int): FloatArray {
+        val r = ((argb shr 16) and 0xFF) / 255f
+        val g = ((argb shr 8) and 0xFF) / 255f
+        val b = (argb and 0xFF) / 255f
+        val a = ((argb shr 24) and 0xFF) / 255f
+        return floatArrayOf(r, g, b, a)
+    }
+
+    @JvmStatic
+    fun cameraLineStart(ahead: Double): Vec3 {
+        val cam = Minecraft.getInstance().cam
+        return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()).scale(ahead))
+    }
+
+    private val deferredFills = ArrayList<AABB>()
+    private val deferredFillColors = it.unimi.dsi.fastutil.ints.IntArrayList()
+
+    @JvmStatic
+    fun clearDeferredFills() {
+        deferredFills.clear()
+        deferredFillColors.clear()
+    }
+
+    @JvmStatic
+    fun hasDeferredFills() = deferredFills.isNotEmpty()
+
+    @JvmStatic
+    fun flushDeferredFills(matrices: PoseStack, consumer: VertexConsumer) {
+        if (deferredFills.size != deferredFillColors.size) FishDiag.fail("RenderUtils.1", "deferred fill lists out of sync boxes=${deferredFills.size} colours=${deferredFillColors.size}")
+        for (i in deferredFills.indices) {
+            val b = deferredFills[i]
+            val argb = deferredFillColors.getInt(i)
+            drawFilledBox(
+                matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ,
+                ((argb shr 16) and 0xFF) / 255f, ((argb shr 8) and 0xFF) / 255f, (argb and 0xFF) / 255f, ((argb shr 24) and 0xFF) / 255f
+            )
+        }
+        clearDeferredFills()
+    }
+
+    // Quad geometry sent while the LINE_ND layer is active is rerouted to FILL_ND; a lines buffer would pair its vertices into garbage edges.
+    @JvmStatic
+    var quadsToFillLayer = false
+
+    private val redirectedQuads = it.unimi.dsi.fastutil.floats.FloatArrayList()
+    private val tmpPos = Vector3f()
+
+    private fun interface QuadSink {
+        fun v(pose: PoseStack.Pose, x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, a: Float)
+    }
+
+    private val redirectSink = QuadSink { pose, x, y, z, r, g, b, a ->
+        pose.pose().transformPosition(x, y, z, tmpPos)
+        redirectedQuads.add(tmpPos.x); redirectedQuads.add(tmpPos.y); redirectedQuads.add(tmpPos.z)
+        redirectedQuads.add(r); redirectedQuads.add(g); redirectedQuads.add(b); redirectedQuads.add(a)
+    }
+
+    // Branch per vertex instead of a capturing lambda per box (was one allocation per draw call).
+    private fun quadVertex(consumer: VertexConsumer, pose: PoseStack.Pose, x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, a: Float) {
+        if (quadsToFillLayer) redirectSink.v(pose, x, y, z, r, g, b, a)
+        else consumer.addVertex(pose, x, y, z).setColor(r, g, b, a)
+    }
+
+    @JvmStatic
+    fun hasRedirectedQuads() = !redirectedQuads.isEmpty
+
+    @JvmStatic
+    fun flushRedirectedQuads(consumer: VertexConsumer) {
+        val f = redirectedQuads
+        if (f.size % 7 != 0) FishDiag.fail("RenderUtils.2", "redirected quad buffer size ${f.size} not a multiple of 7")
+        var i = 0
+        while (i + 7 <= f.size) {
+            consumer.addVertex(f.getFloat(i), f.getFloat(i + 1), f.getFloat(i + 2))
+                .setColor(f.getFloat(i + 3), f.getFloat(i + 4), f.getFloat(i + 5), f.getFloat(i + 6))
+            i += 7
+        }
+        f.clear()
+    }
+
+    @JvmStatic
+    fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int) = gizmoBox(box, fillArgb, strokeArgb, false)
+
+    @JvmStatic
+    fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int, throughWalls: Boolean) {
+        if (box.minX.isNaN() || box.minY.isNaN() || box.minZ.isNaN() || box.maxX.isNaN() || box.maxY.isNaN() || box.maxZ.isNaN()) FishDiag.fail("RenderUtils.3", "gizmoBox given NaN box $box")
+        if ((fillArgb ushr 24) != 0) {
+            if (throughWalls) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb)).setAlwaysOnTop()
+            else { deferredFills.add(box); deferredFillColors.add(fillArgb) }
+        }
+        if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb)).also { if (throughWalls) it.setAlwaysOnTop() }
+    }
+
+    @JvmStatic
+    fun gizmoThickOutline(box: AABB, argb: Int, lineWidth: Double) {
+        if ((argb ushr 24) == 0) return
+        if (lineWidth.isNaN() || lineWidth < 0.0 || box.minX.isNaN() || box.maxY.isNaN()) FishDiag.fail("RenderUtils.4", "gizmoThickOutline bad input box=$box width=$lineWidth")
+        val hw = lineWidth / 2.0
+        val x1 = box.minX; val y1 = box.minY; val z1 = box.minZ
+        val x2 = box.maxX; val y2 = box.maxY; val z2 = box.maxZ
+
+        gizmoThickEdge(x1, y1, z1, x2, y1, z1, hw, argb)
+        gizmoThickEdge(x2, y1, z1, x2, y1, z2, hw, argb)
+        gizmoThickEdge(x2, y1, z2, x1, y1, z2, hw, argb)
+        gizmoThickEdge(x1, y1, z2, x1, y1, z1, hw, argb)
+
+        gizmoThickEdge(x1, y2, z1, x2, y2, z1, hw, argb)
+        gizmoThickEdge(x2, y2, z1, x2, y2, z2, hw, argb)
+        gizmoThickEdge(x2, y2, z2, x1, y2, z2, hw, argb)
+        gizmoThickEdge(x1, y2, z2, x1, y2, z1, hw, argb)
+
+        gizmoThickEdge(x1, y1, z1, x1, y2, z1, hw, argb)
+        gizmoThickEdge(x2, y1, z1, x2, y2, z1, hw, argb)
+        gizmoThickEdge(x2, y1, z2, x2, y2, z2, hw, argb)
+        gizmoThickEdge(x1, y1, z2, x1, y2, z2, hw, argb)
+    }
+
+    @JvmStatic
+    fun gizmoThickEdge(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) {
+        gizmoThickEdge(a.x, a.y, a.z, b.x, b.y, b.z, halfWidth, argb)
+    }
+
+    @JvmStatic
+    fun gizmoThickEdge(
+        ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double,
+        halfWidth: Double, argb: Int
+    ) {
+        var minX = minOf(ax, bx); var maxX = maxOf(ax, bx)
+        var minY = minOf(ay, by); var maxY = maxOf(ay, by)
+        var minZ = minOf(az, bz); var maxZ = maxOf(az, bz)
+        if (minX == maxX) { minX -= halfWidth; maxX += halfWidth }
+        if (minY == maxY) { minY -= halfWidth; maxY += halfWidth }
+        if (minZ == maxZ) { minZ -= halfWidth; maxZ += halfWidth }
+        Gizmos.cuboid(AABB(minX, minY, minZ, maxX, maxY, maxZ), GizmoStyle.fill(argb))
+    }
+
+    @JvmStatic
+    fun gizmoQuad(corners: Array<Vec3>, fillArgb: Int, strokeArgb: Int) {
+        if (corners.size < 4) {
+            FishDiag.fail("RenderUtils.5", "gizmoQuad given ${corners.size} corners")
+            return
+        }
+        Gizmos.rect(corners[0], corners[1], corners[2], corners[3], GizmoStyle.strokeAndFill(strokeArgb, 2f, fillArgb))
+    }
+
+    // Filled box turned by yawDeg around its base centre (no outline)
+    @JvmStatic
+    fun gizmoYawBox(base: Vec3, halfWidth: Double, height: Double, yawDeg: Double, fillArgb: Int, throughWalls: Boolean) {
+        if ((fillArgb ushr 24) == 0 || base.x.isNaN() || base.y.isNaN() || base.z.isNaN()) return
+        val rad = Math.toRadians(yawDeg); val c = Math.cos(rad); val s = Math.sin(rad)
+        fun pt(lx: Double, y: Double, lz: Double) = Vec3(base.x + lx * c - lz * s, base.y + y, base.z + lx * s + lz * c)
+        val h = halfWidth
+        val b = arrayOf(pt(-h, 0.0, -h), pt(h, 0.0, -h), pt(h, 0.0, h), pt(-h, 0.0, h))
+        val t = arrayOf(pt(-h, height, -h), pt(h, height, -h), pt(h, height, h), pt(-h, height, h))
+        val style = GizmoStyle.fill(fillArgb)
+        fun face(a: Vec3, bb: Vec3, cc: Vec3, d: Vec3) {
+            for (q in arrayOf(arrayOf(a, bb, cc, d), arrayOf(d, cc, bb, a))) { val g = Gizmos.rect(q[0], q[1], q[2], q[3], style); if (throughWalls) g.setAlwaysOnTop() }
+        }
+        face(b[0], b[1], b[2], b[3]); face(t[0], t[1], t[2], t[3])
+        for (i in 0..3) { val j = (i + 1) % 4; face(b[i], b[j], t[j], t[i]) }
+    }
+
+    @JvmStatic
+    fun gizmoLine(a: Vec3, b: Vec3, argb: Int) {
+        if (a.x.isNaN() || a.y.isNaN() || a.z.isNaN() || b.x.isNaN() || b.y.isNaN() || b.z.isNaN()) FishDiag.fail("RenderUtils.6", "gizmoLine given NaN $a -> $b")
+        Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb)
+    }
+
+    @JvmStatic
+    fun gizmoLine(a: Vec3, b: Vec3, argb: Int, width: Float) = gizmoLine(a, b, argb, width, false)
+
+    @JvmStatic
+    fun gizmoLine(a: Vec3, b: Vec3, argb: Int, width: Float, throughWalls: Boolean) {
+        if (width.isNaN() || a.x.isNaN() || a.y.isNaN() || b.x.isNaN() || b.y.isNaN()) FishDiag.fail("RenderUtils.7", "gizmoLine given NaN $a -> $b width=$width")
+        Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb, width).also { if (throughWalls) it.setAlwaysOnTop() }
+    }
+
+    // Furthest distance that is always inside the far clip plane
+    @JvmStatic
+    fun safeViewDistance(): Double = maxOf(32.0, Minecraft.getInstance().options.getEffectiveRenderDistance() * 16 * 0.8)
+
+    // Pulls a far point toward the camera along the same ray; returns the point and the size factor to keep it looking the same
+    @JvmStatic
+    fun pullIn(p: Vec3, cam: Vec3): Pair<Vec3, Double> {
+        val d = p.distanceTo(cam)
+        val max = safeViewDistance()
+        if (d <= max) return p to 1.0
+        val k = max / d
+        return cam.add(p.subtract(cam).scale(k)) to k
+    }
+
+    // Camera-facing ribbon, width scaled by distance so it stays `px` pixels wide at any angle; for FILL_ND
+    @JvmStatic
+    fun screenLine(ps: PoseStack, vc: VertexConsumer, a0: Vec3, b0: Vec3, argb: Int, px: Float) {
+        val mc = Minecraft.getInstance()
+        val cam = mc.cam.position()
+        val a = pullIn(a0, cam).first; val b = pullIn(b0, cam).first
+        val dir = b.subtract(a)
+        if (dir.lengthSqr() < 1.0e-9) return
+        val perPx = 2.0 * kotlin.math.tan(Math.toRadians(mc.options.fov().get().toDouble()) / 2) / mc.window.height.coerceAtLeast(1)
+        fun side(p: Vec3): Vec3 {
+            val toCam = p.subtract(cam)
+            var s = dir.cross(toCam)
+            if (s.lengthSqr() < 1.0e-12) s = dir.cross(Vec3(0.0, 1.0, 0.0))
+            if (s.lengthSqr() < 1.0e-12) s = Vec3(1.0, 0.0, 0.0)
+            return s.normalize().scale(toCam.length() * perPx * px / 2)
+        }
+        val sa = side(a); val sb = side(b)
+        val c = toFloats(argb)
+        val pose = ps.last()
+        for (v in arrayOf(a.subtract(sa), a.add(sa), b.add(sb), b.subtract(sb))) {
+            vc.addVertex(pose, v.x.toFloat(), v.y.toFloat(), v.z.toFloat()).setColor(c[0], c[1], c[2], c[3])
+        }
+    }
+
+    private fun crossQuads(a: Vec3, b: Vec3, halfWidth: Double): Pair<Array<Vec3>, Array<Vec3>>? {
+        val dir = b.subtract(a)
+        if (dir.lengthSqr().isNaN() || halfWidth.isNaN()) FishDiag.fail("RenderUtils.8", "crossQuads given NaN $a -> $b hw=$halfWidth")
+        if (dir.lengthSqr() < 1.0e-9) return null
+        val d = dir.normalize()
+        val ref = if (kotlin.math.abs(d.y) < 0.99) Vec3(0.0, 1.0, 0.0) else Vec3(1.0, 0.0, 0.0)
+        val right = d.cross(ref).normalize().scale(halfWidth)
+        val up = d.cross(right).normalize().scale(halfWidth)
+        return Pair(
+            arrayOf(a.subtract(right), a.add(right), b.add(right), b.subtract(right)),
+            arrayOf(a.subtract(up), a.add(up), b.add(up), b.subtract(up)),
+        )
+    }
+
+    // Continuous flat + upright ribbon through points; shared corner edges so bends have no gaps
+    @JvmStatic
+    fun gizmoRibbon(pts: List<Vec3>, halfWidth: Double, argb: Int, throughWalls: (Vec3) -> Boolean) {
+        if (pts.size < 2 || (argb ushr 24) == 0) return
+        val up = Vec3(0.0, halfWidth, 0.0)
+        val side = pts.indices.map { i ->
+            val d = pts[minOf(i + 1, pts.size - 1)].subtract(pts[maxOf(i - 1, 0)])
+            val h = Vec3(-d.z, 0.0, d.x)
+            if (h.lengthSqr() < 1.0e-9) Vec3(halfWidth, 0.0, 0.0) else h.normalize().scale(halfWidth)
+        }
+        for (i in 1 until pts.size) {
+            val a = pts[i - 1]; val b = pts[i]; val sa = side[i - 1]; val sb = side[i]
+            val top = throughWalls(b)
+            Gizmos.rect(a.subtract(sa), a.add(sa), b.add(sb), b.subtract(sb), GizmoStyle.fill(argb)).also { if (top) it.setAlwaysOnTop() }
+            Gizmos.rect(a.subtract(up), a.add(up), b.add(up), b.subtract(up), GizmoStyle.fill(argb)).also { if (top) it.setAlwaysOnTop() }
+        }
+    }
+
+    @JvmStatic
+    fun gizmoThickLine(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) = gizmoThickLine(a, b, halfWidth, argb, false)
+
+    @JvmStatic
+    fun gizmoThickLine(a: Vec3, b: Vec3, halfWidth: Double, argb: Int, throughWalls: Boolean) {
+        if ((argb ushr 24) == 0) return
+        val (quad1, quad2) = crossQuads(a, b, halfWidth) ?: return
+        for (q in arrayOf(quad1, quad2))
+            Gizmos.rect(q[0], q[1], q[2], q[3], GizmoStyle.fill(argb)).also { if (throughWalls) it.setAlwaysOnTop() }
+    }
+
+    @JvmStatic
+    fun gizmoText(text: Component, pos: Vec3, scale: Float, argb: Int) = gizmoText(text, pos, scale, argb, false)
+
+    @JvmStatic
+    fun gizmoText(text: Component, pos: Vec3, scale: Float, argb: Int, throughWalls: Boolean) {
+        if (scale.isNaN() || pos.x.isNaN() || pos.y.isNaN() || pos.z.isNaN()) FishDiag.fail("RenderUtils.9", "gizmoText bad input pos=$pos scale=$scale")
+        Gizmos.billboardText(text.string, pos, TextGizmo.Style.forColorAndCentered(argb).withScale(scale))
+            .also { if (throughWalls) it.setAlwaysOnTop() }
+    }
+
+    @JvmStatic
+    fun drawCenteredText(context: GuiGraphicsExtractor, textRenderer: Font?, text: Component, x: Int, y: Int, maxWidth: Int, color: Int) {
+        if (textRenderer == null) return
+        val centered = (maxWidth - textRenderer.width(text)) / 2
+        context.text(textRenderer, text, x + centered, y, color, true)
+    }
+
+    @JvmStatic
+    fun drawCenteredText(context: GuiGraphicsExtractor, component: HUDComponent, text: Component) {
+        val textRenderer = Minecraft.getInstance().font ?: return
+        drawCenteredText(context, textRenderer, text, component.scaledX, component.scaledY, component.width, -0x1)
+    }
+
+    @JvmStatic
+    fun drawCenteredText(context: GuiGraphicsExtractor, component: HUDComponent, text: Component, color: Int) {
+        val textRenderer = Minecraft.getInstance().font ?: return
+        drawCenteredText(context, textRenderer, text, component.scaledX, component.scaledY, component.width, color)
+    }
+
+    @JvmStatic
+    fun drawTimer(component: HUDComponent, context: GuiGraphicsExtractor, tick: Int, color: Int) {
+        val num = tick * FishConstants.TICK_DURATION
+        drawTimer(component, context, num, color)
+    }
+
+    @JvmStatic
+    fun drawTimer(component: HUDComponent, context: GuiGraphicsExtractor, num: Double, color: Int) {
+        val x = component.scaledX
+        val y = component.scaledY
+
+        drawCenteredText(context, Minecraft.getInstance().font, Component.literal(FishConstants.DECIMAL_FORMAT.format(num)), x, y, component.width, color)
+    }
+
+    @JvmStatic
+    fun drawPrefixedText(component: HUDComponent, context: GuiGraphicsExtractor, prefix: String, text: String) {
+        val textRenderer = Minecraft.getInstance().font ?: return
+
+        val drawnText = Component.literal("$prefix: ").withColor(MiscSettings.timerPrefixColor).append(Component.literal(text).withColor(-0x1))
+        context.text(textRenderer, drawnText, component.scaledX, component.scaledY, -0x1, true)
+    }
+
+    @JvmStatic
+    fun renderFilled(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray) {
+        if (rgba.size < 4) {
+            FishDiag.fail("RenderUtils.10", "renderFilled colour array has ${rgba.size} components")
+            return
+        }
+        if (rgba[3] == 0f) return
+        if (box.minX.isNaN() || box.minY.isNaN() || box.maxX.isNaN() || box.maxY.isNaN()) FishDiag.fail("RenderUtils.11", "renderFilled given NaN box $box")
+        drawFilledBox(matrixStack, consumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, rgba[0], rgba[1], rgba[2], rgba[3])
+    }
+
+    @JvmStatic
+    fun renderFilledQuad(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
+        if (rgba[3] == 0f) return
+        if (corners.size != 4) FishDiag.fail("RenderUtils.12", "renderFilledQuad given ${corners.size} corners, quad buffer will desync")
+        val pose = matrixStack.last()
+        for (c in corners) quadVertex(consumer, pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
+    }
+
+    @JvmStatic
+    fun renderQuadOutline(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
+        if (rgba[3] == 0f) return
+        if (corners.size < 2) FishDiag.fail("RenderUtils.13", "renderQuadOutline given ${corners.size} corners")
+        val pose = matrixStack.last()
+        for (i in corners.indices) {
+            val a = corners[i]
+            val b = corners[(i + 1) % corners.size]
+            edge(consumer, pose, a.x.toFloat(), a.y.toFloat(), a.z.toFloat(), b.x.toFloat(), b.y.toFloat(), b.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
+        }
+    }
+
+    @JvmStatic
+    fun renderOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray) {
+        if (rgba.size < 4) {
+            FishDiag.fail("RenderUtils.14", "renderOutline colour array has ${rgba.size} components")
+            return
+        }
+        if (rgba[3] == 0f) return
+        if (box.minX.isNaN() || box.minY.isNaN() || box.maxX.isNaN() || box.maxY.isNaN()) FishDiag.fail("RenderUtils.15", "renderOutline given NaN box $box")
+        val pose = matrixStack.last()
+        val x1 = box.minX.toFloat(); val y1 = box.minY.toFloat(); val z1 = box.minZ.toFloat()
+        val x2 = box.maxX.toFloat(); val y2 = box.maxY.toFloat(); val z2 = box.maxZ.toFloat()
+        val r = rgba[0]; val g = rgba[1]; val b = rgba[2]; val a = rgba[3]
+
+        edge(consumer, pose, x1, y1, z1, x2, y1, z1, r, g, b, a)
+        edge(consumer, pose, x2, y1, z1, x2, y1, z2, r, g, b, a)
+        edge(consumer, pose, x2, y1, z2, x1, y1, z2, r, g, b, a)
+        edge(consumer, pose, x1, y1, z2, x1, y1, z1, r, g, b, a)
+
+        edge(consumer, pose, x1, y2, z1, x2, y2, z1, r, g, b, a)
+        edge(consumer, pose, x2, y2, z1, x2, y2, z2, r, g, b, a)
+        edge(consumer, pose, x2, y2, z2, x1, y2, z2, r, g, b, a)
+        edge(consumer, pose, x1, y2, z2, x1, y2, z1, r, g, b, a)
+
+        edge(consumer, pose, x1, y1, z1, x1, y2, z1, r, g, b, a)
+        edge(consumer, pose, x2, y1, z1, x2, y2, z1, r, g, b, a)
+        edge(consumer, pose, x2, y1, z2, x2, y2, z2, r, g, b, a)
+        edge(consumer, pose, x1, y1, z2, x1, y2, z2, r, g, b, a)
+    }
+
+    @JvmStatic
+    fun renderThickOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray, lineWidth: Double) {
+        if (rgba[3] == 0f) return
+        if (lineWidth.isNaN() || lineWidth < 0.0 || box.minX.isNaN() || box.maxY.isNaN()) FishDiag.fail("RenderUtils.16", "renderThickOutline bad input box=$box width=$lineWidth")
+        val hw = lineWidth / 2.0
+        val x1 = box.minX; val y1 = box.minY; val z1 = box.minZ
+        val x2 = box.maxX; val y2 = box.maxY; val z2 = box.maxZ
+
+        thickEdge(matrixStack, consumer, x1, y1, z1, x2, y1, z1, hw, rgba)
+        thickEdge(matrixStack, consumer, x2, y1, z1, x2, y1, z2, hw, rgba)
+        thickEdge(matrixStack, consumer, x2, y1, z2, x1, y1, z2, hw, rgba)
+        thickEdge(matrixStack, consumer, x1, y1, z2, x1, y1, z1, hw, rgba)
+
+        thickEdge(matrixStack, consumer, x1, y2, z1, x2, y2, z1, hw, rgba)
+        thickEdge(matrixStack, consumer, x2, y2, z1, x2, y2, z2, hw, rgba)
+        thickEdge(matrixStack, consumer, x2, y2, z2, x1, y2, z2, hw, rgba)
+        thickEdge(matrixStack, consumer, x1, y2, z2, x1, y2, z1, hw, rgba)
+
+        thickEdge(matrixStack, consumer, x1, y1, z1, x1, y2, z1, hw, rgba)
+        thickEdge(matrixStack, consumer, x2, y1, z1, x2, y2, z1, hw, rgba)
+        thickEdge(matrixStack, consumer, x2, y1, z2, x2, y2, z2, hw, rgba)
+        thickEdge(matrixStack, consumer, x1, y1, z2, x1, y2, z2, hw, rgba)
+    }
+
+    @JvmStatic
+    fun renderThickEdge(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, halfWidth: Double, rgba: FloatArray) {
+        thickEdge(matrixStack, consumer, a.x, a.y, a.z, b.x, b.y, b.z, halfWidth, rgba)
+    }
+
+    private fun thickEdge(
+        matrixStack: PoseStack, consumer: VertexConsumer,
+        ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double,
+        halfWidth: Double, rgba: FloatArray
+    ) {
+        var minX = minOf(ax, bx); var maxX = maxOf(ax, bx)
+        var minY = minOf(ay, by); var maxY = maxOf(ay, by)
+        var minZ = minOf(az, bz); var maxZ = maxOf(az, bz)
+        if (minX == maxX) { minX -= halfWidth; maxX += halfWidth }
+        if (minY == maxY) { minY -= halfWidth; maxY += halfWidth }
+        if (minZ == maxZ) { minZ -= halfWidth; maxZ += halfWidth }
+        drawFilledBox(matrixStack, consumer, minX, minY, minZ, maxX, maxY, maxZ, rgba[0], rgba[1], rgba[2], rgba[3])
+    }
+
+    @JvmStatic
+    fun renderLine(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, rgba: FloatArray) {
+        if (rgba[3] == 0f) return
+        if (a.x.isNaN() || a.y.isNaN() || a.z.isNaN() || b.x.isNaN() || b.y.isNaN() || b.z.isNaN()) FishDiag.fail("RenderUtils.17", "renderLine given NaN $a -> $b")
+        edge(
+            consumer, matrixStack.last(), a.x.toFloat(), a.y.toFloat(), a.z.toFloat(), b.x.toFloat(), b.y.toFloat(), b.z.toFloat(),
+            rgba[0], rgba[1], rgba[2], rgba[3]
+        )
+    }
+
+    @JvmStatic
+    fun renderThickLine(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, halfWidth: Double, rgba: FloatArray) {
+        if (rgba[3] == 0f) return
+        val (quad1, quad2) = crossQuads(a, b, halfWidth) ?: return
+        renderFilledQuad(matrixStack, consumer, quad1, rgba)
+        renderFilledQuad(matrixStack, consumer, quad2, rgba)
+    }
+
+    private fun edge(
+        consumer: VertexConsumer, pose: PoseStack.Pose,
+        x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float,
+        r: Float, g: Float, b: Float, a: Float
+    ) {
+        consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a)
+        consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a)
+    }
+
+    @JvmStatic
+    fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, x: Double, y: Double, z: Double, scale: Float) {
+        Minecraft.getInstance().player ?: return
+        if (x.isNaN() || y.isNaN() || z.isNaN() || scale.isNaN() || scale == 0f) FishDiag.fail("RenderUtils.18", "renderText bad input ($x,$y,$z) scale=$scale")
+
+        matrices.pushPose()
+        matrices.translate(x, y, z)
+        matrices.mulPose(context.levelState().cameraRenderState.orientation)
+        matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
+
+        WorldText.draw(matrices, text, -0x1, true)
+        matrices.popPose()
+    }
+
+    // See-through billboard text; `pxSize` = world units per font pixel. Flushed by the NO_DEPTH_* passes
+    @JvmStatic
+    fun renderSeeThroughText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, pxSize: Float, argb: Int, shadow: Boolean) {
+        matrices.pushPose()
+        matrices.translate(pos.x, pos.y, pos.z)
+        matrices.mulPose(context.levelState().cameraRenderState.orientation)
+        matrices.scale(pxSize, -pxSize, pxSize)
+        WorldText.draw(matrices, text, argb, shadow)
+        matrices.popPose()
+    }
+
+    // Text on a rigid board turned only around Y so every line rotates together; lx/ly are local board offsets
+    @JvmStatic
+    fun renderBoardText(matrices: PoseStack, text: Component, base: Vec3, yaw: Float, lx: Double, ly: Double, scale: Float) {
+        matrices.pushPose()
+        matrices.translate(base.x, base.y, base.z)
+        matrices.mulPose(org.joml.Quaternionf().rotateY(yaw))
+        matrices.translate(lx, ly, 0.0)
+        matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
+        WorldText.draw(matrices, text, -0x1, true)
+        matrices.popPose()
+    }
+
+    @JvmStatic
+    fun flushText() = WorldText.flush()
+
+    @JvmStatic
+    fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, scale: Float) {
+        renderText(context, matrices, text, pos.x, pos.y, pos.z, scale)
+    }
+
+    @JvmStatic
+    fun renderLineTo(context: LevelRenderContext, matrices: PoseStack, consumer: VertexConsumer, x: Double, y: Double, z: Double, color: Int) {
+        val player = Minecraft.getInstance().player ?: return
+        if (x.isNaN() || y.isNaN() || z.isNaN()) FishDiag.fail("RenderUtils.19", "renderLineTo given NaN target ($x,$y,$z)")
+
+        val playerPos = EntityTools.getLerpedPos(player)
+        val eyeHeight = player.eyeHeight
+        val lookat = Vector3f(0f, 0f, -1f).rotate(context.levelState().cameraRenderState.orientation)
+
+        val startPos = playerPos.toVector3f().add(0f, eyeHeight.toFloat(), 0f).add(lookat)
+        val endVec = Vec3(x, y, z).subtract(playerPos).subtract(lookat.x.toDouble(), (lookat.y + eyeHeight).toDouble(), lookat.z.toDouble())
+        val r = ((color shr 16) and 0xFF) / 255f
+        val g = ((color shr 8) and 0xFF) / 255f
+        val b = (color and 0xFF) / 255f
+        var a = ((color shr 24) and 0xFF) / 255f
+        if (a == 0f) a = 1.0f
+        consumer.addVertex(matrices.last(), startPos.x, startPos.y, startPos.z).setColor(r, g, b, a)
+        consumer.addVertex(matrices.last(), endVec.x.toFloat() + startPos.x, endVec.y.toFloat() + startPos.y, endVec.z.toFloat() + startPos.z).setColor(r, g, b, a)
+    }
+
+    @JvmStatic
+    fun renderLineTo(context: LevelRenderContext, matrices: PoseStack, consumer: VertexConsumer, pos: Vec3, color: Int) {
+        renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color)
+    }
+
+    @JvmStatic
+    fun fillBox(matrices: PoseStack, consumer: VertexConsumer, b: AABB, argb: Int) {
+        val c = toFloats(argb)
+        drawFilledBox(matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, c[0], c[1], c[2], c[3])
+    }
+
+    private fun drawFilledBox(
+        matrices: PoseStack, consumer: VertexConsumer,
+        x1: Double, y1: Double, z1: Double,
+        x2: Double, y2: Double, z2: Double,
+        r: Float, g: Float, b: Float, a: Float
+    ) {
+        val entry = matrices.last()
+        val ax1 = x1.toFloat(); val ay1 = y1.toFloat(); val az1 = z1.toFloat()
+        val ax2 = x2.toFloat(); val ay2 = y2.toFloat(); val az2 = z2.toFloat()
+
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
+    }
+
+    @JvmStatic
+    fun formatNumber(num: Float): String {
+        if (num.isNaN() || num.isInfinite()) FishDiag.fail("RenderUtils.20", "formatNumber given $num")
+        return formatNumber(num, Floor7Settings.capitalizeHealthNumbers)
+    }
+
+    // thresholds avoid "1000.0K" rollover
+    internal fun formatNumber(num: Float, caps: Boolean): String {
+        val (b, m, k) = if (caps) Triple("B", "M", "K") else Triple("b", "m", "k")
+        return if (num >= 999_950_000f) String.format(java.util.Locale.ROOT, "%.1f$b", num / 1e9f)
+        else if (num >= 999_950f) String.format(java.util.Locale.ROOT, "%.1f$m", num / 1e6f)
+        else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1f$k", num / 1e3f)
+        else wholeOrDecimal(num)
+    }
+
+    private fun wholeOrDecimal(num: Float): String =
+        if (num == Math.floor(num.toDouble()).toFloat()) num.toLong().toString() else "$num"
+}

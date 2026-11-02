@@ -2,10 +2,10 @@ package fishmod.features
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.EntityUtil
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.data.EntityTools
+import fishmod.utils.data.ItemTools
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
@@ -64,7 +64,7 @@ object FireFreezeTimer {
         if (!FishSettings.fireFreezeTimerEnabled || hand != InteractionHand.MAIN_HAND) return false
         if (Minecraft.getInstance().level == null) return false
         val stack = player.getItemInHand(hand)
-        return !stack.isEmpty && "FIRE_FREEZE_STAFF" == ItemUtil.getId(stack)
+        return !stack.isEmpty && "FIRE_FREEZE_STAFF" == ItemTools.getId(stack)
     }
 
     private fun arm() {
@@ -94,7 +94,7 @@ object FireFreezeTimer {
     }
 
     private fun registerRender() {
-        RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
+        RenderHooks.NO_DEPTH_LINE.register { ctx, matrices, _ ->
             if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty()) return@register
             val mc = Minecraft.getInstance()
             val me = mc.player ?: return@register
@@ -111,7 +111,7 @@ object FireFreezeTimer {
                     continue
                 }
 
-                val p = EntityUtil.getLerpedPos(e)
+                val p = EntityTools.getLerpedPos(e)
                 val head = Vec3(p.x, p.y + e.bbHeight + 0.55, p.z)
                 val toMob = head.subtract(me.eyePosition)
                 if (toMob.length() > DRAW_DIST || toMob.dot(me.lookAngle) <= 0.0) continue
@@ -125,7 +125,7 @@ object FireFreezeTimer {
                     val color = if (secs <= 2.0) "§c" else if (secs <= 5.0) "§b" else "§3"
                     t = Component.literal(color + "❄ " + fishmod.utils.Fmt.f1(secs.toDouble()) + "s")
                 }
-                RenderUtils.renderText(ctx, matrices, t, head.x, head.y, head.z, 1.35f)
+                FishDraw.renderText(ctx, matrices, t, head.x, head.y, head.z, 1.35f)
             }
             } catch (t: Throwable) {
                 FishDiag.fail("FireFreezeTimer.5", "render failed frozen=${frozen.size}", t)

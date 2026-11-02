@@ -1,7 +1,7 @@
 package fishmod.features.garden
 import fishmod.compat.curScreen
 
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.network.chat.Component
@@ -166,7 +166,7 @@ object GardenMenus {
                 .filter { it.contains("Harvestable", true) || (it.contains("Water", true) && it.contains(':')) } else emptyList()
         }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> tooltip(stack, lines) })
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (stack.isEmpty) return@register
             if (X.gardenCompUpgrades && stack === cheapest && GardenExtras.inMenu("Composter Upgrades"))
                 ctx.fill(x, y, x + 16, y + 16, fishmod.features.mining.Mining.alpha(X.gardenCompUpgradesColor, 45))

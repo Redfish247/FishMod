@@ -4,12 +4,12 @@ import fishmod.utils.TextStrip
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.mixin.accessors.HandledScreenAccessor
-import fishmod.utils.Misc.abbr
+import fishmod.utils.FishUtil.abbr
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.networth.ItemsDb
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -36,11 +36,11 @@ object AnitaShop {
 
     @JvmStatic
     fun init() {
-        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             if (!FishSettings.anitaProfitEnabled || bestSlot < 0 || stack.isEmpty) return@register
             val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return@register
             if (fishmod.utils.ScreenTitle.plain(scr).trim() != TITLE) return@register
-            val slot = DrawEvents.currentSlot ?: return@register
+            val slot = DrawHooks.currentSlot ?: return@register
             if (slot.index == bestSlot && slot.container !is Inventory) ctx.fill(x, y, x + 16, y + 16, 0x8055FF55.toInt())
         }
     }
@@ -114,7 +114,7 @@ object AnitaShop {
 
     // Books show as "Enchanted Book" with the enchant on the first lore line
     private fun itemValue(stack: ItemStack, name: String, lore: List<String>): Double {
-        val id = ItemUtil.getId(stack) ?: ItemsDb.idFor(name)
+        val id = ItemTools.getId(stack) ?: ItemsDb.idFor(name)
         if (id != null && id != "ENCHANTED_BOOK") return price(id)
         val ench = lore.firstOrNull { ROMAN.matches(it) } ?: return 0.0
         val m = ROMAN.find(ench)!!

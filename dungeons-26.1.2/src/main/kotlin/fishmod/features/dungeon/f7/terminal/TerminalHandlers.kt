@@ -97,7 +97,7 @@ class StartsWithHandler(private val letter: String) : TerminalHandler(TerminalTy
         solution.addAll(items.mapIndexedNotNull { i, it ->
             if (it == null || it.isEmpty || it.isPane()) return@mapIndexedNotNull null
             if (it.hasGlintOverride() && it.item !in ENCHANT_OVERRIDES) return@mapIndexedNotNull null
-            val name = it.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
+            val name = it.hoverName.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
             if (name.startsWith(letter, ignoreCase = true)) i else null
         })
         return true
@@ -122,7 +122,7 @@ class SelectAllHandler(colorName: String) : TerminalHandler(TerminalType.SELECT)
         solution.clear()
         solution.addAll(items.mapIndexedNotNull { i, it ->
             if (it == null || it.isEmpty || it.hasFoil() || it.`is`(BLACK_PANE)) return@mapIndexedNotNull null
-            val name = it.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase().trim()
+            val name = it.hoverName.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").lowercase().trim()
             if (validPrefixes.any { p -> name.startsWith(p) }) i else null
         })
         return true

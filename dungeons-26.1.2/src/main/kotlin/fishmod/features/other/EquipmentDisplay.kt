@@ -2,7 +2,7 @@ package fishmod.features.other
 
 import fishmod.features.storage.NBTInventory
 import fishmod.utils.config.FishConfig
-import fishmod.utils.config.values.Buttons
+import fishmod.utils.config.values.InvButtonSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
@@ -50,7 +50,7 @@ object EquipmentDisplay {
         if (loaded && (0..3).all { ItemStack.matches(cached[it] ?: ItemStack.EMPTY, next[it]) }) return
         for (i in 0..3) cached[i] = next[i]
         loaded = true
-        Buttons.equipmentCache = NBTInventory(next).encode()
+        InvButtonSettings.equipmentCache = NBTInventory(next).encode()
         runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("EquipmentDisplay.2", "saving equipment cache failed", it) }
     }
 
@@ -58,9 +58,9 @@ object EquipmentDisplay {
 
     // restore the saved equipment once a world (and its registries) exists
     private fun ensureLoaded() {
-        if (loaded || Buttons.equipmentCache.isEmpty() || Minecraft.getInstance().level == null) return
+        if (loaded || InvButtonSettings.equipmentCache.isEmpty() || Minecraft.getInstance().level == null) return
         loaded = true
-        NBTInventory.decode(Buttons.equipmentCache)?.stacks?.forEachIndexed { i, st -> if (i < 4) cached[i] = st }
+        NBTInventory.decode(InvButtonSettings.equipmentCache)?.stacks?.forEachIndexed { i, st -> if (i < 4) cached[i] = st }
     }
 
     private const val X = -19
@@ -69,7 +69,7 @@ object EquipmentDisplay {
     @JvmStatic
     fun click(mouseX: Double, mouseY: Double): Boolean {
         if (mouseX < X - 1 || mouseX >= X + 17 || mouseY < 7 || mouseY >= 8 + 72) return false
-        fishmod.utils.Misc.executeCommand("stats")
+        fishmod.utils.FishUtil.executeCommand("stats")
         return true
     }
 

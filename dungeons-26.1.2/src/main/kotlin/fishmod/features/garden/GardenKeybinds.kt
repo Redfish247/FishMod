@@ -2,7 +2,7 @@ package fishmod.features.garden
 
 import fishmod.compat.curScreen
 import fishmod.features.mining.Mining
-import fishmod.utils.Keybinds
+import fishmod.utils.FishKeys
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.KeyMapping
@@ -25,7 +25,7 @@ object GardenKeybinds {
         val held = mc.player?.mainHandItem ?: return false
         if (S.gardenKeysHoe && GardenCrops.holdingFarmingTool()) return true
         if (S.gardenKeysRod && held.`is`(net.minecraft.world.item.Items.FISHING_ROD)) return true
-        val id = fishmod.utils.data.ItemUtil.getId(held) ?: ""
+        val id = fishmod.utils.data.ItemTools.getId(held) ?: ""
         if (S.gardenKeysMousemat && id.contains("SQUEAKY_MOUSEMAT")) return true
         return S.gardenKeysGrasp && held.hoverName.string.contains("Sun's Grasp", true)
     }
@@ -41,7 +41,7 @@ object GardenKeybinds {
     }
 
     private fun tick(mc: Minecraft) {
-        val keys = Keybinds.gardenKeys ?: return
+        val keys = FishKeys.gardenKeys ?: return
         val on = active(mc)
         val target = vanilla(mc)
         for (i in keys.indices) {

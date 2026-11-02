@@ -5,10 +5,10 @@ import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.mixin.accessors.PlayerTabOverlayAccessor
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -50,15 +50,15 @@ object Blessings {
             { FishSettings.blessingScale }, { v -> FishSettings.blessingScale = v }
         )
 
-        Events.ON_SERVER_TICK.register { FishDiag.guard("Blessings.2", "blessing tab poll failed") { poll() }; false }
-        Events.ON_WORLD_CHANGE.register { clear(); false }
-        Events.ON_LOCATION_CHANGE.register { _ -> clear(); false }
+        FishEvents.ON_SERVER_TICK.register { FishDiag.guard("Blessings.2", "blessing tab poll failed") { poll() }; false }
+        FishEvents.ON_WORLD_CHANGE.register { clear(); false }
+        FishEvents.ON_LOCATION_CHANGE.register { _ -> clear(); false }
     }
 
     private fun clear() = Type.entries.forEach { it.current = 0 }
 
     private fun poll() {
-        if (!FishSettings.blessingDisplayEnabled || !Location.inDungeon()) return
+        if (!FishSettings.blessingDisplayEnabled || !SkyblockLocation.inDungeon()) return
         if (++tickAcc < 20) return
         tickAcc = 0
         val overlay = Minecraft.getInstance().hud.tabList as? PlayerTabOverlayAccessor ?: return
@@ -77,7 +77,7 @@ object Blessings {
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!FishSettings.blessingDisplayEnabled || !Location.inDungeon()) return
+        if (!FishSettings.blessingDisplayEnabled || !SkyblockLocation.inDungeon()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
 

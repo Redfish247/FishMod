@@ -2,7 +2,7 @@ package fishmod.features.garden
 
 import fishmod.features.mining.Mining
 import fishmod.utils.FishMsg
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import fishmod.features.garden.GardenSettings as S
 
@@ -20,7 +20,7 @@ object FortuneBonus {
     }
 
     fun init() {
-        Events.ON_WORLD_CHANGE.register { last = null; false }
+        FishEvents.ON_WORLD_CHANGE.register { last = null; false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !S.gardenFortuneMsg || !Garden.inGarden()) return@register
             if (tick++ % 20 != 0) return@register
@@ -31,7 +31,7 @@ object FortuneBonus {
             if (prev != null && prev != cur) send(cur)
         }
         // Server announcements ("+N Farming Fortune ..."); throttled so the tab change doesn't double up (guess at wording)
-        Events.ON_GAME_MESSAGE.register { t ->
+        FishEvents.ON_GAME_MESSAGE.register { t ->
             if (S.gardenFortuneMsg && Garden.inGarden()) {
                 val s = Garden.strip(t.string).trim()
                 val now = System.currentTimeMillis()

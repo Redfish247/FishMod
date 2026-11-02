@@ -1,6 +1,6 @@
 package fishmod.features.garden
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import net.minecraft.sounds.SoundEvents
 import fishmod.features.garden.GardenSettings as S
 
@@ -29,7 +29,7 @@ object GardenAlerts {
         if (!S.gardenAlert) return
         lines = listOf(title, sub).filter { it.isNotEmpty() }
         until = System.currentTimeMillis() + S.gardenAlertSeconds.coerceIn(1, 15) * 1000L
-        if (sound) Misc.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
+        if (sound) FishUtil.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
     }
 
     fun init() {

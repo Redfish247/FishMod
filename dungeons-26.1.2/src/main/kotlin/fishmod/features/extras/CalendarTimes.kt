@@ -2,7 +2,7 @@ package fishmod.features.extras
 
 import fishmod.features.extras.ExtrasSettings as S
 import fishmod.compat.curScreen
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
@@ -20,7 +20,7 @@ object CalendarTimes {
 
     fun init() {
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { _, _, _, lines ->
-            if (!S.calendarRealTimes || !Location.inSkyblock()) return@ItemTooltipCallback
+            if (!S.calendarRealTimes || !SkyblockLocation.inSkyblock()) return@ItemTooltipCallback
             val title = Minecraft.getInstance().curScreen?.title?.string ?: return@ItemTooltipCallback
             if (!title.contains("Calendar", true)) return@ItemTooltipCallback
             try { annotate(lines) } catch (t: Throwable) { FishDiag.fail("CalendarTimes.1", "calendar tooltip failed", t) }
@@ -30,7 +30,7 @@ object CalendarTimes {
     private fun annotate(lines: MutableList<Component>) {
         var i = 0
         while (i < lines.size) {
-            val plain = fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(lines[i].string, "")
+            val plain = fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(lines[i].string, "")
             val m = COUNTDOWN.find(plain)
             if (m != null) {
                 var secs = 0L

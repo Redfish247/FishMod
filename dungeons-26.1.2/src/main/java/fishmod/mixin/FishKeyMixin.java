@@ -1,0 +1,30 @@
+package fishmod.mixin;
+
+import fishmod.features.other.InvSearchBar;
+import fishmod.utils.config.values.FishSettings;
+import net.minecraft.client.KeyboardHandler;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.CharacterEvent;
+import com.llamalad7.mixinextras.sugar.Local;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(KeyboardHandler.class)
+public class FishKeyMixin {
+
+    @Inject(method = "charTyped", at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;charTyped(Lnet/minecraft/client/input/CharacterEvent;)Z"))
+    private void onChar(long window, CharacterEvent input, CallbackInfo ci, @Local Screen screen) {
+        try {
+            if (screen instanceof AbstractContainerScreen<?> container) {
+                if (fishmod.features.storage.StorageOverlay.charTyped(input, container)) return;
+                if (FishSettings.inventorySearchEnabled) InvSearchBar.charTyped(input);
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("KeyboardMixin.1", "container charTyped hooks failed", t);
+        }
+    }
+
+}

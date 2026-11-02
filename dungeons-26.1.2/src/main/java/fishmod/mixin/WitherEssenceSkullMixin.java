@@ -1,0 +1,51 @@
+package fishmod.mixin;
+
+import fishmod.utils.FishConstants;
+import fishmod.utils.config.values.VisualSettings;
+import net.minecraft.client.renderer.blockentity.SkullBlockRenderer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.world.level.block.SkullBlock;
+import net.minecraft.world.level.block.entity.SkullBlockEntity;
+import com.mojang.authlib.GameProfile;
+import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+@Mixin(SkullBlockRenderer.class)
+public abstract class WitherEssenceSkullMixin {
+
+    @Unique
+    private static final Identifier ESSENCE_TEXTURE = Identifier.fromNamespaceAndPath(FishConstants.NAMESPACE, "textures/entity/essence.png");
+
+    @Shadow
+    public static RenderType getSkullRenderType(SkullBlock.Type type, @Nullable Identifier texture) {
+        return null;
+    }
+
+    @org.spongepowered.asm.mixin.Unique
+    private static final java.util.UUID fishmod$ESSENCE_ID = java.util.UUID.fromString("e0f3e929-869e-3dca-9504-54c666ee6f23");
+
+    @Inject(method = "resolveSkullRenderType", at = @At("HEAD"), cancellable = true)
+    private void renderEssence(SkullBlock.Type skullType, SkullBlockEntity blockEntity, CallbackInfoReturnable<RenderType> cir) {
+        if (!VisualSettings.fixWitherEssence || skullType != SkullBlock.Types.PLAYER) return;
+
+        try {
+            ResolvableProfile profileComponent = blockEntity.getOwnerProfile();
+            if (profileComponent == null) return;
+
+            GameProfile profile = profileComponent.partialProfile();
+
+            if (fishmod$ESSENCE_ID.equals(profile.id())) {
+                cir.setReturnValue(getSkullRenderType(SkullBlock.Types.PLAYER, ESSENCE_TEXTURE));
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("SkullBlockEntityRendererMixin.1", "wither essence skull resolve failed", t);
+        }
+    }
+}

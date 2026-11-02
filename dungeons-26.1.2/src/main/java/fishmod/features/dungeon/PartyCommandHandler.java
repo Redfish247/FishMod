@@ -1,10 +1,10 @@
 package fishmod.features.dungeon;
 
 import fishmod.utils.HypixelApi;
-import fishmod.utils.Location;
+import fishmod.utils.SkyblockLocation;
 import fishmod.utils.config.values.FishSettings;
-import fishmod.utils.Misc;
-import fishmod.utils.events.Events;
+import fishmod.utils.FishUtil;
+import fishmod.utils.events.FishEvents;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import net.minecraft.client.Minecraft;
@@ -34,12 +34,12 @@ public class PartyCommandHandler {
             return true;
         });
 
-        Events.ON_LOCATION_CHANGE.register(loc -> {
-            if (loc == Location.DUNGEON || loc == Location.KUUDRA) dungeonEnteredAt = System.currentTimeMillis();
+        FishEvents.ON_LOCATION_CHANGE.register(loc -> {
+            if (loc == SkyblockLocation.DUNGEON || loc == SkyblockLocation.KUUDRA) dungeonEnteredAt = System.currentTimeMillis();
             return false;
         });
 
-        Events.ON_SERVER_TICK.register(() -> {
+        FishEvents.ON_SERVER_TICK.register(() -> {
             long now = System.currentTimeMillis();
             if (lastTickMs > 0) {
                 TICK_TIMES[tickIdx % TICK_TIMES.length] = now - lastTickMs;
@@ -49,7 +49,7 @@ public class PartyCommandHandler {
             return false;
         });
         // Don't count the world-swap gap as one huge tick.
-        Events.ON_WORLD_CHANGE.register(() -> { lastTickMs = -1; return false; });
+        FishEvents.ON_WORLD_CHANGE.register(() -> { lastTickMs = -1; return false; });
 
         // server packets only: addMessage also sees chat replayed by history mods on join, which re-ran old commands
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
@@ -684,7 +684,7 @@ public class PartyCommandHandler {
             floor = (type == 'm' ? "master_" : "") + "catacombs_floor_" + NUM_WORDS[num - 1];
         }
         String joinCmd = "joininstance " + floor;
-        Misc.addChatMessage(Component.literal("§7[FM] Sending: /" + joinCmd));
+        FishUtil.addChatMessage(Component.literal("§7[FM] Sending: /" + joinCmd));
         sendRawCommand(mc, joinCmd);
     }
 
@@ -697,7 +697,7 @@ public class PartyCommandHandler {
         }
         int tier = cmd.charAt(1) - '1';
         String joinCmd = "joininstance kuudra_" + KUUDRA_TIERS[tier];
-        Misc.addChatMessage(Component.literal("§7[FM] Sending: /" + joinCmd));
+        FishUtil.addChatMessage(Component.literal("§7[FM] Sending: /" + joinCmd));
         sendRawCommand(mc, joinCmd);
     }
 
@@ -729,7 +729,7 @@ public class PartyCommandHandler {
 
     private static void sendNetworth(Minecraft mc, String ign, String responder) {
         fishmod.features.croesus.CroesusPrices.refreshIfStale();
-        Misc.addChatMessage(Component.literal("§7[FM] Looking up " + ign + "'s networth..."));
+        FishUtil.addChatMessage(Component.literal("§7[FM] Looking up " + ign + "'s networth..."));
         HypixelApi.getNetworth(mc, ign, (nw, prof) -> {
             if (nw == HypixelApi.NETWORTH_BLOCKED) { sendCmd(mc, responder, "FishMod API access is blocked for you by an admin."); return; }
             if (nw < 0) { sendCmd(mc, responder, ign + "'s Networth: N/A"); return; }

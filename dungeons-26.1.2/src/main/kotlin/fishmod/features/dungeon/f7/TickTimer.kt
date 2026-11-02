@@ -1,7 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.shaded.practicalconfig.hud.HUDComponent
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import fishmod.utils.debug.FishDiag
 
@@ -16,7 +16,7 @@ class TickTimer {
         onTick: (Int) -> Unit = {},
         onReset: () -> Unit = {}
     ) {
-        Events.ON_SERVER_TICK.register {
+        FishEvents.ON_SERVER_TICK.register {
             try {
                 if (shouldCount()) {
                     tick++
@@ -25,7 +25,7 @@ class TickTimer {
             } catch (e: Exception) { FishDiag.fail("TickTimer.1", "tick timer count/onTick threw at tick $tick", e) }
             false
         }
-        Events.ON_LOCATION_CHANGE.register {
+        FishEvents.ON_LOCATION_CHANGE.register {
             try {
                 if (resetOn()) {
                     tick = 0
@@ -41,16 +41,16 @@ object BossTickTimer {
 
     @JvmStatic
     fun display(): Boolean {
-        return MaxorTickTimer.display() || StormTickTimer.display() || GoldorTickTimer.display()
+        return MaxorTicks.display() || StormTicks.display() || GoldorTicks.display()
     }
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         try {
             when {
-                MaxorTickTimer.display() -> MaxorTickTimer.render(component, context)
-                StormTickTimer.display() -> StormTickTimer.render(component, context)
-                GoldorTickTimer.display() -> GoldorTickTimer.render(component, context)
+                MaxorTicks.display() -> MaxorTicks.render(component, context)
+                StormTicks.display() -> StormTicks.render(component, context)
+                GoldorTicks.display() -> GoldorTicks.render(component, context)
             }
         } catch (e: Exception) { FishDiag.fail("TickTimer.3", "boss tick timer render threw", e) }
     }

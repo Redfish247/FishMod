@@ -6,7 +6,7 @@ import fishmod.compat.CI
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import fishmod.features.storage.NBTInventory
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -49,7 +49,7 @@ object LootIcons {
         for (slot in player.containerMenu.slots) {
             val st = slot.item
             if (st.isEmpty) continue
-            val id = ItemUtil.getId(st) ?: continue
+            val id = ItemTools.getId(st) ?: continue
             if (id !in wanted) continue
             val copy = st.copyWithCount(1)
             copy.remove(DataComponents.LORE)
@@ -173,7 +173,7 @@ object LootIcons {
             val type = object : TypeToken<MutableMap<String, String>>() {}.type
             FILE.reader().use { r -> GSON.fromJson<MutableMap<String, String>>(r, type)?.let { learned = it } }
         } catch (e: Exception) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[LootIcons] load failed: {}", e.toString())
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[LootIcons] load failed: {}", e.toString())
             FishDiag.fail("LootIcons.9", "loot icons load failed", e)
         }
     }
@@ -183,7 +183,7 @@ object LootIcons {
             FILE.parentFile?.mkdirs()
             FILE.writer().use { w -> GSON.toJson(learned, w) }
         } catch (e: Exception) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[LootIcons] save failed: {}", e.toString())
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[LootIcons] save failed: {}", e.toString())
             FishDiag.fail("LootIcons.10", "loot icons save failed (${learned.size} entries)", e)
         }
     }

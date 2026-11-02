@@ -1,6 +1,6 @@
 package fishmod.features.slayers
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.monster.Blaze
@@ -13,7 +13,7 @@ enum class SlayerType(
     val displayName: String,
     val bossNames: Set<String>,
     val miniBosses: Set<String>,
-    val island: Location,
+    val island: SkyblockLocation,
     val mobClass: Class<out LivingEntity>,
     val bossXpByTier: Map<Int, Int>,
 ) {
@@ -21,7 +21,7 @@ enum class SlayerType(
         "Revenant Horror",
         setOf("Revenant Horror", "Atoned Horror"),
         setOf("Revenant Sycophant", "Revenant Champion", "Deformed Revenant", "Atoned Champion", "Atoned Revenant"),
-        Location.HUB,
+        SkyblockLocation.HUB,
         Zombie::class.java,
         mapOf(1 to 5, 2 to 25, 3 to 100, 4 to 500, 5 to 1500),
     ),
@@ -29,7 +29,7 @@ enum class SlayerType(
         "Tarantula Broodfather",
         setOf("Tarantula Broodfather"),
         setOf("Tarantula Vermin", "Tarantula Beast", "Mutant Tarantula", "Primordial Jockey", "Primordial Viscount"),
-        Location.SPIDERS_DEN,
+        SkyblockLocation.SPIDERS_DEN,
         Spider::class.java,
         mapOf(1 to 5, 2 to 25, 3 to 100, 4 to 500, 5 to 1500),
     ),
@@ -37,7 +37,7 @@ enum class SlayerType(
         "Sven Packmaster",
         setOf("Sven Packmaster"),
         setOf("Pack Enforcer", "Sven Follower", "Sven Alpha"),
-        Location.THE_PARK,
+        SkyblockLocation.THE_PARK,
         Wolf::class.java,
         mapOf(1 to 5, 2 to 25, 3 to 100, 4 to 500),
     ),
@@ -45,7 +45,7 @@ enum class SlayerType(
         "Voidgloom Seraph",
         setOf("Voidgloom Seraph"),
         setOf("Voidling Devotee", "Voidling Radical", "Voidcrazed Maniac"),
-        Location.THE_END,
+        SkyblockLocation.THE_END,
         EnderMan::class.java,
         mapOf(1 to 5, 2 to 25, 3 to 100, 4 to 500),
     ),
@@ -53,7 +53,7 @@ enum class SlayerType(
         "Inferno Demonlord",
         setOf("Inferno Demonlord"),
         setOf("Flare Demon", "Kindleheart Demon", "Burningsoul Demon"),
-        Location.CRIMSON_ISLE,
+        SkyblockLocation.CRIMSON_ISLE,
         Blaze::class.java,
         mapOf(1 to 5, 2 to 25, 3 to 100, 4 to 500),
     );

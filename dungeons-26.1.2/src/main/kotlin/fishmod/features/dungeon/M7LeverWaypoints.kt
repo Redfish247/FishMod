@@ -4,9 +4,9 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback
 import net.minecraft.client.Minecraft
@@ -33,7 +33,7 @@ object M7LeverWaypoints {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
             try { onTick(mc) } catch (e: Exception) { FishDiag.fail("M7LeverWaypoints.1", "m7 lever tick failed (${flicked.size} flicked)", e) }
         })
-        RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, matrices, vc ->
             try { render(matrices, vc) } catch (e: Exception) { FishDiag.fail("M7LeverWaypoints.2", "m7 lever render failed", e) }
         }
         AttackBlockCallback.EVENT.register(AttackBlockCallback { _, world, _, pos, _ ->
@@ -47,7 +47,7 @@ object M7LeverWaypoints {
     }
 
     private fun active(): Boolean =
-        FishSettings.enableM7LeverWaypoints && Phase.isInFloor7() && Phase.inBoss()
+        FishSettings.enableM7LeverWaypoints && BossPhase.isInFloor7() && BossPhase.inBoss()
 
     private fun onTick(mc: Minecraft) {
         if (mc.level == null || mc.player == null || !active()) {
@@ -87,8 +87,8 @@ object M7LeverWaypoints {
                 .move(p.x.toDouble(), p.y.toDouble(), p.z.toDouble())
                 .inflate(EXPAND)
 
-            if (mode != 0) RenderUtils.renderFilled(matrices, vc, box, fill)
-            if (mode != 1) RenderUtils.renderThickOutline(matrices, vc, box, outline, 0.02)
+            if (mode != 0) FishDraw.renderFilled(matrices, vc, box, fill)
+            if (mode != 1) FishDraw.renderThickOutline(matrices, vc, box, outline, 0.02)
         }
     }
 }

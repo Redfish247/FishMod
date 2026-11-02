@@ -16,6 +16,6 @@ object FishMsg {
 
     @JvmStatic
     fun send(message: String) {
-        Misc.addChatMessage(Component.literal(prefix() + message))
+        FishUtil.addChatMessage(Component.literal(prefix() + message))
     }
 }

@@ -5,13 +5,13 @@ import fishmod.features.croesus.CroesusPrices
 import fishmod.features.dungeon.map.DungeonScore
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.features.mining.Mining
-import fishmod.utils.Constants
-import fishmod.utils.Location
-import fishmod.utils.data.PartyUtil
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.data.PartyTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.Phase
+import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.dungeon.PracticeMode
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -42,27 +42,27 @@ object AchHooks {
     fun i4Plate() { Minecraft.getInstance().execute { AchStore.max("secret.i4Plate", 1) } }
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { c ->
+        FishEvents.ON_GAME_MESSAGE.register { c ->
             if (!AchSettings.achEnabled) return@register false
-            FishDiag.guard("AchHooks.1", "achievement chat parse") { onChat(c.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()) }
+            FishDiag.guard("AchHooks.1", "achievement chat parse") { onChat(c.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()) }
             false
         }
-        Events.ON_RUN_END.register {
+        FishEvents.ON_RUN_END.register {
             FishDiag.guard("AchHooks.2", "achievement run end") { onRunEnd() }
             false
         }
-        Events.ON_TERMINAL.register { name, _, objective, _, _ ->
+        FishEvents.ON_TERMINAL.register { name, _, objective, _, _ ->
             val me = Minecraft.getInstance().player?.name?.string
-            AchBus.post(AchEvent.TerminalDone(me != null && name.replace(Constants.STRIP_COLOR_REGEX, "").trim() == me, objective))
+            AchBus.post(AchEvent.TerminalDone(me != null && name.replace(FishConstants.STRIP_COLOR_REGEX, "").trim() == me, objective))
             false
         }
-        Events.ON_SECTION_CHANGE.register {
+        FishEvents.ON_SECTION_CHANGE.register {
             val now = System.currentTimeMillis()
             if (inTerms && sectionStartMs > 0 && !PracticeMode.active) AchBus.post(AchEvent.TerminalSection((now - sectionStartMs) / 1000.0))
             sectionStartMs = now
             false
         }
-        Events.ON_WORLD_CHANGE.register { resetRun(); false }
+        FishEvents.ON_WORLD_CHANGE.register { resetRun(); false }
     }
 
     private fun resetRun() {
@@ -109,7 +109,7 @@ object AchHooks {
         if (lore.isEmpty()) return
         detailedRead = true
         for (c in lore) {
-            val m = DETAILED_ROW.find(c.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()) ?: continue
+            val m = DETAILED_ROW.find(c.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()) ?: continue
             val n = m.groupValues[1].replace(",", "").toDoubleOrNull() ?: continue
             val secs = (if (m.groupValues[2].startsWith("hour")) n * 3600 else n * 60).toLong()
             val island = m.groupValues[3]
@@ -125,7 +125,7 @@ object AchHooks {
     }
 
     private fun onChat(s: String) {
-        if (Location.inDungeon() && LAVA_DEATH.containsMatchIn(s) && ++lavaDeaths >= 10) AchStore.max("secret.lavaFalls", 1)
+        if (SkyblockLocation.inDungeon() && LAVA_DEATH.containsMatchIn(s) && ++lavaDeaths >= 10) AchStore.max("secret.lavaFalls", 1)
         hiFish(s)
         playtime(s)
         AchFlips.onChat(s)
@@ -136,7 +136,7 @@ object AchHooks {
         if (s == MORT_START) {
             resetRun()
             runStartMs = System.currentTimeMillis()
-            AchBus.post(AchEvent.RunStarted(Phase.getFloor()))
+            AchBus.post(AchEvent.RunStarted(BossPhase.getFloor()))
             return
         }
         DROP.find(s)?.let { m ->
@@ -145,19 +145,19 @@ object AchHooks {
             val id = ItemsDb.idFor(item)
             val unit = if (id != null) CroesusPrices.price(id) else 0.0
             val v = if (unit.isNaN() || unit < 0) 0.0 else unit * n
-            AchBus.post(AchEvent.Drop(item, n, v, m.groupValues[1], Location.getCurrentLocation().name2))
+            AchBus.post(AchEvent.Drop(item, n, v, m.groupValues[1], SkyblockLocation.getCurrentLocation().name2))
             return
         }
         TEAM_SCORE.find(s)?.let { flushRunEnd(it.groupValues[1].toInt()); return }
         when {
-            s.startsWith("PUZZLE SOLVED!") && Location.inDungeon() -> {
+            s.startsWith("PUZZLE SOLVED!") && SkyblockLocation.inDungeon() -> {
                 if (s.contains("Water Board") && s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) {
                     val t = fishmod.features.dungeon.puzzles.odin.WaterSolver.secondsSinceOpen()
                     if (t in 0.0..5.0) AchStore.inc("puzzle.waterSub5")
                 }
                 AchBus.post(AchEvent.PuzzleDone(false))
             }
-            s.startsWith("PUZZLE FAIL!") && Location.inDungeon() -> AchBus.post(AchEvent.PuzzleDone(true))
+            s.startsWith("PUZZLE FAIL!") && SkyblockLocation.inDungeon() -> AchBus.post(AchEvent.PuzzleDone(true))
             s.startsWith("☠ You ") -> AchBus.post(AchEvent.OwnDeath(s))
             s.startsWith("OFFER ACCEPTED with") -> AchBus.post(AchEvent.VisitorAccepted)
             s.contains("COMMISSION COMPLETE") -> AchBus.post(AchEvent.CommissionDone)
@@ -171,8 +171,8 @@ object AchHooks {
         val secs = if (runStartMs > 0) (System.currentTimeMillis() - runStartMs) / 1000.0 else parseElapsed(DungeonScore.elapsedTime)
         flushRunEnd(-1)
         // held until Hypixel's "Team Score" line, live score can lag the real one
-        pendingEnd = AchEvent.RunEnded(Phase.getFloor(), secs, DungeonScore.score, DungeonScore.deaths,
-            DungeonScore.secretsFound, !PartyUtil.isInParty(), DungeonScore.percentCleared)
+        pendingEnd = AchEvent.RunEnded(BossPhase.getFloor(), secs, DungeonScore.score, DungeonScore.deaths,
+            DungeonScore.secretsFound, !PartyTools.isInParty(), DungeonScore.percentCleared)
         runStartMs = 0L
     }
 
@@ -202,18 +202,18 @@ object AchHooks {
             val a = fishmod.features.rift.Rift.strip(Mining.area).replace("⏣", "").trim()
             if (a.isNotEmpty() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
         }
-        if (Location.inDungeon() && runStartMs > 0) {
+        if (SkyblockLocation.inDungeon() && runStartMs > 0) {
             if (!bloodSeen && DungeonState.bloodOpened) {
                 bloodSeen = true
                 AchBus.post(AchEvent.BloodOpened((System.currentTimeMillis() - runStartMs) / 1000.0))
             }
             if (!mimicSeen && DungeonScore.mimicKilled) { mimicSeen = true; AchBus.post(AchEvent.MimicKilled) }
             if (!princeSeen && DungeonScore.princeKilled) { princeSeen = true; AchBus.post(AchEvent.PrinceKilled) }
-            val t = Phase.inTerminals()
+            val t = BossPhase.inTerminals()
             if (t && !inTerms) sectionStartMs = System.currentTimeMillis()
-            inTerms = t || (inTerms && Phase.inP3())
+            inTerms = t || (inTerms && BossPhase.inP3())
         }
-        if (tick % 100 == 0 && Location.inSkyblock()) {
+        if (tick % 100 == 0 && SkyblockLocation.inSkyblock()) {
             val feast = Mining.sidebar.any { it.contains("Feast", true) && it.contains("Harvest", true) }
             val now = System.currentTimeMillis()
             if (feast && !feastSeen && now - lastFeastMs > 30 * 60_000L) { lastFeastMs = now; AchBus.post(AchEvent.FeastStarted) }

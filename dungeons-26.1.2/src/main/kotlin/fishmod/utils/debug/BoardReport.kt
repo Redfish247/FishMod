@@ -4,7 +4,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
@@ -45,7 +45,7 @@ object BoardReport {
 
     fun command(kind: String): LiteralArgumentBuilder<FabricClientCommandSource> =
         ClientCommands.literal(kind)
-            .executes { Misc.addChatMessage(Component.literal("§7Usage: /fm $kind <text>")); 1 }
+            .executes { FishUtil.addChatMessage(Component.literal("§7Usage: /fm $kind <text>")); 1 }
             .then(ClientCommands.argument("text", StringArgumentType.greedyString()).executes { c ->
                 manual(if (kind == "bug") "bug" else "suggest", StringArgumentType.getString(c, "text")); 1
             })
@@ -53,7 +53,7 @@ object BoardReport {
     private fun manual(kind: String, text: String) {
         val label = if (kind == "bug") "Bug report" else "Suggestion"
         submit(kind, text.take(80), text) { ok, msg ->
-            Misc.addChatMessage(Component.literal(if (ok) "§a[FishMod] $label sent, thanks!" else "§c[FishMod] $label not sent: $msg"))
+            FishUtil.addChatMessage(Component.literal(if (ok) "§a[FishMod] $label sent, thanks!" else "§c[FishMod] $label not sent: $msg"))
         }
     }
 
@@ -168,7 +168,7 @@ object BoardReport {
         }
     }
 
-    private fun area(): String = try { fishmod.utils.Location.getCurrentLocation().toString() } catch (_: Throwable) { "?" }
+    private fun area(): String = try { fishmod.utils.SkyblockLocation.getCurrentLocation().toString() } catch (_: Throwable) { "?" }
 
     private fun modVersion(): String = try {
         FabricLoader.getInstance().getModContainer("fishmod-dungeons").map { it.metadata.version.friendlyString }.orElse("?")

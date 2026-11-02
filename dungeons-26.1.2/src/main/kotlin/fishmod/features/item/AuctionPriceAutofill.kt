@@ -4,7 +4,7 @@ import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.mixin.accessors.AbstractSignEditScreenAccessor
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
@@ -30,7 +30,7 @@ object AuctionPriceAutofill {
 
     @JvmStatic
     fun trackScreen(screen: AbstractContainerScreen<*>) {
-        if (!FishSettings.auctionPriceAutofillEnabled || !Location.inSkyblock()) return
+        if (!FishSettings.auctionPriceAutofillEnabled || !SkyblockLocation.inSkyblock()) return
         val title = fishmod.utils.ScreenTitle.plain(screen)
         if (title !in GUI_NAMES) return
         val stack = FishDiag.notNull(screen.menu.slots.getOrNull(13)?.item, "AuctionPriceAutofill.1") { "'$title' screen has no slot 13 (slots=${screen.menu.slots.size})" } ?: return
@@ -43,7 +43,7 @@ object AuctionPriceAutofill {
     }
 
     private fun onScreenInit(screen: Screen, width: Int, height: Int) {
-        if (!FishSettings.auctionPriceAutofillEnabled || !Location.inSkyblock()) return
+        if (!FishSettings.auctionPriceAutofillEnabled || !SkyblockLocation.inSkyblock()) return
         if (screen !is AbstractSignEditScreen) return
         val item = pendingItem ?: return
         val sign = FishDiag.notNull((screen as AbstractSignEditScreenAccessor).`fishmod$getSign`(), "AuctionPriceAutofill.2") { "sign edit screen has no sign entity" } ?: return

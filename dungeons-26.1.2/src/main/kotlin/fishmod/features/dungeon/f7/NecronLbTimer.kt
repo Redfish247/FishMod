@@ -1,13 +1,13 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.shaded.practicalconfig.hud.HUDComponent
-import fishmod.utils.Constants
-import fishmod.utils.Location
-import fishmod.utils.Misc
-import fishmod.utils.Scheduler
-import fishmod.utils.config.values.Floor7
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
+import fishmod.utils.TickScheduler
+import fishmod.utils.config.values.Floor7Settings
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.rendering.FishDraw
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
@@ -25,13 +25,13 @@ object NecronLbTimer {
     @JvmStatic
     fun init() {
         timer.init(
-            shouldCount = { Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() == NECRON_PHASE },
-            resetOn = { Location.inDungeon() },
+            shouldCount = { SkyblockLocation.inDungeon() && BossPhase.isInFloor7() && BossPhase.getPhase() == NECRON_PHASE },
+            resetOn = { SkyblockLocation.inDungeon() },
             onTick = { t ->
-                if (Floor7.enableNecronLbTimer && t == endTick()) {
+                if (Floor7Settings.enableNecronLbTimer && t == endTick()) {
                     try {
-                        Misc.forceTitle(Component.literal("SHOOT LB!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), Component.empty())
-                        Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
+                        FishUtil.forceTitle(Component.literal("SHOOT LB!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), Component.empty())
+                        TickScheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
                     } catch (e: Exception) { FishDiag.fail("NecronLbTimer.1", "necron LB alert threw", e) }
                 }
             }
@@ -39,14 +39,14 @@ object NecronLbTimer {
     }
 
     private fun endTick(): Int =
-        max(1, SHOOT_TICK - ceil(max(0, Floor7.necronLbPingMs) / 50.0).toInt())
+        max(1, SHOOT_TICK - ceil(max(0, Floor7Settings.necronLbPingMs) / 50.0).toInt())
 
     @JvmStatic
-    fun display(): Boolean = Floor7.enableTickTimers && Floor7.enableNecronLbTimer && Location.inDungeon() &&
-        Phase.isInFloor7() && Phase.getPhase() == NECRON_PHASE && timer.tick in 0..endTick()
+    fun display(): Boolean = Floor7Settings.enableTickTimers && Floor7Settings.enableNecronLbTimer && SkyblockLocation.inDungeon() &&
+        BossPhase.isInFloor7() && BossPhase.getPhase() == NECRON_PHASE && timer.tick in 0..endTick()
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        FishDiag.guard("NecronLbTimer.2", "necron LB timer render threw") { RenderUtils.drawTimer(component, context, (endTick() - timer.tick) * Constants.TICK_DURATION, Floor7.necronLbColor) }
+        FishDiag.guard("NecronLbTimer.2", "necron LB timer render threw") { FishDraw.drawTimer(component, context, (endTick() - timer.tick) * FishConstants.TICK_DURATION, Floor7Settings.necronLbColor) }
     }
 }
