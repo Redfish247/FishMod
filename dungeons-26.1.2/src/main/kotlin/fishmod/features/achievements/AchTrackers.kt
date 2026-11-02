@@ -42,7 +42,7 @@ object AchTrackers {
             is AchEvent.RunStarted -> {
                 if (LocalTime.now().hour < 5) secret("midnightRun")
                 TickScheduler.scheduleTask(Runnable {
-                    if (currentFloor() == "F1" && st.get("cata.level") >= 50) secret("wrongFloor")
+                    if (currentFloor() == "F1" && st.get("cata.level") >= 35) secret("wrongFloor")
                 }, 60)
             }
             is AchEvent.RunEnded -> onRunEnded(e)

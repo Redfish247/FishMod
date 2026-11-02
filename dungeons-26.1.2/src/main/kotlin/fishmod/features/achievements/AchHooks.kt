@@ -34,12 +34,9 @@ object AchHooks {
     private var feastSeen = false
     private var lastFeastMs = 0L
     private var tick = 0
-    private var lavaDeaths = 0
-    private val LAVA_DEATH = Regex("^☠ You .*lava")
+    private var lavaFalls = 0
+    private var wasInLava = false
     private val ELAPSED = Regex("(\\d+)([hms])")
-
-    @JvmStatic
-    fun i4Plate() { Minecraft.getInstance().execute { AchStore.max("secret.i4Plate", 1) } }
 
     fun init() {
         FishEvents.chat.register { c ->
@@ -68,7 +65,7 @@ object AchHooks {
     private fun resetRun() {
         flushRunEnd(-1)
         runStartMs = 0L; bloodSeen = false; mimicSeen = false; princeSeen = false
-        sectionStartMs = 0L; inTerms = false; lavaDeaths = 0
+        sectionStartMs = 0L; inTerms = false; lavaFalls = 0; wasInLava = false
     }
 
     private val FISH_NAMES = setOf("fish", "redfish2471")
@@ -125,7 +122,6 @@ object AchHooks {
     }
 
     private fun onChat(s: String) {
-        if (SkyblockLocation.inDungeon() && LAVA_DEATH.containsMatchIn(s) && ++lavaDeaths >= 10) AchStore.max("secret.lavaFalls", 1)
         hiFish(s)
         playtime(s)
         AchFlips.onChat(s)
@@ -203,6 +199,9 @@ object AchHooks {
             if (a.isNotEmpty() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
         }
         if (SkyblockLocation.inDungeon() && runStartMs > 0) {
+            val inLava = Minecraft.getInstance().player?.isInLava == true
+            if (inLava && !wasInLava && ++lavaFalls >= 10) AchStore.max("secret.lavaFalls", 1)
+            wasInLava = inLava
             if (!bloodSeen && DungeonState.bloodOpened) {
                 bloodSeen = true
                 AchBus.post(AchEvent.BloodOpened((System.currentTimeMillis() - runStartMs) / 1000.0))
