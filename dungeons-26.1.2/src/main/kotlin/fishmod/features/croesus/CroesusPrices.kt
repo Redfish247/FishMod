@@ -426,7 +426,13 @@ object CroesusPrices {
                             try { next[key] = value.asDouble } catch (ex: Exception) { FishDiag.fail("CroesusPrices.18", "lbin value for $key not numeric", ex) }
                         }
                     }
-                    FishDiag.check(next.isNotEmpty(), "CroesusPrices.19") { "coflnet lbin parsed 0 entries" }
+                    // Empty 200 keeps the cached prices and backs off
+                    if (next.isEmpty()) {
+                        val entries = root.size()
+                        if (entries > 0 || lbin.isEmpty()) FishDiag.fail("CroesusPrices.19", "coflnet lbin parsed 0 entries (body had $entries, cached ${lbin.size})")
+                        lastLbin = failStamp()
+                        return@thenAccept
+                    }
                     lbin = next
                     val now = System.currentTimeMillis()
                     lastLbin = now
