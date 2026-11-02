@@ -40,7 +40,7 @@ class NetworthBreakdown(total: Double, categories: List<Line>, note: String?) {
     /** Same breakdown with another headline total (FishMod networth). */
     fun withTotal(total: Double): NetworthBreakdown = NetworthBreakdown(total, categories, note)
 
-    fun tooltipLines(): List<String> = tooltipStyledLines().map { line -> line.spans().joinToString("") { it.text() } }
+    fun tooltipLines(): List<String> = tooltipStyledLines().map { line -> line.spans().joinToString("") { it.text } }
 
     /** [showItems] adds per-item rows for every category (Home passes left shift). */
     @JvmOverloads

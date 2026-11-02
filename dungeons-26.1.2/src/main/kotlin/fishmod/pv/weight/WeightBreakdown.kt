@@ -34,7 +34,7 @@ class WeightBreakdown(
 	fun total(): Double = base + overflow
 
 	fun tooltipLines(): List<String> =
-		tooltipStyledLines().map { line -> line.spans().joinToString("") { it.text() } }
+		tooltipStyledLines().map { line -> line.spans().joinToString("") { it.text } }
 
 	fun tooltipStyledLines(): List<PvTooltip.Line> {
 		val lines = ArrayList<PvTooltip.Line>()
