@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.compat.BladeCompat
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.config.values.Floor7
@@ -142,11 +143,15 @@ object F7Huds {
 
     @JvmStatic
     fun init() {
-        MaxorTickTimer.init()
-        CrystalSpawn.init()
         StormTickTimer.init()
         NecronLbTimer.init()
         NecronDropPredict.init()
+        GateDisplay.init()
+        BloodSolver.init()
+        // Blade Addons ships these, so skip ours to avoid double HUDs/sounds
+        if (BladeCompat.active) return
+        MaxorTickTimer.init()
+        CrystalSpawn.init()
         PillarExplode.init()
         GoldorTickTimer.init()
         TermStartTimer.init()
@@ -156,33 +161,32 @@ object F7Huds {
         TitleHider.init()
         MelodyWarning.init()
         SectionCompletion.init()
-        GateDisplay.init()
         PlayersLeaped.init()
-        BloodSolver.init()
     }
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor) {
-        renderOne(ctx, tickTimer, BossTickTimer.display(), BossTickTimer::render, 10, 70)
-        renderOne(ctx, termStartTimer, TermStartTimer.display(), TermStartTimer::render, 10, 106)
-        renderOne(ctx, crystalSpawnTime, CrystalSpawn.display(), CrystalSpawn::render, 10, 118)
-        renderOne(ctx, stormDeathTime, StormTickTimer.displayDeathTime(), StormTickTimer::renderDeathTime, 10, 130)
-        renderOne(ctx, sectionProgress, SectionProgress.display(), SectionProgress::render, 10, 142)
-        renderOne(ctx, Section.terminalSplits, Section.display(), Section::render, 10, 154)
+        val own = !BladeCompat.active
+        renderOne(ctx, tickTimer, own && BossTickTimer.display(), BossTickTimer::render, 10, 70)
+        renderOne(ctx, termStartTimer, own && TermStartTimer.display(), TermStartTimer::render, 10, 106)
+        renderOne(ctx, crystalSpawnTime, own && CrystalSpawn.display(), CrystalSpawn::render, 10, 118)
+        renderOne(ctx, stormDeathTime, own && StormTickTimer.displayDeathTime(), StormTickTimer::renderDeathTime, 10, 130)
+        renderOne(ctx, sectionProgress, own && SectionProgress.display(), SectionProgress::render, 10, 142)
+        renderOne(ctx, Section.terminalSplits, own && Section.display(), Section::render, 10, 154)
         renderOne(ctx, TerminalTracker.terminalTrackerHud, TerminalTracker.display(), TerminalTracker::render, 10, 230)
         renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
         renderOne(ctx, pyTimer, StormTickTimer.displayPyTimer(), StormTickTimer::renderPyTimer, 10, 178)
         renderOne(ctx, necronDragTimer, NecronDropPredict.display(), NecronDropPredict::render, 10, 220)
         renderOne(ctx, necronDropLanding, NecronDropPredict.displayLanding(), NecronDropPredict::renderLanding, 10, 76)
         renderOne(ctx, necronLbTimer, NecronLbTimer.display(), NecronLbTimer::render, 10, 190)
-        renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
-        renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)
-        renderOne(ctx, pillarExplosion, PillarExplode.displayTimer(), PillarExplode::renderTimer, 10, 214)
-        renderOne(ctx, currentSection, CurrentSection.display(), CurrentSection::render, 10, 202)
-        renderOne(ctx, deviceNotifier, DeviceNotifier.display(), DeviceNotifier::render, 10, 52)
-        renderOne(ctx, melodyWarning, MelodyWarning.display(), MelodyWarning::render, 10, 64)
-        renderOne(ctx, sectionCompletion, SectionCompletion.display(), SectionCompletion::render, 10, 16)
-        renderOne(ctx, playersLeaped, PlayersLeaped.display(), PlayersLeaped::render, 10, 90)
+        renderOne(ctx, crystalReminder, own && CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
+        renderOne(ctx, stormCrush, own && PillarExplode.display(), PillarExplode::render, 10, 28)
+        renderOne(ctx, pillarExplosion, own && PillarExplode.displayTimer(), PillarExplode::renderTimer, 10, 214)
+        renderOne(ctx, currentSection, own && CurrentSection.display(), CurrentSection::render, 10, 202)
+        renderOne(ctx, deviceNotifier, own && DeviceNotifier.display(), DeviceNotifier::render, 10, 52)
+        renderOne(ctx, melodyWarning, own && MelodyWarning.display(), MelodyWarning::render, 10, 64)
+        renderOne(ctx, sectionCompletion, own && SectionCompletion.display(), SectionCompletion::render, 10, 16)
+        renderOne(ctx, playersLeaped, own && PlayersLeaped.display(), PlayersLeaped::render, 10, 90)
     }
 
     private fun renderOne(

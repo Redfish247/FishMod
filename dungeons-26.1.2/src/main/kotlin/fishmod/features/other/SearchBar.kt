@@ -29,10 +29,12 @@ object SearchBar {
     private var searchTerm = ""
     private var parsedValue = Double.NaN
 
+    private fun on() = FishSettings.inventorySearchEnabled && !fishmod.compat.BladeCompat.active
+
     @JvmStatic
     fun init() {
         DrawEvents.INVENTORY_SLOT_AFTER.register { context, item, x, y ->
-            if (!FishSettings.inventorySearchEnabled || !shouldDisplay() || searchTerm.isEmpty() || !parsedValue.isNaN()) return@register
+            if (!on() || !shouldDisplay() || searchTerm.isEmpty() || !parsedValue.isNaN()) return@register
             val matched = try {
                 matches(item)
             } catch (e: Exception) {
@@ -68,7 +70,7 @@ object SearchBar {
 
     @JvmStatic
     fun render(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
-        if (!FishSettings.inventorySearchEnabled || !exists() || !shouldDisplay()) return
+        if (!on() || !exists() || !shouldDisplay()) return
         val bar = searchBar!!
         bar.x = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
         try {
@@ -90,7 +92,7 @@ object SearchBar {
 
     @JvmStatic
     fun keyPressed(input: KeyEvent): Boolean {
-        if (!FishSettings.inventorySearchEnabled || !exists()) return false
+        if (!on() || !exists()) return false
         val bar = searchBar!!
 
         val ctrlIsPressed = (input.modifiers() and GLFW.GLFW_MOD_CONTROL) != 0
@@ -125,13 +127,13 @@ object SearchBar {
 
     @JvmStatic
     fun charTyped(input: CharacterEvent) {
-        if (!FishSettings.inventorySearchEnabled || !exists() || !searchBar!!.isFocused || !shouldDisplay()) return
+        if (!on() || !exists() || !searchBar!!.isFocused || !shouldDisplay()) return
         searchBar!!.charTyped(input)
     }
 
     @JvmStatic
     fun onMouseClick(click: MouseButtonEvent) {
-        if (!FishSettings.inventorySearchEnabled || !exists() || !shouldDisplay()) return
+        if (!on() || !exists() || !shouldDisplay()) return
         searchBar!!.isFocused = inBounds(click.x(), click.y())
     }
 

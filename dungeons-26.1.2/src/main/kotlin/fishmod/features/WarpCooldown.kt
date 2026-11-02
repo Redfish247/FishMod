@@ -34,7 +34,7 @@ object WarpCooldown {
         )
 
         Events.ON_GAME_MESSAGE.register { text ->
-            if (!Dungeons.enableWarpCooldown) return@register false
+            if (!Dungeons.enableWarpCooldown || fishmod.compat.BladeCompat.active) return@register false
             try {
                 val s = TextStrip.plain(text.string)
                 if (ENTERED.matcher(s).find()) {
@@ -64,7 +64,7 @@ object WarpCooldown {
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!Dungeons.enableWarpCooldown) return
+        if (!Dungeons.enableWarpCooldown || fishmod.compat.BladeCompat.active) return
         val rem = remainingMs()
         if (rem <= 0L) return
         val mc = Minecraft.getInstance()
