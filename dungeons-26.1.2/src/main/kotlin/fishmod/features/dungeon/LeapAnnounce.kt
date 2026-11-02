@@ -29,7 +29,7 @@ object LeapAnnounce {
             false
         }
         FishEvents.ON_LEAP.register { message ->
-            if (!DungeonSettings.enableLeapMessages) return@register false
+            if (!DungeonSettings.leapAnnounce) return@register false
             val s = message.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
             val m = TARGET.matcher(s)
             if (!m.find()) {

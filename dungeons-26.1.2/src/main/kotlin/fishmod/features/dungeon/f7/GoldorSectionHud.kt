@@ -27,7 +27,7 @@ object GoldorSectionHud {
 
     @JvmStatic
     fun display(): Boolean {
-        return Floor7Settings.showCurrentSection && BossPhase.inTerminals()
+        return Floor7Settings.currentSectionHud && BossPhase.inTerminals()
     }
 
     @JvmStatic

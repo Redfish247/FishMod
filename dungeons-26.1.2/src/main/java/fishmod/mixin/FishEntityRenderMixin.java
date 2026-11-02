@@ -39,7 +39,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             if (state.nameTag != null && fishmod.utils.debug.FishDebug.INSTANCE.getHoloTrace()) {
                 fishmod.utils.debug.FishDebug.INSTANCE.holoTraceMsg(entity.getType().toShortString(), state.nameTag.getString());
             }
-            if (DungeonSettings.hideBlazeNameTag && state.nameTag != null && SkyblockLocation.inDungeon()
+            if (DungeonSettings.hideBlazeTags && state.nameTag != null && SkyblockLocation.inDungeon()
                     && !(entity instanceof net.minecraft.world.entity.player.Player)) {
                 String nameTagText = state.nameTag.getString();
                 if (nameTagText.contains("Blaze")) {
@@ -51,7 +51,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                     && fishmod.features.HologramText.take(entity.getPosition(tickProgress), state.nameTagAttachment, state.nameTag)) {
                 state.nameTag = null;
             }
-            if (entity instanceof RemotePlayer player && DungeonSettings.renderClassName && SkyblockLocation.inDungeon()) {
+            if (entity instanceof RemotePlayer player && DungeonSettings.roleNameTags && SkyblockLocation.inDungeon()) {
                 if (DungeonRole.isTeammate(player)) {
                     state.nameTag = null;
                 }
@@ -73,9 +73,9 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             int dianaGlow = fishmod.features.diana.RareMobs.glowColor(entity);
             if (dianaGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dianaGlow;
 
-            if (VisualSettings.hideEntityFire) {
+            if (VisualSettings.hideMobFire) {
                 state.displayFireAnimation = false;
-            } else if (entity instanceof Player player && VisualSettings.hideFireInf5) {
+            } else if (entity instanceof Player player && VisualSettings.hideBurningInf5) {
                 if (EntityTools.isClientPlayer(player)) {
                     state.displayFireAnimation = false;
                 }
@@ -158,7 +158,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 }
             }
 
-            if (VisualSettings.hideDeadEntities && entity instanceof LivingEntity le
+            if (VisualSettings.hideDeadMobs && entity instanceof LivingEntity le
                     && (le.isDeadOrDying() || le.getHealth() <= 0f)) {
                 cir.setReturnValue(false);
                 return;

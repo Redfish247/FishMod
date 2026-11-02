@@ -40,8 +40,13 @@ object FishConfig {
             fishmod.features.achievements.AchSettings::class.java
         )
 
-    init { ColorDefaults.snapshot(classes) }
+    private const val PATH = "config/fishmod-settings.json"
+
+    init {
+        ColorDefaults.snapshot(classes)
+        ConfigKeyMigration.run(PATH)
+    }
 
     @JvmField
-    val manager: ConfigManager = ConfigManager("config/fishmod-settings.json", classes)
+    val manager: ConfigManager = ConfigManager(PATH, classes)
 }

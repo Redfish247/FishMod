@@ -24,7 +24,7 @@ object SectionDoneHud {
 
     @JvmStatic
     fun display(): Boolean {
-        return System.currentTimeMillis() - prevTime < 1000 && Floor7Settings.sectionCompletionNotification
+        return System.currentTimeMillis() - prevTime < 1000 && Floor7Settings.sectionDoneAlert
     }
 
     @JvmStatic

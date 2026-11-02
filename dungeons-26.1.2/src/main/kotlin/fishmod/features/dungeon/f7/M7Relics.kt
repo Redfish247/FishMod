@@ -86,7 +86,7 @@ object M7Relics {
             false
         }
         NecronDeath.onDeath {
-            if (Floor7Settings.enableRelicStartTimer && BossPhase.getFloor() == "M7") { spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L; spawned = false }
+            if (Floor7Settings.relicStartHud && BossPhase.getFloor() == "M7") { spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L; spawned = false }
         }
         FishEvents.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; spawned = false; myRelic = null; pickers.clear(); placed.clear(); relicStands.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
@@ -166,7 +166,7 @@ object M7Relics {
     }
 
     private fun renderBox(matrices: PoseStack, vc: VertexConsumer) {
-        if (!Floor7Settings.enableRelicStartTimer || !Floor7Settings.renderRelicHighlight || !SkyblockLocation.inDungeon() || !BossPhase.inP5()) return
+        if (!Floor7Settings.relicStartHud || !Floor7Settings.relicHighlight || !SkyblockLocation.inDungeon() || !BossPhase.inP5()) return
         val relic = heldRelic() ?: return
         val c = relic.cauldron
         val box = AABB(c.x - 0.5, c.y - 0.5, c.z - 0.5, c.x + 0.5, c.y + 0.5, c.z + 0.5)
@@ -176,7 +176,7 @@ object M7Relics {
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!Floor7Settings.enableRelicStartTimer) return
+        if (!Floor7Settings.relicStartHud) return
         val left = spawnEndMs - System.currentTimeMillis()
         FishDiag.check(left <= SPAWN_TICKS * 50L + 1000L, "M7Relics.7") { "relic spawn timer too far in future: ${left}ms" }
         if (left <= 0L) return

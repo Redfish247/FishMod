@@ -72,7 +72,7 @@ public class FishPacketHandlerMixin {
             float pitch = packet.getPitch();
             SoundEvent event = packet.getSound().value();
 
-            if (MiscSettings.disableAbilityCooldownSound && pitch == 0.0 && volume == 8.0 && event == SoundEvents.ENDERMAN_TELEPORT) {
+            if (MiscSettings.muteAbilityCooldown && pitch == 0.0 && volume == 8.0 && event == SoundEvents.ENDERMAN_TELEPORT) {
                 ci.cancel();
             }
 

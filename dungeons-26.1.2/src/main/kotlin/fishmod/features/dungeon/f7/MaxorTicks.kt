@@ -19,7 +19,7 @@ object MaxorTicks {
 
     @JvmStatic
     fun display(): Boolean {
-        return Floor7Settings.enableTickTimers && Floor7Settings.enableMaxorTickTimer && SkyblockLocation.inDungeon() && BossPhase.inP1()
+        return Floor7Settings.enableTickTimers && Floor7Settings.maxorTicksHud && SkyblockLocation.inDungeon() && BossPhase.inP1()
     }
 
     @JvmStatic

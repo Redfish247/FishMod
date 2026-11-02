@@ -17,7 +17,7 @@ public class FishEntityMixin {
 
     @Inject(method = "isCurrentlyGlowing", at = @At("HEAD"), cancellable = true)
     public void isGlowing(CallbackInfoReturnable<Boolean> cir) {
-        if (VisualSettings.disableGlowing) {
+        if (VisualSettings.noEntityGlow) {
             cir.setReturnValue(false);
         }
     }

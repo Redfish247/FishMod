@@ -125,11 +125,11 @@ enum class DungeonRole {
             if (dungeonClass == null) return -0x1
 
             return when (dungeonClass) {
-                ARCHER -> DungeonSettings.archerColor
-                BERSERK -> DungeonSettings.berserkColor
-                HEALER -> DungeonSettings.healerColor
-                MAGE -> DungeonSettings.mageColor
-                TANK -> DungeonSettings.tankColor
+                ARCHER -> DungeonSettings.roleColorArcher
+                BERSERK -> DungeonSettings.roleColorBerserk
+                HEALER -> DungeonSettings.roleColorHealer
+                MAGE -> DungeonSettings.roleColorMage
+                TANK -> DungeonSettings.roleColorTank
             }
         }
 

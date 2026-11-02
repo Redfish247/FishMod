@@ -13,7 +13,7 @@ public class HideEffectsMixin {
 
     @Inject(method = "extractEffects", at=@At("HEAD"), cancellable = true)
     public void drawEffects(GuiGraphicsExtractor context, java.util.Collection<?> effects, int x, int y, int width, int height, int maxHeight, CallbackInfo ci) {
-        if (VisualSettings.hideStatusOverLay) {
+        if (VisualSettings.hideEffectHud) {
             ci.cancel();
         }
     }

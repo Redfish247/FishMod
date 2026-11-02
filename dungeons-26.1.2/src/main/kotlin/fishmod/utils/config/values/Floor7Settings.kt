@@ -6,23 +6,23 @@ object Floor7Settings {
 
     @ConfigValue
     @JvmField
-    var enableCrystalSpawnTime: Boolean = false
+    var crystalSpawnHud: Boolean = false
 
     @ConfigValue
     @JvmField
-    var enableStormTickTimer: Boolean = false
+    var stormTicksHud: Boolean = false
 
     @ConfigValue
     @JvmField
-    var stormTickTimerColor: Int = 0xffffffff.toInt()
+    var stormTicksColor: Int = 0xffffffff.toInt()
 
     @ConfigValue
     @JvmField
-    var tickDownStormTickTimer: Boolean = false
+    var stormTicksCountDown: Boolean = false
 
     @ConfigValue
     @JvmField
-    var enableStormDeathTime: Boolean = false
+    var stormKillTimeHud: Boolean = false
 
     @ConfigValue
     @JvmField
@@ -78,23 +78,23 @@ object Floor7Settings {
 
     @ConfigValue
     @JvmField
-    var enableGoldorTickTimer: Boolean = false
+    var goldorTicksHud: Boolean = false
 
     @ConfigValue
     @JvmField
-    var inDeathTicks: Boolean = true
+    var goldorUseDeathTicks: Boolean = true
 
     @ConfigValue
     @JvmField
-    var enableTermStartTimer: Boolean = false
+    var termOpenHud: Boolean = false
 
     @ConfigValue
     @JvmField
-    var enableRelicStartTimer: Boolean = false
+    var relicStartHud: Boolean = false
 
     @ConfigValue
     @JvmField
-    var renderRelicHighlight: Boolean = false
+    var relicHighlight: Boolean = false
 
     @ConfigValue
     @JvmField
@@ -106,63 +106,63 @@ object Floor7Settings {
 
     @ConfigValue
     @JvmField
-    var notifyPre4Completion: Boolean = false
+    var pre4DoneAlert: Boolean = false
 
     @ConfigValue
     @JvmField
-    var notifyStormCrush: Boolean = false
+    var stormCrushAlert: Boolean = false
 
     @ConfigValue
     @JvmField
-    var timePillarExplosion: Boolean = false
+    var pillarBlastTimer: Boolean = false
 
     @ConfigValue
     @JvmField
-    var notifiyMelody: Boolean = false
+    var melodyAlert: Boolean = false
 
     @ConfigValue
     @JvmField
-    var disableTitlesAtPre4: Boolean = false
+    var muteTitlesPre4: Boolean = false
 
     @ConfigValue
     @JvmField
-    var hideTerminalTitles: Boolean = false
+    var muteTerminalTitles: Boolean = false
 
     @ConfigValue
     @JvmField
-    var terminalTimeStamps: Boolean = false
+    var termSplitTimestamps: Boolean = false
 
     @ConfigValue
     @JvmField
-    var crystalPlaceReminder: Boolean = false
+    var crystalPlaceAlert: Boolean = false
 
     @ConfigValue
     @JvmField
-    var showSectionProgress: Boolean = false
+    var sectionProgressHud: Boolean = false
 
     @ConfigValue
     @JvmField
-    var notifySSCompletion: Boolean = false
+    var ssDoneAlert: Boolean = false
 
     @ConfigValue
     @JvmField
-    var disableTitlesAtSS: Boolean = false
+    var muteTitlesSS: Boolean = false
 
     @ConfigValue
     @JvmField
-    var instantlyDisplayCrystalReminder: Boolean = false
+    var crystalAlertInstant: Boolean = false
 
     @ConfigValue
     @JvmField
-    var makeGoldorTickUp: Boolean = true
+    var goldorTicksCountUp: Boolean = true
 
     @ConfigValue
     @JvmField
-    var capitalizeHealthNumbers: Boolean = true
+    var bossHpCapitalized: Boolean = true
 
     @ConfigValue
     @JvmField
-    var sectionCompletionNotification: Boolean = false
+    var sectionDoneAlert: Boolean = false
 
     @ConfigValue
     @JvmField
@@ -170,19 +170,19 @@ object Floor7Settings {
 
     @ConfigValue
     @JvmField
-    var enableMaxorTickTimer: Boolean = false
+    var maxorTicksHud: Boolean = false
 
     @ConfigValue
     @JvmField
-    var showCurrentSection: Boolean = false
+    var currentSectionHud: Boolean = false
 
     @ConfigValue
     @JvmField
-    var sectionColorProgress: Boolean = false
+    var sectionProgressColored: Boolean = false
 
     @ConfigValue
     @JvmField
-    var sectionPrevObjective: Boolean = false
+    var sectionShowPrevious: Boolean = false
 
     @ConfigValue
     @JvmField

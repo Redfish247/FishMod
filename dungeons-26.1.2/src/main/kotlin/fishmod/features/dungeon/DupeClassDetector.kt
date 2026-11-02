@@ -30,7 +30,7 @@ object DupeClassDetector {
         }
 
         FishEvents.ON_PLAYER_ENTRY.register { _ ->
-            if (!DungeonSettings.detectDuplicateClass) return@register false
+            if (!DungeonSettings.dupeClassAlert) return@register false
             try { checkForDupes() } catch (e: Exception) { FishDiag.fail("DupeClassDetector.1", "dupe class check failed (${DungeonRole.getAll().size} players)", e) }
             false
         }
@@ -41,7 +41,7 @@ object DupeClassDetector {
 
         DungeonRole.getAll().forEach { name, dungeonClass ->
             if (dungeonClass == null) { FishDiag.fail("DupeClassDetector.2", "player $name has null dungeon class"); return@forEach }
-            if (dungeonClass == DungeonRole.MAGE && DungeonSettings.ignoreDupeMage) return@forEach
+            if (dungeonClass == DungeonRole.MAGE && DungeonSettings.dupeClassSkipMage) return@forEach
             byClass.computeIfAbsent(dungeonClass) { ArrayList() }.add(name)
         }
 

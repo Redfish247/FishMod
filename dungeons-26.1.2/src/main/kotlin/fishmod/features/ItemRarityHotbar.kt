@@ -38,7 +38,7 @@ object ItemRarityHotbar {
 
     @JvmStatic
     fun drawRarity(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
-        if (!VisualSettings.itemRarityBackground || fishmod.compat.BladeCompat.active || stack == null || stack.isEmpty) return
+        if (!VisualSettings.rarityBackground || fishmod.compat.BladeCompat.active || stack == null || stack.isEmpty) return
 
         val holder = stack as? RarityTierCache
         if (holder == null) {
@@ -49,7 +49,7 @@ object ItemRarityHotbar {
             if (!holder.`fishmod$hasScanned`()) holder.`fishmod$setItemRarity`(getRarity(stack))
             if (!holder.`fishmod$hasItemRarity`()) return
 
-            val sprite = if (VisualSettings.circularRarityBackground) CIRCLE else SQUARE
+            val sprite = if (VisualSettings.rarityBgCircle) CIRCLE else SQUARE
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.`fishmod$getItemRarity`()))
         } catch (t: Throwable) {
             FishDiag.fail("ItemRarityHotbar.2", "rarity background draw failed at $x,$y", t)

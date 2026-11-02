@@ -50,14 +50,14 @@ object DungeonRequeue {
                     val skip = dtSkip
                     dtSkip = false
                     val teamShrank = startTeamCount >= 2 && fishmod.features.dungeon.map.DungeonPlayers.count() < startTeamCount
-                    if (DungeonSettings.enableAutoRequeue && !BladeCompat.active && !partyChanged && !skip && !teamShrank) {
+                    if (DungeonSettings.autoRequeueEnabled && !BladeCompat.active && !partyChanged && !skip && !teamShrank) {
                         val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
                         val cmd = requeueCommand()
                         FishDiag.check(startTeamCount > 0, "AutoRequeue.2") { "extra stats seen but team count never recorded (players=${fishmod.features.dungeon.map.DungeonPlayers.count()})" }
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {
                             Minecraft.getInstance().execute {
                                 val mc = Minecraft.getInstance()
-                                if (DungeonSettings.enableAutoRequeue && !partyChanged && !dtSkip && mc.connection != null) {
+                                if (DungeonSettings.autoRequeueEnabled && !partyChanged && !dtSkip && mc.connection != null) {
                                     FishDiag.guard("AutoRequeue.1", "requeue command '$cmd' failed") { mc.connection!!.sendCommand(cmd) }
                                 }
                             }

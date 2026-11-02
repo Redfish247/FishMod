@@ -19,7 +19,7 @@ object VisualTweaks {
     fun init() {
         UseBlockCallback.EVENT.register(UseBlockCallback { player, level, hand, hit ->
             try {
-                if (VisualSettings.renderOptimizer && VisualSettings.stopShovelFlattening
+                if (VisualSettings.renderOptimizer && VisualSettings.noShovelPath
                     && player === Minecraft.getInstance().player
                     && player.getItemInHand(hand).item is ShovelItem
                     && level.getBlockState(hit.blockPos).block in FLATTENABLE

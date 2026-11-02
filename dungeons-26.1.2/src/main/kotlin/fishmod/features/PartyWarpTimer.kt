@@ -34,7 +34,7 @@ object PartyWarpTimer {
         )
 
         FishEvents.ON_GAME_MESSAGE.register { text ->
-            if (!DungeonSettings.enableWarpCooldown || fishmod.compat.BladeCompat.active) return@register false
+            if (!DungeonSettings.partyWarpTimer || fishmod.compat.BladeCompat.active) return@register false
             try {
                 val s = TextStrip.plain(text.string)
                 if (ENTERED.matcher(s).find()) {
@@ -64,7 +64,7 @@ object PartyWarpTimer {
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!DungeonSettings.enableWarpCooldown || fishmod.compat.BladeCompat.active) return
+        if (!DungeonSettings.partyWarpTimer || fishmod.compat.BladeCompat.active) return
         val rem = remainingMs()
         if (rem <= 0L) return
         val mc = Minecraft.getInstance()

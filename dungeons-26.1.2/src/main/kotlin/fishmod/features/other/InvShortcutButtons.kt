@@ -87,7 +87,7 @@ object InvShortcutButtons {
 
     // old fixed 7-button config -> list
     private fun migrate(): MutableList<InvButton> {
-        val cmds = listOf(InvButtonSettings.command1, InvButtonSettings.command2, InvButtonSettings.command3, InvButtonSettings.command4, InvButtonSettings.command5, InvButtonSettings.command6, InvButtonSettings.command7)
+        val cmds = listOf(InvButtonSettings.invCmd1, InvButtonSettings.invCmd2, InvButtonSettings.invCmd3, InvButtonSettings.invCmd4, InvButtonSettings.invCmd5, InvButtonSettings.invCmd6, InvButtonSettings.invCmd7)
         val names = listOf(InvButtonSettings.name1, InvButtonSettings.name2, InvButtonSettings.name3, InvButtonSettings.name4, InvButtonSettings.name5, InvButtonSettings.name6, InvButtonSettings.name7)
         val icons = listOf(InvButtonSettings.icon1, InvButtonSettings.icon2, InvButtonSettings.icon3, InvButtonSettings.icon4, InvButtonSettings.icon5, InvButtonSettings.icon6, InvButtonSettings.icon7)
         val defs = listOf(77 to 5, 77 to 23, 77 to 41, 133 to 5, 151 to 5, 133 to 61, 151 to 61)

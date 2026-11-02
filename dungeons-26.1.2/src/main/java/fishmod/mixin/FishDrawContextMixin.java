@@ -85,7 +85,7 @@ public class FishDrawContextMixin {
                 fishmod.utils.debug.FishDiag.fail("DrawContextMixin.1", "hotbar rarity draw failed item=" + stack.getItem(), t);
             }
         }
-        if (VisualSettings.oldPlayerHead && stack.getItem() == Items.PLAYER_HEAD) {
+        if (VisualSettings.legacyPlayerHead && stack.getItem() == Items.PLAYER_HEAD) {
             float scale = 0.875f;
             int offset = (16 - (int)(scale * 16)) / 2;
             scaled.set(true);

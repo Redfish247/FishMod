@@ -31,7 +31,7 @@ object MelodyAlert {
     @JvmStatic
     fun init() {
         FishEvents.ON_PARTY_MESSAGE.register { username, message ->
-            if (!Floor7Settings.notifiyMelody) return@register false
+            if (!Floor7Settings.melodyAlert) return@register false
             if (!SkyblockLocation.inDungeon() || !BossPhase.inTerminals()) return@register false
 
             val matcher = PATTERN.matcher(message)
@@ -78,7 +78,7 @@ object MelodyAlert {
 
     @JvmStatic
     fun display(): Boolean {
-        return melodyStarted && Floor7Settings.notifiyMelody && !ownUsername
+        return melodyStarted && Floor7Settings.melodyAlert && !ownUsername
     }
 
     @JvmStatic
@@ -89,7 +89,7 @@ object MelodyAlert {
         val num = minOf(Math.round(furthestProgress * lanes / 100.0).toInt(), lanes - 1)
 
         var color = FishConstants.DARK_PURPLE
-        if (DungeonSettings.useClassColors) {
+        if (DungeonSettings.roleColors) {
             color = DungeonRole.getColor(name)
         }
 

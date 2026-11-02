@@ -47,7 +47,7 @@ object FishUtil {
 
     @JvmStatic
     fun addChatMessage(text: Component) {
-        forceMainThread { INSTANCE.hud.chat.addClientSystemMessage(Component.literal(MiscSettings.textPrefix).append(text)) }
+        forceMainThread { INSTANCE.hud.chat.addClientSystemMessage(Component.literal(MiscSettings.chatPrefix).append(text)) }
     }
 
     @JvmStatic

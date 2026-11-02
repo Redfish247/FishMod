@@ -21,7 +21,7 @@ object StormPillarTimer {
     @JvmStatic
     fun init() {
         FishEvents.ON_GAME_MESSAGE.register { text ->
-            if (!Floor7Settings.notifyStormCrush && !Floor7Settings.timePillarExplosion) return@register false
+            if (!Floor7Settings.stormCrushAlert && !Floor7Settings.pillarBlastTimer) return@register false
             if (!SkyblockLocation.inDungeon() || !BossPhase.inP2()) return@register false
             val string = text.string
             if (string == "[BOSS] Storm: Oof" || string == "[BOSS] Storm: Ouch, that hurt!") {
@@ -37,7 +37,7 @@ object StormPillarTimer {
     }
 
     @JvmStatic
-    fun displayTimer(): Boolean = Floor7Settings.timePillarExplosion && tick > 0
+    fun displayTimer(): Boolean = Floor7Settings.pillarBlastTimer && tick > 0
 
     @JvmStatic
     fun renderTimer(component: HUDComponent, context: GuiGraphicsExtractor) {
@@ -45,7 +45,7 @@ object StormPillarTimer {
     }
 
     @JvmStatic
-    fun display(): Boolean = Floor7Settings.enableTickTimers && Floor7Settings.notifyStormCrush && tick > 0
+    fun display(): Boolean = Floor7Settings.enableTickTimers && Floor7Settings.stormCrushAlert && tick > 0
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
