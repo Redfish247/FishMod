@@ -90,8 +90,8 @@ internal class ProfileEnrichmentSession(
     private val done: EnumSet<Job> = EnumSet.noneOf(Job::class.java)
     private val started: EnumSet<Job> = EnumSet.noneOf(Job::class.java)
 
-    private val name: String? = core.snapshot?.playerName()
-    private val uuid: UUID? = core.snapshot?.playerUuid()
+    private val name: String? = core.snapshot?.playerName
+    private val uuid: UUID? = core.snapshot?.playerUuid
     private val profileId: String? = core.profileId
 
     private var current: ProfileFetcher.LoadedProfile = core
