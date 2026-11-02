@@ -25,13 +25,11 @@ object AchRegistry {
         "frame_perfect" to "Beat yourself by less than a blink.",
         "the_chosen_one" to "Lightning strikes twice, in the same sitting.",
         "the_fish_king" to "He who rules every other secret wears the crown.",
-        "i_hate_bers" to "That plate in the fourth room can't take the pressure.",
-        "wrong_floor" to "A catacombs master visiting the very first floor. Lost?",
+        "wrong_floor" to "A catacombs veteran visiting the very first floor. Lost?",
         "hot_tub" to "The floor is lava. Literally. Over and over.",
         "splash_zone" to "It's hot, it's bright, and it's the last thing you see.",
         "the_one_that_got_away" to "Some prey vanishes if you take too long to finish it.",
         "party_of_one" to "The hardest floor needs no friends. Prove it.",
-        "fish_friend" to "A certain fish enjoys your company, run after run.",
     )
 
     val ALL = ArrayList<Ach>()
@@ -388,13 +386,11 @@ object AchRegistry {
         a("frame_perfect", "Secret Achievements", "Frame Perfect", "Beat your previous PB by <0.01s", "Secret", 25, "secret.framePerfect", 1L, "", true)
         a("the_chosen_one", "Secret Achievements", "The Chosen One", "Obtain the same designated rare RNG twice in one session", "Secret", 25, "secret.chosenOne", 1L, "", true)
         a("the_fish_king", "Secret Achievements", "The Fish King", "Unlock every secret achievement", "Impossible", 100, "meta.fishKing", 1L, "", true)
-        a("i_hate_bers", "Secret Achievements", "I Hate Bers", "Break the I4 Pressure Plate", "Secret", 25, "secret.i4Plate", 1L, "", true)
-        a("wrong_floor", "Secret Achievements", "Wrong Floor", "Enter F1 while Catacombs 50", "Secret", 25, "secret.wrongFloor", 1L, "", true)
+        a("wrong_floor", "Secret Achievements", "Wrong Floor", "Enter F1 while Catacombs 35+","Secret", 25, "secret.wrongFloor", 1L, "", true)
         a("hot_tub", "Secret Achievements", "Hot Tub", "Fall in lava 10 times in 1 run", "Secret", 25, "secret.lavaFalls", 1L, "", true)
         a("splash_zone", "Secret Achievements", "Splash Zone", "Die to lava in a dungeon", "Secret", 25, "secret.lavaDeath", 1L, "", true)
         a("the_one_that_got_away", "Secret Achievements", "The One That Got Away", "An Inquisitor despawns before you kill it", "Secret", 25, "secret.inqDespawn", 1L, "", true)
         a("party_of_one", "Secret Achievements", "Party of One", "Complete an M7 solo", "Secret", 100, "secret.soloM7", 1L, "", true)
-        a("fish_friend", "Secret Achievements", "Fish Friend", "Complete 10 runs with Fish in your party", "Secret", 50, "secret.fishFriend", 1L, "", true)
         a("fishmod_completionist", "Ultimate", "FishMod Completionist", "Unlock every non-secret achievement", "Impossible", 250, "meta.completionist", 1L, "", false)
         a("the_fish_emperor", "Ultimate", "The Fish Emperor", "Unlock every achievement, secrets included", "Impossible", 500, "meta.emperor", 1L, "", false)
     }

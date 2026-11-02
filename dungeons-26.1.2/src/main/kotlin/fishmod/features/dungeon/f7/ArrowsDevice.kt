@@ -71,11 +71,7 @@ object ArrowsDevice {
         FishEvents.packet.register { packet ->
             try {
                 when (packet) {
-                    is ClientboundBlockUpdatePacket -> {
-                        if (packet.blockState.isAir && inP3() && isPlayerInRoom &&
-                            Minecraft.getInstance().level?.getBlockState(packet.pos)?.block is net.minecraft.world.level.block.BasePressurePlateBlock) fishmod.features.achievements.AchHooks.i4Plate()
-                        onBlock(packet.pos, packet.blockState)
-                    }
+                    is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                     is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
                     is ClientboundSetEntityDataPacket -> onEntityData(packet)
                 }
