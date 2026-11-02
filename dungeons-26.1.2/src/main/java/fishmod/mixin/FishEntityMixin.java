@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class FishEntityMixin {
 
     @Inject(method = "isCurrentlyGlowing", at = @At("HEAD"), cancellable = true)
-    public void isGlowing(CallbackInfoReturnable<Boolean> cir) {
+    public void fishmod$glowOverride(CallbackInfoReturnable<Boolean> cir) {
         if (VisualSettings.noEntityGlow) {
             cir.setReturnValue(false);
         }
