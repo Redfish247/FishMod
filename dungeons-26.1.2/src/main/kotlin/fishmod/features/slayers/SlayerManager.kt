@@ -357,6 +357,7 @@ object SlayerManager {
     }
 
     private fun onQuestFailed() {
+        if (state == State.BOSS_SPAWNED || state == State.COCOONED) fishmod.features.achievements.AchStore.max("secret.slayerEscape", 1)
         SlayerTimer.reset()
         state = State.GRINDING
         progress = null
