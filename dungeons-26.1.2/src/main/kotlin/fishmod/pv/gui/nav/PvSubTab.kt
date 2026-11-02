@@ -5,16 +5,21 @@
  *
  * Derived from BetterPV by Vyriv (https://github.com/Vyriv/BetterPV).
  */
-package fishmod.pv.gui.nav;
+package fishmod.pv.gui.nav
 
-import fishmod.pv.ProfileViewer;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import fishmod.pv.ProfileViewer
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 
-public enum PvSubTab {
+enum class PvSubTab(
+	private val iconItem: Item,
+	private val langKey: String,
+	texturePath: String? = null,
+	textureSize: Int = 16
+) {
 	DUNGEON_NORMAL(Items.STONE_BRICKS, "fishmod.pv.sub.dungeon_normal"),
 	DUNGEON_MASTER(Items.NETHER_BRICKS, "fishmod.pv.sub.dungeon_master"),
 	DUNGEON_OVERVIEW(Items.SKELETON_SKULL, "fishmod.pv.sub.dungeon_overview"),
@@ -51,39 +56,19 @@ public enum PvSubTab {
 	HOME_RECORDS(Items.DRAGON_HEAD, "fishmod.pv.sub.home_records"),
 	HOME_ESSENCE(Items.NETHER_STAR, "fishmod.pv.sub.home_essence");
 
-	public static final PvSubTab[] NONE = new PvSubTab[0];
+	private val textureIcon: Identifier? = texturePath?.let { ProfileViewer.id(it) }
+	private val textureSize: Int = maxOf(1, textureSize)
 
-	private final Item iconItem;
-	private final String langKey;
-	private final Identifier textureIcon;
-	private final int textureSize;
+	fun icon(): ItemStack = ItemStack(iconItem)
 
-	PvSubTab(Item item, String langKey) {
-		this(item, langKey, null, 16);
-	}
+	fun textureIcon(): Identifier? = textureIcon
 
-	PvSubTab(Item item, String langKey, String texturePath, int textureSize) {
-		this.iconItem = item;
-		this.langKey = langKey;
-		this.textureIcon = texturePath == null
-			? null
-			: ProfileViewer.id(texturePath);
-		this.textureSize = Math.max(1, textureSize);
-	}
+	fun textureSize(): Int = textureSize
 
-	public ItemStack icon() {
-		return new ItemStack(this.iconItem);
-	}
+	fun label(): Component = Component.translatable(langKey)
 
-	public Identifier textureIcon() {
-		return this.textureIcon;
-	}
-
-	public int textureSize() {
-		return this.textureSize;
-	}
-
-	public Component label() {
-		return Component.translatable(this.langKey);
+	companion object {
+		@JvmField
+		val NONE: Array<PvSubTab> = arrayOf()
 	}
 }

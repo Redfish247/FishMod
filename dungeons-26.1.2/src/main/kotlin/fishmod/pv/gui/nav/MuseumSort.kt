@@ -5,14 +5,14 @@
  *
  * Derived from BetterPV by Vyriv (https://github.com/Vyriv/BetterPV).
  */
-package fishmod.pv.gui.nav;
+package fishmod.pv.gui.nav
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.Component
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 
-public enum MuseumSort {
+enum class MuseumSort(private val iconItem: Item, private val langKey: String) {
 	/** Aggregate of every museum category (side-tab first). */
 	ALL(Items.PAINTING, "fishmod.pv.museum.all"),
 	COMBAT(Items.IRON_SWORD, "fishmod.pv.museum.combat"),
@@ -24,31 +24,15 @@ public enum MuseumSort {
 	HUNTING(Items.BOW, "fishmod.pv.museum.hunting"),
 	SPECIAL(Items.BEACON, "fishmod.pv.museum.special");
 
-	private final Item iconItem;
-	private final String langKey;
+	fun icon(): ItemStack = ItemStack(iconItem)
 
-	MuseumSort(Item item, String langKey) {
-		this.iconItem = item;
-		this.langKey = langKey;
-	}
+	fun label(): Component = Component.translatable(langKey)
 
-	public ItemStack icon() {
-		return new ItemStack(this.iconItem);
-	}
+	fun isAll(): Boolean = this == ALL
 
-	public Component label() {
-		return Component.translatable(this.langKey);
-	}
-
-	public boolean isAll() {
-		return this == ALL;
-	}
-
-	/** Per-category sorts in display order (excludes {@link #ALL}). */
-	public static MuseumSort[] categories() {
-		MuseumSort[] all = values();
-		MuseumSort[] out = new MuseumSort[all.length - 1];
-		System.arraycopy(all, 1, out, 0, out.length);
-		return out;
+	companion object {
+		/** Per-category sorts in display order (excludes [ALL]). */
+		@JvmStatic
+		fun categories(): Array<MuseumSort> = entries.drop(1).toTypedArray()
 	}
 }
