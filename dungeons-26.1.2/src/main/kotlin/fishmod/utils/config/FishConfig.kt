@@ -44,6 +44,7 @@ object FishConfig {
 
     init {
         ColorDefaults.snapshot(classes)
+        ConfigBackup.run(PATH)
         ConfigKeyMigration.run(PATH)
     }
 
