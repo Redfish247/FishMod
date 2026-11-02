@@ -5,23 +5,11 @@
  *
  * Derived from BetterPV by Vyriv (https://github.com/Vyriv/BetterPV).
  */
-package fishmod.pv.weight;
+package fishmod.pv.weight
 
-public enum WeightSystem {
+enum class WeightSystem(@get:JvmName("display") val display: String) {
 	SENITHER("Senither"),
 	LILY("Lily");
 
-	private final String display;
-
-	WeightSystem(String display) {
-		this.display = display;
-	}
-
-	public String display() {
-		return this.display;
-	}
-
-	public WeightSystem other() {
-		return this == SENITHER ? LILY : SENITHER;
-	}
+	fun other(): WeightSystem = if (this == SENITHER) LILY else SENITHER
 }
