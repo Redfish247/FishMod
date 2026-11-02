@@ -111,6 +111,11 @@ object InvButtonSettings {
     @JvmField
     var equipmentCache: String = ""
 
+    // loadout name -> encoded equipment, as JSON
+    @ConfigValue
+    @JvmField
+    var equipmentByLoadout: String = "{}"
+
 
     @JvmStatic
     fun init() { }
