@@ -62,14 +62,30 @@ class NBTInventory(val stacks: List<ItemStack>, private var encoded: String? = n
             if (comps.isEmpty) return tag
             val out = tag.copy()
             val kept = CompoundTag()
-            for (key in comps.keySet()) {
+            fun accepts(key: String, value: Tag): Boolean {
                 val probe = tag.copy()
-                probe.put("components", CompoundTag().also { c -> comps.get(key)?.let { c.put(key, it) } })
-                if (ItemStack.OPTIONAL_CODEC.parse(ops, probe).result().isPresent) comps.get(key)?.let { kept.put(key, it) }
+                probe.put("components", CompoundTag().also { it.put(key, value) })
+                return ItemStack.OPTIONAL_CODEC.parse(ops, probe).result().isPresent
+            }
+            for (key in comps.keySet()) {
+                val value = comps.get(key) ?: continue
+                if (accepts(key, value)) { kept.put(key, value); continue }
+                if (key != ENCHANTMENTS_KEY || value !is CompoundTag) continue
+                // drop only the unknown enchants; keep the glint they gave
+                val good = CompoundTag()
+                for (id in value.keySet()) {
+                    val level = value.get(id) ?: continue
+                    if (accepts(key, CompoundTag().also { it.put(id, level) })) good.put(id, level)
+                }
+                if (!good.isEmpty) kept.put(key, good)
+                if (!comps.contains(GLINT_KEY)) kept.putBoolean(GLINT_KEY, true)
             }
             out.put("components", kept)
             return out
         }
+
+        private const val ENCHANTMENTS_KEY = "minecraft:enchantments"
+        private const val GLINT_KEY = "minecraft:enchantment_glint_override"
 
         private fun registryOps() =
             (Minecraft.getInstance().connection?.registryAccess()
