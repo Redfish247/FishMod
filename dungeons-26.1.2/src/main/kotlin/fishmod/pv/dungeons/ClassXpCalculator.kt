@@ -75,7 +75,7 @@ object ClassXpCalculator {
 		val mods = modsLabel(data, null)
 		val targetXp = CataXpMath.xpForLevel(target)
 
-		if (data.classes().isEmpty()) return AverageResult(target, "-", 0L, emptyList(), mods, false)
+		if (data.classes.isEmpty()) return AverageResult(target, "-", 0L, emptyList(), mods, false)
 
 		val floor = pickBestFloor(data)
 			?: return AverageResult(target, "-", 0L, classRuns(data) { 0L }, mods, false)
@@ -84,10 +84,10 @@ object ClassXpCalculator {
 		val selected = LinkedHashMap<String, Long>()
 		val rates = floor.ratesByClass
 		var alreadyDone = true
-		for (clazz in data.classes()) {
-			val left = max(0.0, (targetXp - clazz.xp()).toDouble())
-			remaining[clazz.id()] = left
-			selected[clazz.id()] = 0L
+		for (clazz in data.classes) {
+			val left = max(0.0, (targetXp - clazz.xp).toDouble())
+			remaining[clazz.id] = left
+			selected[clazz.id] = 0L
 			if (left > 0.0) alreadyDone = false
 		}
 
@@ -124,15 +124,15 @@ object ClassXpCalculator {
 	}
 
 	private inline fun classRuns(data: DungeonSnapshot, runs: (String) -> Long): List<ClassRuns> =
-		java.util.List.copyOf(data.classes().map { clazz ->
-			ClassRuns(clazz.id(), ClassLevelQuery.displayName(clazz.id()), clazz.level(), runs(clazz.id()))
+		java.util.List.copyOf(data.classes.map { clazz ->
+			ClassRuns(clazz.id, ClassLevelQuery.displayName(clazz.id), clazz.level, runs(clazz.id))
 		})
 
 	private fun calculateForClass(data: DungeonSnapshot, classId: String?, className: String, targetLevel: Int): Result {
 		DungeonXpData.ensureLoaded()
 		val clazz = findClass(data, classId)
-		val currentLevel = clazz?.level() ?: 0
-		val currentXp = clazz?.xp() ?: 0f
+		val currentLevel = clazz?.level ?: 0
+		val currentXp = clazz?.xp ?: 0f
 		val target = max(1, min(CataXpMath.maxLevel(), targetLevel))
 		val needed = CataXpMath.xpNeeded(currentXp, target)
 		val mods = modsLabel(data, classId)
@@ -143,11 +143,11 @@ object ClassXpCalculator {
 			val comps = floorCompletions(data, floor)
 			val xpPerRun = max(1L, Math.round(classXpPerRun(
 				floor.baseXp,
-				data.hecatombLevel(),
-				data.scarfBonus(),
-				data.catacombsGraduateBonus(),
+				data.hecatombLevel,
+				data.scarfBonus,
+				data.catacombsGraduateBonus,
 				data.classEssenceBonus(classId),
-				data.mayorFactor(),
+				data.mayorFactor,
 				0.0
 			)))
 			val runs = ceil(needed / xpPerRun.toDouble()).toLong()
@@ -196,17 +196,17 @@ object ClassXpCalculator {
 			val rates = LinkedHashMap<String, Double>()
 			var sum = 0.0
 			var n = 0
-			for (clazz in data.classes()) {
+			for (clazz in data.classes) {
 				val rate = max(1.0, classXpPerRun(
 					floor.baseXp,
-					data.hecatombLevel(),
-					data.scarfBonus(),
-					data.catacombsGraduateBonus(),
-					data.classEssenceBonus(clazz.id()),
-					data.mayorFactor(),
+					data.hecatombLevel,
+					data.scarfBonus,
+					data.catacombsGraduateBonus,
+					data.classEssenceBonus(clazz.id),
+					data.mayorFactor,
 					0.0
 				))
-				rates[clazz.id()] = rate
+				rates[clazz.id] = rate
 				sum += rate
 				n++
 			}
@@ -222,8 +222,8 @@ object ClassXpCalculator {
 
 	// Floors the player can run: cata level, master unlock and previous-floor chain
 	private fun availableFloors(data: DungeonSnapshot): List<DungeonXpData.FloorDef> {
-		val cataLevel = data.cataLevel()
-		val masterUnlocked = completions(data.normal(), "7") > 0L
+		val cataLevel = data.cataLevel
+		val masterUnlocked = completions(data.normal, "7") > 0L
 		return DungeonXpData.floors().filter { floor ->
 			cataLevel >= floor.unlockCata && (!floor.master || masterUnlocked) && chainUnlocked(data, floor)
 		}
@@ -231,34 +231,34 @@ object ClassXpCalculator {
 
 	private fun modsLabel(data: DungeonSnapshot, classId: String?): String {
 		val bits = ArrayList<String>()
-		if (data.hecatombLevel() > 0) bits.add("Hec " + data.hecatombLevel())
-		if (data.scarfBonus() > 0) bits.add("Scarf +" + Math.round(data.scarfBonus() * 100) + "%")
-		if (data.catacombsGraduateBonus() > 0) bits.add("Grad +" + Math.round(data.catacombsGraduateBonus() * 100) + "%")
+		if (data.hecatombLevel > 0) bits.add("Hec " + data.hecatombLevel)
+		if (data.scarfBonus > 0) bits.add("Scarf +" + Math.round(data.scarfBonus * 100) + "%")
+		if (data.catacombsGraduateBonus > 0) bits.add("Grad +" + Math.round(data.catacombsGraduateBonus * 100) + "%")
 		if (classId != null) {
 			val essence = data.classEssenceBonus(classId)
 			if (essence > 0) bits.add("Essence +" + Math.round(essence * 100) + "%")
 		}
-		val mayorName = data.mayorName()
-		if (!mayorName.isNullOrBlank()) bits.add(if (data.mayorFactor() > 1.0) mayorName else "$mayorName (no XP buff)")
+		val mayorName = data.mayorName
+		if (!mayorName.isNullOrBlank()) bits.add(if (data.mayorFactor > 1.0) mayorName else "$mayorName (no XP buff)")
 		return bits.joinToString(" · ")
 	}
 
 	private fun findClass(data: DungeonSnapshot, classId: String?): DungeonSnapshot.ClassEntry? =
-		data.classes().firstOrNull { it.id().equals(classId, ignoreCase = true) }
+		data.classes.firstOrNull { it.id.equals(classId, ignoreCase = true) }
 
 	private fun floorCompletions(data: DungeonSnapshot, floor: DungeonXpData.FloorDef): Long =
-		completions(if (floor.master) data.master() else data.normal(), floor.floor.toString())
+		completions(if (floor.master) data.master else data.normal, floor.floor.toString())
 
 	private fun chainUnlocked(data: DungeonSnapshot, floor: DungeonXpData.FloorDef): Boolean {
 		if (floorCompletions(data, floor) > 0L) return true
 		if (floor.master) {
-			if (floor.floor <= 1) return completions(data.normal(), "7") > 0L
-			return completions(data.master(), (floor.floor - 1).toString()) > 0L
+			if (floor.floor <= 1) return completions(data.normal, "7") > 0L
+			return completions(data.master, (floor.floor - 1).toString()) > 0L
 		}
 		if (floor.floor <= 1) return true
-		return completions(data.normal(), (floor.floor - 1).toString()) > 0L
+		return completions(data.normal, (floor.floor - 1).toString()) > 0L
 	}
 
 	private fun completions(mode: DungeonSnapshot.ModeStats, id: String): Long =
-		mode.floors().firstOrNull { it.id() == id }?.completions() ?: 0L
+		mode.floors.firstOrNull { it.id == id }?.completions ?: 0L
 }

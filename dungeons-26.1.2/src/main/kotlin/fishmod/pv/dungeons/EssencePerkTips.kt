@@ -29,18 +29,18 @@ object EssencePerkTips {
 	@JvmStatic
 	fun tip(perk: DungeonSnapshot.EssencePerk?): List<PvTooltip.Line> {
 		if (perk == null) return emptyList()
-		val id = perk.id()?.lowercase(Locale.ROOT) ?: ""
+		val id = perk.id?.lowercase(Locale.ROOT) ?: ""
 		val levelColor = when {
 			perk.maxed() -> COLOR_UNLOCKED
-			perk.level() > 0 -> PvDraw.COLOR_ACCENT
+			perk.level > 0 -> PvDraw.COLOR_ACCENT
 			else -> COLOR_LOCKED
 		}
 		val lines = ArrayList<PvTooltip.Line>()
-		lines.add(PvTooltip.Line.title(displayName(id, perk.name()), PvDraw.COLOR_TEXT))
-		lines.add(PvTooltip.Line.row("Level", PvDraw.COLOR_MUTED, perk.level().toString() + "/" + perk.maxLevel(), levelColor))
+		lines.add(PvTooltip.Line.title(displayName(id, perk.name), PvDraw.COLOR_TEXT))
+		lines.add(PvTooltip.Line.row("Level", PvDraw.COLOR_MUTED, perk.level.toString() + "/" + perk.maxLevel, levelColor))
 		lines.add(PvTooltip.Line.divider())
-		lines.addAll(effectLines(id, perk.level()))
-		lines.addAll(costLines(EssenceShopCosts.costs(id), perk.level()))
+		lines.addAll(effectLines(id, perk.level))
+		lines.addAll(costLines(EssenceShopCosts.costs(id), perk.level))
 		return lines
 	}
 
