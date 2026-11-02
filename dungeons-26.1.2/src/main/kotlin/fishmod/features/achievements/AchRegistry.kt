@@ -389,7 +389,7 @@ object AchRegistry {
         a("wrong_floor", "Secret Achievements", "Wrong Floor", "Enter F1 while Catacombs 35+","Secret", 25, "secret.wrongFloor", 1L, "", true)
         a("hot_tub", "Secret Achievements", "Hot Tub", "Fall in lava 10 times in 1 run", "Secret", 25, "secret.lavaFalls", 1L, "", true)
         a("splash_zone", "Secret Achievements", "Splash Zone", "Die to lava in a dungeon", "Secret", 25, "secret.lavaDeath", 1L, "", true)
-        a("the_one_that_got_away", "Secret Achievements", "The One That Got Away", "An Inquisitor despawns before you kill it", "Secret", 25, "secret.inqDespawn", 1L, "", true)
+        a("the_one_that_got_away", "Secret Achievements", "The One That Got Away", "A slayer boss gets away before you kill it", "Secret", 25, "secret.slayerEscape", 1L, "", true)
         a("party_of_one", "Secret Achievements", "Party of One", "Complete an M7 solo", "Secret", 100, "secret.soloM7", 1L, "", true)
         a("fishmod_completionist", "Ultimate", "FishMod Completionist", "Unlock every non-secret achievement", "Impossible", 250, "meta.completionist", 1L, "", false)
         a("the_fish_emperor", "Ultimate", "The Fish Emperor", "Unlock every achievement, secrets included", "Impossible", 500, "meta.emperor", 1L, "", false)
