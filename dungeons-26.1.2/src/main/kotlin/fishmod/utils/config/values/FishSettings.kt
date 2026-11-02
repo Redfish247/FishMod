@@ -640,6 +640,8 @@ object FishSettings {
     @ConfigValue @JvmField var ragnarockCastAlert: Boolean = true
     @ConfigValue @JvmField var ragnarockCancelAlert: Boolean = true
     @ConfigValue @JvmField var ragnarockAnnounceParty: Boolean = false
+    @ConfigValue @JvmField var ragnarockStrengthTitle: Boolean = false
+    @ConfigValue @JvmField var ragnarockStrengthParty: Boolean = false
     @ConfigValue @JvmField var ragnarockTimer: Boolean = false
     @ConfigValue @JvmField var ragnarockTimerHudX: Int = 10
     @ConfigValue @JvmField var ragnarockTimerHudY: Int = 150
