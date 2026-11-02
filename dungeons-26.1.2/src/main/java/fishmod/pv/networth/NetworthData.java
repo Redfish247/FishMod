@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -214,11 +214,11 @@ public final class NetworthData {
 	private static JsonObject load(String path) {
 		try {
 			InputStream stream = NetworthData.class.getClassLoader()
-				.getResourceAsStream("assets/betterpv/" + path);
+				.getResourceAsStream("assets/fishmod/pv/" + path);
 			if (stream == null) {
 				Minecraft client = Minecraft.getInstance();
 				if (client != null) {
-					Identifier id = Identifier.fromNamespaceAndPath(BetterPV.MOD_ID, path);
+					Identifier id = ProfileViewer.id(path);
 					var opt = client.getResourceManager().getResource(id);
 					if (opt.isPresent()) {
 						stream = opt.get().open();
@@ -232,7 +232,7 @@ public final class NetworthData {
 				return JsonParser.parseReader(reader).getAsJsonObject();
 			}
 		} catch (Exception exception) {
-			BetterPV.LOGGER.warn("Failed to load {}", path, exception);
+			ProfileViewer.LOGGER.warn("Failed to load {}", path, exception);
 			return null;
 		}
 	}

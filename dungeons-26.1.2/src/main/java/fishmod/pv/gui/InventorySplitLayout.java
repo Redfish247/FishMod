@@ -44,7 +44,7 @@ final class InventorySplitLayout {
 			inventorySearch.extractWidgetRenderState(g, mouseX, mouseY, delta);
 			// EditBox only draws its hint when unfocused; keep placeholder visible while empty.
 			if (inventorySearch.getValue().isEmpty()) {
-				String hint = Component.translatable("betterpv.inv.search_hint").getString();
+				String hint = Component.translatable("fishmod.pv.inv.search_hint").getString();
 				PvDraw.text(g, font, hint, inventorySearch.getX(), inventorySearch.getY(), PvDraw.COLOR_MUTED);
 			}
 		}

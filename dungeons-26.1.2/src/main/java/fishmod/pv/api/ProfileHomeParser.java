@@ -10,7 +10,7 @@ package fishmod.pv.api;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.AuctionSnapshot;
 import fishmod.pv.data.BestiarySnapshot;
 import fishmod.pv.data.CollectionSnapshot;
@@ -85,7 +85,7 @@ final class ProfileHomeParser {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Core profile parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Core profile parse failed for {}", name, exception);
 			return ProfileFetcher.failed(
 				name,
 				exception.getMessage() == null ? "Parse failed" : exception.getMessage()
@@ -129,7 +129,7 @@ final class ProfileHomeParser {
 
 		ProfileCoopIndex.warmCoopMemberNames(choices, undashed, name, null);
 
-		BetterPV.LOGGER.info("Parsing home core for {} ({})", name, cuteName);
+		ProfileViewer.LOGGER.info("Parsing home core for {} ({})", name, cuteName);
 
 		Map<String, Leveling.Progress> weightLevels = WeightCalculator.buildLevels(member);
 		WeightBreakdown senither = WeightCalculator.senither(member, weightLevels);
@@ -187,7 +187,7 @@ final class ProfileHomeParser {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Misc stats parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Misc stats parse failed for {}", name, exception);
 			misc = MiscStatsSnapshot.empty();
 		}
 

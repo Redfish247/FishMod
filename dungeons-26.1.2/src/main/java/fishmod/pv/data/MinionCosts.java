@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
-/** Minion categories and per-tier upgrade costs from NEU recipes + BetterPV prices. */
+/** Minion categories and per-tier upgrade costs from NEU recipes + item prices. */
 public final class MinionCosts {
 	public enum Category {
 		FARMING("Farming"),

@@ -147,7 +147,7 @@ public final class PartyJoinPvNotifier {
 		Style click = Style.EMPTY
 			.withClickEvent(new ClickEvent.RunCommand(cmd))
 			.withHoverEvent(new HoverEvent.ShowText(
-				Component.literal("Open " + name + "'s BetterPV").withStyle(ChatFormatting.YELLOW)
+				Component.literal("Open " + name + "'s profile").withStyle(ChatFormatting.YELLOW)
 			));
 		MutableComponent line = Component.empty();
 		line.append(Component.literal("[BPV] ").withStyle(Style.EMPTY.withColor(0x5B8CFF).withBold(true)));

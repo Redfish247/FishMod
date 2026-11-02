@@ -10,7 +10,7 @@ package fishmod.pv.gui;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.api.EliteBotApiClient;
 import fishmod.pv.api.HypixelApiClient;
 import fishmod.pv.api.ProfileFetcher;
@@ -242,7 +242,7 @@ final class ProfileScreenDataLoader {
 				}
 				JsonObject player = error == null && opt != null && opt.isPresent() ? opt.get() : null;
 				PlayerStatus status = PlayerStatus.offlineFromPlayer(player, System.currentTimeMillis());
-				BetterPV.LOGGER.debug(
+				ProfileViewer.LOGGER.debug(
 					"[PV status] {} offline: {} -> {}",
 					HypixelApiClient.undashed(uuid),
 					PlayerStatus.timestampDiagnostics(player),
@@ -282,7 +282,7 @@ final class ProfileScreenDataLoader {
 				}
 				GardenSnapshot base = this.screen.gardenPage().snapshot();
 				if (error != null) {
-					BetterPV.LOGGER.warn("Garden fetch failed for profile {}", id, error);
+					ProfileViewer.LOGGER.warn("Garden fetch failed for profile {}", id, error);
 					this.screen.gardenPage().apply(base.withIslandError(
 						error.getMessage() == null ? "Couldn't load garden" : error.getMessage()
 					));
@@ -295,7 +295,7 @@ final class ProfileScreenDataLoader {
 				try {
 					this.screen.gardenPage().apply(base.withIsland(opt.get()));
 				} catch (Exception exception) {
-					BetterPV.LOGGER.warn("Garden parse failed for profile {}", id, exception);
+					ProfileViewer.LOGGER.warn("Garden parse failed for profile {}", id, exception);
 					this.screen.gardenPage().apply(base.withIslandError("Couldn't load garden"));
 				}
 			});
@@ -328,7 +328,7 @@ final class ProfileScreenDataLoader {
 				}
 				GardenSnapshot base = this.screen.gardenPage().snapshot();
 				if (error != null) {
-					BetterPV.LOGGER.warn("Elite contests failed for {}", id, error);
+					ProfileViewer.LOGGER.warn("Elite contests failed for {}", id, error);
 					if (!base.contests().isEmpty()) {
 						this.screen.gardenPage().patch(base.withContestsReady());
 					} else {
@@ -350,7 +350,7 @@ final class ProfileScreenDataLoader {
 				try {
 					this.screen.gardenPage().patch(base.withEliteContests(opt.get()));
 				} catch (Exception exception) {
-					BetterPV.LOGGER.warn("Elite contests parse failed for {}", id, exception);
+					ProfileViewer.LOGGER.warn("Elite contests parse failed for {}", id, exception);
 					this.screen.gardenPage().patch(base.withContestsError("Couldn't load contests"));
 				}
 			});
@@ -383,7 +383,7 @@ final class ProfileScreenDataLoader {
 				}
 				GardenSnapshot base = this.screen.gardenPage().snapshot();
 				if (error != null) {
-					BetterPV.LOGGER.warn("Elite weight failed for {}", id, error);
+					ProfileViewer.LOGGER.warn("Elite weight failed for {}", id, error);
 					this.screen.gardenPage().patch(base.withFarmingWeight(GardenSnapshot.FarmingWeightInfo.failed(
 						error.getMessage() == null ? "Weight unavailable" : error.getMessage()
 					)));
@@ -396,7 +396,7 @@ final class ProfileScreenDataLoader {
 				try {
 					this.screen.gardenPage().patch(base.withFarmingWeight(GardenSnapshot.FarmingWeightInfo.fromElite(opt.get())));
 				} catch (Exception exception) {
-					BetterPV.LOGGER.warn("Elite weight parse failed for {}", id, exception);
+					ProfileViewer.LOGGER.warn("Elite weight parse failed for {}", id, exception);
 					this.screen.gardenPage().patch(base.withFarmingWeight(GardenSnapshot.FarmingWeightInfo.failed("Couldn't load weight")));
 				}
 			});
@@ -440,7 +440,7 @@ final class ProfileScreenDataLoader {
 					return;
 				}
 				if (error != null || opt == null || opt.isEmpty()) {
-					BetterPV.LOGGER.warn("Museum fetch failed for {}", id, error);
+					ProfileViewer.LOGGER.warn("Museum fetch failed for {}", id, error);
 					this.screen.museumPage().applyError(error == null || error.getMessage() == null ? "Museum unavailable" : error.getMessage());
 					return;
 				}
@@ -456,7 +456,7 @@ final class ProfileScreenDataLoader {
 					this.screen.museumPage().applyMuseum(member);
 					ProfileFetcher.museumLoaded(uuid, id, member);
 				} catch (Exception exception) {
-					BetterPV.LOGGER.warn("Museum parse failed for {}", id, exception);
+					ProfileViewer.LOGGER.warn("Museum parse failed for {}", id, exception);
 					this.screen.museumPage().applyError("Couldn't load museum");
 				}
 			});
@@ -512,7 +512,7 @@ final class ProfileScreenDataLoader {
 					return;
 				}
 				if (error != null) {
-					BetterPV.LOGGER.warn("Bingo fetch failed for {}", uuid, error);
+					ProfileViewer.LOGGER.warn("Bingo fetch failed for {}", uuid, error);
 					if (!historyOnly) {
 						this.screen.eventsPage().applyBingoError(
 							error.getMessage() == null ? "Couldn't load bingo" : error.getMessage());
@@ -539,7 +539,7 @@ final class ProfileScreenDataLoader {
 						events = events.withBingoHistory(history);
 						this.bingoRetryAtMs = 0L;
 					} else {
-						BetterPV.LOGGER.warn(
+						ProfileViewer.LOGGER.warn(
 							"Bingo history missing for {} (worker miss / no local API key); will retry",
 							uuid
 						);
@@ -547,7 +547,7 @@ final class ProfileScreenDataLoader {
 					}
 					this.screen.eventsPage().applyBingoReady(events, historyLoaded);
 				} catch (Exception exception) {
-					BetterPV.LOGGER.warn("Bingo parse failed for {}", uuid, exception);
+					ProfileViewer.LOGGER.warn("Bingo parse failed for {}", uuid, exception);
 					if (!historyOnly) {
 						this.screen.eventsPage().applyBingoError("Couldn't load bingo");
 						this.bingoRetryAtMs = System.currentTimeMillis() + 5_000L;

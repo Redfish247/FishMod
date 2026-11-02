@@ -23,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ChatScreen.class)
 public abstract class ChatScreenClickMixin {
 	@Inject(method = "handleComponentClicked", at = @At("HEAD"), cancellable = true)
-	private void betterpv$styleClick(Style style, boolean insertionClick, CallbackInfoReturnable<Boolean> cir) {
+	private void fishpv$styleClick(Style style, boolean insertionClick, CallbackInfoReturnable<Boolean> cir) {
 		if (insertionClick) {
 			return;
 		}

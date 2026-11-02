@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -38,7 +38,7 @@ import java.util.zip.ZipInputStream;
 
 /**
  * Official Hypixel SkyBlock resource pack (custom {@code hypixel_skyblock:} item textures).
- * Cached under {@code ~/.betterpv/skyblock-pack}.
+ * Cached under {@code config/fishmod/pv/skyblock-pack}.
  */
 public final class SkyBlockPackCache {
 	private static final String PACK_VERSION = "v2";
@@ -298,7 +298,7 @@ public final class SkyBlockPackCache {
 		try {
 			ensureReady();
 		} catch (Exception exception) {
-			BetterPV.LOGGER.warn("[BetterPV] SkyBlock pack load failed: {}", exception.toString());
+			ProfileViewer.LOGGER.warn("[FishPV] SkyBlock pack load failed: {}", exception.toString());
 			synchronized (LOCK) {
 				ready = false;
 				loadFailed = true;
@@ -308,7 +308,7 @@ public final class SkyBlockPackCache {
 	}
 
 	private static void ensureReady() throws IOException, InterruptedException {
-		Path root = Path.of(System.getProperty("user.home"), ".betterpv", "skyblock-pack");
+		Path root = fishmod.pv.ProfileViewer.DIR.resolve("skyblock-pack");
 		Path zipPath = root.resolve("pack.zip");
 		Path extracted = root.resolve("extracted");
 		Path marker = root.resolve("pack.ok");
@@ -332,7 +332,7 @@ public final class SkyBlockPackCache {
 			ready = true;
 			LOCK.notifyAll();
 		}
-		BetterPV.LOGGER.info("[BetterPV] SkyBlock pack assets ready at {}", assets);
+		ProfileViewer.LOGGER.info("[FishPV] SkyBlock pack assets ready at {}", assets);
 	}
 
 	private static boolean hasAssets(Path extracted) {
@@ -359,7 +359,7 @@ public final class SkyBlockPackCache {
 			try {
 				HttpRequest request = HttpRequest.newBuilder(URI.create(url))
 					.timeout(TIMEOUT)
-					.header("User-Agent", "BetterPV/" + BetterPV.MOD_ID)
+					.header("User-Agent", "FishMod-PV")
 					.GET()
 					.build();
 				HttpResponse<InputStream> response = HTTP.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -374,7 +374,7 @@ public final class SkyBlockPackCache {
 				} catch (IOException atomicFailed) {
 					Files.move(tmp, zipPath, StandardCopyOption.REPLACE_EXISTING);
 				}
-				BetterPV.LOGGER.info("[BetterPV] Downloaded SkyBlock pack from {}", url);
+				ProfileViewer.LOGGER.info("[FishPV] Downloaded SkyBlock pack from {}", url);
 				return;
 			} catch (IOException exception) {
 				last = exception;

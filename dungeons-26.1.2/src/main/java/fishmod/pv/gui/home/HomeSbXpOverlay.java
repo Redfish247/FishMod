@@ -7,7 +7,7 @@
  */
 package fishmod.pv.gui.home;
 
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.ProfileSnapshot;
 import fishmod.pv.gui.PvDraw;
 import fishmod.pv.gui.PvTooltip;
@@ -25,7 +25,7 @@ import java.util.List;
 /** SkyBlock XP strip expand/collapse overlay for Home. */
 final class HomeSbXpOverlay {
 	private static final Identifier SKYBLOCK_XP_ICON =
-		Identifier.fromNamespaceAndPath(BetterPV.MOD_ID, "textures/gui/skyblock_xp.png");
+		ProfileViewer.id("textures/gui/skyblock_xp.png");
 	private static final int SKYBLOCK_XP_TEX_SIZE = 64;
 	private static final int ICON_SIZE = 16;
 	private static final int BAR_H = 6;
@@ -200,7 +200,7 @@ final class HomeSbXpOverlay {
 
 		int level = snapshot.skyBlockLevel();
 		int xp = snapshot.skyBlockXpIntoLevel();
-		String levelText = Component.translatable("betterpv.home.sb_level", level).getString();
+		String levelText = Component.translatable("fishmod.pv.home.sb_level", level).getString();
 		int levelColor = fadeColor(SkyBlockLevelColors.colorFor(level), contentAlpha);
 		int muted = fadeColor(PvDraw.COLOR_MUTED, contentAlpha);
 		int white = fadeColor(PvDraw.COLOR_WHITE, contentAlpha);
@@ -266,7 +266,7 @@ final class HomeSbXpOverlay {
 		int ly = y + pad;
 		int barW = Math.min(w - pad * 2, 160);
 
-		PvDraw.textCentered(g, font, Component.translatable("betterpv.home.sb_level", level).getString(),
+		PvDraw.textCentered(g, font, Component.translatable("fishmod.pv.home.sb_level", level).getString(),
 			x + w / 2, ly, levelColor);
 		ly += font.lineHeight + 6;
 		Component xpLine = Component.empty()

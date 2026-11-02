@@ -198,7 +198,7 @@ public final class JacobPage {
 		drawFlipHint(g, font, "Click for bests", rx, ry, rw);
 		ry += font.lineHeight + 3;
 
-		String credit = Component.translatable("betterpv.garden.elite_credit").getString();
+		String credit = Component.translatable("fishmod.pv.garden.elite_credit").getString();
 		int creditH = Math.round(font.lineHeight * CREDIT_SCALE) + 4;
 		PvDraw.textScaled(g, font, credit, rx, y + h - PAD - Math.round(font.lineHeight * CREDIT_SCALE), CREDIT_C, CREDIT_SCALE);
 

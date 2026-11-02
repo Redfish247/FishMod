@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  * Accessories missing from the bag, SkyHelper style: only the top missing tier of each chain, priced after
  * selling the tier already owned, cheapest coins per MP first.
- * Upgrade chains come from NEU {@code talisman_upgrades} plus BetterPV's {@code accessory_families.json}.
+ * Upgrade chains come from NEU {@code talisman_upgrades} plus our {@code accessory_families.json}.
  */
 public final class MissingAccessories {
 	/** {@code soldId} is the owned lower tier replaced by this one, or null. */

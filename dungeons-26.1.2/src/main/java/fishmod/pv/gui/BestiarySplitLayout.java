@@ -76,7 +76,7 @@ final class BestiarySplitLayout {
 		if (inventorySearch != null) {
 			inventorySearch.extractWidgetRenderState(g, mouseX, mouseY, delta);
 			if (inventorySearch.getValue().isEmpty()) {
-				String hint = Component.translatable("betterpv.bestiary.search_hint").getString();
+				String hint = Component.translatable("fishmod.pv.bestiary.search_hint").getString();
 				PvDraw.text(g, font, hint, inventorySearch.getX(), inventorySearch.getY(), PvDraw.COLOR_MUTED);
 			}
 		}

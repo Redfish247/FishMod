@@ -26,7 +26,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * Injects a command-block "Open BetterPV" control into Hypixel's right-click
+ * Injects a command-block "Open Profile Viewer" control into Hypixel's right-click
  * player menu (empty slot under Co-op Request / next to Ender Chest).
  */
 public final class HypixelProfileSpyButton {
@@ -240,14 +240,14 @@ public final class HypixelProfileSpyButton {
 		if (stack == null) {
 			stack = new ItemStack(Items.COMMAND_BLOCK);
 			stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-				Component.literal("Open BetterPV").withColor(0x55FF55));
+				Component.literal("Open Profile Viewer").withColor(0x55FF55));
 			icon = stack;
 		}
 		g.item(stack, x, y);
 		if (hover) {
 			int tipX = x + SLOT + 8;
 			int tipY = y;
-			String title = "Open BetterPV";
+			String title = "Open Profile Viewer";
 			String body = "View " + target.player + "'s profile";
 			int tw = Math.max(font.width(title), font.width(body));
 			int pad = 3;

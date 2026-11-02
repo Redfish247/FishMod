@@ -138,7 +138,7 @@ public final class NetworthBreakdown {
 		if (!this.note.isBlank()) {
 			lines.add(PvTooltip.Line.of(this.note, PvDraw.COLOR_MUTED));
 		}
-		lines.add(PvTooltip.Line.of("Prices: BetterPV, SkyHelper fallback", PvDraw.COLOR_MUTED));
+		lines.add(PvTooltip.Line.of("Prices: Athen, SkyHelper fallback", PvDraw.COLOR_MUTED));
 		lines.add(PvTooltip.Line.of("", PvDraw.COLOR_MUTED));
 		lines.add(profileValueLine());
 		lines.add(PvTooltip.Line.of("(Price estimated with cookies)", PvDraw.COLOR_MUTED));

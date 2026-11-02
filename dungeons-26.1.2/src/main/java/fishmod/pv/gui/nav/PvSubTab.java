@@ -7,7 +7,7 @@
  */
 package fishmod.pv.gui.nav;
 
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
@@ -15,41 +15,41 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public enum PvSubTab {
-	DUNGEON_NORMAL(Items.STONE_BRICKS, "betterpv.sub.dungeon_normal"),
-	DUNGEON_MASTER(Items.NETHER_BRICKS, "betterpv.sub.dungeon_master"),
-	DUNGEON_OVERVIEW(Items.SKELETON_SKULL, "betterpv.sub.dungeon_overview"),
-	DUNGEON_CHESTS(Items.CHEST, "betterpv.sub.dungeon_chests"),
-	AUCTION_STATS(Items.GOLD_BLOCK, "betterpv.sub.auction_stats"),
-	AUCTION_SOLD(Items.GOLD_INGOT, "betterpv.sub.auction_sold"),
-	AUCTION_BOUGHT(Items.EMERALD, "betterpv.sub.auction_bought"),
-	COLLECTIONS_LIST(Items.ITEM_FRAME, "betterpv.sub.collections"),
-	COLLECTIONS_MINIONS(Items.HOPPER, "betterpv.sub.minions"),
-	GARDEN_OVERVIEW(Items.GRASS_BLOCK, "betterpv.sub.garden_overview"),
-	GARDEN_VISITORS(Items.VILLAGER_SPAWN_EGG, "betterpv.sub.visitors"),
-	GARDEN_CROPS(Items.WHEAT, "betterpv.sub.crops"),
-	GARDEN_COMPOSTER(Items.COMPOSTER, "betterpv.sub.composter"),
-	GARDEN_GREENHOUSE(Items.GLASS, "betterpv.sub.greenhouse"),
-	GARDEN_JACOB(Items.GOLDEN_CARROT, "betterpv.sub.jacob"),
-	MINING_OVERVIEW(Items.IRON_PICKAXE, "betterpv.sub.mining_overview"),
-	MINING_HOTM(Items.PLAYER_HEAD, "betterpv.sub.mining_hotm", "textures/gui/nav/hotm.png", 64),
-	MINING_GLACITE(Items.BLUE_ICE, "betterpv.sub.mining_glacite"),
-	FORAGING_OVERVIEW(Items.IRON_AXE, "betterpv.sub.foraging_overview"),
-	FORAGING_HOTF(Items.OAK_SAPLING, "betterpv.sub.hotf"),
-	FORAGING_HUNTING(Items.LEAD, "betterpv.sub.hunting"),
-	FORAGING_ATTRIBUTE_SHARDS(Items.PRISMARINE_SHARD, "betterpv.sub.attribute_shards"),
-	FISHING_MAIN(Items.FISHING_ROD, "betterpv.sub.fishing_main"),
-	FISHING_TROPHIES(Items.TROPICAL_FISH, "betterpv.sub.fishing_trophies"),
-	CRIMSON_OVERVIEW(Items.NETHERRACK, "betterpv.sub.crimson_overview"),
-	CRIMSON_KUUDRA(Items.NETHERITE_SCRAP, "betterpv.sub.kuudra"),
-	CRIMSON_ABIPHONE(Items.NOTE_BLOCK, "betterpv.sub.abiphone"),
-	RIFT_OVERVIEW(Items.ENDER_EYE, "betterpv.sub.rift_overview"),
-	RIFT_INVENTORY(Items.CHEST, "betterpv.sub.rift_inventory"),
-	EVENTS_BINGO(Items.FILLED_MAP, "betterpv.sub.bingo"),
-	EVENTS_CHOCOLATE(Items.COOKIE, "betterpv.sub.chocolate"),
-	HOME_OVERVIEW(Items.PAPER, "betterpv.sub.home_overview"),
-	HOME_MISC(Items.BOOK, "betterpv.sub.home_misc"),
-	HOME_RECORDS(Items.DRAGON_HEAD, "betterpv.sub.home_records"),
-	HOME_ESSENCE(Items.NETHER_STAR, "betterpv.sub.home_essence");
+	DUNGEON_NORMAL(Items.STONE_BRICKS, "fishmod.pv.sub.dungeon_normal"),
+	DUNGEON_MASTER(Items.NETHER_BRICKS, "fishmod.pv.sub.dungeon_master"),
+	DUNGEON_OVERVIEW(Items.SKELETON_SKULL, "fishmod.pv.sub.dungeon_overview"),
+	DUNGEON_CHESTS(Items.CHEST, "fishmod.pv.sub.dungeon_chests"),
+	AUCTION_STATS(Items.GOLD_BLOCK, "fishmod.pv.sub.auction_stats"),
+	AUCTION_SOLD(Items.GOLD_INGOT, "fishmod.pv.sub.auction_sold"),
+	AUCTION_BOUGHT(Items.EMERALD, "fishmod.pv.sub.auction_bought"),
+	COLLECTIONS_LIST(Items.ITEM_FRAME, "fishmod.pv.sub.collections"),
+	COLLECTIONS_MINIONS(Items.HOPPER, "fishmod.pv.sub.minions"),
+	GARDEN_OVERVIEW(Items.GRASS_BLOCK, "fishmod.pv.sub.garden_overview"),
+	GARDEN_VISITORS(Items.VILLAGER_SPAWN_EGG, "fishmod.pv.sub.visitors"),
+	GARDEN_CROPS(Items.WHEAT, "fishmod.pv.sub.crops"),
+	GARDEN_COMPOSTER(Items.COMPOSTER, "fishmod.pv.sub.composter"),
+	GARDEN_GREENHOUSE(Items.GLASS, "fishmod.pv.sub.greenhouse"),
+	GARDEN_JACOB(Items.GOLDEN_CARROT, "fishmod.pv.sub.jacob"),
+	MINING_OVERVIEW(Items.IRON_PICKAXE, "fishmod.pv.sub.mining_overview"),
+	MINING_HOTM(Items.PLAYER_HEAD, "fishmod.pv.sub.mining_hotm", "textures/gui/nav/hotm.png", 64),
+	MINING_GLACITE(Items.BLUE_ICE, "fishmod.pv.sub.mining_glacite"),
+	FORAGING_OVERVIEW(Items.IRON_AXE, "fishmod.pv.sub.foraging_overview"),
+	FORAGING_HOTF(Items.OAK_SAPLING, "fishmod.pv.sub.hotf"),
+	FORAGING_HUNTING(Items.LEAD, "fishmod.pv.sub.hunting"),
+	FORAGING_ATTRIBUTE_SHARDS(Items.PRISMARINE_SHARD, "fishmod.pv.sub.attribute_shards"),
+	FISHING_MAIN(Items.FISHING_ROD, "fishmod.pv.sub.fishing_main"),
+	FISHING_TROPHIES(Items.TROPICAL_FISH, "fishmod.pv.sub.fishing_trophies"),
+	CRIMSON_OVERVIEW(Items.NETHERRACK, "fishmod.pv.sub.crimson_overview"),
+	CRIMSON_KUUDRA(Items.NETHERITE_SCRAP, "fishmod.pv.sub.kuudra"),
+	CRIMSON_ABIPHONE(Items.NOTE_BLOCK, "fishmod.pv.sub.abiphone"),
+	RIFT_OVERVIEW(Items.ENDER_EYE, "fishmod.pv.sub.rift_overview"),
+	RIFT_INVENTORY(Items.CHEST, "fishmod.pv.sub.rift_inventory"),
+	EVENTS_BINGO(Items.FILLED_MAP, "fishmod.pv.sub.bingo"),
+	EVENTS_CHOCOLATE(Items.COOKIE, "fishmod.pv.sub.chocolate"),
+	HOME_OVERVIEW(Items.PAPER, "fishmod.pv.sub.home_overview"),
+	HOME_MISC(Items.BOOK, "fishmod.pv.sub.home_misc"),
+	HOME_RECORDS(Items.DRAGON_HEAD, "fishmod.pv.sub.home_records"),
+	HOME_ESSENCE(Items.NETHER_STAR, "fishmod.pv.sub.home_essence");
 
 	public static final PvSubTab[] NONE = new PvSubTab[0];
 
@@ -67,7 +67,7 @@ public enum PvSubTab {
 		this.langKey = langKey;
 		this.textureIcon = texturePath == null
 			? null
-			: Identifier.fromNamespaceAndPath(BetterPV.MOD_ID, texturePath);
+			: ProfileViewer.id(texturePath);
 		this.textureSize = Math.max(1, textureSize);
 	}
 

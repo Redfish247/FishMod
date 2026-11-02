@@ -10,7 +10,7 @@ package fishmod.pv.dungeons;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -65,8 +65,7 @@ public final class EssenceShopCosts {
 		if (costs != null) {
 			return costs;
 		}
-		Path path = Path.of(System.getProperty("user.home"),
-			".betterpv", "neu-repo", "repo", "constants", "essenceshops.json");
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "essenceshops.json");
 		if (!Files.isRegularFile(path)) {
 			// Repo may still be downloading; try again on the next hover.
 			return Map.of();
@@ -75,7 +74,7 @@ public final class EssenceShopCosts {
 		try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
 			out.putAll(parse(JsonParser.parseReader(reader).getAsJsonObject()));
 		} catch (Exception ex) {
-			BetterPV.LOGGER.warn("Failed to load essence shop costs", ex);
+			ProfileViewer.LOGGER.warn("Failed to load essence shop costs", ex);
 		}
 		costs = Map.copyOf(out);
 		return costs;

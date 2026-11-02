@@ -8,7 +8,7 @@
 package fishmod.pv.api;
 
 import com.google.gson.JsonObject;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.DungeonChestHistory;
 import fishmod.pv.data.DungeonSnapshot;
 import fishmod.pv.data.FormatUtil;
@@ -101,7 +101,7 @@ final class ProfileDungeonParser {
 			if (!SoftDataFailure.isSoft(ignored)) {
 				throw ignored;
 			}
-			BetterPV.LOGGER.debug("Dungeon modifier scan failed", ignored);
+			ProfileViewer.LOGGER.debug("Dungeon modifier scan failed", ignored);
 		}
 
 		double mayorFactor = CataXpMath.mayorXpFactor(electionRoot);

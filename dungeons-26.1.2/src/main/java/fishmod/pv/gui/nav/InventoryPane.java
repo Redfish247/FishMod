@@ -7,7 +7,7 @@
  */
 package fishmod.pv.gui.nav;
 
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.InventorySnapshot;
 import fishmod.pv.gui.inventories.SkyBlockItemFactory;
 import net.minecraft.network.chat.Component;
@@ -17,29 +17,29 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public enum InventoryPane {
-	INVENTORY(null, null, Items.CHEST, "betterpv.inv.inventory"),
-	ENDER_CHEST(null, null, Items.ENDER_CHEST, "betterpv.inv.ender_chest"),
-	BACKPACKS("JUMBO_BACKPACK", null, Items.SHULKER_BOX, "betterpv.inv.backpacks"),
-	WARDROBE(null, null, Items.ARMOR_STAND, "betterpv.inv.wardrobe"),
-	EQUIPMENT_WARDROBE(null, null, Items.IRON_CHESTPLATE, "betterpv.inv.equipment_wardrobe"),
-	LOADOUTS(null, null, Items.NAME_TAG, "betterpv.inv.loadouts"),
-	SACKS("POCKET_SACK_IN_A_SACK", null, Items.BUNDLE, "betterpv.inv.sacks"),
+	INVENTORY(null, null, Items.CHEST, "fishmod.pv.inv.inventory"),
+	ENDER_CHEST(null, null, Items.ENDER_CHEST, "fishmod.pv.inv.ender_chest"),
+	BACKPACKS("JUMBO_BACKPACK", null, Items.SHULKER_BOX, "fishmod.pv.inv.backpacks"),
+	WARDROBE(null, null, Items.ARMOR_STAND, "fishmod.pv.inv.wardrobe"),
+	EQUIPMENT_WARDROBE(null, null, Items.IRON_CHESTPLATE, "fishmod.pv.inv.equipment_wardrobe"),
+	LOADOUTS(null, null, Items.NAME_TAG, "fishmod.pv.inv.loadouts"),
+	SACKS("POCKET_SACK_IN_A_SACK", null, Items.BUNDLE, "fishmod.pv.inv.sacks"),
 	/** No dedicated Fishing Bag skull in the Hypixel items API. */
-	FISHING_BAG(null, null, Items.FISHING_ROD, "betterpv.inv.fishing_bag"),
+	FISHING_BAG(null, null, Items.FISHING_ROD, "fishmod.pv.inv.fishing_bag"),
 	/**
 	 * Hypixel items API ships a broken shared placeholder skin for potion bags -
 	 * use the bundled SkyCrypt render instead.
 	 */
-	POTION_BAG(null, "textures/gui/inventories/potion_bag.png", Items.POTION, "betterpv.inv.potion_bag"),
-	QUIVER(null, null, Items.ARROW, "betterpv.inv.quiver"),
+	POTION_BAG(null, "textures/gui/inventories/potion_bag.png", Items.POTION, "fishmod.pv.inv.potion_bag"),
+	QUIVER(null, null, Items.ARROW, "fishmod.pv.inv.quiver"),
 	/**
 	 * Same API placeholder issue as potion bags (talisman bag = accessory bag).
 	 */
-	ACCESSORY_BAG(null, "textures/gui/inventories/accessory_bag.png", Items.GOLDEN_APPLE, "betterpv.inv.accessory_bag"),
-	TIME_POCKET(null, null, Items.CLOCK, "betterpv.inv.time_pocket"),
-	PERSONAL_VAULT(null, null, Items.ENDER_EYE, "betterpv.inv.personal_vault"),
-	CARNIVAL_MASKS("CARNIVAL_MASK_BAG", null, Items.LEATHER_HELMET, "betterpv.inv.carnival_masks"),
-	CANDY_BAG(null, null, Items.COOKIE, "betterpv.inv.candy_bag");
+	ACCESSORY_BAG(null, "textures/gui/inventories/accessory_bag.png", Items.GOLDEN_APPLE, "fishmod.pv.inv.accessory_bag"),
+	TIME_POCKET(null, null, Items.CLOCK, "fishmod.pv.inv.time_pocket"),
+	PERSONAL_VAULT(null, null, Items.ENDER_EYE, "fishmod.pv.inv.personal_vault"),
+	CARNIVAL_MASKS("CARNIVAL_MASK_BAG", null, Items.LEATHER_HELMET, "fishmod.pv.inv.carnival_masks"),
+	CANDY_BAG(null, null, Items.COOKIE, "fishmod.pv.inv.candy_bag");
 
 	private final String skyblockIconId;
 	private final Identifier textureIcon;
@@ -55,7 +55,7 @@ public enum InventoryPane {
 		this.skyblockIconId = skyblockIconId;
 		this.textureIcon = texturePath == null
 			? null
-			: Identifier.fromNamespaceAndPath(BetterPV.MOD_ID, texturePath);
+			: ProfileViewer.id(texturePath);
 		this.fallback = fallback;
 		this.langKey = langKey;
 	}

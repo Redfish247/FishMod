@@ -12,7 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.api.HypixelApiClient;
 import java.io.IOException;
 import java.net.URI;
@@ -179,7 +179,7 @@ public final class HypixelCollectionsCache {
 		try {
 			refresh(true);
 		} catch (Exception exception) {
-			BetterPV.LOGGER.warn("Failed to refresh Hypixel collections", exception);
+			ProfileViewer.LOGGER.warn("Failed to refresh Hypixel collections", exception);
 			// Startup can run before session auth works; don't wait for the 12h refresh.
 			if (!isReady() && RETRY_PENDING.compareAndSet(false, true)) {
 				EXECUTOR.schedule(() -> {
@@ -250,7 +250,7 @@ public final class HypixelCollectionsCache {
 		if (!nextCategories.isEmpty()) {
 			categories = List.copyOf(nextCategories);
 			itemsById = Map.copyOf(nextItems);
-			BetterPV.LOGGER.info(
+			ProfileViewer.LOGGER.info(
 				"Loaded {} Hypixel collection categories ({} items)",
 				nextCategories.size(),
 				nextItems.size()

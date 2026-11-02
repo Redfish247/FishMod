@@ -458,7 +458,7 @@ final class HomeLeftColumn {
 		} else {
 			PvDraw.textCentered(
 				g, font,
-				Component.translatable("betterpv.home.player").getString(),
+				Component.translatable("fishmod.pv.home.player").getString(),
 				cx, boxTop + boxH / 2 - font.lineHeight / 2,
 				PvDraw.COLOR_MUTED
 			);
@@ -696,11 +696,11 @@ final class HomeLeftColumn {
 
 	private static void ensureStaticLabels(Font font) {
 		if (NW_LABEL == null) {
-			NW_LABEL = Component.translatable("betterpv.home.networth_label").getString();
-			WEIGHT_LABEL = Component.translatable("betterpv.home.weight_label").getString();
-			PURSE_LABEL = Component.translatable("betterpv.home.purse_label").getString();
-			BANK_LABEL = Component.translatable("betterpv.home.bank_label").getString();
-			SKILL_AVG_LABEL = Component.translatable("betterpv.home.skill_avg_label").getString();
+			NW_LABEL = Component.translatable("fishmod.pv.home.networth_label").getString();
+			WEIGHT_LABEL = Component.translatable("fishmod.pv.home.weight_label").getString();
+			PURSE_LABEL = Component.translatable("fishmod.pv.home.purse_label").getString();
+			BANK_LABEL = Component.translatable("fishmod.pv.home.bank_label").getString();
+			SKILL_AVG_LABEL = Component.translatable("fishmod.pv.home.skill_avg_label").getString();
 		}
 		if (NW_LABEL_W < 0) {
 			NW_LABEL_W = font.width(NW_LABEL);

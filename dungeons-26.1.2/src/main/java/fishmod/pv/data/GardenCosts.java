@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.price.ItemPricer;
 import java.io.IOException;
 import java.io.InputStream;
@@ -210,9 +210,9 @@ public final class GardenCosts {
 			if (loaded) {
 				return;
 			}
-			try (InputStream in = GardenCosts.class.getClassLoader().getResourceAsStream("assets/betterpv/data/garden_costs.json")) {
+			try (InputStream in = GardenCosts.class.getClassLoader().getResourceAsStream("assets/fishmod/pv/data/garden_costs.json")) {
 				if (in == null) {
-					BetterPV.LOGGER.warn("Missing garden_costs.json");
+					ProfileViewer.LOGGER.warn("Missing garden_costs.json");
 				} else {
 					parse(JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject());
 				}
@@ -220,7 +220,7 @@ public final class GardenCosts {
 				if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 					throw runtime;
 				}
-				BetterPV.LOGGER.warn("Failed to load garden_costs.json", exception);
+				ProfileViewer.LOGGER.warn("Failed to load garden_costs.json", exception);
 			}
 			loaded = true;
 		}

@@ -10,7 +10,7 @@ package fishmod.pv.gui.inventories;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.gui.PvDraw;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -159,7 +159,7 @@ public final class EnchantTooltip {
 
 	private static void load(Map<String, Integer> maxByName, Map<String, Boolean> ultimateByName) {
 		Minecraft client = Minecraft.getInstance();
-		Identifier id = Identifier.fromNamespaceAndPath("betterpv", "data/enchants.json");
+		Identifier id = ProfileViewer.id("data/enchants.json");
 		try {
 			InputStream in = null;
 			if (client != null) {
@@ -169,7 +169,7 @@ public final class EnchantTooltip {
 				}
 			}
 			if (in == null) {
-				in = BetterPV.class.getResourceAsStream("/assets/betterpv/data/enchants.json");
+				in = ProfileViewer.class.getResourceAsStream("/assets/fishmod/pv/data/enchants.json");
 			}
 			if (in == null) {
 				return;
@@ -199,7 +199,7 @@ public final class EnchantTooltip {
 				}
 			}
 		} catch (Exception exception) {
-			BetterPV.LOGGER.warn("Failed to load enchant max levels", exception);
+			ProfileViewer.LOGGER.warn("Failed to load enchant max levels", exception);
 		}
 	}
 

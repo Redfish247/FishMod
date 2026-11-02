@@ -8,7 +8,7 @@
 package fishmod.pv.gui.inventories;
 
 import com.google.gson.JsonObject;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.api.HypixelApiClient;
 import fishmod.pv.data.InventorySnapshot;
 import fishmod.pv.data.PetLoreResolver;
@@ -580,7 +580,7 @@ public final class SkyBlockItemFactory {
 		} catch (RuntimeException exception) {
 			// Bad repo / API data must not crash a GUI frame; icons are rebuilt every frame, so warn once per id.
 			if (FAILED_ICON_IDS.add(skyblockId)) {
-				BetterPV.LOGGER.warn("[BetterPV] Icon fallback for {}: {}", skyblockId, exception.toString());
+				ProfileViewer.LOGGER.warn("[FishPV] Icon fallback for {}: {}", skyblockId, exception.toString());
 			}
 			return new ItemStack(Items.PAPER);
 		}

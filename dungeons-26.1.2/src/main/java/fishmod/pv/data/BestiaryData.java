@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.Reader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -141,16 +141,13 @@ public final class BestiaryData {
 	}
 
 	private static void loadFromDisk() {
-		Path path = Path.of(
-			System.getProperty("user.home"),
-			".betterpv",
-			"neu-repo",
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo",
 			"repo",
 			"constants",
 			"bestiary.json"
 		);
 		if (!Files.isRegularFile(path)) {
-			BetterPV.LOGGER.warn("Missing NEU bestiary.json at {}", path);
+			ProfileViewer.LOGGER.warn("Missing NEU bestiary.json at {}", path);
 			categories = List.of();
 			brackets = Map.of();
 			bracketSets = Map.of();
@@ -188,12 +185,12 @@ public final class BestiaryData {
 			bracketSets = copyBracketSets(sets);
 			categories = List.copyOf(cats);
 			familiesById = Map.copyOf(byId);
-			BetterPV.LOGGER.info("Loaded bestiary catalog ({} categories, {} families)", cats.size(), byId.size());
+			ProfileViewer.LOGGER.info("Loaded bestiary catalog ({} categories, {} families)", cats.size(), byId.size());
 		} catch (IOException | RuntimeException exception) {
 			if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed to load bestiary.json", exception);
+			ProfileViewer.LOGGER.warn("Failed to load bestiary.json", exception);
 			categories = List.of();
 			brackets = Map.of();
 			bracketSets = Map.of();

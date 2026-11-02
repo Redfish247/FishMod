@@ -7,8 +7,8 @@ import java.util.concurrent.ThreadFactory;
 
 // Shared daemon pools for the pv caches.
 public final class PvExecutors {
-	public static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(daemon("BetterPV-Refresh"));
-	public static final ExecutorService IO = Executors.newFixedThreadPool(4, daemon("BetterPV-IO"));
+	public static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(daemon("FishPV-Refresh"));
+	public static final ExecutorService IO = Executors.newFixedThreadPool(4, daemon("FishPV-IO"));
 
 	private PvExecutors() {
 	}

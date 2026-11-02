@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.Reader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -162,10 +162,9 @@ public final class AttributeShardsData {
 	}
 
 	private static void loadFromDisk() {
-		Path path = Path.of(System.getProperty("user.home"),
-			".betterpv", "neu-repo", "repo", "constants", "attribute_shards.json");
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "attribute_shards.json");
 		if (!Files.isRegularFile(path)) {
-			BetterPV.LOGGER.debug("Attribute shards missing at {}", path);
+			ProfileViewer.LOGGER.debug("Attribute shards missing at {}", path);
 			defs = List.of();
 			byStackId = Map.of();
 			costsByRarity = Map.of();
@@ -230,7 +229,7 @@ public final class AttributeShardsData {
 			if (ex instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed to load attribute shards", ex);
+			ProfileViewer.LOGGER.warn("Failed to load attribute shards", ex);
 			defs = List.of();
 			byStackId = Map.of();
 			costsByRarity = Map.of();

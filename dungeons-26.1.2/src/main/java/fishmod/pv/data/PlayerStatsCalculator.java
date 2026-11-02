@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.dungeons.CataXpMath;
 import fishmod.pv.networth.InventoryDecoder;
 import fishmod.pv.networth.PetWorth;
@@ -1066,9 +1066,9 @@ public final class PlayerStatsCalculator {
 	}
 
 	private static JsonObject loadConstant(String fileName) {
-		Path path = Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo", "repo", "constants", fileName);
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", fileName);
 		if (!Files.isRegularFile(path)) {
-			path = Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo", "constants", fileName);
+			path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "constants", fileName);
 		}
 		if (!Files.isRegularFile(path)) {
 			return null;
@@ -1080,7 +1080,7 @@ public final class PlayerStatsCalculator {
 			if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.debug("Failed loading NEU {}", fileName, exception);
+			ProfileViewer.LOGGER.debug("Failed loading NEU {}", fileName, exception);
 			return null;
 		}
 	}

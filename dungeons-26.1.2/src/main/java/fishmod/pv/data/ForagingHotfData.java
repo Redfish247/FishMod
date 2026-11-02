@@ -10,7 +10,7 @@ package fishmod.pv.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.Reader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -96,10 +96,9 @@ public final class ForagingHotfData {
 	}
 
 	private static void loadFromDisk() {
-		Path path = Path.of(System.getProperty("user.home"),
-			".betterpv", "neu-repo", "repo", "constants", "hotflayout.json");
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "hotflayout.json");
 		if (!Files.isRegularFile(path)) {
-			BetterPV.LOGGER.debug("HOTF layout missing at {}", path);
+			ProfileViewer.LOGGER.debug("HOTF layout missing at {}", path);
 			perks = List.of();
 			byId = Map.of();
 			maxX = 0;
@@ -151,7 +150,7 @@ public final class ForagingHotfData {
 			if (ex instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed to load HOTF layout", ex);
+			ProfileViewer.LOGGER.warn("Failed to load HOTF layout", ex);
 			perks = List.of();
 			byId = Map.of();
 			maxX = 0;

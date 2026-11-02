@@ -10,7 +10,7 @@ package fishmod.pv.api;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -33,7 +33,7 @@ final class NameUuidStore {
 	// shorter TTL can never map a name to the wrong account.
 	private static final long TTL_MS = TimeUnit.DAYS.toMillis(30);
 	private static final int MAX_ENTRIES = 2000;
-	private static final Path FILE = Path.of(System.getProperty("user.home"), ".betterpv", "name-uuid-cache.json");
+	private static final Path FILE = fishmod.pv.ProfileViewer.DIR.resolve("name-uuid-cache.json");
 
 	private record Entry(UUID uuid, String name, long savedAtMs) {
 		boolean fresh(long now) {
@@ -129,7 +129,7 @@ final class NameUuidStore {
 				}
 			}
 		} catch (IOException | RuntimeException exception) {
-			BetterPV.LOGGER.warn("Could not read name cache {}", FILE, exception);
+			ProfileViewer.LOGGER.warn("Could not read name cache {}", FILE, exception);
 		}
 	}
 
@@ -174,7 +174,7 @@ final class NameUuidStore {
 				Files.move(tmp, FILE, StandardCopyOption.REPLACE_EXISTING);
 			}
 		} catch (IOException exception) {
-			BetterPV.LOGGER.warn("Could not save name cache {}", FILE, exception);
+			ProfileViewer.LOGGER.warn("Could not save name cache {}", FILE, exception);
 		}
 	}
 }

@@ -10,7 +10,7 @@ package fishmod.pv.price;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.IOException;
 import java.net.URI;
 import fishmod.utils.Http;
@@ -63,7 +63,7 @@ public final class AthenPriceCache {
 		try {
 			refresh();
 		} catch (Exception exception) {
-			BetterPV.LOGGER.warn("Failed to refresh Vyriv prices", exception);
+			ProfileViewer.LOGGER.warn("Failed to refresh Vyriv prices", exception);
 		}
 	}
 
@@ -78,7 +78,7 @@ public final class AthenPriceCache {
 			prices = Map.copyOf(next);
 			bazaarPrices = Map.copyOf(nextBazaar);
 			ready = true;
-			BetterPV.LOGGER.info("Loaded {} Vyriv price entries ({} bazaar)", next.size(), nextBazaar.size());
+			ProfileViewer.LOGGER.info("Loaded {} Vyriv price entries ({} bazaar)", next.size(), nextBazaar.size());
 		}
 	}
 

@@ -7,7 +7,7 @@
  */
 package fishmod.pv.gui;
 
-import fishmod.pv.api.BetterPVConfig;
+import fishmod.pv.api.PvConfig;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
@@ -64,7 +64,7 @@ final class ProfileScaleSlider {
 		PvDraw.fill(graphics, this.x, centerY - 1, Math.max(1, knobCenter - this.x), 3, fill);
 		PvDraw.fill(graphics, knobCenter - 2, this.y - 1, 5, HEIGHT + 2, knob);
 		if (this.hovered || this.dragging) {
-			String label = BetterPVConfig.profileViewerScalePercent() + "%  RMB reset";
+			String label = PvConfig.profileViewerScalePercent() + "%  RMB reset";
 			PvDraw.textRight(graphics, font, label, this.x + WIDTH, this.y - font.lineHeight - 3, withAlpha(PvDraw.COLOR_TEXT, this.opacity));
 		}
 	}
@@ -74,7 +74,7 @@ final class ProfileScaleSlider {
 			return false;
 		}
 		if (button == 1) {
-			BetterPVConfig.setProfileViewerScalePercent(100);
+			PvConfig.setProfileViewerScalePercent(100);
 			this.dragging = false;
 			return true;
 		}
@@ -112,7 +112,7 @@ final class ProfileScaleSlider {
 	}
 
 	private void setFromMouse(double mouseX) {
-		BetterPVConfig.setProfileViewerScalePercent(percentAt(mouseX, this.x));
+		PvConfig.setProfileViewerScalePercent(percentAt(mouseX, this.x));
 	}
 
 	static int percentAt(double mouseX, int trackX) {
@@ -121,7 +121,7 @@ final class ProfileScaleSlider {
 	}
 
 	private float progress() {
-		return (BetterPVConfig.profileViewerScalePercent() - 75) / 75.0F;
+		return (PvConfig.profileViewerScalePercent() - 75) / 75.0F;
 	}
 
 	private static int withAlpha(int argb, float opacity) {

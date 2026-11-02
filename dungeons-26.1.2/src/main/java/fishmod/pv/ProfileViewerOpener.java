@@ -47,9 +47,9 @@ public final class ProfileViewerOpener {
 
 	/**
 	 * Chat {@code RunCommand} clicks go to the server via {@code sendUnattendedCommand}.
-	 * BetterPV's {@code /pv} is a Fabric client command, so intercept here instead.
+	 * Our {@code /pv} is a Fabric client command, so intercept here instead.
 	 *
-	 * @return true if this was a BetterPV pv command and was handled client-side
+	 * @return true if this was a pv command and was handled client-side
 	 */
 	public static boolean tryHandleChatCommand(String command) {
 		if (command == null || command.isBlank() || !fishmod.utils.config.values.FishSettings.profileViewerEnabled) {
@@ -68,16 +68,8 @@ public final class ProfileViewerOpener {
 			handleTypedArg(trimmed.substring(3).trim());
 			return true;
 		}
-		if (lower.equals("betterpv pv")) {
-			openSelfOr(null);
-			return true;
-		}
-		if (lower.startsWith("betterpv pv ")) {
-			handleTypedArg(trimmed.substring("betterpv pv ".length()).trim());
-			return true;
-		}
 		// Hypixel name clicks stay on the original Component (keeps chat colors).
-		// Open BetterPV instead of forwarding SocialOptions / viewprofile to the server.
+		// Open the profile viewer instead of forwarding SocialOptions / viewprofile to the server.
 		String hypixelName = ChatClickProcessor.usernameFromCommand(trimmed);
 		if (hypixelName != null) {
 			open(hypixelName);

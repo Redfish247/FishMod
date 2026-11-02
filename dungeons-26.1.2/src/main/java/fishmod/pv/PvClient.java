@@ -11,8 +11,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import fishmod.pv.BetterPV;
-import fishmod.pv.api.BetterPVConfig;
+import fishmod.pv.ProfileViewer;
+import fishmod.pv.api.PvConfig;
 import fishmod.pv.gui.inventories.SkyBlockIconRenderer;
 import fishmod.pv.gui.nav.PvTab;
 import fishmod.pv.neu.NeuRepoCache;
@@ -29,13 +29,14 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 
-public final class BetterPVClient {
+public final class PvClient {
 	/** Runs after {@link Event#DEFAULT_PHASE} so we replace Skyblocker's {@code /pv}. */
-	private static final Identifier PV_COMMAND_PHASE = Identifier.fromNamespaceAndPath("betterpv", "override_pv");
+	private static final Identifier PV_COMMAND_PHASE = ProfileViewer.id("override_pv");
 		/** Set when Brigadier reflection could not strip another mod's {@code /pv}. */
 	private static final AtomicBoolean PV_OVERRIDE_FAILED = new AtomicBoolean(false);
 	private static final AtomicBoolean PV_SHADOW_CHAT_SENT = new AtomicBoolean(false);
@@ -43,7 +44,7 @@ public final class BetterPVClient {
 
 	public static void init() {
 		if (!INITIALIZED.compareAndSet(false, true)) return;
-		BetterPVConfig.load();
+		PvConfig.load();
 		ItemPricer.start();
 		NeuRepoCache.start();
 		SkyBlockPackCache.start();
@@ -58,17 +59,12 @@ public final class BetterPVClient {
 		ClientCommandRegistrationCallback.EVENT.register(PV_COMMAND_PHASE, (dispatcher, registryAccess) -> {
 			removeLiteral(dispatcher, "pv");
 			dispatcher.register(buildPvCommand(ClientCommands.literal("pv")));
-			dispatcher.register(
-				ClientCommands.literal("betterpv")
-					.then(buildPvCommand(ClientCommands.literal("pv")))
-			);
 		});
 
 		ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
 			new SimpleSynchronousResourceReloadListener() {
 				@Override
 				public Identifier getFabricId() {
-					// fishmod namespace: the standalone BetterPV mod registers betterpv:icon_probe_cache too
 					return Identifier.fromNamespaceAndPath("fishmod", "pv_icon_probe_cache");
 				}
 
@@ -88,22 +84,35 @@ public final class BetterPVClient {
 			(message, overlay) -> overlay ? message : ChatClickProcessor.process(message)
 		);
 		ClientTickEvents.END_CLIENT_TICK.register(ProfileViewerOpener::tick);
-		ClientTickEvents.END_CLIENT_TICK.register(BetterPVClient::warnPvShadowedOnce);
-		BetterPV.LOGGER.info("BetterPV client ready - /pv");
+		ClientTickEvents.END_CLIENT_TICK.register(PvClient::warnPvShadowedOnce);
+		ProfileViewer.LOGGER.info("Profile viewer ready - /pv");
+	}
+
+	/** PV stays off while BetterPV is installed; tell the player once. */
+	public static void registerStandaloneNote() {
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (FabricLoader.getInstance().isModLoaded("betterpv")) {
+				sendShadowNoteOnce(client, "FishMod profile viewer is off: BetterPV is installed and owns /pv.");
+			}
+		});
 	}
 
 	/** One in-game chat tip if bare {@code /pv} could not be claimed from another mod. */
 	private static void warnPvShadowedOnce(net.minecraft.client.Minecraft client) {
-		if (!PV_OVERRIDE_FAILED.get() || client == null || client.player == null || client.gui == null) {
+		if (PV_OVERRIDE_FAILED.get()) {
+			sendShadowNoteOnce(client, "FishMod PV: another mod owns /pv. Open profiles from chat name clicks instead.");
+		}
+	}
+
+	private static void sendShadowNoteOnce(net.minecraft.client.Minecraft client, String text) {
+		if (client == null || client.player == null || client.gui == null) {
 			return;
 		}
 		if (!PV_SHADOW_CHAT_SENT.compareAndSet(false, true)) {
 			return;
 		}
 		fishmod.compat.McCompatKt.getHud(client).getChat().addClientSystemMessage(
-			net.minecraft.network.chat.Component.literal(
-				"BetterPV: another mod uses /pv. Use /betterpv pv [name] instead."
-			).withColor(0xFFD36A)
+			net.minecraft.network.chat.Component.literal(text).withColor(0xFFD36A)
 		);
 	}
 
@@ -154,7 +163,7 @@ public final class BetterPVClient {
 	 * Skyblocker's handler. Fabric documents reflection as the only unregister path.
 	 *
 	 * <p>If Brigadier field names change, this fails closed: we still register
-	 * {@code /betterpv pv}, and log that bare {@code /pv} may stay owned by another mod.
+	 * {@code /pv} and log that bare {@code /pv} may stay owned by another mod.
 	 */
 	@SuppressWarnings("unchecked")
 	private static void removeLiteral(CommandDispatcher<FabricClientCommandSource> dispatcher, String name) {
@@ -172,12 +181,11 @@ public final class BetterPVClient {
 				(Map<String, LiteralCommandNode<FabricClientCommandSource>>) literalsField.get(root);
 			literals.remove(name);
 		} catch (ReflectiveOperationException | RuntimeException exception) {
-			// warn (not error): mod still works via /betterpv pv; loud only so mapping breaks are noticed.
+			// warn (not error): chat name clicks still open PV; loud only so mapping breaks are noticed.
 			PV_OVERRIDE_FAILED.set(true);
-			BetterPV.LOGGER.warn(
+			ProfileViewer.LOGGER.warn(
 				"Could not strip existing /{} via Brigadier reflection (children/literals). "
-					+ "/{} may stay owned by another mod (e.g. Skyblocker). Use /betterpv {} instead.",
-				name,
+					+ "/{} may stay owned by another mod (e.g. Skyblocker).",
 				name,
 				name,
 				exception

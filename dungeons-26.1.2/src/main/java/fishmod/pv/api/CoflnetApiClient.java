@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.SoftDataFailure;
 import java.io.IOException;
 import java.net.URI;
@@ -37,7 +37,7 @@ public final class CoflnetApiClient {
 	private static final long SPACING_MS = 350L;
 
 	private static final HttpClient HTTP = fishmod.utils.Http.CLIENT;
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("BetterPV-Coflnet"));
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("FishPV-Coflnet"));
 	private static long nextRequestAtMillis;
 
 	private CoflnetApiClient() {
@@ -104,7 +104,7 @@ public final class CoflnetApiClient {
 		try {
 			HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(TIMEOUT).GET().build();
 			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-			BetterPV.LOGGER.info(
+			ProfileViewer.LOGGER.info(
 				"[PV timing] Coflnet {} {}ms queue={}ms spacing={}ms http={}ms status={} chars={}",
 				url.substring(BASE.length()),
 				(System.nanoTime() - queuedNanos) / 1_000_000L,
@@ -116,12 +116,12 @@ public final class CoflnetApiClient {
 			);
 			if (response.statusCode() < 200 || response.statusCode() >= 300
 				|| response.body() == null || response.body().isBlank()) {
-				BetterPV.LOGGER.warn("Coflnet {} → HTTP {}", url, response.statusCode());
+				ProfileViewer.LOGGER.warn("Coflnet {} → HTTP {}", url, response.statusCode());
 				return Optional.empty();
 			}
 			return Optional.of(JsonParser.parseString(response.body()));
 		} catch (IOException | InterruptedException exception) {
-			BetterPV.LOGGER.warn(
+			ProfileViewer.LOGGER.warn(
 				"Coflnet request failed after {}ms: {}",
 				(System.nanoTime() - sentNanos) / 1_000_000L,
 				url,
@@ -135,7 +135,7 @@ public final class CoflnetApiClient {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Coflnet parse failed: {}", url, exception);
+			ProfileViewer.LOGGER.warn("Coflnet parse failed: {}", url, exception);
 			return Optional.empty();
 		}
 	}

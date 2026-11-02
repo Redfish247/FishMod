@@ -10,7 +10,7 @@ package fishmod.pv.price;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.IOException;
 import java.net.URI;
 import fishmod.utils.Http;
@@ -58,7 +58,7 @@ public final class SkyHelperPriceCache {
 		try {
 			refresh();
 		} catch (Exception exception) {
-			BetterPV.LOGGER.warn("Failed to refresh SkyHelper prices", exception);
+			ProfileViewer.LOGGER.warn("Failed to refresh SkyHelper prices", exception);
 		}
 	}
 
@@ -80,7 +80,7 @@ public final class SkyHelperPriceCache {
 		if (!next.isEmpty()) {
 			prices = Map.copyOf(next);
 			ready = true;
-			BetterPV.LOGGER.info("Loaded {} SkyHelper price entries", next.size());
+			ProfileViewer.LOGGER.info("Loaded {} SkyHelper price entries", next.size());
 		}
 	}
 }

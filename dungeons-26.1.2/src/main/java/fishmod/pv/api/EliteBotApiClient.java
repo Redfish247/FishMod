@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.SoftDataFailure;
 import java.io.IOException;
 import fishmod.utils.Http;
@@ -31,7 +31,7 @@ public final class EliteBotApiClient {
 	private static final Duration TIMEOUT = Duration.ofSeconds(15);
 	private static final long SPACING_MS = 400L;
 
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("BetterPV-EliteBot"));
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("FishPV-EliteBot"));
 	private static long nextRequestAtMillis;
 
 	private EliteBotApiClient() {
@@ -72,7 +72,7 @@ public final class EliteBotApiClient {
 		try {
 			return Optional.of(Http.getJson(url, TIMEOUT));
 		} catch (IOException | InterruptedException exception) {
-			BetterPV.LOGGER.warn("Elite GET {} failed", url, exception);
+			ProfileViewer.LOGGER.warn("Elite GET {} failed", url, exception);
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();
 			}
@@ -81,7 +81,7 @@ public final class EliteBotApiClient {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Elite GET {} parse failed", url, exception);
+			ProfileViewer.LOGGER.warn("Elite GET {} parse failed", url, exception);
 			return Optional.empty();
 		}
 	}

@@ -347,8 +347,8 @@ public final class PetLoreResolver {
 
 	private static JsonObject loadPetnums() {
 		Path[] candidates = {
-			Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo", "repo", "constants", "petnums.json"),
-			Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo", "constants", "petnums.json")
+			fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "petnums.json"),
+			fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "constants", "petnums.json")
 		};
 		for (Path path : candidates) {
 			try {

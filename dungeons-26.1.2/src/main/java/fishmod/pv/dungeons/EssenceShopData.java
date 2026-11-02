@@ -9,7 +9,7 @@ package fishmod.pv.dungeons;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.DungeonSnapshot;
 import fishmod.pv.data.Leveling;
 import java.util.ArrayList;
@@ -210,7 +210,7 @@ public final class EssenceShopData {
 		Map<String, String> unmapped = unmappedPerks(member);
 		unmapped.keySet().removeIf(key -> !LOGGED_UNMAPPED.add(key));
 		if (!unmapped.isEmpty()) {
-			BetterPV.LOGGER.info("[BetterPV] Unmapped essence perk keys: {}", unmapped);
+			ProfileViewer.LOGGER.info("[FishPV] Unmapped essence perk keys: {}", unmapped);
 		}
 	}
 

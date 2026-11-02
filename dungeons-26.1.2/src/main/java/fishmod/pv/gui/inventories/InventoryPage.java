@@ -308,14 +308,14 @@ public final class InventoryPage {
 	private String unavailableReason(InventoryPane pane) {
 		return switch (pane) {
 			case PERSONAL_VAULT -> !this.snapshot.inventoryApi()
-				? Component.translatable("betterpv.inv.state.api_off").getString()
+				? Component.translatable("fishmod.pv.inv.state.api_off").getString()
 				: !this.snapshot.personalVaultPresent()
-					? Component.translatable("betterpv.inv.state.vault_locked").getString()
+					? Component.translatable("fishmod.pv.inv.state.vault_locked").getString()
 					: null;
 			case TIME_POCKET -> !this.snapshot.inventoryApi()
-				? Component.translatable("betterpv.inv.state.api_off").getString()
+				? Component.translatable("fishmod.pv.inv.state.api_off").getString()
 				: !this.snapshot.timePocketPresent()
-					? Component.translatable("betterpv.inv.state.not_in_api").getString()
+					? Component.translatable("fishmod.pv.inv.state.not_in_api").getString()
 					: null;
 			default -> null;
 		};
@@ -398,7 +398,7 @@ public final class InventoryPage {
 		int mouseY
 	) {
 		if (sackPages.isEmpty()) {
-			String key = this.snapshot.inventoryApi() ? "betterpv.inv.state.no_sacks" : "betterpv.inv.state.api_off";
+			String key = this.snapshot.inventoryApi() ? "fishmod.pv.inv.state.no_sacks" : "fishmod.pv.inv.state.api_off";
 			PvDraw.textCentered(g, font, Component.translatable(key).getString(), x + w / 2, y + h / 2, PvDraw.COLOR_MUTED);
 			return;
 		}

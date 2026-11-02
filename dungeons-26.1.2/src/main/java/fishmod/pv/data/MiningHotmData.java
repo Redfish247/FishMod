@@ -10,7 +10,7 @@ package fishmod.pv.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.Reader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -116,10 +116,9 @@ public final class MiningHotmData {
 	}
 
 	private static void loadFromDisk() {
-		Path path = Path.of(System.getProperty("user.home"),
-			".betterpv", "neu-repo", "repo", "constants", "hotmlayout.json");
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "hotmlayout.json");
 		if (!Files.isRegularFile(path)) {
-			BetterPV.LOGGER.debug("HOTM layout missing at {}", path);
+			ProfileViewer.LOGGER.debug("HOTM layout missing at {}", path);
 			perks = List.of();
 			byId = Map.of();
 			return;
@@ -170,12 +169,12 @@ public final class MiningHotmData {
 			byId = Collections.unmodifiableMap(map);
 			maxX = mx;
 			maxY = my;
-			BetterPV.LOGGER.info("Loaded HOTM layout ({} perks)", list.size());
+			ProfileViewer.LOGGER.info("Loaded HOTM layout ({} perks)", list.size());
 		} catch (IOException | RuntimeException exception) {
 			if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed loading hotmlayout.json", exception);
+			ProfileViewer.LOGGER.warn("Failed loading hotmlayout.json", exception);
 			perks = List.of();
 			byId = Map.of();
 		}

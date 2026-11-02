@@ -7,7 +7,7 @@
  */
 package fishmod.pv.gui;
 
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.lang.reflect.Field;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -56,7 +56,7 @@ public final class PvFont {
 			cachedFor = vanilla;
 			return cached;
 		} catch (ReflectiveOperationException | RuntimeException exception) {
-			BetterPV.LOGGER.warn("Inter font unavailable, using the default font", exception);
+			ProfileViewer.LOGGER.warn("Inter font unavailable, using the default font", exception);
 			return vanilla;
 		}
 	}
