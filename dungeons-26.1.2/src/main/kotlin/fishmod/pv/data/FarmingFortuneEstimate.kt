@@ -89,16 +89,16 @@ class FarmingFortuneEstimate private constructor(
 
 			@JvmStatic
 			fun of(snap: GardenSnapshot?): Garden {
-				if (snap == null || !snap.islandLoaded()) {
+				if (snap == null || !snap.islandLoaded) {
 					return NONE
 				}
 				val upgrades = HashMap<String, Int>()
 				val milestones = HashMap<String, Int>()
-				for (row in snap.crops()) {
+				for (row in snap.crops) {
 					upgrades[row.name] = row.upgradeLevel
 					milestones[row.name] = row.milestone
 				}
-				return Garden(true, snap.plotsUnlocked(), snap.gardenLevel(), upgrades, milestones, snap.uniqueVisitors())
+				return Garden(true, snap.plotsUnlocked(), snap.gardenLevel, upgrades, milestones, snap.uniqueVisitors)
 			}
 		}
 	}
