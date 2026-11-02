@@ -5,17 +5,16 @@
  *
  * Derived from BetterPV by Vyriv (https://github.com/Vyriv/BetterPV).
  */
-package fishmod.pv.data;
+package fishmod.pv.data
 
-import java.util.List;
-import java.util.Locale;
+import java.util.Locale
 
 /**
  * Coral "Fish Family" catalog (Galatea Red House).
  * Discovered IDs come from {@code foraging.fish_family}; this list fills empty slots.
  */
-public final class FishFamilyData {
-	private static final List<String> ALL = List.of(
+object FishFamilyData {
+	private val ALL: List<String> = listOf(
 		"BAT_THE_FISH",
 		"BERRY_THE_FISH",
 		"CANDY_THE_FISH",
@@ -49,39 +48,35 @@ public final class FishFamilyData {
 		"TREE_THE_FISH",
 		"WORM_THE_FISH",
 		"ZOOP_THE_FISH"
-	);
+	)
 
-	private FishFamilyData() {
-	}
+	@JvmStatic
+	fun all(): List<String> = ALL
 
-	public static List<String> all() {
-		return ALL;
-	}
-
-	public static String displayName(String id) {
-		if (id == null || id.isBlank()) {
-			return "";
+	@JvmStatic
+	fun displayName(id: String?): String {
+		if (id.isNullOrBlank()) {
+			return ""
 		}
-		if ("SNOWFLAKE_THE_FISH".equalsIgnoreCase(id)) {
-			return "Flake the Fish";
+		if ("SNOWFLAKE_THE_FISH".equals(id, ignoreCase = true)) {
+			return "Flake the Fish"
 		}
-		if ("GORF_THE_FISH".equalsIgnoreCase(id)) {
-			return "Frog the Fish";
+		if ("GORF_THE_FISH".equals(id, ignoreCase = true)) {
+			return "Frog the Fish"
 		}
-		String[] parts = id.replace('-', '_').split("_");
-		StringBuilder sb = new StringBuilder();
-		for (String part : parts) {
-			if (part.isBlank() || "THE".equalsIgnoreCase(part)) {
-				continue;
+		val sb = StringBuilder()
+		for (part in id.replace('-', '_').split("_")) {
+			if (part.isBlank() || "THE".equals(part, ignoreCase = true)) {
+				continue
 			}
-			if (!sb.isEmpty()) {
-				sb.append(' ');
+			if (sb.isNotEmpty()) {
+				sb.append(' ')
 			}
-			sb.append(Character.toUpperCase(part.charAt(0)));
-			if (part.length() > 1) {
-				sb.append(part.substring(1).toLowerCase(Locale.ROOT));
+			sb.append(part[0].uppercaseChar())
+			if (part.length > 1) {
+				sb.append(part.substring(1).lowercase(Locale.ROOT))
 			}
 		}
-		return sb.toString();
+		return sb.toString()
 	}
 }
