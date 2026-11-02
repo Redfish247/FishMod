@@ -16,10 +16,18 @@ public final class TwitchIrcClient {
 	private static final String HOST = "irc.chat.twitch.tv";
 	private static final int PORT = 6697;
 	private static final int READ_TIMEOUT_MS = 360_000;
+	private static final int RECONNECT_LOOP_REPORT_AT = 3;
+
+	private static final class ServerReconnectException extends IOException {
+		ServerReconnectException() {
+			super("server asked to reconnect");
+		}
+	}
 
 	private final TwitchBridgeConfig config;
 	private final String channel;
 
+	private boolean quietConnect;
 	private volatile boolean started;
 	private volatile Thread thread;
 	private volatile Socket socket;
@@ -57,14 +65,24 @@ public final class TwitchIrcClient {
 	private void runLoop() {
 		int attempt = 0;
 		while (started) {
+			long startedAt = System.currentTimeMillis();
 			try {
-				long startedAt = System.currentTimeMillis();
 				connectAndListen();
 				if (!started) break;
 				attempt = System.currentTimeMillis() - startedAt > 60_000L ? 0 : attempt + 1;
 				sleep(Math.min(30_000L, 2_000L * (1L << Math.min(attempt, 4))));
+			} catch (ServerReconnectException e) {
+				if (!started) break;
+				// Normal Twitch maintenance: only a rapid loop of these is a problem
+				attempt = System.currentTimeMillis() - startedAt > 60_000L ? 0 : attempt + 1;
+				if (attempt == RECONNECT_LOOP_REPORT_AT) {
+					fishmod.utils.debug.FishDiag.fail("TwitchIrcClient.6", "IRC server for #" + channel + " keeps asking to reconnect (" + attempt + " in a row)", e);
+				}
+				quietConnect = true;
+				if (attempt > 0) sleep(Math.min(30_000L, 2_000L * (1L << Math.min(attempt - 1, 4))));
 			} catch (IOException e) {
 				if (!started) break;
+				quietConnect = false;
 				fishmod.utils.debug.FishDiag.fail("TwitchIrcClient.1", "IRC connection to #" + channel + " dropped (attempt " + (attempt + 1) + ")", e);
 				attempt++;
 				long delay = Math.min(30_000L, 2_000L * (1L << Math.min(attempt - 1, 4)));
@@ -104,7 +122,8 @@ public final class TwitchIrcClient {
 			send(out, "NICK " + nick);
 			send(out, "JOIN #" + channel);
 
-			ChatOutput.info(config, "connected to #" + channel);
+			if (!quietConnect) ChatOutput.info(config, "connected to #" + channel);
+			quietConnect = false;
 
 			String line;
 			while (started && (line = in.readLine()) != null) {
@@ -156,7 +175,7 @@ public final class TwitchIrcClient {
 				if (!msg.trailing.isBlank()) ChatOutput.info(config, msg.trailing);
 			}
 			case "RECONNECT" -> {
-				throw new IOException("server asked to reconnect");
+				throw new ServerReconnectException();
 			}
 			default -> {  }
 		}
