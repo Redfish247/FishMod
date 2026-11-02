@@ -10,7 +10,7 @@ package fishmod.pv.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,9 +49,9 @@ public final class TrophySkulls {
 	}
 
 	private static void load() {
-		try (InputStream in = TrophySkulls.class.getResourceAsStream("/assets/betterpv/data/trophy_skulls.json")) {
+		try (InputStream in = TrophySkulls.class.getResourceAsStream("/assets/fishmod/pv/data/trophy_skulls.json")) {
 			if (in == null) {
-				BetterPV.LOGGER.warn("Missing trophy_skulls.json");
+				ProfileViewer.LOGGER.warn("Missing trophy_skulls.json");
 				return;
 			}
 			JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
@@ -72,7 +72,7 @@ public final class TrophySkulls {
 			if (ex instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed to load trophy_skulls.json", ex);
+			ProfileViewer.LOGGER.warn("Failed to load trophy_skulls.json", ex);
 		}
 	}
 }

@@ -113,8 +113,8 @@ public final class DungeonPage {
 		ClassLevelQuery.Parsed query = ClassLevelQuery.parse(this.classLevelText);
 		if (query == null) {
 			this.overlay.open(DungeonCalcOverlay.View.error(
-				"betterpv.dungeons.calc.class",
-				Component.translatable("betterpv.dungeons.calc.class_invalid").getString()
+				"fishmod.pv.dungeons.calc.class",
+				Component.translatable("fishmod.pv.dungeons.calc.class_invalid").getString()
 			));
 			return;
 		}
@@ -326,7 +326,7 @@ public final class DungeonPage {
 			));
 		}
 		return DungeonCalcOverlay.View.single(
-			"betterpv.dungeons.calc.result_title",
+			"fishmod.pv.dungeons.calc.result_title",
 			result.targetLevel(),
 			result.xpNeeded(),
 			result.mayorLabel() == null || result.mayorLabel().isBlank()
@@ -345,7 +345,7 @@ public final class DungeonPage {
 			));
 		}
 		return DungeonCalcOverlay.View.single(
-			"betterpv.dungeons.calc.class_result_title",
+			"fishmod.pv.dungeons.calc.class_result_title",
 			result.className() + " " + result.targetLevel(),
 			result.xpNeeded(),
 			result.modsLabel() == null ? "" : result.modsLabel(),
@@ -366,7 +366,7 @@ public final class DungeonPage {
 		}
 		String titleArg = result.targetLevel() + " · " + result.floorLabel();
 		return DungeonCalcOverlay.View.average(
-			"betterpv.dungeons.calc.ca_result_title",
+			"fishmod.pv.dungeons.calc.ca_result_title",
 			titleArg,
 			result.modsLabel() == null ? "" : result.modsLabel(),
 			blocks,
@@ -456,7 +456,7 @@ public final class DungeonPage {
 		int cx = x + PAD;
 		int cy = y + PAD;
 
-		String header = Component.translatable("betterpv.dungeons.calc.header").getString();
+		String header = Component.translatable("fishmod.pv.dungeons.calc.header").getString();
 		PvDraw.text(g, font, header, cx, cy, PvDraw.COLOR_MUTED);
 
 		String mods = buildModsHint();
@@ -468,15 +468,15 @@ public final class DungeonPage {
 		}
 
 		cy += font.lineHeight + 6;
-		String cataLabel = Component.translatable("betterpv.dungeons.calc.level_wanted").getString();
-		String classLabel = Component.translatable("betterpv.dungeons.calc.class_wanted").getString();
+		String cataLabel = Component.translatable("fishmod.pv.dungeons.calc.level_wanted").getString();
+		String classLabel = Component.translatable("fishmod.pv.dungeons.calc.class_wanted").getString();
 		int labelW = Math.max(font.width(cataLabel), font.width(classLabel)) + 4;
 
 		layoutRow(this.cataRow, font, x, w, cx, cy, labelW);
 		drawCalcRow(
 			g, font, this.cataRow, cx, cataLabel, this.cataLevelText,
-			"betterpv.dungeons.calc.level_hint",
-			"betterpv.dungeons.calc.level_help",
+			"fishmod.pv.dungeons.calc.level_hint",
+			"fishmod.pv.dungeons.calc.level_help",
 			this.focus == FieldFocus.CATA,
 			mouseX, mouseY
 		);
@@ -485,8 +485,8 @@ public final class DungeonPage {
 		layoutRow(this.classRow, font, x, w, cx, cy, labelW);
 		drawCalcRow(
 			g, font, this.classRow, cx, classLabel, this.classLevelText,
-			"betterpv.dungeons.calc.class_hint",
-			"betterpv.dungeons.calc.class_help",
+			"fishmod.pv.dungeons.calc.class_hint",
+			"fishmod.pv.dungeons.calc.class_help",
 			this.focus == FieldFocus.CLASS,
 			mouseX, mouseY
 		);
@@ -551,7 +551,7 @@ public final class DungeonPage {
 		boolean btnHover = hitButton(row, mouseX, mouseY);
 		PvDraw.roundedFill(g, row.btnX, row.btnY, row.btnW, row.btnH, 3, btnHover ? 0x50386CC8 : PvDraw.CELL);
 		PvDraw.roundedRing(g, row.btnX, row.btnY, row.btnW, row.btnH, 3, btnHover ? PvDraw.COLOR_ACCENT : PvDraw.COLOR_BORDER, PvDraw.C_ALL);
-		String calc = Component.translatable("betterpv.dungeons.calc.button").getString();
+		String calc = Component.translatable("fishmod.pv.dungeons.calc.button").getString();
 		PvDraw.textCentered(
 			g, font, calc,
 			row.btnX + row.btnW / 2,
@@ -933,8 +933,8 @@ public final class DungeonPage {
 		int leftCol = cx;
 		int rightCol = cx + colW + colGap;
 
-		String normalHeader = Component.translatable("betterpv.dungeons.normal").getString();
-		String masterHeader = Component.translatable("betterpv.dungeons.master").getString();
+		String normalHeader = Component.translatable("fishmod.pv.dungeons.normal").getString();
+		String masterHeader = Component.translatable("fishmod.pv.dungeons.master").getString();
 		PvDraw.text(g, font, normalHeader, leftCol, y + PAD, PvDraw.COLOR_MUTED);
 		PvDraw.text(g, font, masterHeader, rightCol, y + PAD, PvDraw.COLOR_MUTED);
 
@@ -947,8 +947,8 @@ public final class DungeonPage {
 			normalTotal += normal.completions();
 			masterTotal += master.completions();
 
-			String floorLabel = Component.translatable("betterpv.dungeons.floor", floor).getString();
-			String masterLabel = Component.translatable("betterpv.dungeons.master_floor", floor).getString();
+			String floorLabel = Component.translatable("fishmod.pv.dungeons.floor", floor).getString();
+			String masterLabel = Component.translatable("fishmod.pv.dungeons.master_floor", floor).getString();
 
 			drawFloorCell(g, font, leftCol, cy, colW, floors.lineH() + floors.pbH(), floors.gap(), floorLabel, normal, NORMAL_FLOOR_COLOR);
 			drawFloorCell(g, font, rightCol, cy, colW, floors.lineH() + floors.pbH(), floors.gap(), masterLabel, master, MASTER_FLOOR_COLOR);
@@ -973,7 +973,7 @@ public final class DungeonPage {
 		int w,
 		long total
 	) {
-		String label = Component.translatable("betterpv.dungeons.total").getString();
+		String label = Component.translatable("fishmod.pv.dungeons.total").getString();
 		PvDraw.text(g, font, label, x, y, PvDraw.COLOR_MUTED);
 		PvDraw.textRight(g, font, FormatUtil.commas(total), x + w, y, PvDraw.COLOR_TEXT);
 	}

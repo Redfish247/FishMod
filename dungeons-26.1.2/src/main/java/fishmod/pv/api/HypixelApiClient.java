@@ -12,7 +12,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.SoftDataFailure;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -80,9 +80,9 @@ public final class HypixelApiClient {
 	/** Mojang names do not change during this client session often enough to justify repeat lookups. */
 	private static final ConcurrentHashMap<String, UuidName> UUID_NAME_CACHE = new ConcurrentHashMap<>();
 	/** Small pool so museum + election (and other GETs) can overlap while spacing starts. */
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(4, PvExecutors.daemon("BetterPV-HypixelApi"));
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(4, PvExecutors.daemon("FishPV-HypixelApi"));
 	/** Heavy profile parse (NBT / networth) stays off the HTTP pool. */
-	private static final ExecutorService PARSE_EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("BetterPV-ProfileParse"));
+	private static final ExecutorService PARSE_EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("FishPV-ProfileParse"));
 
 	/** Shared so auth, resources and /pv calls to api.vyriv.dev reuse one warm connection. */
 	public static HttpClient http() {
@@ -233,13 +233,13 @@ public final class HypixelApiClient {
 			boolean serverCurrent = server.foundFor(cleaned) && !server.serverStale()
 				&& server.found().uuid().equals(mojang.found().uuid());
 			if (!serverCurrent && server.status() != LookupStatus.FAILED) {
-				BetterPV.LOGGER.info("[PV timing] {} uuid server out of date ({}), asking it to re-check", cleaned, server.describe());
+				ProfileViewer.LOGGER.info("[PV timing] {} uuid server out of date ({}), asking it to re-check", cleaned, server.describe());
 				refreshServerUuid(cleaned);
 			}
 		} else if (mojang.status() == LookupStatus.MISSING) {
 			forgetUuid(cleaned);
 			if (server.status() == LookupStatus.FOUND) {
-				BetterPV.LOGGER.info("[PV timing] {} uuid gone on Mojang but server had it, asking it to re-check", cleaned);
+				ProfileViewer.LOGGER.info("[PV timing] {} uuid gone on Mojang but server had it, asking it to re-check", cleaned);
 				refreshServerUuid(cleaned);
 			}
 		}
@@ -251,12 +251,12 @@ public final class HypixelApiClient {
 		CompletableFuture.supplyAsync(() -> lookupMojangUuid(cleaned), EXECUTOR).thenAccept(mojang -> {
 			if (mojang.status() == LookupStatus.FOUND) {
 				if (!mojang.found().uuid().equals(stored.uuid())) {
-					BetterPV.LOGGER.warn("[PV timing] {} uuid disk entry was out of date, replaced", cleaned);
+					ProfileViewer.LOGGER.warn("[PV timing] {} uuid disk entry was out of date, replaced", cleaned);
 					refreshServerUuid(cleaned);
 				}
 				rememberUuid(mojang.found(), System.currentTimeMillis());
 			} else if (mojang.status() == LookupStatus.MISSING) {
-				BetterPV.LOGGER.warn("[PV timing] {} uuid disk entry no longer exists on Mojang, dropped", cleaned);
+				ProfileViewer.LOGGER.warn("[PV timing] {} uuid disk entry no longer exists on Mojang, dropped", cleaned);
 				forgetUuid(cleaned);
 				refreshServerUuid(cleaned);
 			}
@@ -283,7 +283,7 @@ public final class HypixelApiClient {
 	}
 
 	private static void logUuid(String name, String source, long startedNanos, String detail) {
-		BetterPV.LOGGER.info("[PV timing] {} uuid {} {}ms{}", name, source, (System.nanoTime() - startedNanos) / 1_000_000L, detail);
+		ProfileViewer.LOGGER.info("[PV timing] {} uuid {} {}ms{}", name, source, (System.nanoTime() - startedNanos) / 1_000_000L, detail);
 	}
 
 	private static NameLookup lookupMojangUuid(String cleaned) {
@@ -311,10 +311,10 @@ public final class HypixelApiClient {
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();
 			}
-			BetterPV.LOGGER.warn("Mojang UUID lookup failed for {}: {}", cleaned, exception.toString());
+			ProfileViewer.LOGGER.warn("Mojang UUID lookup failed for {}: {}", cleaned, exception.toString());
 			return NameLookup.failed((System.nanoTime() - startedNanos) / 1_000_000L, exception.getClass().getSimpleName());
 		} catch (RuntimeException exception) {
-			BetterPV.LOGGER.warn("Mojang UUID lookup parse failed for {}", cleaned, exception);
+			ProfileViewer.LOGGER.warn("Mojang UUID lookup parse failed for {}", cleaned, exception);
 			return NameLookup.failed((System.nanoTime() - startedNanos) / 1_000_000L, "parse");
 		}
 	}
@@ -355,7 +355,7 @@ public final class HypixelApiClient {
 			}
 			return NameLookup.failed((System.nanoTime() - startedNanos) / 1_000_000L, exception.getClass().getSimpleName());
 		} catch (RuntimeException exception) {
-			BetterPV.LOGGER.warn("Server UUID lookup parse failed for {}", cleaned, exception);
+			ProfileViewer.LOGGER.warn("Server UUID lookup parse failed for {}", cleaned, exception);
 			return NameLookup.failed((System.nanoTime() - startedNanos) / 1_000_000L, "parse");
 		}
 	}
@@ -385,7 +385,7 @@ public final class HypixelApiClient {
 				NameUuidStore.forgetOtherNames(uuid, resolved);
 				return Optional.of(uuidName);
 			} catch (IOException | InterruptedException exception) {
-				BetterPV.LOGGER.debug("Mojang name lookup failed for {}", id, exception);
+				ProfileViewer.LOGGER.debug("Mojang name lookup failed for {}", id, exception);
 				if (exception instanceof InterruptedException) {
 					Thread.currentThread().interrupt();
 				}
@@ -394,7 +394,7 @@ public final class HypixelApiClient {
 				if (!SoftDataFailure.isSoft(exception)) {
 					throw exception;
 				}
-				BetterPV.LOGGER.debug("Mojang name lookup parse failed for {}", id, exception);
+				ProfileViewer.LOGGER.debug("Mojang name lookup parse failed for {}", id, exception);
 				return Optional.empty();
 			}
 		}, EXECUTOR);
@@ -421,7 +421,7 @@ public final class HypixelApiClient {
 			}, EXECUTOR)
 		);
 		if (shared.reused()) {
-			BetterPV.LOGGER.info(
+			ProfileViewer.LOGGER.info(
 				"[PV timing] event=profile_request_deduplicated correlation_id={} active_correlation_id={} player_uuid={}",
 				correlation,
 				shared.correlationId(),
@@ -607,17 +607,17 @@ public final class HypixelApiClient {
 		Optional<JsonObject> viaWorker = getJson(workerUrl, true, true, timing, 0);
 		if (viaWorker.isEmpty() && System.nanoTime() - attemptStarted > TIMEOUT.toNanos() - 2_000_000_000L) {
 			// The proxy was still fetching from Hypixel when we gave up; it caches the result, so ask again.
-			BetterPV.LOGGER.info("[PV] {} timed out, retrying once", routeName);
+			ProfileViewer.LOGGER.info("[PV] {} timed out, retrying once", routeName);
 			viaWorker = getJson(workerUrl, true, true, timing, 0);
 		}
 		if (viaWorker.isPresent()) {
 			return viaWorker;
 		}
-		BetterPV.LOGGER.warn("Vyriv Hypixel API unavailable for {}", routeName);
+		ProfileViewer.LOGGER.warn("Vyriv Hypixel API unavailable for {}", routeName);
 		return Optional.empty();
 	}
 
-	/** Maps BetterPV's /hypixel/... routes onto the fishmod.dev proxy, or public Hypixel resources. */
+	/** Maps the PV's /hypixel/... routes onto the fishmod.dev proxy, or public Hypixel resources. */
 	static String rewriteUrl(String url) {
 		String prefix = WORKER_BASE + "/hypixel/";
 		if (url == null || !url.startsWith(prefix)) {
@@ -681,27 +681,27 @@ public final class HypixelApiClient {
 				cacheKey = target;
 				Optional<JsonObject> cached = ResponseCache.get(cacheKey);
 				if (cached.isPresent()) {
-					BetterPV.LOGGER.info("[PV cache] hit {}", target.substring(WORKER_BASE.length()));
+					ProfileViewer.LOGGER.info("[PV cache] hit {}", target.substring(WORKER_BASE.length()));
 					return cached;
 				}
 			}
-			String fallback = BetterPVConfig.fallbackHost().isBlank() ? WORKER_FALLBACK_BASE : BetterPVConfig.fallbackHost();
+			String fallback = PvConfig.fallbackHost().isBlank() ? WORKER_FALLBACK_BASE : PvConfig.fallbackHost();
 			boolean useFallback = (fallbackSticky || netAttempt >= 1) && !fallback.isBlank() && target.startsWith(WORKER_BASE);
 			URI uri = URI.create(useFallback ? fallback.replaceAll("/+$", "") + target.substring(WORKER_BASE.length()) : target);
 			HttpRequest.Builder builder = HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET();
 			boolean needsProxyAuth = target.startsWith(WORKER_BASE);
 			if (needsProxyAuth && !FishProxyAuth.applyAuthHeaders(builder, uri)) {
-				BetterPV.LOGGER.warn(
+				ProfileViewer.LOGGER.warn(
 					"Hypixel GET {} skipped: {}",
 					url,
-					FishProxyAuth.userFacingFailure().orElse("missing BetterPV credentials")
+					FishProxyAuth.userFacingFailure().orElse("missing FishMod credentials")
 				);
 				FishProxyAuth.notifyPlayerIfNeeded();
 				return Optional.empty();
 			}
 			if (needsProxyAuth) {
 				builder.header("Accept-Encoding", "gzip");
-				builder.setHeader("X-BetterPV-Correlation-ID", timing.correlationId());
+				builder.setHeader("X-FishPV-Correlation-ID", timing.correlationId());
 			}
 			long startedNanos = System.nanoTime();
 			HttpClient client = netAttempt == 0 ? HTTP : netAttempt == 1 ? HTTP_TLS12 : HTTP_H1;
@@ -715,7 +715,7 @@ public final class HypixelApiClient {
 			} catch (IOException exception) {
 				logTiming(url, response, bodyRead.bytesRead(), timing, startedNanos, headersNanos, System.nanoTime(), 0L, 0L, bodyRead);
 				if (streamed && allowStreamRetry) {
-					BetterPV.LOGGER.warn("Hypixel GET {} stream broke ({}), retrying once", url, exception.toString());
+					ProfileViewer.LOGGER.warn("Hypixel GET {} stream broke ({}), retrying once", url, exception.toString());
 					return getJson(url, allowReauth, false, RequestTiming.retry(timing.correlationId()), 0);
 				}
 				throw exception;
@@ -732,19 +732,19 @@ public final class HypixelApiClient {
 					return getJson(url, false, allowStreamRetry, RequestTiming.retry(timing.correlationId()), 0);
 				}
 				lastFailure = "HTTP 401";
-				BetterPV.LOGGER.warn("Hypixel GET {} unauthorized after re-auth", url);
+				ProfileViewer.LOGGER.warn("Hypixel GET {} unauthorized after re-auth", url);
 				return Optional.empty();
 			}
 			if (response.statusCode() == 503 && needsProxyAuth) {
 				logTiming(url, response, bytes.length, timing, startedNanos, headersNanos, bodyNanos, 0L, 0L, bodyRead);
 				lastFailure = "HTTP 503";
-				BetterPV.LOGGER.warn("Hypixel GET {} session auth unavailable (503)", url);
+				ProfileViewer.LOGGER.warn("Hypixel GET {} session auth unavailable (503)", url);
 				return Optional.empty();
 			}
 			if (response.statusCode() < 200 || response.statusCode() >= 300 || bytes.length == 0) {
 				logTiming(url, response, bytes.length, timing, startedNanos, headersNanos, bodyNanos, 0L, 0L, bodyRead);
 				lastFailure = response.statusCode() >= 200 && response.statusCode() < 300 ? "empty response" : "HTTP " + response.statusCode();
-				BetterPV.LOGGER.warn("Hypixel GET {} failed status={}", url, response.statusCode());
+				ProfileViewer.LOGGER.warn("Hypixel GET {} failed status={}", url, response.statusCode());
 				return Optional.empty();
 			}
 			JsonElement element;
@@ -768,7 +768,7 @@ public final class HypixelApiClient {
 				long parseNanos = System.nanoTime() - parseStartedNanos;
 				logTiming(url, response, bytes.length, timing, startedNanos, headersNanos, bodyNanos, gzipNanos, Math.max(0L, parseNanos - gzipNanos), bodyRead);
 				if (streamed && allowStreamRetry) {
-					BetterPV.LOGGER.warn("Hypixel GET {} stream incomplete ({}), retrying once", url, exception.toString());
+					ProfileViewer.LOGGER.warn("Hypixel GET {} stream incomplete ({}), retrying once", url, exception.toString());
 					return getJson(url, allowReauth, false, RequestTiming.retry(timing.correlationId()), 0);
 				}
 				throw exception;
@@ -792,7 +792,7 @@ public final class HypixelApiClient {
 				if (io instanceof javax.net.ssl.SSLException) {
 					fallbackSticky = true;
 				}
-				BetterPV.LOGGER.warn("Hypixel GET {} network error ({}), retry {}", url, exception.toString(), netAttempt + 1);
+				ProfileViewer.LOGGER.warn("Hypixel GET {} network error ({}), retry {}", url, exception.toString(), netAttempt + 1);
 				try {
 					Thread.sleep(300L * (netAttempt + 1));
 				} catch (InterruptedException interrupted) {
@@ -802,7 +802,7 @@ public final class HypixelApiClient {
 				return getJson(url, allowReauth, allowStreamRetry, timing, netAttempt + 1);
 			}
 			lastFailure = exception.getClass().getSimpleName() + (exception.getMessage() == null ? "" : ": " + exception.getMessage());
-			BetterPV.LOGGER.warn("Hypixel GET {} failed", url, exception);
+			ProfileViewer.LOGGER.warn("Hypixel GET {} failed", url, exception);
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();
 			}
@@ -824,7 +824,7 @@ public final class HypixelApiClient {
 	) {
 		long completedNanos = System.nanoTime();
 		String path = url.startsWith(WORKER_BASE) ? url.substring(WORKER_BASE.length()) : url;
-		BetterPV.LOGGER.info(
+		ProfileViewer.LOGGER.info(
 			"[PV timing] event=http_complete correlation_id={} path={} queue_ms={} admission_ms={} headers_ms={} body_ms={} first_body_byte_ms={} max_read_wait_ms={} read_calls={} http_version={} content_length={} transfer_encoding={} gzip_ms={} json_ms={} total_ms={} stream={} status={} bytes={} encoding={} cache={} server=[{}] upstream=[bytes={} enc={} prevAge={} {}] arrival=[{}]",
 			timing.correlationId(),
 			path,
@@ -1055,19 +1055,19 @@ public final class HypixelApiClient {
 		CompletableFuture<Optional<com.google.gson.JsonArray>> laby =
 			CompletableFuture.supplyAsync(() -> fetchLabyNameHistory(labyId), EXECUTOR)
 				.exceptionally(error -> {
-					BetterPV.LOGGER.warn("Laby name history future failed for {}", labyId, error);
+					ProfileViewer.LOGGER.warn("Laby name history future failed for {}", labyId, error);
 					return Optional.empty();
 				});
 		CompletableFuture<Optional<com.google.gson.JsonArray>> crafty =
 			CompletableFuture.supplyAsync(() -> fetchCraftyNameHistory(labyId), EXECUTOR)
 				.exceptionally(error -> {
-					BetterPV.LOGGER.warn("Crafty name history future failed for {}", labyId, error);
+					ProfileViewer.LOGGER.warn("Crafty name history future failed for {}", labyId, error);
 					return Optional.empty();
 				});
 		CompletableFuture<Optional<com.google.gson.JsonArray>> namemc =
 			CompletableFuture.supplyAsync(() -> fetchNameMcNameHistory(labyId), EXECUTOR)
 				.exceptionally(error -> {
-					BetterPV.LOGGER.warn("NameMC name history future failed for {}", labyId, error);
+					ProfileViewer.LOGGER.warn("NameMC name history future failed for {}", labyId, error);
 					return Optional.empty();
 				});
 		return CompletableFuture.allOf(laby, crafty, namemc).thenApply(ignored -> {
@@ -1082,7 +1082,7 @@ public final class HypixelApiClient {
 				return Optional.empty();
 			}
 			com.google.gson.JsonArray cleaned = collapseConsecutiveNameDupes(sortNameHistoryOldestFirst(merged));
-			BetterPV.LOGGER.info("Username history for {}: {} name(s)", id, cleaned.size());
+			ProfileViewer.LOGGER.info("Username history for {}: {} name(s)", id, cleaned.size());
 			return Optional.of(cleaned);
 		});
 	}
@@ -1119,7 +1119,7 @@ public final class HypixelApiClient {
 			}
 			return Optional.empty();
 		} catch (IOException | InterruptedException exception) {
-			BetterPV.LOGGER.warn("Laby name history failed for {}", uuidPath, exception);
+			ProfileViewer.LOGGER.warn("Laby name history failed for {}", uuidPath, exception);
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();
 			}
@@ -1128,7 +1128,7 @@ public final class HypixelApiClient {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Laby name history parse failed for {}", uuidPath, exception);
+			ProfileViewer.LOGGER.warn("Laby name history parse failed for {}", uuidPath, exception);
 			return Optional.empty();
 		}
 	}
@@ -1182,7 +1182,7 @@ public final class HypixelApiClient {
 			}
 			return out.size() == 0 ? Optional.empty() : Optional.of(out);
 		} catch (IOException | InterruptedException exception) {
-			BetterPV.LOGGER.warn("Crafty name history failed for {}", uuidPath, exception);
+			ProfileViewer.LOGGER.warn("Crafty name history failed for {}", uuidPath, exception);
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();
 			}
@@ -1191,7 +1191,7 @@ public final class HypixelApiClient {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Crafty name history parse failed for {}", uuidPath, exception);
+			ProfileViewer.LOGGER.warn("Crafty name history parse failed for {}", uuidPath, exception);
 			return Optional.empty();
 		}
 	}
@@ -1220,7 +1220,7 @@ public final class HypixelApiClient {
 			}
 			return parseNameMcHistoryHtml(response.body());
 		} catch (IOException | InterruptedException exception) {
-			BetterPV.LOGGER.warn("NameMC name history failed for {}", uuidPath, exception);
+			ProfileViewer.LOGGER.warn("NameMC name history failed for {}", uuidPath, exception);
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();
 			}
@@ -1229,7 +1229,7 @@ public final class HypixelApiClient {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("NameMC name history parse failed for {}", uuidPath, exception);
+			ProfileViewer.LOGGER.warn("NameMC name history parse failed for {}", uuidPath, exception);
 			return Optional.empty();
 		}
 	}
@@ -1406,7 +1406,7 @@ public final class HypixelApiClient {
 			}
 			return Optional.empty();
 		} catch (IOException | InterruptedException exception) {
-			BetterPV.LOGGER.warn("Ashcon name history failed for {}", undashedUuid, exception);
+			ProfileViewer.LOGGER.warn("Ashcon name history failed for {}", undashedUuid, exception);
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();
 			}
@@ -1415,7 +1415,7 @@ public final class HypixelApiClient {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Ashcon name history parse failed for {}", undashedUuid, exception);
+			ProfileViewer.LOGGER.warn("Ashcon name history parse failed for {}", undashedUuid, exception);
 			return Optional.empty();
 		}
 	}

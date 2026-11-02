@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
@@ -155,7 +155,7 @@ public final class RepoData {
 			if (client == null || client.getResourceManager() == null) {
 				return null;
 			}
-			Identifier id = Identifier.fromNamespaceAndPath(BetterPV.MOD_ID, path);
+			Identifier id = ProfileViewer.id(path);
 			Optional<Resource> resource = client.getResourceManager().getResource(id);
 			if (resource.isEmpty()) {
 				return null;
@@ -173,10 +173,10 @@ public final class RepoData {
 	}
 
 	private static JsonObject loadFromClasspath(String path) {
-		String classpath = "/assets/" + BetterPV.MOD_ID + "/" + path;
+		String classpath = ProfileViewer.ASSETS + path;
 		try (InputStream stream = RepoData.class.getResourceAsStream(classpath)) {
 			if (stream == null) {
-				BetterPV.LOGGER.warn("Missing classpath resource {}", classpath);
+				ProfileViewer.LOGGER.warn("Missing classpath resource {}", classpath);
 				return null;
 			}
 			try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -187,7 +187,7 @@ public final class RepoData {
 			if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed loading {}", path, exception);
+			ProfileViewer.LOGGER.warn("Failed loading {}", path, exception);
 			return null;
 		}
 	}

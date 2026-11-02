@@ -9,7 +9,7 @@ package fishmod.pv.gui;
 
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.api.HypixelApiClient;
 import fishmod.pv.api.ProfileFetcher;
 import fishmod.pv.data.FormatUtil;
@@ -127,7 +127,7 @@ final class ProfileSelectorController {
 			+ "|" + this.profileMenuOpen;
 		if (!footerKey.equals(this.cachedProfileFooterName)) {
 			this.cachedProfileFooterName = footerKey;
-			this.cachedProfileFooter = Component.translatable("betterpv.home.profile", profileName).getString();
+			this.cachedProfileFooter = Component.translatable("fishmod.pv.home.profile", profileName).getString();
 		}
 		this.profileFooterX = panelX + 2;
 		this.profileFooterY = panelY + panelH + 3;
@@ -732,7 +732,7 @@ final class ProfileSelectorController {
 					return;
 				}
 				if (error != null || loaded == null || !loaded.ok()) {
-					BetterPV.LOGGER.warn(
+					ProfileViewer.LOGGER.warn(
 						"Profile switch failed for {} -> {}",
 						name,
 						nextProfileId,

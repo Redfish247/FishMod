@@ -160,7 +160,7 @@ public final class MinionsPage {
 		PvDraw.innerPanel(g, rightX, y, rightW, h);
 
 		List<CollectionSnapshot.MinionEntry> minions = snapshot.minions();
-		PvDraw.text(g, font, Component.translatable("betterpv.collections.minions").getString(), x + PAD, y + PAD, PvDraw.COLOR_TEXT);
+		PvDraw.text(g, font, Component.translatable("fishmod.pv.collections.minions").getString(), x + PAD, y + PAD, PvDraw.COLOR_TEXT);
 		this.minionTop = y + PAD + font.lineHeight + 4;
 		this.minionH = Math.max(20, y + h - PAD - this.minionTop);
 
@@ -168,7 +168,7 @@ public final class MinionsPage {
 			this.toggleW = 0;
 			PvDraw.textCentered(
 				g, font,
-				Component.translatable("betterpv.collections.minions_empty").getString(),
+				Component.translatable("fishmod.pv.collections.minions_empty").getString(),
 				x + leftW / 2, y + h / 2, PvDraw.COLOR_MUTED
 			);
 			this.minionMaxScroll = 0;
@@ -178,7 +178,7 @@ public final class MinionsPage {
 		}
 		this.selectedMinion = Math.max(0, Math.min(this.selectedMinion, minions.size() - 1));
 
-		String toggle = Component.translatable("betterpv.collections.minions_cheapest").getString();
+		String toggle = Component.translatable("fishmod.pv.collections.minions_cheapest").getString();
 		this.toggleW = font.width(toggle);
 		this.toggleH = font.lineHeight;
 		this.toggleX = x + leftW - PAD - this.toggleW;
@@ -288,7 +288,7 @@ public final class MinionsPage {
 			this.minionMaxScroll = 0;
 			PvDraw.textCentered(
 				g, font,
-				Component.translatable("betterpv.collections.minions_all_crafted").getString(),
+				Component.translatable("fishmod.pv.collections.minions_all_crafted").getString(),
 				listX + listW / 2, this.minionTop + this.minionH / 2 - font.lineHeight / 2, PvDraw.COLOR_MUTED
 			);
 			return;
@@ -347,7 +347,7 @@ public final class MinionsPage {
 		if (minion == null) {
 			PvDraw.textCentered(
 				g, font,
-				Component.translatable("betterpv.collections.select_minion").getString(),
+				Component.translatable("fishmod.pv.collections.select_minion").getString(),
 				x + w / 2, y + h / 2, PvDraw.COLOR_MUTED
 			);
 			this.tierListTop = cy;
@@ -375,7 +375,7 @@ public final class MinionsPage {
 		cy += font.lineHeight + 2;
 		PvDraw.text(
 			g, font,
-			Component.translatable("betterpv.collections.minions_shared").getString(),
+			Component.translatable("fishmod.pv.collections.minions_shared").getString(),
 			cx, cy,
 			PvDraw.COLOR_MUTED
 		);
@@ -383,7 +383,7 @@ public final class MinionsPage {
 
 		List<MinionCosts.TierCost> missing = this.missingById.getOrDefault(minion.id(), List.of());
 		if (!missing.isEmpty()) {
-			String remainingLabel = Component.translatable("betterpv.collections.minions_remaining").getString();
+			String remainingLabel = Component.translatable("fishmod.pv.collections.minions_remaining").getString();
 			String remaining = totalText(missing);
 			PvDraw.text(g, font, CollectionsUi.trim(font, remainingLabel, contentW - font.width(remaining) - 4), cx, cy, PvDraw.COLOR_MUTED);
 			PvDraw.textRight(g, font, remaining, cx + contentW, cy, totalComplete(missing) ? PvDraw.COLOR_GOLD : PvDraw.COLOR_MUTED);
@@ -393,7 +393,7 @@ public final class MinionsPage {
 			cy += font.lineHeight + 3;
 		}
 
-		PvDraw.text(g, font, Component.translatable("betterpv.collections.tiers").getString(), cx, cy, PvDraw.COLOR_MUTED);
+		PvDraw.text(g, font, Component.translatable("fishmod.pv.collections.tiers").getString(), cx, cy, PvDraw.COLOR_MUTED);
 		cy += font.lineHeight + 2;
 		this.tierListTop = cy;
 		this.tierListH = Math.max(20, y + h - PAD - this.tierListTop);
@@ -457,7 +457,7 @@ public final class MinionsPage {
 		List<MinionCosts.TierCost> missing = this.missingById.getOrDefault(minion.id(), List.of());
 		if (!missing.isEmpty()) {
 			lines.add(PvTooltip.Line.row(
-				Component.translatable("betterpv.collections.minions_remaining").getString(), PvDraw.COLOR_MUTED,
+				Component.translatable("fishmod.pv.collections.minions_remaining").getString(), PvDraw.COLOR_MUTED,
 				totalText(missing), totalComplete(missing) ? PvDraw.COLOR_GOLD : PvDraw.COLOR_MUTED));
 		}
 		return lines;
@@ -470,7 +470,7 @@ public final class MinionsPage {
 			lines.add(PvTooltip.Line.row("T" + cost.tier(), PvDraw.COLOR_MUTED, costText(cost), costColor(cost)));
 		}
 		lines.add(PvTooltip.Line.blank());
-		lines.add(PvTooltip.Line.of(Component.translatable("betterpv.collections.minions_cost_note").getString(), PvDraw.COLOR_MUTED));
+		lines.add(PvTooltip.Line.of(Component.translatable("fishmod.pv.collections.minions_cost_note").getString(), PvDraw.COLOR_MUTED));
 		return lines;
 	}
 
@@ -483,8 +483,8 @@ public final class MinionsPage {
 			MinionsPage::itemColor,
 			MinionsPage::itemIcon,
 			id -> cost.unpriced().contains(id) ? null : ItemPricer.knownPrice(id),
-			Component.translatable("betterpv.collections.minions_unpriced").getString(),
-			Component.translatable("betterpv.collections.minions_no_recipe").getString()
+			Component.translatable("fishmod.pv.collections.minions_unpriced").getString(),
+			Component.translatable("fishmod.pv.collections.minions_no_recipe").getString()
 		);
 	}
 

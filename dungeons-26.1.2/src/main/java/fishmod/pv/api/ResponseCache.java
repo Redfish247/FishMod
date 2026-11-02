@@ -9,7 +9,7 @@ package fishmod.pv.api;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +25,7 @@ import java.util.Optional;
 final class ResponseCache {
 	private static final long TTL_MS = 5L * 60L * 1000L;
 	private static final int MAX_MEMORY = 24;
-	private static final Path DIR = Path.of(System.getProperty("user.home"), ".betterpv", "response-cache");
+	private static final Path DIR = fishmod.pv.ProfileViewer.DIR.resolve("response-cache");
 
 	private record Cached(JsonObject json, long storedAtMs) {}
 
@@ -63,7 +63,7 @@ final class ResponseCache {
 				Files.deleteIfExists(file);
 			}
 		} catch (IOException | RuntimeException exception) {
-			BetterPV.LOGGER.debug("Response cache read failed for {}", key, exception);
+			ProfileViewer.LOGGER.debug("Response cache read failed for {}", key, exception);
 		}
 		return Optional.empty();
 	}
@@ -80,7 +80,7 @@ final class ResponseCache {
 				Files.writeString(tmp, json.toString(), StandardCharsets.UTF_8);
 				Files.move(tmp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException | RuntimeException exception) {
-				BetterPV.LOGGER.debug("Response cache write failed for {}", key, exception);
+				ProfileViewer.LOGGER.debug("Response cache write failed for {}", key, exception);
 			}
 		});
 	}

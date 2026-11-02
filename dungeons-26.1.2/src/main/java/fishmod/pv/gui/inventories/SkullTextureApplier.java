@@ -74,12 +74,12 @@ final class SkullTextureApplier {
 	private static boolean tryApplyProfile(ItemStack stack, String paddedValue, String signature) {
 		// Resolved profile first: an unresolved CODEC profile (fake id) makes the client look it up and lose the texture.
 		try {
-			UUID uuid = UUID.nameUUIDFromBytes(("betterpv:" + paddedValue).getBytes());
+			UUID uuid = UUID.nameUUIDFromBytes(("fishpv:" + paddedValue).getBytes());
 			Property textures = signature == null || signature.isBlank()
 				? new Property("textures", paddedValue)
 				: new Property("textures", paddedValue, signature);
 			PropertyMap properties = new PropertyMap(ImmutableListMultimap.of("textures", textures));
-			GameProfile profile = new GameProfile(uuid, "betterpv", properties);
+			GameProfile profile = new GameProfile(uuid, "fishpv", properties);
 			stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile));
 			if (isTexturedPlayerHead(stack)) {
 				return true;
@@ -108,12 +108,12 @@ final class SkullTextureApplier {
 		} catch (Exception ignored) {
 		}
 		try {
-			UUID uuid = UUID.nameUUIDFromBytes(("betterpv:" + paddedValue).getBytes());
+			UUID uuid = UUID.nameUUIDFromBytes(("fishpv:" + paddedValue).getBytes());
 			Property textures = signature == null || signature.isBlank()
 				? new Property("textures", paddedValue)
 				: new Property("textures", paddedValue, signature);
 			PropertyMap properties = new PropertyMap(ImmutableListMultimap.of("textures", textures));
-			GameProfile profile = new GameProfile(uuid, "betterpv", properties);
+			GameProfile profile = new GameProfile(uuid, "fishpv", properties);
 			stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile));
 			return isTexturedPlayerHead(stack);
 		} catch (Exception ignored) {

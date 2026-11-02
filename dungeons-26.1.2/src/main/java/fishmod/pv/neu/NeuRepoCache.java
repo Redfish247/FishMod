@@ -9,7 +9,7 @@ package fishmod.pv.neu;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.AttributeShardsData;
 import fishmod.pv.data.BestiaryData;
 import fishmod.pv.data.ForagingHotfData;
@@ -48,7 +48,7 @@ import java.util.zip.ZipInputStream;
 
 /**
  * NotEnoughUpdates-REPO item definitions (skull textures, leather colors, itemids).
- * Full zip is cached under {@code ~/.betterpv/neu-repo}; individual items can be fetched on demand.
+ * Full zip is cached under {@code config/fishmod/pv/neu-repo}; individual items can be fetched on demand.
  */
 public final class NeuRepoCache {
 	private static final String REPO_USER = "NotEnoughUpdates";
@@ -180,7 +180,7 @@ public final class NeuRepoCache {
 			abiphoneContacts = cached;
 			return cached;
 		} catch (Exception exception) {
-			BetterPV.LOGGER.debug("Failed loading NEU abiphone.json", exception);
+			ProfileViewer.LOGGER.debug("Failed loading NEU abiphone.json", exception);
 			return new JsonObject();
 		}
 	}
@@ -226,7 +226,7 @@ public final class NeuRepoCache {
 				}
 				talismansLoaded = true;
 			} catch (Exception exception) {
-				BetterPV.LOGGER.debug("Failed loading NEU misc.json talismans", exception);
+				ProfileViewer.LOGGER.debug("Failed loading NEU misc.json talismans", exception);
 			}
 		}
 	}
@@ -301,7 +301,7 @@ public final class NeuRepoCache {
 			SACKS = java.util.Collections.unmodifiableMap(sacksOut);
 			SACK_ITEMS = java.util.Collections.unmodifiableMap(sackItemsOut);
 		} catch (Exception exception) {
-			BetterPV.LOGGER.debug("Failed loading NEU sacks.json", exception);
+			ProfileViewer.LOGGER.debug("Failed loading NEU sacks.json", exception);
 		}
 	}
 
@@ -330,17 +330,17 @@ public final class NeuRepoCache {
 			}
 			MINIONS = java.util.Collections.unmodifiableMap(minionsOut);
 		} catch (Exception exception) {
-			BetterPV.LOGGER.debug("Failed loading NEU misc.json minions", exception);
+			ProfileViewer.LOGGER.debug("Failed loading NEU misc.json minions", exception);
 		}
 	}
 
 	private static Path constantsPath(String fileName) {
-		Path path = Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo", "repo", "constants", fileName);
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", fileName);
 		if (Files.isRegularFile(path)) {
 			return path;
 		}
 		start();
-		path = Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo", "repo", "constants", fileName);
+		path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", fileName);
 		return Files.isRegularFile(path) ? path : null;
 	}
 
@@ -451,7 +451,7 @@ public final class NeuRepoCache {
 			ITEMS.put(key, object);
 			return object;
 		} catch (Exception exception) {
-			BetterPV.LOGGER.debug("NEU item fetch failed for {}", key, exception);
+			ProfileViewer.LOGGER.debug("NEU item fetch failed for {}", key, exception);
 			return null;
 		}
 	}
@@ -460,7 +460,7 @@ public final class NeuRepoCache {
 		try {
 			loadFullRepo();
 		} catch (Exception exception) {
-			BetterPV.LOGGER.warn("Failed to load NEU-REPO zip (on-demand item fetch still works)", exception);
+			ProfileViewer.LOGGER.warn("Failed to load NEU-REPO zip (on-demand item fetch still works)", exception);
 		} finally {
 			synchronized (FULL_LOAD_LOCK) {
 				fullLoadDone = true;
@@ -470,12 +470,12 @@ public final class NeuRepoCache {
 	}
 
 	private static void loadFullRepo() throws IOException, InterruptedException {
-		Path base = Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo");
+		Path base = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo");
 		Files.createDirectories(base);
 		Path repoRoot = base.resolve("repo");
 		boolean diskOk = Files.isDirectory(repoRoot) && Files.isDirectory(repoRoot.resolve("items"));
 		if (!diskOk) {
-			BetterPV.LOGGER.info("Downloading NotEnoughUpdates-REPO…");
+			ProfileViewer.LOGGER.info("Downloading NotEnoughUpdates-REPO…");
 			downloadAndExtract(base, repoRoot);
 			writeUpdatedAt(base);
 		}
@@ -484,7 +484,7 @@ public final class NeuRepoCache {
 		}
 		int before = ITEMS.size();
 		int indexed = indexRepoItems(repoRoot);
-		BetterPV.LOGGER.info("NEU-REPO ready ({} items, +{})", indexed, Math.max(0, indexed - before));
+		ProfileViewer.LOGGER.info("NEU-REPO ready ({} items, +{})", indexed, Math.max(0, indexed - before));
 		fishmod.pv.gui.inventories.SkyBlockItemFactory.clearCache();
 		if (needsRefresh(base)) {
 			refreshInBackground(base, repoRoot);
@@ -493,14 +493,14 @@ public final class NeuRepoCache {
 
 	private static void refreshIfStaleSafely() {
 		try {
-			Path base = Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo");
+			Path base = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo");
 			Path repoRoot = base.resolve("repo");
 			if (!Files.isDirectory(repoRoot.resolve("items")) || !needsRefresh(base)) {
 				return;
 			}
 			refreshInBackground(base, repoRoot);
 		} catch (Exception exception) {
-			BetterPV.LOGGER.warn("Failed to check NEU-REPO for updates", exception);
+			ProfileViewer.LOGGER.warn("Failed to check NEU-REPO for updates", exception);
 		}
 	}
 
@@ -510,14 +510,14 @@ public final class NeuRepoCache {
 		}
 		EXECUTOR.execute(() -> {
 			try {
-				BetterPV.LOGGER.info("Updating NotEnoughUpdates-REPO…");
+				ProfileViewer.LOGGER.info("Updating NotEnoughUpdates-REPO…");
 				downloadAndExtract(base, repoRoot);
 				writeUpdatedAt(base);
 				int indexed = indexRepoItems(repoRoot);
 				reloadDependentCaches();
-				BetterPV.LOGGER.info("NEU-REPO updated ({} items)", indexed);
+				ProfileViewer.LOGGER.info("NEU-REPO updated ({} items)", indexed);
 			} catch (Exception exception) {
-				BetterPV.LOGGER.warn("Failed to update NEU-REPO (using cached copy)", exception);
+				ProfileViewer.LOGGER.warn("Failed to update NEU-REPO (using cached copy)", exception);
 			} finally {
 				REFRESH_IN_FLIGHT.set(false);
 			}

@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.Reader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -63,10 +63,9 @@ public final class HoppityRabbitsData {
 	}
 
 	private static void loadFromDisk() {
-		Path path = Path.of(System.getProperty("user.home"),
-			".betterpv", "neu-repo", "repo", "constants", "hoppity.json");
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "hoppity.json");
 		if (!Files.isRegularFile(path)) {
-			BetterPV.LOGGER.warn("hoppity.json missing at {}", path);
+			ProfileViewer.LOGGER.warn("hoppity.json missing at {}", path);
 			rarityById = Map.of();
 			return;
 		}
@@ -114,12 +113,12 @@ public final class HoppityRabbitsData {
 				}
 			}
 			rarityById = Collections.unmodifiableMap(map);
-			BetterPV.LOGGER.info("Loaded {} chocolate rabbits from hoppity.json", rarityById.size());
+			ProfileViewer.LOGGER.info("Loaded {} chocolate rabbits from hoppity.json", rarityById.size());
 		} catch (IOException | RuntimeException exception) {
 			if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed loading hoppity.json", exception);
+			ProfileViewer.LOGGER.warn("Failed loading hoppity.json", exception);
 			rarityById = Map.of();
 		}
 	}

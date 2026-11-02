@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -183,9 +183,9 @@ public final class ChocolateFactoryData {
 				return;
 			}
 			try (InputStream in = ChocolateFactoryData.class.getClassLoader()
-				.getResourceAsStream("assets/betterpv/data/chocolate_factory.json")) {
+				.getResourceAsStream("assets/fishmod/pv/data/chocolate_factory.json")) {
 				if (in == null) {
-					BetterPV.LOGGER.warn("Missing chocolate_factory.json");
+					ProfileViewer.LOGGER.warn("Missing chocolate_factory.json");
 				} else {
 					parse(JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject());
 				}
@@ -193,7 +193,7 @@ public final class ChocolateFactoryData {
 				if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 					throw runtime;
 				}
-				BetterPV.LOGGER.warn("Failed to load chocolate_factory.json", exception);
+				ProfileViewer.LOGGER.warn("Failed to load chocolate_factory.json", exception);
 			}
 			loaded = true;
 		}

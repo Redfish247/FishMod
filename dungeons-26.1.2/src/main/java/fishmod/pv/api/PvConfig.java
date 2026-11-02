@@ -9,17 +9,16 @@ package fishmod.pv.api;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
-import net.fabricmc.loader.api.FabricLoader;
 
-public final class BetterPVConfig {
-	private static final String FILE_NAME = "betterpv.json";
+public final class PvConfig {
+	private static final String FILE_NAME = "config.json";
 	private static final String PROFILE_SCALE_KEY = "profileViewerScalePercent";
 	// Finished layout trials; drop their old keys from existing configs.
 	static final String[] REMOVED_TRIAL_KEYS = { "trialEssenceTab", "trialSkillOverviews", "trialFishingTrophies" };
@@ -28,7 +27,7 @@ public final class BetterPVConfig {
 	private static volatile SearchHistory searchHistory = SearchHistory.empty();
 	private static JsonObject document = new JsonObject();
 
-	private BetterPVConfig() {
+	private PvConfig() {
 	}
 
 	public static synchronized void load() {
@@ -42,7 +41,7 @@ public final class BetterPVConfig {
 				}
 				searchHistory = readSearchHistory(loaded);
 			} catch (Exception exception) {
-				BetterPV.LOGGER.warn("Could not load BetterPV config", exception);
+				ProfileViewer.LOGGER.warn("Could not load PV config", exception);
 				document = new JsonObject();
 				profileViewerScalePercent = 100;
 				searchHistory = SearchHistory.empty();
@@ -51,14 +50,14 @@ public final class BetterPVConfig {
 		if (dropRemovedTrialKeys(document)) {
 			save();
 		}
-		BetterPV.LOGGER.info("Hypixel: fishmod.dev proxy");
+		ProfileViewer.LOGGER.info("Hypixel: fishmod.dev proxy");
 	}
 
 	public static int profileViewerScalePercent() {
 		return normalizeProfileScale(fishmod.utils.config.values.FishSettings.guiScaleProfileViewer);
 	}
 
-	/** Optional override for the proxy fallback host (betterpv.json "fallbackHost"). */
+	/** Optional override for the proxy fallback host (config "fallbackHost"). */
 	public static String fallbackHost() {
 		return document.has("fallbackHost") && document.get("fallbackHost").isJsonPrimitive()
 			? document.get("fallbackHost").getAsString().trim() : "";
@@ -110,7 +109,7 @@ public final class BetterPVConfig {
 	}
 
 	private static Path configPath() {
-		return FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
+		return ProfileViewer.DIR.resolve(FILE_NAME);
 	}
 
 	private static void save() {
@@ -125,7 +124,7 @@ public final class BetterPVConfig {
 				Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
 			}
 		} catch (IOException exception) {
-			BetterPV.LOGGER.warn("Could not save BetterPV config", exception);
+			ProfileViewer.LOGGER.warn("Could not save PV config", exception);
 			try {
 				Files.deleteIfExists(temporary);
 			} catch (IOException ignored) {

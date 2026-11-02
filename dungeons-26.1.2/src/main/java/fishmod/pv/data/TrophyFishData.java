@@ -10,7 +10,7 @@ package fishmod.pv.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import java.io.Reader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -117,7 +117,7 @@ public final class TrophyFishData {
 	}
 
 	private static void loadFromDisk() {
-		Path path = Path.of(System.getProperty("user.home"), ".betterpv", "neu-repo", "repo", "constants", "trophyfish.json");
+		Path path = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "trophyfish.json");
 		Map<String, Def> map = new LinkedHashMap<>();
 		if (Files.isRegularFile(path)) {
 			try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
@@ -137,7 +137,7 @@ public final class TrophyFishData {
 				if (ex instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 					throw runtime;
 				}
-				BetterPV.LOGGER.warn("Failed to load trophyfish.json", ex);
+				ProfileViewer.LOGGER.warn("Failed to load trophyfish.json", ex);
 			}
 		}
 		List<Def> out = new ArrayList<>();

@@ -14,20 +14,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public enum PvTab {
-	HOME(Items.PAPER, "betterpv.tab.home"),
-	DUNGEONS(Items.SKELETON_SKULL, "betterpv.tab.dungeons"),
-	INVENTORIES(Items.CHEST, "betterpv.tab.inventories"),
-	PETS(Items.BONE, "betterpv.tab.pets"),
-	COLLECTIONS(Items.ITEM_FRAME, "betterpv.tab.collections"),
-	GARDEN(Items.IRON_HOE, "betterpv.tab.garden"),
-	MINING(Items.IRON_PICKAXE, "betterpv.tab.mining"),
-	FORAGING(Items.IRON_AXE, "betterpv.tab.foraging"),
-	FISHING(Items.FISHING_ROD, "betterpv.tab.fishing"),
-	CRIMSON(Items.NETHERRACK, "betterpv.tab.crimson"),
-	RIFT(Items.ENDER_EYE, "betterpv.tab.rift"),
-	MUSEUM(Items.EMERALD, "betterpv.tab.museum"),
-	BESTIARY(Items.IRON_SWORD, "betterpv.tab.bestiary"),
-	EVENTS(Items.FIREWORK_ROCKET, "betterpv.tab.events");
+	HOME(Items.PAPER, "fishmod.pv.tab.home"),
+	DUNGEONS(Items.SKELETON_SKULL, "fishmod.pv.tab.dungeons"),
+	INVENTORIES(Items.CHEST, "fishmod.pv.tab.inventories"),
+	PETS(Items.BONE, "fishmod.pv.tab.pets"),
+	COLLECTIONS(Items.ITEM_FRAME, "fishmod.pv.tab.collections"),
+	GARDEN(Items.IRON_HOE, "fishmod.pv.tab.garden"),
+	MINING(Items.IRON_PICKAXE, "fishmod.pv.tab.mining"),
+	FORAGING(Items.IRON_AXE, "fishmod.pv.tab.foraging"),
+	FISHING(Items.FISHING_ROD, "fishmod.pv.tab.fishing"),
+	CRIMSON(Items.NETHERRACK, "fishmod.pv.tab.crimson"),
+	RIFT(Items.ENDER_EYE, "fishmod.pv.tab.rift"),
+	MUSEUM(Items.EMERALD, "fishmod.pv.tab.museum"),
+	BESTIARY(Items.IRON_SWORD, "fishmod.pv.tab.bestiary"),
+	EVENTS(Items.FIREWORK_ROCKET, "fishmod.pv.tab.events");
 
 	private final Item iconItem;
 	private final String langKey;

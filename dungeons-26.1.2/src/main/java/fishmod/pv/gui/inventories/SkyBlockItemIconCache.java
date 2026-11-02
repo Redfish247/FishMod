@@ -8,7 +8,7 @@
 package fishmod.pv.gui.inventories;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.neu.SkyBlockPackCache;
 import java.io.IOException;
 import java.io.InputStream;
@@ -106,7 +106,7 @@ public final class SkyBlockItemIconCache {
 			image = composeLayers(layers);
 		} catch (IOException exception) {
 			state.failed = true;
-			BetterPV.LOGGER.warn("[BetterPV] Failed reading item icon {}: {}", state.model, exception.toString());
+			ProfileViewer.LOGGER.warn("[FishPV] Failed reading item icon {}: {}", state.model, exception.toString());
 			return;
 		}
 		if (image == null) {
@@ -123,18 +123,17 @@ public final class SkyBlockItemIconCache {
 		client.execute(() -> {
 			try {
 				int size = Math.max(toRegister.getWidth(), toRegister.getHeight());
-				Identifier id = Identifier.fromNamespaceAndPath(
-					BetterPV.MOD_ID,
+				Identifier id = ProfileViewer.id(
 					"dynamic_items/" + UUID.nameUUIDFromBytes(state.model.getBytes(StandardCharsets.UTF_8))
 				);
-				client.getTextureManager().register(id, new DynamicTexture(() -> "BetterPV item " + state.model, toRegister));
+				client.getTextureManager().register(id, new DynamicTexture(() -> "PV item " + state.model, toRegister));
 				state.size = size;
 				state.textureId = id;
 				state.loaded = true;
 			} catch (Exception exception) {
 				toRegister.close();
 				state.failed = true;
-				BetterPV.LOGGER.warn("[BetterPV] Failed registering item icon {}: {}", state.model, exception.toString());
+				ProfileViewer.LOGGER.warn("[FishPV] Failed registering item icon {}: {}", state.model, exception.toString());
 			}
 		});
 	}

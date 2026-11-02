@@ -12,7 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.gui.inventories.SkyBlockItemFactory;
 import fishmod.pv.networth.InventoryDecoder;
 import fishmod.pv.networth.NbtAttrs;
@@ -342,7 +342,7 @@ public final class MagicalPowerCalculator {
 		try {
 			Minecraft client = Minecraft.getInstance();
 			if (client != null && client.getResourceManager() != null) {
-				Identifier id = Identifier.fromNamespaceAndPath("betterpv", path);
+				Identifier id = ProfileViewer.id(path);
 				var optional = client.getResourceManager().getResource(id);
 				if (optional.isPresent()) {
 					try (InputStream stream = optional.get().open();
@@ -355,11 +355,11 @@ public final class MagicalPowerCalculator {
 			if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed loading {} from resource manager", path, exception);
+			ProfileViewer.LOGGER.warn("Failed loading {} from resource manager", path, exception);
 		}
-		try (InputStream stream = MagicalPowerCalculator.class.getResourceAsStream("/assets/betterpv/" + path)) {
+		try (InputStream stream = MagicalPowerCalculator.class.getResourceAsStream("/assets/fishmod/pv/" + path)) {
 			if (stream == null) {
-				BetterPV.LOGGER.warn("Missing classpath resource assets/betterpv/{}", path);
+				ProfileViewer.LOGGER.warn("Missing classpath resource assets/fishmod/pv/{}", path);
 				return null;
 			}
 			try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -369,7 +369,7 @@ public final class MagicalPowerCalculator {
 			if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 				throw runtime;
 			}
-			BetterPV.LOGGER.warn("Failed loading {}", path, exception);
+			ProfileViewer.LOGGER.warn("Failed loading {}", path, exception);
 			return null;
 		}
 	}

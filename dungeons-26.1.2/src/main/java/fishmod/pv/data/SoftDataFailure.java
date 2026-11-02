@@ -63,7 +63,7 @@ public final class SoftDataFailure {
 			if (!isSoft(exception)) {
 				throw exception;
 			}
-			fishmod.pv.BetterPV.LOGGER.warn("{} failed", context, exception);
+			fishmod.pv.ProfileViewer.LOGGER.warn("{} failed", context, exception);
 			return fallback;
 		}
 	}

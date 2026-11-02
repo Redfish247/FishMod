@@ -180,7 +180,7 @@ public final class ChatClickProcessor {
 			return false;
 		}
 		String cmd = normalizeCommand(run.command());
-		return cmd != null && (cmd.equals("pv") || cmd.startsWith("pv ") || cmd.startsWith("betterpv pv"));
+		return cmd != null && (cmd.equals("pv") || cmd.startsWith("pv "));
 	}
 
 	private static boolean isHypixelProfileCommand(String command) {
@@ -313,7 +313,7 @@ public final class ChatClickProcessor {
 	}
 
 	private static Style pvStyle(Style style, String name) {
-		Component tip = Component.translatable("betterpv.chat.click_pv", name);
+		Component tip = Component.translatable("fishmod.pv.chat.click_pv", name);
 		Style base = style == null ? Style.EMPTY : style;
 		return base
 			.withClickEvent(new ClickEvent.RunCommand("/pv " + name))

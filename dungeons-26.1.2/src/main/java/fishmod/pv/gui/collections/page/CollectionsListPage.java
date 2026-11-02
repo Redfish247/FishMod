@@ -147,7 +147,7 @@ public final class CollectionsListPage {
 		if (categories.isEmpty()) {
 			PvDraw.textCentered(
 				g, font,
-				Component.translatable("betterpv.collections.loading").getString(),
+				Component.translatable("fishmod.pv.collections.loading").getString(),
 				x + w / 2, y + h / 2, PvDraw.COLOR_MUTED
 			);
 			return;
@@ -322,7 +322,7 @@ public final class CollectionsListPage {
 		if (!boss && snapshot.members().size() > 1) {
 			lines.add(PvTooltip.Line.blank());
 			lines.add(PvTooltip.Line.bold(
-				Component.translatable("betterpv.collections.coop").getString(),
+				Component.translatable("fishmod.pv.collections.coop").getString(),
 				PvDraw.COLOR_ACCENT
 			));
 			for (CollectionSnapshot.Member member : snapshot.membersByAmount(item.id())) {

@@ -14,15 +14,15 @@ import net.minecraft.world.item.Items;
 
 public enum MuseumSort {
 	/** Aggregate of every museum category (side-tab first). */
-	ALL(Items.PAINTING, "betterpv.museum.all"),
-	COMBAT(Items.IRON_SWORD, "betterpv.museum.combat"),
-	MINING(Items.IRON_PICKAXE, "betterpv.museum.mining"),
-	FORAGING(Items.IRON_AXE, "betterpv.museum.foraging"),
-	FARMING(Items.IRON_HOE, "betterpv.museum.farming"),
-	FISHING(Items.FISHING_ROD, "betterpv.museum.fishing"),
-	DUNGEONEERING(Items.GOLDEN_SWORD, "betterpv.museum.dungeoneering"),
-	HUNTING(Items.BOW, "betterpv.museum.hunting"),
-	SPECIAL(Items.BEACON, "betterpv.museum.special");
+	ALL(Items.PAINTING, "fishmod.pv.museum.all"),
+	COMBAT(Items.IRON_SWORD, "fishmod.pv.museum.combat"),
+	MINING(Items.IRON_PICKAXE, "fishmod.pv.museum.mining"),
+	FORAGING(Items.IRON_AXE, "fishmod.pv.museum.foraging"),
+	FARMING(Items.IRON_HOE, "fishmod.pv.museum.farming"),
+	FISHING(Items.FISHING_ROD, "fishmod.pv.museum.fishing"),
+	DUNGEONEERING(Items.GOLDEN_SWORD, "fishmod.pv.museum.dungeoneering"),
+	HUNTING(Items.BOW, "fishmod.pv.museum.hunting"),
+	SPECIAL(Items.BEACON, "fishmod.pv.museum.special");
 
 	private final Item iconItem;
 	private final String langKey;

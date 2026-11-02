@@ -9,7 +9,7 @@ package fishmod.pv.api;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.SoftDataFailure;
 import fishmod.pv.data.AuctionSnapshot;
 import fishmod.pv.data.BestiarySnapshot;
@@ -265,7 +265,7 @@ final class ProfileEnrichmentSession {
 				long jobStartedNanos = System.nanoTime();
 				try {
 					runJob(next);
-					BetterPV.LOGGER.info(
+					ProfileViewer.LOGGER.info(
 						"[PV timing] {} job {} took {}ms (at {}ms)",
 						this.name,
 						next,
@@ -275,7 +275,7 @@ final class ProfileEnrichmentSession {
 				} catch (RuntimeException exception) {
 					// Soft or hard: keep enriching other tabs. Core is already on screen;
 					// aborting the session would strand the rest of the viewer empty.
-					BetterPV.LOGGER.warn("Enrichment job {} failed for {}", next, this.name, exception);
+					ProfileViewer.LOGGER.warn("Enrichment job {} failed for {}", next, this.name, exception);
 				}
 				synchronized (this.lock) {
 					this.done.add(next);
@@ -336,7 +336,7 @@ final class ProfileEnrichmentSession {
 				if (!SoftDataFailure.isSoft(exception)) {
 					throw exception;
 				}
-				BetterPV.LOGGER.warn("Inventory decode failed for {}", this.name, exception);
+				ProfileViewer.LOGGER.warn("Inventory decode failed for {}", this.name, exception);
 				inventories = InventorySnapshot.empty();
 			}
 			PlayerStatsSnapshot stats = FarmingFortuneEstimate.attach(
@@ -379,7 +379,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Pets decode failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Pets decode failed for {}", this.name, exception);
 			pets = PetSnapshot.empty();
 		}
 		publish(merge(
@@ -398,7 +398,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Collections decode failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Collections decode failed for {}", this.name, exception);
 			collections = CollectionSnapshot.empty();
 		}
 		publish(merge(
@@ -418,7 +418,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Mining member parse failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Mining member parse failed for {}", this.name, exception);
 			mining = MiningSnapshot.empty();
 		}
 		publish(merge(
@@ -437,7 +437,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Garden member parse failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Garden member parse failed for {}", this.name, exception);
 			garden = GardenSnapshot.empty();
 		}
 		publish(merge(
@@ -456,7 +456,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Foraging member parse failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Foraging member parse failed for {}", this.name, exception);
 			foraging = ForagingSnapshot.empty();
 		}
 		publish(merge(
@@ -475,7 +475,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Fishing member parse failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Fishing member parse failed for {}", this.name, exception);
 			fishing = FishingSnapshot.empty();
 		}
 		publish(merge(
@@ -497,7 +497,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Crimson member parse failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Crimson member parse failed for {}", this.name, exception);
 			crimson = CrimsonSnapshot.empty();
 		}
 		publish(merge(
@@ -516,7 +516,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Rift member parse failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Rift member parse failed for {}", this.name, exception);
 			rift = RiftSnapshot.empty();
 		}
 		publish(merge(
@@ -535,7 +535,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Bestiary member parse failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Bestiary member parse failed for {}", this.name, exception);
 			bestiary = BestiarySnapshot.empty();
 		}
 		publish(merge(
@@ -554,7 +554,7 @@ final class ProfileEnrichmentSession {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Events member parse failed for {}", this.name, exception);
+			ProfileViewer.LOGGER.warn("Events member parse failed for {}", this.name, exception);
 			events = EventsSnapshot.empty();
 		}
 		publish(merge(
@@ -640,7 +640,7 @@ final class ProfileEnrichmentSession {
 			: NetworthBreakdown.empty("Loading networth");
 
 		long calcNanos = System.nanoTime();
-		BetterPV.LOGGER.info(
+		ProfileViewer.LOGGER.info(
 			"[PV timing] {} networth split decode={}ms museum={} museumParse={}ms pricesWait={}ms calc={}ms",
 			this.name,
 			(decodedNanos - startedNanos) / 1_000_000L,
@@ -743,7 +743,7 @@ final class ProfileEnrichmentSession {
 			Optional<T> value = future.join();
 			return value == null ? Optional.empty() : value;
 		} catch (RuntimeException exception) {
-			BetterPV.LOGGER.warn("Enrichment {} future failed for {}", label, this.name, exception);
+			ProfileViewer.LOGGER.warn("Enrichment {} future failed for {}", label, this.name, exception);
 			return Optional.empty();
 		}
 	}

@@ -42,7 +42,7 @@ import fishmod.pv.networth.NetworthMode;
 import fishmod.pv.price.ItemPricer;
 import fishmod.pv.weight.WeightBreakdown;
 import fishmod.pv.weight.WeightCalculator;
-import fishmod.pv.BetterPV;
+import fishmod.pv.ProfileViewer;
 import fishmod.pv.data.SoftDataFailure;
 import java.util.List;
 import java.util.Locale;
@@ -66,7 +66,7 @@ public final class ProfileFetcher {
 	private static final ConcurrentHashMap<String, CacheEntry> CACHE = new ConcurrentHashMap<>();
 	private static final Pattern MINECRAFT_NAME = Pattern.compile("[A-Za-z0-9_]{1,16}");
 	/** Post-core enrichment / profile-switch parsing (bounded; avoids parse-pool deadlock). */
-	private static final ExecutorService ENRICH_EXECUTOR = Executors.newFixedThreadPool(3, PvExecutors.daemon("BetterPV-Enrich"));
+	private static final ExecutorService ENRICH_EXECUTOR = Executors.newFixedThreadPool(3, PvExecutors.daemon("FishPV-Enrich"));
 	private static final Object ACTIVE_ENRICH_LOCK = new Object();
 	private static volatile ProfileEnrichmentSession activeEnrichment;
 	private static volatile fishmod.pv.gui.nav.PvTab requestedTab;
@@ -275,7 +275,7 @@ public final class ProfileFetcher {
 		String preferred = preferredProfileId == null || preferredProfileId.isBlank() ? null : preferredProfileId;
 		LoadedProfile cached = getCached(nameKey(cleaned));
 		if (cached != null) {
-			BetterPV.LOGGER.info("Profile cache hit for {}", cleaned);
+			ProfileViewer.LOGGER.info("Profile cache hit for {}", cleaned);
 			logStage(cleaned, "core_ready", startedNanos, correlation);
 			return cachedOnProfile(cached, preferred, onUpdate);
 		}
@@ -292,7 +292,7 @@ public final class ProfileFetcher {
 			HypixelApiClient.UuidName id = uuidOpt.get();
 			LoadedProfile byUuid = getCached(uuidKey(id.uuid()));
 			if (byUuid != null) {
-				BetterPV.LOGGER.info("Profile cache hit for {} ({})", id.name(), id.uuid());
+				ProfileViewer.LOGGER.info("Profile cache hit for {} ({})", id.name(), id.uuid());
 				putCache(nameKey(cleaned), byUuid);
 				putCache(nameKey(id.name()), byUuid);
 				logStage(cleaned, "core_ready", startedNanos, correlation);
@@ -420,14 +420,14 @@ public final class ProfileFetcher {
 			}
 			perProfile.append(members).append(selected ? "*" : "");
 		}
-		BetterPV.LOGGER.info(
+		ProfileViewer.LOGGER.info(
 			"[PV timing] {} shape profiles={} members={} selectedMembers={} perProfile=[{}]",
 			name, profiles.size(), totalMembers, selectedMembers, perProfile
 		);
 	}
 
 	private static void logStage(String name, String stage, long startedNanos, String correlationId) {
-		BetterPV.LOGGER.info(
+		ProfileViewer.LOGGER.info(
 			"[PV timing] event={} correlation_id={} player={} elapsed_ms={}",
 			stage,
 			correlationId,
@@ -768,7 +768,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Profile parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Profile parse failed for {}", name, exception);
 			return fail(name, exception.getMessage() == null ? "Parse failed" : exception.getMessage());
 		}
 	}
@@ -785,7 +785,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Profile re-parse failed for {} ({})", name, profileId, exception);
+			ProfileViewer.LOGGER.warn("Profile re-parse failed for {} ({})", name, profileId, exception);
 			return fail(name, exception.getMessage() == null ? "Parse failed" : exception.getMessage());
 		}
 	}
@@ -840,7 +840,7 @@ public final class ProfileFetcher {
 		JsonObject museumMember = includeNetworth
 			? ProfileMuseumLookup.findMuseumMember(museumRoot, profileId, undashed)
 			: null;
-		BetterPV.LOGGER.info("Parsing profile {} ({})", name, cuteName);
+		ProfileViewer.LOGGER.info("Parsing profile {} ({})", name, cuteName);
 
 		Map<String, List<InventoryDecoder.Stack>> inventoryCategories =
 			InventoryDecoder.parseCategories(member, museumMember);
@@ -921,7 +921,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Inventory decode failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Inventory decode failed for {}", name, exception);
 			inventories = InventorySnapshot.empty();
 		}
 
@@ -933,7 +933,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Pets decode failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Pets decode failed for {}", name, exception);
 			pets = PetSnapshot.empty();
 		}
 
@@ -944,7 +944,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Collections decode failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Collections decode failed for {}", name, exception);
 			collections = CollectionSnapshot.empty();
 		}
 
@@ -955,7 +955,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Garden member parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Garden member parse failed for {}", name, exception);
 			garden = GardenSnapshot.empty();
 		}
 
@@ -967,7 +967,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Mining member parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Mining member parse failed for {}", name, exception);
 			mining = MiningSnapshot.empty();
 		}
 		ForagingSnapshot foraging;
@@ -977,7 +977,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Foraging member parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Foraging member parse failed for {}", name, exception);
 			foraging = ForagingSnapshot.empty();
 		}
 		FishingSnapshot fishing;
@@ -987,7 +987,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Fishing member parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Fishing member parse failed for {}", name, exception);
 			fishing = FishingSnapshot.empty();
 		}
 		CrimsonSnapshot crimson;
@@ -997,7 +997,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Crimson member parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Crimson member parse failed for {}", name, exception);
 			crimson = CrimsonSnapshot.empty();
 		}
 		RiftSnapshot rift;
@@ -1007,7 +1007,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Rift member parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Rift member parse failed for {}", name, exception);
 			rift = RiftSnapshot.empty();
 		}
 		BestiarySnapshot bestiary;
@@ -1017,7 +1017,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Bestiary member parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Bestiary member parse failed for {}", name, exception);
 			bestiary = BestiarySnapshot.empty();
 		}
 		EventsSnapshot events;
@@ -1027,7 +1027,7 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Events member parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Events member parse failed for {}", name, exception);
 			events = EventsSnapshot.empty();
 		}
 		MiscStatsSnapshot misc;
@@ -1037,10 +1037,10 @@ public final class ProfileFetcher {
 			if (!SoftDataFailure.isSoft(exception)) {
 				throw exception;
 			}
-			BetterPV.LOGGER.warn("Misc stats parse failed for {}", name, exception);
+			ProfileViewer.LOGGER.warn("Misc stats parse failed for {}", name, exception);
 			misc = MiscStatsSnapshot.empty();
 		}
-		BetterPV.LOGGER.info("Profile ready for {} (nw={})", name, nwText);
+		ProfileViewer.LOGGER.info("Profile ready for {} (nw={})", name, nwText);
 		AuctionSnapshot auctionSnapshot = auctions == null ? AuctionSnapshot.empty() : auctions;
 		auctionSnapshot = auctionSnapshot.withStats(AuctionSnapshot.Stats.fromMember(member));
 		PlayerStatsSnapshot playerStats = FarmingFortuneEstimate.attach(PlayerStatsCalculator.fromMember(member), member, inventoryCategories);
@@ -1154,14 +1154,14 @@ public final class ProfileFetcher {
 					try {
 						listener.accept(refreshed);
 					} catch (RuntimeException listenerError) {
-						BetterPV.LOGGER.debug("Networth listener failed for {}", name, listenerError);
+						ProfileViewer.LOGGER.debug("Networth listener failed for {}", name, listenerError);
 					}
 				}
 			} catch (RuntimeException exception) {
 				if (!SoftDataFailure.isSoft(exception)) {
 					throw exception;
 				}
-				BetterPV.LOGGER.warn("Deferred networth refresh failed for {}", name, exception);
+				ProfileViewer.LOGGER.warn("Deferred networth refresh failed for {}", name, exception);
 			}
 		}, ENRICH_EXECUTOR);
 	}

@@ -9,8 +9,8 @@ package fishmod.pv.gui;
 
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.InputConstants;
-import fishmod.pv.BetterPV;
-import fishmod.pv.api.BetterPVConfig;
+import fishmod.pv.ProfileViewer;
+import fishmod.pv.api.PvConfig;
 import fishmod.pv.api.HypixelApiClient;
 import fishmod.pv.api.ProfileFetcher;
 import fishmod.pv.data.MiscStatsSnapshot;
@@ -102,7 +102,7 @@ public final class ProfileViewerScreen extends Screen {
 	private float openPivotY;
 	private final ProfileScaleSlider scaleSlider = new ProfileScaleSlider();
 	private final SocialsMenu socialsMenu = new SocialsMenu(this::socialTarget, this::openExternalLink);
-	private final SearchHistoryMenu searchHistory = new SearchHistoryMenu(BetterPVConfig::searchHistory, this::openSearchedPlayer);
+	private final SearchHistoryMenu searchHistory = new SearchHistoryMenu(PvConfig::searchHistory, this::openSearchedPlayer);
 	private boolean recordSearch;
 	private ProfileViewerScale.Viewport scaleViewport;
 	private ProfileViewerScale.Viewport sliderViewport;
@@ -146,7 +146,7 @@ public final class ProfileViewerScreen extends Screen {
 	}
 
 	public ProfileViewerScreen(String playerName, PvTab initialTab, PvSubTab initialSub) {
-		super(Component.translatable("betterpv.screen.title"));
+		super(Component.translatable("fishmod.pv.screen.title"));
 		this.requestedName = playerName == null || playerName.isBlank() ? "?" : playerName.trim();
 		this.homePage = new HomePage(ProfileSnapshot.loading(this.requestedName));
 		this.tab = initialTab == null ? PvTab.HOME : initialTab;
@@ -180,7 +180,7 @@ public final class ProfileViewerScreen extends Screen {
 			fontField.setAccessible(true);
 			fontField.set(this, PvFont.get(Minecraft.getInstance().font));
 		} catch (ReflectiveOperationException | RuntimeException exception) {
-			BetterPV.LOGGER.warn("Could not swap the viewer font", exception);
+			ProfileViewer.LOGGER.warn("Could not swap the viewer font", exception);
 		}
 		this.inventorySearch = new EditBox(
 			this.font,
@@ -188,7 +188,7 @@ public final class ProfileViewerScreen extends Screen {
 			0,
 			100,
 			InventorySplitLayout.SEARCH_H,
-			Component.translatable("betterpv.inv.search")
+			Component.translatable("fishmod.pv.inv.search")
 		);
 		this.inventorySearch.setMaxLength(64);
 		this.inventorySearch.setBordered(false);
@@ -210,13 +210,13 @@ public final class ProfileViewerScreen extends Screen {
 			0,
 			120,
 			InventorySplitLayout.SEARCH_H,
-			Component.translatable("betterpv.home.search_hint")
+			Component.translatable("fishmod.pv.home.search_hint")
 		);
 		this.playerSearch.setMaxLength(16);
 		this.playerSearch.setBordered(false);
 		this.playerSearch.setTextColor(PvDraw.COLOR_TEXT);
 		this.playerSearch.setTextColorUneditable(PvDraw.COLOR_MUTED);
-		this.playerSearch.setHint(Component.translatable("betterpv.home.search_hint"));
+		this.playerSearch.setHint(Component.translatable("fishmod.pv.home.search_hint"));
 		this.playerSearch.setVisible(false);
 		this.addWidget(this.playerSearch);
 
@@ -257,7 +257,7 @@ public final class ProfileViewerScreen extends Screen {
 				}
 				ProfileFetcher.LoadedProfile displayed = loaded;
 				if (error != null || loaded == null) {
-					BetterPV.LOGGER.warn(
+					ProfileViewer.LOGGER.warn(
 						"Profile fetch failed for {}",
 						this.requestedName,
 						error
@@ -268,7 +268,7 @@ public final class ProfileViewerScreen extends Screen {
 					displayed = ProfileFetcher.failed(this.requestedName, message);
 				}
 				if (!displayed.ok()) {
-					BetterPV.LOGGER.warn("Profile fetch failed for {}: {}", this.requestedName, displayed.error());
+					ProfileViewer.LOGGER.warn("Profile fetch failed for {}: {}", this.requestedName, displayed.error());
 					this.loadError = friendlyLoadError(displayed.error());
 					return;
 				}
@@ -277,9 +277,9 @@ public final class ProfileViewerScreen extends Screen {
 				this.dataReady = true;
 				if (this.recordSearch && displayed.snapshot() != null) {
 					this.recordSearch = false;
-					BetterPVConfig.recordSearch(displayed.snapshot().playerUuid(), displayed.snapshot().playerName());
+					PvConfig.recordSearch(displayed.snapshot().playerUuid(), displayed.snapshot().playerName());
 				}
-				BetterPV.LOGGER.info(
+				ProfileViewer.LOGGER.info(
 					"[PV timing] event=render_thread_applied correlation_id={} player={} elapsed_ms={}",
 					this.loadCorrelationId,
 					this.requestedName,
@@ -424,7 +424,7 @@ public final class ProfileViewerScreen extends Screen {
 			panelX + panelW + 2,
 			panelY + panelH + BOTTOM_FIT_ROOM
 		);
-		int selectedPercent = BetterPVConfig.profileViewerScalePercent();
+		int selectedPercent = PvConfig.profileViewerScalePercent();
 		this.scaleViewport = ProfileViewerScale.viewport(
 			screenWidth, screenHeight, framebufferWidth, framebufferHeight, guiScale, selectedPercent, bounds
 		);
@@ -611,7 +611,7 @@ public final class ProfileViewerScreen extends Screen {
 		}
 		if (this.dataReady && !this.firstVisibleLogged && this.loadStartedNanos > 0L) {
 			this.firstVisibleLogged = true;
-			BetterPV.LOGGER.info(
+			ProfileViewer.LOGGER.info(
 				"[PV timing] event=first_visible_frame correlation_id={} player={} elapsed_ms={}",
 				this.loadCorrelationId,
 				this.requestedName,
@@ -736,7 +736,7 @@ public final class ProfileViewerScreen extends Screen {
 			return;
 		}
 		this.breakScheduled = true;
-		BetterPV.LOGGER.warn("Loading egg hit finale for {} - starting limbo + fake ban", this.requestedName);
+		ProfileViewer.LOGGER.warn("Loading egg hit finale for {} - starting limbo + fake ban", this.requestedName);
 	}
 
 	private Object selectedLeftKey() {
@@ -998,7 +998,7 @@ public final class ProfileViewerScreen extends Screen {
 		this.playerSearch.setVisible(true);
 		this.playerSearch.extractWidgetRenderState(g, 0, 0, 0f);
 		if (this.playerSearch.getValue().isEmpty() && !focused) {
-			String hint = Component.translatable("betterpv.home.search_hint").getString();
+			String hint = Component.translatable("fishmod.pv.home.search_hint").getString();
 			PvDraw.text(
 				g, this.font, hint,
 				this.playerSearch.getX(),
@@ -1039,7 +1039,7 @@ public final class ProfileViewerScreen extends Screen {
 		}
 		String trimmed = this.playerSearch.getValue() == null ? "" : this.playerSearch.getValue().trim();
 		if (trimmed.isEmpty()) {
-			this.playerSearchError = Component.translatable("betterpv.home.search_empty").getString();
+			this.playerSearchError = Component.translatable("fishmod.pv.home.search_empty").getString();
 			this.playerSearchErrorUntilMs = System.currentTimeMillis() + 2_500L;
 			return;
 		}
@@ -1413,7 +1413,7 @@ public final class ProfileViewerScreen extends Screen {
 		try {
 			uri = new URI(url);
 		} catch (URISyntaxException e) {
-			BetterPV.LOGGER.warn("Bad social link {}", url, e);
+			ProfileViewer.LOGGER.warn("Bad social link {}", url, e);
 			return;
 		}
 		// Same path as chat links (honours the confirm prompt); still confirm if chat links are off.
