@@ -128,6 +128,8 @@ object ConfigKeyMigration {
         "Term splits" to "Goldor Splits"
     )
 
+    private val CLOCK_VALUES: Map<String?, String> = mapOf("TICK_TIME" to "SERVER_TICKS", "DIFFRENCE" to "GAP")
+
     @JvmStatic
     fun run(path: String) {
         val file = File(path)
@@ -140,6 +142,8 @@ object ConfigKeyMigration {
                 if (!root.has(new)) root.add(new, v)
                 moved++
             }
+            val clock = root.get("splitClock")?.takeIf { it.isJsonPrimitive }?.asString
+            CLOCK_VALUES[clock]?.let { root.addProperty("splitClock", it); moved++ }
             for ((_, v) in root.entrySet()) {
                 val hud = v as? JsonObject ?: continue
                 val label = hud.get("info")?.takeIf { it.isJsonPrimitive }?.asString ?: continue

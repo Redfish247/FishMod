@@ -40,8 +40,9 @@ enum class SkyblockLocation(val label: String) {
     override fun toString(): String = "$label (${(System.currentTimeMillis() - since) / 1000.0}s ago)"
 
     companion object {
-        // the dungeon run map is called "Catacombs"
-        private val BY_MAP: Map<String, SkyblockLocation> = entries.associateBy { it.label.lowercase() } + ("catacombs" to DUNGEON)
+        // "Spider's Den", "SPIDERS_DEN" and "spiders den" all match; the dungeon run map is called "Catacombs"
+        private fun key(s: String) = s.lowercase().replace('_', ' ').replace("'", "")
+        private val BY_MAP: Map<String, SkyblockLocation> = entries.associateBy { key(it.label) } + ("catacombs" to DUNGEON)
 
         private var here: SkyblockLocation = UNKNOWN
         private var onSkyblock = false
@@ -67,7 +68,7 @@ enum class SkyblockLocation(val label: String) {
 
         @JvmStatic
         fun getLocation(locationName: String): SkyblockLocation {
-            BY_MAP[locationName.lowercase()]?.let { return it }
+            BY_MAP[key(locationName)]?.let { return it }
             if (onSkyblock) FishDiag.fail("SkyblockLocation.1", "unknown SkyBlock location name '$locationName'")
             return UNKNOWN
         }

@@ -18,7 +18,7 @@ class RunSplit(
 ) {
 
     enum class ClockKind(private val label: String) {
-        TICK_TIME("Tick time"), DIFFRENCE("difference");
+        SERVER_TICKS("Server ticks"), GAP("Gap to real time");
 
         override fun toString(): String = label
     }
@@ -62,7 +62,7 @@ class RunSplit(
 
         @ConfigValue
         @JvmField
-        var splitClock: ClockKind = ClockKind.TICK_TIME
+        var splitClock: ClockKind = ClockKind.SERVER_TICKS
 
         private var cachedRaw: String? = null
         private var cachedNameColors: Map<String, Int> = emptyMap()
@@ -201,7 +201,7 @@ class RunSplit(
         val tickTime = getTickTime()
         val realTime = getRealTime()
 
-        val serverTime: String = if (splitClock == ClockKind.DIFFRENCE) {
+        val serverTime: String = if (splitClock == ClockKind.GAP) {
             val diff = realTime - tickTime
             if (diff > 0) {
                 "+" + FishConstants.DECIMAL_FORMAT.format(diff) + "s"

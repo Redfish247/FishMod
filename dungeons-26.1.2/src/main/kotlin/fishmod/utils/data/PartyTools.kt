@@ -27,7 +27,7 @@ object PartyTools {
     fun init() {
         INSTANCE.createHandler(ClientboundPartyInfoPacket::class.java) { packet ->
             try {
-                if (FishDebug.termInfo) FishDebug.LOGGER.info("Received party info packet")
+                if (FishDebug.termInfo) FishDebug.LOGGER.info("party info packet in")
                 lastReceived = System.currentTimeMillis()
                 memberMap = packet.memberMap
                 inParty = packet.isInParty

@@ -45,7 +45,7 @@ object InvincibilityTracker {
         fun reset() { active = 0; cooldown = 0 }
     }
 
-    private const val NAME = "Invincibility Timer"
+    private const val NAME = "Mask & Phoenix Timer"
     private const val LINE_H = 10
     private const val ICON_LINE_H = 18
     private val WS = Regex("\\s+")

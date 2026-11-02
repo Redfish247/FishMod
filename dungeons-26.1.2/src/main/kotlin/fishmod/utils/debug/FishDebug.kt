@@ -103,7 +103,7 @@ object FishDebug {
         dispatcher.register(ClientCommands.literal("fm").then(BoardReport.command("bug")).then(BoardReport.command("suggest")))
 
         dispatcher.register(
-            ClientCommands.literal("badev")
+            ClientCommands.literal("fmdev")
                 .then(ClientCommands.literal("runInfo").executes { _ ->
                     sendRunInfo()
                     FishConstants.SUCCESS
@@ -111,13 +111,13 @@ object FishDebug {
 
                 .then(ClientCommands.literal("debug").executes { _ ->
                     sendDebug = !sendDebug
-                    FishUtil.addChatMessage(Component.literal("Send debug: ").append(FishUtil.getStatusText(sendDebug)))
+                    FishUtil.addChatMessage(Component.literal("Debug chat: ").append(FishUtil.getStatusText(sendDebug)))
                     FishConstants.SUCCESS
                 })
 
                 .then(ClientCommands.literal("sound").executes { _ ->
                     sendSound = !sendSound
-                    FishUtil.addChatMessage(Component.literal("Send Sound: ").append(FishUtil.getStatusText(sendSound)))
+                    FishUtil.addChatMessage(Component.literal("Sound ids: ").append(FishUtil.getStatusText(sendSound)))
                     FishConstants.SUCCESS
                 })
 
@@ -147,13 +147,13 @@ object FishDebug {
 
                 .then(ClientCommands.literal("termInfo").executes { _ ->
                     termInfo = !termInfo
-                    FishUtil.addChatMessage(Component.literal("Terminal info: ").append(FishUtil.getStatusText(termInfo)))
+                    FishUtil.addChatMessage(Component.literal("P3 trace: ").append(FishUtil.getStatusText(termInfo)))
                     FishConstants.SUCCESS
                 })
 
                 .then(ClientCommands.literal("drawPositionBoxes").executes { _ ->
                     renderPositions = !renderPositions
-                    FishUtil.addChatMessage(Component.literal("Render positons: ").append(FishUtil.getStatusText(renderPositions)))
+                    FishUtil.addChatMessage(Component.literal("Position boxes: ").append(FishUtil.getStatusText(renderPositions)))
                     FishConstants.SUCCESS
                 })
 
@@ -224,7 +224,7 @@ object FishDebug {
                                             val name = StringArgumentType.getString(context, "name").uppercase()
                                             val location = SkyblockLocation.getLocation(name)
                                             SkyblockLocation.changeLocation(location)
-                                            FishUtil.addChatMessage(Component.literal("Swapped to location: " + location.name))
+                                            FishUtil.addChatMessage(Component.literal("Island set to " + location.name))
                                             FishConstants.SUCCESS
                                         }
                                 )
@@ -237,7 +237,7 @@ object FishDebug {
                             ClientCommands.literal("sendDebug")
                                 .executes { _ ->
                                     sendNotiDebug = !sendNotiDebug
-                                    FishUtil.addChatMessage(Component.literal("Send notification debug: ").append(FishUtil.getStatusText(sendNotiDebug)))
+                                    FishUtil.addChatMessage(Component.literal("Chat rule debug: ").append(FishUtil.getStatusText(sendNotiDebug)))
                                     FishConstants.SUCCESS
                                 }
 
@@ -259,7 +259,7 @@ object FishDebug {
                 .then(
                     ClientCommands.literal("currentClass")
                         .executes { _ ->
-                            FishUtil.addChatMessage(Component.literal("Current class: " + DungeonRole.currentClass))
+                            FishUtil.addChatMessage(Component.literal("Your role: " + DungeonRole.currentClass))
                             FishConstants.SUCCESS
                         }
                 )
@@ -275,14 +275,14 @@ object FishDebug {
 
     @JvmStatic
     fun sendRunInfo() {
-        FishUtil.addChatMessage(Component.literal("Phase: " + BossPhase.getPhase()))
-        FishUtil.addChatMessage(Component.literal("Section: " + GoldorSection.getSection()))
-        FishUtil.addChatMessage(Component.literal("Gateblown: " + GoldorSection.isGateBlownUp()))
-        FishUtil.addChatMessage(Component.literal("In floor 7: " + BossPhase.isInFloor7()))
+        FishUtil.addChatMessage(Component.literal("§7boss phase §f" + BossPhase.getPhase()))
+        FishUtil.addChatMessage(Component.literal("§7goldor section §f" + GoldorSection.getSection()))
+        FishUtil.addChatMessage(Component.literal("§7gate down §f" + GoldorSection.isGateBlownUp()))
+        FishUtil.addChatMessage(Component.literal("§7on F7 §f" + BossPhase.isInFloor7()))
     }
 }
 
-// /badev holo <text>: nearest entities (64 blocks) whose name contains the text
+// /fmdev holo <text>: nearest entities (64 blocks) whose name contains the text
 private fun holoDump(q: String) {
     val mc = net.minecraft.client.Minecraft.getInstance()
     val p = mc.player ?: return

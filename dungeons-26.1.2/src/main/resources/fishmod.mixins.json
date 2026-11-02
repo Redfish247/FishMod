@@ -13,7 +13,7 @@
     "FishConnectionMixin",
     "FishEntityMixin",
     "FishItemStackMixin",
-    "LocalPlayerMixin",
+    "SlotLockDropMixin",
     "FishBossBarHudMixin",
     "accessors.BossBarHudAccessor",
     "accessors.LerpingBossEventAccessor",
