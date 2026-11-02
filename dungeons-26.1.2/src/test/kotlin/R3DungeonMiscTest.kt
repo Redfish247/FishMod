@@ -1,4 +1,4 @@
-import fishmod.features.dungeon.AutoRequeue
+import fishmod.features.dungeon.DungeonRequeue
 import fishmod.features.dungeon.InvincibilityTracker
 import fishmod.features.mining.TunnelGraph
 import org.junit.jupiter.api.Assertions.*
@@ -7,8 +7,8 @@ import java.util.regex.Pattern
 
 class R3DungeonMiscTest {
     private fun pat(name: String): Pattern {
-        val f = AutoRequeue::class.java.getDeclaredField(name); f.isAccessible = true
-        return f.get(AutoRequeue) as Pattern
+        val f = DungeonRequeue::class.java.getDeclaredField(name); f.isAccessible = true
+        return f.get(DungeonRequeue) as Pattern
     }
 
     private fun parse(json: String): Boolean {

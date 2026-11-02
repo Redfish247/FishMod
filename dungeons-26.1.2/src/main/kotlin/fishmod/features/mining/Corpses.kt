@@ -1,9 +1,9 @@
 package fishmod.features.mining
 
 import fishmod.utils.ChatQueue
-import fishmod.utils.Location
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.EquipmentSlot
@@ -47,9 +47,9 @@ object Corpses {
     private var shaftDone = false
 
     fun init() {
-        Events.ON_WORLD_CHANGE.register { seenTicks.clear(); announced.clear(); shaftType = null; shaftDone = false; enteredMs = 0L; false }
-        Events.ON_LOCATION_CHANGE.register { loc ->
-            if (loc == Location.MINESHAFT) { enteredMs = System.currentTimeMillis(); shaftType = null; shaftDone = false }
+        FishEvents.ON_WORLD_CHANGE.register { seenTicks.clear(); announced.clear(); shaftType = null; shaftDone = false; enteredMs = 0L; false }
+        FishEvents.ON_LOCATION_CHANGE.register { loc ->
+            if (loc == SkyblockLocation.MINESHAFT) { enteredMs = System.currentTimeMillis(); shaftType = null; shaftDone = false }
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
@@ -60,7 +60,7 @@ object Corpses {
     }
 
     fun typeOf(stand: ArmorStand): Type? {
-        val id = ItemUtil.getId(stand.getItemBySlot(EquipmentSlot.HEAD)) ?: return null
+        val id = ItemTools.getId(stand.getItemBySlot(EquipmentSlot.HEAD)) ?: return null
         return Type.entries.firstOrNull { it.helmet == id }
     }
 
@@ -89,7 +89,7 @@ object Corpses {
 
     // Solo: Hypixel drops /pc, so show it locally instead
     private fun announce(msg: String) {
-        if (fishmod.utils.data.PartyUtil.isInParty()) ChatQueue.enqueue("pc $msg")
+        if (fishmod.utils.data.PartyTools.isInParty()) ChatQueue.enqueue("pc $msg")
         else fishmod.utils.FishMsg.send("§b$msg")
     }
 

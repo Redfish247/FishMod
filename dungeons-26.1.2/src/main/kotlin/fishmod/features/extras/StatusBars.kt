@@ -2,7 +2,7 @@ package fishmod.features.extras
 
 import fishmod.features.FishHudEditor
 import fishmod.features.extras.ExtrasSettings as S
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -43,9 +43,9 @@ object StatusBars {
     // Reads health/mana/defense from the action bar; returns it with those parts removed when vanilla is hidden
     @JvmStatic
     fun onActionBar(msg: Component): Component {
-        if (!S.statusBars || !Location.inSkyblock()) return msg
+        if (!S.statusBars || !SkyblockLocation.inSkyblock()) return msg
         val raw = msg.string
-        val s = fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(raw, "")
+        val s = fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(raw, "")
         HEALTH.find(s)?.let { hp = num(it.groupValues[1]); hpMax = num(it.groupValues[2]) }
         MANA.find(s)?.let { mana = num(it.groupValues[1]); manaMax = num(it.groupValues[2]) }
         DEFENSE.find(s)?.let { def = num(it.groupValues[1]) }
@@ -62,13 +62,13 @@ object StatusBars {
     private fun num(s: String) = s.replace(",", "").toLongOrNull() ?: -1L
 
     @JvmStatic
-    fun hideVanilla(): Boolean = S.statusBars && S.statusBarsHideVanilla && Location.inSkyblock()
+    fun hideVanilla(): Boolean = S.statusBars && S.statusBarsHideVanilla && SkyblockLocation.inSkyblock()
 
     @JvmStatic
     fun hideVanillaXp(): Boolean = hideVanilla() && S.statusBarsXp
 
     private fun render(ctx: GuiGraphicsExtractor) {
-        if (!S.statusBars || !Location.inSkyblock()) return
+        if (!S.statusBars || !SkyblockLocation.inSkyblock()) return
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
         // no action bar read yet: fall back to vanilla health so the bars still show

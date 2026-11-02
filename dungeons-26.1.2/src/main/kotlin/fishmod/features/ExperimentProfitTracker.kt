@@ -5,11 +5,11 @@ import fishmod.compat.hudHidden
 
 import com.google.gson.Gson
 import fishmod.features.croesus.CroesusPrices
-import fishmod.utils.Constants
-import fishmod.utils.Misc
+import fishmod.utils.FishConstants
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
@@ -62,9 +62,9 @@ object ExperimentProfitTracker {
                 lastTableMs = System.currentTimeMillis()
             }
         }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.expProfitEnabled) FishDiag.guard("ExperimentProfitTracker.1", "experiment chat parse failed") {
-                onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim(), text)
+                onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim(), text)
             }
             false
         }
@@ -150,7 +150,7 @@ object ExperimentProfitTracker {
     @JvmStatic
     fun reset() {
         data = Data(); changed()
-        Misc.addChatMessage(Component.literal("§b[FM] §fExperiment profit tracker reset"))
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fExperiment profit tracker reset"))
     }
 
     // ── HUD ──
@@ -160,7 +160,7 @@ object ExperimentProfitTracker {
         if (!FishSettings.expProfitEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        if (FishSettings.expProfitOnlyIsland && fishmod.utils.Location.getCurrentLocation() != fishmod.utils.Location.PRIVATE_ISLAND) return
+        if (FishSettings.expProfitOnlyIsland && fishmod.utils.SkyblockLocation.getCurrentLocation() != fishmod.utils.SkyblockLocation.PRIVATE_ISLAND) return
         if (data.experiments == 0 && data.drops.isEmpty() && data.xp == 0L) return
 
         // Same layout as the Slayer/Mining trackers: right-aligned value column, "| item count" after it
@@ -190,7 +190,7 @@ object ExperimentProfitTracker {
         rows.add("§eProfit §6${short(total)}" + (if (sp > 0) " §7(§6${short(total / sp)}§7/exp)" else "") to "")
 
         val f = mc.font
-        val lh = Constants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT + 2
         val colX = rows.maxOfOrNull { if (it.second.isEmpty()) 0 else f.width(it.second) + 6 } ?: 0
         val sc = FishSettings.expProfitHudScale.toFloat()
         ctx.pose().pushMatrix()

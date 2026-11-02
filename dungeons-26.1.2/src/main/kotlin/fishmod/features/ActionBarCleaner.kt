@@ -2,7 +2,7 @@ package fishmod.features
 
 import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.network.chat.Component
 
@@ -52,7 +52,7 @@ object ActionBarCleaner {
 
     @JvmStatic
     fun filter(message: Component): Component {
-        if (!FishSettings.actionBarEnabled || !Location.inSkyblock()) return message
+        if (!FishSettings.actionBarEnabled || !SkyblockLocation.inSkyblock()) return message
         val raw = message.string
         val now = System.currentTimeMillis()
         if (raw == lastRaw && now - lastAt < 1000L) lastOut?.let { out -> return if (lastIn === lastOut) message else out }

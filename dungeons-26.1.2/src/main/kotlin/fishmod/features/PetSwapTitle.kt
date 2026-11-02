@@ -2,7 +2,7 @@ package fishmod.features
 import fishmod.compat.Fmt
 import fishmod.utils.TextStrip
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
@@ -46,6 +46,6 @@ object PetSwapTitle {
     private fun show(name: String, rarity: Int?) {
         val text = FishSettings.petSwapTitleFormat.ifBlank { "{pet}" }.replace("{pet}", name)
         val color = if (FishSettings.petSwapTitleRarityColor && rarity != null) rarity else FishSettings.petSwapTitleColor
-        Misc.forceTitle(Component.literal(text).withColor(color and 0xFFFFFF), Component.empty(), FishSettings.petSwapTitleMs)
+        FishUtil.forceTitle(Component.literal(text).withColor(color and 0xFFFFFF), Component.empty(), FishSettings.petSwapTitleMs)
     }
 }

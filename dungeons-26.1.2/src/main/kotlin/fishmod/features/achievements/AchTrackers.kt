@@ -6,9 +6,9 @@ import fishmod.features.kuudra.KuudraSettings
 import fishmod.features.mining.MiningProfitTracker
 import fishmod.features.slayers.SlayerManager
 import fishmod.features.slayers.SlayerProfitTracker
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.MayorApi
-import fishmod.utils.Scheduler
+import fishmod.utils.TickScheduler
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import java.time.DayOfWeek
@@ -41,7 +41,7 @@ object AchTrackers {
         when (e) {
             is AchEvent.RunStarted -> {
                 if (LocalTime.now().hour < 5) secret("midnightRun")
-                Scheduler.scheduleTask(Runnable {
+                TickScheduler.scheduleTask(Runnable {
                     if (currentFloor() == "F1" && st.get("cata.level") >= 50) secret("wrongFloor")
                 }, 60)
             }
@@ -70,7 +70,7 @@ object AchTrackers {
                 }
             }
             is AchEvent.PersonalBest -> { st.inc("fm.pbs"); if (e.improvedBy > 0 && e.improvedBy < 0.01) secret("framePerfect") }
-            is AchEvent.OwnDeath -> if (Location.inDungeon() && (e.message.contains("lava", true) || e.message.contains("burn", true))) secret("lavaDeath")
+            is AchEvent.OwnDeath -> if (SkyblockLocation.inDungeon() && (e.message.contains("lava", true) || e.message.contains("burn", true))) secret("lavaDeath")
             AchEvent.FeastStarted -> st.inc("garden.feasts")
             AchEvent.VisitorAccepted -> st.inc("garden.visitors")
             AchEvent.CommissionDone -> st.inc("mining.commissions")
@@ -79,7 +79,7 @@ object AchTrackers {
         }
     }
 
-    private fun currentFloor(): String? = fishmod.utils.dungeon.Phase.getFloor()
+    private fun currentFloor(): String? = fishmod.utils.dungeon.BossPhase.getFloor()
 
     private fun onRunEnded(e: AchEvent.RunEnded) {
         val st = AchStore
@@ -126,7 +126,7 @@ object AchTrackers {
         tick++
         val p = mc.player ?: return
         if (p.yRot != lastYaw || p.xRot != lastPitch) { lastYaw = p.yRot; lastPitch = p.xRot; lastInputMs = System.currentTimeMillis() }
-        if (tick % 20 == 0 && Location.inSkyblock()) playtimeSecond()
+        if (tick % 20 == 0 && SkyblockLocation.inSkyblock()) playtimeSecond()
         if (tick % 100 == 0) FishDiag.guard("AchTrackers.1", "achievement ledgers") { pollLedgers() }
         if (tick % 1200 == 0) FishDiag.guard("AchTrackers.2", "playtime derived") { derivePlaytime() }
     }
@@ -134,9 +134,9 @@ object AchTrackers {
     private fun playtimeSecond() {
         val st = AchStore
         st.inc("play.total")
-        when (Location.getCurrentLocation()) {
-            Location.DUNGEON -> st.inc("play.dungeon")
-            Location.KUUDRA -> st.inc("play.kuudra")
+        when (SkyblockLocation.getCurrentLocation()) {
+            SkyblockLocation.DUNGEON -> st.inc("play.dungeon")
+            SkyblockLocation.KUUDRA -> st.inc("play.kuudra")
             else -> {}
         }
         val d = LocalDate.now().toString()
@@ -161,7 +161,7 @@ object AchTrackers {
         st.max("play.streak4h", streak(parsed, 4 * 3600L))
         st.max("play.streak8h", streak(parsed, 8 * 3600L))
         MayorApi.mayorLine()?.let { line ->
-            val name = line.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim().substringBefore(' ').substringBefore(':')
+            val name = line.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim().substringBefore(' ').substringBefore(':')
             if (name.isNotBlank() && st.data.mayors.add(name)) { st.changed(); st.set("mayors.seen", st.data.mayors.size.toLong()) }
         }
     }

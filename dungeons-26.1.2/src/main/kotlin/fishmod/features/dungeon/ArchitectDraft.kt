@@ -1,10 +1,10 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import java.util.regex.Pattern
@@ -18,8 +18,8 @@ object ArchitectDraft {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (!FishSettings.architectDraftRefill || !Location.inDungeon()) return@register false
+        FishEvents.ON_GAME_MESSAGE.register { text ->
+            if (!FishSettings.architectDraftRefill || !SkyblockLocation.inDungeon()) return@register false
             val s = TextStrip.plain(text.string).trim()
             val self = Minecraft.getInstance().player?.gameProfile?.name ?: return@register false
             val m1 = PUZZLE_FAIL.matcher(s)
@@ -32,7 +32,7 @@ object ArchitectDraft {
             false
         }
 
-        Events.ON_WORLD_CHANGE.register { pending = -1; false }
+        FishEvents.ON_WORLD_CHANGE.register { pending = -1; false }
 
         ClientTickEvents.END_CLIENT_TICK.register {
             if (pending < 0) return@register

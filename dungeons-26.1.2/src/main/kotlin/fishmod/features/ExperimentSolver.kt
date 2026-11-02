@@ -4,7 +4,7 @@ import fishmod.compat.curScreen
 import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -41,9 +41,9 @@ object ExperimentSolver {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             FishDiag.guard("ExperimentSolver.1", "experiment solver tick failed") { tick(mc) }
         }
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, _, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, _, x, y ->
             if (game == Game.NONE || !FishSettings.experimentSolverEnabled) return@register
-            val slot = DrawEvents.currentSlot ?: return@register
+            val slot = DrawHooks.currentSlot ?: return@register
             if (slot.container is Inventory) return@register
             val c = colorFor(slot.index)
             if (c != 0) ctx.fill(x, y, x + 16, y + 16, c)

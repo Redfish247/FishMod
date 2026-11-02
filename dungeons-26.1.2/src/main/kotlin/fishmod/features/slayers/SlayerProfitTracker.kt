@@ -6,10 +6,10 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import fishmod.features.croesus.CroesusPrices
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.io.File
@@ -91,12 +91,12 @@ object SlayerProfitTracker {
                 FishDiag.fail("SlayerProfitTracker.3", "slayer profit tick failed (key=${curKey()})", e)
             }
         })
-        Events.ON_WORLD_CHANGE.register { FishDiag.guard("SlayerProfitTracker.10", "flush on world change failed") { flushSave(true) }; false }
+        FishEvents.ON_WORLD_CHANGE.register { FishDiag.guard("SlayerProfitTracker.10", "flush on world change failed") { flushSave(true) }; false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishDiag.guard("SlayerProfitTracker.11", "flush on client stop failed") { flushSave(true) } }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (enabled()) {
                 try {
-                    onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+                    onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim())
                 } catch (e: Exception) {
                     FishDiag.fail("SlayerProfitTracker.4", "slayer profit chat handler failed", e)
                 }

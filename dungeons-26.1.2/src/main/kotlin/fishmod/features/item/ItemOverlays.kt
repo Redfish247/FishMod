@@ -1,9 +1,9 @@
 package fishmod.features.item
 
 import fishmod.features.extras.ExtrasSettings as S
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -23,12 +23,12 @@ object ItemOverlays {
 
     @JvmStatic
     fun init() {
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
-            if (!S.overlayItemLevels || !Location.inSkyblock()) return@register
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+            if (!S.overlayItemLevels || !SkyblockLocation.inSkyblock()) return@register
             try { draw(ctx, stack, x, y) } catch (t: Throwable) { FishDiag.fail("ItemOverlays.1", "item overlay draw failed", t) }
         }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
-            if (!S.obtainedDateTooltip || !Location.inSkyblock()) return@ItemTooltipCallback
+            if (!S.obtainedDateTooltip || !SkyblockLocation.inSkyblock()) return@ItemTooltipCallback
             try { obtained(stack)?.let { lines.add(Component.literal("§7Obtained: §f$it")) } }
             catch (t: Throwable) { FishDiag.fail("ItemOverlays.2", "obtained date tooltip failed", t) }
         })

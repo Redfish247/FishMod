@@ -28,7 +28,7 @@ object UiRenderer {
     private val noUi = System.getProperty("fishmod.noui") != null
     private var failed = false
     // Vulkan backend has no GL context; raw GL calls there crash the client
-    private val noGl by lazy { runCatching { org.lwjgl.opengl.GL.getCapabilities() }.isFailure.also { if (it) fishmod.utils.debug.Debug.LOGGER.warn("[UiRenderer] no OpenGL context (Vulkan?), custom UI painting disabled") } }
+    private val noGl by lazy { runCatching { org.lwjgl.opengl.GL.getCapabilities() }.isFailure.also { if (it) fishmod.utils.debug.FishDebug.LOGGER.warn("[UiRenderer] no OpenGL context (Vulkan?), custom UI painting disabled") } }
     private var failLogged = false
     private var consecutiveFailures = 0
 
@@ -195,7 +195,7 @@ void main(){
             }
             if (!failLogged) {
                 failLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] paint failed - FishMod screens will render without their UI layer", t)
+                fishmod.utils.debug.FishDebug.LOGGER.error("[UiRenderer] paint failed - FishMod screens will render without their UI layer", t)
             }
         } finally {
             guard.restore()
@@ -215,7 +215,7 @@ void main(){
         val passTex = lastPassColorTex
         if (!targetLogged) {
             targetLogged = true
-            fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] UI target: lastPass={} main={}", passTex, mainTex)
+            fishmod.utils.debug.FishDebug.LOGGER.info("[UiRenderer] UI target: lastPass={} main={}", passTex, mainTex)
         }
         if (passTex != 0 && GL11.glIsTexture(passTex) && attach(passTex)) return
         if (mainTex == 0) {

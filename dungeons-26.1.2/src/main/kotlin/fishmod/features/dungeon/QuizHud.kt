@@ -3,9 +3,9 @@ import fishmod.compat.hudHidden
 import fishmod.utils.TextStrip
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -28,7 +28,7 @@ object QuizHud {
             90, 10,
             { FishSettings.quizHudScale }, { v -> FishSettings.quizHudScale = v }
         )
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             val s = TextStrip.plain(text.string)
             when {
                 s.contains("I am Oruo the Omniscient. I have lived many lives.") -> { stage = 1; ticksLeft = 220 }
@@ -52,13 +52,13 @@ object QuizHud {
             }
             false
         }
-        Events.ON_SERVER_TICK.register { if (ticksLeft > 0) ticksLeft--; false }
-        Events.ON_WORLD_CHANGE.register { stage = 0; ticksLeft = 0; false }
+        FishEvents.ON_SERVER_TICK.register { if (ticksLeft > 0) ticksLeft--; false }
+        FishEvents.ON_WORLD_CHANGE.register { stage = 0; ticksLeft = 0; false }
     }
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!FishSettings.quizHudEnabled || !Location.inDungeon() || stage == 0 || ticksLeft <= 0) return
+        if (!FishSettings.quizHudEnabled || !SkyblockLocation.inDungeon() || stage == 0 || ticksLeft <= 0) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
         val sc = FishSettings.quizHudScale.toFloat()

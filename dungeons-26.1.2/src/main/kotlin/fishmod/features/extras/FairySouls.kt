@@ -4,12 +4,12 @@ import fishmod.compat.cam
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import fishmod.utils.IoExecutor
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.data.NeuRepo
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -28,11 +28,11 @@ object FairySouls {
 
     fun init() {
         load()
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (S.fairySoulWaypoints) onChat(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
+        FishEvents.ON_GAME_MESSAGE.register { text ->
+            if (S.fairySoulWaypoints) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, ""))
             false
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.fairySoulWaypoints && Location.inSkyblock()) render(ctx, ps, vc) }
+        RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.fairySoulWaypoints && SkyblockLocation.inSkyblock()) render(ctx, ps, vc) }
     }
 
     private fun souls(mode: String): List<Pair<String, Vec3>> {
@@ -45,7 +45,7 @@ object FairySouls {
 
     private fun onChat(s: String) {
         if (!s.startsWith("SOUL! You found a Fairy Soul!") && !s.startsWith("You have already found that Fairy Soul!")) return
-        val mode = Location.currentMode
+        val mode = SkyblockLocation.currentMode
         val p = Minecraft.getInstance().player ?: return
         val done = found[mode] ?: emptySet()
         val near = souls(mode).filter { it.first !in done }.minByOrNull { it.second.distanceTo(p.position()) } ?: return
@@ -54,10 +54,10 @@ object FairySouls {
         save()
     }
 
-    fun resetIsland() { found.remove(Location.currentMode); save() }
+    fun resetIsland() { found.remove(SkyblockLocation.currentMode); save() }
 
     private fun render(ctx: net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext, ps: com.mojang.blaze3d.vertex.PoseStack, vc: com.mojang.blaze3d.vertex.VertexConsumer) {
-        val mode = Location.currentMode
+        val mode = SkyblockLocation.currentMode
         if (mode.isEmpty()) return
         val done = found[mode] ?: emptySet()
         val eye = Minecraft.getInstance().cam.position()
@@ -67,13 +67,13 @@ object FairySouls {
             if (key in done) continue
             val center = pos.add(0.0, 0.5, 0.0)
             val d = center.distanceTo(eye)
-            val (c, k) = RenderUtils.pullIn(center, eye)
-            RenderUtils.fillBox(ps, vc, AABB.ofSize(c, k, k, k), (0x66 shl 24) or rgb)
-            if (S.fairySoulBeam) RenderUtils.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
+            val (c, k) = FishDraw.pullIn(center, eye)
+            FishDraw.fillBox(ps, vc, AABB.ofSize(c, k, k, k), (0x66 shl 24) or rgb)
+            if (S.fairySoulBeam) FishDraw.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
             if (S.fairySoulText) {
-                val (tp, pk) = RenderUtils.pullIn(Vec3(pos.x, pos.y + 1.5 + d / 25.0, pos.z), eye)
+                val (tp, pk) = FishDraw.pullIn(Vec3(pos.x, pos.y + 1.5 + d / 25.0, pos.z), eye)
                 val px = (maxOf(0.035, d * 0.0035) * pk).toFloat()
-                RenderUtils.renderSeeThroughText(ctx, ps, Component.literal("Fairy Soul §7(${d.toInt()}m)"), tp, px, argb or (0xFF shl 24), true)
+                FishDraw.renderSeeThroughText(ctx, ps, Component.literal("Fairy Soul §7(${d.toInt()}m)"), tp, px, argb or (0xFF shl 24), true)
             }
         }
     }

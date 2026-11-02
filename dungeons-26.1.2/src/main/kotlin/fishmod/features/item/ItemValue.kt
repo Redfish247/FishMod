@@ -1,7 +1,7 @@
 package fishmod.features.item
 
 import fishmod.features.croesus.CroesusPrices
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import net.minecraft.world.item.ItemStack
 
@@ -17,7 +17,7 @@ object ItemValue {
 
     private fun estimateInner(stack: ItemStack): Double {
         if (stack.isEmpty) return 0.0
-        val id = ItemUtil.getId(stack) ?: return 0.0
+        val id = ItemTools.getId(stack) ?: return 0.0
         val mods = ModifierValue.calc(stack)
         FishDiag.check(!mods.isNaN() && mods >= 0.0, "ItemValue.2") { "modifier value $mods for $id" }
         val tag = stack.fishmodCustomDataTag()

@@ -6,7 +6,7 @@ import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.ChatQueue
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket
 import net.minecraft.world.entity.monster.zombie.Zombie
@@ -24,9 +24,9 @@ object MimicAnnounce {
 
     @JvmStatic
     fun init() {
-        Events.ON_WORLD_CHANGE.register { mimicSent = false; princeSent = false; batSent = false; false }
+        FishEvents.ON_WORLD_CHANGE.register { mimicSent = false; princeSent = false; batSent = false; false }
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.mimicAnnounceEnabled) {
                 val s = TextStrip.plain(text.string).trim()
                 if (PRINCE.matches(s)) princeKilled(false)
@@ -41,7 +41,7 @@ object MimicAnnounce {
             false
         }
 
-        Events.ON_PACKET.register { packet ->
+        FishEvents.ON_PACKET.register { packet ->
             if (FishSettings.mimicAnnounceEnabled && !mimicSent && packet is ClientboundEntityEventPacket
                 && packet.eventId.toInt() == 3 && isFloor67() && inClear()
             ) {

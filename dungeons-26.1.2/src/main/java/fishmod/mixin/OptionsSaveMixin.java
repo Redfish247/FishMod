@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.utils.Keybinds;
+import fishmod.utils.FishKeys;
 import net.minecraft.client.Options;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,7 +14,7 @@ public abstract class OptionsSaveMixin {
     @Inject(method = "save", at = @At("TAIL"))
     private void fishmod$syncKeybindBackup(CallbackInfo ci) {
         try {
-            Keybinds.syncKeybindBackup();
+            FishKeys.syncKeybindBackup();
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("OptionsSaveMixin.1", "keybind backup sync on options save failed", t);
         }

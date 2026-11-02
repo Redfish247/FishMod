@@ -1,10 +1,10 @@
 package fishmod.features.mining
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.Entity
@@ -23,7 +23,7 @@ object MiningBoxes {
         ClientTickEvents.END_CLIENT_TICK.register { _ ->
             FishDiag.guard("MiningBoxes.1", "mining box scan threw") { scan() }
         }
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             FishDiag.guard("MiningBoxes.2", "mining box render threw") { render() }
         }
     }
@@ -32,7 +32,7 @@ object MiningBoxes {
         if (tick++ % 5 != 0) return
         val level = Minecraft.getInstance().level
         val doCorpse = FishSettings.corpseHighlightEnabled && Mining.inShaft()
-        val doGhost = FishSettings.ghostBoxEnabled && Location.`in`(Location.DWARVEN_MINES)
+        val doGhost = FishSettings.ghostBoxEnabled && SkyblockLocation.`in`(SkyblockLocation.DWARVEN_MINES)
         if (level == null || (!doCorpse && !doGhost)) { corpses = emptyList(); ghosts = emptyList(); return }
         val c = ArrayList<Entity>(); val g = ArrayList<Entity>()
         for (e in level.entitiesForRendering()) {
@@ -47,12 +47,12 @@ object MiningBoxes {
 
     @JvmStatic
     fun hideGhost(e: Entity): Boolean =
-        FishSettings.ghostBoxEnabled && FishSettings.ghostBoxHideModel && isGhost(e) && Location.`in`(Location.DWARVEN_MINES)
+        FishSettings.ghostBoxEnabled && FishSettings.ghostBoxHideModel && isGhost(e) && SkyblockLocation.`in`(SkyblockLocation.DWARVEN_MINES)
 
     private fun render() {
         if (FishSettings.corpseHighlightEnabled) for (e in corpses) if (e.isAlive)
-            RenderUtils.gizmoBox(e.boundingBox, 0, FishSettings.corpseHighlightColor, true)
+            FishDraw.gizmoBox(e.boundingBox, 0, FishSettings.corpseHighlightColor, true)
         if (FishSettings.ghostBoxEnabled) for (e in ghosts) if (e.isAlive)
-            RenderUtils.gizmoBox(e.boundingBox, if (FishSettings.ghostBoxFilled) FishSettings.ghostBoxFillColor else 0, FishSettings.ghostBoxColor)
+            FishDraw.gizmoBox(e.boundingBox, if (FishSettings.ghostBoxFilled) FishSettings.ghostBoxFillColor else 0, FishSettings.ghostBoxColor)
     }
 }

@@ -1,10 +1,10 @@
 package fishmod.features.slayers
 
-import fishmod.utils.Constants
-import fishmod.utils.Location
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.LivingEntity
@@ -70,16 +70,16 @@ object SlayerManager {
 
     @JvmStatic fun hasActiveQuest(): Boolean = type != null
 
-    private data class AreaRule(val island: Location, val areas: Set<String>?)
+    private data class AreaRule(val island: SkyblockLocation, val areas: Set<String>?)
 
     private val AREA_RULES: Map<SlayerType, List<AreaRule>> = mapOf(
-        SlayerType.REVENANT to listOf(AreaRule(Location.HUB, setOf("Graveyard", "Crypt", "Crypts", "Castle"))),
-        SlayerType.SVEN to listOf(AreaRule(Location.THE_PARK, setOf("Howling Cave"))),
-        SlayerType.VOIDGLOOM to listOf(AreaRule(Location.THE_END, null)),
-        SlayerType.INFERNO to listOf(AreaRule(Location.CRIMSON_ISLE, setOf("Smoldering Tomb"))),
+        SlayerType.REVENANT to listOf(AreaRule(SkyblockLocation.HUB, setOf("Graveyard", "Crypt", "Crypts", "Castle"))),
+        SlayerType.SVEN to listOf(AreaRule(SkyblockLocation.THE_PARK, setOf("Howling Cave"))),
+        SlayerType.VOIDGLOOM to listOf(AreaRule(SkyblockLocation.THE_END, null)),
+        SlayerType.INFERNO to listOf(AreaRule(SkyblockLocation.CRIMSON_ISLE, setOf("Smoldering Tomb"))),
         SlayerType.TARANTULA to listOf(
-            AreaRule(Location.SPIDERS_DEN, null),
-            AreaRule(Location.CRIMSON_ISLE, setOf("Burning Desert")),
+            AreaRule(SkyblockLocation.SPIDERS_DEN, null),
+            AreaRule(SkyblockLocation.CRIMSON_ISLE, setOf("Burning Desert")),
         ),
     )
 
@@ -95,11 +95,11 @@ object SlayerManager {
     }
 
     private fun onSlayerIsland(t: SlayerType): Boolean =
-        AREA_RULES[t]?.any { Location.`in`(it.island) } ?: Location.`in`(t.island)
+        AREA_RULES[t]?.any { SkyblockLocation.`in`(it.island) } ?: SkyblockLocation.`in`(t.island)
 
     private fun areaMatches(t: SlayerType, lines: List<String>): Boolean {
-        val rules = FishDiag.notNull(AREA_RULES[t], "SlayerManager.7") { "no area rule for slayer $t" } ?: return Location.`in`(t.island)
-        val rule = rules.firstOrNull { Location.`in`(it.island) } ?: return false
+        val rules = FishDiag.notNull(AREA_RULES[t], "SlayerManager.7") { "no area rule for slayer $t" } ?: return SkyblockLocation.`in`(t.island)
+        val rule = rules.firstOrNull { SkyblockLocation.`in`(it.island) } ?: return false
         val names = rule.areas ?: return true
         return lines.any { line -> names.any { line.contains(it, ignoreCase = true) } }
     }
@@ -112,7 +112,7 @@ object SlayerManager {
     fun onQuestIsland(): Boolean = type?.let { onSlayerIsland(it) } ?: false
 
     @JvmStatic
-    fun isActiveSlayer(): Boolean = hasActiveQuest() && Location.inSkyblock()
+    fun isActiveSlayer(): Boolean = hasActiveQuest() && SkyblockLocation.inSkyblock()
 
     @JvmStatic
     fun init() {
@@ -131,7 +131,7 @@ object SlayerManager {
                 if (state != State.NONE || type != null) fullReset()
                 return@EndTick
             }
-            if (mc.player == null || mc.connection == null || !Location.inSkyblock()) {
+            if (mc.player == null || mc.connection == null || !SkyblockLocation.inSkyblock()) {
                 if (type != null || state != State.NONE) softReset()
                 return@EndTick
             }
@@ -143,17 +143,17 @@ object SlayerManager {
             }
         })
 
-        Events.ON_WORLD_CHANGE.register { fullReset(); false }
-        Events.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.ON_WORLD_CHANGE.register { fullReset(); false }
+        FishEvents.ON_LOCATION_CHANGE.register { _ ->
             bossEntity = null
             cocoonLatchedAt = 0L
             areaLatched = false
             false
         }
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.slayerAnyEnabled()) return@register false
-            val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
+            val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
             val now = System.currentTimeMillis()
             try { when {
                 QUEST_STARTED.matcher(s).find() -> {

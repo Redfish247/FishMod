@@ -1,7 +1,7 @@
 package fishmod.utils.sound
 
 import fishmod.shaded.practicalconfig.data.SoundData
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.minecraft.core.registries.BuiltInRegistries
@@ -90,7 +90,7 @@ object SoundManager {
         }
         if (v.isNaN() || pitch.isNaN()) FishDiag.fail("SoundManager.4", "play $sound with NaN volume=$volume pitch=$pitch")
         try {
-            Misc.sendSound(sound, v, pitch)
+            FishUtil.sendSound(sound, v, pitch)
         } catch (t: Throwable) {
             FishDiag.fail("SoundManager.5", "play sound $sound", t)
             return false
@@ -125,7 +125,7 @@ object SoundManager {
         }
         if (v.isNaN() || pitch.isNaN()) FishDiag.fail("SoundManager.7", "play2D $sound with NaN volume=$volume pitch=$pitch")
         try {
-            Misc.sendSound2D(sound, v, pitch)
+            FishUtil.sendSound2D(sound, v, pitch)
         } catch (t: Throwable) {
             FishDiag.fail("SoundManager.8", "play 2D sound $sound", t)
             return false

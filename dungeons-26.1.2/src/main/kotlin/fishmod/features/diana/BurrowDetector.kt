@@ -1,7 +1,7 @@
 package fishmod.features.diana
 
-import fishmod.utils.Misc
-import fishmod.utils.events.Events
+import fishmod.utils.FishUtil
+import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
@@ -27,12 +27,12 @@ object BurrowDetector {
     fun reset() { chains.clear() }
 
     fun init() {
-        Events.ON_PARTICLE.register { p ->
+        FishEvents.ON_PARTICLE.register { p ->
             if (Diana.inHub() && DianaSettings.dianaGuessing && DianaSettings.dianaBurrowDetection) onParticle(p)
             false
         }
-        Events.ON_SOUND.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_SOUND.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (Diana.inHub()) {
                 val s = fishmod.utils.TextStrip.plain(text.string)
                 dugSound(s)
@@ -158,7 +158,7 @@ object BurrowDetector {
             val me = Diana.player()?.position()
             DianaTest.log("chain end: title=${DianaSettings.dianaChainEndTitle} near=${me?.let { p -> DianaWaypoints.targets().count { it.distTo(p) <= 90 } }}")
             if (DianaSettings.dianaChainEndTitle && me != null && DianaWaypoints.targets().none { it.distTo(me) <= 90 })
-                Misc.forceTitle(Component.literal("§eUse Spade!"), Component.empty(), 2000)
+                FishUtil.forceTitle(Component.literal("§eUse Spade!"), Component.empty(), 2000)
             return
         }
         DUG.matchEntire(s)?.let { m ->

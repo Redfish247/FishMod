@@ -1,9 +1,9 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientLevel
@@ -25,7 +25,7 @@ object StarredMobHighlight {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             try { render() } catch (e: Exception) { FishDiag.fail("StarredMobHighlight.1", "starred mob render threw (mobs=${cachedStarredMobs.size})", e) }
         }
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
@@ -34,7 +34,7 @@ object StarredMobHighlight {
     }
 
     private fun active(): Boolean {
-        return FishSettings.enableStarredMobHighlight && Location.inDungeon()
+        return FishSettings.enableStarredMobHighlight && SkyblockLocation.inDungeon()
     }
 
     private fun tick() {
@@ -51,7 +51,7 @@ object StarredMobHighlight {
         val stroke = FishSettings.starredMobHighlightColor
         for (mob in cachedStarredMobs) {
             if (mob is LivingEntity && mob.isAlive) {
-                RenderUtils.gizmoBox(mob.boundingBox, 0, stroke)
+                FishDraw.gizmoBox(mob.boundingBox, 0, stroke)
             }
         }
     }

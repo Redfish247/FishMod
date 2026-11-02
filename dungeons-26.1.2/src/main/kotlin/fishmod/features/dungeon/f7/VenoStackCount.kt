@@ -3,10 +3,10 @@ import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.features.item.fishmodCustomDataTag
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -42,11 +42,11 @@ object VenoStackCount {
             40, 20,
             { FishSettings.venoStackScale }, { v -> FishSettings.venoStackScale = v }
         )
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
             try { onTick() } catch (e: Exception) { FishDiag.fail("VenoStackCount.1", "veno stack tick threw (beams=${beams.size})", e) }
         }
-        Events.ON_PARTICLE.register { packet ->
+        FishEvents.ON_PARTICLE.register { packet ->
             try {
                 if (packet.particle.type === ParticleTypes.FIREWORK && active()) onBeamPoint(Vec3(packet.x, packet.y, packet.z))
             } catch (e: Exception) { FishDiag.fail("VenoStackCount.2", "veno beam particle handler threw", e) }
@@ -57,7 +57,7 @@ object VenoStackCount {
     private fun reset() { beams.clear(); stormBox = null; stacks = 0; lastHitMs = 0L }
 
     private fun active(): Boolean =
-        FishSettings.venoStackEnabled && holdingVeno && Location.inDungeon() && Phase.inP2() && !Phase.stormDead()
+        FishSettings.venoStackEnabled && holdingVeno && SkyblockLocation.inDungeon() && BossPhase.inP2() && !BossPhase.stormDead()
 
     private fun onTick() {
         tick++
@@ -67,9 +67,9 @@ object VenoStackCount {
         val mc = Minecraft.getInstance()
         val p = mc.player
         holdingVeno = FishSettings.venoStackEnabled && p != null && isVenomous(p.mainHandItem)
-        if (!FishSettings.venoStackEnabled || !Location.inDungeon() || !Phase.inP2() || Phase.stormDead()) {
+        if (!FishSettings.venoStackEnabled || !SkyblockLocation.inDungeon() || !BossPhase.inP2() || BossPhase.stormDead()) {
             stormBox = null
-            if (Phase.stormDead() || !Location.inDungeon()) stacks = 0
+            if (BossPhase.stormDead() || !SkyblockLocation.inDungeon()) stacks = 0
             return
         }
         run {

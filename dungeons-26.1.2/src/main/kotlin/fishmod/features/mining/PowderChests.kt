@@ -1,8 +1,8 @@
 package fishmod.features.mining
 
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
@@ -21,20 +21,20 @@ object PowderChests {
     private val chests = ConcurrentHashMap<BlockPos, Long>()
 
     fun init() {
-        Events.ON_PACKET.register { packet ->
+        FishEvents.ON_PACKET.register { packet ->
             if (packet is ClientboundBlockUpdatePacket && S.miningChests && Mining.inHollows()) onBlock(packet.pos, packet.blockState)
             false
         }
-        Events.ON_WORLD_CHANGE.register { chests.clear(); false }
+        FishEvents.ON_WORLD_CHANGE.register { chests.clear(); false }
         // Lockpicked chests linger until Hypixel clears the block
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (chests.isNotEmpty() && text.string.contains("CHEST LOCKPICKED")) {
                 val pp = Minecraft.getInstance().player?.position()
                 if (pp != null) chests.keys.minByOrNull { Vec3.atCenterOf(it).distanceToSqr(pp) }?.let { chests.remove(it) }
             }
             false
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!S.miningChests || chests.isEmpty()) return@register
             val now = System.currentTimeMillis()
             val lvl = Minecraft.getInstance().level
@@ -42,9 +42,9 @@ object PowderChests {
             val start = Mining.lineStart()
             for (p in chests.keys) {
                 val b = AABB(p.x + 0.0625, p.y.toDouble(), p.z + 0.0625, p.x + 0.9375, p.y + 0.875, p.z + 0.9375)
-                RenderUtils.fillBox(ps, vc, b, Mining.alpha(S.miningChestColor, S.miningChestOpacity))
+                FishDraw.fillBox(ps, vc, b, Mining.alpha(S.miningChestColor, S.miningChestOpacity))
                 Mining.outline(ps, vc, b, Mining.alpha(S.miningChestColor, 100), 2f)
-                if (S.miningChestLine) RenderUtils.screenLine(ps, vc, start, Vec3.atCenterOf(p), Mining.alpha(S.miningChestColor, 100), S.miningChestLineWidth.toFloat())
+                if (S.miningChestLine) FishDraw.screenLine(ps, vc, start, Vec3.atCenterOf(p), Mining.alpha(S.miningChestColor, 100), S.miningChestLineWidth.toFloat())
             }
         }
     }

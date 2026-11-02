@@ -3,9 +3,9 @@ package fishmod.features.dungeon
 import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.client.Minecraft
@@ -35,16 +35,16 @@ object IceSprayTimer {
         UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
             try {
                 if (FishSettings.iceSprayTimerEnabled && hand == InteractionHand.MAIN_HAND &&
-                    ItemUtil.getId(player.getItemInHand(hand)) == "ICE_SPRAY_WAND") cast()
+                    ItemTools.getId(player.getItemInHand(hand)) == "ICE_SPRAY_WAND") cast()
             } catch (e: Exception) {
                 FishDiag.fail("IceSprayTimer.2", "ice spray cast (use item) failed", e)
             }
             InteractionResult.PASS
         })
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             try { render() } catch (e: Exception) { FishDiag.fail("IceSprayTimer.3", "ice spray render failed (${frozen.size} frozen)", e) }
         }
-        fishmod.utils.events.Events.ON_WORLD_CHANGE.register { frozen.clear(); false }
+        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { frozen.clear(); false }
     }
 
     private fun cast() {
@@ -83,7 +83,7 @@ object IceSprayTimer {
             val z = g.sumOf { it.first.z } / g.size
             val y = g.maxOf { it.first.boundingBox.maxY } + 0.6
             val secs = (g.minOf { it.second } - now) / 1000.0
-            RenderUtils.gizmoText(Component.literal(fishmod.utils.Fmt.f1(secs.toDouble()) + "s"), Vec3(x, y, z),
+            FishDraw.gizmoText(Component.literal(fishmod.utils.Fmt.f1(secs.toDouble()) + "s"), Vec3(x, y, z),
                 FishSettings.iceSprayScale.toFloat(), FishSettings.iceSprayColor or 0xFF000000.toInt())
         }
     }

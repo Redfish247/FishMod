@@ -4,29 +4,29 @@ import fishmod.shaded.practicalconfig.manager.ConfigManager
 import fishmod.features.dungeon.FishEstTotal
 import fishmod.features.dungeon.FishPuzzleDisplay
 import fishmod.features.dungeon.f7.F7Huds
-import fishmod.utils.config.values.Buttons
-import fishmod.utils.config.values.Dungeons
+import fishmod.utils.config.values.InvButtonSettings
+import fishmod.utils.config.values.DungeonSettings
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.config.values.Floor7
-import fishmod.utils.config.values.Visual
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.dungeon.Section
-import fishmod.utils.dungeon.Split
+import fishmod.utils.config.values.Floor7Settings
+import fishmod.utils.config.values.VisualSettings
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.dungeon.GoldorSection
+import fishmod.utils.dungeon.RunSplit
 
 object FishConfig {
 
     private val classes: List<Class<*>> = listOf(
             FishSettings::class.java, FishPuzzleDisplay::class.java, FishEstTotal::class.java,
-            Phase::class.java,
-            Section::class.java,
+            BossPhase::class.java,
+            GoldorSection::class.java,
             fishmod.features.dungeon.f7.TerminalTracker::class.java,
             fishmod.features.other.Stopwatch::class.java,
-            Split::class.java,
-            Dungeons::class.java,
-            Floor7::class.java,
-            Visual::class.java,
-            Buttons::class.java,
+            RunSplit::class.java,
+            DungeonSettings::class.java,
+            Floor7Settings::class.java,
+            VisualSettings::class.java,
+            InvButtonSettings::class.java,
             F7Huds::class.java,
             DungeonMapSettings::class.java,
             fishmod.features.extras.ExtrasSettings::class.java,

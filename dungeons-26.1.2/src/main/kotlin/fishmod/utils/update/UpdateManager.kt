@@ -5,15 +5,15 @@ import fishmod.compat.showScreen
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.FishMsg
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.minecraft.network.chat.HoverEvent
-import fishmod.utils.Misc
-import fishmod.utils.debug.Debug
+import fishmod.utils.FishUtil
+import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -148,7 +148,7 @@ object UpdateManager {
     private fun tick(mc: Minecraft) {
         if (!onHypixel || shownThisLogin || mc.player == null || mc.curScreen != null) return
         if (++ticksSinceJoin < JOIN_SETTLE_TICKS || ticksSinceJoin % 20 != 0) return
-        if (Location.inDungeon() || Location.`in`(Location.KUUDRA)) return
+        if (SkyblockLocation.inDungeon() || SkyblockLocation.`in`(SkyblockLocation.KUUDRA)) return
         val release = pendingRelease() ?: return
         if (!FishDiag.check(release.version.isNotEmpty(), "UpdateManager.4") { "pending release has empty version tag=${release.tag}" }) return
         // Once per Hypixel login, never again while connected.
@@ -168,25 +168,25 @@ object UpdateManager {
             .append(button("[Download]", ChatFormatting.GREEN, if (canInstall(release)) "Download now, installs when you close the game" else "Open the release page", ClickEvent.RunCommand("/fm update download")))
         if (page != null) msg.append(" ").append(button("[Changelog]", ChatFormatting.YELLOW, "Open the release on GitHub", ClickEvent.RunCommand("/fm update page")))
         msg.append(" ").append(button("[Ignore]", ChatFormatting.DARK_GRAY, "Don't remind me about v${release.version}", ClickEvent.RunCommand("/fm update ignore")))
-        Misc.addChatMessage(msg)
+        FishUtil.addChatMessage(msg)
     }
 
     private fun latestRelease(): Release? = synchronized(lock) { state.release?.takeIf { isNewer(it.version) } }
 
     private fun say(text: String, color: ChatFormatting) =
-        Misc.addChatMessage(Component.literal(FishMsg.prefix()).append(Component.literal(text).withStyle(color)))
+        FishUtil.addChatMessage(Component.literal(FishMsg.prefix()).append(Component.literal(text).withStyle(color)))
 
     private fun registerCommands() {
         ClientCommandRegistrationCallback.EVENT.register(ClientCommandRegistrationCallback { d, _ ->
             d.register(ClientCommands.literal("fm").then(ClientCommands.literal("update")
-                .then(ClientCommands.literal("download").executes { commandDownload(); Constants.SUCCESS })
+                .then(ClientCommands.literal("download").executes { commandDownload(); FishConstants.SUCCESS })
                 .then(ClientCommands.literal("page").executes {
                     (latestRelease()?.htmlUrl?.ifEmpty { null } ?: releasesUrl)?.let(::openInBrowser)
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 })
                 .then(ClientCommands.literal("ignore").executes {
                     latestRelease()?.let { dismiss(it); say("Won't remind you about v${it.version}.", ChatFormatting.GRAY) }
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 })))
         })
     }
@@ -233,7 +233,7 @@ object UpdateManager {
         if (!checking.compareAndSet(false, true)) return
         worker.execute {
             try { fetchLatest() } catch (t: Throwable) {
-                Debug.LOGGER.warn("[FishMod updater] check failed: {}", t.toString())
+                FishDebug.LOGGER.warn("[FishMod updater] check failed: {}", t.toString())
                 FishDiag.fail("UpdateManager.6", "update check failed repo=$repo", t)
                 synchronized(lock) { state.nextCheckAt = System.currentTimeMillis() + FAILURE_BACKOFF_MS; save() }
             } finally { checking.set(false) }
@@ -364,7 +364,7 @@ object UpdateManager {
                 downloadState = DownloadState.STAGED
             } catch (t: Throwable) {
                 runCatching { Files.deleteIfExists(part) }.onFailure { e -> FishDiag.fail("UpdateManager.15", "delete partial download $part", e) }
-                Debug.LOGGER.warn("[FishMod updater] download failed: {}", t.toString())
+                FishDebug.LOGGER.warn("[FishMod updater] download failed: {}", t.toString())
                 FishDiag.fail("UpdateManager.16", "update download failed ${release.assetName} v${release.version}", t)
                 downloadError = when {
                     t is java.net.http.HttpTimeoutException -> "Timed out"
@@ -391,7 +391,7 @@ object UpdateManager {
                 proc.outputStream.close()
                 !proc.waitFor(5, java.util.concurrent.TimeUnit.SECONDS) || proc.exitValue() == 0
             } catch (t: Throwable) {
-                Debug.LOGGER.warn("[FishMod updater] could not open {}: {}", url, t.toString())
+                FishDebug.LOGGER.warn("[FishMod updater] could not open {}: {}", url, t.toString())
                 FishDiag.fail("UpdateManager.17", "open browser failed os=${System.getProperty("os.name")}", t)
                 false
             }
@@ -407,7 +407,7 @@ object UpdateManager {
                 .onFailure { FishDiag.fail("UpdateManager.19", "build clickable link for $url", it) }
                 .getOrDefault(st.withColor(ChatFormatting.AQUA))
         }
-        Misc.addChatMessage(
+        FishUtil.addChatMessage(
             Component.literal(FishMsg.prefix()).append(Component.literal("Couldn't open your browser. ").withStyle(ChatFormatting.RED))
                 .append(link).append(Component.literal(" (link copied to clipboard)").withStyle(ChatFormatting.GRAY))
         )
@@ -449,7 +449,7 @@ object UpdateManager {
                 oldJar.resolveSibling(staged.fileName.toString()).toString(),
             ).redirectErrorStream(true).redirectOutput(stagingDir.resolve("installer.log").toFile()).start()
         } catch (t: Throwable) {
-            Debug.LOGGER.warn("[FishMod updater] could not launch installer: {}", t.toString())
+            FishDebug.LOGGER.warn("[FishMod updater] could not launch installer: {}", t.toString())
             FishDiag.fail("UpdateManager.24", "launch update installer", t)
         }
     }
@@ -460,7 +460,7 @@ object UpdateManager {
                 Files.newBufferedReader(stateFile).use { state = gson.fromJson(it, State::class.java) ?: State() }
             }
         } catch (t: Throwable) {
-            Debug.LOGGER.warn("[FishMod updater] resetting unreadable state: {}", t.toString())
+            FishDebug.LOGGER.warn("[FishMod updater] resetting unreadable state: {}", t.toString())
             FishDiag.fail("UpdateManager.25", "read updater.json $stateFile", t)
             state = State()
         }
@@ -473,7 +473,7 @@ object UpdateManager {
             Files.writeString(tmp, gson.toJson(state))
             Files.move(tmp, stateFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         } catch (t: Throwable) {
-            Debug.LOGGER.warn("[FishMod updater] could not save state: {}", t.toString())
+            FishDebug.LOGGER.warn("[FishMod updater] could not save state: {}", t.toString())
             FishDiag.fail("UpdateManager.26", "save updater.json $stateFile", t)
         }
     }

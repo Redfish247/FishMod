@@ -2,10 +2,10 @@ package fishmod.features.garden
 
 import fishmod.compat.curScreen
 import fishmod.features.PetHud
-import fishmod.features.item.ItemRarity
+import fishmod.features.item.RarityTier
 import fishmod.utils.config.FishConfig
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -35,7 +35,7 @@ object MushroomCowPerk {
 
     private fun petActive(): Boolean {
         val n = PetHud.activePetName() ?: return false
-        return (n.contains("Mooshroom", true) || n.contains("Mushroom Cow", true)) && PetHud.activePetRarity().ordinal >= ItemRarity.RARE.ordinal
+        return (n.contains("Mooshroom", true) || n.contains("Mushroom Cow", true)) && PetHud.activePetRarity().ordinal >= RarityTier.RARE.ordinal
     }
 
     private fun isCropBlock(state: BlockState): Boolean {
@@ -45,7 +45,7 @@ object MushroomCowPerk {
 
     fun init() {
         if (S.gardenMushroomTotal >= 0) total = S.gardenMushroomTotal.toDouble()
-        Events.ON_PACKET.register { packet ->
+        FishEvents.ON_PACKET.register { packet ->
             if (packet is ClientboundBlockUpdatePacket) try { onBlock(packet) } catch (e: Exception) { FishDiag.fail("MushroomCowPerk.1", "mushroom perk block handler threw", e) }
             false
         }

@@ -1,6 +1,6 @@
 package fishmod.features.garden
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import net.minecraft.sounds.SoundEvents
 import fishmod.features.garden.GardenSettings as S
 
@@ -13,7 +13,7 @@ object GardenTitles {
     fun show(title: String, sub: String, ms: Int, sound: Boolean) {
         lines = listOf(title, sub).filter { it.isNotEmpty() }
         until = System.currentTimeMillis() + ms
-        if (sound) Misc.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
+        if (sound) FishUtil.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
     }
 
     fun init() {

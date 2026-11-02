@@ -5,12 +5,12 @@ import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishMsg
-import fishmod.utils.Misc
-import fishmod.utils.data.PartyUtil
+import fishmod.utils.FishUtil
+import fishmod.utils.data.PartyTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import fishmod.features.kuudra.KuudraSettings as S
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseItemCallback
@@ -72,8 +72,8 @@ object KuudraExtras {
     }
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { c -> if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.1", "kuudra extras chat failed") { onChat(Mining.strip(c.string)) }; false }
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.ON_GAME_MESSAGE.register { c -> if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.1", "kuudra extras chat failed") { onChat(Mining.strip(c.string)) }; false }
+        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !Kuudra.inKuudra()) return@register
             FishDiag.guard("KuudraExtras.2", "kuudra extras tick failed") { tick(mc) }
@@ -98,7 +98,7 @@ object KuudraExtras {
                 listOf("§6Backbone §c" + "|".repeat(done) + "§7" + "|".repeat(20 - done))
             }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.3", "kuudra extras fill render failed") { fills(ps, vc) }
             // screenLine emits quads: draw on the QUADS buffer, DEBUG_LINES turns them into corner ticks
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.4", "kuudra extras line render failed") { lines(ps, vc) }
@@ -116,7 +116,7 @@ object KuudraExtras {
         if (S.kuudraBossMaster && S.kuudraAnnounce) for (sp in SPELLS) if (sp.on() && msg == sp.line) {
             val p = Minecraft.getInstance().player?.blockPosition() ?: return
             val t = if (Kuudra.phase == 4 && Kuudra.phaseStart[3] > 0) " in %.2fs".format((Kuudra.now() - Kuudra.phaseStart[3]) / 1000.0) else ""
-            if (PartyUtil.isInParty()) Kuudra.party("${sp.name} Casted at ${p.x}, ${p.y}, ${p.z}$t!")
+            if (PartyTools.isInParty()) Kuudra.party("${sp.name} Casted at ${p.x}, ${p.y}, ${p.z}$t!")
             break
         }
         if (S.kuudraBossMaster && S.kuudraIchorArea) ICHOR.matchEntire(msg)?.let { m ->
@@ -132,7 +132,7 @@ object KuudraExtras {
         if (rendShow > 0) rendShow--
         if (boneLeft > 0 && --boneLeft == 0) {
             rendShow = 20
-            if (S.kuudraBackboneSound) Misc.sendSound2D(SoundEvents.NOTE_BLOCK_BELL.value(), 2f, 1f)
+            if (S.kuudraBackboneSound) FishUtil.sendSound2D(SoundEvents.NOTE_BLOCK_BELL.value(), 2f, 1f)
         }
         if (stunPhase && playerInStomach()) { stunPhase = false; eaten = true }
         rend(mc)
@@ -174,7 +174,7 @@ object KuudraExtras {
 
     private fun fills(ps: PoseStack, vc: VertexConsumer) {
         val sp = stunPos()
-        if (sp != null && S.kuudraStunStyle != "Outline") RenderUtils.fillBox(ps, vc, podBox(sp), Mining.alpha(S.kuudraStunColor, 25))
+        if (sp != null && S.kuudraStunStyle != "Outline") FishDraw.fillBox(ps, vc, podBox(sp), Mining.alpha(S.kuudraStunColor, 25))
     }
 
     private fun lines(ps: PoseStack, vc: VertexConsumer) {
@@ -184,7 +184,7 @@ object KuudraExtras {
             val n = 64
             for (i in 0 until n) {
                 val a0 = 2 * Math.PI * i / n; val a1 = 2 * Math.PI * (i + 1) / n
-                RenderUtils.screenLine(ps, vc, Vec3(p.center.x + 8 * cos(a0), p.center.y, p.center.z + 8 * sin(a0)),
+                FishDraw.screenLine(ps, vc, Vec3(p.center.x + 8 * cos(a0), p.center.y, p.center.z + 8 * sin(a0)),
                     Vec3(p.center.x + 8 * cos(a1), p.center.y, p.center.z + 8 * sin(a1)), S.kuudraIchorColor, 2f)
             }
         }

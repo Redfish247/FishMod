@@ -2,9 +2,9 @@ package fishmod.features.dungeon
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
@@ -88,7 +88,7 @@ object PbMessages {
         val r = submit(key, seconds) ?: return null
         if (!FishSettings.pbMessagesEnabled || !enabled) return r
         if (!r.isPb && FishSettings.pbMessagesOnlyPb) return r
-        Misc.addChatMessage(Component.empty().append(label).append(Component.literal(" §e${fmt(seconds)}")).append(tag(r)))
+        FishUtil.addChatMessage(Component.empty().append(label).append(Component.literal(" §e${fmt(seconds)}")).append(tag(r)))
         return r
     }
 
@@ -106,7 +106,7 @@ object PbMessages {
             }
         } catch (e: Exception) {
             FishDiag.fail("PbMessages.2", "loading personal_bests.json failed", e)
-            Debug.LOGGER.warn("[PbMessages] load failed: {}", e.toString())
+            FishDebug.LOGGER.warn("[PbMessages] load failed: {}", e.toString())
         }
     }
 
@@ -118,7 +118,7 @@ object PbMessages {
                 Files.writeString(FILE, json)
             } catch (e: Exception) {
                 FishDiag.fail("PbMessages.3", "saving personal_bests.json failed", e)
-                Debug.LOGGER.warn("[PbMessages] save failed: {}", e.toString())
+                FishDebug.LOGGER.warn("[PbMessages] save failed: {}", e.toString())
             }
         }
     }

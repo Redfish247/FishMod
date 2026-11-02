@@ -2,9 +2,9 @@ package fishmod.features.dungeon.f6
 
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -27,7 +27,7 @@ object TerracottaTimer {
 
     @JvmStatic
     fun init() {
-        Events.ON_PACKET.register { packet ->
+        FishEvents.ON_PACKET.register { packet ->
             if (!active()) return@register false
             try {
                 when (packet) {
@@ -38,18 +38,18 @@ object TerracottaTimer {
             false
         }
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.ON_SERVER_TICK.register {
             spawning.removeIf { it.time -= 0.05f; it.time <= 0f }
             false
         }
 
-        Events.ON_WORLD_CHANGE.register { spawning.clear(); false }
+        FishEvents.ON_WORLD_CHANGE.register { spawning.clear(); false }
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!active() || spawning.isEmpty()) return@register
             try {
                 for (t in spawning) {
-                    RenderUtils.gizmoText(
+                    FishDraw.gizmoText(
                         Component.literal("§${color(t.time)}%.1fs".format(t.time)),
                         Vec3(t.pos.x + 0.5, t.pos.y + 1.5, t.pos.z + 0.5), 1f, -0x1,
                     )

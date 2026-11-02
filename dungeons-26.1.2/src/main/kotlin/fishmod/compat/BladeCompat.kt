@@ -23,7 +23,7 @@ object BladeCompat {
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
         told = true
-        fishmod.utils.Misc.addChatMessage(Component.literal(
+        fishmod.utils.FishUtil.addChatMessage(Component.literal(
             "§7Blade Addons detected, paused to avoid doubles: §f" + pausedFeatures.joinToString("§7, §f")
         ))
     }

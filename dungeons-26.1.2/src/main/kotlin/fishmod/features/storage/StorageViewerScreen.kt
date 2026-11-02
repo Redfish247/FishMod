@@ -79,7 +79,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
 
     private fun matches(stack: ItemStack, q: String): Boolean =
         !stack.isEmpty && searchNames.getOrPut(stack) {
-            stack.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase()
+            stack.hoverName.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").lowercase()
         }.contains(q)
 
     override fun paintUiOverlay() {

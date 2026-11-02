@@ -104,8 +104,8 @@ class InventoryButtonEditScreen(private val b: InvButton, private val parent: Sc
     }
 
     override fun onClose() {
-        if (deleted) InventoryButton.buttons.remove(b) else apply()
-        InventoryButton.save()
+        if (deleted) InvShortcutButtons.buttons.remove(b) else apply()
+        InvShortcutButtons.save()
         Minecraft.getInstance().showScreen(parent)
     }
 }

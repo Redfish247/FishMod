@@ -1,8 +1,8 @@
 package fishmod.features.mining
 
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -31,7 +31,7 @@ object MiningAbilities {
     private var maniacBlocks = 0
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             val s = Mining.strip(text.string).trim()
             READY.find(s)?.let { m ->
                 val ab = m.groupValues[1]
@@ -48,11 +48,11 @@ object MiningAbilities {
         Mining.breakListeners += Mining.BreakListener { _, _, _ -> if (maniacActive()) maniacBlocks++ }
         ClientTickEvents.END_CLIENT_TICK.register { tickPickobulus() }
 
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!(S.miningAbilities && S.miningPickobulus) || pickBlocks.isEmpty()) return@register
             for (p in pickBlocks) {
                 val b = AABB(p)
-                if (S.miningPickobulusOpacity > 0) RenderUtils.fillBox(ps, vc, b, Mining.alpha(S.miningPickobulusColor, S.miningPickobulusOpacity))
+                if (S.miningPickobulusOpacity > 0) FishDraw.fillBox(ps, vc, b, Mining.alpha(S.miningPickobulusColor, S.miningPickobulusOpacity))
                 Mining.outline(ps, vc, b, Mining.alpha(S.miningPickobulusColor, 100), 1.5f)
             }
         }

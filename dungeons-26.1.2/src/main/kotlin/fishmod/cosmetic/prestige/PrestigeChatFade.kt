@@ -2,7 +2,7 @@ package fishmod.cosmetic.prestige
 import fishmod.compat.hud
 
 import fishmod.utils.debug.FishDiag
-import fishmod.mixin.ChatHudInvoker
+import fishmod.mixin.FishChatInvoker
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -30,7 +30,7 @@ object PrestigeChatFade {
         val hud = mc.hud?.chat ?: return
         val nowTick = mc.hud.guiTicks
 
-        val invoker = hud as ChatHudInvoker
+        val invoker = hud as FishChatInvoker
         val messages = invoker.messages
         if (messages == null || messages.isEmpty()) return
 

@@ -2,11 +2,11 @@ package fishmod.features
 import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
+import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.dungeon.RunHistory
-import fishmod.utils.dungeon.Split
+import fishmod.utils.dungeon.RunSplit
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -16,7 +16,7 @@ object PbPaceHud {
 
     @JvmStatic
     fun isVisible(): Boolean =
-        FishSettings.pbPaceEnabled && Phase.runStarted() && Phase.getCurrentSplits().isNotEmpty()
+        FishSettings.pbPaceEnabled && BossPhase.runStarted() && BossPhase.getCurrentSplits().isNotEmpty()
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
@@ -24,7 +24,7 @@ object PbPaceHud {
         try {
             renderInner(ctx)
         } catch (t: Throwable) {
-            FishDiag.fail("PbPaceHud.1", "PB pace HUD render failed floor=${Phase.getFloor()}", t)
+            FishDiag.fail("PbPaceHud.1", "PB pace HUD render failed floor=${BossPhase.getFloor()}", t)
         }
     }
 
@@ -32,15 +32,15 @@ object PbPaceHud {
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
         if (mc.curScreen != null && mc.curScreen !is ChatScreen) return
-        if (!Phase.runStarted()) return
+        if (!BossPhase.runStarted()) return
 
-        val splits: List<Split> = Phase.getCurrentSplits()
+        val splits: List<RunSplit> = BossPhase.getCurrentSplits()
         if (splits.isEmpty()) return
-        val floor = Phase.getFloor()
+        val floor = BossPhase.getFloor()
 
         var cumDelta = 0.0
         var anyPb = false
-        var last: Split? = null
+        var last: RunSplit? = null
         var lastDelta = 0.0
         var lastHasPb = false
 
@@ -63,7 +63,7 @@ object PbPaceHud {
         val x = FishSettings.pbPaceHudX
         val y = FishSettings.pbPaceHudY
         val sc = FishSettings.pbPaceScale.toFloat()
-        val lh = Constants.TEXT_HEIGHT + 1
+        val lh = FishConstants.TEXT_HEIGHT + 1
 
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
@@ -80,7 +80,7 @@ object PbPaceHud {
     }
 
     private fun signed(d: Double): String {
-        val num = Constants.DECIMAL_FORMAT.format(Math.abs(d))
+        val num = FishConstants.DECIMAL_FORMAT.format(Math.abs(d))
         return if (d <= 0) "§a-" + num + "s" else "§c+" + num + "s"
     }
 }

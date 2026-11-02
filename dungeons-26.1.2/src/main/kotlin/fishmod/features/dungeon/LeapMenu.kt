@@ -6,10 +6,10 @@ import fishmod.features.dungeon.map.DungeonPlayers
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.features.dungeon.map.MapHud
 import fishmod.features.dungeon.map.Scan
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.DungeonClass
+import fishmod.utils.dungeon.DungeonRole
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -22,14 +22,14 @@ import org.lwjgl.glfw.GLFW
 object LeapMenu {
 
     private val NAME_RX = Regex("(?:\\[.+?] )?(\\w{1,16})")
-    private data class Target(val slot: Int, val name: String, val clazz: DungeonClass?, val dead: Boolean)
+    private data class Target(val slot: Int, val name: String, val clazz: DungeonRole?, val dead: Boolean)
 
     private var cache: List<Target> = emptyList()
     private var cacheScreen: AbstractContainerScreen<*>? = null
     private var cacheAt = 0L
 
     private val TABLIST_RX = Regex("^\\[(\\d+)] (?:\\[\\w+] )*(\\w+) .*?\\((\\w+)(?: (\\w+))*\\)$")
-    private val teammateClasses = HashMap<String, DungeonClass>()
+    private val teammateClasses = HashMap<String, DungeonRole>()
     private var lastLevel: Any? = null
 
     private fun refreshTeammateClasses() {
@@ -42,13 +42,13 @@ object LeapMenu {
             val m = TABLIST_RX.find(line) ?: continue
             val name = m.groupValues[2]
             if (teammateClasses.containsKey(name)) continue
-            val cls = runCatching { DungeonClass.valueOf(m.groupValues[3].uppercase()) }.getOrNull() ?: continue
+            val cls = runCatching { DungeonRole.valueOf(m.groupValues[3].uppercase()) }.getOrNull() ?: continue
             teammateClasses[name] = cls
         }
     }
 
     private fun isLeapMenu(screen: AbstractContainerScreen<*>): Boolean {
-        if (!FishSettings.leapMenuEnabled || !Location.inDungeon()) return false
+        if (!FishSettings.leapMenuEnabled || !SkyblockLocation.inDungeon()) return false
         val t = screen.title.string
         return t == "Spirit Leap" || t == "Teleport to Player"
     }
@@ -76,7 +76,7 @@ object LeapMenu {
             if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) continue
             val name = NAME_RX.find(TextStrip.plain(stack.hoverName.string))?.groupValues?.get(1) ?: continue
             val dp = DungeonPlayers.get(name)
-            val clazz = teammateClasses[name] ?: dpClass(dp) ?: DungeonClass.getClass(name)
+            val clazz = teammateClasses[name] ?: dpClass(dp) ?: DungeonRole.getClass(name)
             out.add(Target(i, name, clazz, dp?.isDead() == true))
         }
         return when (FishSettings.leapMenuSort) {
@@ -89,18 +89,18 @@ object LeapMenu {
         }
     }
 
-    private fun homeQuadrant(c: DungeonClass?): Int = when (c) {
-        DungeonClass.ARCHER -> 0
-        DungeonClass.BERSERK -> 1
-        DungeonClass.HEALER -> 2
-        DungeonClass.TANK -> 3
-        DungeonClass.MAGE -> 3
+    private fun homeQuadrant(c: DungeonRole?): Int = when (c) {
+        DungeonRole.ARCHER -> 0
+        DungeonRole.BERSERK -> 1
+        DungeonRole.HEALER -> 2
+        DungeonRole.TANK -> 3
+        DungeonRole.MAGE -> 3
         else -> -1
     }
-    private fun classPriority(c: DungeonClass?): Int = when (c) {
-        DungeonClass.BERSERK -> 0
-        DungeonClass.TANK -> 1
-        DungeonClass.ARCHER, DungeonClass.HEALER, DungeonClass.MAGE -> 2
+    private fun classPriority(c: DungeonRole?): Int = when (c) {
+        DungeonRole.BERSERK -> 0
+        DungeonRole.TANK -> 1
+        DungeonRole.ARCHER, DungeonRole.HEALER, DungeonRole.MAGE -> 2
         else -> 3
     }
     private val EMPTY_TARGET = Target(-1, "", null, true)
@@ -115,8 +115,8 @@ object LeapMenu {
         }
         for (i in 0..3) if (result[i] == null && overflow.isNotEmpty()) result[i] = overflow.removeFirst()
         val out = result.map { it ?: EMPTY_TARGET }
-        if (fishmod.utils.debug.Debug.leapDebug) {
-            fishmod.utils.debug.Debug.LOGGER.info(
+        if (fishmod.utils.debug.FishDebug.leapDebug) {
+            fishmod.utils.debug.FishDebug.LOGGER.info(
                 "[LeapMenu] odinSort in={} -> TL={} TR={} BL={} BR={}",
                 players.map { "${it.name}:${it.clazz}" },
                 "${out[0].name}:${out[0].clazz}", "${out[1].name}:${out[1].clazz}",
@@ -126,8 +126,8 @@ object LeapMenu {
         return out
     }
 
-    private fun dpClass(dp: DungeonPlayers.DungeonPlayer?): DungeonClass? =
-        dp?.clazz?.let { c -> runCatching { DungeonClass.valueOf(c.uppercase()) }.getOrNull() }
+    private fun dpClass(dp: DungeonPlayers.DungeonPlayer?): DungeonRole? =
+        dp?.clazz?.let { c -> runCatching { DungeonRole.valueOf(c.uppercase()) }.getOrNull() }
 
     private fun scale(): Float = (FishSettings.leapMenuScale.coerceIn(40, 220) / 100f)
 
@@ -190,7 +190,7 @@ object LeapMenu {
 
         val hov = nearestMarker(mouseX, mouseY)
         for (m in out) {
-            val col = 0xFF000000.toInt() or (DungeonClass.getColor(m.target.clazz) and 0xFFFFFF)
+            val col = 0xFF000000.toInt() or (DungeonRole.getColor(m.target.clazz) and 0xFFFFFF)
             val r = if (m === hov) 9 else 7
             ctx.fill(m.x - r, m.y - r, m.x + r, m.y - r + 1, col)
             ctx.fill(m.x - r, m.y + r - 1, m.x + r, m.y + r, col)
@@ -234,7 +234,7 @@ object LeapMenu {
         val rad = (6 * scale()).toInt().coerceIn(3, 12)
         cache.forEachIndexed { i, t ->
             val r = rects[i]
-            val classCol = DungeonClass.getColor(t.clazz) and 0xFFFFFF
+            val classCol = DungeonRole.getColor(t.clazz) and 0xFFFFFF
             var bg = 0xCC1E1E1E.toInt()
             if (i == hov) bg = 0xE0333333.toInt()
             if (FishSettings.leapMenuTintDead && t.dead) bg = if (i == hov) 0xE0662222.toInt() else 0xCC4A1E1E.toInt()

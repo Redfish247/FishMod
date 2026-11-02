@@ -1,11 +1,11 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Misc
-import fishmod.utils.config.values.Dungeons
+import fishmod.utils.FishUtil
+import fishmod.utils.config.values.DungeonSettings
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.DungeonClass
-import fishmod.utils.events.Events
+import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
@@ -24,13 +24,13 @@ object LeapAnnounce {
 
     @JvmStatic
     fun init() {
-        Events.ON_LEAP.register { _ ->
+        FishEvents.ON_LEAP.register { _ ->
             if (FishSettings.leapHidePlayers) hideUntil = System.currentTimeMillis() + (FishSettings.leapHidePlayersSeconds * 1000).toLong()
             false
         }
-        Events.ON_LEAP.register { message ->
-            if (!Dungeons.enableLeapMessages) return@register false
-            val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+        FishEvents.ON_LEAP.register { message ->
+            if (!DungeonSettings.enableLeapMessages) return@register false
+            val s = message.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
             val m = TARGET.matcher(s)
             if (!m.find()) {
                 FishDiag.fail("LeapAnnounce.1", "leap message without a target: '$s'")
@@ -38,14 +38,14 @@ object LeapAnnounce {
             }
             try {
                 val target = m.group(1).trim()
-                val clazz = DungeonClass.getClass(target)
-                if (clazz == null && fishmod.utils.Location.inDungeon()) FishDiag.fail("LeapAnnounce.3", "no dungeon class known for leap target '$target'")
+                val clazz = DungeonRole.getClass(target)
+                if (clazz == null && fishmod.utils.SkyblockLocation.inDungeon()) FishDiag.fail("LeapAnnounce.3", "no dungeon class known for leap target '$target'")
                 val className = clazz?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "?"
-                val classLetter = DungeonClass.getChar(clazz)
+                val classLetter = DungeonRole.getChar(clazz)
                 fun fill(t: String) = t.replace("{name}", target).replace("{class}", className).replace("{c}", classLetter)
                 if (FishSettings.leapMessagesTitle) {
                     val msg = fill(FishSettings.leapMessagesText.replace("&", "§"))
-                    Misc.forceTitle(Component.literal(msg), Component.empty())
+                    FishUtil.forceTitle(Component.literal(msg), Component.empty())
                 }
                 if (FishSettings.leapMessagesParty) {
                     val plain = fill(

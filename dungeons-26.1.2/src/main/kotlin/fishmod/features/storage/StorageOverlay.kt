@@ -92,7 +92,7 @@ object StorageOverlay {
         val title = screen.title
         if (title === titleFor) return
         titleFor = title
-        val t = title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+        val t = title.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
         titlePage = StoragePage.fromTitle(t)
         titleIsStorage = StoragePage.isOverviewTitle(t) || titlePage != null
     }

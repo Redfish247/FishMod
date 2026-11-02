@@ -50,7 +50,7 @@ class R3UtilFormatTest {
     }
 
     @Test fun renderFormatNumberRollover() {
-        val f = Class.forName("fishmod.utils.rendering.RenderUtils")
+        val f = Class.forName("fishmod.utils.rendering.FishDraw")
         val o = f.getField("INSTANCE").get(null)
         val m = f.getDeclaredMethod("wholeOrDecimal", Float::class.java).apply { isAccessible = true }
         assertEquals("5", m.invoke(o, 5f))

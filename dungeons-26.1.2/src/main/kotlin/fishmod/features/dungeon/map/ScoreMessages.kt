@@ -2,7 +2,7 @@ package fishmod.features.dungeon.map
 import fishmod.compat.hudHidden
 
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.DungeonMapSettings
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -78,7 +78,7 @@ object ScoreMessages {
     }
 
     private fun sendClientMessage(raw: String?, time: String) {
-        Misc.addChatMessage(net.minecraft.network.chat.Component.literal((raw ?: "").replace("<time>", time).replace('&', '§')))
+        FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal((raw ?: "").replace("<time>", time).replace('&', '§')))
     }
 
     private fun chatText(raw: String?, time: String): String {

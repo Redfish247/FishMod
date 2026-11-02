@@ -3,13 +3,13 @@ import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -41,7 +41,7 @@ object SpringBoots {
 
     private fun wearingSpringBoots(): Boolean {
         val p = Minecraft.getInstance().player ?: return false
-        return FishDiag.guard("SpringBoots.1", "boots id lookup failed") { ItemUtil.getId(p.getItemBySlot(EquipmentSlot.FEET)) == "SPRING_BOOTS" } ?: false
+        return FishDiag.guard("SpringBoots.1", "boots id lookup failed") { ItemTools.getId(p.getItemBySlot(EquipmentSlot.FEET)) == "SPRING_BOOTS" } ?: false
     }
 
     @JvmStatic
@@ -54,8 +54,8 @@ object SpringBoots {
             { FishSettings.springBootsScale }, { v -> FishSettings.springBootsScale = v }
         )
 
-        Events.ON_SOUND.register { event, _, pitch ->
-            if (!FishSettings.springBootsEnabled || !Location.inSkyblock()) return@register false
+        FishEvents.ON_SOUND.register { event, _, pitch ->
+            if (!FishSettings.springBootsEnabled || !SkyblockLocation.inSkyblock()) return@register false
             val p = Minecraft.getInstance().player ?: return@register false
             if (!p.onGround()) return@register false
             when (event.location) {
@@ -75,10 +75,10 @@ object SpringBoots {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!FishSettings.springBootsEnabled) return@register
             val p = mc.player ?: return@register
-            if (!p.isCrouching || !wearingSpringBoots() || !Location.inSkyblock()) reset()
+            if (!p.isCrouching || !wearingSpringBoots() || !SkyblockLocation.inSkyblock()) reset()
         }
 
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> renderBox(m, vc) }
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc -> renderBox(m, vc) }
     }
 
     private fun renderBox(matrices: PoseStack, vc: VertexConsumer) {
@@ -87,7 +87,7 @@ object SpringBoots {
         val y = p.y + currentHeight
         val box = AABB(p.x - 0.5, y, p.z - 0.5, p.x + 0.5, y + 1.0, p.z + 0.5)
         try {
-            RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(FishSettings.springBootsBoxColor))
+            FishDraw.renderOutline(matrices, vc, box, FishDraw.toFloats(FishSettings.springBootsBoxColor))
         } catch (e: Exception) {
             FishDiag.fail("SpringBoots.3", "spring boots box render failed (h=$currentHeight)", e)
         }

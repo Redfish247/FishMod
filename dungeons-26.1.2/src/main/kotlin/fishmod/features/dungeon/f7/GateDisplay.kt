@@ -1,13 +1,13 @@
 package fishmod.features.dungeon.f7
 
 import com.mojang.blaze3d.vertex.PoseStack
-import fishmod.utils.Constants
-import fishmod.utils.Location
-import fishmod.utils.config.values.Floor7
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.dungeon.Section
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.config.values.Floor7Settings
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.dungeon.GoldorSection
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
@@ -35,10 +35,10 @@ object GateDisplay {
 
     @JvmStatic
     fun init() {
-        Events.ON_LOCATION_CHANGE.register { _ -> reset(); armed = false; lastTermTime = 0.0; false }
-        Events.ON_PHASE_CHANGE.register {
-            if (Phase.inTerminals()) {
-                val t = Phase.getPhaseTime(6)
+        FishEvents.ON_LOCATION_CHANGE.register { _ -> reset(); armed = false; lastTermTime = 0.0; false }
+        FishEvents.ON_PHASE_CHANGE.register {
+            if (BossPhase.inTerminals()) {
+                val t = BossPhase.getPhaseTime(6)
                 if (!armed || t < lastTermTime - 1.0) {
                     reset()
                     show(0)
@@ -52,21 +52,21 @@ object GateDisplay {
             }
             false
         }
-        Events.ON_SECTION_CHANGE.register {
-            if (!Location.inDungeon()) return@register false
-            val s = Section.getSection()
+        FishEvents.ON_SECTION_CHANGE.register {
+            if (!SkyblockLocation.inDungeon()) return@register false
+            val s = GoldorSection.getSection()
             FishDiag.check(s in 1..5, "GateDisplay.1") { "section change to out-of-range section $s" }
             if (s == 2 || s == 3) show(s - 1)
             false
         }
-        Events.ON_GAME_MESSAGE.register { message ->
-            if (Floor7.gateDisplayEnabled && Location.inDungeon() && Phase.inTerminals()
+        FishEvents.ON_GAME_MESSAGE.register { message ->
+            if (Floor7Settings.gateDisplayEnabled && SkyblockLocation.inDungeon() && BossPhase.inTerminals()
                 && message.string == GATE_MESSAGE
             ) {
-                if (fishmod.utils.debug.Debug.termInfo) {
+                if (fishmod.utils.debug.FishDebug.termInfo) {
                     val p = net.minecraft.client.Minecraft.getInstance().player?.position()
-                    fishmod.utils.Misc.addChatMessage(Component.literal(
-                        "[GateDisplay] destroyed at section=${Section.getSection()} you@" +
+                    fishmod.utils.FishUtil.addChatMessage(Component.literal(
+                        "[GateDisplay] destroyed at section=${GoldorSection.getSection()} you@" +
                             "${p?.x?.let { "%.1f".format(it) }}, ${p?.y?.let { "%.1f".format(it) }}, ${p?.z?.let { "%.1f".format(it) }}" +
                             " state=${state.toList()}"
                     ))
@@ -75,8 +75,8 @@ object GateDisplay {
             }
             false
         }
-        fishmod.utils.rendering.RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
-            if (!Floor7.gateDisplayEnabled || !Location.inDungeon() || !Phase.inTerminals()) return@register
+        fishmod.utils.rendering.RenderHooks.NO_DEPTH_LINE.register { ctx, matrices, _ ->
+            if (!Floor7Settings.gateDisplayEnabled || !SkyblockLocation.inDungeon() || !BossPhase.inTerminals()) return@register
             if (state.all { it == GateState.HIDDEN }) return@register
             try { render(ctx, matrices) } catch (e: Exception) { FishDiag.fail("GateDisplay.2", "gate display render threw (state=${state.toList()})", e) }
         }
@@ -101,15 +101,15 @@ object GateDisplay {
     }
 
     private fun render(ctx: LevelRenderContext, matrices: PoseStack) {
-        if (!Floor7.gateDisplayEnabled || !Location.inDungeon()) return
-        val i = Section.getSection() - 1
+        if (!Floor7Settings.gateDisplayEnabled || !SkyblockLocation.inDungeon()) return
+        val i = GoldorSection.getSection() - 1
         if (i !in GATE_POS.indices) return
         val text = when (state[i]) {
-            GateState.DESTROY -> styled("✖", Constants.RED)
-            GateState.DONE -> styled("✔", Constants.GREEN)
+            GateState.DESTROY -> styled("✖", FishConstants.RED)
+            GateState.DONE -> styled("✔", FishConstants.GREEN)
             GateState.HIDDEN -> return
         }
-        RenderUtils.renderText(ctx, matrices, text, GATE_POS[i], Floor7.gateDisplayScale)
+        FishDraw.renderText(ctx, matrices, text, GATE_POS[i], Floor7Settings.gateDisplayScale)
     }
 
     private fun styled(symbol: String, argb: Int): Component =

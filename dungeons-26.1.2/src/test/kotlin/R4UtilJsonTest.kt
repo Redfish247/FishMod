@@ -4,7 +4,7 @@ import fishmod.features.achievements.AchLeaderboard
 import fishmod.features.item.NeuItems
 import fishmod.utils.ChatQueue
 import fishmod.utils.HypixelApi
-import fishmod.utils.JsonUtility
+import fishmod.utils.FishJson
 import fishmod.utils.MayorApi
 import fishmod.utils.data.NeuRepo
 import fishmod.utils.networth.ItemsDb
@@ -74,7 +74,7 @@ class R4UtilJsonTest {
     }
 
     @Test fun jsonUtilityMissing() {
-        assertTrue(JsonUtility.readSplits("/does/not/exist.json").isEmpty())
+        assertTrue(FishJson.readSplits("/does/not/exist.json").isEmpty())
     }
 
     @Test fun chatQueueOrderAndDedup() {

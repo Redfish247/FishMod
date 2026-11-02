@@ -2,10 +2,10 @@ package fishmod.features.dungeon.f7
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -34,7 +34,7 @@ object StormOverAlert {
             HUD_W, HUD_H,
             { FishSettings.stormOverScale }, { v -> FishSettings.stormOverScale = v }
         )
-        Events.ON_WORLD_CHANGE.register { shownAt = 0L; ticksLeft = -1; false }
+        FishEvents.ON_WORLD_CHANGE.register { shownAt = 0L; ticksLeft = -1; false }
     }
 
     @JvmStatic
@@ -56,8 +56,8 @@ object StormOverAlert {
     @JvmStatic
     fun shouldHideServerCountdown(text: Component): Boolean {
         if (!FishSettings.stormOverEnabled || !FishSettings.stormOverHideServerCountdown) return false
-        if (!Location.inDungeon() || !Phase.inP2() || Phase.stormDead()) return false
-        return SERVER_COUNTDOWN.matches(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim())
+        if (!SkyblockLocation.inDungeon() || !BossPhase.inP2() || BossPhase.stormDead()) return false
+        return SERVER_COUNTDOWN.matches(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim())
     }
 
     @JvmStatic
@@ -70,7 +70,7 @@ object StormOverAlert {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
         val text = when {
-            FishSettings.stormOverCountdown && ticksLeft > 0 && Phase.inP2() && !Phase.stormDead() ->
+            FishSettings.stormOverCountdown && ticksLeft > 0 && BossPhase.inP2() && !BossPhase.stormDead() ->
                 "%.2f".format(ticksLeft / 20.0)
             shownAt != 0L && System.currentTimeMillis() - shownAt <= FishSettings.stormOverDurationMs ->
                 FishSettings.stormOverText.ifBlank { "Storm Over!" }

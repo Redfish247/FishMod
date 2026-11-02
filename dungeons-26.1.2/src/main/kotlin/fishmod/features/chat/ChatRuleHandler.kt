@@ -2,7 +2,7 @@ package fishmod.features.chat
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.TextStrip
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.DeltaTracker
@@ -20,7 +20,7 @@ object ChatRuleHandler {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
+        fishmod.utils.events.FishEvents.ON_GAME_MESSAGE.register { message ->
             if (!ChatRuleStore.isMasterEnabled()) return@register false
             val raw = TextStrip.plain(message.string)
             for (rule in ChatRuleStore.rules()) {
@@ -76,7 +76,7 @@ object ChatRuleHandler {
         val mc = Minecraft.getInstance()
 
         if (rule.chatMessage.isNotBlank()) {
-            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + rule.chatMessage))
+            FishUtil.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + rule.chatMessage))
         }
         if (rule.actionBarMessage.isNotBlank()) {
             mc.player?.sendOverlayMessage(Component.literal(rule.actionBarMessage))

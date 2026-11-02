@@ -9,7 +9,7 @@ import fishmod.features.item.ItemCustomizationStore.AnimatedDye
 import fishmod.features.item.ItemCustomizationStore.ArmorTrimId
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -64,7 +64,7 @@ object RemoteItems {
         for (i in 0 until p.inventory.containerSize) stacks.add(p.inventory.getItem(i))
         for (st in stacks) {
             if (st.isEmpty) continue
-            val uuid = ItemUtil.getUuid(st) ?: continue
+            val uuid = ItemTools.getUuid(st) ?: continue
             val c = ItemCustomizationStore.own(uuid)
             if (c.isEmpty()) continue
             val v = vanillaId(st)
@@ -136,7 +136,7 @@ object RemoteItems {
                 val v = vanillaId(st)
                 if (!customs.containsKey(v)) continue
                 val syn = synthetic(p.uuid.toString().replace("-", ""), v)
-                if (ItemUtil.getUuid(st) == syn) continue
+                if (ItemTools.getUuid(st) == syn) continue
                 val tag = st.get(DataComponents.CUSTOM_DATA)?.copyTag() ?: net.minecraft.nbt.CompoundTag()
                 tag.putString("uuid", syn)
                 st.set(DataComponents.CUSTOM_DATA, CustomData.of(tag))

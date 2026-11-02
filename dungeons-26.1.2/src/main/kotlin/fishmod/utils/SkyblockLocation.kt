@@ -1,0 +1,138 @@
+package fishmod.utils
+
+import fishmod.utils.debug.FishDebug
+import fishmod.utils.debug.FishDiag
+import fishmod.utils.events.FishEvents
+import net.hypixel.data.type.ServerType
+import net.hypixel.modapi.HypixelModAPI
+import net.hypixel.modapi.packet.impl.clientbound.event.ClientboundLocationPacket
+import net.minecraft.network.chat.Component
+
+enum class SkyblockLocation(val name2: String) {
+    UNKNOWN("Unknown"),
+    DUNGEON("Dungeon"),
+    DUNGEON_HUB("Dungeon Hub"),
+    PRIVATE_ISLAND("Private Island"),
+    HUB("Hub"),
+    GALATEA("Galatea"),
+    // own packet map names since the foraging/safari update (seen in error reports)
+    MOONGLADE_MARSH("Moonglade Marsh"),
+    TORRHUS_CANYON("Torrhus Canyon"),
+    LOTUS_ATOLL("Lotus Atoll"),
+    THE_PARK("The Park"),
+    THE_FARMING_ISLANDS("The Farming Islands"),
+    GOLD_MINE("Gold Mine"),
+    DEEP_CAVERNS("Deep Caverns"),
+    DWARVEN_MINES("Dwarven Mines"),
+    CRYSTAL_HOLLOWS("Crystal Hollows"),
+    SPIDERS_DEN("Spider's Den"),
+    THE_END("The End"),
+    CRIMSON_ISLE("Crimson Isle"),
+    GARDEN("Garden"),
+    THE_RIFT("The Rift"),
+    BACKWATER_BAYOU("Backwater Bayou"),
+    JERRYS_WORKSHOP("Jerry's Workshop"),
+    MINESHAFT("Mineshaft"),
+    DARK_AUCTION("Dark Auction"),
+    KUUDRA("Kuudra");
+
+    override fun toString(): String {
+        return "Location: " + name2 + " Last changed: " + (System.currentTimeMillis() - lastChanged) / 1000.0 + "s"
+    }
+
+    companion object {
+        private var currentLocation: SkyblockLocation = UNKNOWN
+        private var inSkyblockFlag: Boolean = false
+        private var detectedNewLocation: Boolean = false
+        private var lastChanged: Long = System.currentTimeMillis()
+        // Raw Hypixel server mode (e.g. "hub", "combat_1")
+        @JvmStatic var currentMode: String = ""
+            private set
+
+        @JvmStatic
+        fun init() {
+            val instance = HypixelModAPI.getInstance()
+            instance.createHandler(ClientboundLocationPacket::class.java) { packet ->
+                try {
+                    currentMode = packet.mode.orElse("")
+                    packet.map.ifPresent { locationName ->
+                        if (packet.serverType.isPresent) {
+                            val serverType: ServerType = packet.serverType.get()
+                            inSkyblockFlag = serverType.name == "SkyBlock"
+                        }
+
+                        changeLocation(getLocation(locationName))
+                    }
+                } catch (e: Throwable) {
+                    FishDiag.fail("Location.2", "location packet handling failed ($packet)", e)
+                }
+            }
+
+            instance.subscribeToEventPacket(ClientboundLocationPacket::class.java)
+
+            FishEvents.ON_WORLD_CHANGE.register {
+                detectedNewLocation = false
+                false
+            }
+        }
+
+        @JvmStatic
+        fun getLocation(locationName: String): SkyblockLocation {
+            var location: SkyblockLocation
+            // Hypixel names the dungeon run map "Catacombs"
+            if (locationName.equals("Catacombs", ignoreCase = true)) return DUNGEON
+            try {
+                location = valueOf(locationName.uppercase().replace(" ", "_").replace("'", ""))
+            } catch (e: IllegalArgumentException) {
+                if (inSkyblockFlag) FishDiag.fail("Location.1", "unknown SkyBlock location name '$locationName'")
+                location = UNKNOWN
+            }
+            return location
+        }
+
+        @JvmStatic
+        fun changeLocation(location: SkyblockLocation) {
+            currentLocation = location
+            detectedNewLocation = true
+            lastChanged = System.currentTimeMillis()
+            FishDebug.sendDebugMessage(Component.literal("Location: $currentLocation"))
+
+            try {
+                FishEvents.ON_LOCATION_CHANGE.invoke { locationChangeEvent -> locationChangeEvent.onLocationChange(currentLocation) }
+            } catch (e: Throwable) {
+                FishDiag.fail("Location.3", "location change listener threw for ${location.name2}", e)
+            }
+        }
+
+        private fun practiceModeDungeon(location: SkyblockLocation): Boolean =
+            fishmod.utils.dungeon.PracticeMode.active && location == DUNGEON
+
+        @JvmStatic
+        fun `in`(location: SkyblockLocation): Boolean {
+            if (practiceModeDungeon(location)) return true
+            if (!inSkyblockFlag) return false
+            return currentLocation == location
+        }
+
+        @JvmStatic
+        fun inDungeon(): Boolean {
+            if (practiceModeDungeon(DUNGEON)) return true
+            if (!inSkyblockFlag) return false
+            return currentLocation == DUNGEON
+        }
+
+        @JvmStatic
+        fun inDungeonHub(): Boolean = inSkyblockFlag && currentLocation == DUNGEON_HUB
+
+        // FishDebug-only: lets singleplayer test worlds pretend to be on SkyBlock (/fm debug skyblock on).
+        @JvmStatic
+        fun devSetSkyblock(on: Boolean) { inSkyblockFlag = on }
+
+        @JvmStatic
+        fun getCurrentLocation(): SkyblockLocation = currentLocation
+
+        @JvmStatic
+        fun inSkyblock(): Boolean = inSkyblockFlag || fishmod.utils.dungeon.PracticeMode.active
+
+    }
+}

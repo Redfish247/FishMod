@@ -1,6 +1,6 @@
 package fishmod.features
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
@@ -30,7 +30,7 @@ object BridgeBot {
             val plain = TextStrip.plain(message.string).trim()
             val m = pattern.matcher(plain)
             if (!m.matches()) return@register true
-            Misc.addChatMessage(Component.literal("§2Bridge > §r${m.group(1)}§r: ${m.group(2)}"))
+            FishUtil.addChatMessage(Component.literal("§2Bridge > §r${m.group(1)}§r: ${m.group(2)}"))
             false
         }
     }

@@ -4,12 +4,12 @@ import fishmod.compat.curScreen
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.mixin.accessors.KeyBindingAccessor
-import fishmod.utils.Keybinds
-import fishmod.utils.config.FolderUtility
+import fishmod.utils.FishKeys
+import fishmod.utils.config.FishPaths
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.rendering.DrawEvents
-import fishmod.utils.rendering.drawevents.SlotEvent
+import fishmod.utils.rendering.DrawHooks
+import fishmod.utils.rendering.drawevents.SlotDrawHook
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -25,7 +25,7 @@ import java.nio.file.Paths
 object SlotBinds {
 
     private const val DEFAULT = "Default"
-    private val FILE = Paths.get(FolderUtility.CONFIG_PATH + "slot_binds.txt")
+    private val FILE = Paths.get(FishPaths.CONFIG_PATH + "slot_binds.txt")
 
     private val profiles = LinkedHashMap<String, LinkedHashMap<Int, Int>>()
     private var previousSlot: Int? = null
@@ -33,7 +33,7 @@ object SlotBinds {
 
     @JvmStatic
     fun init() {
-        DrawEvents.INVENTORY_SLOT_AFTER.register(SlotEvent { ctx, _, x, y -> drawSlot(ctx, x, y) })
+        DrawHooks.INVENTORY_SLOT_AFTER.register(SlotDrawHook { ctx, _, x, y -> drawSlot(ctx, x, y) })
     }
 
     private fun activeName(): String = FishSettings.slotBindsProfile.trim().ifEmpty { DEFAULT }
@@ -132,7 +132,7 @@ object SlotBinds {
     }
 
     private fun bindKeyHeld(): Boolean {
-        val key = (Keybinds.slotBind as KeyBindingAccessor?)?.boundKey ?: return false
+        val key = (FishKeys.slotBind as KeyBindingAccessor?)?.boundKey ?: return false
         if (key == InputConstants.UNKNOWN) return false
         val handle = Minecraft.getInstance().window.handle()
         return when (key.type) {
@@ -201,7 +201,7 @@ object SlotBinds {
     fun onClose() { previousSlot = null }
 
     private fun feedback(msg: String) =
-        fishmod.utils.Misc.addChatMessage(Component.literal("§dSlot Binds §7» §r$msg"))
+        fishmod.utils.FishUtil.addChatMessage(Component.literal("§dSlot Binds §7» §r$msg"))
 
     private fun drawSlot(ctx: GuiGraphicsExtractor, x: Int, y: Int) {
         if (!FishSettings.slotBindsEnabled || !FishSettings.slotBindsShow) return
@@ -209,7 +209,7 @@ object SlotBinds {
         ensureLoaded()
         if (binds.isEmpty()) return
         val slots = screen.menu.slots
-        val self = DrawEvents.currentSlot ?: slots.firstOrNull { it.x == x && it.y == y } ?: return
+        val self = DrawHooks.currentSlot ?: slots.firstOrNull { it.x == x && it.y == y } ?: return
         val idx = self.index
         val invPartner = binds[idx]
         val partners = if (invPartner != null) listOf(invPartner) else binds.entries.filter { it.value == idx }.map { it.key }

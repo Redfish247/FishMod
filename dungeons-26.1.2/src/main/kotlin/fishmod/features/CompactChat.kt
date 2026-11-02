@@ -2,7 +2,7 @@ package fishmod.features
 import fishmod.compat.hud
 
 import fishmod.utils.debug.FishDiag
-import fishmod.mixin.ChatHudInvoker
+import fishmod.mixin.FishChatInvoker
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.ChatComponent
@@ -27,7 +27,7 @@ object CompactChat {
         if (mc.hud == null) return false
         val nowTick = mc.hud.guiTicks
 
-        val acc = hud as? ChatHudInvoker ?: run { FishDiag.fail("CompactChat.1", "ChatHudInvoker mixin not applied"); return false }
+        val acc = hud as? FishChatInvoker ?: run { FishDiag.fail("CompactChat.1", "ChatHudInvoker mixin not applied"); return false }
         val messages = acc.messages
         if (messages == null || messages.isEmpty()) return false
 
@@ -56,7 +56,7 @@ object CompactChat {
         return stripKey(line.content().string).also { keys[id] = line to it }
     }
 
-    private fun removeDisplayedLines(acc: ChatHudInvoker, index: Int, messageCount: Int): Boolean {
+    private fun removeDisplayedLines(acc: FishChatInvoker, index: Int, messageCount: Int): Boolean {
         val lines = acc.visibleMessages ?: return false
         var groups = 0
         var start = -1
@@ -73,14 +73,14 @@ object CompactChat {
     }
 
     private fun stripKey(s: String): String {
-        var plain = s.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+        var plain = s.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
         val m: Matcher = COUNT_SUFFIX.matcher(plain)
         if (m.find()) plain = plain.substring(0, m.start())
         return plain.trim()
     }
 
     private fun extractCount(s: String): Int {
-        val m = COUNT_SUFFIX.matcher(s.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
+        val m = COUNT_SUFFIX.matcher(s.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, ""))
         return if (m.find()) FishDiag.notNull(m.group(1).toIntOrNull(), "CompactChat.2") { "compact count '${m.group(1)}' overflowed" } ?: 1 else 1
     }
 

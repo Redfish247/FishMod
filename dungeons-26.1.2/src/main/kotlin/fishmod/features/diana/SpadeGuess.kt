@@ -1,6 +1,6 @@
 package fishmod.features.diana
 
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.world.phys.Vec3
@@ -23,13 +23,13 @@ object SpadeGuess {
     fun reset() { points.clear(); trailGuess = null }
 
     fun init() {
-        Events.ON_PARTICLE.register { p ->
+        FishEvents.ON_PARTICLE.register { p ->
             if (DianaSettings.dianaGuessing && DianaSettings.dianaSpadeGuess && Diana.inHub() && p.particle.type === ParticleTypes.DRIPPING_LAVA &&
                 p.count == 2 && (abs(p.maxSpeed + 0.5f) < 1e-4f || testTrail(p))
             ) onPoint(Vec3(p.x, p.y, p.z))
             false
         }
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
     }
 
     // /particle can't send a negative speed, so test worlds use speed 0 with no spread

@@ -5,8 +5,8 @@ import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.util.ARGB
 import net.minecraft.world.phys.AABB
@@ -17,12 +17,12 @@ object BlockOverlay {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!FishSettings.blockOverlayPhase) {
                 try { renderGizmo() } catch (t: Throwable) { FishDiag.fail("BlockOverlay.1", "block overlay gizmo render failed (mode ${FishSettings.blockOverlayMode})", t) }
             }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             if (FishSettings.blockOverlayPhase) {
                 try { renderNoDepth(m, vc, fill = true); renderNoDepth(m, vc, fill = false) } catch (t: Throwable) { FishDiag.fail("BlockOverlay.2", "block overlay no-depth render failed (mode ${FishSettings.blockOverlayMode})", t) }
             }
@@ -50,17 +50,17 @@ object BlockOverlay {
     private fun renderGizmo() {
         val box = targetBox() ?: return
         val mode = FishSettings.blockOverlayMode
-        if (mode != 0) RenderUtils.gizmoBox(box, fillArgb(), 0)
-        if (mode != 1) RenderUtils.gizmoThickOutline(box, FishSettings.blockOverlayOutlineColor, FishSettings.blockOverlayOutlineThickness)
+        if (mode != 0) FishDraw.gizmoBox(box, fillArgb(), 0)
+        if (mode != 1) FishDraw.gizmoThickOutline(box, FishSettings.blockOverlayOutlineColor, FishSettings.blockOverlayOutlineThickness)
     }
 
     private fun renderNoDepth(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
         val box = targetBox() ?: return
         val mode = FishSettings.blockOverlayMode
         if (fill) {
-            if (mode != 0) RenderUtils.renderFilled(matrices, vc, box, RenderUtils.toFloats(fillArgb()))
+            if (mode != 0) FishDraw.renderFilled(matrices, vc, box, FishDraw.toFloats(fillArgb()))
         } else {
-            if (mode != 1) RenderUtils.renderThickOutline(matrices, vc, box, RenderUtils.toFloats(FishSettings.blockOverlayOutlineColor), FishSettings.blockOverlayOutlineThickness)
+            if (mode != 1) FishDraw.renderThickOutline(matrices, vc, box, FishDraw.toFloats(FishSettings.blockOverlayOutlineColor), FishSettings.blockOverlayOutlineThickness)
         }
     }
 }

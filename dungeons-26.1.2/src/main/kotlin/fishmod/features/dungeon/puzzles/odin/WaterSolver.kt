@@ -3,9 +3,9 @@ package fishmod.features.dungeon.puzzles.odin
 import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -24,7 +24,7 @@ object WaterSolver {
             )
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Water solutions failed to load", e)
+        FishDebug.LOGGER.error("Water solutions failed to load", e)
         FishDiag.fail("WaterSolver.1", "waterSolutions.json failed to load", e)
         emptyMap()
     }
@@ -65,7 +65,7 @@ object WaterSolver {
             level.getBlockState(room.getRealCoords(BlockPos(14, 78, 27))).block == Blocks.QUARTZ_BLOCK -> 3
             else -> {
                 failed = true
-                Misc.addChatMessage(Component.literal("§cFailed to get Water Board pattern. Was the puzzle already started?"))
+                FishUtil.addChatMessage(Component.literal("§cFailed to get Water Board pattern. Was the puzzle already started?"))
                 return
             }
         }

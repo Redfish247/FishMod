@@ -3,9 +3,9 @@ import fishmod.compat.curScreen
 
 import fishmod.features.mining.Mining
 import fishmod.utils.FishMsg
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
@@ -38,8 +38,8 @@ object Visitors {
     private var tick = 0
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text -> Garden.inGarden() && onChat(Garden.strip(text.string).trim()) }
-        Events.ON_WORLD_CHANGE.register { shopping.clear(); false }
+        FishEvents.ON_GAME_MESSAGE.register { text -> Garden.inGarden() && onChat(Garden.strip(text.string).trim()) }
+        FishEvents.ON_WORLD_CHANGE.register { shopping.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || tick++ % 10 != 0) return@register
             if (!Garden.inGarden()) { count = 0; nextVisitor = ""; return@register }
@@ -69,7 +69,7 @@ object Visitors {
         }
 
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> tooltip(stack, lines) })
-        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             if (!S.gardenRareRewardWarn || stack.isEmpty || !isVisitorMenu()) return@register
             if (Garden.strip(stack.hoverName.string) == "Accept Offer" && rareIn(Garden.lore(stack)) != null)
                 ctx.fill(x, y, x + 16, y + 16, Mining.alpha(S.gardenRareRewardColor, 60))
@@ -186,7 +186,7 @@ object Visitors {
         for (i in 0 until inv.containerSize) {
             val st = inv.getItem(i)
             if (st.isEmpty) continue
-            if ((id != null && id.equals(ItemUtil.getId(st), true)) || Garden.strip(st.hoverName.string) == name) n += st.count
+            if ((id != null && id.equals(ItemTools.getId(st), true)) || Garden.strip(st.hoverName.string) == name) n += st.count
         }
         return n
     }

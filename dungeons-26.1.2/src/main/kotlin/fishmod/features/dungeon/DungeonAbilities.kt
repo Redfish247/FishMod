@@ -1,7 +1,7 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Location
-import fishmod.utils.Keybinds
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishKeys
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -13,10 +13,10 @@ object DungeonAbilities {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
             var ult = false
-            while (Keybinds.dungeonAbility.consumeClick()) ult = true
+            while (FishKeys.dungeonAbility.consumeClick()) ult = true
             var mini = false
-            while (Keybinds.dungeonAbilityMini.consumeClick()) mini = true
-            if (!FishSettings.dungeonAbilitiesEnabled || !Location.inDungeon()) return@EndTick
+            while (FishKeys.dungeonAbilityMini.consumeClick()) mini = true
+            if (!FishSettings.dungeonAbilitiesEnabled || !SkyblockLocation.inDungeon()) return@EndTick
 
             if (ult) drop(mc, fullStack = false)
             if (mini) drop(mc, fullStack = true)

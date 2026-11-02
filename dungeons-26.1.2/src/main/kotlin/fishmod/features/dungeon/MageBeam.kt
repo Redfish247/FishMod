@@ -2,12 +2,12 @@ package fishmod.features.dungeon
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.world.phys.Vec3
@@ -31,8 +31,8 @@ object MageBeam {
             }
         }
 
-        Events.ON_PARTICLE.register { packet ->
-            if (!FishSettings.mageBeamEnabled || !Location.inDungeon()) return@register false
+        FishEvents.ON_PARTICLE.register { packet ->
+            if (!FishSettings.mageBeamEnabled || !SkyblockLocation.inDungeon()) return@register false
             if (packet.particle.type !== ParticleTypes.FIREWORK) return@register false
             try {
                 val p = Vec3(packet.x, packet.y, packet.z)
@@ -50,10 +50,10 @@ object MageBeam {
             FishSettings.mageBeamHideParticles
         }
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (FishSettings.mageBeamDepth) try { renderGizmo() } catch (e: Exception) { FishDiag.fail("MageBeam.4", "mage beam gizmo render failed", e) }
         }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc ->
             if (!FishSettings.mageBeamDepth) try { render(m, vc) } catch (e: Exception) { FishDiag.fail("MageBeam.5", "mage beam line render failed", e) }
         }
     }
@@ -63,7 +63,7 @@ object MageBeam {
         val argb = FishSettings.mageBeamColor
         for (beam in beams) {
             if (beam.points.size < 8) continue
-            for (i in 1 until beam.points.size) RenderUtils.gizmoLine(beam.points[i - 1], beam.points[i], argb)
+            for (i in 1 until beam.points.size) FishDraw.gizmoLine(beam.points[i - 1], beam.points[i], argb)
         }
     }
 
@@ -75,11 +75,11 @@ object MageBeam {
 
     private fun render(matrices: PoseStack, vc: VertexConsumer) {
         if (!FishSettings.mageBeamEnabled) return
-        val rgba = RenderUtils.toFloats(FishSettings.mageBeamColor)
+        val rgba = FishDraw.toFloats(FishSettings.mageBeamColor)
         for (beam in beams) {
             if (beam.points.size < 8) continue
             for (i in 1 until beam.points.size) {
-                RenderUtils.renderLine(matrices, vc, beam.points[i - 1], beam.points[i], rgba)
+                FishDraw.renderLine(matrices, vc, beam.points[i - 1], beam.points[i], rgba)
             }
         }
     }

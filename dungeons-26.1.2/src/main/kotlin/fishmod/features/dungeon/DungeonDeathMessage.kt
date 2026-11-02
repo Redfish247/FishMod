@@ -1,9 +1,9 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
@@ -16,14 +16,14 @@ object DungeonDeathMessage {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { message ->
+        FishEvents.ON_GAME_MESSAGE.register { message ->
             try { onMessage(message) } catch (e: Exception) { FishDiag.fail("DungeonDeathMessage.1", "death message handling failed", e); false }
         }
     }
 
     private fun onMessage(message: Component): Boolean {
         if (!FishSettings.deathMessageEnabled) return false
-        if (Location.getCurrentLocation() != Location.DUNGEON) return false
+        if (SkyblockLocation.getCurrentLocation() != SkyblockLocation.DUNGEON) return false
 
         val raw = message.string
 

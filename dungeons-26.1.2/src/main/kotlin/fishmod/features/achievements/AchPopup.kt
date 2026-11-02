@@ -1,7 +1,7 @@
 package fishmod.features.achievements
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Scheduler
+import fishmod.utils.TickScheduler
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
@@ -137,7 +137,7 @@ object AchPopup {
 
     private fun note(id: String, vol: Float, pitch: Float, delay: Int) {
         val go = Runnable { SoundManager.play(SoundManager.preset(id), vol, pitch) }
-        if (delay <= 0) go.run() else Scheduler.scheduleTask(go, delay)
+        if (delay <= 0) go.run() else TickScheduler.scheduleTask(go, delay)
     }
 
     @JvmStatic

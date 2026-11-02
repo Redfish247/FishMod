@@ -1,7 +1,7 @@
 package fishmod.features.garden
 import fishmod.compat.curScreen
 
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.world.item.ItemStack
 import fishmod.features.garden.GardenExtraSettings as X
@@ -51,7 +51,7 @@ object GardenJeff {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.curScreen == null || !X.gardenJeff || !GardenExtras.inMenu("Manage Chips", "Jeff")) nextStack = null else pickNext()
         }
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!stack.isEmpty && stack === nextStack && X.gardenJeff)
                 ctx.fill(x, y, x + 16, y + 16, fishmod.features.mining.Mining.alpha(X.gardenJeffColor, 55))
         }

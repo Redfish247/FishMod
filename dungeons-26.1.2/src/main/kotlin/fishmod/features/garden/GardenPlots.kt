@@ -1,7 +1,7 @@
 package fishmod.features.garden
 
 import com.mojang.brigadier.arguments.StringArgumentType
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
@@ -18,7 +18,7 @@ object GardenPlots {
     private fun menu() = GardenExtras.inMenu("Plot", "Desk")
 
     fun init() {
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!X.gardenPlotIcons || stack.isEmpty || !menu()) return@register
             val n = PLOT.find(GardenExtras.name(stack))?.groupValues?.get(1) ?: return@register
             ctx.text(Minecraft.getInstance().font, n, x + 1, y + 1, X.gardenPlotIconColor, true)

@@ -2,9 +2,9 @@ package fishmod.features
 
 import fishmod.utils.debug.FishDiag
 import fishmod.mixin.accessors.LerpingBossEventAccessor
-import fishmod.utils.Location
-import fishmod.utils.config.values.Dungeons
-import fishmod.utils.dungeon.Phase
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.config.values.DungeonSettings
+import fishmod.utils.dungeon.BossPhase
 import net.minecraft.client.gui.components.LerpingBossEvent
 import net.minecraft.network.chat.Component
 import java.util.Locale
@@ -18,7 +18,7 @@ object BossBarFeature {
 
     @JvmStatic
     fun appendHealth(instance: LerpingBossEvent, name: Component): Component {
-        if (!Dungeons.bossHealthNumbers || !Location.inDungeon()) return name
+        if (!DungeonSettings.bossHealthNumbers || !SkyblockLocation.inDungeon()) return name
         val accessor = instance as? LerpingBossEventAccessor ?: run { FishDiag.fail("BossBarFeature.1", "LerpingBossEventAccessor mixin not applied"); return name }
         val percent = accessor.targetPercent
         if (name === lastName && percent == lastPercent) lastOut?.let { return it }
@@ -35,8 +35,8 @@ object BossBarFeature {
     }
 
     private fun getMaxHealth(nameComponent: Component): Float? {
-        val name = nameComponent.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
-        val floor = Phase.getFloor()
+        val name = nameComponent.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
+        val floor = BossPhase.getFloor()
         val master = floor?.startsWith("M", ignoreCase = true) == true
         val floorNum = floor?.filter { it.isDigit() }?.toFloatOrNull() ?: 0f
 

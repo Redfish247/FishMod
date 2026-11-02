@@ -1,7 +1,7 @@
 package fishmod.features.storage
 
 import fishmod.utils.HypixelApi
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
@@ -50,5 +50,5 @@ object StorageAutoLoader {
         }
     }
 
-    private fun msg(s: String) = Misc.addChatMessage(Component.literal(s))
+    private fun msg(s: String) = FishUtil.addChatMessage(Component.literal(s))
 }

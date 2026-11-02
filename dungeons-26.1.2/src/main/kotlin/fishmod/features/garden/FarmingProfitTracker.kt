@@ -8,7 +8,7 @@ import fishmod.features.ProfitTrackerKit.Row
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishMsg
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -68,8 +68,8 @@ object FarmingProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        Events.ON_WORLD_CHANGE.register { save(true); pending.clear(); rewardUntil = 0L; false }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_WORLD_CHANGE.register { save(true); pending.clear(); rewardUntil = 0L; false }
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (S.gardenProfit && Garden.inGarden()) runCatching { onChat(text) }
             false
         }

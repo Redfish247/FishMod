@@ -1,7 +1,7 @@
 package fishmod.features.rift
 
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -25,8 +25,8 @@ object RiftCaducousStem {
                     net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("stem").executes { debug(); 1 })))
         }
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 4 == 0) scan() }
-        fishmod.utils.events.Events.ON_WORLD_CHANGE.register { tops = emptyList(); false }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { tops = emptyList(); false }
+        RenderHooks.GIZMO.register { _ -> render() }
     }
 
     private fun scan() {
@@ -60,7 +60,7 @@ object RiftCaducousStem {
     private fun debug() {
         val mc = Minecraft.getInstance(); val level = mc.level ?: return
         val hit = mc.hitResult as? net.minecraft.world.phys.BlockHitResult
-        val say = { t: String -> fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(t)) }
+        val say = { t: String -> fishmod.utils.FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal(t)) }
         if (hit == null || hit.type != net.minecraft.world.phys.HitResult.Type.BLOCK) { say("§7[stem] not looking at a block"); return }
         for (dy in 0..14) {
             val p = hit.blockPos.above(dy)
@@ -71,6 +71,6 @@ object RiftCaducousStem {
     private fun render() {
         if (!S.riftStem) return
         val c = S.riftStemColor
-        for (p in tops) RenderUtils.gizmoBox(AABB(p), (c and 0xFFFFFF) or 0x60000000, c, false)
+        for (p in tops) FishDraw.gizmoBox(AABB(p), (c and 0xFFFFFF) or 0x60000000, c, false)
     }
 }

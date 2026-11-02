@@ -4,10 +4,10 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import fishmod.features.ActionBarCleaner;
 import fishmod.features.DarkMode;
-import fishmod.utils.Keybinds;
-import fishmod.utils.Location;
+import fishmod.utils.FishKeys;
+import fishmod.utils.SkyblockLocation;
 import fishmod.utils.config.values.FishSettings;
-import fishmod.utils.config.values.Visual;
+import fishmod.utils.config.values.VisualSettings;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class GuiMixin {
 
     @org.spongepowered.asm.mixin.Unique private static boolean fishmod$ab(boolean toggle) {
-        return FishSettings.actionBarEnabled && toggle && Location.inSkyblock();
+        return FishSettings.actionBarEnabled && toggle && SkyblockLocation.inSkyblock();
     }
 
     @ModifyVariable(method = "setOverlayMessage(Lnet/minecraft/network/chat/Component;Z)V",
@@ -59,7 +59,7 @@ public class GuiMixin {
     private void fishmod$chatPeek(ChatComponent chat, GuiGraphicsExtractor extractor, Font font, int tickCount,
                                    int mouseX, int mouseY, ChatComponent.DisplayMode mode, boolean focused,
                                    Operation<Void> original) {
-        if (Keybinds.chatPeekActive()) {
+        if (FishKeys.chatPeekActive()) {
             original.call(chat, extractor, font, tickCount, mouseX, mouseY, ChatComponent.DisplayMode.FOREGROUND, true);
         } else {
             original.call(chat, extractor, font, tickCount, mouseX, mouseY, mode, focused);
@@ -83,7 +83,7 @@ public class GuiMixin {
     @Inject(method = "extractRenderState", at = @At("HEAD"))
     private void fishmod$darkModePre(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
         try {
-            if (!Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
+            if (!VisualSettings.darkModeTintHud) DarkMode.drawOverlay(extractor);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("GuiMixin.2", "dark mode overlay (pre) failed", t);
         }
@@ -92,7 +92,7 @@ public class GuiMixin {
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$darkModePost(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
         try {
-            if (Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
+            if (VisualSettings.darkModeTintHud) DarkMode.drawOverlay(extractor);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("GuiMixin.3", "dark mode overlay (post) failed", t);
         }

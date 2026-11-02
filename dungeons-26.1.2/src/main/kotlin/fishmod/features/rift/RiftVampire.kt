@@ -1,10 +1,10 @@
 package fishmod.features.rift
 
-import fishmod.utils.Misc
-import fishmod.utils.data.EntityUtil
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.FishUtil
+import fishmod.utils.data.EntityTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.component.DataComponents
@@ -36,8 +36,8 @@ object RiftVampire {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
-        Events.ON_WORLD_CHANGE.register { reset(); skinCache.clear(); false }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        FishEvents.ON_WORLD_CHANGE.register { reset(); skinCache.clear(); false }
+        RenderHooks.GIZMO.register { _ -> render() }
     }
 
     private fun reset() { boss = null; canSteak = false; orbs = emptyList() }
@@ -57,11 +57,11 @@ object RiftVampire {
         boss = b
         canSteak = b != null && b.health <= b.getAttributeBaseValue(Attributes.MAX_HEALTH) * 0.2
         if (b != null && canSteak && S.riftVampireSteakTitle)
-            Misc.forceTitle(Component.literal("§c§lSTEAK!"), Component.empty(), 300)
+            FishUtil.forceTitle(Component.literal("§c§lSTEAK!"), Component.empty(), 300)
         if (b != null && S.riftVampireTwinclaws && tagsNear(b, "TWINCLAWS").any { TWINCLAWS.containsMatchIn(it) }) {
             val now = System.currentTimeMillis()
             if (now >= nextTwinclaws) {
-                Misc.forceTitle(Component.literal("§6§lTWINCLAWS"), Component.literal("§bFreeze it with Holy Ice!"), 1750)
+                FishUtil.forceTitle(Component.literal("§6§lTWINCLAWS"), Component.literal("§bFreeze it with Holy Ice!"), 1750)
                 nextTwinclaws = now + 5000
             }
         }
@@ -95,17 +95,17 @@ object RiftVampire {
     private fun render() {
         boss?.let { b ->
             if (!b.isAlive) return@let
-            val p = EntityUtil.getLerpedPos(b)
+            val p = EntityTools.getLerpedPos(b)
             if (S.riftVampireHighlight) {
                 val c = if (canSteak) S.riftVampireSteakColor else S.riftVampireColor
                 val box = b.boundingBox.move(p.x - b.x, p.y - b.y, p.z - b.z)
-                RenderUtils.gizmoBox(box, (c and 0xFFFFFF) or 0x30000000, c, true)
-                if (canSteak) RenderUtils.gizmoText(Component.literal("§c§lSTEAK!"), Vec3(p.x, p.y + b.bbHeight + 0.9, p.z), 1.5f, -1, true)
+                FishDraw.gizmoBox(box, (c and 0xFFFFFF) or 0x30000000, c, true)
+                if (canSteak) FishDraw.gizmoText(Component.literal("§c§lSTEAK!"), Vec3(p.x, p.y + b.bbHeight + 0.9, p.z), 1.5f, -1, true)
             }
             if (S.riftVampireLine) {
                 val me = Minecraft.getInstance().player ?: return@let
-                val eye = EntityUtil.getLerpedPos(me).add(0.0, me.eyeHeight.toDouble(), 0.0)
-                RenderUtils.gizmoLine(eye, p.add(0.0, b.bbHeight / 2.0, 0.0), S.riftVampireLineColor, 2f, true)
+                val eye = EntityTools.getLerpedPos(me).add(0.0, me.eyeHeight.toDouble(), 0.0)
+                FishDraw.gizmoLine(eye, p.add(0.0, b.bbHeight / 2.0, 0.0), S.riftVampireLineColor, 2f, true)
             }
         }
         for ((s, ichor) in orbs) {
@@ -113,9 +113,9 @@ object RiftVampire {
             val c = if (ichor) S.riftVampireIchorColor else S.riftVampireSpringColor
             val bp = s.blockPosition()
             val box = AABB(bp.x.toDouble(), bp.y + 2.0, bp.z.toDouble(), bp.x + 1.0, bp.y + 3.0, bp.z + 1.0)
-            RenderUtils.gizmoBox(box, (c and 0xFFFFFF) or 0x40000000, c, true)
+            FishDraw.gizmoBox(box, (c and 0xFFFFFF) or 0x40000000, c, true)
             val label = if (ichor) "§4Ichor" else "§4Spring"
-            RenderUtils.gizmoText(Component.literal(label), Vec3(bp.x + 0.5, bp.y + 2.5, bp.z + 0.5), 1.5f, -1, false)
+            FishDraw.gizmoText(Component.literal(label), Vec3(bp.x + 0.5, bp.y + 2.5, bp.z + 0.5), 1.5f, -1, false)
         }
     }
 }

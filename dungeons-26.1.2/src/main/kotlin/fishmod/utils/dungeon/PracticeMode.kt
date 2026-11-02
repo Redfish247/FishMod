@@ -1,11 +1,11 @@
 package fishmod.utils.dungeon
 
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -23,7 +23,7 @@ object PracticeMode {
             try { refresh(mc) } catch (t: Throwable) { FishDiag.fail("PracticeMode.1", "practice mode refresh on join", t) }
         })
         // The sim announces each boss end in chat; follow it so no manual /fmpractice is needed mid-run.
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (active) {
                 val s = text.string
                 if (s.startsWith("Goldor killed in") || s.startsWith("Goldor finished in")) phaseOverride = 8
@@ -48,7 +48,7 @@ object PracticeMode {
         active = addr.isNotEmpty() && ips().any { addr == it || addr.contains(it) }
         if (active && !was) {
             if (phaseOverride < 0) phaseOverride = 6
-            FishDiag.guard("PracticeMode.2", "fire practice location change") { Events.ON_LOCATION_CHANGE.invoke { it.onLocationChange(Location.DUNGEON) } }
+            FishDiag.guard("PracticeMode.2", "fire practice location change") { FishEvents.ON_LOCATION_CHANGE.invoke { it.onLocationChange(SkyblockLocation.DUNGEON) } }
             msg("§aPractice mode ON §7— phase §f${label(phaseOverride)}§7. §8/fmpractice for options")
         } else if (!active && was) {
             phaseOverride = -1
@@ -92,5 +92,5 @@ object PracticeMode {
         msg("phase → §f${label(p)}" + if (!active) " §8(takes effect on a practice server)" else "")
     }
 
-    private fun msg(s: String) = Misc.addChatMessage(Component.literal("§b[fmpractice] §7$s"))
+    private fun msg(s: String) = FishUtil.addChatMessage(Component.literal("§b[fmpractice] §7$s"))
 }

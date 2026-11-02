@@ -1,10 +1,10 @@
 package fishmod.features.garden
 import fishmod.compat.curScreen
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.TabListCache
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -82,7 +82,7 @@ object GardenLevels {
             if (tick++ % 20 == 0) { scanTab(); if (S.gardenHoeHud && Garden.inGarden()) scanHoe() else hoeLines = emptyList() }
             if (tick % 5 == 0) scanMenu()
         }
-        Events.ON_GAME_MESSAGE.register { t ->
+        FishEvents.ON_GAME_MESSAGE.register { t ->
             val m = if (Garden.inGarden() && S.gardenLevelXp > 0) GXP.find(Garden.strip(t.string)) else null
             if (m != null) {
                 S.gardenLevelXp += m.groupValues[1].replace(",", "").toLongOrNull() ?: 0
@@ -154,13 +154,13 @@ object GardenLevels {
     private fun checkLevelUp() {
         val l = levelOf(S.gardenLevelXp).first
         if (lastLevel in 0 until l && l > MAX_LEVEL && S.gardenLevelChat)
-            Misc.addChatMessage(Component.literal("§a§lGARDEN LEVEL UP! §7Overflow level §f$l §7(+${l - MAX_LEVEL})"))
+            FishUtil.addChatMessage(Component.literal("§a§lGARDEN LEVEL UP! §7Overflow level §f$l §7(+${l - MAX_LEVEL})"))
         lastLevel = l
     }
 
     private fun scanHoe() {
         val st = Minecraft.getInstance().player?.mainHandItem
-        if (st == null || st.isEmpty || !isHoe(ItemUtil.getId(st))) { hoeLines = emptyList(); return }
+        if (st == null || st.isEmpty || !isHoe(ItemTools.getId(st))) { hoeLines = emptyList(); return }
         val m = Garden.lore(st).firstNotNullOfOrNull { HOE_LEVEL.find(it) } ?: run { hoeLines = emptyList(); return }
         val lvl = m.groupValues[1].toInt()
         val max = m.groupValues[2].toIntOrNull()
@@ -174,6 +174,6 @@ object GardenLevels {
     @JvmStatic
     fun muteSound(instance: SoundInstance): Boolean {
         if (!S.gardenHoeMute || !instance.identifier.path.startsWith("item.hoe.")) return false
-        return isHoe(Minecraft.getInstance().player?.mainHandItem?.let { ItemUtil.getId(it) })
+        return isHoe(Minecraft.getInstance().player?.mainHandItem?.let { ItemTools.getId(it) })
     }
 }

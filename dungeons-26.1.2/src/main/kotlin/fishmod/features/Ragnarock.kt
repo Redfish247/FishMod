@@ -1,12 +1,12 @@
 package fishmod.features
 import fishmod.compat.hudHidden
 
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -34,12 +34,12 @@ object Ragnarock {
         val now = System.currentTimeMillis()
         if (now - lastTauntMs < 2000) return
         lastTauntMs = now
-        Misc.forceTitle(Component.literal("§5Rag"), Component.empty())
+        FishUtil.forceTitle(Component.literal("§5Rag"), Component.empty())
     }
 
     private fun holdingAxe(): Boolean {
         val p = Minecraft.getInstance().player ?: return false
-        return FishDiag.guard("Ragnarock.2", "rag axe id lookup failed") { ItemUtil.getId(p.mainHandItem) == "RAGNAROCK_AXE" } ?: false
+        return FishDiag.guard("Ragnarock.2", "rag axe id lookup failed") { ItemTools.getId(p.mainHandItem) == "RAGNAROCK_AXE" } ?: false
     }
 
     @JvmStatic
@@ -53,12 +53,12 @@ object Ragnarock {
             { FishSettings.ragnarockEnabled && FishSettings.ragnarockTimer },
         )
 
-        Events.ON_SOUND.register { event, _, pitch ->
+        FishEvents.ON_SOUND.register { event, _, pitch ->
             if (FishSettings.ragnarockEnabled
-                && pitch == CAST_PITCH && "wolf" in event.location.path && Location.inSkyblock() && holdingAxe()
+                && pitch == CAST_PITCH && "wolf" in event.location.path && SkyblockLocation.inSkyblock() && holdingAxe()
             ) {
                 if (FishSettings.ragnarockCastAlert) {
-                    Misc.forceTitle(Component.literal("§aCasted Ragnarock"), Component.empty())
+                    FishUtil.forceTitle(Component.literal("§aCasted Ragnarock"), Component.empty())
                     if (FishSettings.ragnarockAnnounceParty) fishmod.utils.ChatQueue.enqueue("pc Casted Ragnarock")
                 }
                 if (FishSettings.ragnarockTimer) ticksLeft = BUFF_TICKS
@@ -67,16 +67,16 @@ object Ragnarock {
             false
         }
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.ragnarockEnabled && CANCELLED.matcher(text.string).find()) {
-                if (FishSettings.ragnarockCancelAlert) Misc.forceTitle(Component.literal("§cRagnarock Cancelled"), Component.empty())
+                if (FishSettings.ragnarockCancelAlert) FishUtil.forceTitle(Component.literal("§cRagnarock Cancelled"), Component.empty())
                 ticksLeft = 0
             }
             false
         }
 
-        Events.ON_SERVER_TICK.register { if (ticksLeft > 0) ticksLeft--; false }
-        Events.ON_WORLD_CHANGE.register { ticksLeft = 0; false }
+        FishEvents.ON_SERVER_TICK.register { if (ticksLeft > 0) ticksLeft--; false }
+        FishEvents.ON_WORLD_CHANGE.register { ticksLeft = 0; false }
     }
 
     @JvmStatic

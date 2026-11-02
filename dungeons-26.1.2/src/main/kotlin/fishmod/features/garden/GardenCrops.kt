@@ -1,6 +1,6 @@
 package fishmod.features.garden
 
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import net.minecraft.client.Minecraft
 
 // Held farming tool -> crop, plus per-crop optimal speed/angles (values from SkyHanni memory, unverified)
@@ -21,7 +21,7 @@ object GardenCrops {
     )
 
     fun heldCrop(): Crop? {
-        val id = Minecraft.getInstance().player?.mainHandItem?.let { ItemUtil.getId(it) } ?: return null
+        val id = Minecraft.getInstance().player?.mainHandItem?.let { ItemTools.getId(it) } ?: return null
         return TOOLS.firstOrNull { id.contains(it.first) }?.second
     }
 

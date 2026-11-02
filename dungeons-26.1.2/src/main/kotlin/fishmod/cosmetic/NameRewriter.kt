@@ -104,7 +104,7 @@ object NameRewriter {
             if (text.isNotEmpty()) sb.append(" [").append(style.color?.serialize() ?: "none").append(if (style.isBold) " b" else "").append("]").append(text)
             Optional.empty<Any>()
         }, Style.EMPTY)
-        fishmod.utils.debug.Debug.LOGGER.info(sb.toString())
+        fishmod.utils.debug.FishDebug.LOGGER.info(sb.toString())
     }
 
     private data class Segment(val text: String, val style: Style)

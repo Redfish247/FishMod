@@ -3,7 +3,7 @@ import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.ChatQueue
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -120,8 +120,8 @@ object RareMobs {
         }
 
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
-        Events.ON_GAME_MESSAGE.register { text -> onChat(text.string); false }
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.ON_GAME_MESSAGE.register { text -> onChat(text.string); false }
+        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
     }
 
     private fun reset() {

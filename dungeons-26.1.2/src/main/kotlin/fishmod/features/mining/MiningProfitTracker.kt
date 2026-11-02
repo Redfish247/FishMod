@@ -7,7 +7,7 @@ import fishmod.features.ProfitTrackerKit
 import fishmod.features.ProfitTrackerKit.Row
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.FishMsg
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -66,8 +66,8 @@ object MiningProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        Events.ON_WORLD_CHANGE.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_WORLD_CHANGE.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (S.miningProfit && Mining.inMiningIsland()) onChat(text)
             false
         }

@@ -1,6 +1,6 @@
 package fishmod.features.dungeon.f7.dragons
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon
@@ -80,4 +80,4 @@ enum class WitherDragon(
 }
 
 internal fun modMessage(msg: String) =
-    Misc.addChatMessage(Component.literal("§5§lWD §7» §r" + msg.replace("&", "§")))
+    FishUtil.addChatMessage(Component.literal("§5§lWD §7» §r" + msg.replace("&", "§")))

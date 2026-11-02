@@ -11,12 +11,12 @@ import fishmod.features.dungeon.map.DungeonMap
 import fishmod.features.dungeon.map.Room
 import fishmod.features.dungeon.map.Scan
 import fishmod.utils.FishMsg
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -142,14 +142,14 @@ object RouteRecorder {
         AttackBlockCallback.EVENT.register(AttackBlockCallback { player, _, hand, pos, _ ->
             if (hand == InteractionHand.MAIN_HAND && tracking() && isBoom(player.mainHandItem)) {
                 boom(pos.immutable(), "attack")
-            } else if (hand == InteractionHand.MAIN_HAND && tracking() && ItemUtil.getId(player.mainHandItem) == "DUNGEONBREAKER") {
+            } else if (hand == InteractionHand.MAIN_HAND && tracking() && ItemTools.getId(player.mainHandItem) == "DUNGEONBREAKER") {
                 pendingBreaks[pos.immutable()] = tick
             }
             InteractionResult.PASS
         })
 
-        Events.ON_PACKET.register { packet ->
-            if (!FishSettings.routeRecorderEnabled || !Location.inDungeon()) return@register false
+        FishEvents.ON_PACKET.register { packet ->
+            if (!FishSettings.routeRecorderEnabled || !SkyblockLocation.inDungeon()) return@register false
             try {
                 when (packet) {
                     is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
@@ -163,7 +163,7 @@ object RouteRecorder {
             false
         }
 
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.ON_WORLD_CHANGE.register {
             liveWorld = false
             lastPos = null; pendingPearl = null; pendingBreaks.clear()
             batSounds.clear(); itemPos.clear(); pickedItemIds.clear()
@@ -177,18 +177,18 @@ object RouteRecorder {
             try { onTick(mc) } catch (e: Exception) { FishDiag.fail("RouteRecorder.4", "route tick threw (mode=$mode steps=${steps.size} progress=$progress)", e) }
         })
 
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             try { renderNoDepth(m, vc) } catch (e: Exception) { FishDiag.fail("RouteRecorder.5", "route no-depth render threw (steps=${steps.size})", e) }
         }
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             try { renderGizmo(); labels() } catch (e: Exception) { FishDiag.fail("RouteRecorder.6", "route gizmo render threw (steps=${steps.size})", e) }
         }
     }
 
-    private fun isBoom(stack: net.minecraft.world.item.ItemStack) = ItemUtil.getId(stack) in BOOM_ITEMS
+    private fun isBoom(stack: net.minecraft.world.item.ItemStack) = ItemTools.getId(stack) in BOOM_ITEMS
 
     private fun boom(pos: BlockPos, via: String) {
-        fishmod.utils.debug.Debug.LOGGER.debug("[Route] superboom via $via at $pos")
+        fishmod.utils.debug.FishDebug.LOGGER.debug("[Route] superboom via $via at $pos")
         if (tick - lastBoomTick < 20) return
         lastBoomTick = tick
         action(Type.SUPERBOOM, pos)
@@ -199,7 +199,7 @@ object RouteRecorder {
     private fun routeRoom(): String? = steps.firstNotNullOfOrNull { it.room }
 
     private fun checkRoomLeave() {
-        if (steps.isEmpty() || !Location.inDungeon()) { outsideTicks = 0; return }
+        if (steps.isEmpty() || !SkyblockLocation.inDungeon()) { outsideTicks = 0; return }
         val here = currentRoom() ?: return
         val rooms = steps.mapNotNullTo(HashSet()) { it.room }
         if (rooms.isEmpty()) return
@@ -213,7 +213,7 @@ object RouteRecorder {
 
     private fun autoLoad() {
         if (!FishSettings.routeRecorderEnabled || !FishSettings.routeAutoLoad) return
-        if (mode != Mode.IDLE || steps.isNotEmpty() || !Location.inDungeon()) return
+        if (mode != Mode.IDLE || steps.isNotEmpty() || !SkyblockLocation.inDungeon()) return
         val here = currentRoom() ?: return
         if (here == lastAutoRoom) return
         lastAutoRoom = here
@@ -225,7 +225,7 @@ object RouteRecorder {
         }
     }
 
-    private fun tracking() = FishSettings.routeRecorderEnabled && mode != Mode.IDLE && Location.inDungeon()
+    private fun tracking() = FishSettings.routeRecorderEnabled && mode != Mode.IDLE && SkyblockLocation.inDungeon()
 
     private fun onTick(mc: Minecraft) {
         tick++
@@ -249,7 +249,7 @@ object RouteRecorder {
             if (pearl != null && tick - pearlTick <= 80) {
                 landPearl(pearl, player.blockPosition())
                 pendingPearl = null
-            } else if (player.isShiftKeyDown && ItemUtil.getId(player.mainHandItem) in ETHER_ITEMS) {
+            } else if (player.isShiftKeyDown && ItemTools.getId(player.mainHandItem) in ETHER_ITEMS) {
                 action(Type.ETHERWARP, player.blockPosition().below())
             }
         }
@@ -259,7 +259,7 @@ object RouteRecorder {
         while (true) {
             val (name, at) = boomSounds.poll() ?: break
             if (tick - boomHeldTick > 40 || at.distanceToSqr(pos) > 100.0) continue
-            fishmod.utils.debug.Debug.LOGGER.debug("[Route] sound near superboom: $name")
+            fishmod.utils.debug.FishDebug.LOGGER.debug("[Route] sound near superboom: $name")
             if ("explode" in name || "explosion" in name) boom(BlockPos.containing(at), "sound:$name")
         }
 
@@ -355,7 +355,7 @@ object RouteRecorder {
 
     private fun visible(): List<Pair<Int, BlockPos>> {
         if (!FishSettings.routeRecorderEnabled || steps.isEmpty()) return emptyList()
-        if (!Location.inDungeon()) return emptyList()
+        if (!SkyblockLocation.inDungeon()) return emptyList()
         val from = if (mode == Mode.PLAYING) progress else 0
         val out = ArrayList<Pair<Int, BlockPos>>()
         for (i in from until steps.size) resolve(steps[i])?.let { out.add(i to it) }
@@ -411,7 +411,7 @@ object RouteRecorder {
             val (i, p) = vis.first()
             val player = Minecraft.getInstance().player
             if (i == progress && player != null && throughWalls(steps[i].type) == noDepth) {
-                val eye = RenderUtils.cameraLineStart(1.0)
+                val eye = FishDraw.cameraLineStart(1.0)
                 line(eye, Vec3.atCenterOf(p), hw / 2, withAlpha(color(steps[i].type), FishSettings.routeLineOpacity))
             }
         }
@@ -420,17 +420,17 @@ object RouteRecorder {
     private fun renderNoDepth(m: PoseStack, vc: VertexConsumer) {
         val ow = FishSettings.routeOutlineWidth * 0.01
         draw(true, { b, fill, stroke ->
-            if ((fill ushr 24) != 0) RenderUtils.renderFilled(m, vc, b, RenderUtils.toFloats(fill))
-            if ((stroke ushr 24) != 0) RenderUtils.renderThickOutline(m, vc, b, RenderUtils.toFloats(stroke), ow)
-        }, { a, b, hw, argb -> RenderUtils.renderThickLine(m, vc, a, b, hw, RenderUtils.toFloats(argb)) })
+            if ((fill ushr 24) != 0) FishDraw.renderFilled(m, vc, b, FishDraw.toFloats(fill))
+            if ((stroke ushr 24) != 0) FishDraw.renderThickOutline(m, vc, b, FishDraw.toFloats(stroke), ow)
+        }, { a, b, hw, argb -> FishDraw.renderThickLine(m, vc, a, b, hw, FishDraw.toFloats(argb)) })
     }
 
     private fun renderGizmo() {
         val ow = FishSettings.routeOutlineWidth * 0.01
         draw(false, { b, fill, stroke ->
-            RenderUtils.gizmoBox(b, fill, 0)
-            RenderUtils.gizmoThickOutline(b, stroke, ow)
-        }, { a, b, hw, argb -> RenderUtils.gizmoThickLine(a, b, hw, argb) })
+            FishDraw.gizmoBox(b, fill, 0)
+            FishDraw.gizmoThickOutline(b, stroke, ow)
+        }, { a, b, hw, argb -> FishDraw.gizmoThickLine(a, b, hw, argb) })
     }
 
     private fun groups(): IntArray {
@@ -456,7 +456,7 @@ object RouteRecorder {
             if (g[i] == lastGroup) continue
             lastGroup = g[i]
             val s = steps[i]
-            RenderUtils.gizmoText(Component.literal("${g[i] + 1}. ${s.type.label}"), Vec3(p.x + 0.5, p.y + 1.4, p.z + 0.5), scale, withAlpha(color(s.type), 100))
+            FishDraw.gizmoText(Component.literal("${g[i] + 1}. ${s.type.label}"), Vec3(p.x + 0.5, p.y + 1.4, p.z + 0.5), scale, withAlpha(color(s.type), 100))
         }
     }
 
@@ -552,7 +552,7 @@ object RouteRecorder {
             return true
         } catch (t: Throwable) {
             FishDiag.fail("RouteRecorder.12", "route load failed for '$name'", t)
-            if (quiet) fishmod.utils.debug.Debug.LOGGER.warn("[Route] load of {} failed", name, t) else msg("§cLoad failed: ${t.message}")
+            if (quiet) fishmod.utils.debug.FishDebug.LOGGER.warn("[Route] load of {} failed", name, t) else msg("§cLoad failed: ${t.message}")
             return false
         }
     }

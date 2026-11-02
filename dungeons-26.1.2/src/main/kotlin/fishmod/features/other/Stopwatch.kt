@@ -6,11 +6,11 @@ import fishmod.features.dungeon.f7.terminal.TerminalType
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
-import fishmod.utils.Keybinds
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.FishKeys
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
@@ -110,8 +110,8 @@ object Stopwatch {
         fishmod.features.FishHudEditor.register(NAME, hud)
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("Stopwatch.1", "stopwatch tick") { tick(mc) } }
-        Events.ON_GAME_MESSAGE.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(fishmod.utils.TextStrip.plain(msg.string)) }; false }
-        Events.ON_TERMINAL.register { name, _, objective, _, _ ->
+        FishEvents.ON_GAME_MESSAGE.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(fishmod.utils.TextStrip.plain(msg.string)) }; false }
+        FishEvents.ON_TERMINAL.register { name, _, objective, _, _ ->
             when (objective) {
                 "terminal" -> {
                     if (name == Minecraft.getInstance().player?.gameProfile?.name) fire(Trigger.MY_TERMINAL)
@@ -122,12 +122,12 @@ object Stopwatch {
             }
             false
         }
-        Events.ON_SECTION_CHANGE.register { fire(Trigger.SECTION); false }
-        Events.ON_PHASE_CHANGE.register { fire(Trigger.PHASE_CHANGE); false }
-        Events.ON_LEAP.register { _ -> fire(Trigger.LEAP); false }
-        Events.ON_RUN_END.register { fire(Trigger.RUN_END); false }
-        Events.ON_WORLD_CHANGE.register { fire(Trigger.WORLD_CHANGE); false }
-        Events.ON_LOCATION_CHANGE.register { _ -> fire(Trigger.AREA_CHANGE); false }
+        FishEvents.ON_SECTION_CHANGE.register { fire(Trigger.SECTION); false }
+        FishEvents.ON_PHASE_CHANGE.register { fire(Trigger.PHASE_CHANGE); false }
+        FishEvents.ON_LEAP.register { _ -> fire(Trigger.LEAP); false }
+        FishEvents.ON_RUN_END.register { fire(Trigger.RUN_END); false }
+        FishEvents.ON_WORLD_CHANGE.register { fire(Trigger.WORLD_CHANGE); false }
+        FishEvents.ON_LOCATION_CHANGE.register { _ -> fire(Trigger.AREA_CHANGE); false }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (enabled && screen is AbstractContainerScreen<*>) {
                 val title = fishmod.utils.TextStrip.plain(screen.title.string)
@@ -139,11 +139,11 @@ object Stopwatch {
     }
 
     private fun key(name: String): KeyMapping = KeyMappingHelper.registerKeyMapping(
-        KeyMapping(name, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, Keybinds.category())
+        KeyMapping(name, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, FishKeys.category())
     )
 
     private fun tick(mc: Minecraft) {
-        // Keybinds: drain clicks even when disabled so they don't pile up
+        // FishKeys: drain clicks even when disabled so they don't pile up
         val toggle = toggleKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
         val split = splitKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
         val reset = resetKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
@@ -197,7 +197,7 @@ object Stopwatch {
 
     // One event does one thing: reset, then stop, then split, then start
     private fun fire(t: Trigger, arg: String? = null) {
-        if (!enabled || (dungeonsOnly && !Location.inDungeon())) return
+        if (!enabled || (dungeonsOnly && !SkyblockLocation.inDungeon())) return
         when {
             matches(t, resetTrigger, resetText, arg) -> reset()
             running && matches(t, stopTrigger, stopText, arg) -> stop()
@@ -220,7 +220,7 @@ object Stopwatch {
         val secs = elapsedNs / 1e9
         val pb = bestSeconds <= 0.0 || secs < bestSeconds
         if (pb) bestSeconds = secs
-        if (chatOnStop) Misc.addChatMessage(Component.literal("§6[Stopwatch] §f${fmt(elapsedNs)}" + if (pb) " §d(PB)" else ""))
+        if (chatOnStop) FishUtil.addChatMessage(Component.literal("§6[Stopwatch] §f${fmt(elapsedNs)}" + if (pb) " §d(PB)" else ""))
     }
 
     private fun split() {

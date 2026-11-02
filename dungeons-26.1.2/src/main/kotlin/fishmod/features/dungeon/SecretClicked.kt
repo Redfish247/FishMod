@@ -3,12 +3,12 @@ package fishmod.features.dungeon
 import com.mojang.blaze3d.vertex.PoseStack
 import fishmod.utils.TextStrip
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
@@ -54,7 +54,7 @@ object SecretClicked {
             InteractionResult.PASS
         })
 
-        Events.ON_PACKET.register { packet ->
+        FishEvents.ON_PACKET.register { packet ->
             try {
                 when (packet) {
                     is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
@@ -68,25 +68,25 @@ object SecretClicked {
             try { onTick(mc) } catch (e: Exception) { FishDiag.fail("SecretClicked.3", "secret clicked tick threw (clicked=${clicked.size})", e) }
         })
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.ON_GAME_MESSAGE.register { text ->
             if (TextStrip.plain(text.string).trim() == "That chest is locked!") {
                 clicked.lastOrNull()?.locked = true
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.ON_WORLD_CHANGE.register {
             clicked.clear(); itemPos.clear(); pendingSkull = null
             pickedItemIds.clear(); batSounds.clear()
             false
         }
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!FishSettings.secretClickedDepthCheck) try { renderGizmo() } catch (e: Exception) { FishDiag.fail("SecretClicked.4", "secret clicked gizmo render threw", e) }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             if (FishSettings.secretClickedDepthCheck) try { render(m, vc, fill = true) } catch (e: Exception) { FishDiag.fail("SecretClicked.5", "secret clicked fill render threw", e) }
         }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc ->
             if (FishSettings.secretClickedDepthCheck) try { render(m, vc, fill = false) } catch (e: Exception) { FishDiag.fail("SecretClicked.6", "secret clicked line render threw", e) }
         }
     }
@@ -175,14 +175,14 @@ object SecretClicked {
     private fun renderGizmo() {
         val width = lineWidth()
         for ((box, fill, stroke) in boxes()) {
-            RenderUtils.gizmoBox(box, fill, 0)
-            RenderUtils.gizmoThickOutline(box, stroke, width)
+            FishDraw.gizmoBox(box, fill, 0)
+            FishDraw.gizmoThickOutline(box, stroke, width)
         }
     }
 
     private fun active(): Boolean =
-        FishSettings.secretClickedEnabled && Location.inDungeon() &&
-            (FishSettings.secretClickedInBoss || !Phase.inBoss())
+        FishSettings.secretClickedEnabled && SkyblockLocation.inDungeon() &&
+            (FishSettings.secretClickedInBoss || !BossPhase.inBoss())
 
     private fun onInteract(pos: BlockPos) {
         if (!active()) return
@@ -222,7 +222,7 @@ object SecretClicked {
 
     private fun chime() {
         if (!FishSettings.secretClickedChime) return
-        if (Phase.inBoss() && !FishSettings.secretClickedChimeInBoss) return
+        if (BossPhase.inBoss() && !FishSettings.secretClickedChimeInBoss) return
         val now = System.currentTimeMillis()
         if (now - lastChime <= 10) return
         lastChime = now
@@ -237,9 +237,9 @@ object SecretClicked {
     private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
         for ((box, fillArgb, strokeArgb) in boxes()) {
             if (fill) {
-                if ((fillArgb ushr 24) != 0) RenderUtils.renderFilled(matrices, vc, box, RenderUtils.toFloats(fillArgb))
+                if ((fillArgb ushr 24) != 0) FishDraw.renderFilled(matrices, vc, box, FishDraw.toFloats(fillArgb))
             } else {
-                if ((strokeArgb ushr 24) != 0) RenderUtils.renderThickOutline(matrices, vc, box, RenderUtils.toFloats(strokeArgb), lineWidth())
+                if ((strokeArgb ushr 24) != 0) FishDraw.renderThickOutline(matrices, vc, box, FishDraw.toFloats(strokeArgb), lineWidth())
             }
         }
     }
