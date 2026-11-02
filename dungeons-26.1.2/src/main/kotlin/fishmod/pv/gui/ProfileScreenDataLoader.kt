@@ -214,7 +214,7 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 			return
 		}
 		val current = screen.gardenPage().snapshot()
-		if (current.islandLoaded()) {
+		if (current.islandLoaded) {
 			return
 		}
 		val id = screen.profileId()
@@ -271,7 +271,7 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 						ProfileViewer.LOGGER.warn("Elite contests failed for {}", id, error)
 					}
 					// Keep Hypixel contest list if Elite miss.
-					if (base.contests().isNotEmpty()) {
+					if (base.contests.isNotEmpty()) {
 						screen.gardenPage().patch(base.withContestsReady())
 					} else {
 						screen.gardenPage().patch(base.withContestsError(error?.message ?: "Contests unavailable"))
