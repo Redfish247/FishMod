@@ -249,7 +249,9 @@ public class HypixelApi {
         try {
             var file = FabricLoader.getInstance().getConfigDir().resolve("fishmod_uuid_cache.json");
             if (Files.exists(file)) {
-                JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+                JsonElement parsed = JsonParser.parseString(Files.readString(file));
+                // Blank or literal null file parses to JsonNull: same as no cache.
+                JsonObject root = parsed.isJsonNull() ? new JsonObject() : parsed.getAsJsonObject();
                 JsonObject entries = root.has("entries") ? root.getAsJsonObject("entries") : new JsonObject();
                 long now = System.currentTimeMillis();
                 for (Map.Entry<String, JsonElement> e : entries.entrySet()) {
@@ -293,7 +295,14 @@ public class HypixelApi {
             JsonObject root = new JsonObject();
             root.addProperty("version", 1);
             root.add("entries", entries);
-            Files.writeString(file, root.toString());
+            // Temp then move: a crash or full disk mid-write keeps the old file.
+            var tmp = file.resolveSibling("fishmod_uuid_cache.json.tmp");
+            Files.writeString(tmp, root.toString());
+            try {
+                Files.move(tmp, file, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } catch (java.nio.file.AtomicMoveNotSupportedException notAtomic) {
+                Files.move(tmp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.4", "saveUuidCacheNow failed", ignored);}
     }
 
