@@ -150,7 +150,7 @@ object ConfigKeyMigration {
                 HUD_LABELS[label]?.let { hud.addProperty("info", it); moved++ }
             }
             if (moved == 0) return
-            file.writeText(GsonBuilder().create().toJson(root), Charsets.UTF_8)
+            ConfigBackup.writeAtomic(file, GsonBuilder().create().toJson(root).toByteArray(Charsets.UTF_8))
         } catch (e: Exception) {
             FishDiag.fail("ConfigKeyMigration.1", "setting key migration failed for $path", e)
         }
