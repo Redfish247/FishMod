@@ -45,8 +45,8 @@ class SlayerCalcOverlay {
 		this.accent = if (accent == 0) PvDraw.COLOR_ACCENT else accent
 		open = slayer != null
 		openStartMs = System.currentTimeMillis()
-		val max = SlayerXpCalculator.maxLevel(slayer?.id() ?: "")
-		val next = min(max, max(1, (slayer?.tier() ?: 0) + 1))
+		val max = SlayerXpCalculator.maxLevel(slayer?.id ?: "")
+		val next = min(max, max(1, (slayer?.tier ?: 0) + 1))
 		levelText = next.toString()
 		replaceOnType = true
 		fieldFocus = true
@@ -220,9 +220,9 @@ class SlayerCalcOverlay {
 
 	private fun currentResult(): SlayerXpCalculator.Result? {
 		val slayer = slayer ?: return null
-		val max = min(9, SlayerXpCalculator.maxLevel(slayer.id()))
-		val target = parseLevel(levelText, min(max, slayer.tier() + 1), max)
-		return SlayerXpCalculator.calculate(slayer.id(), slayer.name(), slayer.xp(), slayer.tier(), target, mods)
+		val max = min(9, SlayerXpCalculator.maxLevel(slayer.id))
+		val target = parseLevel(levelText, min(max, slayer.tier + 1), max)
+		return SlayerXpCalculator.calculate(slayer.id, slayer.name, slayer.xp, slayer.tier, target, mods)
 	}
 
 	private fun openScale(): Float {

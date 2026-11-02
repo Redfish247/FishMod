@@ -322,11 +322,11 @@ object ProfileFetcher {
     ): CompletableFuture<LoadedProfile> {
         val root = cached.profilesRoot
         val snapshot = cached.snapshot
-        val uuid = snapshot?.playerUuid()
+        val uuid = snapshot?.playerUuid
         if (preferredProfileId == null || preferredProfileId == cached.profileId || root == null || snapshot == null || uuid == null) {
             return CompletableFuture.completedFuture(cached)
         }
-        return switchToProfile(snapshot.playerName(), uuid, root, preferredProfileId, onUpdate)
+        return switchToProfile(snapshot.playerName, uuid, root, preferredProfileId, onUpdate)
     }
 
     // Skips the Mojang lookup when the client already knows the player. Tab entries are
@@ -457,7 +457,7 @@ object ProfileFetcher {
     ) {
         val profiles = if (root.has("profiles") && root.get("profiles").isJsonArray) root.getAsJsonArray("profiles") else null
         val best = ProfileCoopIndex.pickProfile(profiles, core.profileId) ?: return
-        val playerUuid = core.snapshot?.playerUuid() ?: return
+        val playerUuid = core.snapshot?.playerUuid ?: return
         val undashed = HypixelApiClient.undashed(playerUuid)
         val members = if (best.has("members") && best.get("members").isJsonObject) best.getAsJsonObject("members") else null
         val member = ProfileMuseumLookup.findMember(members, undashed) ?: return
@@ -789,8 +789,8 @@ object ProfileFetcher {
     ) {
         if (base == null || !base.ok()) return
         val baseSnapshot = base.snapshot ?: return
-        val uuid = baseSnapshot.playerUuid() ?: return
-        val name = baseSnapshot.playerName()
+        val uuid = baseSnapshot.playerUuid ?: return
+        val name = baseSnapshot.playerName
         CompletableFuture.runAsync({
             ItemPricer.awaitReady(30_000L)
             if (!ItemPricer.isReady()) return@runAsync
