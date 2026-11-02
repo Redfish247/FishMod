@@ -5,18 +5,23 @@
  *
  * Derived from BetterPV by Vyriv (https://github.com/Vyriv/BetterPV).
  */
-package fishmod.pv.gui.nav;
+package fishmod.pv.gui.nav
 
-import fishmod.pv.ProfileViewer;
-import fishmod.pv.data.InventorySnapshot;
-import fishmod.pv.gui.inventories.SkyBlockItemFactory;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import fishmod.pv.ProfileViewer
+import fishmod.pv.data.InventorySnapshot
+import fishmod.pv.gui.inventories.SkyBlockItemFactory
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 
-public enum InventoryPane {
+enum class InventoryPane(
+	private val skyblockIconId: String?,
+	texturePath: String?,
+	private val fallback: Item,
+	private val langKey: String
+) {
 	INVENTORY(null, null, Items.CHEST, "fishmod.pv.inv.inventory"),
 	ENDER_CHEST(null, null, Items.ENDER_CHEST, "fishmod.pv.inv.ender_chest"),
 	BACKPACKS("JUMBO_BACKPACK", null, Items.SHULKER_BOX, "fishmod.pv.inv.backpacks"),
@@ -41,58 +46,37 @@ public enum InventoryPane {
 	CARNIVAL_MASKS("CARNIVAL_MASK_BAG", null, Items.LEATHER_HELMET, "fishmod.pv.inv.carnival_masks"),
 	CANDY_BAG(null, null, Items.COOKIE, "fishmod.pv.inv.candy_bag");
 
-	private final String skyblockIconId;
-	private final Identifier textureIcon;
-	private final Item fallback;
-	private final String langKey;
-
-	InventoryPane(
-		String skyblockIconId,
-		String texturePath,
-		Item fallback,
-		String langKey
-	) {
-		this.skyblockIconId = skyblockIconId;
-		this.textureIcon = texturePath == null
-			? null
-			: ProfileViewer.id(texturePath);
-		this.fallback = fallback;
-		this.langKey = langKey;
-	}
+	private val textureIcon: Identifier? = texturePath?.let { ProfileViewer.id(it) }
 
 	/** Bundled 16×16 GUI texture when Hypixel/NEU skulls are missing or wrong. */
-	public Identifier textureIcon() {
-		return this.textureIcon;
-	}
+	fun textureIcon(): Identifier? = textureIcon
 
-	public ItemStack icon() {
-		if (this.skyblockIconId != null) {
-			ItemStack sky = SkyBlockItemFactory.iconStack(this.skyblockIconId);
-			if (sky != null && !sky.isEmpty()) {
-				if (this == CARNIVAL_MASKS || sky.is(Items.PLAYER_HEAD)) {
-					return sky;
+	fun icon(): ItemStack {
+		if (skyblockIconId != null) {
+			val sky = SkyBlockItemFactory.iconStack(skyblockIconId)
+			if (sky != null && !sky.isEmpty) {
+				if (this == CARNIVAL_MASKS || sky.`is`(Items.PLAYER_HEAD)) {
+					return sky
 				}
 			}
 		}
-		return new ItemStack(this.fallback);
+		return ItemStack(fallback)
 	}
 
-	public Component label() {
-		return Component.translatable(this.langKey);
-	}
+	fun label(): Component = Component.translatable(langKey)
 
-	public boolean visibleOn(InventorySnapshot snapshot) {
+	fun visibleOn(snapshot: InventorySnapshot?): Boolean {
 		// Fishing Bag was removed from the game; still decoded for networth but never shown.
 		if (this == FISHING_BAG) {
-			return false;
+			return false
 		}
 		if (snapshot == null) {
-			return this != CARNIVAL_MASKS && this != CANDY_BAG;
+			return this != CARNIVAL_MASKS && this != CANDY_BAG
 		}
-		return switch (this) {
-			case CARNIVAL_MASKS -> snapshot.carnivalPresent();
-			case CANDY_BAG -> snapshot.candyPresent();
-			default -> true;
-		};
+		return when (this) {
+			CARNIVAL_MASKS -> snapshot.carnivalPresent()
+			CANDY_BAG -> snapshot.candyPresent()
+			else -> true
+		}
 	}
 }
