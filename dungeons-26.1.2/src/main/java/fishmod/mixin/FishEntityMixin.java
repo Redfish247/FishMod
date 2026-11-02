@@ -31,7 +31,7 @@ public class FishEntityMixin {
             if (cls == null) cls = DungeonPlayers.classOf(player.getName().getString());
             if (cls != null) cir.setReturnValue(DungeonRole.getColor(cls) & 0xFFFFFF);
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("EntityMixin.1", "class glow color lookup failed", t);
+            fishmod.utils.debug.FishDiag.fail("FishEntityMixin.1", "class glow color lookup failed", t);
         }
     }
 }

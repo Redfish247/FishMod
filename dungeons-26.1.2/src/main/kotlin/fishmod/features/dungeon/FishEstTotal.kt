@@ -53,7 +53,7 @@ object FishEstTotal {
         0.0, 0.0, BossPhase.SPLIT_LENGTH, FishConstants.TEXT_HEIGHT * 2 + 4, 1f, "Est. Total",
         { display() },
         { component, context -> render(component, context) },
-        { try { BossPhase.runSplitsEnabled } catch (t: Throwable) { FishDiag.fail("FishEstTotal.1", "Phase.enableSplits read failed", t); false } }
+        { try { BossPhase.runSplitsEnabled } catch (t: Throwable) { FishDiag.fail("FishEstTotal.1", "BossPhase.enableSplits read failed", t); false } }
     )
 
     @JvmStatic
@@ -75,8 +75,8 @@ object FishEstTotal {
         val splits = currentSplits ?: return 0
         var onlyActivated = true
         var includeTotal = false
-        try { onlyActivated = BossPhase.runSplitsReachedOnly } catch (t: Throwable) { FishDiag.fail("FishEstTotal.6", "Phase.onlyShowActivatedSplits read failed", t) }
-        try { includeTotal = BossPhase.runSplitsTotal } catch (t: Throwable) { FishDiag.fail("FishEstTotal.7", "Phase.includeTotalTime read failed", t) }
+        try { onlyActivated = BossPhase.runSplitsReachedOnly } catch (t: Throwable) { FishDiag.fail("FishEstTotal.6", "BossPhase.onlyShowActivatedSplits read failed", t) }
+        try { includeTotal = BossPhase.runSplitsTotal } catch (t: Throwable) { FishDiag.fail("FishEstTotal.7", "BossPhase.includeTotalTime read failed", t) }
         var count = splits.size
         if (!includeTotal) count--
         if (!onlyActivated) return Math.max(0, count)

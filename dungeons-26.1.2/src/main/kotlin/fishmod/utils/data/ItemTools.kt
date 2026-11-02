@@ -12,7 +12,7 @@ object ItemTools {
         val compound = item.fishmodCustomDataTag() ?: return null
         if (!compound.contains("id")) return null
         val id = compound.getStringOr("id", "")
-        if (id.isEmpty()) FishDiag.fail("ItemUtil.1", "item custom data has 'id' but it isn't a non-empty string: ${compound.get("id")}")
+        if (id.isEmpty()) FishDiag.fail("ItemTools.1", "item custom data has 'id' but it isn't a non-empty string: ${compound.get("id")}")
         return id
     }
 
@@ -21,7 +21,7 @@ object ItemTools {
         val compound = item.fishmodCustomDataTag() ?: return null
         if (!compound.contains("uuid")) return null
         val uuid = compound.getStringOr("uuid", "")
-        if (uuid.isEmpty()) FishDiag.fail("ItemUtil.2", "item custom data has 'uuid' but it isn't a non-empty string: ${compound.get("uuid")}")
+        if (uuid.isEmpty()) FishDiag.fail("ItemTools.2", "item custom data has 'uuid' but it isn't a non-empty string: ${compound.get("uuid")}")
         return uuid
     }
 

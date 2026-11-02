@@ -33,10 +33,10 @@ object PartyTools {
                 inParty = packet.isInParty
                 leaderUuid = packet.memberMap.entries
                     .firstOrNull { it.value.role == ClientboundPartyInfoPacket.PartyRole.LEADER }?.key
-                if (inParty && leaderUuid == null) FishDiag.fail("PartyUtil.1", "party info packet has no leader among ${packet.memberMap.size} members")
-                if (inParty && packet.memberMap.isEmpty()) FishDiag.fail("PartyUtil.2", "party info packet says in party but member map is empty")
+                if (inParty && leaderUuid == null) FishDiag.fail("PartyTools.1", "party info packet has no leader among ${packet.memberMap.size} members")
+                if (inParty && packet.memberMap.isEmpty()) FishDiag.fail("PartyTools.2", "party info packet says in party but member map is empty")
             } catch (t: Throwable) {
-                FishDiag.fail("PartyUtil.3", "handle party info packet", t)
+                FishDiag.fail("PartyTools.3", "handle party info packet", t)
             }
         }
     }

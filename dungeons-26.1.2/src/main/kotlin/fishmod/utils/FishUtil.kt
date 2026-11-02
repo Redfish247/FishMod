@@ -20,7 +20,7 @@ object FishUtil {
 
     @JvmStatic
     fun abbr(v: Double): String = when {
-        v.isNaN() -> { FishDiag.fail("Misc.2", "abbr called with NaN"); "%,d".format(0L) }
+        v.isNaN() -> { FishDiag.fail("FishUtil.2", "abbr called with NaN"); "%,d".format(0L) }
         v >= 1_000_000_000 -> "%.2fB".format(v / 1_000_000_000)
         v >= 1_000_000 -> "%.2fM".format(v / 1_000_000)
         v >= 1_000 -> "%.1fk".format(v / 1_000)
@@ -120,7 +120,7 @@ object FishUtil {
             try {
                 runnable.run()
             } catch (e: Exception) {
-                FishDiag.fail("Misc.1", "main-thread task threw", e)
+                FishDiag.fail("FishUtil.1", "main-thread task threw", e)
             }
         }
         if (INSTANCE.isSameThread) {

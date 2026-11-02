@@ -22,7 +22,7 @@ public class FishClientMixin {
         try {
             FishEvents.worldChange.invoke(it -> it.onWorldSwap());
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("MinecraftClientMixin.1", "world change event failed", t);
+            fishmod.utils.debug.FishDiag.fail("FishClientMixin.1", "world change event failed", t);
         }
     }
 }

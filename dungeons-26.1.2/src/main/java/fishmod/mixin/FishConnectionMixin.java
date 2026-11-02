@@ -24,7 +24,7 @@ public class FishConnectionMixin {
                 fishmod.utils.PingTracker.pushRtt(Util.getMillis() - pong.time());
             }
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("ClientConnectionMixin.1", "ping rtt tracking failed", t);
+            fishmod.utils.debug.FishDiag.fail("FishConnectionMixin.1", "ping rtt tracking failed", t);
         }
 
         boolean serverTick = packet instanceof ClientboundPingPacket ping && ping.getId() != 0;
@@ -36,7 +36,7 @@ public class FishConnectionMixin {
                 if (serverTick) FishEvents.serverTick.invoke(ServerTickHook::onServerTick);
                 if (wanted) FishEvents.packet.invoke(packetEvent -> packetEvent.onPacket(packet));
             } catch (Throwable t) {
-                fishmod.utils.debug.FishDiag.fail("ClientConnectionMixin.2", "packet/server-tick event dispatch failed packet=" + packet.getClass().getSimpleName(), t);
+                fishmod.utils.debug.FishDiag.fail("FishConnectionMixin.2", "packet/server-tick event dispatch failed packet=" + packet.getClass().getSimpleName(), t);
             }
         });
     }

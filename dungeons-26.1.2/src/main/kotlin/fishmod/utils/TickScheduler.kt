@@ -33,7 +33,7 @@ object TickScheduler {
                 try {
                     task.task.run()
                 } catch (e: Exception) {
-                    FishDiag.fail("Scheduler.1", "scheduled task threw", e)
+                    FishDiag.fail("TickScheduler.1", "scheduled task threw", e)
                 }
             }
         }
@@ -57,7 +57,7 @@ object TickScheduler {
 
     @JvmStatic
     fun scheduleTask(runnable: Runnable, ticks: Int) {
-        FishDiag.check(ticks >= 0, "Scheduler.2") { "task scheduled with negative delay $ticks" }
+        FishDiag.check(ticks >= 0, "TickScheduler.2") { "task scheduled with negative delay $ticks" }
         synchronized(tasks) { tasks.add(Task(runnable, ticks)) }
     }
 }

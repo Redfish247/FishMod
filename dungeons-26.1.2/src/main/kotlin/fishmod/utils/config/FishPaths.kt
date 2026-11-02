@@ -21,7 +21,7 @@ object FishPaths {
         val file = File(CONFIG_PATH)
         if (!file.exists()) {
             if (!file.mkdirs()) {
-                FishDiag.fail("FolderUtility.1", "failed to create config directory ${file.absolutePath}")
+                FishDiag.fail("FishPaths.1", "failed to create config directory ${file.absolutePath}")
                 FishDebug.LOGGER.error("Failed to create fishmod directory")
             }
         }

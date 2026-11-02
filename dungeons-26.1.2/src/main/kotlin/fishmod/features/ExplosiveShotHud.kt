@@ -31,7 +31,7 @@ object ExplosiveShotHud {
 
         val m = PATTERN.matcher(s)
         if (!m.find()) {
-            FishDiag.check(s.indexOf("Your Explosive Shot hit") < 0, "ExplosiveShot.1") { "explosive shot line didn't parse: '${s.take(120)}'" }
+            FishDiag.check(s.indexOf("Your Explosive Shot hit") < 0, "ExplosiveShotHud.1") { "explosive shot line didn't parse: '${s.take(120)}'" }
             return false
         }
 
@@ -41,7 +41,7 @@ object ExplosiveShotHud {
             enemies = m.group(1).toInt()
             total = m.group(2).replace(",", "").toDouble()
         } catch (e: NumberFormatException) {
-            FishDiag.fail("ExplosiveShot.2", "explosive shot numbers unparsable: '${s.take(120)}'", e)
+            FishDiag.fail("ExplosiveShotHud.2", "explosive shot numbers unparsable: '${s.take(120)}'", e)
             return false
         }
         if (enemies <= 0) return false

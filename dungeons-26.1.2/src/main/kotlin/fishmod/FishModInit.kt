@@ -1006,13 +1006,13 @@ class FishModInit : ClientModInitializer {
                         try {
                             FishUtil.addChatMessage(Component.literal("§7Phase.runStarted: §f" + BossPhase.runStarted()))
                         } catch (t: Throwable) {
-                            FishDiag.fail("FishModInit.110", "fmdbg Phase.runStarted failed", t)
+                            FishDiag.fail("FishModInit.110", "fmdbg BossPhase.runStarted failed", t)
                             FishUtil.addChatMessage(Component.literal("§cPhase.runStarted ERR: " + t.message))
                         }
                         try {
                             FishUtil.addChatMessage(Component.literal("§7Phase.enableSplits: §f" + BossPhase.runSplitsEnabled))
                         } catch (t: Throwable) {
-                            FishDiag.fail("FishModInit.111", "fmdbg Phase.enableSplits failed", t)
+                            FishDiag.fail("FishModInit.111", "fmdbg BossPhase.enableSplits failed", t)
                             FishUtil.addChatMessage(Component.literal("§cPhase.enableSplits ERR: " + t.message))
                         }
                         try {

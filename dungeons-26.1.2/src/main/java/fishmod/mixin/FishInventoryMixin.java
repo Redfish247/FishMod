@@ -39,7 +39,7 @@ public abstract class FishInventoryMixin extends AbstractRecipeBookScreen<Invent
             if (InvButtonSettings.showEquipment) fishmod.features.other.EquipmentDisplay.render(context, mouseX - this.leftPos, mouseY - this.topPos, this.leftPos, this.topPos);
             if (InvShortcutButtons.on()) InvShortcutButtons.renderAll(context, mouseX - this.leftPos, mouseY - this.topPos, deltaTicks);
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("InventoryScreenMixin.1", "inventory buttons render failed", t);
+            fishmod.utils.debug.FishDiag.fail("FishInventoryMixin.1", "inventory buttons render failed", t);
         }
         stack.popMatrix();
     }
@@ -51,7 +51,7 @@ public abstract class FishInventoryMixin extends AbstractRecipeBookScreen<Invent
             try {
                 if (InvShortcutButtons.parseClicks(click.x() - this.leftPos, click.y() - this.topPos, click.button())) return true;
             } catch (Throwable t) {
-                fishmod.utils.debug.FishDiag.fail("InventoryScreenMixin.2", "inventory button click failed", t);
+                fishmod.utils.debug.FishDiag.fail("FishInventoryMixin.2", "inventory button click failed", t);
             }
         }
         return super.mouseClicked(click, doubled);

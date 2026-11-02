@@ -38,7 +38,7 @@ object InvSearchBar {
             val matched = try {
                 matches(item)
             } catch (e: Exception) {
-                FishDiag.fail("SearchBar.3", "search match failed for term '$searchTerm'", e)
+                FishDiag.fail("InvSearchBar.3", "search match failed for term '$searchTerm'", e)
                 true
             }
             if (!matched) {
@@ -76,7 +76,7 @@ object InvSearchBar {
         try {
             bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
         } catch (e: Exception) {
-            FishDiag.fail("SearchBar.4", "search bar render failed", e)
+            FishDiag.fail("InvSearchBar.4", "search bar render failed", e)
             return
         }
 
@@ -111,7 +111,7 @@ object InvSearchBar {
                 val dropCode = (mc.options.keyDrop as KeyBindingAccessor).boundKey.value
                 if (input.key() == dropCode) { bar.isFocused = false; return false }
             } catch (e: Exception) {
-                FishDiag.fail("SearchBar.1", "failed to read drop key binding", e)
+                FishDiag.fail("InvSearchBar.1", "failed to read drop key binding", e)
             }
             if (input.key() == GLFW.GLFW_KEY_ENTER) {
                 if (parsedValue.isFinite()) {
@@ -157,7 +157,7 @@ object InvSearchBar {
             parsedValue = try {
                 ExprParser.parseExpression(searchTerm)
             } catch (e: Exception) {
-                FishDiag.fail("SearchBar.2", "MathParser threw on '$searchTerm'", e)
+                FishDiag.fail("InvSearchBar.2", "ExprParser threw on '$searchTerm'", e)
                 Double.NaN
             }
         }

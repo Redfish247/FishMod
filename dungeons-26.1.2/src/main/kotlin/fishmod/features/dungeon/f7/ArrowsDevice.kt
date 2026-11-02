@@ -54,7 +54,7 @@ object ArrowsDevice {
     }
 
     private fun inP3(): Boolean =
-        (try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("ArrowsDevice.1", "Phase.inP3 threw", t); false }) ||
+        (try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("ArrowsDevice.1", "BossPhase.inP3 threw", t); false }) ||
             (SkyblockLocation.inDungeon() && Minecraft.getInstance().player?.let { it.y in 100.0..156.0 } == true)
 
     private val isPlayerInRoom: Boolean
