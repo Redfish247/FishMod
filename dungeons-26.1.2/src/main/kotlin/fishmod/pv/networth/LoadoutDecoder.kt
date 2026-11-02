@@ -116,13 +116,13 @@ internal object LoadoutDecoder {
     @JvmStatic
     fun loadoutHasContent(loadout: InventorySnapshot.Loadout?): Boolean {
         if (loadout == null) return false
-        if (loadout.powerStone().isNotBlank() || loadout.petLabel().isNotBlank()) return true
-        if (loadout.hotmPreset() != null || loadout.hotfPreset() != null) return true
-        val pet = loadout.pet()
+        if (loadout.powerStone.isNotBlank() || loadout.petLabel.isNotBlank()) return true
+        if (loadout.hotmPreset != null || loadout.hotfPreset != null) return true
+        val pet = loadout.pet
         if (pet != null && !pet.isEmpty()) return true
-        if (!loadout.tuning().isNullOrEmpty()) return true
-        if (loadout.armor().any { it != null && !it.isEmpty() }) return true
-        return loadout.equipment().any { it != null && !it.isEmpty() }
+        if (!loadout.tuning.isNullOrEmpty()) return true
+        if (loadout.armor.any { it != null && !it.isEmpty() }) return true
+        return loadout.equipment.any { it != null && !it.isEmpty() }
     }
 
     @JvmStatic
@@ -142,7 +142,7 @@ internal object LoadoutDecoder {
     @JvmStatic
     fun resolveTuning(info: InventorySnapshot.AccessoryInfo?, slot: Int?): List<InventorySnapshot.StatPoint> {
         if (info == null || slot == null) return emptyList()
-        return info.tunings().firstOrNull { it.slot() == slot }?.stats() ?: emptyList()
+        return info.tunings.firstOrNull { it.slot == slot }?.stats ?: emptyList()
     }
 
     @JvmStatic
