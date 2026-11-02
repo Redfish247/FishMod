@@ -3646,10 +3646,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             FishDiag.check(values.isNotEmpty(), "FishModScreen.30") { "dropdown '$name' has no options" }
         }
 
+        // Stale stored value (old config) shows as the first option; stored value kept until the player picks
         private fun indexOfCurrent(): Int {
             val cur = getter()
             for (i in values.indices) if (values[i] === cur || values[i] == cur) return i
-            FishDiag.fail("FishModScreen.29", "dropdown '$name' value '$cur' not in options")
             return 0
         }
 
@@ -3658,7 +3658,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            val currentValue = getter()
+            val currentValue = values.getOrElse(indexOfCurrent()) { getter() }
             val current = label(currentValue)
             val textW = stw(tr, current)
             val sw = swatch
