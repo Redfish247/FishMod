@@ -30,24 +30,24 @@ object CataXpCalculator {
 	fun calculate(data: DungeonSnapshot, targetLevel: Int): Result {
 		DungeonXpData.ensureLoaded()
 		val target = max(1, min(CataXpMath.maxLevel(), targetLevel))
-		val needed = CataXpMath.xpNeeded(data.cataXp(), target)
+		val needed = CataXpMath.xpNeeded(data.cataXp, target)
 		if (needed <= 0f) return Result(0f, target, emptyList(), mayorDisplay(data))
 
-		val cataLevel = data.cataLevel()
-		val masterUnlocked = completions(data.normal(), "7") > 0L
+		val cataLevel = data.cataLevel
+		val masterUnlocked = completions(data.normal, "7") > 0L
 		val estimates = ArrayList<FloorEstimate>()
 
 		for (floor in DungeonXpData.floors()) {
 			if (cataLevel < floor.unlockCata) continue
 			if (floor.master && !masterUnlocked) continue
 			if (!chainUnlocked(data, floor)) continue
-			val comps = completions(if (floor.master) data.master() else data.normal(), floor.floor.toString())
+			val comps = completions(if (floor.master) data.master else data.normal, floor.floor.toString())
 			val xpPerRun = max(1L, Math.round(cataXpPerRun(
 				floor.baseXp,
 				comps,
-				data.expertRing(),
-				data.hecatombLevel(),
-				data.mayorFactor(),
+				data.expertRing,
+				data.hecatombLevel,
+				data.mayorFactor,
 				0.0
 			)))
 			val runs = ceil(needed / xpPerRun.toDouble()).toLong()
@@ -83,22 +83,22 @@ object CataXpCalculator {
 	}
 
 	private fun mayorDisplay(data: DungeonSnapshot): String {
-		val name = data.mayorName()
+		val name = data.mayorName
 		if (name.isNullOrBlank()) return ""
-		return if (data.mayorFactor() <= 1.0) "$name (no XP buff)" else name
+		return if (data.mayorFactor <= 1.0) "$name (no XP buff)" else name
 	}
 
 	private fun chainUnlocked(data: DungeonSnapshot, floor: DungeonXpData.FloorDef): Boolean {
-		val own = completions(if (floor.master) data.master() else data.normal(), floor.floor.toString())
+		val own = completions(if (floor.master) data.master else data.normal, floor.floor.toString())
 		if (own > 0L) return true
 		if (floor.master) {
-			if (floor.floor <= 1) return completions(data.normal(), "7") > 0L
-			return completions(data.master(), (floor.floor - 1).toString()) > 0L
+			if (floor.floor <= 1) return completions(data.normal, "7") > 0L
+			return completions(data.master, (floor.floor - 1).toString()) > 0L
 		}
 		if (floor.floor <= 1) return true
-		return completions(data.normal(), (floor.floor - 1).toString()) > 0L
+		return completions(data.normal, (floor.floor - 1).toString()) > 0L
 	}
 
 	private fun completions(mode: DungeonSnapshot.ModeStats, id: String): Long =
-		mode.floors().firstOrNull { it.id() == id }?.completions() ?: 0L
+		mode.floors.firstOrNull { it.id == id }?.completions ?: 0L
 }
