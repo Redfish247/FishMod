@@ -64,7 +64,10 @@ object BoardReport {
         val now = System.currentTimeMillis()
         if (now - lastManualAt < MANUAL_COOLDOWN_MS) return done(false, "wait ${(MANUAL_COOLDOWN_MS - (now - lastManualAt)) / 1000}s before sending another")
         lastManualAt = now
-        send(kind, title.take(120), text, null, done)
+        send(kind, title.take(120), text, null) { ok, msg ->
+            if (ok) fishmod.features.achievements.AchUsage.onReportSent(kind)
+            done(ok, msg)
+        }
     }
 
     /** Called by FishDiag on the first hit of each code; deduped and rate limited. */
