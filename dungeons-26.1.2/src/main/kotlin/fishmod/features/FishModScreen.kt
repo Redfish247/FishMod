@@ -325,6 +325,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Cast Alert", "Title when you start casting", FishSettings::ragnarockCastAlert))
             f.sub.add(ToggleSetting("Cancelled Alert", "Title when a cast is interrupted", FishSettings::ragnarockCancelAlert))
             f.sub.add(ToggleSetting("Announce Cast to Party", "", FishSettings::ragnarockAnnounceParty))
+            f.sub.add(ToggleSetting("Strength Gained Notification", "Show the Strength gained on screen when you cast", FishSettings::ragnarockStrengthTitle))
+            f.sub.add(ToggleSetting("Strength Gained in Party Chat", "Send the Strength gained to party chat when you cast", FishSettings::ragnarockStrengthParty))
             f.sub.add(ToggleSetting("Strength Timer", "Moveable HUD countdown of the 10s Ragnarock buff (edit position in the HUD editor)", FishSettings::ragnarockTimer))
             f.sub.add(ToggleSetting("P5 Rag", "Title \"Rag\" when Wither King's pre-fight taunt appears", FishSettings::p5RagEnabled))
             general.features.add(f)

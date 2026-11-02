@@ -10,6 +10,7 @@ import fishmod.utils.events.FishEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
@@ -21,6 +22,8 @@ object Ragnarock {
         Pattern.compile("Ragnarock was cancelled due to (?:being hit|taking damage)!")
     private val P5_TAUNT: Pattern =
         Pattern.compile(Pattern.quote("Wither King: I no longer wish to fight"))
+    private val WEAPON_STRENGTH: Pattern =
+        Pattern.compile("Strength: (?:§.)*\\+([\\d,]+(?:\\.\\d+)?)")
 
     private const val NAME = "Rag Timer"
 
@@ -42,6 +45,18 @@ object Ragnarock {
         return FishDiag.guard("Ragnarock.2", "rag axe id lookup failed") { ItemTools.getId(p.mainHandItem) == "RAGNAROCK_AXE" } ?: false
     }
 
+    // Ability grants 1.5x the held weapon's lore Strength
+    private fun strengthGained(): Int? {
+        val p = Minecraft.getInstance().player ?: return null
+        val lore = p.mainHandItem.get(DataComponents.LORE) ?: return null
+        for (line in lore.lines()) {
+            val m = WEAPON_STRENGTH.matcher(line.string)
+            if (m.find()) return (m.group(1).replace(",", "").toDouble() * 1.5).toInt()
+        }
+        FishDiag.fail("Ragnarock.4", "no Strength line in rag lore")
+        return null
+    }
+
     @JvmStatic
     fun init() {
         FishHudEditor.register(
@@ -57,9 +72,19 @@ object Ragnarock {
             if (FishSettings.ragnarockEnabled
                 && pitch == CAST_PITCH && "wolf" in event.location.path && SkyblockLocation.inSkyblock() && holdingAxe()
             ) {
+                val strength = if (FishSettings.ragnarockStrengthTitle || FishSettings.ragnarockStrengthParty) strengthGained() else null
+                val showStrength = if (FishSettings.ragnarockStrengthTitle && strength != null) "§c+$strength Strength" else null
                 if (FishSettings.ragnarockCastAlert) {
-                    FishUtil.forceTitle(Component.literal("§aCasted Ragnarock"), Component.empty())
-                    if (FishSettings.ragnarockAnnounceParty) fishmod.utils.ChatQueue.enqueue("pc Casted Ragnarock")
+                    FishUtil.forceTitle(Component.literal("§aCasted Ragnarock"), Component.literal(showStrength ?: ""))
+                } else if (showStrength != null) {
+                    FishUtil.forceTitle(Component.literal(showStrength), Component.empty())
+                }
+                val announce = FishSettings.ragnarockCastAlert && FishSettings.ragnarockAnnounceParty
+                val partyStrength = if (FishSettings.ragnarockStrengthParty) strength else null
+                when {
+                    announce && partyStrength != null -> fishmod.utils.ChatQueue.enqueue("pc Casted Ragnarock (+$partyStrength Strength)")
+                    announce -> fishmod.utils.ChatQueue.enqueue("pc Casted Ragnarock")
+                    partyStrength != null -> fishmod.utils.ChatQueue.enqueue("pc Ragnarock: +$partyStrength Strength")
                 }
                 if (FishSettings.ragnarockTimer) ticksLeft = BUFF_TICKS
             }
