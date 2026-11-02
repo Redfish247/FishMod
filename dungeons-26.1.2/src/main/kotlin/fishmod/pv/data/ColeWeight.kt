@@ -73,9 +73,9 @@ object ColeWeight {
 		val miningXp = Leveling.readSkillXp(member, "mining").toDouble()
 		add(lines, "experience", "Mining Experience", miningXp, 2_500_000.0)
 
-		add(lines, "powder", "Mithril Powder", mining.mithril().total().toDouble(), 400_000.0)
-		add(lines, "powder", "Gemstone Powder", mining.gemstone().total().toDouble(), 400_000.0)
-		add(lines, "powder", "Glacite Powder", mining.glacite().total().toDouble(), 400_000.0)
+		add(lines, "powder", "Mithril Powder", mining.mithril.total().toDouble(), 400_000.0)
+		add(lines, "powder", "Gemstone Powder", mining.gemstone.total().toDouble(), 400_000.0)
+		add(lines, "powder", "Glacite Powder", mining.glacite.total().toDouble(), 400_000.0)
 
 		for (t in COLLECTIONS) {
 			val amount = collections?.viewedAmount(t.collectionId) ?: 0L
