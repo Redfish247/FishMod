@@ -100,7 +100,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             }
             ((NametagStatsHolder) state).fishmod$setNametagStats(statLines);
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("EntityRendererMixin.1", "nametag render-state adjust failed entity=" + entity.getType(), t);
+            fishmod.utils.debug.FishDiag.fail("FishEntityRenderMixin.1", "nametag render-state adjust failed entity=" + entity.getType(), t);
         }
     }
 
@@ -121,7 +121,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 y += above ? -10 : 10;
             }
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("EntityRendererMixin.2", "extra nametag lines submit failed lines=" + lines.size(), t);
+            fishmod.utils.debug.FishDiag.fail("FishEntityRenderMixin.2", "extra nametag lines submit failed lines=" + lines.size(), t);
         }
     }
 
@@ -175,7 +175,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 }
             }
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("EntityRendererMixin.3", "entity cull check failed entity=" + entity.getType(), t);
+            fishmod.utils.debug.FishDiag.fail("FishEntityRenderMixin.3", "entity cull check failed entity=" + entity.getType(), t);
         }
     }
 }

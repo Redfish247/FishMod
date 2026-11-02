@@ -23,7 +23,7 @@ public class FishKeyMixin {
                 if (FishSettings.inventorySearchEnabled) InvSearchBar.charTyped(input);
             }
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("KeyboardMixin.1", "container charTyped hooks failed", t);
+            fishmod.utils.debug.FishDiag.fail("FishKeyMixin.1", "container charTyped hooks failed", t);
         }
     }
 

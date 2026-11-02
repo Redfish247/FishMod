@@ -108,7 +108,7 @@ object InvShortcutButtons {
     fun save() {
         InvButtonSettings.buttonsJson = gson.toJson(buttons)
         loadedJson = InvButtonSettings.buttonsJson
-        runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("InventoryButton.3", "saving inventory buttons failed", it) }
+        runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("InvShortcutButtons.3", "saving inventory buttons failed", it) }
     }
 
     private fun inside(mx: Double, my: Double, r: IntArray) = mx >= r[0] && mx < r[0] + r[2] && my >= r[1] && my < r[1] + r[3]
@@ -157,7 +157,7 @@ object InvShortcutButtons {
         try {
             FishUtil.executeCommand(hit.command)
         } catch (e: Exception) {
-            FishDiag.fail("InventoryButton.1", "inventory button click failed", e)
+            FishDiag.fail("InvShortcutButtons.1", "inventory button click failed", e)
         }
         return true
     }
@@ -269,7 +269,7 @@ object InvShortcutButtons {
             try {
                 draw(context, b, mouseX, mouseY)
             } catch (e: Exception) {
-                FishDiag.fail("InventoryButton.2", "inventory button render failed", e)
+                FishDiag.fail("InvShortcutButtons.2", "inventory button render failed", e)
             }
         }
     }

@@ -29,7 +29,7 @@ object EntityTools {
     @JvmStatic
     fun getLerpedPos(entity: Entity): Vec3 {
         val tickProgress = Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(false).toDouble()
-        if (tickProgress.isNaN() || tickProgress < 0.0 || tickProgress > 1.0) FishDiag.fail("EntityUtil.1", "partial tick out of range: $tickProgress")
+        if (tickProgress.isNaN() || tickProgress < 0.0 || tickProgress > 1.0) FishDiag.fail("EntityTools.1", "partial tick out of range: $tickProgress")
         return FishUtil.getPos(entity, tickProgress)
     }
 }

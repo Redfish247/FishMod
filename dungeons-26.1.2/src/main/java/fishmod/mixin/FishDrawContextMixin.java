@@ -82,7 +82,7 @@ public class FishDrawContextMixin {
             try {
                 fishmod.features.ItemRarityHotbar.drawRarity((GuiGraphicsExtractor) (Object) this, stack, x, y);
             } catch (Throwable t) {
-                fishmod.utils.debug.FishDiag.fail("DrawContextMixin.1", "hotbar rarity draw failed item=" + stack.getItem(), t);
+                fishmod.utils.debug.FishDiag.fail("FishDrawContextMixin.1", "hotbar rarity draw failed item=" + stack.getItem(), t);
             }
         }
         if (VisualSettings.legacyPlayerHead && stack.getItem() == Items.PLAYER_HEAD) {

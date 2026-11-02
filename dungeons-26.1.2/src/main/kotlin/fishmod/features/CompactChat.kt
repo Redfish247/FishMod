@@ -27,7 +27,7 @@ object CompactChat {
         if (mc.hud == null) return false
         val nowTick = mc.hud.guiTicks
 
-        val acc = hud as? FishChatInvoker ?: run { FishDiag.fail("CompactChat.1", "ChatHudInvoker mixin not applied"); return false }
+        val acc = hud as? FishChatInvoker ?: run { FishDiag.fail("CompactChat.1", "FishChatInvoker mixin not applied"); return false }
         val messages = acc.messages
         if (messages == null || messages.isEmpty()) return false
 

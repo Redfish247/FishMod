@@ -57,7 +57,7 @@ object FishDraw {
 
     @JvmStatic
     fun flushDeferredFills(matrices: PoseStack, consumer: VertexConsumer) {
-        if (deferredFills.size != deferredFillColors.size) FishDiag.fail("RenderUtils.1", "deferred fill lists out of sync boxes=${deferredFills.size} colours=${deferredFillColors.size}")
+        if (deferredFills.size != deferredFillColors.size) FishDiag.fail("FishDraw.1", "deferred fill lists out of sync boxes=${deferredFills.size} colours=${deferredFillColors.size}")
         for (i in deferredFills.indices) {
             val b = deferredFills[i]
             val argb = deferredFillColors.getInt(i)
@@ -98,7 +98,7 @@ object FishDraw {
     @JvmStatic
     fun flushRedirectedQuads(consumer: VertexConsumer) {
         val f = redirectedQuads
-        if (f.size % 7 != 0) FishDiag.fail("RenderUtils.2", "redirected quad buffer size ${f.size} not a multiple of 7")
+        if (f.size % 7 != 0) FishDiag.fail("FishDraw.2", "redirected quad buffer size ${f.size} not a multiple of 7")
         var i = 0
         while (i + 7 <= f.size) {
             consumer.addVertex(f.getFloat(i), f.getFloat(i + 1), f.getFloat(i + 2))
@@ -113,7 +113,7 @@ object FishDraw {
 
     @JvmStatic
     fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int, throughWalls: Boolean) {
-        if (box.minX.isNaN() || box.minY.isNaN() || box.minZ.isNaN() || box.maxX.isNaN() || box.maxY.isNaN() || box.maxZ.isNaN()) FishDiag.fail("RenderUtils.3", "gizmoBox given NaN box $box")
+        if (box.minX.isNaN() || box.minY.isNaN() || box.minZ.isNaN() || box.maxX.isNaN() || box.maxY.isNaN() || box.maxZ.isNaN()) FishDiag.fail("FishDraw.3", "gizmoBox given NaN box $box")
         if ((fillArgb ushr 24) != 0) {
             if (throughWalls) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb)).setAlwaysOnTop()
             else { deferredFills.add(box); deferredFillColors.add(fillArgb) }
@@ -124,7 +124,7 @@ object FishDraw {
     @JvmStatic
     fun gizmoThickOutline(box: AABB, argb: Int, lineWidth: Double) {
         if ((argb ushr 24) == 0) return
-        if (lineWidth.isNaN() || lineWidth < 0.0 || box.minX.isNaN() || box.maxY.isNaN()) FishDiag.fail("RenderUtils.4", "gizmoThickOutline bad input box=$box width=$lineWidth")
+        if (lineWidth.isNaN() || lineWidth < 0.0 || box.minX.isNaN() || box.maxY.isNaN()) FishDiag.fail("FishDraw.4", "gizmoThickOutline bad input box=$box width=$lineWidth")
         val hw = lineWidth / 2.0
         val x1 = box.minX; val y1 = box.minY; val z1 = box.minZ
         val x2 = box.maxX; val y2 = box.maxY; val z2 = box.maxZ
@@ -167,7 +167,7 @@ object FishDraw {
     @JvmStatic
     fun gizmoQuad(corners: Array<Vec3>, fillArgb: Int, strokeArgb: Int) {
         if (corners.size < 4) {
-            FishDiag.fail("RenderUtils.5", "gizmoQuad given ${corners.size} corners")
+            FishDiag.fail("FishDraw.5", "gizmoQuad given ${corners.size} corners")
             return
         }
         Gizmos.rect(corners[0], corners[1], corners[2], corners[3], GizmoStyle.strokeAndFill(strokeArgb, 2f, fillArgb))
@@ -192,7 +192,7 @@ object FishDraw {
 
     @JvmStatic
     fun gizmoLine(a: Vec3, b: Vec3, argb: Int) {
-        if (a.x.isNaN() || a.y.isNaN() || a.z.isNaN() || b.x.isNaN() || b.y.isNaN() || b.z.isNaN()) FishDiag.fail("RenderUtils.6", "gizmoLine given NaN $a -> $b")
+        if (a.x.isNaN() || a.y.isNaN() || a.z.isNaN() || b.x.isNaN() || b.y.isNaN() || b.z.isNaN()) FishDiag.fail("FishDraw.6", "gizmoLine given NaN $a -> $b")
         Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb)
     }
 
@@ -201,7 +201,7 @@ object FishDraw {
 
     @JvmStatic
     fun gizmoLine(a: Vec3, b: Vec3, argb: Int, width: Float, throughWalls: Boolean) {
-        if (width.isNaN() || a.x.isNaN() || a.y.isNaN() || b.x.isNaN() || b.y.isNaN()) FishDiag.fail("RenderUtils.7", "gizmoLine given NaN $a -> $b width=$width")
+        if (width.isNaN() || a.x.isNaN() || a.y.isNaN() || b.x.isNaN() || b.y.isNaN()) FishDiag.fail("FishDraw.7", "gizmoLine given NaN $a -> $b width=$width")
         Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb, width).also { if (throughWalls) it.setAlwaysOnTop() }
     }
 
@@ -245,7 +245,7 @@ object FishDraw {
 
     private fun crossQuads(a: Vec3, b: Vec3, halfWidth: Double): Pair<Array<Vec3>, Array<Vec3>>? {
         val dir = b.subtract(a)
-        if (dir.lengthSqr().isNaN() || halfWidth.isNaN()) FishDiag.fail("RenderUtils.8", "crossQuads given NaN $a -> $b hw=$halfWidth")
+        if (dir.lengthSqr().isNaN() || halfWidth.isNaN()) FishDiag.fail("FishDraw.8", "crossQuads given NaN $a -> $b hw=$halfWidth")
         if (dir.lengthSqr() < 1.0e-9) return null
         val d = dir.normalize()
         val ref = if (kotlin.math.abs(d.y) < 0.99) Vec3(0.0, 1.0, 0.0) else Vec3(1.0, 0.0, 0.0)
@@ -291,7 +291,7 @@ object FishDraw {
 
     @JvmStatic
     fun gizmoText(text: Component, pos: Vec3, scale: Float, argb: Int, throughWalls: Boolean) {
-        if (scale.isNaN() || pos.x.isNaN() || pos.y.isNaN() || pos.z.isNaN()) FishDiag.fail("RenderUtils.9", "gizmoText bad input pos=$pos scale=$scale")
+        if (scale.isNaN() || pos.x.isNaN() || pos.y.isNaN() || pos.z.isNaN()) FishDiag.fail("FishDraw.9", "gizmoText bad input pos=$pos scale=$scale")
         Gizmos.billboardText(text.string, pos, TextGizmo.Style.forColorAndCentered(argb).withScale(scale))
             .also { if (throughWalls) it.setAlwaysOnTop() }
     }
@@ -340,18 +340,18 @@ object FishDraw {
     @JvmStatic
     fun renderFilled(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray) {
         if (rgba.size < 4) {
-            FishDiag.fail("RenderUtils.10", "renderFilled colour array has ${rgba.size} components")
+            FishDiag.fail("FishDraw.10", "renderFilled colour array has ${rgba.size} components")
             return
         }
         if (rgba[3] == 0f) return
-        if (box.minX.isNaN() || box.minY.isNaN() || box.maxX.isNaN() || box.maxY.isNaN()) FishDiag.fail("RenderUtils.11", "renderFilled given NaN box $box")
+        if (box.minX.isNaN() || box.minY.isNaN() || box.maxX.isNaN() || box.maxY.isNaN()) FishDiag.fail("FishDraw.11", "renderFilled given NaN box $box")
         drawFilledBox(matrixStack, consumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
     @JvmStatic
     fun renderFilledQuad(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
         if (rgba[3] == 0f) return
-        if (corners.size != 4) FishDiag.fail("RenderUtils.12", "renderFilledQuad given ${corners.size} corners, quad buffer will desync")
+        if (corners.size != 4) FishDiag.fail("FishDraw.12", "renderFilledQuad given ${corners.size} corners, quad buffer will desync")
         val pose = matrixStack.last()
         for (c in corners) quadVertex(consumer, pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
     }
@@ -359,7 +359,7 @@ object FishDraw {
     @JvmStatic
     fun renderQuadOutline(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
         if (rgba[3] == 0f) return
-        if (corners.size < 2) FishDiag.fail("RenderUtils.13", "renderQuadOutline given ${corners.size} corners")
+        if (corners.size < 2) FishDiag.fail("FishDraw.13", "renderQuadOutline given ${corners.size} corners")
         val pose = matrixStack.last()
         for (i in corners.indices) {
             val a = corners[i]
@@ -371,11 +371,11 @@ object FishDraw {
     @JvmStatic
     fun renderOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray) {
         if (rgba.size < 4) {
-            FishDiag.fail("RenderUtils.14", "renderOutline colour array has ${rgba.size} components")
+            FishDiag.fail("FishDraw.14", "renderOutline colour array has ${rgba.size} components")
             return
         }
         if (rgba[3] == 0f) return
-        if (box.minX.isNaN() || box.minY.isNaN() || box.maxX.isNaN() || box.maxY.isNaN()) FishDiag.fail("RenderUtils.15", "renderOutline given NaN box $box")
+        if (box.minX.isNaN() || box.minY.isNaN() || box.maxX.isNaN() || box.maxY.isNaN()) FishDiag.fail("FishDraw.15", "renderOutline given NaN box $box")
         val pose = matrixStack.last()
         val x1 = box.minX.toFloat(); val y1 = box.minY.toFloat(); val z1 = box.minZ.toFloat()
         val x2 = box.maxX.toFloat(); val y2 = box.maxY.toFloat(); val z2 = box.maxZ.toFloat()
@@ -400,7 +400,7 @@ object FishDraw {
     @JvmStatic
     fun renderThickOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray, lineWidth: Double) {
         if (rgba[3] == 0f) return
-        if (lineWidth.isNaN() || lineWidth < 0.0 || box.minX.isNaN() || box.maxY.isNaN()) FishDiag.fail("RenderUtils.16", "renderThickOutline bad input box=$box width=$lineWidth")
+        if (lineWidth.isNaN() || lineWidth < 0.0 || box.minX.isNaN() || box.maxY.isNaN()) FishDiag.fail("FishDraw.16", "renderThickOutline bad input box=$box width=$lineWidth")
         val hw = lineWidth / 2.0
         val x1 = box.minX; val y1 = box.minY; val z1 = box.minZ
         val x2 = box.maxX; val y2 = box.maxY; val z2 = box.maxZ
@@ -443,7 +443,7 @@ object FishDraw {
     @JvmStatic
     fun renderLine(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, rgba: FloatArray) {
         if (rgba[3] == 0f) return
-        if (a.x.isNaN() || a.y.isNaN() || a.z.isNaN() || b.x.isNaN() || b.y.isNaN() || b.z.isNaN()) FishDiag.fail("RenderUtils.17", "renderLine given NaN $a -> $b")
+        if (a.x.isNaN() || a.y.isNaN() || a.z.isNaN() || b.x.isNaN() || b.y.isNaN() || b.z.isNaN()) FishDiag.fail("FishDraw.17", "renderLine given NaN $a -> $b")
         edge(
             consumer, matrixStack.last(), a.x.toFloat(), a.y.toFloat(), a.z.toFloat(), b.x.toFloat(), b.y.toFloat(), b.z.toFloat(),
             rgba[0], rgba[1], rgba[2], rgba[3]
@@ -470,7 +470,7 @@ object FishDraw {
     @JvmStatic
     fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, x: Double, y: Double, z: Double, scale: Float) {
         Minecraft.getInstance().player ?: return
-        if (x.isNaN() || y.isNaN() || z.isNaN() || scale.isNaN() || scale == 0f) FishDiag.fail("RenderUtils.18", "renderText bad input ($x,$y,$z) scale=$scale")
+        if (x.isNaN() || y.isNaN() || z.isNaN() || scale.isNaN() || scale == 0f) FishDiag.fail("FishDraw.18", "renderText bad input ($x,$y,$z) scale=$scale")
 
         matrices.pushPose()
         matrices.translate(x, y, z)
@@ -515,7 +515,7 @@ object FishDraw {
     @JvmStatic
     fun renderLineTo(context: LevelRenderContext, matrices: PoseStack, consumer: VertexConsumer, x: Double, y: Double, z: Double, color: Int) {
         val player = Minecraft.getInstance().player ?: return
-        if (x.isNaN() || y.isNaN() || z.isNaN()) FishDiag.fail("RenderUtils.19", "renderLineTo given NaN target ($x,$y,$z)")
+        if (x.isNaN() || y.isNaN() || z.isNaN()) FishDiag.fail("FishDraw.19", "renderLineTo given NaN target ($x,$y,$z)")
 
         val playerPos = EntityTools.getLerpedPos(player)
         val eyeHeight = player.eyeHeight
@@ -581,7 +581,7 @@ object FishDraw {
 
     @JvmStatic
     fun formatNumber(num: Float): String {
-        if (num.isNaN() || num.isInfinite()) FishDiag.fail("RenderUtils.20", "formatNumber given $num")
+        if (num.isNaN() || num.isInfinite()) FishDiag.fail("FishDraw.20", "formatNumber given $num")
         return formatNumber(num, Floor7Settings.bossHpCapitalized)
     }
 

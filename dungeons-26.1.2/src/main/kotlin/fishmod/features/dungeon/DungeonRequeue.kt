@@ -53,12 +53,12 @@ object DungeonRequeue {
                     if (DungeonSettings.autoRequeueEnabled && !BladeCompat.active && !partyChanged && !skip && !teamShrank) {
                         val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
                         val cmd = requeueCommand()
-                        FishDiag.check(startTeamCount > 0, "AutoRequeue.2") { "extra stats seen but team count never recorded (players=${fishmod.features.dungeon.map.DungeonPlayers.count()})" }
+                        FishDiag.check(startTeamCount > 0, "DungeonRequeue.2") { "extra stats seen but team count never recorded (players=${fishmod.features.dungeon.map.DungeonPlayers.count()})" }
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {
                             Minecraft.getInstance().execute {
                                 val mc = Minecraft.getInstance()
                                 if (DungeonSettings.autoRequeueEnabled && !partyChanged && !dtSkip && mc.connection != null) {
-                                    FishDiag.guard("AutoRequeue.1", "requeue command '$cmd' failed") { mc.connection!!.sendCommand(cmd) }
+                                    FishDiag.guard("DungeonRequeue.1", "requeue command '$cmd' failed") { mc.connection!!.sendCommand(cmd) }
                                 }
                             }
                         }
@@ -98,7 +98,7 @@ object DungeonRequeue {
                 (if (master) "master_" else "") +
                 "catacombs_floor_" + NUM_WORDS[floor - 1]
             else -> {
-                FishDiag.fail("AutoRequeue.3", "unknown floor $floor for requeue, falling back to instancerequeue")
+                FishDiag.fail("DungeonRequeue.3", "unknown floor $floor for requeue, falling back to instancerequeue")
                 "instancerequeue"
             }
         }

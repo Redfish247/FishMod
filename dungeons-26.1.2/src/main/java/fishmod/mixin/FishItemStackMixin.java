@@ -26,7 +26,7 @@ public class FishItemStackMixin implements RarityTierCache, ItemCustomDataHolder
             net.minecraft.network.chat.MutableComponent name = ItemCustomizationStore.parsedItemName(uuid);
             if (name != null) cir.setReturnValue(name.setStyle(cir.getReturnValue().getStyle()));
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("ItemStackMixin.1", "custom item name lookup failed", t);
+            fishmod.utils.debug.FishDiag.fail("FishItemStackMixin.1", "custom item name lookup failed", t);
         }
     }
 

@@ -32,15 +32,15 @@ object RenderHooks {
             FishDraw.clearDeferredFills()
             GIZMO.invoke { it.emit(ctx) }
         } catch (t: Throwable) {
-            FishDiag.fail("RenderingEvents.1", "gizmo pass", t)
+            FishDiag.fail("RenderHooks.1", "gizmo pass", t)
         }
     }
 
     private fun render(ctx: LevelRenderContext) {
         val mc = Minecraft.getInstance()
         if (mc.level == null) return
-        val buffers: MultiBufferSource.BufferSource = FishDiag.notNull(ctx.bufferSource(), "RenderingEvents.2") { "level render context has no buffer source" } ?: return
-        val ps: PoseStack = FishDiag.notNull(ctx.poseStack(), "RenderingEvents.3") { "level render context has no pose stack" } ?: return
+        val buffers: MultiBufferSource.BufferSource = FishDiag.notNull(ctx.bufferSource(), "RenderHooks.2") { "level render context has no buffer source" } ?: return
+        val ps: PoseStack = FishDiag.notNull(ctx.poseStack(), "RenderHooks.3") { "level render context has no pose stack" } ?: return
 
         val cam = mc.cam.position()
         ps.pushPose()
@@ -63,7 +63,7 @@ object RenderHooks {
             buffers.endBatch(FishRenderLayers.FILL_ND)
         }
         } catch (t: Throwable) {
-            FishDiag.fail("RenderingEvents.4", "world overlay render pass", t)
+            FishDiag.fail("RenderHooks.4", "world overlay render pass", t)
         } finally {
             ps.popPose()
         }

@@ -43,7 +43,7 @@ object PartyWarpTimer {
                     fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.warpKickText}")
                 }
             } catch (e: Exception) {
-                FishDiag.fail("WarpCooldown.1", "warp cooldown chat handling failed", e)
+                FishDiag.fail("PartyWarpTimer.1", "warp cooldown chat handling failed", e)
             }
             false
         }
@@ -58,7 +58,7 @@ object PartyWarpTimer {
         if (enteredAt == 0L) return 0
         val total = FishSettings.warpCooldownSeconds.coerceIn(1, 120) * 1000L
         val rem = total - (System.currentTimeMillis() - enteredAt)
-        FishDiag.check(rem <= total, "WarpCooldown.2") { "warp cooldown enteredAt in the future: rem=$rem total=$total" }
+        FishDiag.check(rem <= total, "PartyWarpTimer.2") { "warp cooldown enteredAt in the future: rem=$rem total=$total" }
         return rem.coerceAtLeast(0)
     }
 
@@ -80,7 +80,7 @@ object PartyWarpTimer {
             ctx.pose().scale(sc, sc)
             ctx.text(mc.font, label, 0, 0, -1, true)
         } catch (e: Exception) {
-            FishDiag.fail("WarpCooldown.3", "warp cooldown hud render failed", e)
+            FishDiag.fail("PartyWarpTimer.3", "warp cooldown hud render failed", e)
         } finally {
             ctx.pose().popMatrix()
         }

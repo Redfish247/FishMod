@@ -40,7 +40,7 @@ object RenderHooks {
             GIZMO.invoke { it.emit(ctx) }
             if (VisualSettings.gizmoOverlays) gizmoOverlays(ctx)
         } catch (t: Throwable) {
-            FishDiag.fail("RenderingEvents.1", "gizmo pass", t)
+            FishDiag.fail("RenderHooks.1", "gizmo pass", t)
         }
     }
 
@@ -119,7 +119,7 @@ object RenderHooks {
                 submit(collector, FishRenderLayers.FILL_ND, rec)
             }
         } catch (t: Throwable) {
-            FishDiag.fail("RenderingEvents.4", "world overlay render pass", t)
+            FishDiag.fail("RenderHooks.4", "world overlay render pass", t)
         } finally {
             WorldText.collector = null
             WorldText.commit(ctx.levelState().cameraRenderState)

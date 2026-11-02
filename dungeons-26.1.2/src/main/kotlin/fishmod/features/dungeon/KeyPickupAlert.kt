@@ -34,18 +34,18 @@ object KeyPickupAlert {
                     s == "A Blood Key was picked up!" || BLOOD.matcher(s).matches() ->
                         notify("§c§lBLOOD KEY", "§cBlood key picked up", 1.2f, "bloodKey")
                     s.endsWith("has obtained Wither Key!") || s.endsWith("has obtained Blood Key!") ->
-                        FishDiag.fail("KeyNotifier.1", "key pickup line did not match pattern: '$s'")
+                        FishDiag.fail("KeyPickupAlert.1", "key pickup line did not match pattern: '$s'")
                 }
             } catch (e: Exception) {
-                FishDiag.fail("KeyNotifier.2", "key notification failed", e)
+                FishDiag.fail("KeyPickupAlert.2", "key notification failed", e)
             }
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register {
-            try { scanKeys() } catch (e: Exception) { FishDiag.fail("KeyNotifier.3", "key scan threw", e) }
+            try { scanKeys() } catch (e: Exception) { FishDiag.fail("KeyPickupAlert.3", "key scan threw", e) }
         }
         RenderHooks.GIZMO.register { _ ->
-            try { renderKeys() } catch (e: Exception) { FishDiag.fail("KeyNotifier.4", "key highlight render threw", e) }
+            try { renderKeys() } catch (e: Exception) { FishDiag.fail("KeyPickupAlert.4", "key highlight render threw", e) }
         }
     }
 

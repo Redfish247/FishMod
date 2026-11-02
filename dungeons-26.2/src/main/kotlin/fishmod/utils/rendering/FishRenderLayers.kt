@@ -35,7 +35,7 @@ object FishRenderLayers {
             m.isAccessible = true
             m.invoke(null, p)
         } catch (e: Throwable) {
-            FishDiag.fail("RenderLayers.1", "could not register pipeline $name", e)
+            FishDiag.fail("FishRenderLayers.1", "could not register pipeline $name", e)
         }
         return p
     }

@@ -205,7 +205,7 @@ public class FishKeys {
             for (String line : Files.readAllLines(KEYBIND_BACKUP_FILE)) {
                 String[] parts = line.split("\t", 2);
                 if (parts.length != 2) {
-                    if (!line.isBlank()) fishmod.utils.debug.FishDiag.fail("Keybinds.1", "malformed keybind backup line: " + line);
+                    if (!line.isBlank()) fishmod.utils.debug.FishDiag.fail("FishKeys.1", "malformed keybind backup line: " + line);
                     continue;
                 }
                 String id = parts[0].trim();
@@ -225,7 +225,7 @@ public class FishKeys {
                 if (options != null) options.save();
             }
         } catch (IOException e) {
-            fishmod.utils.debug.FishDiag.fail("Keybinds.2", "reading keybind backup failed", e);
+            fishmod.utils.debug.FishDiag.fail("FishKeys.2", "reading keybind backup failed", e);
         }
     }
 
@@ -247,7 +247,7 @@ public class FishKeys {
             }
             Files.writeString(KEYBIND_BACKUP_FILE, sb.toString());
         } catch (IOException e) {
-            fishmod.utils.debug.FishDiag.fail("Keybinds.3", "writing keybind backup failed", e);
+            fishmod.utils.debug.FishDiag.fail("FishKeys.3", "writing keybind backup failed", e);
         }
     }
 
@@ -276,7 +276,7 @@ public class FishKeys {
                 FishUtil.executeCommand("potionbag");
             }
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("Keybinds.4", "keybind input tick failed", t);
+            fishmod.utils.debug.FishDiag.fail("FishKeys.4", "keybind input tick failed", t);
         }
     }
 }

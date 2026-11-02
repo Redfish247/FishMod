@@ -21,7 +21,7 @@ public class NoRecipeBookScreenMixin {
         try {
             InvSearchBar.render(context, mouseX, mouseY, deltaTicks);
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("RecipeBookScreenMixin.1", "search bar render (recipe screen) failed", t);
+            fishmod.utils.debug.FishDiag.fail("NoRecipeBookScreenMixin.1", "search bar render (recipe screen) failed", t);
         }
     }
 }

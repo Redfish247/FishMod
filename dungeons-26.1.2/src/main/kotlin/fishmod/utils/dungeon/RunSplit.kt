@@ -75,9 +75,9 @@ class RunSplit(
                 cachedNameColors = raw.split(';').mapNotNull { e ->
                     val i = e.lastIndexOf('=')
                     if (i <= 0) {
-                        if (e.isNotBlank()) FishDiag.fail("Split.1", "split name colour entry without '=': '$e'")
+                        if (e.isNotBlank()) FishDiag.fail("RunSplit.1", "split name colour entry without '=': '$e'")
                         null
-                    } else FishDiag.notNull(e.substring(i + 1).toLongOrNull(16), "Split.2") { "bad hex in split name colour '$e'" }
+                    } else FishDiag.notNull(e.substring(i + 1).toLongOrNull(16), "RunSplit.2") { "bad hex in split name colour '$e'" }
                         ?.let { e.substring(0, i) to it.toInt() }
                 }.toMap()
             }
@@ -139,7 +139,7 @@ class RunSplit(
     fun end() {
         if (ended) return
         endTime = System.currentTimeMillis()
-        if (started && endTime < startTime) FishDiag.fail("Split.3", "split '$name' ended before it started (clock went back ${startTime - endTime}ms)")
+        if (started && endTime < startTime) FishDiag.fail("RunSplit.3", "split '$name' ended before it started (clock went back ${startTime - endTime}ms)")
         started = false
         ended = true
         cachedAt = 0L
@@ -234,7 +234,7 @@ class RunSplit(
         if (nameText == null || timerText == null || now - cachedAt >= refreshMs) {
             nameText = createNameText()
             timerText = createTimeText()
-            if (tick < 0) FishDiag.fail("Split.4", "split '$name' tick counter negative: $tick")
+            if (tick < 0) FishDiag.fail("RunSplit.4", "split '$name' tick counter negative: $tick")
             cachedName = nameText
             cachedTimer = timerText
             cachedTimerWidth = textRenderer.width(timerText)

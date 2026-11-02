@@ -42,7 +42,7 @@ object ItemRarityHotbar {
 
         val holder = stack as? RarityTierCache
         if (holder == null) {
-            FishDiag.fail("ItemRarityHotbar.1", "ItemStack missing ItemRarityHolder mixin: ${stack.javaClass.name}")
+            FishDiag.fail("ItemRarityHotbar.1", "ItemStack missing RarityTierCache mixin: ${stack.javaClass.name}")
             return
         }
         try {
