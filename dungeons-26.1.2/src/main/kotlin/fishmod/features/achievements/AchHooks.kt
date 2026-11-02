@@ -36,6 +36,7 @@ object AchHooks {
     private var tick = 0
     private var lavaFalls = 0
     private var wasInLava = false
+    private var lavaOutTicks = 0
     private val ELAPSED = Regex("(\\d+)([hms])")
 
     fun init() {
@@ -193,8 +194,19 @@ object AchHooks {
         return t
     }
 
+    // Every tick so short lava touches count; 5 ticks out of lava ends a fall
+    private fun trackLava() {
+        if (!SkyblockLocation.inDungeon()) return
+        if (Minecraft.getInstance().player?.isInLava == true) {
+            if (!wasInLava && ++lavaFalls >= 10) AchStore.max("secret.lavaFalls", 1)
+            wasInLava = true
+            lavaOutTicks = 0
+        } else if (wasInLava && ++lavaOutTicks >= 5) wasInLava = false
+    }
+
     // State polled from existing trackers each tick
     fun onTick() {
+        trackLava()
         if (tick++ % 5 != 0) return
         detailedPlaytime()
         if (fishmod.features.rift.Rift.inRift()) {
@@ -202,9 +214,6 @@ object AchHooks {
             if (a.isNotEmpty() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
         }
         if (SkyblockLocation.inDungeon() && runStartMs > 0) {
-            val inLava = Minecraft.getInstance().player?.isInLava == true
-            if (inLava && !wasInLava && ++lavaFalls >= 10) AchStore.max("secret.lavaFalls", 1)
-            wasInLava = inLava
             if (!bloodSeen && DungeonState.bloodOpened) {
                 bloodSeen = true
                 AchBus.post(AchEvent.BloodOpened((System.currentTimeMillis() - runStartMs) / 1000.0))
