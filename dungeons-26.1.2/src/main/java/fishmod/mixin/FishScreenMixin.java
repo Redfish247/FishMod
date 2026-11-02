@@ -121,6 +121,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void fishmod$screenKey(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         try {
+            if (fishmod.features.storage.StorageOverlay.searchKeyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (InvSearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
             if (fishmod.features.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (fishmod.features.storage.StorageOverlay.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }

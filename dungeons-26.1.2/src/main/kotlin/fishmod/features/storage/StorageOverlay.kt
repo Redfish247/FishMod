@@ -75,7 +75,12 @@ object StorageOverlay {
     private val dragArmed get() = dragStartSlot != null
     private val dragActive get() = dragSlots.size >= 2
 
-    var search = ""
+    private val searchField = SearchFieldState()
+    var search: String
+        get() = searchField.text
+        set(value) { searchField.text = value }
+    private var searchSelecting = false
+    private var searchShift = 0f
     // page switches reopen within ~1.5s and keep the search
     private var closedAt = 0L
     private var searchFocused = false
@@ -362,22 +367,49 @@ object StorageOverlay {
         val fw = 130; val fh = 13
         val fx = mx0 + overviewW - fw - PADDING; val fy = my0 + 7
         UiRecorder.roundedRectRing(fx.toFloat(), fy.toFloat(), fw.toFloat(), fh.toFloat(), 4f, 1f, FIELD_BG, if (searchFocused) ACCENT else SLOT_CELL_BORDER)
-        val size = 7f
-        val pad = 4f
-        val textY = fy + (fh - size) / 2f
-        val tw = UiRecorder.textWidth(search, size)
-        val shift = (tw - (fw - pad * 2 - 2)).coerceAtLeast(0f)
+        val textY = fy + (fh - SEARCH_SIZE) / 2f
+        val tw = UiRecorder.textWidth(search, SEARCH_SIZE)
+        val viewW = fw - SEARCH_PAD * 2 - 2
+        val caretX = searchWidthTo(searchField.caret)
+        // keep the caret in view, no gap past the text end
+        if (caretX - searchShift > viewW) searchShift = caretX - viewW
+        if (caretX < searchShift) searchShift = caretX
+        searchShift = searchShift.coerceIn(0f, (tw - viewW).coerceAtLeast(0f))
+        val originX = fx + SEARCH_PAD - searchShift
         UiRecorder.pushScissor(fx + 1f, fy + 1f, fw - 2f, fh - 2f)
-        if (search.isEmpty()) UiRecorder.text("Search…", fx + pad, textY, size, ScreenTheme.SUBTEXT_COLOR)
-        else UiRecorder.text(search, fx + pad - shift, textY, size, ScreenTheme.TEXT_COLOR)
+        if (searchFocused && searchField.hasSelection) {
+            val sx = searchWidthTo(searchField.selStart)
+            val color = (ACCENT and 0xFFFFFF) or 0x66000000
+            UiRecorder.fillRect(originX + sx, fy + 2f, searchWidthTo(searchField.selEnd) - sx, fh - 4f, color)
+        }
+        if (search.isEmpty()) UiRecorder.text("Search…", fx + SEARCH_PAD, textY, SEARCH_SIZE, ScreenTheme.SUBTEXT_COLOR)
+        else UiRecorder.text(search, originX, textY, SEARCH_SIZE, ScreenTheme.TEXT_COLOR)
         if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
-            UiRecorder.fillRect(fx + pad + tw - shift + 0.5f, fy + 3f, 1f, fh - 6f, ScreenTheme.TEXT_COLOR)
+            UiRecorder.fillRect(originX + caretX, fy + 3f, 1f, fh - 6f, ScreenTheme.TEXT_COLOR)
         }
         UiRecorder.popScissor()
         searchFieldRect = intArrayOf(fx, fy, fw, fh)
     }
 
     private var searchFieldRect = IntArray(4)
+    private const val SEARCH_SIZE = 7f
+    private const val SEARCH_PAD = 4f
+
+    private fun searchWidthTo(index: Int) = UiRecorder.textWidth(search.substring(0, index), SEARCH_SIZE)
+
+    // Nearest caret index to a scaled mouse x, on code point boundaries
+    private fun searchIndexAt(rx: Double): Int {
+        val target = (rx - (searchFieldRect[0] + SEARCH_PAD - searchShift)).toFloat()
+        var best = 0
+        var bestDist = Float.MAX_VALUE
+        var i = 0
+        while (true) {
+            val dist = kotlin.math.abs(searchWidthTo(i) - target)
+            if (dist < bestDist) { bestDist = dist; best = i }
+            if (i >= search.length) return best
+            i = search.offsetByCodePoints(i, 1)
+        }
+    }
 
     private fun cardHeight(inv: NBTInventory?): Int = inv?.let { it.rows * SLOT_SIZE + GRID_TOP + 3 } ?: 18
 
@@ -698,7 +730,16 @@ object StorageOverlay {
         val modifiers = click.modifiers()
 
         if (inRect(rx, ry, searchFieldRect[0], searchFieldRect[1], searchFieldRect[2], searchFieldRect[3])) {
-            searchFocused = true; return true
+            searchFocused = true
+            if (button == 0) {
+                val index = searchIndexAt(rx)
+                if (doubled) searchField.selectWordAt(index)
+                else {
+                    searchField.moveTo(index, modifiers and GLFW.GLFW_MOD_SHIFT != 0)
+                    searchSelecting = true
+                }
+            }
+            return true
         }
         searchFocused = false
 
@@ -739,6 +780,7 @@ object StorageOverlay {
     @JvmStatic
     fun mouseReleased(screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
+        searchSelecting = false
         if (dragArmed) {
             if (dragActive) endDrag()
             else dragStartSlot?.let {
@@ -760,6 +802,10 @@ object StorageOverlay {
         val s = scale
         val rx = mouseX / s
         val ry = mouseY / s
+        if (searchSelecting) {
+            searchField.moveTo(searchIndexAt(rx), true)
+            return true
+        }
         if (dragArmed) {
             resolveSlotUnder(rx, ry, activePage(screen))?.let { dragSlots.add(it.index) }
             return true
@@ -787,16 +833,18 @@ object StorageOverlay {
     private var lastMouseX = 0.0
     private var lastMouseY = 0.0
 
+    // Runs before every other container key hook; a focused field takes all keys
+    @JvmStatic
+    fun searchKeyPressed(input: KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on(screen) || !searchFocused) return false
+        if (input.key() == GLFW.GLFW_KEY_ESCAPE) searchFocused = false
+        else searchField.keyPressed(input.key(), input.modifiers())
+        return true
+    }
+
     @JvmStatic
     fun keyPressed(input: KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
-        if (searchFocused) {
-            when (input.key()) {
-                GLFW.GLFW_KEY_ESCAPE -> searchFocused = false
-                GLFW.GLFW_KEY_BACKSPACE -> if (search.isNotEmpty()) search = search.dropLast(1)
-            }
-            return true
-        }
         val options = mc.options
         val hotbar = options.keyHotbarSlots.indexOfFirst { it.matches(input) }
         val drop = options.keyDrop.matches(input)
@@ -812,7 +860,7 @@ object StorageOverlay {
         if (!on(screen) || !searchFocused) return false
         val cp = input.codepoint()
         if (Character.isISOControl(cp)) return true
-        search += String(Character.toChars(cp))
+        searchField.insert(String(Character.toChars(cp)))
         return true
     }
 
@@ -821,6 +869,7 @@ object StorageOverlay {
         if (!FishSettings.storageRetainScroll) scroll = 0f
         closedAt = System.currentTimeMillis()
         searchFocused = false
+        searchSelecting = false
         knobGrabbed = false
         dragStartSlot = null
         dragSlots.clear()
