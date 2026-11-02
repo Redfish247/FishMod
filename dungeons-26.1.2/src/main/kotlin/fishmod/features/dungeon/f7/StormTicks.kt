@@ -71,7 +71,7 @@ object StormTicks {
                     CritTracker.onStormDeath(deathTime)
                     BossPhase.onStormKill(deathTime)
                 }
-                if (Floor7Settings.enableStormDeathTime && !fishmod.compat.BladeCompat.active) {
+                if (Floor7Settings.stormKillTimeHud && !fishmod.compat.BladeCompat.active) {
                     FishUtil.addChatMessage(
                         Component.literal(
                             "§aStorm died at: §e"
@@ -86,23 +86,23 @@ object StormTicks {
 
     @JvmStatic
     fun display(): Boolean {
-        if (Floor7Settings.tickDownStormTickTimer) {
+        if (Floor7Settings.stormTicksCountDown) {
             val diff = CRUSH_TICK - timer.tick
             if (diff > COUNTDOWN_DURATION || diff < 0) return false
         }
-        return Floor7Settings.enableTickTimers && Floor7Settings.enableStormTickTimer && SkyblockLocation.inDungeon() && BossPhase.inP2() && !BossPhase.stormDead()
+        return Floor7Settings.enableTickTimers && Floor7Settings.stormTicksHud && SkyblockLocation.inDungeon() && BossPhase.inP2() && !BossPhase.stormDead()
     }
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         var num = timer.tick * FishConstants.TICK_DURATION
-        if (Floor7Settings.tickDownStormTickTimer) num = CRUSH_TICK * FishConstants.TICK_DURATION - num
-        FishDiag.guard("StormTickTimer.5", "storm tick timer render threw") { FishDraw.drawTimer(component, context, num, Floor7Settings.stormTickTimerColor) }
+        if (Floor7Settings.stormTicksCountDown) num = CRUSH_TICK * FishConstants.TICK_DURATION - num
+        FishDiag.guard("StormTickTimer.5", "storm tick timer render threw") { FishDraw.drawTimer(component, context, num, Floor7Settings.stormTicksColor) }
     }
 
     @JvmStatic
     fun displayDeathTime(): Boolean {
-        return Floor7Settings.enableTickTimers && Floor7Settings.enableStormDeathTime && SkyblockLocation.inDungeon() && BossPhase.inP2() && !BossPhase.stormDead()
+        return Floor7Settings.enableTickTimers && Floor7Settings.stormKillTimeHud && SkyblockLocation.inDungeon() && BossPhase.inP2() && !BossPhase.stormDead()
                 && deathTime > 0 && deathStartDisplayTime > System.currentTimeMillis() - DEATH_DISPLAY_DURATION
     }
 

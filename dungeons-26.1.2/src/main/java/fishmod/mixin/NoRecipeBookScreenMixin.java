@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class NoRecipeBookScreenMixin {
     @Inject(method = "initButton", at=@At("HEAD"), cancellable = true)
     private void addRecipeBook(CallbackInfo ci) {
-        if (MiscSettings.disableRecipeBook) {
+        if (MiscSettings.hideRecipeBook) {
             ci.cancel();
         }
     }

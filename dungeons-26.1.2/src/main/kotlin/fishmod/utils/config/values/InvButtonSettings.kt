@@ -10,31 +10,31 @@ object InvButtonSettings {
 
     @ConfigValue
     @JvmField
-    var command1: String = ""
+    var invCmd1: String = ""
 
     @ConfigValue
     @JvmField
-    var command2: String = ""
+    var invCmd2: String = ""
 
     @ConfigValue
     @JvmField
-    var command3: String = ""
+    var invCmd3: String = ""
 
     @ConfigValue
     @JvmField
-    var command4: String = ""
+    var invCmd4: String = ""
 
     @ConfigValue
     @JvmField
-    var command5: String = ""
+    var invCmd5: String = ""
 
     @ConfigValue
     @JvmField
-    var command6: String = ""
+    var invCmd6: String = ""
 
     @ConfigValue
     @JvmField
-    var command7: String = ""
+    var invCmd7: String = ""
 
     @ConfigValue
     @JvmField

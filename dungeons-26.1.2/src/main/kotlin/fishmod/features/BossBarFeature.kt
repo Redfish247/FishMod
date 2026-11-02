@@ -18,7 +18,7 @@ object BossBarFeature {
 
     @JvmStatic
     fun appendHealth(instance: LerpingBossEvent, name: Component): Component {
-        if (!DungeonSettings.bossHealthNumbers || !SkyblockLocation.inDungeon()) return name
+        if (!DungeonSettings.bossHpNumbers || !SkyblockLocation.inDungeon()) return name
         val accessor = instance as? LerpingBossEventAccessor ?: run { FishDiag.fail("BossBarFeature.1", "LerpingBossEventAccessor mixin not applied"); return name }
         val percent = accessor.targetPercent
         if (name === lastName && percent == lastPercent) lastOut?.let { return it }

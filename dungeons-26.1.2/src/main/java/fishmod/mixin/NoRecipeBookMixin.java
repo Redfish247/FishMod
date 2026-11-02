@@ -14,14 +14,14 @@ public class NoRecipeBookMixin {
 
     @Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
     public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
-        if (MiscSettings.disableRecipeBook) {
+        if (MiscSettings.hideRecipeBook) {
             ci.cancel();
         }
     }
 
     @Inject(method = "isVisible", at = @At("HEAD"), cancellable = true)
     public void render(CallbackInfoReturnable<Boolean> cir) {
-        if (MiscSettings.disableRecipeBook) {
+        if (MiscSettings.hideRecipeBook) {
             cir.setReturnValue(false);
         }
 
@@ -29,7 +29,7 @@ public class NoRecipeBookMixin {
 
     @Inject(method = "setVisible", at = @At("HEAD"), cancellable = true)
     public void render(boolean opened, CallbackInfo ci) {
-        if (MiscSettings.disableRecipeBook) {
+        if (MiscSettings.hideRecipeBook) {
             ci.cancel();
         }
     }

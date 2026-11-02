@@ -31,7 +31,7 @@ object P3TitleFilter {
 
     @JvmStatic
     fun shouldHideTitle(title: Component): Boolean {
-        if (!Floor7Settings.hideTerminalTitles || !SkyblockLocation.inDungeon() || !(inP3 || BossPhase.inP3())) return false
+        if (!Floor7Settings.muteTerminalTitles || !SkyblockLocation.inDungeon() || !(inP3 || BossPhase.inP3())) return false
         val s = title.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
         return KEEP.none { s.contains(it) }
     }

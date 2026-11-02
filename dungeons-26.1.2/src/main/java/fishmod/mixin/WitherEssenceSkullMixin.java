@@ -33,7 +33,7 @@ public abstract class WitherEssenceSkullMixin {
 
     @Inject(method = "resolveSkullRenderType", at = @At("HEAD"), cancellable = true)
     private void renderEssence(SkullBlock.Type skullType, SkullBlockEntity blockEntity, CallbackInfoReturnable<RenderType> cir) {
-        if (!VisualSettings.fixWitherEssence || skullType != SkullBlock.Types.PLAYER) return;
+        if (!VisualSettings.witherEssenceSkin || skullType != SkullBlock.Types.PLAYER) return;
 
         try {
             ResolvableProfile profileComponent = blockEntity.getOwnerProfile();

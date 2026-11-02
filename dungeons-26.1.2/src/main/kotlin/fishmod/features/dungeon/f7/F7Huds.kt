@@ -19,28 +19,28 @@ object F7Huds {
     var tickTimer: HUDComponent = HUDComponent(
         10.0, 80.0, TICK_W, 10, 1f, "Tick Timer",
         { false }, BossTickTimer::render,
-        { Floor7Settings.enableTickTimers && (Floor7Settings.enableMaxorTickTimer || Floor7Settings.enableStormTickTimer || Floor7Settings.enableGoldorTickTimer) }
+        { Floor7Settings.enableTickTimers && (Floor7Settings.maxorTicksHud || Floor7Settings.stormTicksHud || Floor7Settings.goldorTicksHud) }
     )
 
     @JvmField
     @ConfigValue
     var crystalSpawnTime: HUDComponent = HUDComponent(
         10.0, 92.0, TICK_W, 10, 1f, "Crystal Spawn Time",
-        { false }, MaxorCrystalTimer::render, { Floor7Settings.enableCrystalSpawnTime }
+        { false }, MaxorCrystalTimer::render, { Floor7Settings.crystalSpawnHud }
     )
 
     @JvmField
     @ConfigValue
     var crystalReminder: HUDComponent = HUDComponent(
         0.0, 0.0, NOTI_W, 10, 1f, "Crystal Reminder",
-        { false }, MaxorCrystalTimer::renderNotification, { Floor7Settings.enableCrystalSpawnTime && Floor7Settings.crystalPlaceReminder }
+        { false }, MaxorCrystalTimer::renderNotification, { Floor7Settings.crystalSpawnHud && Floor7Settings.crystalPlaceAlert }
     )
 
     @JvmField
     @ConfigValue
     var stormDeathTime: HUDComponent = HUDComponent(
         10.0, 92.0, 40, 10, 1f, "Storm Death Time",
-        { false }, StormTicks::renderDeathTime, { Floor7Settings.enableTickTimers && Floor7Settings.enableStormDeathTime }
+        { false }, StormTicks::renderDeathTime, { Floor7Settings.enableTickTimers && Floor7Settings.stormKillTimeHud }
     )
 
     @JvmField
@@ -82,56 +82,56 @@ object F7Huds {
     @ConfigValue
     var stormCrush: HUDComponent = HUDComponent(
         0.0, 0.0, NOTI_W, 10, 1f, "Storm Crushed",
-        { false }, StormPillarTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.notifyStormCrush }
+        { false }, StormPillarTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.stormCrushAlert }
     )
 
     @JvmField
     @ConfigValue
     var pillarExplosion: HUDComponent = HUDComponent(
         10.0, 140.0, TICK_W, 10, 1f, "Pillar Explosion Timer",
-        { false }, StormPillarTimer::renderTimer, { Floor7Settings.timePillarExplosion }
+        { false }, StormPillarTimer::renderTimer, { Floor7Settings.pillarBlastTimer }
     )
 
     @JvmField
     @ConfigValue
     var termStartTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "Term Start Timer",
-        { false }, TermOpenTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.enableTermStartTimer }
+        { false }, TermOpenTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.termOpenHud }
     )
 
     @JvmField
     @ConfigValue
     var sectionProgress: HUDComponent = HUDComponent(
         10.0, 116.0, 40, 10, 1f, "Section Progress",
-        { false }, SectionCountHud::render, { Floor7Settings.showSectionProgress }
+        { false }, SectionCountHud::render, { Floor7Settings.sectionProgressHud }
     )
 
     @JvmField
     @ConfigValue
     var currentSection: HUDComponent = HUDComponent(
         10.0, 190.0, TICK_W, 10, 1f, "Current Section",
-        { false }, GoldorSectionHud::render, { Floor7Settings.showCurrentSection }
+        { false }, GoldorSectionHud::render, { Floor7Settings.currentSectionHud }
     )
 
     @JvmField
     @ConfigValue
     var deviceNotifier: HUDComponent = HUDComponent(
         0.0, 0.0, NOTI_W, 10, 1f, "Device Completed",
-        { false }, DeviceDoneAlert::render, { Floor7Settings.notifyPre4Completion || Floor7Settings.notifySSCompletion }
+        { false }, DeviceDoneAlert::render, { Floor7Settings.pre4DoneAlert || Floor7Settings.ssDoneAlert }
     )
 
     @JvmField
     @ConfigValue
     var melodyWarning: HUDComponent = HUDComponent(
         0.0, 0.0, NOTI_W, 10, 1f, "Melody Warning",
-        { false }, MelodyAlert::render, { Floor7Settings.notifiyMelody }
+        { false }, MelodyAlert::render, { Floor7Settings.melodyAlert }
     )
 
     @JvmField
     @ConfigValue
     var sectionCompletion: HUDComponent = HUDComponent(
         0.0, 0.0, NOTI_W, 10, 1f, "Section Completion",
-        { false }, SectionDoneHud::render, { Floor7Settings.sectionCompletionNotification }
+        { false }, SectionDoneHud::render, { Floor7Settings.sectionDoneAlert }
     )
 
     @JvmField

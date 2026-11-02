@@ -29,7 +29,7 @@ public class FishCopyChatMixin extends Screen {
     private static void mouseClicked(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         boolean smart = fishmod.utils.config.values.FishSettings.chatFeatureEnabled
                 && fishmod.utils.config.values.FishSettings.smartCopyChat;
-        if ((!MiscSettings.copyChat && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
+        if ((!MiscSettings.chatCopy && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
 
         try {
             Minecraft mc = Minecraft.getInstance();
@@ -39,7 +39,7 @@ public class FishCopyChatMixin extends Screen {
             double y = toChatLineY(hudInvoker, click.y(), mc);
 
             String string;
-            if (MiscSettings.copyLineOnly && !smart) {
+            if (MiscSettings.chatCopySingleLine && !smart) {
                 int index = getMessageLineIndex(hudInvoker, mc, x, y);
                 List<GuiMessage.Line> visibleMessages = hudInvoker.getVisibleMessages();
                 if (visibleMessages == null) {
@@ -56,9 +56,9 @@ public class FishCopyChatMixin extends Screen {
 
             if (string == null) return;
 
-            if (MiscSettings.removeColorCodes || smart) {
+            if (MiscSettings.chatCopyStripColors || smart) {
                 string = string.replaceAll("§.", "");
-            } else if (MiscSettings.replaceColorChars) {
+            } else if (MiscSettings.chatCopyAmpersand) {
                 string = string.replaceAll("§", "&");
             }
 

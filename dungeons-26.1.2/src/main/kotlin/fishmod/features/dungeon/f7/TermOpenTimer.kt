@@ -33,7 +33,7 @@ object TermOpenTimer {
 
     @JvmStatic
     fun display(): Boolean {
-        return Floor7Settings.enableTickTimers && Floor7Settings.enableTermStartTimer && SkyblockLocation.inDungeon() && BossPhase.inP2() && BossPhase.stormDead()
+        return Floor7Settings.enableTickTimers && Floor7Settings.termOpenHud && SkyblockLocation.inDungeon() && BossPhase.inP2() && BossPhase.stormDead()
     }
 
     @JvmStatic

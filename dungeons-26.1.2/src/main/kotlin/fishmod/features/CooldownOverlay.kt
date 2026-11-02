@@ -299,7 +299,7 @@ object CooldownOverlay {
 
     @JvmStatic
     fun shouldHideVanillaCooldown(): Boolean =
-        FishSettings.cooldownOverlayEnabled && fishmod.utils.config.values.VisualSettings.hideCooldown && SkyblockLocation.inSkyblock()
+        FishSettings.cooldownOverlayEnabled && fishmod.utils.config.values.VisualSettings.hideItemCooldown && SkyblockLocation.inSkyblock()
 
     @JvmStatic
     fun debugState(): String {
@@ -341,7 +341,7 @@ object CooldownOverlay {
         if (FishSettings.cooldownOnlyUnder3s && !inFocusWindow) return
 
         val shade = (16 * remaining / total).toInt().coerceIn(1, 16)
-        if (!fishmod.utils.config.values.VisualSettings.hideCooldown) ctx.fill(x, y + 16 - shade, x + 16, y + 16, 0x80FFFFFF.toInt())
+        if (!fishmod.utils.config.values.VisualSettings.hideItemCooldown) ctx.fill(x, y + 16 - shade, x + 16, y + 16, 0x80FFFFFF.toInt())
 
         if (FishSettings.cooldownShowText) {
             val secs = remaining / 1000.0

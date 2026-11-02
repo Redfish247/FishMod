@@ -32,7 +32,7 @@ object DeviceDoneAlert {
             if (objective != "device" || !EntityTools.isClientPlayer(name)) return@register false
 
             try {
-                if ((Floor7Settings.notifyPre4Completion && at4thDev()) || (Floor7Settings.notifySSCompletion && atSS())) {
+                if ((Floor7Settings.pre4DoneAlert && at4thDev()) || (Floor7Settings.ssDoneAlert && atSS())) {
                     completedTime = System.currentTimeMillis()
                     showNotification = true
                     TickScheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f)
@@ -56,7 +56,7 @@ object DeviceDoneAlert {
 
     @JvmStatic
     fun disableTitles(title: Component): Boolean {
-        if (!(((Floor7Settings.disableTitlesAtPre4 && at4thDev()) || (Floor7Settings.disableTitlesAtSS && atSS())) && BossPhase.inTerminals()))
+        if (!(((Floor7Settings.muteTitlesPre4 && at4thDev()) || (Floor7Settings.muteTitlesSS && atSS())) && BossPhase.inTerminals()))
             return false
 
         val string = title.string

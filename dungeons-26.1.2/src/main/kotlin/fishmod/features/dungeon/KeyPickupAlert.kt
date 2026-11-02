@@ -25,7 +25,7 @@ object KeyPickupAlert {
     @JvmStatic
     fun init() {
         FishEvents.ON_GAME_MESSAGE.register { text ->
-            if (!DungeonSettings.enableKeyNotifier || fishmod.compat.BladeCompat.active || !SkyblockLocation.inDungeon()) return@register false
+            if (!DungeonSettings.keyPickupAlert || fishmod.compat.BladeCompat.active || !SkyblockLocation.inDungeon()) return@register false
             val s = TextStrip.plain(text.string).trim()
             try {
                 when {

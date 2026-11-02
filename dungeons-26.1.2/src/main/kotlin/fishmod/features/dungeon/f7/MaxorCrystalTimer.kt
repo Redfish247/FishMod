@@ -30,7 +30,7 @@ object MaxorCrystalTimer {
     fun init() {
         FishEvents.ON_GAME_MESSAGE.register { text ->
             if (!SkyblockLocation.inDungeon() || !BossPhase.inP1()
-                || !Floor7Settings.enableCrystalSpawnTime
+                || !Floor7Settings.crystalSpawnHud
             ) {
                 return@register false
             }
@@ -62,7 +62,7 @@ object MaxorCrystalTimer {
             false
         }
         FishEvents.ON_ENTITY_SPAWNED.register { entity, world ->
-            if (!pickedUp || !SkyblockLocation.inDungeon() || !Floor7Settings.enableCrystalSpawnTime || !BossPhase.inP1()) {
+            if (!pickedUp || !SkyblockLocation.inDungeon() || !Floor7Settings.crystalSpawnHud || !BossPhase.inP1()) {
                 return@register false
             }
             if (entity is EndCrystal) {
@@ -79,7 +79,7 @@ object MaxorCrystalTimer {
 
     @JvmStatic
     fun display(): Boolean {
-        return tick > 0 && SkyblockLocation.inDungeon() && BossPhase.inP1() && Floor7Settings.enableCrystalSpawnTime
+        return tick > 0 && SkyblockLocation.inDungeon() && BossPhase.inP1() && Floor7Settings.crystalSpawnHud
     }
 
     @JvmStatic
@@ -89,8 +89,8 @@ object MaxorCrystalTimer {
 
     @JvmStatic
     fun displayNotification(): Boolean {
-        return (Floor7Settings.instantlyDisplayCrystalReminder || tickSincePicked > REMINDER_TICK)
-                && SkyblockLocation.inDungeon() && BossPhase.inP1() && Floor7Settings.enableCrystalSpawnTime && Floor7Settings.crystalPlaceReminder && pickedUp
+        return (Floor7Settings.crystalAlertInstant || tickSincePicked > REMINDER_TICK)
+                && SkyblockLocation.inDungeon() && BossPhase.inP1() && Floor7Settings.crystalSpawnHud && Floor7Settings.crystalPlaceAlert && pickedUp
     }
 
     @JvmStatic

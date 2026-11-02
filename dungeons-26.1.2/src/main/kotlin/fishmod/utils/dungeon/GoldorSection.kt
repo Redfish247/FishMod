@@ -199,7 +199,7 @@ object GoldorSection {
                 FishEvents.ON_TERMINAL.invoke { terminalEvent -> terminalEvent.onComplete(name, action, objective, currentCompleted, totalNeeded) }
             }
 
-            if (Floor7Settings.terminalTimeStamps) {
+            if (Floor7Settings.termSplitTimestamps) {
                 val texts = message.siblings
                 FishDiag.check(texts.isNotEmpty(), "Section.9") { "terminal message has no siblings, can't restyle: '$string'" }
                 if (texts.isNotEmpty()) {
@@ -239,7 +239,7 @@ object GoldorSection {
                     incrementSection()
                 }
 
-                if (Floor7Settings.terminalTimeStamps) {
+                if (Floor7Settings.termSplitTimestamps) {
                     FishUtil.addChatMessage(Component.literal("§aThe gate has been destroyed! §8(§7${getSectionTime()}s §8| §7${BossPhase.getPhaseTime(TERM_PHASE_INDEX)}s§8)"))
                     shouldCancelMessage = true
                 }

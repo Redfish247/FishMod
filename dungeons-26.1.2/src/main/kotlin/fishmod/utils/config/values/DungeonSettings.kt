@@ -4,44 +4,44 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object DungeonSettings {
 
-    @ConfigValue @JvmField var enableWarpCooldown: Boolean = false
+    @ConfigValue @JvmField var partyWarpTimer: Boolean = false
 
-    @ConfigValue @JvmField var displayInvincibilityTimer: Boolean = false
+    @ConfigValue @JvmField var invincibilityTimerHud: Boolean = false
 
-    @ConfigValue @JvmField var enableLeapMessages: Boolean = false
+    @ConfigValue @JvmField var leapAnnounce: Boolean = false
 
-    @ConfigValue @JvmField var enableAutoRequeue: Boolean = false
+    @ConfigValue @JvmField var autoRequeueEnabled: Boolean = false
 
-    @ConfigValue @JvmField var enableKeyNotifier: Boolean = false
+    @ConfigValue @JvmField var keyPickupAlert: Boolean = false
 
-    @ConfigValue @JvmField var hideBlazeNameTag: Boolean = false
+    @ConfigValue @JvmField var hideBlazeTags: Boolean = false
 
-    @ConfigValue @JvmField var detectDuplicateClass: Boolean = false
+    @ConfigValue @JvmField var dupeClassAlert: Boolean = false
 
-    @ConfigValue @JvmField var ignoreDupeMage: Boolean = false
+    @ConfigValue @JvmField var dupeClassSkipMage: Boolean = false
 
     @ConfigValue @JvmField var dupeClassPartyChat: Boolean = false
 
-    @ConfigValue @JvmField var useClassColors: Boolean = false
+    @ConfigValue @JvmField var roleColors: Boolean = false
 
     @ConfigValue @JvmField var classColoredGlow: Boolean = false
 
-    @ConfigValue @JvmField var archerColor: Int = 0xffffaa00.toInt()
+    @ConfigValue @JvmField var roleColorArcher: Int = 0xffffaa00.toInt()
 
-    @ConfigValue @JvmField var berserkColor: Int = 0xffaa0000.toInt()
+    @ConfigValue @JvmField var roleColorBerserk: Int = 0xffaa0000.toInt()
 
-    @ConfigValue @JvmField var healerColor: Int = 0xffff55ff.toInt()
+    @ConfigValue @JvmField var roleColorHealer: Int = 0xffff55ff.toInt()
 
-    @ConfigValue @JvmField var tankColor: Int = 0xff00aa00.toInt()
+    @ConfigValue @JvmField var roleColorTank: Int = 0xff00aa00.toInt()
 
-    @ConfigValue @JvmField var mageColor: Int = 0xff55ffff.toInt()
+    @ConfigValue @JvmField var roleColorMage: Int = 0xff55ffff.toInt()
 
-    @ConfigValue @JvmField var InvincibilityDuration: Boolean = false
+    @ConfigValue @JvmField var invincibilityHud: Boolean = false
 
-    @ConfigValue @JvmField var useStatusColorForInvincibility: Boolean = false
+    @ConfigValue @JvmField var invincibilityStatusColor: Boolean = false
 
-    @ConfigValue @JvmField var renderClassName: Boolean = false
+    @ConfigValue @JvmField var roleNameTags: Boolean = false
 
-    @ConfigValue @JvmField var bossHealthNumbers: Boolean = false
+    @ConfigValue @JvmField var bossHpNumbers: Boolean = false
 
 }

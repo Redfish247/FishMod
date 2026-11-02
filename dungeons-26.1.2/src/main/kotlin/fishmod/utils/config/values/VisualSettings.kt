@@ -4,13 +4,13 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object VisualSettings {
 
-    @ConfigValue @JvmField var hideFireInf5: Boolean = false
+    @ConfigValue @JvmField var hideBurningInf5: Boolean = false
 
-    @ConfigValue @JvmField var hideStuckArrows: Boolean = false
+    @ConfigValue @JvmField var hideArrowsInBody: Boolean = false
 
     @ConfigValue @JvmField var renderOptimizer: Boolean = false
 
-    @ConfigValue @JvmField var hideDeadEntities: Boolean = false
+    @ConfigValue @JvmField var hideDeadMobs: Boolean = false
 
     @ConfigValue @JvmField var roHideFallingBlocks: Boolean = false
     @ConfigValue @JvmField var roHideLightning: Boolean = false
@@ -31,17 +31,17 @@ object VisualSettings {
     @ConfigValue @JvmField var hidePlayersInRange: Boolean = false
     @ConfigValue @JvmField var hidePlayerRange: Double = 3.0
 
-    @ConfigValue @JvmField var itemRarityBackground: Boolean = false
+    @ConfigValue @JvmField var rarityBackground: Boolean = false
     @ConfigValue @JvmField var itemRarityOpacity: Int = 35
     @ConfigValue @JvmField var itemRarityHypixelColors: Boolean = true
 
-    @ConfigValue @JvmField var hideStatusOverLay: Boolean = false
+    @ConfigValue @JvmField var hideEffectHud: Boolean = false
 
-    @ConfigValue @JvmField var disableGlowing: Boolean = false
+    @ConfigValue @JvmField var noEntityGlow: Boolean = false
 
-    @ConfigValue @JvmField var hideCooldown: Boolean = false
+    @ConfigValue @JvmField var hideItemCooldown: Boolean = false
 
-    @ConfigValue @JvmField var hideEntityFire: Boolean = false
+    @ConfigValue @JvmField var hideMobFire: Boolean = false
 
     @ConfigValue @JvmField var nametagsOnTop: Boolean = true
 
@@ -49,16 +49,16 @@ object VisualSettings {
 
     @ConfigValue @JvmField var gizmoOverlays: Boolean = true
 
-    @ConfigValue @JvmField var oldPlayerHead: Boolean = false
+    @ConfigValue @JvmField var legacyPlayerHead: Boolean = false
 
-    @ConfigValue @JvmField var fixWitherEssence: Boolean = false
+    @ConfigValue @JvmField var witherEssenceSkin: Boolean = false
 
-    @ConfigValue @JvmField var stopShovelFlattening: Boolean = false
+    @ConfigValue @JvmField var noShovelPath: Boolean = false
 
     @ConfigValue @JvmField var noSwingAnimation: Boolean = false
     @ConfigValue @JvmField var noSwingTerminatorOnly: Boolean = false
 
-    @ConfigValue @JvmField var circularRarityBackground: Boolean = false
+    @ConfigValue @JvmField var rarityBgCircle: Boolean = false
 
     @ConfigValue @JvmField var darkModeEnabled: Boolean = false
     @ConfigValue @JvmField var darkModeOpacity: Int = 25

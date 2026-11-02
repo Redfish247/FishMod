@@ -25,7 +25,7 @@ object SectionCountHud {
         updateProgressFormat()
 
         FishEvents.ON_GAME_MESSAGE.register { message ->
-            if (!BossPhase.inTerminals() || !Floor7Settings.sectionPrevObjective) return@register false
+            if (!BossPhase.inTerminals() || !Floor7Settings.sectionShowPrevious) return@register false
             val string = message.string
             if (string == "The gate has been destroyed!") {
                 prevObjective = "Gate Destroyed"; updateObjectiveFormat()
@@ -84,7 +84,7 @@ object SectionCountHud {
     }
 
     private fun getProgressText(): Component {
-        if (Floor7Settings.sectionColorProgress) {
+        if (Floor7Settings.sectionProgressColored) {
             return Component.literal("§f(" + completedFormat + completed + "§f/§a" + sectionTotal + "§f)")
         }
         return Component.literal("§a(§c" + completed + "§a/" + sectionTotal + ")")
@@ -92,7 +92,7 @@ object SectionCountHud {
 
     @JvmStatic
     fun display(): Boolean {
-        return Floor7Settings.showSectionProgress && BossPhase.inTerminals()
+        return Floor7Settings.sectionProgressHud && BossPhase.inTerminals()
     }
 
     @JvmStatic
@@ -101,7 +101,7 @@ object SectionCountHud {
     }
 
     private fun renderInner(component: HUDComponent, context: GuiGraphicsExtractor) {
-        if (Floor7Settings.sectionPrevObjective) {
+        if (Floor7Settings.sectionShowPrevious) {
             FishDraw.drawCenteredText(
                 context, component,
                 Component.literal("$objectiveFormat$prevObjective ").append(getProgressText())

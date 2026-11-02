@@ -12,7 +12,7 @@ public class HideArrowsMixin {
 
     @Inject(method = "numStuck", at=@At("TAIL"), cancellable = true)
     public void shouldRender(CallbackInfoReturnable<Integer> cir) {
-        if (VisualSettings.hideStuckArrows) {
+        if (VisualSettings.hideArrowsInBody) {
             cir.setReturnValue(0);
         }
 

@@ -333,7 +333,7 @@ object FishDraw {
     fun drawPrefixedText(component: HUDComponent, context: GuiGraphicsExtractor, prefix: String, text: String) {
         val textRenderer = Minecraft.getInstance().font ?: return
 
-        val drawnText = Component.literal("$prefix: ").withColor(MiscSettings.timerPrefixColor).append(Component.literal(text).withColor(-0x1))
+        val drawnText = Component.literal("$prefix: ").withColor(MiscSettings.timerLabelColor).append(Component.literal(text).withColor(-0x1))
         context.text(textRenderer, drawnText, component.scaledX, component.scaledY, -0x1, true)
     }
 
@@ -582,7 +582,7 @@ object FishDraw {
     @JvmStatic
     fun formatNumber(num: Float): String {
         if (num.isNaN() || num.isInfinite()) FishDiag.fail("RenderUtils.20", "formatNumber given $num")
-        return formatNumber(num, Floor7Settings.capitalizeHealthNumbers)
+        return formatNumber(num, Floor7Settings.bossHpCapitalized)
     }
 
     // thresholds avoid "1000.0K" rollover
