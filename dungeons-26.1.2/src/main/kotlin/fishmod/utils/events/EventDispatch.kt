@@ -1,59 +1,39 @@
 package fishmod.utils.events
 
+import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
-import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
-import java.util.regex.Pattern
 
+// Turns raw chat into the party-chat and leap hooks.
 object EventDispatch {
 
-    private val PARTY_PATTERN: Pattern = Pattern.compile("^§9Party §8>")
-    private val LEAP_PATTERN: Pattern = Pattern.compile("^You have teleported to .*!$")
-
-    private const val PARTY_MSG_OFFSET = 11
+    private const val PARTY_PREFIX = "§9Party §8>"
+    private val LEAP_LINE = Regex("^You have teleported to .*!$")
+    // "[MVP+] Name" -> "Name"
+    private val RANK_TAG = Regex("^\\[[^\\]]*] ")
 
     @JvmStatic
     fun init() {
         ClientReceiveMessageEvents.GAME.register { message, _ ->
-            try {
-                onPartyChat(message.string)
-            } catch (t: Throwable) {
-                FishDiag.fail("CustomEvents.1", "party chat parse", t)
-            }
-        }
-
-        ClientReceiveMessageEvents.GAME.register { message, _ ->
-            try {
-                if (SkyblockLocation.inDungeon() && LEAP_PATTERN.matcher(message.string).find()) {
-                    FishEvents.leap.invoke { leapEvent -> leapEvent.onLeap(message) }
-                }
-            } catch (t: Throwable) {
-                FishDiag.fail("CustomEvents.2", "leap message dispatch", t)
+            val raw = message.string
+            FishDiag.guard("EventDispatch.1", "party chat parse") { if (raw.startsWith(PARTY_PREFIX)) firePartyChat(raw) }
+            FishDiag.guard("EventDispatch.2", "leap message dispatch") {
+                if (SkyblockLocation.inDungeon() && LEAP_LINE.containsMatchIn(raw)) FishEvents.leap.invoke { it.onLeap(message) }
             }
         }
     }
 
-    private fun onPartyChat(string: String) {
-            val matcher = PARTY_PATTERN.matcher(string)
-            if (!matcher.find()) return
-
-            val index = string.indexOf(":")
-            if (index < PARTY_MSG_OFFSET) {
-                FishDebug.LOGGER.error("{} had bad index", string)
-                FishDiag.fail("CustomEvents.3", "party message without ':' after prefix: '$string'")
-                return
-            }
-
-            var tempUsername = string.substring(PARTY_MSG_OFFSET, index).replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
-            if (index + 2 >= string.length) return
-            val sentMessage = string.substring(index + 2).trim()
-
-            val b = tempUsername.indexOf("]")
-            if (b >= 0 && b + 2 <= tempUsername.length) tempUsername = tempUsername.substring(b + 2)
-
-            val username = tempUsername
-            if (username.isBlank()) FishDiag.fail("CustomEvents.4", "odd party sender '$username' parsed from '$string'")
-            FishEvents.partyChat.invoke { partyMessageEvent -> partyMessageEvent.sentMessage(username, sentMessage) }
+    private fun firePartyChat(raw: String) {
+        val colon = raw.indexOf(':', PARTY_PREFIX.length)
+        if (colon < 0) {
+            FishDiag.fail("EventDispatch.3", "party message without ':' after prefix: '$raw'")
+            return
+        }
+        if (colon + 2 >= raw.length) return
+        val sender = raw.substring(PARTY_PREFIX.length, colon).replace(FishConstants.STRIP_COLOR_REGEX, "").trim().replace(RANK_TAG, "")
+        val text = raw.substring(colon + 2).trim()
+        if (sender.isBlank()) FishDiag.fail("EventDispatch.4", "odd party sender parsed from '$raw'")
+        FishEvents.partyChat.invoke { it.sentMessage(sender, text) }
     }
 }

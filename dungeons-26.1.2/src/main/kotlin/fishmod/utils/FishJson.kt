@@ -1,60 +1,36 @@
 package fishmod.utils
 
-import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.RunSplit
-import java.io.InputStreamReader
 
 object FishJson {
 
+    // run_splits.json: { "m7": [ { label, rgb "#RRGGBB", from, to, avgSec }, ... ] }, floor keys come back upper-case
     @JvmStatic
     fun readSplits(path: String): HashMap<String, ArrayList<RunSplit>> {
+        val text = FishJson::class.java.getResourceAsStream(path)?.use { it.readBytes().toString(Charsets.UTF_8) }
+        if (text == null) {
+            FishDiag.fail("FishJson.1", "bundled splits resource missing: $path")
+            return HashMap()
+        }
+        val out = HashMap<String, ArrayList<RunSplit>>()
         try {
-            FishJson::class.java.getResourceAsStream(path).use { stream ->
-                if (stream == null) {
-                    FishDiag.fail("JsonUtility.1", "bundled splits resource missing: $path")
-                    return HashMap()
-                }
-                InputStreamReader(stream).use { reader ->
-                    val element = JsonParser.parseReader(reader)
-                    return parseSplits(element)
-                }
+            for ((floor, rows) in JsonParser.parseString(text).asJsonObject.entrySet()) {
+                out[floor.uppercase()] = rows.asJsonArray.mapNotNullTo(ArrayList()) { splitOf(floor, it.asJsonObject) }
             }
         } catch (e: Exception) {
-            FishDiag.fail("JsonUtility.2", "failed to parse splits from $path", e)
-            FishDebug.LOGGER.error("Failed to parse splits from $path", e)
+            FishDiag.fail("FishJson.2", "failed to parse splits from $path", e)
         }
-
-        return HashMap()
+        return out
     }
 
-    private fun parseSplits(jsonElement: JsonElement): HashMap<String, ArrayList<RunSplit>> {
-        val floors = HashMap<String, ArrayList<RunSplit>>()
-        val obj = jsonElement.asJsonObject
-
-        for (floorEntry in obj.entrySet()) {
-            val splits = ArrayList<RunSplit>()
-
-            val floorName = floorEntry.key
-            val dialoguesArray = floorEntry.value.asJsonArray
-
-            for (dialogueElement in dialoguesArray) {
-                val dialogueObj = dialogueElement.asJsonObject
-
-                if (!FishDiag.check(dialogueObj.has("name") && dialogueObj.has("start") && dialogueObj.has("end") && dialogueObj.has("color"), "JsonUtility.3") { "split in $floorName missing fields: $dialogueObj" }) continue
-                val color = dialogueObj.get("color").asInt
-                val name = dialogueObj.get("name").asString
-                val start = dialogueObj.get("start").asString
-                val end = dialogueObj.get("end").asString
-                val avg = if (dialogueObj.has("avg")) dialogueObj.get("avg").asDouble else 0.0
-
-                splits.add(RunSplit(name, start, end, color, avg))
-            }
-
-            floors[floorName] = splits
-        }
-        return floors
+    private fun splitOf(floor: String, o: JsonObject): RunSplit? {
+        val ok = listOf("label", "rgb", "from", "to").all(o::has)
+        if (!FishDiag.check(ok, "FishJson.3") { "split in $floor missing fields: $o" }) return null
+        val rgb = o["rgb"].asString.removePrefix("#").toInt(16)
+        val avg = o["avgSec"]?.asDouble ?: 0.0
+        return RunSplit(o["label"].asString, o["from"].asString, o["to"].asString, rgb, avg)
     }
 }

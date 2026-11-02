@@ -181,7 +181,7 @@ object AchLeaderboard {
     private fun areaOk(): Boolean {
         if (AchSettings.achLbVillageOnly && !(SkyblockLocation.getCurrentLocation() == SkyblockLocation.HUB)) return false
         val a = AchSettings.achLbArea
-        return a.isEmpty() || a == "Any" || SkyblockLocation.getCurrentLocation().name2 == a
+        return a.isEmpty() || a == "Any" || SkyblockLocation.getCurrentLocation().label == a
     }
 
     private fun renderBoard(ctx: LevelRenderContext, m: PoseStack) {
