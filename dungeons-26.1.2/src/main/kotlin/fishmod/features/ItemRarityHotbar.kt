@@ -38,7 +38,7 @@ object ItemRarityHotbar {
 
     @JvmStatic
     fun drawRarity(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
-        if (!Visual.itemRarityBackground || stack == null || stack.isEmpty) return
+        if (!Visual.itemRarityBackground || fishmod.compat.BladeCompat.active || stack == null || stack.isEmpty) return
 
         val holder = stack as? ItemRarityHolder
         if (holder == null) {

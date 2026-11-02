@@ -121,6 +121,9 @@ object InventoryButton {
     private fun carried(): ItemStack = Minecraft.getInstance().player?.containerMenu?.carried ?: ItemStack.EMPTY
 
     @JvmStatic
+    fun on(): Boolean = Buttons.enableInventoryButtons && !fishmod.compat.BladeCompat.active
+
+    @JvmStatic
     fun parseClicks(mouseX: Double, mouseY: Double, button: Int): Boolean {
         load()
         if (inside(mouseX, mouseY, EDIT)) {

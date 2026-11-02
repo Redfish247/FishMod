@@ -37,7 +37,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         stack.translate(this.leftPos, this.topPos);
         try {
             if (Buttons.showEquipment) fishmod.features.other.EquipmentDisplay.render(context, mouseX - this.leftPos, mouseY - this.topPos, this.leftPos, this.topPos);
-            if (Buttons.enableInventoryButtons) InventoryButton.renderAll(context, mouseX - this.leftPos, mouseY - this.topPos, deltaTicks);
+            if (InventoryButton.on()) InventoryButton.renderAll(context, mouseX - this.leftPos, mouseY - this.topPos, deltaTicks);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("InventoryScreenMixin.1", "inventory buttons render failed", t);
         }
@@ -47,7 +47,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (Buttons.showEquipment && click.button() == 0 && fishmod.features.other.EquipmentDisplay.click(click.x() - this.leftPos, click.y() - this.topPos)) return true;
-        if (Buttons.enableInventoryButtons) {
+        if (InventoryButton.on()) {
             try {
                 if (InventoryButton.parseClicks(click.x() - this.leftPos, click.y() - this.topPos, click.button())) return true;
             } catch (Throwable t) {
@@ -59,7 +59,7 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
 
     @Override
     public boolean mouseDragged(MouseButtonEvent click, double dx, double dy) {
-        if (Buttons.enableInventoryButtons && InventoryButton.drag(click.x() - this.leftPos, click.y() - this.topPos)) return true;
+        if (InventoryButton.on() && InventoryButton.drag(click.x() - this.leftPos, click.y() - this.topPos)) return true;
         return super.mouseDragged(click, dx, dy);
     }
 

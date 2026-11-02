@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.compat.BladeCompat
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.TextStrip
 import fishmod.utils.config.values.Dungeons
@@ -49,7 +50,7 @@ object AutoRequeue {
                     val skip = dtSkip
                     dtSkip = false
                     val teamShrank = startTeamCount >= 2 && fishmod.features.dungeon.map.DungeonPlayers.count() < startTeamCount
-                    if (Dungeons.enableAutoRequeue && !partyChanged && !skip && !teamShrank) {
+                    if (Dungeons.enableAutoRequeue && !BladeCompat.active && !partyChanged && !skip && !teamShrank) {
                         val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
                         val cmd = requeueCommand()
                         FishDiag.check(startTeamCount > 0, "AutoRequeue.2") { "extra stats seen but team count never recorded (players=${fishmod.features.dungeon.map.DungeonPlayers.count()})" }

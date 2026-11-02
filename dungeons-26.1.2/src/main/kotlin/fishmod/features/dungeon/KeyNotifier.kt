@@ -25,7 +25,7 @@ object KeyNotifier {
     @JvmStatic
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
-            if (!Dungeons.enableKeyNotifier || !Location.inDungeon()) return@register false
+            if (!Dungeons.enableKeyNotifier || fishmod.compat.BladeCompat.active || !Location.inDungeon()) return@register false
             val s = TextStrip.plain(text.string).trim()
             try {
                 when {

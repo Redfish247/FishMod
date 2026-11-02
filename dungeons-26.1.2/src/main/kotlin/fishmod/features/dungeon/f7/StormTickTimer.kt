@@ -71,7 +71,7 @@ object StormTickTimer {
                     CritTracker.onStormDeath(deathTime)
                     Phase.onStormKill(deathTime)
                 }
-                if (Floor7.enableStormDeathTime) {
+                if (Floor7.enableStormDeathTime && !fishmod.compat.BladeCompat.active) {
                     Misc.addChatMessage(
                         Component.literal(
                             "§aStorm died at: §e"

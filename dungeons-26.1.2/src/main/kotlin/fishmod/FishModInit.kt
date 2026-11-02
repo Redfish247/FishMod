@@ -1016,7 +1016,7 @@ class FishModInit : ClientModInitializer {
                             Misc.addChatMessage(Component.literal("§cPhase.enableSplits ERR: " + t.message))
                         }
                         try {
-                            Misc.addChatMessage(Component.literal("§7blade loaded: §f" + FabricLoader.getInstance().isModLoaded("blade-addons")))
+                            Misc.addChatMessage(Component.literal("§7Blade compat: §f" + fishmod.compat.BladeCompat.active))
                         } catch (t: Throwable) {
                             FishDiag.fail("FishModInit.112", "fmdbg mod loader query failed", t)
                             Misc.addChatMessage(Component.literal("§cloader ERR"))
@@ -1366,6 +1366,7 @@ class FishModInit : ClientModInitializer {
 
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
             fishmod.utils.config.values.DungeonMapSettings.mapLegitMode = true
+            fishmod.utils.Scheduler.scheduleTask({ fishmod.compat.BladeCompat.tellOnce() }, 60)
         })
 
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) SoulflowHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.113", "soulflow_hud render failed", t) } }
