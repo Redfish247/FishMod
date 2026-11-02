@@ -74,8 +74,8 @@ enum class InventoryPane(
 			return this != CARNIVAL_MASKS && this != CANDY_BAG
 		}
 		return when (this) {
-			CARNIVAL_MASKS -> snapshot.carnivalPresent()
-			CANDY_BAG -> snapshot.candyPresent()
+			CARNIVAL_MASKS -> snapshot.carnivalPresent
+			CANDY_BAG -> snapshot.candyPresent
 			else -> true
 		}
 	}

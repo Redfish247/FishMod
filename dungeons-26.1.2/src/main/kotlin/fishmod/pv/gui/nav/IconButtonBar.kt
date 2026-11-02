@@ -222,14 +222,20 @@ class IconButtonBar {
 	}
 
 	@JvmRecord
-	data class Entry @JvmOverloads constructor(
+	data class Entry(
 		val key: Any,
 		val icon: ItemStack,
 		val label: Component,
 		val onClick: Runnable,
-		val texture: Identifier? = null,
-		val textureSize: Int = 16
-	)
+		val texture: Identifier?,
+		val textureSize: Int
+	) {
+		constructor(key: Any, icon: ItemStack, label: Component, onClick: Runnable) :
+			this(key, icon, label, onClick, null, 16)
+
+		constructor(key: Any, icon: ItemStack, label: Component, onClick: Runnable, texture: Identifier?) :
+			this(key, icon, label, onClick, texture, 16)
+	}
 
 	private data class Hit(val x: Int, val y: Int, val w: Int, val h: Int, val onClick: Runnable) {
 		fun contains(mx: Double, my: Double): Boolean =
