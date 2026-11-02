@@ -28,7 +28,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     }
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
-    private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void fishmod$drawOverlays(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
         MixinGuard.run("FishScreenMixin.9", "hovered slot tracking failed", () -> {
             Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
@@ -73,7 +73,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
-    public void drawBackground(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+    public void fishmod$slotBackground(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
         if (DrawHooks.INVENTORY_SLOT_BEFORE.isEmpty()) return;
         ItemStack stack = slot.getItem();
         DrawHooks.currentSlot = slot;
@@ -119,7 +119,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     }
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
-    private void keyPressed(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
+    private void fishmod$screenKey(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         try {
             if (InvSearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
             if (fishmod.features.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
@@ -133,7 +133,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void onMouseClick(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+    private void fishmod$screenClick(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         try {
             double cx = click.x(), cy = click.y();
 

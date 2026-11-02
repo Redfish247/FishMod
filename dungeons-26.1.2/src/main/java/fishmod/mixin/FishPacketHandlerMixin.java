@@ -41,7 +41,7 @@ public class FishPacketHandlerMixin {
     private ClientboundSystemChatPacket fishmod$lastBundledSystemChat;
 
     @Inject(method = "applyPlayerInfoUpdate", at = @At(value = "TAIL"))
-    private void onPlayerList(ClientboundPlayerInfoUpdatePacket.Action action, ClientboundPlayerInfoUpdatePacket.Entry receivedEntry, PlayerInfo currentEntry, CallbackInfo ci) {
+    private void fishmod$tabUpdated(ClientboundPlayerInfoUpdatePacket.Action action, ClientboundPlayerInfoUpdatePacket.Entry receivedEntry, PlayerInfo currentEntry, CallbackInfo ci) {
         MixinGuard.run("FishPacketHandlerMixin.1", "player list entry event failed",
                 () -> FishEvents.tabEntry.invoke(playerListEvent -> playerListEvent.onNewPlayerEntry(receivedEntry)));
     }
@@ -65,7 +65,7 @@ public class FishPacketHandlerMixin {
     }
 
     @Inject(method = "handleSoundEvent", at = @At(value = "HEAD"), cancellable = true)
-    private void onSound(ClientboundSoundPacket packet, CallbackInfo ci) {
+    private void fishmod$soundPacket(ClientboundSoundPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
         try {
             float volume = packet.getVolume();
@@ -94,7 +94,7 @@ public class FishPacketHandlerMixin {
     }
 
     @Inject(method = "handleSoundEntityEvent", at = @At(value = "HEAD"), cancellable = true)
-    private void onLocationSound(ClientboundSoundEntityPacket packet, CallbackInfo ci) {
+    private void fishmod$entitySoundPacket(ClientboundSoundEntityPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
         try {
             float volume = packet.getVolume();
@@ -114,7 +114,7 @@ public class FishPacketHandlerMixin {
     }
 
     @Inject(method = "handleParticleEvent", at = @At("HEAD"), cancellable = true)
-    private void onParticle(ClientboundLevelParticlesPacket packet, CallbackInfo ci) {
+    private void fishmod$particlePacket(ClientboundLevelParticlesPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
         MixinGuard.run("FishPacketHandlerMixin.5", "particle event failed", () -> {
             if (FishEvents.particle.invoke(particleEvent -> particleEvent.onParticle(packet))) ci.cancel();
@@ -122,7 +122,7 @@ public class FishPacketHandlerMixin {
     }
 
     @WrapOperation(method = "handleBundlePacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/Packet;handle(Lnet/minecraft/network/PacketListener;)V"))
-    private void apply(Packet<?> packet, PacketListener listener, Operation<Void> original) {
+    private void fishmod$wrapPacketHandle(Packet<?> packet, PacketListener listener, Operation<Void> original) {
         try {
             if (packet instanceof ClientboundSystemChatPacket sysChat) {
                 fishmod$lastBundledSystemChat = sysChat;

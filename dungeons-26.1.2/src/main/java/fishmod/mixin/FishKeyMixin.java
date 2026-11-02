@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class FishKeyMixin {
 
     @Inject(method = "charTyped", at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;charTyped(Lnet/minecraft/client/input/CharacterEvent;)Z"))
-    private void onChar(long window, CharacterEvent input, CallbackInfo ci, @Local Screen screen) {
+    private void fishmod$charToSearch(long window, CharacterEvent input, CallbackInfo ci, @Local Screen screen) {
         try {
             if (screen instanceof AbstractContainerScreen<?> container) {
                 if (fishmod.features.storage.StorageOverlay.charTyped(input, container)) return;
