@@ -29,6 +29,10 @@ object AchTrackers {
     private var lastInputMs = System.currentTimeMillis()
     private var lastYaw = 0f
     private var lastPitch = 0f
+    private var runPuzzleFails = 0
+    private var runMimic = false
+    private var runPrince = false
+    private val slayerKills = ArrayDeque<Long>()
 
     fun init() {
         AchBus.on(::onEvent)
@@ -41,26 +45,38 @@ object AchTrackers {
         when (e) {
             is AchEvent.RunStarted -> {
                 if (LocalTime.now().hour < 5) secret("midnightRun")
+                if (LocalTime.now().hour in 5..6) secret("earlyBird")
+                runPuzzleFails = 0; runMimic = false; runPrince = false
                 TickScheduler.scheduleTask(Runnable {
                     if (currentFloor() == "F1" && st.get("cata.level") >= 35) secret("wrongFloor")
                 }, 60)
             }
             is AchEvent.RunEnded -> onRunEnded(e)
             is AchEvent.Drop -> onDrop(e)
-            is AchEvent.PuzzleDone -> if (e.failed) st.set("puzzle.curStreak", 0) else {
+            is AchEvent.PuzzleDone -> if (e.failed) {
+                st.set("puzzle.curStreak", 0)
+                if (++runPuzzleFails >= 3) secret("threeFails")
+            } else {
                 st.inc("puzzle.solved"); st.inc("puzzle.curStreak"); st.max("puzzle.bestStreak", st.get("puzzle.curStreak"))
             }
             is AchEvent.TerminalDone -> if (e.own && e.objective.contains("terminal", true)) st.inc("term.done")
             is AchEvent.TerminalSection -> if (e.seconds in 1.0..5.0) st.inc("term.sectionSub5")
             is AchEvent.BloodOpened -> if (e.seconds in 1.0..15.0) st.max("dungeon.bloodSub15", 1)
-            AchEvent.MimicKilled -> st.inc("dungeon.mimic")
-            AchEvent.PrinceKilled -> st.inc("dungeon.prince")
-            is AchEvent.KuudraEnded -> { st.inc("kuudra.total"); if (e.tier in 1..5) st.inc("kuudra.t${e.tier}") }
+            AchEvent.MimicKilled -> { st.inc("dungeon.mimic"); runMimic = true }
+            AchEvent.PrinceKilled -> { st.inc("dungeon.prince"); runPrince = true }
+            is AchEvent.KuudraEnded -> {
+                if (e.tier == 1 && st.get("kuudra.t5") > 0) secret("slumming")
+                st.inc("kuudra.total"); if (e.tier in 1..5) st.inc("kuudra.t${e.tier}")
+            }
             AchEvent.SupplyDelivered -> st.inc("kuudra.supplies")
             AchEvent.BallistaBuilt -> st.inc("kuudra.ballista")
             is AchEvent.ChestOpened -> if (e.kind == "kuudra" && e.paid) st.inc("kuudra.paidChests")
             is AchEvent.SlayerKill -> {
                 st.inc("slayer.total")
+                val now = System.currentTimeMillis()
+                slayerKills.addLast(now)
+                while (now - slayerKills.first() > 300_000) slayerKills.removeFirst()
+                if (slayerKills.size >= 5) secret("slayerRush")
                 when {
                     e.type == "REVENANT" && e.tier >= 5 -> st.inc("slayer.zombieT5")
                     e.type == "TARANTULA" && e.tier >= 5 -> st.inc("slayer.spiderT5")
@@ -70,7 +86,12 @@ object AchTrackers {
                 }
             }
             is AchEvent.PersonalBest -> { st.inc("fm.pbs"); if (e.improvedBy > 0 && e.improvedBy < 0.01) secret("framePerfect") }
-            is AchEvent.OwnDeath -> if (SkyblockLocation.inDungeon() && (e.message.contains("lava", true) || e.message.contains("burn", true))) secret("lavaDeath")
+            is AchEvent.OwnDeath -> if (SkyblockLocation.inDungeon()) {
+                if (e.message.contains("lava", true) || e.message.contains("burn", true)) secret("lavaDeath")
+                if (LocalDate.now().dayOfWeek == DayOfWeek.MONDAY) secret("mondayDeath")
+                val start = AchHooks.runStartMs
+                if (start > 0 && System.currentTimeMillis() - start <= 30_000) secret("speedBump")
+            }
             AchEvent.FeastStarted -> st.inc("garden.feasts")
             AchEvent.VisitorAccepted -> st.inc("garden.visitors")
             AchEvent.CommissionDone -> st.inc("mining.commissions")
@@ -90,6 +111,11 @@ object AchTrackers {
         val splus = e.score >= 300
         if (splus) st.inc("dungeon.splus")
         if (e.deaths == 0) st.inc("dungeon.deathless")
+        if (e.score == 299) secret("score299")
+        if (e.score == 277) secret("score277")
+        if (e.secrets == 0) secret("noSecrets")
+        if (e.deaths >= 9) secret("nineDeaths")
+        if (e.deaths == 0 && runMimic && runPrince) secret("fullHouse")
         st.max("secrets.bestRun", e.secrets.toLong())
         if (f == "M7") {
             if (e.seconds in 1.0..300.0) { st.inc("m7.sub5"); st.inc("m7.curSub5") } else st.set("m7.curSub5", 0)
@@ -143,6 +169,7 @@ object AchTrackers {
         st.data.playDays[d] = (st.data.playDays[d] ?: 0L) + 1
         if (d == st.data.updateDay) st.max("play.updateDay", st.data.playDays[d] ?: 0L)
         st.max("play.afkBest", (System.currentTimeMillis() - lastInputMs) / 1000)
+        if (System.currentTimeMillis() - lastInputMs >= 3_600_000) secret("afkHour")
     }
 
     private fun derivePlaytime() {

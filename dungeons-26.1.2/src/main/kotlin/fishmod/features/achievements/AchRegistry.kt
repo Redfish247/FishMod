@@ -30,6 +30,18 @@ object AchRegistry {
         "splash_zone" to "It's hot, it's bright, and it's the last thing you see.",
         "the_one_that_got_away" to "Some prey vanishes if you take too long to finish it.",
         "party_of_one" to "The hardest floor needs no friends. Prove it.",
+        "early_bird" to "The sun is barely up and you're already underground.",
+        "speed_bump" to "The door hadn't even finished opening.",
+        "so_close" to "One point. One single point.",
+        "bare_minimum" to "All those chests, and you left them all shut.",
+        "nine_lives" to "A cat would have stopped by now.",
+        "case_of_the_mondays" to "Nobody likes the first day of the week, especially down there.",
+        "coffee_break" to "Step away for a while. The game will wait.",
+        "lucky_sevens" to "Three sevens on the final tally.",
+        "assembly_line" to "Five heads in five minutes. Keep the line moving.",
+        "puzzled" to "Some rooms just aren't for you. Three of them, in fact.",
+        "slumming_it" to "The king of the wastes returns to the basic tier.",
+        "full_house" to "Trickster, royalty and not one funeral.",
     )
 
     val ALL = ArrayList<Ach>()
@@ -391,6 +403,18 @@ object AchRegistry {
         a("splash_zone", "Secret Achievements", "Splash Zone", "Die to lava in a dungeon", "Secret", 25, "secret.lavaDeath", 1L, "", true)
         a("the_one_that_got_away", "Secret Achievements", "The One That Got Away", "A slayer boss gets away before you kill it", "Secret", 25, "secret.slayerEscape", 1L, "", true)
         a("party_of_one", "Secret Achievements", "Party of One", "Complete an M7 solo", "Secret", 100, "secret.soloM7", 1L, "", true)
+        a("early_bird", "Secret Achievements", "Early Bird", "Start a dungeon run between 5 and 7 AM", "Secret", 25, "secret.earlyBird", 1L, "", true)
+        a("speed_bump", "Secret Achievements", "Speed Bump", "Die within 30 seconds of a run starting", "Secret", 25, "secret.speedBump", 1L, "", true)
+        a("so_close", "Secret Achievements", "So Close", "Finish a run with a score of exactly 299", "Secret", 50, "secret.score299", 1L, "", true)
+        a("bare_minimum", "Secret Achievements", "Bare Minimum", "Finish a run without finding a single secret", "Secret", 25, "secret.noSecrets", 1L, "", true)
+        a("nine_lives", "Secret Achievements", "Nine Lives", "Finish a run with 9 or more team deaths", "Secret", 25, "secret.nineDeaths", 1L, "", true)
+        a("case_of_the_mondays", "Secret Achievements", "Case of the Mondays", "Die in a dungeon on a Monday", "Secret", 25, "secret.mondayDeath", 1L, "", true)
+        a("coffee_break", "Secret Achievements", "Coffee Break", "Stand still in Skyblock for an hour", "Secret", 25, "secret.afkHour", 1L, "", true)
+        a("lucky_sevens", "Secret Achievements", "Lucky Sevens", "Finish a run with a score of exactly 277", "Secret", 50, "secret.score277", 1L, "", true)
+        a("assembly_line", "Secret Achievements", "Assembly Line", "Kill 5 slayer bosses in 5 minutes", "Secret", 50, "secret.slayerRush", 1L, "", true)
+        a("puzzled", "Secret Achievements", "Puzzled", "Fail 3 puzzles in one run", "Secret", 25, "secret.threeFails", 1L, "", true)
+        a("slumming_it", "Secret Achievements", "Slumming It", "Finish a T1 Kuudra after clearing T5", "Secret", 25, "secret.slumming", 1L, "", true)
+        a("full_house", "Secret Achievements", "Full House", "Kill a Mimic and a Prince in one deathless run", "Secret", 50, "secret.fullHouse", 1L, "", true)
         a("fishmod_completionist", "Ultimate", "FishMod Completionist", "Unlock every non-secret achievement", "Impossible", 250, "meta.completionist", 1L, "", false)
         a("the_fish_emperor", "Ultimate", "The Fish Emperor", "Unlock every achievement, secrets included", "Impossible", 500, "meta.emperor", 1L, "", false)
     }
