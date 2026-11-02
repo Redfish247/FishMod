@@ -33,6 +33,7 @@ object BossDamageCalc {
 
     @JvmStatic
     fun init() {
+        BossDamageCapture.init()
         FishEvents.worldChange.register { bosses.clear(); false }
         AttackEntityCallback.EVENT.register { _, level, _, entity, _ ->
             if (level.isClientSide) { lastActionTick = ticks; lastTargetId = entity.id }
