@@ -56,7 +56,7 @@ object LagTracker {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { message ->
+        FishEvents.chat.register { message ->
             val s = message.string
 
             if (!active && !ended && s.contains(RUN_START_FRAGMENT)) {
@@ -79,7 +79,7 @@ object LagTracker {
             false
         }
 
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (!active && !ended && ++probeTick >= 20) {
                 probeTick = 0
                 if (fishmod.utils.SkyblockLocation.inDungeon() && (FishDiag.guard("LagTracker.3", "run time tab scan failed") { scoreboardRunSeconds() } ?: -1) > 0) start()
@@ -88,14 +88,14 @@ object LagTracker {
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             active = false
             ended = false
             ticks = 0
             false
         }
 
-        FishEvents.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.locationChange.register { _ ->
             active = false
             ended = false
             startMs = 0

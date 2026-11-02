@@ -36,7 +36,7 @@ object RoomTimer {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register { room = null; toldClear = false; toldSecrets = false; false }
+        FishEvents.worldChange.register { room = null; toldClear = false; toldSecrets = false; false }
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
             if (!FishSettings.roomTimerEnabled || !DungeonState.isInDungeon() || DungeonState.isInBoss()) return@EndTick

@@ -120,8 +120,8 @@ object RareMobs {
         }
 
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
-        FishEvents.ON_GAME_MESSAGE.register { text -> onChat(text.string); false }
-        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.chat.register { text -> onChat(text.string); false }
+        FishEvents.worldChange.register { reset(); false }
     }
 
     private fun reset() {

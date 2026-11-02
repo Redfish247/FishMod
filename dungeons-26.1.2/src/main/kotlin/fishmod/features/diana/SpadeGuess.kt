@@ -23,13 +23,13 @@ object SpadeGuess {
     fun reset() { points.clear(); trailGuess = null }
 
     fun init() {
-        FishEvents.ON_PARTICLE.register { p ->
+        FishEvents.particle.register { p ->
             if (DianaSettings.dianaGuessing && DianaSettings.dianaSpadeGuess && Diana.inHub() && p.particle.type === ParticleTypes.DRIPPING_LAVA &&
                 p.count == 2 && (abs(p.maxSpeed + 0.5f) < 1e-4f || testTrail(p))
             ) onPoint(Vec3(p.x, p.y, p.z))
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.worldChange.register { reset(); false }
     }
 
     // /particle can't send a negative speed, so test worlds use speed 0 with no spread

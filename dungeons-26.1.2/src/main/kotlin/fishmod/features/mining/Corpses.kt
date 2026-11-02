@@ -47,8 +47,8 @@ object Corpses {
     private var shaftDone = false
 
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register { seenTicks.clear(); announced.clear(); shaftType = null; shaftDone = false; enteredMs = 0L; false }
-        FishEvents.ON_LOCATION_CHANGE.register { loc ->
+        FishEvents.worldChange.register { seenTicks.clear(); announced.clear(); shaftType = null; shaftDone = false; enteredMs = 0L; false }
+        FishEvents.locationChange.register { loc ->
             if (loc == SkyblockLocation.MINESHAFT) { enteredMs = System.currentTimeMillis(); shaftType = null; shaftDone = false }
             false
         }

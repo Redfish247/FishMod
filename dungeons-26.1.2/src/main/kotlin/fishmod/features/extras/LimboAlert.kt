@@ -10,7 +10,7 @@ object LimboAlert {
     private var lastMs = 0L
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (S.limboAlert) {
                 val s = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
                 if (s.startsWith("You were spawned in Limbo") || s.startsWith("You are AFK. Move around to return from AFK")

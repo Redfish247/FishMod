@@ -54,7 +54,7 @@ object SpringBoots {
             { FishSettings.springBootsScale }, { v -> FishSettings.springBootsScale = v }
         )
 
-        FishEvents.ON_SOUND.register { event, _, pitch ->
+        FishEvents.sound.register { event, _, pitch ->
             if (!FishSettings.springBootsEnabled || !SkyblockLocation.inSkyblock()) return@register false
             val p = Minecraft.getInstance().player ?: return@register false
             if (!p.onGround()) return@register false

@@ -44,7 +44,7 @@ object EtherwarpHelper {
             try { raycast(mc) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.1", "etherwarp raycast failed", t) }
         }
 
-        FishEvents.ON_SOUND.register { event, volume, pitch ->
+        FishEvents.sound.register { event, volume, pitch ->
             if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpSoundEnabled) return@register false
             if (volume != 1f || pitch != ETHERWARP_PITCH || !SkyblockLocation.inSkyblock()) return@register false
             val looksRight = event == SoundEvents.ENDER_DRAGON_HURT ||

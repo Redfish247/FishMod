@@ -72,8 +72,8 @@ object KuudraExtras {
     }
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { c -> if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.1", "kuudra extras chat failed") { onChat(Mining.strip(c.string)) }; false }
-        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.chat.register { c -> if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.1", "kuudra extras chat failed") { onChat(Mining.strip(c.string)) }; false }
+        FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !Kuudra.inKuudra()) return@register
             FishDiag.guard("KuudraExtras.2", "kuudra extras tick failed") { tick(mc) }

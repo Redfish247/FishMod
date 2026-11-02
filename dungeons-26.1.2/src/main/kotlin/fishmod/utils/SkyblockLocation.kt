@@ -70,7 +70,7 @@ enum class SkyblockLocation(val name2: String) {
 
             instance.subscribeToEventPacket(ClientboundLocationPacket::class.java)
 
-            FishEvents.ON_WORLD_CHANGE.register {
+            FishEvents.worldChange.register {
                 detectedNewLocation = false
                 false
             }
@@ -98,7 +98,7 @@ enum class SkyblockLocation(val name2: String) {
             FishDebug.sendDebugMessage(Component.literal("Location: $currentLocation"))
 
             try {
-                FishEvents.ON_LOCATION_CHANGE.invoke { locationChangeEvent -> locationChangeEvent.onLocationChange(currentLocation) }
+                FishEvents.locationChange.invoke { locationChangeEvent -> locationChangeEvent.onLocationChange(currentLocation) }
             } catch (e: Throwable) {
                 FishDiag.fail("Location.3", "location change listener threw for ${location.name2}", e)
             }

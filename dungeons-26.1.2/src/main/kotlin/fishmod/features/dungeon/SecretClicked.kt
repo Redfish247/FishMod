@@ -54,7 +54,7 @@ object SecretClicked {
             InteractionResult.PASS
         })
 
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             try {
                 when (packet) {
                     is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
@@ -68,13 +68,13 @@ object SecretClicked {
             try { onTick(mc) } catch (e: Exception) { FishDiag.fail("SecretClicked.3", "secret clicked tick threw (clicked=${clicked.size})", e) }
         })
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (TextStrip.plain(text.string).trim() == "That chest is locked!") {
                 clicked.lastOrNull()?.locked = true
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             clicked.clear(); itemPos.clear(); pendingSkull = null
             pickedItemIds.clear(); batSounds.clear()
             false

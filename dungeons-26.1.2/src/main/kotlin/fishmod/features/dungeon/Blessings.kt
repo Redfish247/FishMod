@@ -50,9 +50,9 @@ object Blessings {
             { FishSettings.blessingScale }, { v -> FishSettings.blessingScale = v }
         )
 
-        FishEvents.ON_SERVER_TICK.register { FishDiag.guard("Blessings.2", "blessing tab poll failed") { poll() }; false }
-        FishEvents.ON_WORLD_CHANGE.register { clear(); false }
-        FishEvents.ON_LOCATION_CHANGE.register { _ -> clear(); false }
+        FishEvents.serverTick.register { FishDiag.guard("Blessings.2", "blessing tab poll failed") { poll() }; false }
+        FishEvents.worldChange.register { clear(); false }
+        FishEvents.locationChange.register { _ -> clear(); false }
     }
 
     private fun clear() = Type.entries.forEach { it.current = 0 }

@@ -16,7 +16,7 @@ object DungeonDeathMessage {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { message ->
+        FishEvents.chat.register { message ->
             try { onMessage(message) } catch (e: Exception) { FishDiag.fail("DungeonDeathMessage.1", "death message handling failed", e); false }
         }
     }

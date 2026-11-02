@@ -20,7 +20,7 @@ object DoorHighlight {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { lastRoom = null; outlineCache = emptyList(); outlineCacheAt = 0L; false }
+        fishmod.utils.events.FishEvents.worldChange.register { lastRoom = null; outlineCache = emptyList(); outlineCacheAt = 0L; false }
         RenderHooks.GIZMO.register { _ ->
             try { renderGizmo() } catch (e: Exception) { FishDiag.fail("DoorHighlight.1", "door highlight gizmo render failed doors=${Scan.doors.size}", e) }
         }

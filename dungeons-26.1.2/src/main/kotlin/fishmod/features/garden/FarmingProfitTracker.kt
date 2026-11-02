@@ -68,8 +68,8 @@ object FarmingProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        FishEvents.ON_WORLD_CHANGE.register { save(true); pending.clear(); rewardUntil = 0L; false }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { save(true); pending.clear(); rewardUntil = 0L; false }
+        FishEvents.chat.register { text ->
             if (S.gardenProfit && Garden.inGarden()) runCatching { onChat(text) }
             false
         }

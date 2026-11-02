@@ -12,7 +12,7 @@ object PartyJoinSound {
     private var lastMs = 0L
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (S.partyJoinSound) {
                 val s = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
                 JOIN.find(s)?.let { onJoin(it.groupValues[1]) }

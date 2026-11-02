@@ -28,7 +28,7 @@ object QuizHud {
             90, 10,
             { FishSettings.quizHudScale }, { v -> FishSettings.quizHudScale = v }
         )
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             val s = TextStrip.plain(text.string)
             when {
                 s.contains("I am Oruo the Omniscient. I have lived many lives.") -> { stage = 1; ticksLeft = 220 }
@@ -52,8 +52,8 @@ object QuizHud {
             }
             false
         }
-        FishEvents.ON_SERVER_TICK.register { if (ticksLeft > 0) ticksLeft--; false }
-        FishEvents.ON_WORLD_CHANGE.register { stage = 0; ticksLeft = 0; false }
+        FishEvents.serverTick.register { if (ticksLeft > 0) ticksLeft--; false }
+        FishEvents.worldChange.register { stage = 0; ticksLeft = 0; false }
     }
 
     @JvmStatic

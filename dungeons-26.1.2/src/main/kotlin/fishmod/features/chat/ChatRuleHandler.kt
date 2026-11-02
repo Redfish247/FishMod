@@ -20,7 +20,7 @@ object ChatRuleHandler {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.FishEvents.ON_GAME_MESSAGE.register { message ->
+        fishmod.utils.events.FishEvents.chat.register { message ->
             if (!ChatRuleStore.isMasterEnabled()) return@register false
             val raw = TextStrip.plain(message.string)
             for (rule in ChatRuleStore.rules()) {

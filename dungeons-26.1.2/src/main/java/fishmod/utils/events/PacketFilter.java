@@ -29,6 +29,6 @@ public final class PacketFilter {
     private PacketFilter() {}
 
     public static boolean wanted(Object packet) {
-        return !FishEvents.ON_PACKET.isEmpty() && WANTED.get(packet.getClass());
+        return !FishEvents.packet.isEmpty() && WANTED.get(packet.getClass());
     }
 }

@@ -41,7 +41,7 @@ object ArrowHud {
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "arrow_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("ArrowHud.1", "arrow hud render failed", t) }
         }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (S.arrowHud || S.quiverWarning) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim())
             false
         }

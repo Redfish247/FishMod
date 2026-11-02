@@ -53,7 +53,7 @@ object Ragnarock {
             { FishSettings.ragnarockEnabled && FishSettings.ragnarockTimer },
         )
 
-        FishEvents.ON_SOUND.register { event, _, pitch ->
+        FishEvents.sound.register { event, _, pitch ->
             if (FishSettings.ragnarockEnabled
                 && pitch == CAST_PITCH && "wolf" in event.location.path && SkyblockLocation.inSkyblock() && holdingAxe()
             ) {
@@ -67,7 +67,7 @@ object Ragnarock {
             false
         }
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (FishSettings.ragnarockEnabled && CANCELLED.matcher(text.string).find()) {
                 if (FishSettings.ragnarockCancelAlert) FishUtil.forceTitle(Component.literal("§cRagnarock Cancelled"), Component.empty())
                 ticksLeft = 0
@@ -75,8 +75,8 @@ object Ragnarock {
             false
         }
 
-        FishEvents.ON_SERVER_TICK.register { if (ticksLeft > 0) ticksLeft--; false }
-        FishEvents.ON_WORLD_CHANGE.register { ticksLeft = 0; false }
+        FishEvents.serverTick.register { if (ticksLeft > 0) ticksLeft--; false }
+        FishEvents.worldChange.register { ticksLeft = 0; false }
     }
 
     @JvmStatic

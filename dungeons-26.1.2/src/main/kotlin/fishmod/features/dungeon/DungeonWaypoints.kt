@@ -137,7 +137,7 @@ object DungeonWaypoints {
         )
 
         // New world = new run: drop route progress so reached points don't stay hidden.
-        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register {
+        fishmod.utils.events.FishEvents.worldChange.register {
             if (routeReached.isNotEmpty() || routeLoopCursor.isNotEmpty()) { routeReached.clear(); routeLoopCursor.clear(); progressVersion++ }
             false
         }

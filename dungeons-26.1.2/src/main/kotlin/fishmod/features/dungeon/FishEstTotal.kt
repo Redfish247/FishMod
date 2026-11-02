@@ -58,7 +58,7 @@ object FishEstTotal {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_LOCATION_CHANGE.register { _ -> reset(); false }
+        FishEvents.locationChange.register { _ -> reset(); false }
     }
 
     private fun reset() {

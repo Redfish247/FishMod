@@ -26,7 +26,7 @@ object EventDispatch {
         ClientReceiveMessageEvents.GAME.register { message, _ ->
             try {
                 if (SkyblockLocation.inDungeon() && LEAP_PATTERN.matcher(message.string).find()) {
-                    FishEvents.ON_LEAP.invoke { leapEvent -> leapEvent.onLeap(message) }
+                    FishEvents.leap.invoke { leapEvent -> leapEvent.onLeap(message) }
                 }
             } catch (t: Throwable) {
                 FishDiag.fail("CustomEvents.2", "leap message dispatch", t)
@@ -54,6 +54,6 @@ object EventDispatch {
 
             val username = tempUsername
             if (username.isBlank()) FishDiag.fail("CustomEvents.4", "odd party sender '$username' parsed from '$string'")
-            FishEvents.ON_PARTY_MESSAGE.invoke { partyMessageEvent -> partyMessageEvent.sentMessage(username, sentMessage) }
+            FishEvents.partyChat.invoke { partyMessageEvent -> partyMessageEvent.sentMessage(username, sentMessage) }
     }
 }

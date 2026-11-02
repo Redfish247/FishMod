@@ -32,8 +32,8 @@ object KickListManager {
         ClientTickEvents.END_CLIENT_TICK.register {
             try { onTick() } catch (e: Exception) { FishDiag.fail("KickListManager.1", "kick list tick failed (${pending.size} pending)", e) }
         }
-        FishEvents.ON_WORLD_CHANGE.register { lastKick.clear(); pending.clear(); false }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { lastKick.clear(); pending.clear(); false }
+        FishEvents.chat.register { text ->
             if (FishSettings.pcKickListEnabled && FishSettings.pcKickList.isNotBlank()) {
                 val stripped = FishConstants.STRIP_COLOR_REGEX.replace(text.string, "")
                 val m = PF_JOIN.matcher(stripped).takeIf { it.find() }

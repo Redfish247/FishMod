@@ -82,7 +82,7 @@ object GardenLevels {
             if (tick++ % 20 == 0) { scanTab(); if (S.gardenHoeHud && Garden.inGarden()) scanHoe() else hoeLines = emptyList() }
             if (tick % 5 == 0) scanMenu()
         }
-        FishEvents.ON_GAME_MESSAGE.register { t ->
+        FishEvents.chat.register { t ->
             val m = if (Garden.inGarden() && S.gardenLevelXp > 0) GXP.find(Garden.strip(t.string)) else null
             if (m != null) {
                 S.gardenLevelXp += m.groupValues[1].replace(",", "").toLongOrNull() ?: 0

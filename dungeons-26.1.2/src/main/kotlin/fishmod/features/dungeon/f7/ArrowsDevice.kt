@@ -68,7 +68,7 @@ object ArrowsDevice {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             try {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> {
@@ -83,11 +83,11 @@ object ArrowsDevice {
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             resetSolver(); isDeviceComplete = false; prev.clear(); false
         }
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.arrowsDeviceEnabled || !inP3() || !isPlayerInRoom || isDeviceComplete) return@register false
             val plain = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
             val name = deviceCompleteRegex.find(plain)?.groupValues?.get(1)

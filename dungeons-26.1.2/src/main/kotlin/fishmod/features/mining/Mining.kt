@@ -52,14 +52,14 @@ object Mining {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> onTick(mc) }
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (inMiningIsland()) when (packet) {
                 is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                 is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, s -> onBlock(p, s) }
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { recentTargets.clear(); area = ""; false }
+        FishEvents.worldChange.register { recentTargets.clear(); area = ""; false }
 
         NucleusHighlight.init()
         MineshaftPity.init()

@@ -21,11 +21,11 @@ object PatcherWaypoints {
     private val list = CopyOnWriteArrayList<Wp>()
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (S.patcherWaypoints) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, ""))
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { list.clear(); false }
+        FishEvents.worldChange.register { list.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.patcherWaypoints && list.isNotEmpty()) render(ctx, ps, vc) }
     }

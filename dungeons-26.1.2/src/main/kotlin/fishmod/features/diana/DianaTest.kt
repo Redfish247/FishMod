@@ -16,13 +16,13 @@ object DianaTest {
 
     fun init() {
         LOG.info("Diana test mode on")
-        FishEvents.ON_PARTICLE.register { p ->
+        FishEvents.particle.register { p ->
             val t = p.particle.type
             if (t === net.minecraft.core.particles.ParticleTypes.DUST || t === net.minecraft.core.particles.ParticleTypes.DRIPPING_LAVA)
                 LOG.info("particle {} count={} speed={} off={},{},{} at {},{},{}", net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getKey(t), p.count, p.maxSpeed, p.xDist, p.yDist, p.zDist, p.x, p.y, p.z)
             false
         }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             val s = text.string
             if (!s.startsWith("[fmtest]")) return@register false
             when {

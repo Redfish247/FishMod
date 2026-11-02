@@ -31,7 +31,7 @@ object PlayersLeaped {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.FishEvents.ON_LOCATION_CHANGE.register { _ -> filledAt.clear(); false }
+        fishmod.utils.events.FishEvents.locationChange.register { _ -> filledAt.clear(); false }
     }
 
     private fun hiddenForRun(zone: Zone): Boolean =

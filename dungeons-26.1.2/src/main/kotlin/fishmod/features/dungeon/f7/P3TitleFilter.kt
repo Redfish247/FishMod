@@ -16,14 +16,14 @@ object P3TitleFilter {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { msg ->
+        FishEvents.chat.register { msg ->
             when (msg.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()) {
                 "[BOSS] Goldor: Who dares trespass into my domain?" -> inP3 = true
                 "[BOSS] Necron: You went further than any human before, congratulations." -> inP3 = false
             }
             false
         }
-        FishEvents.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.locationChange.register { _ ->
             inP3 = false
             false
         }

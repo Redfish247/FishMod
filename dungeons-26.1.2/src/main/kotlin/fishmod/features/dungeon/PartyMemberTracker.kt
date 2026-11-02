@@ -25,7 +25,7 @@ object PartyMemberTracker {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             try { onChat(text.string) } catch (e: Exception) { FishDiag.fail("PartyMemberTracker.1", "party member chat parse threw", e) }
             false
         }

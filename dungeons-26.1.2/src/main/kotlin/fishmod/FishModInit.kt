@@ -1423,7 +1423,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.148", "fishmod.features.CustomCrosshair.register() failed") { fishmod.features.CustomCrosshair.register() }
         FishDiag.guard("FishModInit.149", "fishmod.features.dungeon.map.DungeonScore.register() failed") { fishmod.features.dungeon.map.DungeonScore.register() }
         FishDiag.guard("FishModInit.150", "fishmod.features.dungeon.map.DoorHighlight.init() failed") { fishmod.features.dungeon.map.DoorHighlight.init() }
-        fishmod.utils.events.FishEvents.ON_GAME_MESSAGE.register { message ->
+        fishmod.utils.events.FishEvents.chat.register { message ->
             try {
                 fishmod.features.dungeon.map.DungeonState.onChatMessage(message.string)
                 fishmod.features.dungeon.map.DungeonScore.onChatMessage(message.string)

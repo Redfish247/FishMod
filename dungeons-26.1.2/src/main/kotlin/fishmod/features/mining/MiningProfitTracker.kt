@@ -66,8 +66,8 @@ object MiningProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        FishEvents.ON_WORLD_CHANGE.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
+        FishEvents.chat.register { text ->
             if (S.miningProfit && Mining.inMiningIsland()) onChat(text)
             false
         }

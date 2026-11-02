@@ -25,14 +25,14 @@ object NecronTrace {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (active()) {
                 val s = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
                 if (s.startsWith("[BOSS]") || s.contains("Corrupted") || s.contains("Relic")) log("chat: $s")
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { startMs = 0L; lastBar = ""; lastWithers = ""; relicsLogged = false; false }
+        FishEvents.worldChange.register { startMs = 0L; lastBar = ""; lastWithers = ""; relicsLogged = false; false }
     }
 
     @JvmStatic

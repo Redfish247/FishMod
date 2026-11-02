@@ -32,18 +32,18 @@ object TerminalTracker {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_LOCATION_CHANGE.register { _ -> st.clear(); false }
-        FishEvents.ON_PHASE_CHANGE.register {
+        FishEvents.locationChange.register { _ -> st.clear(); false }
+        FishEvents.phaseChange.register {
             // Fresh state each P3; leftovers from a run without a location change ate S1
             if (BossPhase.inTerminals()) st.terminalsStarted(System.currentTimeMillis())
             false
         }
-        FishEvents.ON_SECTION_CHANGE.register { st.sectionChanged(GoldorSection.getSection(), System.currentTimeMillis()); false }
-        FishEvents.ON_TERMINAL.register { name, _, objective, _, _ ->
+        FishEvents.sectionChange.register { st.sectionChanged(GoldorSection.getSection(), System.currentTimeMillis()); false }
+        FishEvents.terminalStep.register { name, _, objective, _, _ ->
             FishDiag.guard("TerminalTracker.1", "record $objective by $name") { record(name, objective) }
             false
         }
-        FishEvents.ON_GAME_MESSAGE.register { msg ->
+        FishEvents.chat.register { msg ->
             if (BossPhase.inTerminals() && msg.string == "The gate has been destroyed!") st.gateDestroyed(System.currentTimeMillis())
             false
         }

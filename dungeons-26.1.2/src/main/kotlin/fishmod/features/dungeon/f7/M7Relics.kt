@@ -65,7 +65,7 @@ object M7Relics {
             { FishSettings.relicTimerScale }, { v -> FishSettings.relicTimerScale = v }
         )
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             val msg = COLOR.replace(text.string, "")
             // Old or alpha Necron line; first one wins so a later line can't restart it.
             if (DialogueCompat.isNecronEnd(msg) && System.currentTimeMillis() - p5StartMs > RESTART_GUARD_MS) {
@@ -88,7 +88,7 @@ object M7Relics {
         NecronDeath.onDeath {
             if (Floor7Settings.relicStartHud && BossPhase.getFloor() == "M7") { spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L; spawned = false }
         }
-        FishEvents.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; spawned = false; myRelic = null; pickers.clear(); placed.clear(); relicStands.clear(); false }
+        FishEvents.worldChange.register { spawnEndMs = 0L; p5StartMs = 0L; spawned = false; myRelic = null; pickers.clear(); placed.clear(); relicStands.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
             try { NecronTrace.tick(); BossPhase.checkNecronBar(); checkRelics() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }

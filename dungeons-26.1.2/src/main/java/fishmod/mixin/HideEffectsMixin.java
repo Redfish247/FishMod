@@ -8,13 +8,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Collection;
+
 @Mixin(EffectsInInventory.class)
 public class HideEffectsMixin {
 
-    @Inject(method = "extractEffects", at=@At("HEAD"), cancellable = true)
-    public void drawEffects(GuiGraphicsExtractor context, java.util.Collection<?> effects, int x, int y, int width, int height, int maxHeight, CallbackInfo ci) {
-        if (VisualSettings.hideEffectHud) {
-            ci.cancel();
-        }
+    @Inject(method = "extractEffects", at = @At("HEAD"), cancellable = true)
+    private void fishmod$skipEffectList(GuiGraphicsExtractor g, Collection<?> list, int x, int y, int w, int h, int maxH, CallbackInfo ci) {
+        if (VisualSettings.hideEffectHud) ci.cancel();
     }
 }

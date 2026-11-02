@@ -51,10 +51,10 @@ object BloodSolver {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_LOCATION_CHANGE.register { _ -> resetRun(); false }
-        FishEvents.ON_WORLD_CHANGE.register { resetRun(); false }
+        FishEvents.locationChange.register { _ -> resetRun(); false }
+        FishEvents.worldChange.register { resetRun(); false }
 
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             dungeonTick++
             val w = watcher
             if (w != null && w.isRemoved) { watcher = null; bloodMobs.clear() }
@@ -63,7 +63,7 @@ object BloodSolver {
             false
         }
 
-        FishEvents.ON_GAME_MESSAGE.register { message ->
+        FishEvents.chat.register { message ->
             when (message.string) {
                 OPEN_MESSAGE -> if (bloodOpenTick < 0 && SkyblockLocation.inDungeon()) bloodOpenTick = dungeonTick
                 WATCHER_MESSAGE -> if (Floor7Settings.bloodSolverEnabled && SkyblockLocation.inDungeon()) {
@@ -73,7 +73,7 @@ object BloodSolver {
             false
         }
 
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             try {
             when (packet) {
                 is ClientboundSetEquipmentPacket -> {

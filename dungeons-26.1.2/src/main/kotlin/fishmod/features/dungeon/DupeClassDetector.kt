@@ -17,19 +17,19 @@ object DupeClassDetector {
     @JvmStatic
     fun init() {
 
-        FishEvents.ON_PHASE_CHANGE.register {
+        FishEvents.phaseChange.register {
             if (BossPhase.runJustStarted()) {
                 announced.clear()
             }
             false
         }
 
-        FishEvents.ON_RUN_END.register {
+        FishEvents.runEnd.register {
             announced.clear()
             false
         }
 
-        FishEvents.ON_PLAYER_ENTRY.register { _ ->
+        FishEvents.tabEntry.register { _ ->
             if (!DungeonSettings.dupeClassAlert) return@register false
             try { checkForDupes() } catch (e: Exception) { FishDiag.fail("DupeClassDetector.1", "dupe class check failed (${DungeonRole.getAll().size} players)", e) }
             false

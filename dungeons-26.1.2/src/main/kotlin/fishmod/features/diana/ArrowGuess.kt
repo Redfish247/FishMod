@@ -39,7 +39,7 @@ object ArrowGuess {
     fun reset() { dust.clear(); entries.clear(); seenRays.clear(); range = null; pending = false }
 
     fun init() {
-        FishEvents.ON_PARTICLE.register { p ->
+        FishEvents.particle.register { p ->
             if (!DianaSettings.dianaGuessing || !DianaSettings.dianaArrowGuess || !Diana.inHub()) return@register false
             if (p.particle.type !== ParticleTypes.DUST || p.count != 0 || abs(p.maxSpeed - 1f) > 1e-4f || p.particle !is DustParticleOptions) return@register false
             val r = bandFor(p.xDist.toDouble(), p.yDist.toDouble(), p.zDist.toDouble()) ?: return@register false

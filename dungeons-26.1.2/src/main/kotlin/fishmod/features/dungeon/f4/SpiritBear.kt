@@ -38,7 +38,7 @@ object SpiritBear {
             { FishSettings.spiritBearEnabled },
         )
 
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (timer > 0) timer--
             if (!active()) return@register false
             val level = Minecraft.getInstance().level ?: return@register false
@@ -56,7 +56,7 @@ object SpiritBear {
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             timer = -1; kills = 0; lastWasLantern = false; false
         }
     }

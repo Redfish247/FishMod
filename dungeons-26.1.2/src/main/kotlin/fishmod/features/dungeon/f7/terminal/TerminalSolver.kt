@@ -96,17 +96,17 @@ object TerminalSolver {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             when (packet) {
                 is ClientboundOpenScreenPacket -> onOpen(packet)
                 is net.minecraft.network.protocol.game.ClientboundContainerClosePacket -> if (!simActive) onScreenClosed()
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.worldChange.register { reset(); false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { tickSync() }
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             try {
                 val m = ACTIVATED.matcher(TextStrip.plain(text.string))
                 if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) {

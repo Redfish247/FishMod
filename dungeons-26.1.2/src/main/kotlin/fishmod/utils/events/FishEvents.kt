@@ -17,26 +17,26 @@ import fishmod.utils.events.interfaces.TerminalHook
 import fishmod.utils.events.interfaces.WorldHook
 
 object FishEvents {
-    @JvmField val ON_SERVER_TICK = FishEventBus<ServerTickHook>()
+    @JvmField val serverTick = FishEventBus<ServerTickHook>()
 
-    @JvmField val ON_LOCATION_CHANGE = FishEventBus<LocationHook>()
-    @JvmField val ON_WORLD_CHANGE = FishEventBus<WorldHook>()
+    @JvmField val locationChange = FishEventBus<LocationHook>()
+    @JvmField val worldChange = FishEventBus<WorldHook>()
 
-    @JvmField val ON_LEAP = FishEventBus<LeapHook>()
-    @JvmField val ON_RUN_END = FishEventBus<RunEndHook>()
-    @JvmField val ON_PLAYER_ENTRY = FishEventBus<TabEntryHook>()
-    @JvmField val ON_PHASE_CHANGE = FishEventBus<PhaseHook>()
-    @JvmField val ON_PARTY_MESSAGE = FishEventBus<PartyChatHook>()
+    @JvmField val leap = FishEventBus<LeapHook>()
+    @JvmField val runEnd = FishEventBus<RunEndHook>()
+    @JvmField val tabEntry = FishEventBus<TabEntryHook>()
+    @JvmField val phaseChange = FishEventBus<PhaseHook>()
+    @JvmField val partyChat = FishEventBus<PartyChatHook>()
 
-    @JvmField val ON_TERMINAL = FishEventBus<TerminalHook>()
-    @JvmField val ON_SECTION_CHANGE = FishEventBus<SectionHook>()
+    @JvmField val terminalStep = FishEventBus<TerminalHook>()
+    @JvmField val sectionChange = FishEventBus<SectionHook>()
 
-    @JvmField val ON_ENTITY_SPAWNED = FishEventBus<EntityHook>()
+    @JvmField val entitySpawn = FishEventBus<EntityHook>()
 
-    @JvmField val ON_GAME_MESSAGE = FishEventBus<GameMessageHook>()
+    @JvmField val chat = FishEventBus<GameMessageHook>()
 
-    @JvmField val ON_SOUND = FishEventBus<SoundHook>()
+    @JvmField val sound = FishEventBus<SoundHook>()
 
-    @JvmField val ON_PARTICLE = FishEventBus<ParticleHook>()
-    @JvmField val ON_PACKET = FishEventBus<PacketHook>()
+    @JvmField val particle = FishEventBus<ParticleHook>()
+    @JvmField val packet = FishEventBus<PacketHook>()
 }

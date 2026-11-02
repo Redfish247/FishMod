@@ -59,12 +59,12 @@ object PuzzleSolvers {
             if (FishSettings.tttSolver) FishDiag.guard("PuzzleSolvers.11", "tic tac toe solver tick failed") { TicTacToeSolver.onTick() }
         }
 
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (inClear && FishSettings.waterSolver) FishDiag.guard("PuzzleSolvers.12", "water solver server tick failed") { WaterSolver.onServerTick() }
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             FishDiag.guard("PuzzleSolvers.13", "puzzle solver reset on world change failed") {
                 IceFillSolver.reset(); WeirdosSolver.reset(); BoulderSolver.reset(); TPMazeSolver.reset()
                 WaterSolver.reset(); BlazeSolver.reset(); BeamsSolver.reset(); QuizSolver.reset()
@@ -73,7 +73,7 @@ object PuzzleSolvers {
             false
         }
 
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (enabled && isInPuzzle && FishSettings.tpMazeSolver && packet is ClientboundPlayerPositionPacket) {
                 val from = Minecraft.getInstance().player?.position()
                 Minecraft.getInstance().execute { FishDiag.guard("PuzzleSolvers.14", "tp maze teleport handling failed") { TPMazeSolver.tpPacket(packet, from) } }
@@ -92,7 +92,7 @@ object PuzzleSolvers {
             InteractionResult.PASS
         })
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!enabled || !SkyblockLocation.inDungeon()) return@register false
             val msg = TextStrip.plain(text.string)
             if (FishSettings.weirdosSolver) weirdosRegex.find(msg)?.let {

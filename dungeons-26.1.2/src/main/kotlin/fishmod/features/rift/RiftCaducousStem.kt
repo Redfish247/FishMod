@@ -25,7 +25,7 @@ object RiftCaducousStem {
                     net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("stem").executes { debug(); 1 })))
         }
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 4 == 0) scan() }
-        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { tops = emptyList(); false }
+        fishmod.utils.events.FishEvents.worldChange.register { tops = emptyList(); false }
         RenderHooks.GIZMO.register { _ -> render() }
     }
 

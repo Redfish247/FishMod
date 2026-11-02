@@ -44,7 +44,7 @@ object IceSprayTimer {
         RenderHooks.GIZMO.register { _ ->
             try { render() } catch (e: Exception) { FishDiag.fail("IceSprayTimer.3", "ice spray render failed (${frozen.size} frozen)", e) }
         }
-        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { frozen.clear(); false }
+        fishmod.utils.events.FishEvents.worldChange.register { frozen.clear(); false }
     }
 
     private fun cast() {

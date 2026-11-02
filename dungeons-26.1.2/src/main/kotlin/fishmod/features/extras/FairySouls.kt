@@ -28,7 +28,7 @@ object FairySouls {
 
     fun init() {
         load()
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (S.fairySoulWaypoints) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, ""))
             false
         }

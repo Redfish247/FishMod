@@ -31,7 +31,7 @@ object MageBeam {
             }
         }
 
-        FishEvents.ON_PARTICLE.register { packet ->
+        FishEvents.particle.register { packet ->
             if (!FishSettings.mageBeamEnabled || !SkyblockLocation.inDungeon()) return@register false
             if (packet.particle.type !== ParticleTypes.FIREWORK) return@register false
             try {

@@ -53,7 +53,7 @@ object SlayerCarryTracker {
             { FishSettings.slayerCarryHudEnabled },
         )
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("SlayerCarryTracker.1", "carry tracker tick failed") { tick(mc) } }
-        fishmod.utils.events.FishEvents.ON_LOCATION_CHANGE.register { loc -> onLocation(loc); false }
+        fishmod.utils.events.FishEvents.locationChange.register { loc -> onLocation(loc); false }
     }
 
     private fun tick(mc: Minecraft) {

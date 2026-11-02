@@ -60,7 +60,7 @@ object InvincibilityTracker {
             { FishSettings.invincScale }, { v -> FishSettings.invincScale = v }
         )
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (DungeonSettings.invincibilityTimerHud) {
                 val s = TextStrip.plain(text.string).replace(WS, " ").trim()
                 val hit = Type.entries.firstOrNull { it.regex.matches(s) }
@@ -75,8 +75,8 @@ object InvincibilityTracker {
             }
             false
         }
-        FishEvents.ON_SERVER_TICK.register { Type.entries.forEach { it.tick() }; FishDiag.guard("InvincibilityTracker.3", "invincibility icon learning failed") { learnIcons() }; false }
-        FishEvents.ON_WORLD_CHANGE.register { Type.entries.forEach { it.reset() }; false }
+        FishEvents.serverTick.register { Type.entries.forEach { it.tick() }; FishDiag.guard("InvincibilityTracker.3", "invincibility icon learning failed") { learnIcons() }; false }
+        FishEvents.worldChange.register { Type.entries.forEach { it.reset() }; false }
 
         DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!DungeonSettings.invincibilityTimerHud || !FishSettings.invincShowCooldown) return@register

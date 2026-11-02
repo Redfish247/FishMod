@@ -20,7 +20,7 @@ object PartyFinderStats {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.pfStatsEnabled) return@register false
             try {
                 val plain = TextStrip.plain(text.string)

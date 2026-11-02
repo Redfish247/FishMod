@@ -28,7 +28,7 @@ object RiftHay {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
-        FishEvents.ON_WORLD_CHANGE.register { Minecraft.getInstance().execute { seen.clear(); cleared.clear() }; false }
+        FishEvents.worldChange.register { Minecraft.getInstance().execute { seen.clear(); cleared.clear() }; false }
         RenderHooks.GIZMO.register { _ -> render() }
     }
 

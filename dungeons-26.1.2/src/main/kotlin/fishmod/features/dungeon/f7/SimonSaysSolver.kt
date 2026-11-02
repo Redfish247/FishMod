@@ -59,7 +59,7 @@ object SimonSaysSolver {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             Minecraft.getInstance().execute {
                 resetSolution()
                 firstPhase = true
@@ -69,7 +69,7 @@ object SimonSaysSolver {
             false
         }
 
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             try {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> queueBlock(packet.pos, packet.blockState)
@@ -79,7 +79,7 @@ object SimonSaysSolver {
             false
         }
 
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             try { tick() } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.4", "SS solver tick threw", e) }
             false
         }

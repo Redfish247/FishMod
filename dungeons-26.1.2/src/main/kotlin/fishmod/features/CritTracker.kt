@@ -33,7 +33,7 @@ object CritTracker {
     @JvmStatic
     fun init() {
         load()
-        FishEvents.ON_GAME_MESSAGE.register { text -> onMessage(text.string) }
+        FishEvents.chat.register { text -> onMessage(text.string) }
     }
 
     private fun onMessage(s: String?): Boolean {

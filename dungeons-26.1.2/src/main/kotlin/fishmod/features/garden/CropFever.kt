@@ -18,7 +18,7 @@ object CropFever {
         Mining.sidebar.any { it.contains("Crop Fever", true) } || TabListCache.entries.any { it.stripped.contains("Crop Fever", true) }
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { t ->
+        FishEvents.chat.register { t ->
             if (S.gardenFever && Garden.inGarden() && Garden.strip(t.string).contains("Crop Fever", true)) lastSeenMs = System.currentTimeMillis()
             false
         }

@@ -32,8 +32,8 @@ enum class DungeonRole {
         @JvmStatic
         fun init() {
 
-            FishEvents.ON_WORLD_CHANGE.register { reset(); false }
-            FishEvents.ON_RUN_END.register { reset(); false }
+            FishEvents.worldChange.register { reset(); false }
+            FishEvents.runEnd.register { reset(); false }
 
             ClientReceiveMessageEvents.GAME.register { message, _ ->
                 try {
@@ -43,7 +43,7 @@ enum class DungeonRole {
                 }
             }
 
-            FishEvents.ON_PLAYER_ENTRY.register { receivedEntry ->
+            FishEvents.tabEntry.register { receivedEntry ->
                 if (receivedEntry == null || !fishmod.utils.SkyblockLocation.inDungeon()) return@register false
                 val text = receivedEntry.displayName() ?: return@register false
                 val string = fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(text.string, "").trim()

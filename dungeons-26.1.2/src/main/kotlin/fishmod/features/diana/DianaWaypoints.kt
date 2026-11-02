@@ -74,7 +74,7 @@ object DianaWaypoints {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
-        FishEvents.ON_WORLD_CHANGE.register { clearAll(); false }
+        FishEvents.worldChange.register { clearAll(); false }
         // Boxes, lines and labels all go through our own see-through pass, no vanilla gizmos
         RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc ->
             rCtx = ctx; rPs = ps; rVc = vc

@@ -72,9 +72,9 @@ object SimonSaysTracker {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.FishEvents.ON_LOCATION_CHANGE.register { reset(); false }
+        fishmod.utils.events.FishEvents.locationChange.register { reset(); false }
 
-        fishmod.utils.events.FishEvents.ON_GAME_MESSAGE.register { message ->
+        fishmod.utils.events.FishEvents.chat.register { message ->
             if (!FishSettings.simonSaysEnabled) return@register false
             try { onChat(message.string) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.1", "SS tracker chat handler threw (round=$round)", e) }
             false

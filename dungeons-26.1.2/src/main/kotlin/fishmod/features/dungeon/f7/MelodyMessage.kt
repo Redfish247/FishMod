@@ -18,7 +18,7 @@ object MelodyMessage {
         ClientTickEvents.END_CLIENT_TICK.register {
             try { tick() } catch (e: Exception) { FishDiag.fail("MelodyMessage.1", "melody message tick threw", e) }
         }
-        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.worldChange.register { reset(); false }
     }
 
     private fun reset() { wasOpen = false; lastPctSent = -1 }

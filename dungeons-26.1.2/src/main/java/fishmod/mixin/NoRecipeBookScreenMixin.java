@@ -11,11 +11,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(AbstractRecipeBookScreen.class)
 public class NoRecipeBookScreenMixin {
-    @Inject(method = "initButton", at=@At("HEAD"), cancellable = true)
-    private void addRecipeBook(CallbackInfo ci) {
-        if (MiscSettings.hideRecipeBook) {
-            ci.cancel();
-        }
+    @Inject(method = "initButton", at = @At("HEAD"), cancellable = true)
+    private void fishmod$skipRecipeButton(CallbackInfo ci) {
+        if (MiscSettings.hideRecipeBook) ci.cancel();
     }
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
