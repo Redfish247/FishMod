@@ -290,7 +290,7 @@ object EssencePerkTips {
 
 	private fun manaSpan(): PvTooltip.Span {
 		val style = SkyBlockStats.stat("intelligence")
-		return PvTooltip.Span.bold(style.symbol() + " Mana", style.color())
+		return PvTooltip.Span.bold(style.symbol + " Mana", style.color)
 	}
 
 	private fun statSpan(statId: String): PvTooltip.Span {
@@ -304,9 +304,9 @@ object EssencePerkTips {
 			"critical_damage" -> "Crit Damage"
 			"ferocity" -> "Ferocity"
 			"attack_speed" -> "Attack Speed"
-			else -> style.symbol()
+			else -> style.symbol
 		}
-		return PvTooltip.Span.bold(style.symbol() + " " + label, style.color())
+		return PvTooltip.Span.bold(style.symbol + " " + label, style.color)
 	}
 
 	private fun at(level: Int, vararg tiers: Int): Int {
