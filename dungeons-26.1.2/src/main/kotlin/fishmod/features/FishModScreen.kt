@@ -589,8 +589,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Key & Room Timer",
                 { DungeonSettings.keyPickupAlert || FishSettings.roomTimerEnabled || FishSettings.keyHighlight },
                 { v -> DungeonSettings.keyPickupAlert = v; FishSettings.roomTimerEnabled = v; FishSettings.keyHighlight = v })
-            f.sub.add(SubcategoryHeader("Key Notifier"))
-            f.sub.add(ToggleSetting("Key Notifier", "", DungeonSettings::keyPickupAlert))
+            f.sub.add(SubcategoryHeader("Key Pickup Alert"))
+            f.sub.add(ToggleSetting("Key Pickup Alert", "", DungeonSettings::keyPickupAlert))
             f.sub.add(ToggleSetting("Title", "", FishSettings::keyNotifierTitle).gatedBy { DungeonSettings.keyPickupAlert })
             f.sub.add(ToggleSetting("Chat", "", FishSettings::keyNotifierChat).gatedBy { DungeonSettings.keyPickupAlert })
             f.sub.add(ToggleSetting("Sound", "", FishSettings::keyNotifierSound).gatedBy { DungeonSettings.keyPickupAlert })
@@ -876,7 +876,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Warp Cooldown", DungeonSettings::partyWarpTimer)
+            val f = Feature("Party Warp Timer", DungeonSettings::partyWarpTimer)
             f.sub.add(SliderIntSetting("Cooldown (s)", "Hypixel's real gate is 30s", FishSettings::warpCooldownSeconds, 1, 120))
             f.sub.add(ColorPickerSetting("Timer Color", "", FishSettings::warpCooldownColor))
             f.sub.add(ToggleSetting("Announce Kick", "Post to party chat if you get kicked mid-join", FishSettings::warpAnnounceKick))
@@ -894,22 +894,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         dungeon.features.add(Feature("Send Lag to Party", FishSettings::sendLagToParty))
         run {
-            val f = Feature("Splits", BossPhase::enableSplits)
-            f.sub.add(ToggleSetting("Total Time", "", BossPhase::includeTotalTime))
-            f.sub.add(ToggleSetting("Send in Chat", "", BossPhase::sendSplitInChat))
-            f.sub.add(DropdownSetting("Tick Timer", "",
-                RunSplit.TimerType.values(), { RunSplit.timerType }, { v -> RunSplit.timerType = v }))
-            f.sub.add(ToggleSetting("Activated Only", "", BossPhase::onlyShowActivatedSplits))
+            val f = Feature("Run Splits", BossPhase::runSplitsEnabled)
+            f.sub.add(ToggleSetting("Total Time", "", BossPhase::runSplitsTotal))
+            f.sub.add(ToggleSetting("Send in Chat", "", BossPhase::runSplitsToChat))
+            f.sub.add(DropdownSetting("Clock Source", "",
+                RunSplit.ClockKind.values(), { RunSplit.splitClock }, { v -> RunSplit.splitClock = v }))
+            f.sub.add(ToggleSetting("Activated Only", "", BossPhase::runSplitsReachedOnly))
             f.sub.add(ToggleSetting("PB Colors", "Finished split time: pink = new PB, orange = faster than your average", FishSettings::splitPbColors))
             f.sub.add(SubcategoryHeader("Time Colors"))
             f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
             f.sub.add(ColorPickerSetting("Faster Than Avg", "", FishSettings::splitAvgColor).gatedBy { FishSettings.splitPbColors })
-            f.sub.add(ColorPickerSetting("Not Started", "", RunSplit.Companion::realTimeColorInactive))
-            f.sub.add(ColorPickerSetting("Running", "", RunSplit.Companion::realTimeColorOngoing))
-            f.sub.add(ColorPickerSetting("Finished", "", RunSplit.Companion::realTimeColorComplete))
-            f.sub.add(ColorPickerSetting("Tick Time", "The time in brackets", { RunSplit.serverTimeColorComplete },
-                { v -> RunSplit.serverTimeColorInactive = v; RunSplit.serverTimeColorOngoing = v; RunSplit.serverTimeColorComplete = v },
-                ColorDefaults.of(RunSplit::class.java, "serverTimeColorComplete")))
+            f.sub.add(ColorPickerSetting("Not Started", "", RunSplit.Companion::splitRealIdle))
+            f.sub.add(ColorPickerSetting("Running", "", RunSplit.Companion::splitRealLive))
+            f.sub.add(ColorPickerSetting("Finished", "", RunSplit.Companion::splitRealDone))
+            f.sub.add(ColorPickerSetting("Tick Time", "The time in brackets", { RunSplit.splitTickDone },
+                { v -> RunSplit.splitTickIdle = v; RunSplit.splitTickLive = v; RunSplit.splitTickDone = v },
+                ColorDefaults.of(RunSplit::class.java, "splitTickDone")))
             f.sub.add(SubcategoryHeader("Split Name Colors"))
             for (s in BossPhase.distinctSplits()) {
                 f.sub.add(ColorPickerSetting(s.name, "", { s.nameColor() }, { v -> RunSplit.setNameColor(s.name, v) }, s.defaultNameColor()))
@@ -942,7 +942,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("PB Messages", FishSettings::pbMessagesEnabled)
             f.sub.add(ToggleSetting("Only On PB", "Off = also print slower times with the gap to your PB", FishSettings::pbMessagesOnlyPb))
-            f.sub.add(ToggleSetting("Splits", "Run splits (Blood Open, Maxor, Terminals, Run Time…)", FishSettings::pbMessagesSplits))
+            f.sub.add(ToggleSetting("Run Splits", "Run splits (Blood Open, Maxor, Terminals, Run Time…)", FishSettings::pbMessagesSplits))
             f.sub.add(ToggleSetting("Goldor Sections", "S1–S4 terminal sections", FishSettings::pbMessagesGoldor))
             f.sub.add(ToggleSetting("Terminals", "Your open-to-solve time per terminal type", FishSettings::pbMessagesTerminals))
             f.sub.add(ToggleSetting("Relics", "P5 start to your relic placed (M7)", FishSettings::pbMessagesRelics))
@@ -1520,8 +1520,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Render Optimizer", VisualSettings::renderOptimizer)
-            f.sub.add(ToggleSetting("Hide Nearby Players", "Hide other players within range", VisualSettings::hidePlayersInRange))
-            f.sub.add(SliderDoubleSetting("Player Range", "Blocks", VisualSettings::hidePlayerRange, 1.0, 12.0).gatedBy { VisualSettings.hidePlayersInRange })
+            f.sub.add(ToggleSetting("Hide Nearby Players", "Hide other players within range", VisualSettings::hideNearbyPlayers))
+            f.sub.add(SliderDoubleSetting("Player Range", "Blocks", VisualSettings::hidePlayersRadius, 1.0, 12.0).gatedBy { VisualSettings.hideNearbyPlayers })
             f.sub.add(ToggleSetting("Hide Dead Entities", "Drop dying / 0-HP mobs from the render pass", VisualSettings::hideDeadMobs))
             f.sub.add(ToggleSetting("No Swing Animation", "Suppress the first-person hand swing", VisualSettings::noSwingAnimation))
             f.sub.add(ToggleSetting("Swing: Terminator Only", "Only suppress while holding a Terminator", VisualSettings::noSwingTerminatorOnly).gatedBy { VisualSettings.noSwingAnimation })
@@ -1626,22 +1626,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         run {
-            val f = Feature("Tick Timers", Floor7Settings::enableTickTimers)
+            val f = Feature("Boss Tick Clocks", Floor7Settings::enableTickTimers)
             f.sub.add(SubcategoryHeader("Maxor"))
             f.sub.add(ToggleSetting("Maxor", "", Floor7Settings::maxorTicksHud))
             f.sub.add(SubcategoryHeader("Storm"))
             f.sub.add(ToggleSetting("Storm", "", Floor7Settings::stormTicksHud))
             f.sub.add(ToggleSetting("Tick Down From 5", "", Floor7Settings::stormTicksCountDown).gatedBy { Floor7Settings.stormTicksHud })
             f.sub.add(ColorPickerSetting("Storm Timer Color", "", Floor7Settings::stormTicksColor).gatedBy { Floor7Settings.stormTicksHud })
-            f.sub.add(ToggleSetting("Storm Death Time", "", Floor7Settings::stormKillTimeHud))
+            f.sub.add(ToggleSetting("Storm Kill Time", "", Floor7Settings::stormKillTimeHud))
             f.sub.add(ToggleSetting("LB Release Timer", "", Floor7Settings::enableLbReleaseTimer))
             f.sub.add(ColorPickerSetting("LB Release Timer Color", "", Floor7Settings::lbReleaseTimerColor).gatedBy { Floor7Settings.enableLbReleaseTimer })
             f.sub.add(SliderIntSetting("LB Release Ping (ms)", "Fires the release cue this much earlier to offset latency", Floor7Settings::lbReleaseTimerPingMs, 0, 500).gatedBy { Floor7Settings.enableLbReleaseTimer })
             f.sub.add(ToggleSetting("Py Tick Timer", "Counts down 5s to 29.5s, then tells you to stand on the crusher", Floor7Settings::enablePyTimer))
             f.sub.add(ColorPickerSetting("Py Timer Color", "", Floor7Settings::pyTimerColor).gatedBy { Floor7Settings.enablePyTimer })
             f.sub.add(SliderIntSetting("Py Ping (ms)", "Ends the countdown this much earlier so high ping doesn't make you late", Floor7Settings::pyTimerPingMs, 0, 500).gatedBy { Floor7Settings.enablePyTimer })
-            f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7Settings::stormCrushAlert))
-            f.sub.add(ToggleSetting("Pillar Explosion Timer", "Counts down the second before the crushed pillar explodes", Floor7Settings::pillarBlastTimer))
+            f.sub.add(ToggleSetting("Storm Crush Banner", "", Floor7Settings::stormCrushAlert))
+            f.sub.add(ToggleSetting("Pillar Blast Timer", "Counts down the second before the crushed pillar explodes", Floor7Settings::pillarBlastTimer))
             f.sub.add(SubcategoryHeader("Necron"))
             f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 4s into Necron's phase, then says SHOOT LB", Floor7Settings::enableNecronLbTimer))
             f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7Settings::necronLbPingMs, 0, 500).gatedBy { Floor7Settings.enableNecronLbTimer })
@@ -1656,17 +1656,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Goldor", "", Floor7Settings::goldorTicksHud))
             f.sub.add(ToggleSetting("In 3s Increments", "", Floor7Settings::goldorUseDeathTicks).gatedBy { Floor7Settings.goldorTicksHud })
             f.sub.add(ToggleSetting("Tick Up", "", Floor7Settings::goldorTicksCountUp).gatedBy { Floor7Settings.goldorTicksHud })
-            f.sub.add(ToggleSetting("Term Start Timer", "", Floor7Settings::termOpenHud))
+            f.sub.add(ToggleSetting("Terminals Open In", "", Floor7Settings::termOpenHud))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Crystal Spawn", Floor7Settings::crystalSpawnHud)
+            val f = Feature("Crystal Respawn", Floor7Settings::crystalSpawnHud)
             f.sub.add(ToggleSetting("Place Reminder", "", Floor7Settings::crystalPlaceAlert))
             f.sub.add(ToggleSetting("Instant Reminder", "", Floor7Settings::crystalAlertInstant).gatedBy { Floor7Settings.crystalPlaceAlert })
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Section Progress", Floor7Settings::sectionProgressHud)
+            val f = Feature("Section Count", Floor7Settings::sectionProgressHud)
             f.sub.add(ToggleSetting("Color w/ Progress", "", Floor7Settings::sectionProgressColored))
             f.sub.add(ToggleSetting("Prev Objective", "", Floor7Settings::sectionShowPrevious))
             floor7.features.add(f)
@@ -1688,16 +1688,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Goldor Splits", GoldorSection::enableTerminalSplits)
+            val f = Feature("Goldor Splits", GoldorSection::goldorSplitsEnabled)
             f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
             f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
             GoldorSection.sectionSplits().forEachIndexed { i, s ->
                 f.sub.add(ColorPickerSetting("S${i + 1} Name", "", { s.nameColor() }, { v -> RunSplit.setNameColor(s.name, v) }, s.defaultNameColor()))
             }
             f.sub.add(DropdownSetting("Show During", "",
-                GoldorSection.DisplayTerminalSplitsWhen.values(),
-                { GoldorSection.displayTerminalSplitsWhen },
-                { v -> GoldorSection.displayTerminalSplitsWhen = v }))
+                GoldorSection.SplitsShownIn.values(),
+                { GoldorSection.goldorSplitsShownIn },
+                { v -> GoldorSection.goldorSplitsShownIn = v }))
             floor7.features.add(f)
         }
         run {
@@ -4527,10 +4527,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Wither Highlight" -> "Outline the F7 wither boss by phase"
                 "M7 Relics" -> "P5 relic spawn timer + cauldron box"
                 "Auto Requeue" -> "Re-queue the same floor when a run ends (leader only)"
-                "Warp Cooldown" -> "Countdown until you can /warp again"
+                "Party Warp Timer" -> "Countdown until you can /warp again"
                 "Death Message" -> "Announce deaths with a template"
                 "Send Lag to Party" -> "Warn the party when your game lags"
-                "Splits" -> "Phase split timers for runs"
+                "Run Splits" -> "Phase split timers for runs"
                 "PB Messages" -> "Chat PB alerts for splits, Goldor sections, terminals and relics"
                 "Session Stats" -> "Per-session run statistics HUD"
                 "Loot Tracker" -> "Manual drop & profit tracker (D Hub inv)"
@@ -4538,9 +4538,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Class Colored Boots" -> "Dye boots by your dungeon class"
                 "M7 Lever Waypoints" -> "See F7/M7 levers through walls"
                 "Starred Mob Highlight" -> "Outline dungeon mobs that need to be killed to clear the floor"
-                "Tick Timers" -> "Maxor/Storm/Goldor tick timers + related P2/terminal notifications"
-                "Crystal Spawn" -> "Crystal spawn countdown + reminder"
-                "Section Progress" -> "Terminal section completed/total"
+                "Boss Tick Clocks" -> "Maxor/Storm/Goldor tick timers + related P2/terminal notifications"
+                "Crystal Respawn" -> "Crystal spawn countdown + reminder"
+                "Section Count" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
                 "Name Color" -> "Recolor your username gradient"
                 "Nametag" -> "Show your own above-head nametag"

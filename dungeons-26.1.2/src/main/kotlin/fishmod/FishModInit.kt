@@ -527,41 +527,41 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.f7.F7Huds.init() failed") { fishmod.features.dungeon.f7.F7Huds.init() }
         FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.InvButtonSettings.init() failed") { fishmod.utils.config.values.InvButtonSettings.init() }
         FishDiag.guard("FishModInit.104b", "EquipmentDisplay.init() failed") { fishmod.features.other.EquipmentDisplay.init() }
-        FishHudEditor.register("Tick Timer", fishmod.features.dungeon.f7.F7Huds.tickTimer)
-        FishHudEditor.register("Crystal Spawn Time", fishmod.features.dungeon.f7.F7Huds.crystalSpawnTime)
-        FishHudEditor.register("Crystal Reminder", fishmod.features.dungeon.f7.F7Huds.crystalReminder)
-        FishHudEditor.register("Storm Death Time", fishmod.features.dungeon.f7.F7Huds.stormDeathTime)
+        FishHudEditor.register("Boss Tick Clock", fishmod.features.dungeon.f7.F7Huds.tickTimer)
+        FishHudEditor.register("Crystal Respawn", fishmod.features.dungeon.f7.F7Huds.crystalRespawnBox)
+        FishHudEditor.register("Crystal Not Placed", fishmod.features.dungeon.f7.F7Huds.crystalReminder)
+        FishHudEditor.register("Storm Kill Time", fishmod.features.dungeon.f7.F7Huds.stormKillBox)
         FishHudEditor.register("LB Release Timer", fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer)
         FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.f7.F7Huds.pyTimer)
         FishHudEditor.register("Necron LB Timer", fishmod.features.dungeon.f7.F7Huds.necronLbTimer)
         FishHudEditor.register("Necron Drag Timer", fishmod.features.dungeon.f7.F7Huds.necronDragTimer)
         FishHudEditor.register("Necron Drop Lava/Platform", fishmod.features.dungeon.f7.F7Huds.necronDropLanding)
-        FishHudEditor.register("Storm Crushed", fishmod.features.dungeon.f7.F7Huds.stormCrush)
-        FishHudEditor.register("Pillar Explosion Timer", fishmod.features.dungeon.f7.F7Huds.pillarExplosion)
-        FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
-        FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
-        FishHudEditor.register("Current Section", fishmod.features.dungeon.f7.F7Huds.currentSection)
-        FishHudEditor.register("Device Completed", fishmod.features.dungeon.f7.F7Huds.deviceNotifier)
-        FishHudEditor.register("Melody Warning", fishmod.features.dungeon.f7.F7Huds.melodyWarning)
-        FishHudEditor.register("Section Completion", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
+        FishHudEditor.register("Storm Crush Banner", fishmod.features.dungeon.f7.F7Huds.stormCrush)
+        FishHudEditor.register("Pillar Blast Timer", fishmod.features.dungeon.f7.F7Huds.pillarExplosion)
+        FishHudEditor.register("Terminals Open In", fishmod.features.dungeon.f7.F7Huds.termOpenBox)
+        FishHudEditor.register("Section Count", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
+        FishHudEditor.register("P3 Section", fishmod.features.dungeon.f7.F7Huds.currentSection)
+        FishHudEditor.register("Device Done", fishmod.features.dungeon.f7.F7Huds.deviceNotifier)
+        FishHudEditor.register("Melody Callout", fishmod.features.dungeon.f7.F7Huds.melodyWarning)
+        FishHudEditor.register("Section Cleared", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
         FishHudEditor.register("Players Leaped", fishmod.features.dungeon.f7.F7Huds.playersLeaped)
-        FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.GoldorSection.terminalSplits)
+        FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.GoldorSection.goldorSplitsBox)
         FishHudEditor.register("Terminal Tracker", fishmod.features.dungeon.f7.TerminalTracker.terminalTrackerHud)
         FishDiag.guard("FishModInit.105", "fishmod.utils.dungeon.DungeonRole.init() failed") { fishmod.utils.dungeon.DungeonRole.init() }
         FishDiag.guard("FishModInit.106", "fishmod.features.ClassColoredBoots.init() failed") { fishmod.features.ClassColoredBoots.init() }
         FishDiag.guard("FishModInit.107", "fishmod.features.dungeon.DupeClassDetector.init() failed") { fishmod.features.dungeon.DupeClassDetector.init() }
 
-        FishHudEditor.register("Splits", BossPhase.splitTimer)
+        FishHudEditor.register("Run Splits", BossPhase.runSplitsBox)
         FishHudEditor.registerLocked(
             "Est. Total (follows Splits)",
-            { try { BossPhase.splitTimer.scaledX } catch (t: Throwable) { FishDiag.fail("FishModInit.108", "Est. Total x lookup failed", t); 0 } },
+            { try { BossPhase.runSplitsBox.scaledX } catch (t: Throwable) { FishDiag.fail("FishModInit.108", "Est. Total x lookup failed", t); 0 } },
             {
                 try {
                     // outside a run the editor shows the 6-row Splits preview
-                    BossPhase.splitTimer.scaledY + FishConstants.TEXT_HEIGHT * BossPhase.getVisibleRowCount().let { if (it > 0) it else 6 } + 8
+                    BossPhase.runSplitsBox.scaledY + FishConstants.TEXT_HEIGHT * BossPhase.getVisibleRowCount().let { if (it > 0) it else 6 } + 8
                 } catch (t: Throwable) {
                     FishDiag.fail("FishModInit.109", "Est. Total y lookup failed", t)
-                    BossPhase.splitTimer.scaledY + 20
+                    BossPhase.runSplitsBox.scaledY + 20
                 }
             },
             BossPhase.SPLIT_LENGTH, FishConstants.TEXT_HEIGHT + 4
@@ -1010,7 +1010,7 @@ class FishModInit : ClientModInitializer {
                             FishUtil.addChatMessage(Component.literal("§cPhase.runStarted ERR: " + t.message))
                         }
                         try {
-                            FishUtil.addChatMessage(Component.literal("§7Phase.enableSplits: §f" + BossPhase.enableSplits))
+                            FishUtil.addChatMessage(Component.literal("§7Phase.enableSplits: §f" + BossPhase.runSplitsEnabled))
                         } catch (t: Throwable) {
                             FishDiag.fail("FishModInit.111", "fmdbg Phase.enableSplits failed", t)
                             FishUtil.addChatMessage(Component.literal("§cPhase.enableSplits ERR: " + t.message))

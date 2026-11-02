@@ -72,12 +72,7 @@ object StormTicks {
                     BossPhase.onStormKill(deathTime)
                 }
                 if (Floor7Settings.stormKillTimeHud && !fishmod.compat.BladeCompat.active) {
-                    FishUtil.addChatMessage(
-                        Component.literal(
-                            "§aStorm died at: §e"
-                                    + FishConstants.DECIMAL_FORMAT.format(deathTime) + "s§a."
-                        )
-                    )
+                    FishUtil.addChatMessage(Component.literal("§dStorm killed in §f${FishConstants.DECIMAL_FORMAT.format(deathTime)}s"))
                 }
             }
             false

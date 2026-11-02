@@ -39,13 +39,13 @@ object BossPhase {
     private var stormKillAnnounced = false
     private var runOver = false
 
-    @ConfigValue @JvmField var enableSplits: Boolean = false
+    @ConfigValue @JvmField var runSplitsEnabled: Boolean = false
 
-    @ConfigValue @JvmField var includeTotalTime: Boolean = false
+    @ConfigValue @JvmField var runSplitsTotal: Boolean = false
 
-    @ConfigValue @JvmField var sendSplitInChat: Boolean = false
+    @ConfigValue @JvmField var runSplitsToChat: Boolean = false
 
-    @ConfigValue @JvmField var onlyShowActivatedSplits: Boolean = false
+    @ConfigValue @JvmField var runSplitsReachedOnly: Boolean = false
 
     @JvmStatic
     fun init() {
@@ -151,7 +151,7 @@ object BossPhase {
             if (currentSplit.ended()) {
                 val pb = FishDiag.guard("Phase.3", "split PB for ${currentSplit.name}") { splitPb(currentSplit) }
                 val tick = FishDiag.guard("Phase.4", "tick PB for ${currentSplit.name}") { tickPb(currentSplit) }
-                if (sendSplitInChat) {
+                if (runSplitsToChat) {
                     val line = currentSplit.createNameText().append(currentSplit.createTimeText())
                     if (showSplitPb()) appendPbTags(line, pb, tick, false)
                     FishUtil.addChatMessage(line)
@@ -310,7 +310,7 @@ object BossPhase {
     private fun showSplitPb(): Boolean = FishSettings.pbMessagesEnabled && FishSettings.pbMessagesSplits
 
     private fun printSplits() {
-        if (enableSplits) FishUtil.addChatMessage(Component.literal("§aSplits: "))
+        if (runSplitsEnabled) FishUtil.addChatMessage(Component.literal("§aSplits: "))
         val splits = currentSplits ?: return
         for (split in splits) {
             val wasRunning = split.started()
@@ -319,7 +319,7 @@ object BossPhase {
             val tick = if (wasRunning) tickPb(split) else null
             val line = split.createNameText().append(split.createTimeText())
             if (showSplitPb()) appendPbTags(line, pb, tick, true)
-            if (enableSplits) FishUtil.addChatMessage(line)
+            if (runSplitsEnabled) FishUtil.addChatMessage(line)
         }
         FishDiag.guard("Phase.15", "save run history floor=$floor") { RunHistory.saveSplits(floor, splits) }
         if (splits.isNotEmpty()) {
@@ -383,17 +383,17 @@ object BossPhase {
     }
 
     @ConfigValue @JvmField
-    var splitTimer: HUDComponent = HUDComponent(0.0, 0.0, SPLIT_LENGTH, 100, 1f, "Splits",
+    var runSplitsBox: HUDComponent = HUDComponent(0.0, 0.0, SPLIT_LENGTH, 100, 1f, "Run Splits",
         { false },
         { hudComponent, drawContext -> renderSplitRows(drawContext, hudComponent.scaledX, hudComponent.scaledY) },
-        { enableSplits }
+        { runSplitsEnabled }
     )
 
     @JvmStatic
     fun renderHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor) {
-        if (enableSplits && runStarted()) {
+        if (runSplitsEnabled && runStarted()) {
             try {
-                renderScaled(ctx, splitTimer) { renderSplitRows(ctx, splitTimer.scaledX, splitTimer.scaledY) }
+                renderScaled(ctx, runSplitsBox) { renderSplitRows(ctx, runSplitsBox.scaledX, runSplitsBox.scaledY) }
             } catch (t: Throwable) {
                 FishDiag.fail("Phase.16", "render splits HUD", t)
             }
@@ -414,11 +414,11 @@ object BossPhase {
         val splits = currentSplits
         if (splits != null) {
             var splitCount = splits.size
-            if (!includeTotalTime) splitCount--
+            if (!runSplitsTotal) splitCount--
             var height = 0
             for (i in 0 until splitCount) {
                 val split = splits[i]
-                if (onlyShowActivatedSplits && !(split.started() || split.ended())) continue
+                if (runSplitsReachedOnly && !(split.started() || split.ended())) continue
                 split.drawSplit(ctx, textRenderer, x, y + FishConstants.TEXT_HEIGHT * height, SPLIT_LENGTH)
                 height++
             }
@@ -437,8 +437,8 @@ object BossPhase {
     fun getVisibleRowCount(): Int {
         val splits = currentSplits ?: return 0
         var splitCount = splits.size
-        if (!includeTotalTime) splitCount--
-        if (!onlyShowActivatedSplits) return splitCount
+        if (!runSplitsTotal) splitCount--
+        if (!runSplitsReachedOnly) return splitCount
         var visible = 0
         for (i in 0 until splitCount) {
             val s = splits[i]

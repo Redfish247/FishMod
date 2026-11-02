@@ -17,7 +17,7 @@ class RunSplit(
     val avg: Double
 ) {
 
-    enum class TimerType(private val label: String) {
+    enum class ClockKind(private val label: String) {
         TICK_TIME("Tick time"), DIFFRENCE("difference");
 
         override fun toString(): String = label
@@ -32,37 +32,37 @@ class RunSplit(
 
         @ConfigValue
         @JvmField
-        var realTimeColorInactive: Int = GREEN
+        var splitRealIdle: Int = GREEN
         @ConfigValue
         @JvmField
-        var realTimeColorOngoing: Int = GREEN
+        var splitRealLive: Int = GREEN
         @ConfigValue
         @JvmField
-        var realTimeColorComplete: Int = GREEN
+        var splitRealDone: Int = GREEN
 
         @ConfigValue
         @JvmField
-        var serverTimeColorInactive: Int = GRAY
+        var splitTickIdle: Int = GRAY
         @ConfigValue
         @JvmField
-        var serverTimeColorOngoing: Int = GRAY
+        var splitTickLive: Int = GRAY
         @ConfigValue
         @JvmField
-        var serverTimeColorComplete: Int = GRAY
+        var splitTickDone: Int = GRAY
 
         @ConfigValue
         @JvmField
-        var parenthesesColorInactive: Int = DARK_GRAY
+        var splitBracketIdle: Int = DARK_GRAY
         @ConfigValue
         @JvmField
-        var parenthesesColorOngoing: Int = DARK_GRAY
+        var splitBracketLive: Int = DARK_GRAY
         @ConfigValue
         @JvmField
-        var parenthesesColorComplete: Int = DARK_GRAY
+        var splitBracketDone: Int = DARK_GRAY
 
         @ConfigValue
         @JvmField
-        var timerType: TimerType = TimerType.TICK_TIME
+        var splitClock: ClockKind = ClockKind.TICK_TIME
 
         private var cachedRaw: String? = null
         private var cachedNameColors: Map<String, Int> = emptyMap()
@@ -180,28 +180,28 @@ class RunSplit(
         val parenthesesColor: Int
 
         if (!started && !ended) {
-            realTimeColor = realTimeColorInactive
-            serverTimeColor = serverTimeColorInactive
-            parenthesesColor = parenthesesColorInactive
+            realTimeColor = splitRealIdle
+            serverTimeColor = splitTickIdle
+            parenthesesColor = splitBracketIdle
         } else if (!ended) {
-            realTimeColor = realTimeColorOngoing
-            serverTimeColor = serverTimeColorOngoing
-            parenthesesColor = parenthesesColorOngoing
+            realTimeColor = splitRealLive
+            serverTimeColor = splitTickLive
+            parenthesesColor = splitBracketLive
         } else {
             val pace = when (paceColor) {
                 PB_COLOR -> FishSettings.splitPbColor
                 AVG_COLOR -> FishSettings.splitAvgColor
                 else -> 0
             }
-            realTimeColor = if (pace != 0 && FishSettings.splitPbColors) pace else realTimeColorComplete
-            serverTimeColor = serverTimeColorComplete
-            parenthesesColor = parenthesesColorComplete
+            realTimeColor = if (pace != 0 && FishSettings.splitPbColors) pace else splitRealDone
+            serverTimeColor = splitTickDone
+            parenthesesColor = splitBracketDone
         }
 
         val tickTime = getTickTime()
         val realTime = getRealTime()
 
-        val serverTime: String = if (timerType == TimerType.DIFFRENCE) {
+        val serverTime: String = if (splitClock == ClockKind.DIFFRENCE) {
             val diff = realTime - tickTime
             if (diff > 0) {
                 "+" + FishConstants.DECIMAL_FORMAT.format(diff) + "s"
