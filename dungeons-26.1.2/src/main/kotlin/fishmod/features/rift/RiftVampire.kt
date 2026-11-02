@@ -36,7 +36,7 @@ object RiftVampire {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
-        FishEvents.ON_WORLD_CHANGE.register { reset(); skinCache.clear(); false }
+        FishEvents.worldChange.register { reset(); skinCache.clear(); false }
         RenderHooks.GIZMO.register { _ -> render() }
     }
 

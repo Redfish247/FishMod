@@ -52,8 +52,8 @@ object SphinxSolver {
     private fun enabled() = DianaSettings.dianaSphinxSolver && Diana.inHub()
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { msg -> onMessage(msg) }
-        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.chat.register { msg -> onMessage(msg) }
+        FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is ChatScreen) return@AfterInit

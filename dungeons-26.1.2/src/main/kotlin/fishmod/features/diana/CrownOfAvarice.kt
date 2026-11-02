@@ -68,14 +68,14 @@ object CrownOfAvarice {
     fun init() {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 10 == 0) onTick(it) }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
             val now = System.currentTimeMillis()
             if (NOT_CROWN.containsMatchIn(s)) lastNonCrownMs = now
             else if (Diana.inHub() && DUG_COINS.containsMatchIn(s)) lastDugCoinsMs = now
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { lastPurse = -1L; false }
+        FishEvents.worldChange.register { lastPurse = -1L; false }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> editTooltip(stack, lines) })
         FishHudEditor.register("Crown of Avarice", { DianaSettings.dianaCrownHudX }, { DianaSettings.dianaCrownHudX = it },
             { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,

@@ -35,8 +35,8 @@ object GateDisplay {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_LOCATION_CHANGE.register { _ -> reset(); armed = false; lastTermTime = 0.0; false }
-        FishEvents.ON_PHASE_CHANGE.register {
+        FishEvents.locationChange.register { _ -> reset(); armed = false; lastTermTime = 0.0; false }
+        FishEvents.phaseChange.register {
             if (BossPhase.inTerminals()) {
                 val t = BossPhase.getPhaseTime(6)
                 if (!armed || t < lastTermTime - 1.0) {
@@ -52,14 +52,14 @@ object GateDisplay {
             }
             false
         }
-        FishEvents.ON_SECTION_CHANGE.register {
+        FishEvents.sectionChange.register {
             if (!SkyblockLocation.inDungeon()) return@register false
             val s = GoldorSection.getSection()
             FishDiag.check(s in 1..5, "GateDisplay.1") { "section change to out-of-range section $s" }
             if (s == 2 || s == 3) show(s - 1)
             false
         }
-        FishEvents.ON_GAME_MESSAGE.register { message ->
+        FishEvents.chat.register { message ->
             if (Floor7Settings.gateDisplayEnabled && SkyblockLocation.inDungeon() && BossPhase.inTerminals()
                 && message.string == GATE_MESSAGE
             ) {

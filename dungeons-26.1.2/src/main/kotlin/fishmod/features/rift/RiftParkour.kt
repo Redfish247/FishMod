@@ -34,8 +34,8 @@ object RiftParkour {
     private fun box(p: IntArray) = AABB(p[0] - 1.0, p[1] - 1.0, p[2] - 1.0, p[0] + 1.0, p[1].toDouble(), p[2] + 1.0)
 
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register { COURSES.forEach { it.idx = -1 }; false }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { COURSES.forEach { it.idx = -1 }; false }
+        FishEvents.chat.register { text ->
             if (!Rift.inRift()) return@register false
             val m = Rift.strip(text.string)
             if (m.contains("THE LAVA OOFED YOU BACK TO THE START")) COURSES.forEach { it.idx = -1 }

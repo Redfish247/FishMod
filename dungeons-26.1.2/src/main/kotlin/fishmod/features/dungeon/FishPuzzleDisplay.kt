@@ -41,7 +41,7 @@ object FishPuzzleDisplay {
             }
             try { updatePuzzles(client) } catch (e: Exception) { FishDiag.fail("FishPuzzleDisplay.1", "puzzle tab scan failed", e) }
         })
-        FishEvents.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.locationChange.register { _ ->
             bossReached = false
             puzzles.clear()
             false

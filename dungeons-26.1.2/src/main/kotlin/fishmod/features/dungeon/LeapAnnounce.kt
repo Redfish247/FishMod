@@ -24,11 +24,11 @@ object LeapAnnounce {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_LEAP.register { _ ->
+        FishEvents.leap.register { _ ->
             if (FishSettings.leapHidePlayers) hideUntil = System.currentTimeMillis() + (FishSettings.leapHidePlayersSeconds * 1000).toLong()
             false
         }
-        FishEvents.ON_LEAP.register { message ->
+        FishEvents.leap.register { message ->
             if (!DungeonSettings.leapAnnounce) return@register false
             val s = message.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
             val m = TARGET.matcher(s)

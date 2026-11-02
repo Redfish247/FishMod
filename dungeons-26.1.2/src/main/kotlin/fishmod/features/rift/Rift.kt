@@ -97,7 +97,7 @@ object Rift {
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player != null && tick++ % 20 == 0) { if (inRift()) pollArea() else cachedArea = "" }
         }
-        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { cachedArea = ""; false }
+        fishmod.utils.events.FishEvents.worldChange.register { cachedArea = ""; false }
         FishDiag.guard("Rift.1", "RiftNametag init failed") { RiftNametag.init() }
         FishDiag.guard("Rift.2", "RiftDreadfarm init failed") { RiftDreadfarm.init() }
         FishDiag.guard("Rift.3", "RiftMobs init failed") { RiftMobs.init() }

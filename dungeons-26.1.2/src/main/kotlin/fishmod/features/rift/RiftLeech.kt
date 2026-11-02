@@ -42,7 +42,7 @@ object RiftLeech {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) poll() }
-        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { laser = false; false }
+        fishmod.utils.events.FishEvents.worldChange.register { laser = false; false }
         RenderHooks.GIZMO.register { _ -> render() }
     }
 

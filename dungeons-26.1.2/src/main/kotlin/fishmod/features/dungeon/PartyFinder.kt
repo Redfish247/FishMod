@@ -56,7 +56,7 @@ object PartyFinder {
         ItemTooltipCallback.EVENT.register(TOOLTIP_LAST_PHASE, ItemTooltipCallback { stack, _, _, lines -> onTooltip(stack, lines) })
         ClientTickEvents.END_CLIENT_TICK.register { captureSelectedClass() }
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (FishSettings.pfAutoKick) {
                 try {
                     val plain = TextStrip.plain(text.string)
@@ -69,7 +69,7 @@ object PartyFinder {
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { gen++; kicked.clear(); cache.clear(); sbCache.clear(); pending.clear(); failedAt.clear(); false }
+        FishEvents.worldChange.register { gen++; kicked.clear(); cache.clear(); sbCache.clear(); pending.clear(); failedAt.clear(); false }
     }
 
     private fun tryAutoKick(name: String, clazz: String?) {

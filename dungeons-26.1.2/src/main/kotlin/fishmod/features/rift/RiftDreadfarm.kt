@@ -51,8 +51,8 @@ object RiftDreadfarm {
                 while ((seenTimes.peek() ?: now) < now - 5000L) seenTimes.poll()
             }
         }
-        FishEvents.ON_WORLD_CHANGE.register { capPos = null; berbs.clear(); false }
-        FishEvents.ON_PARTICLE.register { p -> anyParticles++; if (p.particle.type === ParticleTypes.FIREWORK) onParticle(p.particle.type, Vec3(p.x, p.y, p.z)); false }
+        FishEvents.worldChange.register { capPos = null; berbs.clear(); false }
+        FishEvents.particle.register { p -> anyParticles++; if (p.particle.type === ParticleTypes.FIREWORK) onParticle(p.particle.type, Vec3(p.x, p.y, p.z)); false }
         RenderHooks.GIZMO.register { _ -> render() }
     }
 

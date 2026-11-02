@@ -33,8 +33,8 @@ public class FishConnectionMixin {
 
         Minecraft.getInstance().execute(() -> {
             try {
-                if (serverTick) FishEvents.ON_SERVER_TICK.invoke(ServerTickHook::onServerTick);
-                if (wanted) FishEvents.ON_PACKET.invoke(packetEvent -> packetEvent.onPacket(packet));
+                if (serverTick) FishEvents.serverTick.invoke(ServerTickHook::onServerTick);
+                if (wanted) FishEvents.packet.invoke(packetEvent -> packetEvent.onPacket(packet));
             } catch (Throwable t) {
                 fishmod.utils.debug.FishDiag.fail("ClientConnectionMixin.2", "packet/server-tick event dispatch failed packet=" + packet.getClass().getSimpleName(), t);
             }

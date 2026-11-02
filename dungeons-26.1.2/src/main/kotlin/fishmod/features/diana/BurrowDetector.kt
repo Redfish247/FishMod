@@ -27,12 +27,12 @@ object BurrowDetector {
     fun reset() { chains.clear() }
 
     fun init() {
-        FishEvents.ON_PARTICLE.register { p ->
+        FishEvents.particle.register { p ->
             if (Diana.inHub() && DianaSettings.dianaGuessing && DianaSettings.dianaBurrowDetection) onParticle(p)
             false
         }
-        FishEvents.ON_SOUND.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.sound.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
+        FishEvents.chat.register { text ->
             if (Diana.inHub()) {
                 val s = fishmod.utils.TextStrip.plain(text.string)
                 dugSound(s)

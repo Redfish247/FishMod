@@ -44,14 +44,14 @@ object RiftSnake {
     }
 
     fun init() {
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (S.riftSnake && Rift.inArea("Living Cave", "Living Stillness")) when (packet) {
                 is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                 is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, st -> onBlock(p, st) }
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { snakes.clear(); added.clear(); removed.clear(); false }
+        FishEvents.worldChange.register { snakes.clear(); added.clear(); removed.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { try { tick() } catch (_: Throwable) { snakes.clear() } }
         RenderHooks.GIZMO.register { _ -> render() }
     }

@@ -49,7 +49,7 @@ object BossPhase {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (floor == null) detectFloor()
             val splits = currentSplits
             if (splits == null || runOver) return@register false
@@ -59,12 +59,12 @@ object BossPhase {
             false
         }
 
-        FishEvents.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.locationChange.register { _ ->
             reset()
             false
         }
 
-        FishEvents.ON_GAME_MESSAGE.register(BossPhase::parseGameMessage)
+        FishEvents.chat.register(BossPhase::parseGameMessage)
         NecronDeath.init()
         NecronDeath.onDeath { if (awaitingNecronDeath()) fireP5Start("necron dead") }
     }
@@ -108,12 +108,12 @@ object BossPhase {
 
     private fun fireP3Start(reason: String) {
         fishmod.utils.debug.FishDebug.LOGGER.info("[Phase] P3 fallback: $reason")
-        FishEvents.ON_GAME_MESSAGE.invoke { it.onGameMessage(Component.literal(P3_START)) }
+        FishEvents.chat.invoke { it.onGameMessage(Component.literal(P3_START)) }
     }
 
     private fun fireP5Start(reason: String) {
         fishmod.utils.debug.FishDebug.LOGGER.info("[Phase] P5 fallback: $reason")
-        FishEvents.ON_GAME_MESSAGE.invoke { it.onGameMessage(Component.literal(P5_START)) }
+        FishEvents.chat.invoke { it.onGameMessage(Component.literal(P5_START)) }
     }
 
     private const val P5_START = "[BOSS] Necron: All this, for nothing..."
@@ -161,12 +161,12 @@ object BossPhase {
 
                 FishDiag.check(i + 1 >= currentPhase, "Phase.5") { "phase went backwards $currentPhase -> ${i + 1} floor=$floor split=${currentSplit.name}" }
                 currentPhase = i + 1
-                FishDiag.guard("Phase.6", "ON_PHASE_CHANGE listeners") { FishEvents.ON_PHASE_CHANGE.invoke(PhaseHook::onPhaseChange) }
+                FishDiag.guard("Phase.6", "ON_PHASE_CHANGE listeners") { FishEvents.phaseChange.invoke(PhaseHook::onPhaseChange) }
             }
 
             if (currentSplit.started() && currentPhase == -1) {
                 currentPhase = i
-                FishDiag.guard("Phase.7", "ON_PHASE_CHANGE listeners (run start)") { FishEvents.ON_PHASE_CHANGE.invoke(PhaseHook::onPhaseChange) }
+                FishDiag.guard("Phase.7", "ON_PHASE_CHANGE listeners (run start)") { FishEvents.phaseChange.invoke(PhaseHook::onPhaseChange) }
             }
         }
 
@@ -204,7 +204,7 @@ object BossPhase {
         TickScheduler.scheduleTask(Runnable {
             try { printSplits() } catch (t: Throwable) { FishDiag.fail("Phase.11", "print end-of-run splits floor=$floor", t) }
         }, 2)
-        FishDiag.guard("Phase.12", "ON_RUN_END listeners") { FishEvents.ON_RUN_END.invoke(RunEndHook::onRunEnd) }
+        FishDiag.guard("Phase.12", "ON_RUN_END listeners") { FishEvents.runEnd.invoke(RunEndHook::onRunEnd) }
     }
 
     @JvmStatic

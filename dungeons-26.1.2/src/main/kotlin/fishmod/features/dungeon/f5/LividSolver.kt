@@ -47,7 +47,7 @@ object LividSolver {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (!active()) return@register false
             try {
                 when (packet) {
@@ -59,7 +59,7 @@ object LividSolver {
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             current = Livid.HOCKEY
             Livid.entries.forEach { it.entity = null }
             false

@@ -51,7 +51,7 @@ object WitherDragons {
             { FishSettings.witherDragonsEnabled && FishSettings.witherDragonsTimerHud },
         )
 
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             priorityDragon = WitherDragon.NONE
             spawnRank = emptyList()
             WitherDragon.resetAll()
@@ -59,7 +59,7 @@ object WitherDragons {
             false
         }
 
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (on()) try {
                 when (packet) {
                     is ClientboundLevelParticlesPacket -> DragonCheck.handleSpawnPacket(packet, tick)
@@ -82,7 +82,7 @@ object WitherDragons {
             }
         }
 
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             tick++
             if (on()) try { serverTick() } catch (e: Exception) { FishDiag.fail("WitherDragons.3", "dragon server tick threw", e) }
             false

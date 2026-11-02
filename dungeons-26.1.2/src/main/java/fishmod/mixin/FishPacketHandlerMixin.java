@@ -43,7 +43,7 @@ public class FishPacketHandlerMixin {
     @Inject(method = "applyPlayerInfoUpdate", at = @At(value = "TAIL"))
     private void onPlayerList(ClientboundPlayerInfoUpdatePacket.Action action, ClientboundPlayerInfoUpdatePacket.Entry receivedEntry, PlayerInfo currentEntry, CallbackInfo ci) {
         MixinGuard.run("ClientPlayNetworkHandlerMixin.1", "player list entry event failed",
-                () -> FishEvents.ON_PLAYER_ENTRY.invoke(playerListEvent -> playerListEvent.onNewPlayerEntry(receivedEntry)));
+                () -> FishEvents.tabEntry.invoke(playerListEvent -> playerListEvent.onNewPlayerEntry(receivedEntry)));
     }
 
     @Inject(method = "handleAddEntity", at = @At("HEAD"), cancellable = true)
@@ -61,7 +61,7 @@ public class FishPacketHandlerMixin {
     private void fishmod$onEntitySpawned(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet, CallbackInfo ci, @Local Entity entity) {
         if (entity == null) return;
         MixinGuard.run("ClientPlayNetworkHandlerMixin.2", "entity spawned event failed",
-                () -> FishEvents.ON_ENTITY_SPAWNED.invoke(e -> e.onEntity(entity, this.level)));
+                () -> FishEvents.entitySpawn.invoke(e -> e.onEntity(entity, this.level)));
     }
 
     @Inject(method = "handleSoundEvent", at = @At(value = "HEAD"), cancellable = true)
@@ -85,7 +85,7 @@ public class FishPacketHandlerMixin {
                 return;
             }
 
-            if (FishEvents.ON_SOUND.invoke(soundEvent -> soundEvent.onSound(event, volume, pitch))) {
+            if (FishEvents.sound.invoke(soundEvent -> soundEvent.onSound(event, volume, pitch))) {
                 ci.cancel();
             }
         } catch (Throwable t) {
@@ -105,7 +105,7 @@ public class FishPacketHandlerMixin {
                 FishUtil.addChatMessage(Component.literal("Sound: " + event.location() + " Volume: " + volume + " Pitch: " + pitch + "entitySeed: " + packet.getId()));
             }
 
-            if (FishEvents.ON_SOUND.invoke(soundEvent -> soundEvent.onSound(event, volume, pitch))) {
+            if (FishEvents.sound.invoke(soundEvent -> soundEvent.onSound(event, volume, pitch))) {
                 ci.cancel();
             }
         } catch (Throwable t) {
@@ -117,7 +117,7 @@ public class FishPacketHandlerMixin {
     private void onParticle(ClientboundLevelParticlesPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
         MixinGuard.run("ClientPlayNetworkHandlerMixin.5", "particle event failed", () -> {
-            if (FishEvents.ON_PARTICLE.invoke(particleEvent -> particleEvent.onParticle(packet))) ci.cancel();
+            if (FishEvents.particle.invoke(particleEvent -> particleEvent.onParticle(packet))) ci.cancel();
         });
     }
 
@@ -127,13 +127,13 @@ public class FishPacketHandlerMixin {
             if (packet instanceof ClientboundSystemChatPacket sysChat) {
                 fishmod$lastBundledSystemChat = sysChat;
                 if (!sysChat.overlay()) {
-                    if (FishEvents.ON_GAME_MESSAGE.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(sysChat.content()))) {
+                    if (FishEvents.chat.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(sysChat.content()))) {
                         return;
                     }
                 }
             }
 
-            if (fishmod.utils.events.PacketFilter.wanted(packet)) FishEvents.ON_PACKET.invoke(packetEvent -> packetEvent.onPacket(packet));
+            if (fishmod.utils.events.PacketFilter.wanted(packet)) FishEvents.packet.invoke(packetEvent -> packetEvent.onPacket(packet));
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("ClientPlayNetworkHandlerMixin.6", "bundled packet event failed packet=" + packet.getClass().getSimpleName(), t);
         }
@@ -177,7 +177,7 @@ public class FishPacketHandlerMixin {
         }
         if (packet.overlay()) return;
         MixinGuard.run("ClientPlayNetworkHandlerMixin.9", "system chat event failed", () -> {
-            if (FishEvents.ON_GAME_MESSAGE.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(packet.content()))) ci.cancel();
+            if (FishEvents.chat.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(packet.content()))) ci.cancel();
         });
     }
 }

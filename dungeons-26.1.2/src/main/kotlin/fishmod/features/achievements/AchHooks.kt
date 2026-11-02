@@ -42,27 +42,27 @@ object AchHooks {
     fun i4Plate() { Minecraft.getInstance().execute { AchStore.max("secret.i4Plate", 1) } }
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { c ->
+        FishEvents.chat.register { c ->
             if (!AchSettings.achEnabled) return@register false
             FishDiag.guard("AchHooks.1", "achievement chat parse") { onChat(c.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()) }
             false
         }
-        FishEvents.ON_RUN_END.register {
+        FishEvents.runEnd.register {
             FishDiag.guard("AchHooks.2", "achievement run end") { onRunEnd() }
             false
         }
-        FishEvents.ON_TERMINAL.register { name, _, objective, _, _ ->
+        FishEvents.terminalStep.register { name, _, objective, _, _ ->
             val me = Minecraft.getInstance().player?.name?.string
             AchBus.post(AchEvent.TerminalDone(me != null && name.replace(FishConstants.STRIP_COLOR_REGEX, "").trim() == me, objective))
             false
         }
-        FishEvents.ON_SECTION_CHANGE.register {
+        FishEvents.sectionChange.register {
             val now = System.currentTimeMillis()
             if (inTerms && sectionStartMs > 0 && !PracticeMode.active) AchBus.post(AchEvent.TerminalSection((now - sectionStartMs) / 1000.0))
             sectionStartMs = now
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { resetRun(); false }
+        FishEvents.worldChange.register { resetRun(); false }
     }
 
     private fun resetRun() {

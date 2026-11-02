@@ -91,9 +91,9 @@ object SlayerProfitTracker {
                 FishDiag.fail("SlayerProfitTracker.3", "slayer profit tick failed (key=${curKey()})", e)
             }
         })
-        FishEvents.ON_WORLD_CHANGE.register { FishDiag.guard("SlayerProfitTracker.10", "flush on world change failed") { flushSave(true) }; false }
+        FishEvents.worldChange.register { FishDiag.guard("SlayerProfitTracker.10", "flush on world change failed") { flushSave(true) }; false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishDiag.guard("SlayerProfitTracker.11", "flush on client stop failed") { flushSave(true) } }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (enabled()) {
                 try {
                     onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim())

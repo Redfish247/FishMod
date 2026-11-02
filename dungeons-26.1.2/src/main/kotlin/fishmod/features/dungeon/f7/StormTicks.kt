@@ -60,7 +60,7 @@ object StormTicks {
             },
             onReset = { deathTime = 0.0; deathStartDisplayTime = 0 }
         )
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!SkyblockLocation.inDungeon() || !BossPhase.inP2()) return@register false
             if (deathTime == 0.0 && text.string.startsWith("⚠ Storm is enraged") && !PATTERN.matcher(text.string).find()) FishDiag.fail("StormTickTimer.2", "storm enraged line format changed: '${text.string}'")
             if (deathTime == 0.0 && PATTERN.matcher(text.string).find()) {

@@ -49,12 +49,12 @@ object GoldorSection {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register(GoldorSection::parseMessage)
-        FishEvents.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.chat.register(GoldorSection::parseMessage)
+        FishEvents.locationChange.register { _ ->
             reset()
             false
         }
-        FishEvents.ON_PHASE_CHANGE.register {
+        FishEvents.phaseChange.register {
             if (FishDebug.termInfo) {
                 FishDebug.LOGGER.info("[Section] ON_PHASE_CHANGE phase={} inTerminals={} inGoldorTunnel={} currentSection={}",
                     BossPhase.getPhase(), BossPhase.inTerminals(), BossPhase.inGoldorTunnel(), currentSection)
@@ -79,7 +79,7 @@ object GoldorSection {
             }
             false
         }
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (currentSection < 1 || currentSection > 5) return@register false
             for (split in splits) {
                 split.tick()
@@ -119,7 +119,7 @@ object GoldorSection {
             FishUtil.addChatMessage(Component.literal("section: $currentSection"))
         }
 
-        FishDiag.guard("Section.2", "ON_SECTION_CHANGE listeners (section $currentSection)") { FishEvents.ON_SECTION_CHANGE.invoke(SectionHook::onSection) }
+        FishDiag.guard("Section.2", "ON_SECTION_CHANGE listeners (section $currentSection)") { FishEvents.sectionChange.invoke(SectionHook::onSection) }
         startSplit(currentSection)
     }
 
@@ -155,7 +155,7 @@ object GoldorSection {
         if (FishDebug.termInfo) {
             FishUtil.addChatMessage(Component.literal("ending all sections"))
         }
-        FishDiag.guard("Section.5", "ON_SECTION_CHANGE listeners (end all)") { FishEvents.ON_SECTION_CHANGE.invoke(SectionHook::onSection) }
+        FishDiag.guard("Section.5", "ON_SECTION_CHANGE listeners (end all)") { FishEvents.sectionChange.invoke(SectionHook::onSection) }
     }
 
     @JvmStatic
@@ -196,7 +196,7 @@ object GoldorSection {
             }
 
             FishDiag.guard("Section.8", "ON_TERMINAL listeners $name $objective $currentCompleted/$totalNeeded") {
-                FishEvents.ON_TERMINAL.invoke { terminalEvent -> terminalEvent.onComplete(name, action, objective, currentCompleted, totalNeeded) }
+                FishEvents.terminalStep.invoke { terminalEvent -> terminalEvent.onComplete(name, action, objective, currentCompleted, totalNeeded) }
             }
 
             if (Floor7Settings.termSplitTimestamps) {

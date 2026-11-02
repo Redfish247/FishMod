@@ -27,7 +27,7 @@ object TerracottaTimer {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (!active()) return@register false
             try {
                 when (packet) {
@@ -38,12 +38,12 @@ object TerracottaTimer {
             false
         }
 
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             spawning.removeIf { it.time -= 0.05f; it.time <= 0f }
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register { spawning.clear(); false }
+        FishEvents.worldChange.register { spawning.clear(); false }
 
         RenderHooks.GIZMO.register { _ ->
             if (!active() || spawning.isEmpty()) return@register

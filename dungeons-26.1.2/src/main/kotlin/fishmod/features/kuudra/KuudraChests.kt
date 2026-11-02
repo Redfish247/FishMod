@@ -31,7 +31,7 @@ object KuudraChests {
     private var pending: Parsed? = null
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { c ->
+        FishEvents.chat.register { c ->
             if (S.kuudraChestsMaster && S.kuudraProfit && Mining.strip(c.string).contains("PAID CHEST REWARDS")) FishDiag.guard("KuudraChests.2", "paid rewards failed") { onPaidRewards() }
             false
         }

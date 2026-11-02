@@ -109,7 +109,7 @@ object NecronDropPredict {
             if (testTick == -2) { try { tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
             if (testTick >= 0) { try { tick(); testStep() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
         }
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (testTick != -1) return@register false
             try { tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.3", "necron drop tick threw", e) }
             false

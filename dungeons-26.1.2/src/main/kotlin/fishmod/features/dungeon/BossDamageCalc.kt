@@ -33,7 +33,7 @@ object BossDamageCalc {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register { bosses.clear(); false }
+        FishEvents.worldChange.register { bosses.clear(); false }
         AttackEntityCallback.EVENT.register { _, level, _, entity, _ ->
             if (level.isClientSide) { lastActionTick = ticks; lastTargetId = entity.id }
             InteractionResult.PASS
@@ -47,7 +47,7 @@ object BossDamageCalc {
             if (!FishSettings.bossDamageCalcEnabled || !SkyblockLocation.inDungeon()) return@register
             FishDiag.guard("BossDamageCalc.1", "boss health scan failed") { scan(mc) }
         }
-        FishEvents.ON_RUN_END.register {
+        FishEvents.runEnd.register {
             if (FishSettings.bossDamageCalcEnabled && SkyblockLocation.inDungeon())
                 TickScheduler.scheduleTask(Runnable { FishDiag.guard("BossDamageCalc.2", "boss damage print failed") { print() } }, 20)
             false

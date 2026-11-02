@@ -26,7 +26,7 @@ object ChatQueue {
                 FishDiag.fail("ChatQueue.1", "chat queue flush failed (${pending.size} pending)", e)
             }
         }
-        FishEvents.ON_WORLD_CHANGE.register { synchronized(pending) { pending.clear() }; false }
+        FishEvents.worldChange.register { synchronized(pending) { pending.clear() }; false }
     }
 
     @JvmStatic

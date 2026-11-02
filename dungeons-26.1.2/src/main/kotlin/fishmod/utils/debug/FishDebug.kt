@@ -159,7 +159,7 @@ object FishDebug {
 
                 .then(ClientCommands.literal("testString").then(ClientCommands.argument("message", StringArgumentType.string()).executes { context ->
                     val message = StringArgumentType.getString(context, "message")
-                    FishEvents.ON_GAME_MESSAGE.invoke { gameMessageEvent -> gameMessageEvent.onGameMessage(Component.literal(message)) }
+                    FishEvents.chat.invoke { gameMessageEvent -> gameMessageEvent.onGameMessage(Component.literal(message)) }
                     FishConstants.SUCCESS
                 }))
 

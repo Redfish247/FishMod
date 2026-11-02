@@ -42,7 +42,7 @@ object AchEngine {
             }
         }
         ClientLifecycleEvents.CLIENT_STOPPING.register { AchStore.saveNow() }
-        fishmod.utils.events.FishEvents.ON_WORLD_CHANGE.register { skyblockSinceMs = 0L; false }
+        fishmod.utils.events.FishEvents.worldChange.register { skyblockSinceMs = 0L; false }
     }
 
     private fun autoSync(mc: Minecraft) {

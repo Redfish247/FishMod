@@ -81,7 +81,7 @@ object CooldownOverlay {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_SOUND.register { event, volume, pitch ->
+        FishEvents.sound.register { event, volume, pitch ->
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {
@@ -95,7 +95,7 @@ object CooldownOverlay {
             }
         }
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {

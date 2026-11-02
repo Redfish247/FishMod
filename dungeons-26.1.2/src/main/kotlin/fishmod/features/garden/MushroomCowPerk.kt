@@ -45,7 +45,7 @@ object MushroomCowPerk {
 
     fun init() {
         if (S.gardenMushroomTotal >= 0) total = S.gardenMushroomTotal.toDouble()
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (packet is ClientboundBlockUpdatePacket) try { onBlock(packet) } catch (e: Exception) { FishDiag.fail("MushroomCowPerk.1", "mushroom perk block handler threw", e) }
             false
         }

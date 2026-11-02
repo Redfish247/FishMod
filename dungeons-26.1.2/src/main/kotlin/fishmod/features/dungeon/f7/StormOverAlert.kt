@@ -34,7 +34,7 @@ object StormOverAlert {
             HUD_W, HUD_H,
             { FishSettings.stormOverScale }, { v -> FishSettings.stormOverScale = v }
         )
-        FishEvents.ON_WORLD_CHANGE.register { shownAt = 0L; ticksLeft = -1; false }
+        FishEvents.worldChange.register { shownAt = 0L; ticksLeft = -1; false }
     }
 
     @JvmStatic

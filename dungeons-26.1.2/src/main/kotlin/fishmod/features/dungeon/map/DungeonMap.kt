@@ -50,7 +50,7 @@ object DungeonMap {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (packet is ClientboundMapItemDataPacket) {
                 val mc = Minecraft.getInstance()
                 mc.execute {

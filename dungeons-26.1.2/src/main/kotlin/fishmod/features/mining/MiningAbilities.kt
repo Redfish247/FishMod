@@ -31,7 +31,7 @@ object MiningAbilities {
     private var maniacBlocks = 0
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             val s = Mining.strip(text.string).trim()
             READY.find(s)?.let { m ->
                 val ab = m.groupValues[1]

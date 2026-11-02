@@ -38,8 +38,8 @@ object Visitors {
     private var tick = 0
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text -> Garden.inGarden() && onChat(Garden.strip(text.string).trim()) }
-        FishEvents.ON_WORLD_CHANGE.register { shopping.clear(); false }
+        FishEvents.chat.register { text -> Garden.inGarden() && onChat(Garden.strip(text.string).trim()) }
+        FishEvents.worldChange.register { shopping.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || tick++ % 10 != 0) return@register
             if (!Garden.inGarden()) { count = 0; nextVisitor = ""; return@register }

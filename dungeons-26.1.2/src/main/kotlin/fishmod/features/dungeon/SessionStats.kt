@@ -155,7 +155,7 @@ object SessionStats {
 
     private fun registerRest() {
 
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             havePos = false
             autoPause(1, System.currentTimeMillis())
             false
@@ -165,12 +165,12 @@ object SessionStats {
             if (FishSettings.sessionStatsResetOnRelog) FishDiag.guard("SessionStats.11", "session stats reset on join failed") { reset() }
         }
 
-        FishEvents.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.locationChange.register { _ ->
             havePos = false
             false
         }
 
-        FishEvents.ON_RUN_END.register {
+        FishEvents.runEnd.register {
             if (!FishSettings.sessionStatsEnabled) return@register false
             if (paused && !autoPaused) return@register false
             val now = System.currentTimeMillis()
@@ -181,7 +181,7 @@ object SessionStats {
             false
         }
 
-        FishEvents.ON_GAME_MESSAGE.register { message ->
+        FishEvents.chat.register { message ->
             if (!FishSettings.sessionStatsEnabled) return@register false
             val s = message.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
             if (s.startsWith("☠ ") && !DEATH_PAT.matcher(s).find() && (s.contains(" killed") || s.contains(" died"))) FishDiag.fail("SessionStats.3", "death line not matched: '$s'")

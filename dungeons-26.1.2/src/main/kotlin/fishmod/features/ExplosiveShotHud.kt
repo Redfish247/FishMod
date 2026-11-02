@@ -19,7 +19,7 @@ object ExplosiveShotHud {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text -> onMessage(text) }
+        FishEvents.chat.register { text -> onMessage(text) }
     }
 
     private fun onMessage(text: Component?): Boolean {

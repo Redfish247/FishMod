@@ -18,7 +18,7 @@ object ArchitectDraft {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.architectDraftRefill || !SkyblockLocation.inDungeon()) return@register false
             val s = TextStrip.plain(text.string).trim()
             val self = Minecraft.getInstance().player?.gameProfile?.name ?: return@register false
@@ -32,7 +32,7 @@ object ArchitectDraft {
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register { pending = -1; false }
+        FishEvents.worldChange.register { pending = -1; false }
 
         ClientTickEvents.END_CLIENT_TICK.register {
             if (pending < 0) return@register

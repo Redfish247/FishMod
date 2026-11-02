@@ -70,7 +70,7 @@ object SlayerBossPhases {
                 FishDiag.fail("SlayerBossPhases.1", "boss phase tick failed (type=${SlayerManager.type}, tier=${SlayerManager.tier})", e)
             }
         })
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (enabled()) {
                 try {
                     onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim())
@@ -80,7 +80,7 @@ object SlayerBossPhases {
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { hardReset(); false }
+        FishEvents.worldChange.register { hardReset(); false }
         RenderHooks.GIZMO.register { _ ->
             try {
                 render()

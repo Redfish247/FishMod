@@ -21,13 +21,13 @@ object PowderChests {
     private val chests = ConcurrentHashMap<BlockPos, Long>()
 
     fun init() {
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (packet is ClientboundBlockUpdatePacket && S.miningChests && Mining.inHollows()) onBlock(packet.pos, packet.blockState)
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { chests.clear(); false }
+        FishEvents.worldChange.register { chests.clear(); false }
         // Lockpicked chests linger until Hypixel clears the block
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (chests.isNotEmpty() && text.string.contains("CHEST LOCKPICKED")) {
                 val pp = Minecraft.getInstance().player?.position()
                 if (pp != null) chests.keys.minByOrNull { Vec3.atCenterOf(it).distanceToSqr(pp) }?.let { chests.remove(it) }

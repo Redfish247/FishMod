@@ -22,11 +22,11 @@ object NecronDeath {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (FishConstants.STRIP_COLOR_REGEX.replace(text.string, "").startsWith(ARGH)) started = true
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { started = false; dead = false; lastTag = null; false }
+        FishEvents.worldChange.register { started = false; dead = false; lastTag = null; false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!started || dead || !BossPhase.isInFloor7()) return@register
             FishDiag.guard("NecronDeath.1", "necron death check threw") { check(mc) }

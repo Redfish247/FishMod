@@ -110,8 +110,8 @@ object Stopwatch {
         fishmod.features.FishHudEditor.register(NAME, hud)
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("Stopwatch.1", "stopwatch tick") { tick(mc) } }
-        FishEvents.ON_GAME_MESSAGE.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(fishmod.utils.TextStrip.plain(msg.string)) }; false }
-        FishEvents.ON_TERMINAL.register { name, _, objective, _, _ ->
+        FishEvents.chat.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(fishmod.utils.TextStrip.plain(msg.string)) }; false }
+        FishEvents.terminalStep.register { name, _, objective, _, _ ->
             when (objective) {
                 "terminal" -> {
                     if (name == Minecraft.getInstance().player?.gameProfile?.name) fire(Trigger.MY_TERMINAL)
@@ -122,12 +122,12 @@ object Stopwatch {
             }
             false
         }
-        FishEvents.ON_SECTION_CHANGE.register { fire(Trigger.SECTION); false }
-        FishEvents.ON_PHASE_CHANGE.register { fire(Trigger.PHASE_CHANGE); false }
-        FishEvents.ON_LEAP.register { _ -> fire(Trigger.LEAP); false }
-        FishEvents.ON_RUN_END.register { fire(Trigger.RUN_END); false }
-        FishEvents.ON_WORLD_CHANGE.register { fire(Trigger.WORLD_CHANGE); false }
-        FishEvents.ON_LOCATION_CHANGE.register { _ -> fire(Trigger.AREA_CHANGE); false }
+        FishEvents.sectionChange.register { fire(Trigger.SECTION); false }
+        FishEvents.phaseChange.register { fire(Trigger.PHASE_CHANGE); false }
+        FishEvents.leap.register { _ -> fire(Trigger.LEAP); false }
+        FishEvents.runEnd.register { fire(Trigger.RUN_END); false }
+        FishEvents.worldChange.register { fire(Trigger.WORLD_CHANGE); false }
+        FishEvents.locationChange.register { _ -> fire(Trigger.AREA_CHANGE); false }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (enabled && screen is AbstractContainerScreen<*>) {
                 val title = fishmod.utils.TextStrip.plain(screen.title.string)

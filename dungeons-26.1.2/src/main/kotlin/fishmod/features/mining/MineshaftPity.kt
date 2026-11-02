@@ -22,11 +22,11 @@ object MineshaftPity {
             S.miningPityPoints = halfPoints.toInt().coerceAtMost(MAX)
             S.miningPityBlocks++
         }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (S.miningPity && Mining.strip(text.string).contains("You found a Glacite Mineshaft portal!")) reset()
             false
         }
-        FishEvents.ON_LOCATION_CHANGE.register { loc ->
+        FishEvents.locationChange.register { loc ->
             if (loc == SkyblockLocation.MINESHAFT) reset()
             false
         }

@@ -6,99 +6,68 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.DungeonSettings
 import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.data.EntityTools
-import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.dungeon.DungeonRole
 import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.regex.Pattern
-import fishmod.utils.debug.FishDiag
 
+// Shows who is on the melody terminal, from their "n%" party callouts; clears when they finish a terminal.
 object MelodyAlert {
 
-    private val PATTERN: Pattern = Pattern.compile("(\\d+)%")
+    private val PERCENT = Regex("(\\d+)%")
 
-    private val names = CopyOnWriteArrayList<String>()
+    private class Player(val name: String, val mine: Boolean)
 
-    private var melodyStarted = false
-    private var ownUsername = false
-    private var name: String? = null
-    private var furthestProgress = 0
+    private var current: Player? = null
+    private var bestPercent = 0
+    private val callers = HashSet<String>()
+
+    private fun clear() {
+        current = null
+        bestPercent = 0
+        callers.clear()
+    }
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_PARTY_MESSAGE.register { username, message ->
-            if (!Floor7Settings.melodyAlert) return@register false
-            if (!SkyblockLocation.inDungeon() || !BossPhase.inTerminals()) return@register false
-
-            val matcher = PATTERN.matcher(message)
-            if (matcher.find()) {
-                val progress = FishDiag.notNull(matcher.group(1).toIntOrNull(), "MelodyWarning.1") { "melody % not an int: '$message'" } ?: return@register false
-                if (progress > furthestProgress) {
-                    melodyStarted = true
-                    name = username
-                    furthestProgress = progress
-                    ownUsername = EntityTools.isClientPlayer(username)
-                    if (!names.contains(username)) {
-                        names.add(username)
+        FishEvents.partyChat.register { sender, msg ->
+            if (Floor7Settings.melodyAlert && SkyblockLocation.inDungeon() && BossPhase.inTerminals()) {
+                PERCENT.find(msg)?.let { m ->
+                    val pct = FishDiag.notNull(m.groupValues[1].toIntOrNull(), "MelodyAlert.1") { "melody % not an int: '$msg'" }
+                    if (pct != null && pct > bestPercent) {
+                        bestPercent = pct
+                        current = Player(sender, EntityTools.isClientPlayer(sender))
+                        callers += sender
                     }
                 }
             }
             false
         }
-
-        FishEvents.ON_TERMINAL.register { formattedName, _, objective, _, _ ->
-            if (names.contains(formattedName) && objective == "terminal") {
-                reset()
-            }
+        FishEvents.terminalStep.register { who, _, kind, _, _ ->
+            if (kind == "terminal" && who in callers) clear()
             false
         }
-
-        FishEvents.ON_SECTION_CHANGE.register {
-            reset()
-            false
-        }
-
-        FishEvents.ON_LOCATION_CHANGE.register {
-            reset()
-            false
-        }
-    }
-
-    private fun reset() {
-        names.clear()
-        furthestProgress = 0
-        name = ""
-        melodyStarted = false
-        ownUsername = false
+        FishEvents.sectionChange.register { clear(); false }
+        FishEvents.locationChange.register { clear(); false }
     }
 
     @JvmStatic
-    fun display(): Boolean {
-        return melodyStarted && Floor7Settings.melodyAlert && !ownUsername
-    }
+    fun display(): Boolean = Floor7Settings.melodyAlert && current?.mine == false
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        FishDiag.check(!name.isNullOrEmpty(), "MelodyWarning.3") { "melody warning shown with no player name" }
-        val dungeonClass = DungeonRole.getClass(name)
-        val lanes = if (furthestProgress % 25 == 0) 4 else 3 // alpha: 33/67%
-        val num = minOf(Math.round(furthestProgress * lanes / 100.0).toInt(), lanes - 1)
-
-        var color = FishConstants.DARK_PURPLE
-        if (DungeonSettings.roleColors) {
-            color = DungeonRole.getColor(name)
-        }
-
-        val nameText = Component.literal(dungeonClass?.name ?: name ?: "Someone")
-            .setStyle(Style.EMPTY.withColor(color).withBold(true))
-        val infoText = Component.literal(" §r§dhas melody! $num/$lanes").setStyle(Style.EMPTY)
-
-        val text = nameText.append(infoText)
-
-        FishDiag.guard("MelodyWarning.2", "melody warning render threw") { FishDraw.drawCenteredText(context, component, text) }
+        val who = current ?: return
+        // 25/50/75 callouts mean 4 lanes, 33/67 mean 3
+        val lanes = if (bestPercent % 25 == 0) 4 else 3
+        val lane = minOf(Math.round(bestPercent * lanes / 100.0).toInt(), lanes - 1)
+        val color = if (DungeonSettings.roleColors) DungeonRole.getColor(who.name) else FishConstants.DARK_PURPLE
+        val label = DungeonRole.getClass(who.name)?.name ?: who.name
+        val text = Component.literal(label).setStyle(Style.EMPTY.withColor(color).withBold(true))
+            .append(Component.literal(" §7» §dMelody §f$lane§7/§f$lanes"))
+        FishDiag.guard("MelodyAlert.2", "melody hud threw") { FishDraw.drawCenteredText(context, component, text) }
     }
 }

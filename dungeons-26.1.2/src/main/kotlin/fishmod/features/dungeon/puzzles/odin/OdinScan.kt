@@ -49,7 +49,7 @@ object OdinScan {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             try { tick(mc) } catch (e: Exception) { FishDiag.fail("OdinScan.7", "puzzle room tracking tick failed current='${currentRoom?.data?.name}'", e) }
         }
-        FishEvents.ON_WORLD_CHANGE.register { setRoom(null); false }
+        FishEvents.worldChange.register { setRoom(null); false }
     }
 
     @Volatile private var lastDiag = 0L

@@ -172,12 +172,12 @@ object DianaTracker {
         CroesusPrices.refreshIfStale()
         ClientTickEvents.END_CLIENT_TICK.register { tick(it) }
         ClientLifecycleEvents.CLIENT_STOPPING.register { flushSave(true) }
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             flushSave(true); lastActivityMs = 0L; sinceActivityMs = 0L; afk = true; hiltBaseline = false; seenHilts.clear()
             invBaseline = false; shurikenCount = -1
             false
         }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!Diana.inHub()) return@register false
             val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
             if (DianaSettings.dianaTracker && s.startsWith("[Sacks]")) onSacks(text)

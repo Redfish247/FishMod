@@ -63,9 +63,9 @@ object ExtraStats {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register { resetRun(); false }
+        FishEvents.worldChange.register { resetRun(); false }
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.extraStatsEnabled || !SkyblockLocation.inDungeon()) return@register false
             val s = TextStrip.plain(text.string)
 

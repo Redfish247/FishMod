@@ -21,11 +21,11 @@ object RiftNametag {
     @Volatile private var lastKick = 0L
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (Rift.inRift()) PUNCHED.find(Rift.strip(text.string).trim())?.let { punched.add(it.groupValues[1].lowercase()) }
             false
         }
-        FishEvents.ON_LOCATION_CHANGE.register { loc -> if (loc != SkyblockLocation.THE_RIFT) punched.clear(); false }
+        FishEvents.locationChange.register { loc -> if (loc != SkyblockLocation.THE_RIFT) punched.clear(); false }
     }
 
     // Replaces the normal stat lines while in the Rift; null = not handled

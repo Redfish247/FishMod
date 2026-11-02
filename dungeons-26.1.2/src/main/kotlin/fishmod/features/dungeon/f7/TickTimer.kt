@@ -16,7 +16,7 @@ class TickTimer {
         onTick: (Int) -> Unit = {},
         onReset: () -> Unit = {}
     ) {
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             try {
                 if (shouldCount()) {
                     tick++
@@ -25,7 +25,7 @@ class TickTimer {
             } catch (e: Exception) { FishDiag.fail("TickTimer.1", "tick timer count/onTick threw at tick $tick", e) }
             false
         }
-        FishEvents.ON_LOCATION_CHANGE.register {
+        FishEvents.locationChange.register {
             try {
                 if (resetOn()) {
                     tick = 0

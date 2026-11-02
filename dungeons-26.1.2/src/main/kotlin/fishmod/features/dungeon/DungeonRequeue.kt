@@ -38,7 +38,7 @@ object DungeonRequeue {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             val s = TextStrip.plain(text.string)
             onChatLine(text.string)
             when {
@@ -67,8 +67,8 @@ object DungeonRequeue {
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; lastFloor = -1; lastMaster = false; false }
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.worldChange.register { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; lastFloor = -1; lastMaster = false; false }
+        FishEvents.serverTick.register {
             if (DungeonState.isInDungeon() && !DungeonState.isInBoss()) {
                 val n = fishmod.features.dungeon.map.DungeonPlayers.count()
                 if (n > startTeamCount) startTeamCount = n

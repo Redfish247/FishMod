@@ -34,12 +34,12 @@ public class PartyCommandHandler {
             return true;
         });
 
-        FishEvents.ON_LOCATION_CHANGE.register(loc -> {
+        FishEvents.locationChange.register(loc -> {
             if (loc == SkyblockLocation.DUNGEON || loc == SkyblockLocation.KUUDRA) dungeonEnteredAt = System.currentTimeMillis();
             return false;
         });
 
-        FishEvents.ON_SERVER_TICK.register(() -> {
+        FishEvents.serverTick.register(() -> {
             long now = System.currentTimeMillis();
             if (lastTickMs > 0) {
                 TICK_TIMES[tickIdx % TICK_TIMES.length] = now - lastTickMs;
@@ -49,7 +49,7 @@ public class PartyCommandHandler {
             return false;
         });
         // Don't count the world-swap gap as one huge tick.
-        FishEvents.ON_WORLD_CHANGE.register(() -> { lastTickMs = -1; return false; });
+        FishEvents.worldChange.register(() -> { lastTickMs = -1; return false; });
 
         // server packets only: addMessage also sees chat replayed by history mods on join, which re-ran old commands
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {

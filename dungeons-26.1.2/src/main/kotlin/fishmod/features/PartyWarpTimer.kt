@@ -33,7 +33,7 @@ object PartyWarpTimer {
             { FishSettings.warpCooldownScale }, { v -> FishSettings.warpCooldownScale = v }
         )
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!DungeonSettings.partyWarpTimer || fishmod.compat.BladeCompat.active) return@register false
             try {
                 val s = TextStrip.plain(text.string)
@@ -47,7 +47,7 @@ object PartyWarpTimer {
             }
             false
         }
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             if (armedAt != 0L) { enteredAt = System.currentTimeMillis(); armedAt = 0L }
             false
         }

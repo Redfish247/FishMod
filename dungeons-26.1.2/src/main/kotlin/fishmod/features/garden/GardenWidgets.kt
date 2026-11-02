@@ -23,7 +23,7 @@ object GardenWidgets {
             if (idle && !composterWarned && S.gardenComposterWarn) GardenTitles.show(Garden.legacy(S.gardenComposterWarnColor) + "Composter Inactive!", "", 2000, true)
             composterWarned = idle
         }
-        FishEvents.ON_GAME_MESSAGE.register { t ->
+        FishEvents.chat.register { t ->
             val s = if (S.gardenRareCrop) Garden.strip(t.string).trim() else ""
             if (S.gardenRareCrop && RARE_CROP.containsMatchIn(s)) {
                 S.gardenRareCropCount++

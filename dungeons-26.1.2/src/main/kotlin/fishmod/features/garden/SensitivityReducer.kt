@@ -38,7 +38,7 @@ object SensitivityReducer {
         // A crash while reduced leaves the saved original behind; put it back on the next launch
         ClientLifecycleEvents.CLIENT_STARTED.register { mc -> if (S.gardenSensOriginal >= 0) restore(mc, false) }
         ClientLifecycleEvents.CLIENT_STOPPING.register { mc -> if (reduced) restore(mc, false) }
-        FishEvents.ON_WORLD_CHANGE.register { Minecraft.getInstance().let { mc -> if (reduced) restore(mc, false) }; false }
+        FishEvents.worldChange.register { Minecraft.getInstance().let { mc -> if (reduced) restore(mc, false) }; false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             val p = mc.player
             if (p == null) return@register

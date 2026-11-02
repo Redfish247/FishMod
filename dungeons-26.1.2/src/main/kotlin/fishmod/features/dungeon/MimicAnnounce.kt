@@ -24,9 +24,9 @@ object MimicAnnounce {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register { mimicSent = false; princeSent = false; batSent = false; false }
+        FishEvents.worldChange.register { mimicSent = false; princeSent = false; batSent = false; false }
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (FishSettings.mimicAnnounceEnabled) {
                 val s = TextStrip.plain(text.string).trim()
                 if (PRINCE.matches(s)) princeKilled(false)
@@ -41,7 +41,7 @@ object MimicAnnounce {
             false
         }
 
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (FishSettings.mimicAnnounceEnabled && !mimicSent && packet is ClientboundEntityEventPacket
                 && packet.eventId.toInt() == 3 && isFloor67() && inClear()
             ) {

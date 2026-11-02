@@ -77,7 +77,7 @@ object Diana {
             if (level.isClientSide && inHub() && player.getItemInHand(hand).hoverName.string.contains("Spade")) SpadeGuess.onSpadeUse()
             InteractionResult.PASS
         })
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             recentClicks.clear(); lastClickedWaypoint = null
             false
         }

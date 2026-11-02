@@ -9,28 +9,17 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// With the recipe book hidden, the panel never draws, never reports open and ignores toggles.
 @Mixin(RecipeBookComponent.class)
 public class NoRecipeBookMixin {
 
-    @Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
-    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
-        if (MiscSettings.hideRecipeBook) {
-            ci.cancel();
-        }
-    }
-
     @Inject(method = "isVisible", at = @At("HEAD"), cancellable = true)
-    public void render(CallbackInfoReturnable<Boolean> cir) {
-        if (MiscSettings.hideRecipeBook) {
-            cir.setReturnValue(false);
-        }
-
+    private void fishmod$neverOpen(CallbackInfoReturnable<Boolean> cir) {
+        if (MiscSettings.hideRecipeBook) cir.setReturnValue(false);
     }
 
-    @Inject(method = "setVisible", at = @At("HEAD"), cancellable = true)
-    public void render(boolean opened, CallbackInfo ci) {
-        if (MiscSettings.hideRecipeBook) {
-            ci.cancel();
-        }
+    @Inject(method = {"extractRenderState", "setVisible"}, at = @At("HEAD"), cancellable = true)
+    private void fishmod$blockPanel(CallbackInfo ci) {
+        if (MiscSettings.hideRecipeBook) ci.cancel();
     }
 }

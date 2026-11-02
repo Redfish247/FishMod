@@ -143,15 +143,15 @@ object SlayerManager {
             }
         })
 
-        FishEvents.ON_WORLD_CHANGE.register { fullReset(); false }
-        FishEvents.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.worldChange.register { fullReset(); false }
+        FishEvents.locationChange.register { _ ->
             bossEntity = null
             cocoonLatchedAt = 0L
             areaLatched = false
             false
         }
 
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.slayerAnyEnabled()) return@register false
             val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
             val now = System.currentTimeMillis()

@@ -148,7 +148,7 @@ object RouteRecorder {
             InteractionResult.PASS
         })
 
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (!FishSettings.routeRecorderEnabled || !SkyblockLocation.inDungeon()) return@register false
             try {
                 when (packet) {
@@ -163,7 +163,7 @@ object RouteRecorder {
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             liveWorld = false
             lastPos = null; pendingPearl = null; pendingBreaks.clear()
             batSounds.clear(); itemPos.clear(); pickedItemIds.clear()

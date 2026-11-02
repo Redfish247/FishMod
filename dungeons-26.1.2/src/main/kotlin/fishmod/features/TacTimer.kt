@@ -37,7 +37,7 @@ object TacTimer {
             { FishSettings.tacTimerScale }, { v -> FishSettings.tacTimerScale = v }
         )
 
-        FishEvents.ON_SOUND.register { event, _, pitch ->
+        FishEvents.sound.register { event, _, pitch ->
             if (!FishSettings.tacTimerEnabled || !SkyblockLocation.inSkyblock()) return@register false
             if (event.location != FLINT || abs(pitch - CAST_PITCH) > 1e-4f) return@register false
             val p = Minecraft.getInstance().player ?: return@register false
@@ -48,12 +48,12 @@ object TacTimer {
             false
         }
 
-        FishEvents.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (ticks > 0) ticks-- else pos = null
             false
         }
 
-        FishEvents.ON_WORLD_CHANGE.register { ticks = 0; pos = null; false }
+        FishEvents.worldChange.register { ticks = 0; pos = null; false }
 
         RenderHooks.NO_DEPTH_FILLED.register { _, m, vc -> renderWaypoint(m, vc, fill = true) }
         RenderHooks.NO_DEPTH_LINE.register { _, m, vc -> renderWaypoint(m, vc, fill = false) }

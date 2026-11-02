@@ -10,11 +10,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ArrowLayer.class)
 public class HideArrowsMixin {
 
-    @Inject(method = "numStuck", at=@At("TAIL"), cancellable = true)
-    public void shouldRender(CallbackInfoReturnable<Integer> cir) {
-        if (VisualSettings.hideArrowsInBody) {
-            cir.setReturnValue(0);
-        }
-
+    @Inject(method = "numStuck", at = @At("HEAD"), cancellable = true)
+    private void fishmod$noArrowsInBody(CallbackInfoReturnable<Integer> cir) {
+        if (VisualSettings.hideArrowsInBody) cir.setReturnValue(0);
     }
 }

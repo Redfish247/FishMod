@@ -20,7 +20,7 @@ object FortuneBonus {
     }
 
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register { last = null; false }
+        FishEvents.worldChange.register { last = null; false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !S.gardenFortuneMsg || !Garden.inGarden()) return@register
             if (tick++ % 20 != 0) return@register
@@ -31,7 +31,7 @@ object FortuneBonus {
             if (prev != null && prev != cur) send(cur)
         }
         // Server announcements ("+N Farming Fortune ..."); throttled so the tab change doesn't double up (guess at wording)
-        FishEvents.ON_GAME_MESSAGE.register { t ->
+        FishEvents.chat.register { t ->
             if (S.gardenFortuneMsg && Garden.inGarden()) {
                 val s = Garden.strip(t.string).trim()
                 val now = System.currentTimeMillis()

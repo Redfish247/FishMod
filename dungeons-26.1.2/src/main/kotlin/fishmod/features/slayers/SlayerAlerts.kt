@@ -14,8 +14,8 @@ object SlayerAlerts {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
-        FishEvents.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { reset(); false }
+        FishEvents.chat.register { text ->
             if (FishSettings.slayerAnyEnabled()) {
                 val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
                 RNG_METER.find(s)?.let {

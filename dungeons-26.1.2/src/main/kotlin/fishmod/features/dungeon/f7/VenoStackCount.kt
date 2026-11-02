@@ -42,11 +42,11 @@ object VenoStackCount {
             40, 20,
             { FishSettings.venoStackScale }, { v -> FishSettings.venoStackScale = v }
         )
-        FishEvents.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
             try { onTick() } catch (e: Exception) { FishDiag.fail("VenoStackCount.1", "veno stack tick threw (beams=${beams.size})", e) }
         }
-        FishEvents.ON_PARTICLE.register { packet ->
+        FishEvents.particle.register { packet ->
             try {
                 if (packet.particle.type === ParticleTypes.FIREWORK && active()) onBeamPoint(Vec3(packet.x, packet.y, packet.z))
             } catch (e: Exception) { FishDiag.fail("VenoStackCount.2", "veno beam particle handler threw", e) }

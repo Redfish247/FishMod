@@ -51,9 +51,9 @@ object Pests {
     }
 
     fun init() {
-        FishEvents.ON_GAME_MESSAGE.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.string).trim()); false }
-        FishEvents.ON_WORLD_CHANGE.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
-        FishEvents.ON_PARTICLE.register { p ->
+        FishEvents.chat.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.string).trim()); false }
+        FishEvents.worldChange.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
+        FishEvents.particle.register { p ->
             if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.maxSpeed == 0f && Garden.inGarden() && holdingVacuum()) {
                 val now = System.currentTimeMillis()
                 if (now - lastTrail > 2500L) { trail.clear(); guess = null }

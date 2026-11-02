@@ -30,12 +30,12 @@ object RenderOptimizer {
 
     @JvmStatic
     fun init() {
-        FishEvents.ON_PARTICLE.register { packet ->
+        FishEvents.particle.register { packet ->
             VisualSettings.renderOptimizer && VisualSettings.roHideExplosionParticles &&
                 (packet.particle.type === ParticleTypes.EXPLOSION || packet.particle.type === ParticleTypes.EXPLOSION_EMITTER)
         }
 
-        FishEvents.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (!VisualSettings.renderOptimizer) return@register false
             val mc = Minecraft.getInstance()
             try {
