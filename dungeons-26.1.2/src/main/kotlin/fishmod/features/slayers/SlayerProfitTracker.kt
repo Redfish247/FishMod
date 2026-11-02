@@ -28,7 +28,7 @@ object SlayerProfitTracker {
     private const val COINS_ROW = "Mob Kill Coins"
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    private val DROP_LINE = Pattern.compile("(?:[A-Z]{3,} )+DROP! \\(?(?:([\\d,]+)x )?(.+?)\\)?(?: \\(\\+.*)?$")
+    private val DROP_LINE = Pattern.compile("^(?:[A-Z]{3,} )+DROP! (?!.* just found )\\(?(?:([\\d,]+)x )?(.+?)\\)?(?: \\(\\+.*)?$")
     private val LEADING_GLYPHS = Regex("^[^\\p{L}\\p{N}]+")
     private val SACK_PICKUP = Pattern.compile("^\\+\\s*([\\d,]+)\\s+([A-Za-z'’. ]+?)(?:\\s*\\(.*\\))?$")
     private val AUTO_SLAYER_BANK = Pattern.compile("Took ([\\d,.]+[kmb]?) coins from your bank for auto-slayer")
@@ -115,7 +115,7 @@ object SlayerProfitTracker {
         if (resetArmedAt != 0L && now - resetArmedAt > RESET_CONFIRM_MS) resetArmedAt = 0L
 
         val k = curKey()
-        if (k == null || !SlayerManager.isActiveSlayer()) return
+        if (k == null || !SlayerManager.isActiveSlayer() || !SlayerManager.onQuestIsland()) return
         val (t, s) = bothData(k)
 
         if (idlePaused) return
@@ -156,7 +156,7 @@ object SlayerProfitTracker {
         lastPurse = purse
         if (!enabled() || prev < 0) return
         val k = curKey() ?: return
-        if (!SlayerManager.isActiveSlayer()) return
+        if (!SlayerManager.isActiveSlayer() || !SlayerManager.onQuestIsland()) return
 
         val delta = (purse - prev).toLong()
         if (delta == 0L) return
@@ -194,7 +194,7 @@ object SlayerProfitTracker {
             return
         }
 
-        if (!SlayerManager.isActiveSlayer()) return
+        if (!SlayerManager.isActiveSlayer() || !SlayerManager.onQuestIsland()) return
 
         val drop = DROP_LINE.matcher(s)
         if (drop.find()) {
