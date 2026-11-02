@@ -46,7 +46,7 @@ object AchRegistry {
         "overtime" to "The King's paperwork can't keep up with you.",
         "night_shift" to "The bosses clock in late, and so do you.",
         "midnight_catch" to "Something shiny bites while the world sleeps.",
-        "exterminator" to "Your crops have never felt safer, and the pests have never felt worse.",
+        "pest_control" to "Your crops have never felt safer, and the pests have never felt worse.",
         "variety_pack" to "Why hunt one kind of monster when you can sample the menu?",
     )
 
@@ -425,7 +425,7 @@ object AchRegistry {
         a("overtime", "Secret Achievements", "Overtime", "Finish 5 mining commissions in 10 minutes", "Secret", 25, "secret.commissionRush", 1L, "", true)
         a("night_shift", "Secret Achievements", "Night Shift", "Kill a slayer boss between midnight and 5 AM", "Secret", 25, "secret.nightSlayer", 1L, "", true)
         a("midnight_catch", "Secret Achievements", "Midnight Catch", "Catch a Golden Fish trophy between midnight and 5 AM", "Secret", 50, "secret.midnightGolden", 1L, "", true)
-        a("exterminator", "Secret Achievements", "Exterminator", "Kill 15 garden pests in 10 minutes", "Secret", 25, "secret.pestRush", 1L, "", true)
+        a("pest_control", "Secret Achievements", "Pest Control", "Kill 15 garden pests in 10 minutes", "Secret", 25, "secret.pestRush", 1L, "", true)
         a("variety_pack", "Secret Achievements", "Variety Pack", "Kill all 5 slayer types within 1 hour", "Secret", 50, "secret.slayerVariety", 1L, "", true)
         a("fishmod_completionist", "Ultimate", "FishMod Completionist", "Unlock every non-secret achievement", "Impossible", 250, "meta.completionist", 1L, "", false)
         a("the_fish_emperor", "Ultimate", "The Fish Emperor", "Unlock every achievement, secrets included", "Impossible", 500, "meta.emperor", 1L, "", false)
