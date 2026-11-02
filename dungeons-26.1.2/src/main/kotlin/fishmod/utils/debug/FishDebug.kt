@@ -139,6 +139,13 @@ object FishDebug {
                     FishConstants.SUCCESS
                 })
 
+                .then(ClientCommands.literal("bossDamage").executes { _ ->
+                    val on = fishmod.features.dungeon.BossDamageCapture.toggle()
+                    FishUtil.addChatMessage(Component.literal("Boss damage capture: ").append(FishUtil.getStatusText(on)))
+                    if (!on) FishUtil.addChatMessage(Component.literal(fishmod.features.dungeon.BossDamageCapture.path()))
+                    FishConstants.SUCCESS
+                })
+
                 .then(ClientCommands.literal("leapSort").executes { _ ->
                     leapDebug = !leapDebug
                     FishUtil.addChatMessage(Component.literal("Leap sort debug: ").append(FishUtil.getStatusText(leapDebug)))
