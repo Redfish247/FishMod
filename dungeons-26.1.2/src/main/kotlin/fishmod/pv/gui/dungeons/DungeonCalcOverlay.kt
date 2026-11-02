@@ -26,7 +26,7 @@ class DungeonCalcOverlay {
 	@JvmRecord
 	data class View(
 		val titleKey: String,
-		val titleArg: Any?,
+		val titleArg: Any,
 		val xpNeeded: Float,
 		val modsLabel: String?,
 		val floors: List<FloorLine>,
@@ -42,7 +42,7 @@ class DungeonCalcOverlay {
 			@JvmStatic
 			fun single(
 				titleKey: String,
-				titleArg: Any?,
+				titleArg: Any,
 				xpNeeded: Float,
 				modsLabel: String?,
 				floors: List<FloorLine>,
@@ -52,7 +52,7 @@ class DungeonCalcOverlay {
 			@JvmStatic
 			fun average(
 				titleKey: String,
-				titleArg: Any?,
+				titleArg: Any,
 				modsLabel: String?,
 				blocks: List<ClassBlock>,
 				totalRuns: Long,
