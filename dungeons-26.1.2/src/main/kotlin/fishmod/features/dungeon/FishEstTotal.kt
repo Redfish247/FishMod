@@ -53,7 +53,7 @@ object FishEstTotal {
         0.0, 0.0, BossPhase.SPLIT_LENGTH, FishConstants.TEXT_HEIGHT * 2 + 4, 1f, "Est. Total",
         { display() },
         { component, context -> render(component, context) },
-        { try { BossPhase.enableSplits } catch (t: Throwable) { FishDiag.fail("FishEstTotal.1", "Phase.enableSplits read failed", t); false } }
+        { try { BossPhase.runSplitsEnabled } catch (t: Throwable) { FishDiag.fail("FishEstTotal.1", "Phase.enableSplits read failed", t); false } }
     )
 
     @JvmStatic
@@ -75,8 +75,8 @@ object FishEstTotal {
         val splits = currentSplits ?: return 0
         var onlyActivated = true
         var includeTotal = false
-        try { onlyActivated = BossPhase.onlyShowActivatedSplits } catch (t: Throwable) { FishDiag.fail("FishEstTotal.6", "Phase.onlyShowActivatedSplits read failed", t) }
-        try { includeTotal = BossPhase.includeTotalTime } catch (t: Throwable) { FishDiag.fail("FishEstTotal.7", "Phase.includeTotalTime read failed", t) }
+        try { onlyActivated = BossPhase.runSplitsReachedOnly } catch (t: Throwable) { FishDiag.fail("FishEstTotal.6", "Phase.onlyShowActivatedSplits read failed", t) }
+        try { includeTotal = BossPhase.runSplitsTotal } catch (t: Throwable) { FishDiag.fail("FishEstTotal.7", "Phase.includeTotalTime read failed", t) }
         var count = splits.size
         if (!includeTotal) count--
         if (!onlyActivated) return Math.max(0, count)
@@ -91,7 +91,7 @@ object FishEstTotal {
     @JvmStatic
     fun display(): Boolean {
         return try {
-            BossPhase.enableSplits && BossPhase.runStarted() && currentSplits != null
+            BossPhase.runSplitsEnabled && BossPhase.runStarted() && currentSplits != null
         } catch (t: Throwable) {
             FishDiag.fail("FishEstTotal.8", "est total display check failed", t)
             false
@@ -133,8 +133,8 @@ object FishEstTotal {
         val x: Int
         val y: Int
         try {
-            x = BossPhase.splitTimer.scaledX
-            val baseY = BossPhase.splitTimer.scaledY
+            x = BossPhase.runSplitsBox.scaledX
+            val baseY = BossPhase.runSplitsBox.scaledY
             y = baseY + FishConstants.TEXT_HEIGHT * computeVisibleRowCount() + 8
         } catch (t: Throwable) {
             FishDiag.fail("FishEstTotal.9", "split timer position read failed, using own HUD position", t)
@@ -142,7 +142,7 @@ object FishEstTotal {
             return
         }
         // Splits draw inside their own scale, so follow it or the rows overlap at scale != 1.
-        val rel = try { BossPhase.splitTimer.scale / component.scale } catch (t: Throwable) { 1f }
+        val rel = try { BossPhase.runSplitsBox.scale / component.scale } catch (t: Throwable) { 1f }
         val pose = context.pose()
         pose.pushMatrix()
         pose.scale(rel, rel)

@@ -150,8 +150,8 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || entity == mc.player) return;
 
-            if (VisualSettings.hidePlayersInRange && entity instanceof Player) {
-                double r = VisualSettings.hidePlayerRange;
+            if (VisualSettings.hideNearbyPlayers && entity instanceof Player) {
+                double r = VisualSettings.hidePlayersRadius;
                 if (r > 0 && entity.distanceToSqr(mc.player) <= r * r) {
                     cir.setReturnValue(false);
                     return;

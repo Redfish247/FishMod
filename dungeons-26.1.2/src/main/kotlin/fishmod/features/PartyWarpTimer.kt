@@ -13,7 +13,7 @@ import java.util.regex.Pattern
 
 object PartyWarpTimer {
 
-    private const val NAME = "Warp Cooldown"
+    private const val NAME = "Party Warp Timer"
     private val ENTERED: Pattern =
         Pattern.compile("\\b(\\w{1,16}) entered (?:MM )?\\w+ Catacombs, Floor \\w+!")
     private val KICKED: Pattern =

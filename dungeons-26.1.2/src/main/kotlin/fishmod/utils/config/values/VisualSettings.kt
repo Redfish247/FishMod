@@ -28,8 +28,8 @@ object VisualSettings {
     @ConfigValue @JvmField var roRemoveDamageIndicator: Boolean = false
     @ConfigValue @JvmField var roFormatDamageIndicator: Boolean = false
 
-    @ConfigValue @JvmField var hidePlayersInRange: Boolean = false
-    @ConfigValue @JvmField var hidePlayerRange: Double = 3.0
+    @ConfigValue @JvmField var hideNearbyPlayers: Boolean = false
+    @ConfigValue @JvmField var hidePlayersRadius: Double = 3.0
 
     @ConfigValue @JvmField var rarityBackground: Boolean = false
     @ConfigValue @JvmField var itemRarityOpacity: Int = 35

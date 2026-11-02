@@ -84,7 +84,48 @@ object ConfigKeyMigration {
         "command4" to "invCmd4",
         "command5" to "invCmd5",
         "command6" to "invCmd6",
-        "command7" to "invCmd7"
+        "command7" to "invCmd7",
+        "crystalSpawnTime" to "crystalRespawnBox",
+        "stormDeathTime" to "stormKillBox",
+        "termStartTimer" to "termOpenBox",
+        "displayTerminalSplitsWhen" to "goldorSplitsShownIn",
+        "enableTerminalSplits" to "goldorSplitsEnabled",
+        "terminalSplits" to "goldorSplitsBox",
+        "enableSplits" to "runSplitsEnabled",
+        "includeTotalTime" to "runSplitsTotal",
+        "sendSplitInChat" to "runSplitsToChat",
+        "onlyShowActivatedSplits" to "runSplitsReachedOnly",
+        "splitTimer" to "runSplitsBox",
+        "realTimeColorInactive" to "splitRealIdle",
+        "realTimeColorOngoing" to "splitRealLive",
+        "realTimeColorComplete" to "splitRealDone",
+        "serverTimeColorInactive" to "splitTickIdle",
+        "serverTimeColorOngoing" to "splitTickLive",
+        "serverTimeColorComplete" to "splitTickDone",
+        "parenthesesColorInactive" to "splitBracketIdle",
+        "parenthesesColorOngoing" to "splitBracketLive",
+        "parenthesesColorComplete" to "splitBracketDone",
+        "timerType" to "splitClock",
+        "hidePlayerRange" to "hidePlayersRadius",
+        "hidePlayersInRange" to "hideNearbyPlayers"
+    )
+
+    // saved HUD boxes keep their label in "info"
+    private val HUD_LABELS: Map<String, String> = mapOf(
+        "Tick Timer" to "Boss Tick Clock",
+        "Crystal Spawn Time" to "Crystal Respawn",
+        "Crystal Reminder" to "Crystal Not Placed",
+        "Storm Death Time" to "Storm Kill Time",
+        "Storm Crushed" to "Storm Crush Banner",
+        "Pillar Explosion Timer" to "Pillar Blast Timer",
+        "Term Start Timer" to "Terminals Open In",
+        "Section Progress" to "Section Count",
+        "Current Section" to "P3 Section",
+        "Device Completed" to "Device Done",
+        "Melody Warning" to "Melody Callout",
+        "Section Completion" to "Section Cleared",
+        "Splits" to "Run Splits",
+        "Term splits" to "Goldor Splits"
     )
 
     @JvmStatic
@@ -98,6 +139,11 @@ object ConfigKeyMigration {
                 val v = root.remove(old) ?: continue
                 if (!root.has(new)) root.add(new, v)
                 moved++
+            }
+            for ((_, v) in root.entrySet()) {
+                val hud = v as? JsonObject ?: continue
+                val label = hud.get("info")?.takeIf { it.isJsonPrimitive }?.asString ?: continue
+                HUD_LABELS[label]?.let { hud.addProperty("info", it); moved++ }
             }
             if (moved == 0) return
             file.writeText(GsonBuilder().create().toJson(root), Charsets.UTF_8)

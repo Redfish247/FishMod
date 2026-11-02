@@ -17,29 +17,29 @@ object F7Huds {
     @JvmField
     @ConfigValue
     var tickTimer: HUDComponent = HUDComponent(
-        10.0, 80.0, TICK_W, 10, 1f, "Tick Timer",
+        10.0, 80.0, TICK_W, 10, 1f, "Boss Tick Clock",
         { false }, BossTickTimer::render,
         { Floor7Settings.enableTickTimers && (Floor7Settings.maxorTicksHud || Floor7Settings.stormTicksHud || Floor7Settings.goldorTicksHud) }
     )
 
     @JvmField
     @ConfigValue
-    var crystalSpawnTime: HUDComponent = HUDComponent(
-        10.0, 92.0, TICK_W, 10, 1f, "Crystal Spawn Time",
+    var crystalRespawnBox: HUDComponent = HUDComponent(
+        10.0, 92.0, TICK_W, 10, 1f, "Crystal Respawn",
         { false }, MaxorCrystalTimer::render, { Floor7Settings.crystalSpawnHud }
     )
 
     @JvmField
     @ConfigValue
     var crystalReminder: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Crystal Reminder",
+        0.0, 0.0, NOTI_W, 10, 1f, "Crystal Not Placed",
         { false }, MaxorCrystalTimer::renderNotification, { Floor7Settings.crystalSpawnHud && Floor7Settings.crystalPlaceAlert }
     )
 
     @JvmField
     @ConfigValue
-    var stormDeathTime: HUDComponent = HUDComponent(
-        10.0, 92.0, 40, 10, 1f, "Storm Death Time",
+    var stormKillBox: HUDComponent = HUDComponent(
+        10.0, 92.0, 40, 10, 1f, "Storm Kill Time",
         { false }, StormTicks::renderDeathTime, { Floor7Settings.enableTickTimers && Floor7Settings.stormKillTimeHud }
     )
 
@@ -81,56 +81,56 @@ object F7Huds {
     @JvmField
     @ConfigValue
     var stormCrush: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Storm Crushed",
+        0.0, 0.0, NOTI_W, 10, 1f, "Storm Crush Banner",
         { false }, StormPillarTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.stormCrushAlert }
     )
 
     @JvmField
     @ConfigValue
     var pillarExplosion: HUDComponent = HUDComponent(
-        10.0, 140.0, TICK_W, 10, 1f, "Pillar Explosion Timer",
+        10.0, 140.0, TICK_W, 10, 1f, "Pillar Blast Timer",
         { false }, StormPillarTimer::renderTimer, { Floor7Settings.pillarBlastTimer }
     )
 
     @JvmField
     @ConfigValue
-    var termStartTimer: HUDComponent = HUDComponent(
-        10.0, 104.0, TICK_W, 10, 1f, "Term Start Timer",
+    var termOpenBox: HUDComponent = HUDComponent(
+        10.0, 104.0, TICK_W, 10, 1f, "Terminals Open In",
         { false }, TermOpenTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.termOpenHud }
     )
 
     @JvmField
     @ConfigValue
     var sectionProgress: HUDComponent = HUDComponent(
-        10.0, 116.0, 40, 10, 1f, "Section Progress",
+        10.0, 116.0, 40, 10, 1f, "Section Count",
         { false }, SectionCountHud::render, { Floor7Settings.sectionProgressHud }
     )
 
     @JvmField
     @ConfigValue
     var currentSection: HUDComponent = HUDComponent(
-        10.0, 190.0, TICK_W, 10, 1f, "Current Section",
+        10.0, 190.0, TICK_W, 10, 1f, "P3 Section",
         { false }, GoldorSectionHud::render, { Floor7Settings.currentSectionHud }
     )
 
     @JvmField
     @ConfigValue
     var deviceNotifier: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Device Completed",
+        0.0, 0.0, NOTI_W, 10, 1f, "Device Done",
         { false }, DeviceDoneAlert::render, { Floor7Settings.pre4DoneAlert || Floor7Settings.ssDoneAlert }
     )
 
     @JvmField
     @ConfigValue
     var melodyWarning: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Melody Warning",
+        0.0, 0.0, NOTI_W, 10, 1f, "Melody Callout",
         { false }, MelodyAlert::render, { Floor7Settings.melodyAlert }
     )
 
     @JvmField
     @ConfigValue
     var sectionCompletion: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Section Completion",
+        0.0, 0.0, NOTI_W, 10, 1f, "Section Cleared",
         { false }, SectionDoneHud::render, { Floor7Settings.sectionDoneAlert }
     )
 
@@ -168,11 +168,11 @@ object F7Huds {
     fun renderHud(ctx: GuiGraphicsExtractor) {
         val own = !BladeCompat.active
         renderOne(ctx, tickTimer, own && BossTickTimer.display(), BossTickTimer::render, 10, 70)
-        renderOne(ctx, termStartTimer, own && TermOpenTimer.display(), TermOpenTimer::render, 10, 106)
-        renderOne(ctx, crystalSpawnTime, own && MaxorCrystalTimer.display(), MaxorCrystalTimer::render, 10, 118)
-        renderOne(ctx, stormDeathTime, own && StormTicks.displayDeathTime(), StormTicks::renderDeathTime, 10, 130)
+        renderOne(ctx, termOpenBox, own && TermOpenTimer.display(), TermOpenTimer::render, 10, 106)
+        renderOne(ctx, crystalRespawnBox, own && MaxorCrystalTimer.display(), MaxorCrystalTimer::render, 10, 118)
+        renderOne(ctx, stormKillBox, own && StormTicks.displayDeathTime(), StormTicks::renderDeathTime, 10, 130)
         renderOne(ctx, sectionProgress, own && SectionCountHud.display(), SectionCountHud::render, 10, 142)
-        renderOne(ctx, GoldorSection.terminalSplits, own && GoldorSection.display(), GoldorSection::render, 10, 154)
+        renderOne(ctx, GoldorSection.goldorSplitsBox, own && GoldorSection.display(), GoldorSection::render, 10, 154)
         renderOne(ctx, TerminalTracker.terminalTrackerHud, TerminalTracker.display(), TerminalTracker::render, 10, 230)
         renderOne(ctx, lbReleaseTimer, StormTicks.displayLbReleaseTimer(), StormTicks::renderLbReleaseTimer, 10, 166)
         renderOne(ctx, pyTimer, StormTicks.displayPyTimer(), StormTicks::renderPyTimer, 10, 178)
