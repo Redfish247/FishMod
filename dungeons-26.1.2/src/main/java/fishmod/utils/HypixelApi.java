@@ -2076,14 +2076,31 @@ public class HypixelApi {
 
     public static void fetchNicks(java.util.Collection<String> uuidsNoDashes,
                                   java.util.function.Consumer<Map<String, String>> cb) {
+        fetchNicks(uuidsNoDashes, cb, true);
+    }
+
+    private static void fetchNicks(java.util.Collection<String> uuidsNoDashes,
+                                   java.util.function.Consumer<Map<String, String>> cb, boolean mayRetry) {
         if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.accept(java.util.Map.of()); return; }
         try {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = proxyGet("/nicks?uuids=" + q, 10);
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                // Proxy error page (HTML, non-200) is an outage, not a bug: retry once, log locally.
+                String body = r.body();
+                if (r.statusCode() != 200 || body == null || !body.stripLeading().startsWith("{")) {
+                    if (mayRetry) {
+                        CompletableFuture.delayedExecutor(5, java.util.concurrent.TimeUnit.SECONDS)
+                            .execute(() -> fetchNicks(uuidsNoDashes, cb, false));
+                    } else {
+                        fishmod.utils.debug.FishDebug.LOGGER.debug("[Nicks] bad response: http={}", r.statusCode());
+                        cb.accept(java.util.Map.of());
+                    }
+                    return;
+                }
                 Map<String, String> out = new HashMap<>();
                 try {
-                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    JsonObject root = JsonParser.parseString(body).getAsJsonObject();
                     if (root.has("nicks") && root.get("nicks").isJsonObject())
                         for (var e : root.getAsJsonObject("nicks").entrySet())
                             if (e.getValue() != null && !e.getValue().isJsonNull())
