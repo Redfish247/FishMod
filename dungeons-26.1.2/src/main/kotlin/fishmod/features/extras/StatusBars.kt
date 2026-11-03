@@ -11,9 +11,9 @@ import net.minecraft.resources.Identifier
 
 // Skyblocker-style defense bar + health/mana bars above the hotbar, fed from the action bar
 object StatusBars {
-    private val HEALTH = Regex("""([\d,]+)/([\d,]+)❤""")
-    private val MANA = Regex("""([\d,]+)/([\d,]+)✎""")
-    private val DEFENSE = Regex("""([\d,]+)❈""")
+    private val HEALTH = Regex("""(\d[\d,.  ]*)/(\d[\d,.  ]*)\s*❤""")
+    private val MANA = Regex("""(\d[\d,.  ]*)/(\d[\d,.  ]*)\s*✎""")
+    private val DEFENSE = Regex("""(\d[\d,.  ]*)\s*❈""")
 
     private const val W = 182
     private const val H = 22
@@ -45,10 +45,7 @@ object StatusBars {
     fun onActionBar(msg: Component): Component {
         if (!S.statusBars || !SkyblockLocation.inSkyblock()) return msg
         val raw = msg.string
-        val s = fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(raw, "")
-        HEALTH.find(s)?.let { hp = num(it.groupValues[1]); hpMax = num(it.groupValues[2]) }
-        MANA.find(s)?.let { mana = num(it.groupValues[1]); manaMax = num(it.groupValues[2]) }
-        DEFENSE.find(s)?.let { def = num(it.groupValues[1]) }
+        read(raw)
         if (!hideVanilla()) return msg
         var out = raw
         if (S.statusBarsHealth) out = STRIP_HEALTH.replace(out, "")
@@ -59,7 +56,20 @@ object StatusBars {
         return Component.literal(out.ifEmpty { " " })
     }
 
-    private fun num(s: String) = s.replace(",", "").toLongOrNull() ?: -1L
+    private var loggedMiss = false
+
+    private fun read(raw: String) {
+        val s = fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(raw, "")
+        val h = HEALTH.find(s)
+        h?.let { hp = num(it.groupValues[1]); hpMax = num(it.groupValues[2]) }
+        MANA.find(s)?.let { mana = num(it.groupValues[1]); manaMax = num(it.groupValues[2]) }
+        DEFENSE.find(s)?.let { def = num(it.groupValues[1]) }
+        // log one unparsed bar so the real format can be fixed
+        if (h == null && !loggedMiss && s.contains('/')) { loggedMiss = true; FishDiag.fail("StatusBars.2", "no health in action bar '${s.take(120)}'") }
+    }
+
+    // nbsp/thin-space separators too, not just commas
+    private fun num(s: String) = s.filter { it.isDigit() }.toLongOrNull() ?: -1L
 
     @JvmStatic
     fun hideVanilla(): Boolean = S.statusBars && S.statusBarsHideVanilla && SkyblockLocation.inSkyblock()
