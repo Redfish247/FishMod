@@ -302,6 +302,7 @@ object StorageOverlay {
         UiRecorder.clear()
         pendingPaint = false
         carriedLayer = null
+        tooltipLayer = null
         recomputeGeometry()
         dragPreview = computeDragPreview()
         tooltipStack = null
@@ -341,11 +342,7 @@ object StorageOverlay {
 
         ctx.pose().popMatrix()
 
-        tooltipStack?.let {
-            val lines = runCatching { Screen.getTooltipFromItem(mc, it) }
-                .onFailure { e -> FishDiag.fail("StorageOverlay.3", "tooltip build failed for ${it.hoverName.string}", e) }.getOrNull()
-            if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s, s)
-        }
+        tooltipLayer = tooltipStack?.let { Triple(it, mouseX, mouseY) }
         pendingPaint = true
     }
 
@@ -616,13 +613,22 @@ object StorageOverlay {
     }
 
     private var carriedLayer: Triple<ItemStack, Int, Int>? = null
+    private var tooltipLayer: Triple<ItemStack, Int, Int>? = null
 
-    // Held item goes in its own GUI pass after the UI paint so panels never cover it.
+    // Held item and vanilla tooltip go in their own GUI pass after the UI paint so panels never cover them.
     @JvmStatic
     fun extractCarriedLayer(state: net.minecraft.client.renderer.state.gui.GuiRenderState): Boolean {
-        val (stack, x, y) = carriedLayer ?: return false
+        val tip = tooltipLayer
+        tooltipLayer = null
+        val carried = carriedLayer
         carriedLayer = null
+        if (tip == null && carried == null) return false
         val ctx = GuiGraphicsExtractor(mc, state, 0, 0)
+        if (tip != null) {
+            ctx.setTooltipForNextFrame(font, tip.first, tip.second, tip.third)
+            ctx.extractDeferredElements(tip.second, tip.third, 0f)
+        }
+        val (stack, x, y) = carried ?: return true
         ctx.pose().pushMatrix()
         ctx.pose().scale(scale, scale)
         ctx.item(stack, x, y)
