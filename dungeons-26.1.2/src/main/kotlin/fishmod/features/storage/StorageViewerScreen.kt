@@ -180,7 +180,11 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
 
         val mc = minecraft
         val hs = hovered
-        if (hs != null && mc != null) ctx.setTooltipForNextFrame(mc.font, hs, mouseX, mouseY)
+        if (hs != null && mc != null) {
+            val lines = runCatching { Screen.getTooltipFromItem(mc, hs) }
+                .onFailure { FishDiag.fail("StorageViewerScreen.8", "tooltip build failed for ${hs.hoverName.string}", it) }.getOrNull()
+            if (lines != null) ScreenTheme.nItemTooltip(lines, mouseX, mouseY, vw, vh, paintScale = k)
+        }
     }
 
     private fun drawPanel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int) {
