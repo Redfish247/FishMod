@@ -341,7 +341,11 @@ object StorageOverlay {
 
         ctx.pose().popMatrix()
 
-        tooltipStack?.let { ctx.setTooltipForNextFrame(mc.font, it, mouseX, mouseY) }
+        tooltipStack?.let {
+            val lines = runCatching { Screen.getTooltipFromItem(mc, it) }
+                .onFailure { e -> FishDiag.fail("StorageOverlay.3", "tooltip build failed for ${it.hoverName.string}", e) }.getOrNull()
+            if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s, s)
+        }
         pendingPaint = true
     }
 
