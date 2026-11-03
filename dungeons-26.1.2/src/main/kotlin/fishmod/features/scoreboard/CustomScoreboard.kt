@@ -102,7 +102,12 @@ object CustomScoreboard {
             else -> FishSettings.customScoreboardHudY
         }
 
-        fishmod.features.ScreenTheme.roundedRect(ctx, x1 - 2, y0, width + 4, totalH, FishSettings.customScoreboardRadius, bgColor())
+        // Draw the background at real pixels so rounded corners stay smooth at any GUI scale
+        val gs = mc.window.guiScale.toInt().coerceAtLeast(1)
+        ctx.pose().pushMatrix()
+        ctx.pose().scale(1f / gs, 1f / gs)
+        fishmod.features.ScreenTheme.roundedRect(ctx, (x1 - 2) * gs, y0 * gs, (width + 4) * gs, totalH * gs, FishSettings.customScoreboardRadius * gs, bgColor())
+        ctx.pose().popMatrix()
         if (FishSettings.sbSectionTitle) ctx.centeredText(tr, title, (x1 + x2) / 2, y0 + 1, 0xFFFFFFFF.toInt())
         var y = y0 + top
         for (l in lines) {
