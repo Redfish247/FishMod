@@ -85,7 +85,7 @@ object CustomScoreboard {
         if (lines.isEmpty() && footer == null) return
 
         val top = if (FishSettings.sbSectionTitle) TITLE_H else 2
-        val totalH = top + (lines.size + (if (footer != null) 1 else 0)) * LINE_H + 2
+        val totalH = top + (lines.size + (if (footer != null) (if (lines.isEmpty()) 1 else 2) else 0)) * LINE_H + 2
         val screenH = mc.window.guiScaledHeight
         val anchor = FishSettings.customScoreboardAnchor
         val x2 = when {
@@ -114,7 +114,7 @@ object CustomScoreboard {
             if (l !== BLANK) ctx.text(tr, l, x1 + 1, y, 0xFFFFFFFF.toInt(), true)
             y += LINE_H
         }
-        footer?.let { ctx.text(tr, it, x1 + 1, y, 0xFFFFFFFF.toInt(), true) }
+        footer?.let { ctx.text(tr, it, x1 + 1, if (lines.isEmpty()) y else y + LINE_H, 0xFFFFFFFF.toInt(), true) }
     }
 
     private fun readScoreboard(mc: Minecraft, obj: Objective): List<Raw> {
