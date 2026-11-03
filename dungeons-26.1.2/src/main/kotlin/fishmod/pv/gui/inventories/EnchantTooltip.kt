@@ -41,7 +41,8 @@ object EnchantTooltip {
 	private var ultimateByName: Map<String, Boolean> = mapOf()
 
 	@JvmStatic
-	fun colorize(line: Component?): Component {
+	@JvmOverloads
+	fun colorize(line: Component?, row: Int = 0): Component {
 		if (line == null) {
 			return Component.empty()
 		}
@@ -76,13 +77,13 @@ object EnchantTooltip {
 			if (ExtrasSettings.enchantColors) {
 				val s = ExtrasSettings
 				out.append(when {
-					level >= max -> tier(label, s.enchantMaxColor, s.enchantMaxChroma, s.enchantBold, out.string.length)
-					level == max - 1 -> tier(label, s.enchantHighColor, s.enchantHighChroma, s.enchantBold, out.string.length)
-					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true, out.string.length)
-					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false, out.string.length)
+					level >= max -> tier(label, s.enchantMaxColor, s.enchantMaxChroma, s.enchantBold, row * ROW_SHIFT + out.string.length)
+					level == max - 1 -> tier(label, s.enchantHighColor, s.enchantHighChroma, s.enchantBold, row * ROW_SHIFT + out.string.length)
+					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true, row * ROW_SHIFT + out.string.length)
+					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false, row * ROW_SHIFT + out.string.length)
 				})
 			} else if (level >= max) {
-				out.append(PvDraw.chromaText(label, true, out.string.length, CHROMA_MS))
+				out.append(PvDraw.chromaText(label, true, row * ROW_SHIFT + out.string.length, CHROMA_MS))
 			} else if (level == max - 1) {
 				out.append(PvDraw.styled(label, T6_GOLD, true))
 			} else if (ultimate) {
@@ -103,6 +104,7 @@ object EnchantTooltip {
 	}
 
 	private const val CHROMA_MS = 6000L
+	private const val ROW_SHIFT = 3 // per-line wave offset so it flows diagonally
 
 	private fun tier(label: String, argb: Int, chroma: Boolean, bold: Boolean, start: Int): Component =
 		if (chroma) PvDraw.chromaText(label, bold, start, CHROMA_MS) // continue the wave from line position
@@ -113,7 +115,7 @@ object EnchantTooltip {
 	fun init() {
 		ItemTooltipCallback.EVENT.register(ItemTooltipCallback { _, _, _, lines ->
 			if (!ExtrasSettings.enchantColors) return@ItemTooltipCallback
-			for (i in 1 until lines.size) lines[i] = colorize(lines[i])
+			for (i in 1 until lines.size) lines[i] = colorize(lines[i], i)
 		})
 	}
 
