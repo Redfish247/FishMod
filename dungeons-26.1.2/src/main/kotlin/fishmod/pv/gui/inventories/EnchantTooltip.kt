@@ -82,7 +82,7 @@ object EnchantTooltip {
 					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false)
 				})
 			} else if (level >= max) {
-				out.append(PvDraw.chromaText(label, true))
+				out.append(PvDraw.chromaText(label, true, 0f))
 			} else if (level == max - 1) {
 				out.append(PvDraw.styled(label, T6_GOLD, true))
 			} else if (ultimate) {
@@ -103,7 +103,7 @@ object EnchantTooltip {
 	}
 
 	private fun tier(label: String, argb: Int, chroma: Boolean, bold: Boolean): Component =
-		if (chroma) PvDraw.chromaText(label, bold)
+		if (chroma) PvDraw.chromaText(label, bold, 0f) // one shared hue so all enchants stay in sync
 		else Component.literal(label).withStyle(Style.EMPTY.withColor(argb and 0xFFFFFF).withBold(bold).withItalic(false))
 
 	/** Recolours enchant lines in every item tooltip when Enchant Colors is on. */

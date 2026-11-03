@@ -464,14 +464,14 @@ object PvDraw {
 	fun chromaRgb(hue: Float): Int = rainbowArgb(hue)
 
 	@JvmStatic
-	fun chromaText(text: String?, bold: Boolean): Component {
+	fun chromaText(text: String?, bold: Boolean, spread: Float = 0.07f): Component {
 		if (text.isNullOrEmpty()) {
 			return Component.empty()
 		}
 		val t = (System.currentTimeMillis() % 2800L) / 2800f
 		val out = Component.empty()
 		for (i in text.indices) {
-			val rgb = rainbowArgb(positiveModulo(t + i * 0.07f, 1.0f)) and 0xFFFFFF
+			val rgb = rainbowArgb(positiveModulo(t + i * spread, 1.0f)) and 0xFFFFFF
 			var style = Style.EMPTY.withColor(TextColor.fromRgb(rgb)).withItalic(false)
 			if (bold) {
 				style = style.withBold(true)
