@@ -505,6 +505,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Custom Scoreboard", FishSettings::customScoreboardEnabled)
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::customScoreboardOpacity, 0, 100))
+            f.sub.add(DropdownSetting("Position", "Custom = HUD editor spot",
+                arrayOf("Custom", "Top Left", "Middle Left", "Bottom Left", "Top Right", "Middle Right", "Bottom Right"),
+                { FishSettings.customScoreboardAnchor },
+                { v -> FishSettings.customScoreboardAnchor = v }))
             f.sub.add(ToggleSetting("Title", "SKYBLOCK title", FishSettings::sbSectionTitle))
             f.sub.add(ToggleSetting("Date", "11/02/26", FishSettings::sbSectionHeader))
             f.sub.add(ToggleSetting("IRL Time", "Real time next to the date", FishSettings::sbHeaderIrlTime))
