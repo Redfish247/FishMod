@@ -81,7 +81,7 @@ object CustomScoreboard {
             var w = if (FishSettings.sbSectionTitle) tr.width(title) else 0
             for (l in lines) w = max(w, tr.width(l))
             footer?.let { w = max(w, tr.width(it)) }
-            width = w + 6
+            width = w + 9
         }
         if (lines.isEmpty() && footer == null) return
 
