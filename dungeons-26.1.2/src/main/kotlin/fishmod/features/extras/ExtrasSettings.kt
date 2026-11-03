@@ -20,7 +20,6 @@ object ExtrasSettings {
     @ConfigValue @JvmField var calendarRealTimes: Boolean = false
     @ConfigValue @JvmField var calendarTimeColor: Int = 0xFF55FFFF.toInt()
 
-
     // Limbo alert
     @ConfigValue @JvmField var limboAlert: Boolean = false
     @ConfigValue @JvmField var limboTitle: String = "§cIN LIMBO"
