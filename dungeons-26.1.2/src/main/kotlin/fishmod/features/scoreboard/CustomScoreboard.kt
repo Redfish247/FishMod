@@ -2,15 +2,25 @@ package fishmod.features.scoreboard
 
 import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.PartyCommandHandler
+import fishmod.utils.MayorApi
 import fishmod.utils.PingTracker
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
+import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.FormattedText
+import net.minecraft.network.chat.Style
+import net.minecraft.network.chat.TextColor
 import net.minecraft.world.scores.DisplaySlot
 import net.minecraft.world.scores.Objective
 import net.minecraft.world.scores.PlayerScoreEntry
 import net.minecraft.world.scores.PlayerTeam
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Optional
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -19,24 +29,34 @@ object CustomScoreboard {
 
     private const val LINE_H = 9
     private const val TITLE_H = 11
-    private val CONTINUATION = java.util.regex.Pattern.compile("^-\\s")
-
-    private class Line(val component: Component, val blank: Boolean)
-
     private const val CACHE_TTL_MS = 250L
-    private var sig = 0
-    private var sigAt = 0L
-    private var cachedBody: List<Line> = emptyList()
-    private var cachedBodyWidth = 0
-    private var cachedTitleWidth = 0
-    private var cachedExtra: List<Line> = emptyList()
-    private var cachedExtraWidth = 0
-    private var extraAt = 0L
+    private val BLANK: Component = Component.empty()
+
+    private val HEADER = Regex("""^(\d{2}/\d{2}/\d{2})\s*(.*)$""")
+    private val LOCATION = Regex("""^\s*[⏣ф]""")
+    private val PURSE = Regex("""^(Purse|Piggy):\s*(.+)$""")
+    private val BITS = Regex("""^Bits:\s*([\d,.]+)""")
+    private val MOTES = Regex("""^Motes:\s*([\d,.]+)""")
+    private val POWDER = Regex("""^\s*(Mithril|Gemstone|Glacite)(?: Powder)?:\s*([\d,]+)""")
+    private val PARTY = Regex("""^Party \((\d+)\)""")
+    private val IRL = DateTimeFormatter.ofPattern("h:mm a")
+    private val MINING = setOf(SkyblockLocation.DWARVEN_MINES, SkyblockLocation.CRYSTAL_HOLLOWS, SkyblockLocation.MINESHAFT)
+    private val OTHER_CURRENCIES = setOf(
+        ScoreboardSection.BANK, ScoreboardSection.COPPER, ScoreboardSection.SOWDUST, ScoreboardSection.HEAT,
+        ScoreboardSection.COLD, ScoreboardSection.NORTH_STARS, ScoreboardSection.SOULFLOW,
+    )
+
+    private class Raw(val c: Component, val s: String)
+
+    private var builtAt = 0L
+    private var title: Component = BLANK
+    private var lines: List<Component> = emptyList()
+    private var footer: Component? = null
+    private var width = 0
 
     private fun bgColor(): Int {
         val pct = max(0, min(100, FishSettings.customScoreboardOpacity))
-        val a = (pct * 2.55).roundToInt()
-        return (a shl 24)
+        return (pct * 2.55).roundToInt() shl 24
     }
 
     @JvmStatic
@@ -44,7 +64,7 @@ object CustomScoreboard {
         try {
             renderInner(ctx, screenW)
         } catch (e: Exception) {
-            FishDiag.fail("CustomScoreboard.1", "custom scoreboard render failed (${cachedBody.size} cached lines)", e)
+            FishDiag.fail("CustomScoreboard.1", "custom scoreboard render failed (${lines.size} cached lines)", e)
         }
     }
 
@@ -52,162 +72,221 @@ object CustomScoreboard {
         if (fishmod.features.FishHudEditor.isOpen()) return
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
-        val sb = level.scoreboard
-        val obj: Objective = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return
+        val obj: Objective = level.scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return
         val tr = mc.font
 
-        val title = obj.displayName
-        if (refreshBody(mc, sb, obj, title)) {
-            var w = 0
-            for (l in cachedBody) w = max(w, tr.width(l.component))
-            cachedBodyWidth = w
-            cachedTitleWidth = tr.width(title)
-        }
-
         val now = System.currentTimeMillis()
-        if (now - extraAt >= CACHE_TTL_MS) {
-            extraAt = now
-            cachedExtra = extraLines(mc)
-            var w = 0
-            for (l in cachedExtra) w = max(w, tr.width(l.component))
-            cachedExtraWidth = w
+        if (now - builtAt >= CACHE_TTL_MS) {
+            builtAt = now
+            build(mc, obj)
+            var w = if (FishSettings.sbSectionTitle) tr.width(title) else 0
+            for (l in lines) w = max(w, tr.width(l))
+            footer?.let { w = max(w, tr.width(it)) }
+            width = w + 6
         }
-        val extra = cachedExtra
-        if (cachedBody.isEmpty() && extra.isEmpty() && title.string.isBlank()) return
-        val lines = cachedBody + extra
+        if (lines.isEmpty() && footer == null) return
 
-        val width = max(max(cachedTitleWidth, cachedBodyWidth), cachedExtraWidth) + 6
-
-        val x2 = if (fishmod.utils.config.values.FishSettings.customScoreboardHudX < 0) screenW - 3 else min(fishmod.utils.config.values.FishSettings.customScoreboardHudX, screenW - 3)
+        val x2 = if (FishSettings.customScoreboardHudX < 0) screenW - 3 else min(FishSettings.customScoreboardHudX, screenW - 3)
         val x1 = x2 - width
         val y0 = FishSettings.customScoreboardHudY
-        val totalH = TITLE_H + lines.size * LINE_H + 2
+        val top = if (FishSettings.sbSectionTitle) TITLE_H else 2
+        val totalH = top + (lines.size + (if (footer != null) 1 else 0)) * LINE_H + 2
 
         ctx.fill(x1 - 2, y0, x2 + 2, y0 + totalH, bgColor())
-        ctx.centeredText(tr, title, (x1 + x2) / 2, y0 + 1, 0xFFFFFFFF.toInt())
-
-        var y = y0 + TITLE_H
+        if (FishSettings.sbSectionTitle) ctx.centeredText(tr, title, (x1 + x2) / 2, y0 + 1, 0xFFFFFFFF.toInt())
+        var y = y0 + top
         for (l in lines) {
-            if (!l.blank) ctx.text(tr, l.component, x2 - tr.width(l.component), y, 0xFFFFFFFF.toInt(), true)
+            if (l !== BLANK) ctx.text(tr, l, x1 + 1, y, 0xFFFFFFFF.toInt(), true)
             y += LINE_H
         }
+        footer?.let { ctx.centeredText(tr, it, (x1 + x2) / 2, y, 0xFFFFFFFF.toInt()) }
     }
 
-    private fun refreshBody(mc: Minecraft, sb: net.minecraft.world.scores.Scoreboard, obj: Objective, title: Component): Boolean {
-        val now = System.currentTimeMillis()
-        if (now - sigAt < CACHE_TTL_MS && cachedBody.isNotEmpty()) return false
-        val newSig = buildSig(sb, obj, title)
-        if (newSig == sig && cachedBody.isNotEmpty()) { sigAt = now; return false }
-        sig = newSig
-        sigAt = now
-        cachedBody = buildLines(mc, obj)
-        return true
-    }
-
-    private fun buildSig(sb: net.minecraft.world.scores.Scoreboard, obj: Objective, title: Component): Int {
-        var h = title.string.hashCode()
-        h = h * 31 + (if (FishSettings.customScoreboardCompactNumbers) 1 else 0)
-        for (s in ScoreboardSection.entries) h = h * 31 + (if (sectionEnabled(s)) 1 else 0)
-        for (entry in sb.listPlayerScores(obj)) {
-            h = h * 31 + entry.value()
-            h = h * 31 + entry.owner().hashCode()
-            h = h * 31 + (if (entry.isHidden) 1 else 0)
-        }
-        return h
-    }
-
-    private fun buildLines(mc: Minecraft, obj: Objective): List<Line> {
-        val level = mc.level ?: return emptyList()
-        val sb = level.scoreboard
-
-        val entries = sb.listPlayerScores(obj)
+    private fun readScoreboard(mc: Minecraft, obj: Objective): List<Raw> {
+        val sb = mc.level?.scoreboard ?: return emptyList()
+        return sb.listPlayerScores(obj)
             .filter { !it.isHidden }
             .sortedWith(compareByDescending<PlayerScoreEntry> { it.value() }.thenBy { it.owner() })
             .take(20)
-
-        val raw = ArrayList<Line>()
-        var lastSection: ScoreboardSection? = null
-        for (entry in entries) {
-            val owner = entry.owner()
-            val team = sb.getPlayersTeam(owner)
-            val nameComponent: Component = if (team != null) PlayerTeam.formatNameForTeam(team, entry.ownerName()) else entry.ownerName()
-
-            val stripped = nameComponent.string.trim()
-            if (stripped.isEmpty()) {
-                lastSection = null
-                raw.add(Line(Component.empty(), true))
-                continue
+            .map { e ->
+                val team = sb.getPlayersTeam(e.owner())
+                val c = if (team != null) PlayerTeam.formatNameForTeam(team, e.ownerName()) else e.ownerName()
+                Raw(c, c.string.trim())
             }
-
-            val isContinuation = CONTINUATION.matcher(stripped).find() && lastSection != null
-            val section = if (isContinuation) lastSection!! else ScoreboardSection.classify(stripped)
-            if (!isContinuation) lastSection = section
-            if (!sectionEnabled(section)) continue
-
-            if (FishSettings.customScoreboardCompactNumbers) {
-                val compacted = CompactNumbers.apply(stripped)
-                if (compacted != stripped) {
-                    raw.add(Line(Component.literal(compacted).withStyle(sectionColor(section)), false))
-                    continue
-                }
-            }
-            raw.add(Line(nameComponent, false))
-        }
-        return collapseBlanks(raw)
     }
 
-    private fun collapseBlanks(lines: List<Line>): List<Line> {
-        val out = ArrayList<Line>()
-        for (l in lines) {
-            if (l.blank) {
-                if (out.isEmpty() || out.last().blank) continue
-            }
-            out.add(l)
+    private fun build(mc: Minecraft, obj: Objective) {
+        title = obj.displayName
+        val raw = readScoreboard(mc, obj)
+        val used = BooleanArray(raw.size)
+        fun take(pred: (Raw) -> Boolean): Raw? {
+            val i = raw.indices.firstOrNull { !used[it] && pred(raw[it]) } ?: return null
+            used[i] = true
+            return raw[i]
         }
-        while (out.isNotEmpty() && out.last().blank) out.removeAt(out.size - 1)
+        for (i in raw.indices) if (raw[i].s.isEmpty()) used[i] = true
+
+        val groups = ArrayList<List<Component>>()
+
+        // Hypixel's last line is the server footer
+        val hyFooter = raw.indices.lastOrNull { !used[it] && raw[it].s.contains("hypixel", true) }?.let { used[it] = true; raw[it].c }
+        footer = if (!FishSettings.sbSectionFooter) null
+            else FishSettings.sbFooterText.takeIf { it.isNotBlank() }?.let { Component.literal(it.replace('&', '§')) } ?: hyFooter
+
+        val top = ArrayList<Component>()
+        take { HEADER.containsMatchIn(it.s) }?.let { h ->
+            if (!FishSettings.sbSectionHeader) return@let
+            val m = HEADER.find(h.s)!!
+            val irl = if (FishSettings.sbHeaderIrlTime) " §7" + LocalTime.now().format(IRL) else ""
+            top.add(Component.literal("§7${m.groupValues[1]}$irl  §8${m.groupValues[2]}"))
+        }
+        take { ScoreboardSection.DATE.matches(it.s) }?.let { if (FishSettings.sbSectionDate) top.add(it.c) }
+        take { ScoreboardSection.TIME.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionTime) top.add(it.c) }
+        take { LOCATION.containsMatchIn(it.s) || ScoreboardSection.classify(it.s) == ScoreboardSection.LOCATION }
+            ?.let { if (FishSettings.sbSectionLocation) top.add(it.c) }
+        groups.add(top)
+
+        val money = ArrayList<Component>()
+        if (FishSettings.sbSectionLevel) levelLine(mc)?.let { money.add(it) }
+        take { PURSE.containsMatchIn(it.s) }?.let { if (FishSettings.sbSectionPurse) money.add(compact(it, ChatFormatting.GOLD)) }
+        val bits = take { BITS.containsMatchIn(it.s) }
+        val motes = take { MOTES.containsMatchIn(it.s) }
+        val showBits = bits != null && FishSettings.sbSectionBits
+        val showMotes = motes != null && FishSettings.sbSectionMotes
+        if (showBits && showMotes) {
+            money.add(Component.literal("§fBits/Motes: §b${num(BITS.find(bits!!.s)!!.groupValues[1])}§7/§d${num(MOTES.find(motes!!.s)!!.groupValues[1])}"))
+        } else if (showBits) money.add(compact(bits!!, ChatFormatting.AQUA))
+        else if (showMotes) money.add(compact(motes!!, ChatFormatting.LIGHT_PURPLE))
+        take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionGems) money.add(compact(it, ChatFormatting.GREEN)) }
+        while (true) {
+            val r = take { ScoreboardSection.classify(it.s) in OTHER_CURRENCIES } ?: break
+            if (FishSettings.sbSectionOther && sectionEnabled(ScoreboardSection.classify(r.s))) money.add(compact(r, ChatFormatting.WHITE))
+        }
+        groups.add(money)
+
+        val slayerIdx = raw.indices.firstOrNull { !used[it] && raw[it].s.equals("Slayer Quest", true) }
+        if (slayerIdx != null) {
+            val slayer = ArrayList<Component>()
+            var i = slayerIdx
+            while (i < raw.size && i <= slayerIdx + 2 && raw[i].s.isNotEmpty()) { used[i] = true; slayer.add(raw[i].c); i++ }
+            if (FishSettings.sbSectionSlayer) groups.add(slayer)
+        }
+
+        // Everything else Hypixel shows (objective, dungeon, diana, ...) stays in order
+        val area = ArrayList<Component>()
+        var last: ScoreboardSection? = null
+        for (i in raw.indices) {
+            if (used[i]) continue
+            val r = raw[i]
+            val sec = if (r.s.startsWith("- ") && last != null) last else ScoreboardSection.classify(r.s)
+            last = sec
+            if (sec == ScoreboardSection.POWDER || sec == ScoreboardSection.PARTY) continue
+            if (sectionEnabled(sec)) area.add(compact(r, ChatFormatting.WHITE))
+        }
+        groups.add(area)
+
+        if (FishSettings.sbSectionPowder && SkyblockLocation.getCurrentLocation() in MINING) groups.add(powderLines())
+        if (FishSettings.sbSectionMayor) groups.add(mayorLines())
+        if (FishSettings.sbSectionParty) groups.add(partyLines())
+        groups.add(extraLines(mc))
+
+        val out = ArrayList<Component>()
+        for (g in groups) {
+            if (g.isEmpty()) continue
+            if (out.isNotEmpty()) out.add(BLANK)
+            out.addAll(g)
+        }
+        lines = out
+    }
+
+    private fun bare(s: String): String = s.replace(Regex("""^[^\p{L}\p{N}]+"""), "").trim()
+
+    private fun num(s: String): String =
+        if (FishSettings.customScoreboardCompactNumbers) CompactNumbers.apply(s) else s
+
+    private fun compact(r: Raw, color: ChatFormatting): Component {
+        if (!FishSettings.customScoreboardCompactNumbers) return r.c
+        val c = CompactNumbers.apply(r.s)
+        return if (c == r.s) r.c else Component.literal(c).withStyle(color)
+    }
+
+    private fun levelLine(mc: Minecraft): Component? {
+        val name = mc.player?.gameProfile?.name ?: return null
+        val re = Regex("""^\[(\d{1,4})\S*]\s+$name\b""")
+        for (e in TabListCache.entries) {
+            val m = re.find(e.stripped.trim()) ?: continue
+            val lvl = m.groupValues[1]
+            val style = if (FishSettings.prestigeColorsEnabled)
+                Style.EMPTY.withColor(TextColor.fromRgb(fishmod.cosmetic.prestige.PrestigeLevelColors.rgb(lvl.toInt())))
+                else styleOf(e.info.tabListDisplayName, lvl)
+            return Component.literal("Level: ").withStyle(ChatFormatting.WHITE).append(Component.literal(lvl).withStyle(style))
+        }
+        return null
+    }
+
+    // Style Hypixel gave the level digits in the tab entry
+    private fun styleOf(c: Component?, text: String): Style {
+        var found: Style = Style.EMPTY.withColor(ChatFormatting.WHITE)
+        c?.visit(FormattedText.StyledContentConsumer<Unit> { st, s ->
+            if (s.contains(text)) { found = st; Optional.of(Unit) } else Optional.empty()
+        }, Style.EMPTY)
+        return found
+    }
+
+    private fun powderLines(): List<Component> {
+        val out = ArrayList<Component>()
+        for (e in TabListCache.entries) {
+            val m = POWDER.find(e.stripped) ?: continue
+            val col = when (m.groupValues[1]) { "Mithril" -> "§2"; "Gemstone" -> "§d"; else -> "§b" }
+            out.add(Component.literal(" §7- §f${m.groupValues[1]}: $col${num(m.groupValues[2])}"))
+            if (out.size == 3) break
+        }
+        if (out.isNotEmpty()) out.add(0, Component.literal("§fPowder"))
         return out
     }
 
-    private fun sectionColor(section: ScoreboardSection): net.minecraft.ChatFormatting = when (section) {
-        ScoreboardSection.PURSE -> net.minecraft.ChatFormatting.GOLD
-        ScoreboardSection.BANK -> net.minecraft.ChatFormatting.GREEN
-        ScoreboardSection.MOTES -> net.minecraft.ChatFormatting.RED
-        ScoreboardSection.BITS -> net.minecraft.ChatFormatting.AQUA
-        ScoreboardSection.SKILL_AVERAGE -> net.minecraft.ChatFormatting.AQUA
-        else -> net.minecraft.ChatFormatting.WHITE
+    private fun mayorLines(): List<Component> {
+        val name = MayorApi.mayorName() ?: return emptyList()
+        val left = MayorApi.termMsLeft() / 60_000
+        val time = if (left >= 1440) "${left / 1440}d ${left % 1440 / 60}h" else "${left / 60}h ${left % 60}m"
+        val out = arrayListOf<Component>(Component.literal("§eMayor $name §7($time)"))
+        for (p in MayorApi.mayorPerks()) out.add(Component.literal(" §7- §f$p"))
+        return out
     }
 
-    private fun extraLines(mc: Minecraft): List<Line> {
-        val out = ArrayList<Line>()
+    // Tab widget "Party (N)" followed by member rows; absent when not in a party
+    private fun partyLines(): List<Component> {
+        val tab = TabListCache.entries
+        val i = tab.indexOfFirst { PARTY.containsMatchIn(it.stripped.trim()) }
+        if (i < 0) return emptyList()
+        val out = arrayListOf<Component>(Component.literal("§9Party §7(${PARTY.find(tab[i].stripped.trim())!!.groupValues[1]})"))
+        var j = i + 1
+        while (j < tab.size && out.size < 6) {
+            val s = tab[j].stripped.trim()
+            if (s.isEmpty() || s.endsWith(":")) break
+            out.add(Component.literal(" §7- ").append(tab[j].info.tabListDisplayName ?: Component.literal(s)))
+            j++
+        }
+        return out
+    }
+
+    private fun extraLines(mc: Minecraft): List<Component> {
+        val out = ArrayList<Component>()
         if (FishSettings.sbSectionTps) {
             val tps = PartyCommandHandler.currentTps()
-            out.add(Line(Component.literal("§7TPS: " + (if (tps < 0) "§c—" else (if (tps < 19) "§c" else "§a") + String.format("%.2f", tps))), false))
+            out.add(Component.literal("§7TPS: " + (if (tps < 0) "§c—" else (if (tps < 19) "§c" else "§a") + String.format("%.2f", tps))))
         }
         if (FishSettings.sbSectionPing) {
             val ping = realPing(mc)
-            out.add(Line(Component.literal("§7Ping: " + (if (ping < 0) "§c—" else "§a${ping}ms")), false))
+            out.add(Component.literal("§7Ping: " + (if (ping < 0) "§c—" else "§a${ping}ms")))
         }
-        if (FishSettings.sbSectionFps) {
-            out.add(Line(Component.literal("§7FPS: §a${mc.fps}"), false))
-        }
-        if (FishSettings.sbSectionPetExtra) {
-            fishmod.features.PetHud.currentPetLine()?.let { out.add(Line(Component.literal(it), false)) }
-        }
-        if (FishSettings.sbSectionSkills) {
-            for (l in SkillLevels.lines()) out.add(Line(Component.literal(l), false))
-        }
-        if (FishSettings.sbSectionBestiary) {
-            for (l in BestiaryProgress.lines()) out.add(Line(Component.literal(l), false))
-        }
-        if (FishSettings.sbSectionCollections) {
-            for (l in CollectionsProgress.lines()) out.add(Line(Component.literal(l), false))
-        }
-        if (FishSettings.sbSectionElection) {
-            for (l in ElectionInfo.lines()) out.add(Line(Component.literal(l), false))
-        }
-        if (FishSettings.sbSectionFireSales) {
-            for (l in FireSaleInfo.lines()) out.add(Line(Component.literal(l), false))
-        }
+        if (FishSettings.sbSectionFps) out.add(Component.literal("§7FPS: §a${mc.fps}"))
+        if (FishSettings.sbSectionPetExtra) fishmod.features.PetHud.currentPetLine()?.let { out.add(Component.literal(it)) }
+        if (FishSettings.sbSectionSkills) for (l in SkillLevels.lines()) out.add(Component.literal(l))
+        if (FishSettings.sbSectionBestiary) for (l in BestiaryProgress.lines()) out.add(Component.literal(l))
+        if (FishSettings.sbSectionCollections) for (l in CollectionsProgress.lines()) out.add(Component.literal(l))
+        if (FishSettings.sbSectionElection) for (l in ElectionInfo.lines()) out.add(Component.literal(l))
+        if (FishSettings.sbSectionFireSales) for (l in FireSaleInfo.lines()) out.add(Component.literal(l))
         return out
     }
 

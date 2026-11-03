@@ -941,6 +941,13 @@ object FishSettings {
     @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
     @ConfigValue @JvmField var customScoreboardHudY: Int = 2
     @ConfigValue @JvmField var customScoreboardHudX: Int = -1
+    @ConfigValue @JvmField var sbSectionTitle: Boolean = true
+    @ConfigValue @JvmField var sbSectionHeader: Boolean = true
+    @ConfigValue @JvmField var sbHeaderIrlTime: Boolean = false
+    @ConfigValue @JvmField var sbSectionLevel: Boolean = true
+    @ConfigValue @JvmField var sbSectionMayor: Boolean = true
+    @ConfigValue @JvmField var sbSectionFooter: Boolean = true
+    @ConfigValue @JvmField var sbFooterText: String = ""
     @ConfigValue @JvmField var sbSectionDate: Boolean = true
     @ConfigValue @JvmField var sbSectionTime: Boolean = true
     @ConfigValue @JvmField var sbSectionLocation: Boolean = true
