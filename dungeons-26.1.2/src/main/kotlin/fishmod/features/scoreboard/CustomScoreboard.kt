@@ -102,7 +102,7 @@ object CustomScoreboard {
             else -> FishSettings.customScoreboardHudY
         }
 
-        ctx.fill(x1 - 2, y0, x2 + 2, y0 + totalH, bgColor())
+        fishmod.features.ScreenTheme.roundedRect(ctx, x1 - 2, y0, width + 4, totalH, FishSettings.customScoreboardRadius, bgColor())
         if (FishSettings.sbSectionTitle) ctx.centeredText(tr, title, (x1 + x2) / 2, y0 + 1, 0xFFFFFFFF.toInt())
         var y = y0 + top
         for (l in lines) {
