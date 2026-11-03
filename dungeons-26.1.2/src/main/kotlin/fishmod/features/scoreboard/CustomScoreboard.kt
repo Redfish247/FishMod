@@ -36,6 +36,7 @@ object CustomScoreboard {
     private val BITS = Regex("""^Bits:\s*([\d,.]+)""")
     private val MOTES = Regex("""^Motes:\s*([\d,.]+)""")
     private val POWDER = Regex("""^\s*(Mithril|Gemstone|Glacite)(?: Powder)?:\s*([\d,]+)""")
+    private val GUESTS = Regex("""\(\d+/\d+\)\s*$""")
     private val PARTY = Regex("""^Party \((\d+)\)""")
     private val IRL = DateTimeFormatter.ofPattern("h:mm a")
     private val MINING = setOf(SkyblockLocation.DWARVEN_MINES, SkyblockLocation.CRYSTAL_HOLLOWS, SkyblockLocation.MINESHAFT)
@@ -173,6 +174,12 @@ object CustomScoreboard {
         if (locIdx != null) {
             used[locIdx] = true
             if (FishSettings.sbSectionLocation) world.add(raw[locIdx].c)
+            // Island guest count "(1/8)" stays under the location
+            val guestIdx = locIdx + 1
+            if (guestIdx < raw.size && !used[guestIdx] && GUESTS.containsMatchIn(raw[guestIdx].s)) {
+                used[guestIdx] = true
+                if (FishSettings.sbSectionLocation) world.add(raw[guestIdx].c)
+            }
         }
         groups.add(world)
 
