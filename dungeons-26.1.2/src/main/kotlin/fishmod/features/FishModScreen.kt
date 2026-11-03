@@ -193,7 +193,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Inventory Buttons", InvButtonSettings::enableInventoryButtons)
-            f.sub.add(SubcategoryHeader("Open your inventory and click Edit (under its bottom-right corner) to add, move and edit buttons"))
+            f.sub.add(ButtonSetting("Edit Buttons", "Opens your inventory to add, move and edit buttons", "Edit",
+                Runnable { fishmod.features.other.InvShortcutButtons.openEditMode() }))
             general.features.add(f)
         }
         run {

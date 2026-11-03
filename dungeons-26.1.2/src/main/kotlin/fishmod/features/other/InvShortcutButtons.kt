@@ -126,8 +126,8 @@ object InvShortcutButtons {
     @JvmStatic
     fun parseClicks(mouseX: Double, mouseY: Double, button: Int): Boolean {
         load()
-        if (inside(mouseX, mouseY, EDIT)) {
-            editMode = !editMode
+        if (editMode && inside(mouseX, mouseY, EDIT)) {
+            editMode = false
             dragging = null
             return true
         }
@@ -160,6 +160,16 @@ object InvShortcutButtons {
             FishDiag.fail("InvShortcutButtons.1", "inventory button click failed", e)
         }
         return true
+    }
+
+    // opened from the mod menu; inventory shows Done until clicked
+    @JvmStatic
+    fun openEditMode() {
+        val mc = Minecraft.getInstance()
+        val p = mc.player ?: return
+        editMode = true
+        dragging = null
+        mc.showScreen(net.minecraft.client.gui.screens.inventory.InventoryScreen(p))
     }
 
     private fun openEditor(b: InvButton) {
@@ -263,7 +273,7 @@ object InvShortcutButtons {
             context.text(font, "Drag to move, right-click to edit (or with an item to set icon), Alt = no snap", -40, INV_H + 16, 0xFFFFFF55.toInt(), true)
             pill(context, ADD, "+ Add", false, mouseX, mouseY)
         }
-        pill(context, EDIT, if (editMode) "Done" else "Edit", editMode, mouseX, mouseY)
+        if (editMode) pill(context, EDIT, "Done", true, mouseX, mouseY)
         for (b in buttons) {
             if (!editMode && b.command.isBlank()) continue
             try {
