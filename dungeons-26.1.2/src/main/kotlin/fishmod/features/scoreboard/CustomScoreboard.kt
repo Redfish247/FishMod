@@ -111,7 +111,7 @@ object CustomScoreboard {
             .map { e ->
                 val team = sb.getPlayersTeam(e.owner())
                 val c = if (team != null) PlayerTeam.formatNameForTeam(team, e.ownerName()) else e.ownerName()
-                Raw(c, c.string.trim())
+                Raw(c, clean(c.string))
             }
     }
 
@@ -199,6 +199,11 @@ object CustomScoreboard {
         lines = out
     }
 
+    // Hypixel pads each line with hidden emoji to keep them unique
+    private fun clean(s: String): String = s.filter {
+        !Character.isSurrogate(it) && Character.getType(it).toByte() != Character.FORMAT && Character.getType(it).toByte() != Character.PRIVATE_USE
+    }.trim()
+
     private fun bare(s: String): String = s.replace(Regex("""^[^\p{L}\p{N}]+"""), "").trim()
 
     private fun num(s: String): String =
@@ -285,7 +290,7 @@ object CustomScoreboard {
         if (FishSettings.sbSectionSkills) for (l in SkillLevels.lines()) out.add(Component.literal(l))
         if (FishSettings.sbSectionBestiary) for (l in BestiaryProgress.lines()) out.add(Component.literal(l))
         if (FishSettings.sbSectionCollections) for (l in CollectionsProgress.lines()) out.add(Component.literal(l))
-        if (FishSettings.sbSectionElection) for (l in ElectionInfo.lines()) out.add(Component.literal(l))
+        if (FishSettings.sbSectionElection && !FishSettings.sbSectionMayor) for (l in ElectionInfo.lines()) out.add(Component.literal(l))
         if (FishSettings.sbSectionFireSales) for (l in FireSaleInfo.lines()) out.add(Component.literal(l))
         return out
     }
