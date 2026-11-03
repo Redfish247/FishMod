@@ -304,6 +304,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Mask & Phoenix Timer" to s("§eBonzo §7●", "§7Spirit §7●", "§7Phoenix §7✔"),
             "Dungeon Breaker" to s("§cCharges: §e17§7/§e20§c⸕"),
             "Spirit Bear" to s("§cBear: §f18/25"),
+            "Rift Guide" to s("§d§lMirrorverse", "§f• Lava maze: follow the glass", "§f• Upside-down parkour", "§f• Turn on the red lever", "§f• Dance room: copy the moves"),
+            "Slayer RNG Meter" to s("§dRNG Meter: §eWarden Heart §8(§a62.4%§8)"),
+            "Achievement Popup" to Sample(listOf("§6§lAchievement Unlocked!", "§fFlawless Floor 7", "§7S+ on F7 without dying", "§e+25 points"), lineH = 12, bg = 0xC0101018.toInt()),
+            "Mooshroom Cow Perk" to s("§c§lMooshroom Cow Perk", "§7Mushroom Milestone §f24", "§e182,340§8/§e300,000 §8(60.8%)", "§7ETA: §b1h 12m"),
+            "Necron Drag Timer" to s("§bDragged: §f3.45"),
+            "Kuudra Backbone" to s("§6Backbone §c||||||||||||§7||||||||"),
             "Session Stats" to s("§7Runs: §a14", "§7Deaths: §c3", "§7R/hr: §e9.2", "§7Time: §f1h 31m", lineH = 12),
             "Simon Says" to s("§bSimon Says: §a3§7/4"),
             "Party Finder List" to s(
@@ -780,7 +786,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         try {
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(sc, sc)
-        if (s != null) {
+        if (e.name() == "Dungeon Map") {
+            drawMapExample(ctx, e.w(), e.h())
+        } else if (s != null) {
             val bw = baseW(e)
             if (s.bg != 0) ctx.fill(0, 0, bw, baseH(e), s.bg)
             s.lines.forEachIndexed { i, line ->
@@ -794,6 +802,25 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
         } finally {
             pose.popMatrix()
+        }
+    }
+
+    // Fake 6x6 dungeon layout: 0 empty, 1 normal, 2 puzzle, 3 trap, 4 blood, 5 entrance, 6 fairy, 7 mini
+    private val MAP_EXAMPLE = arrayOf(
+        intArrayOf(5, 1, 1, 0, 2, 1), intArrayOf(0, 1, 6, 1, 1, 0), intArrayOf(1, 1, 0, 7, 1, 1),
+        intArrayOf(2, 1, 1, 1, 0, 1), intArrayOf(1, 0, 3, 1, 1, 1), intArrayOf(1, 1, 1, 0, 1, 4),
+    )
+
+    private fun drawMapExample(ctx: GuiGraphicsExtractor, w: Int, h: Int) {
+        ctx.fill(0, 0, w, h, 0x80000000.toInt())
+        val cell = minOf(w, h) / 6
+        val room = cell * 4 / 5
+        val ox = (w - cell * 6) / 2 + (cell - room) / 2
+        val oy = (h - cell * 6) / 2 + (cell - room) / 2
+        val cols = intArrayOf(0, 0xFF6B3A1E.toInt(), 0xFF8A2BE2.toInt(), 0xFFD87F33.toInt(), 0xFFE02020.toInt(), 0xFF20A020.toInt(), 0xFFF070C0.toInt(), 0xFFE0C020.toInt())
+        for (r in 0 until 6) for (c in 0 until 6) {
+            val t = MAP_EXAMPLE[r][c]
+            if (t != 0) ctx.fill(ox + c * cell, oy + r * cell, ox + c * cell + room, oy + r * cell + room, cols[t])
         }
     }
 
