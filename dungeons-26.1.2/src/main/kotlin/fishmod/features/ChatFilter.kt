@@ -16,12 +16,34 @@ object ChatFilter {
     private val FRIEND_JOIN_LEAVE: Pattern = Pattern.compile("Friend > \\S+ (?:joined|left)\\.")
 
     private val SPAM_LIST: List<Pattern> by lazy { load("chatSpam.json") }
-    private val COMMON_SPAM: List<Pattern> by lazy { load("chatSpamCommon.json") }
+    // Index in chatSpamCommon.json -> its sub-toggle; unlisted lines fall under Misc.
+    private val COMMON_GROUPS: List<Pair<IntArray, () -> Boolean>> = listOf(
+        intArrayOf(0, 1, 2, 3, 46) to { FishSettings.cfSpamEventRewards },
+        intArrayOf(4, 5) to { FishSettings.cfSpamRadio },
+        intArrayOf(6, 7) to { FishSettings.cfSpamPotions },
+        intArrayOf(8, 9, 10, 35) to { FishSettings.cfSpamClassAbilities },
+        intArrayOf(11, 51) to { FishSettings.cfSpamEquip },
+        intArrayOf(12, 13, 14, 15, 16, 17) to { FishSettings.cfSpamSacksStash },
+        intArrayOf(22, 23) to { FishSettings.cfSpamHype },
+        intArrayOf(24, 25, 26) to { FishSettings.cfSpamHoppity },
+        intArrayOf(27, 28, 29, 30, 31, 32, 33, 34, 52, 53, 54) to { FishSettings.cfSpamDungeonProgress },
+        intArrayOf(36, 37) to { FishSettings.cfSpamAbiphone },
+        intArrayOf(38, 39) to { FishSettings.cfSpamLaunchPad },
+        intArrayOf(49, 50) to { FishSettings.cfSpamLootShare },
+    )
 
-    private fun load(file: String): List<Pattern> = try {
+    private val COMMON_SPAM: List<Pair<Pattern, () -> Boolean>> by lazy {
+        loadRaw("chatSpamCommon.json").mapIndexedNotNull { i, p ->
+            p?.let { it to (COMMON_GROUPS.firstOrNull { g -> i in g.first }?.second ?: { FishSettings.cfSpamMisc }) }
+        }
+    }
+
+    private fun load(file: String): List<Pattern> = loadRaw(file).filterNotNull()
+
+    private fun loadRaw(file: String): List<Pattern?> = try {
         ChatFilter::class.java.getResourceAsStream("/$file")!!.use { s ->
             Gson().fromJson(InputStreamReader(s, StandardCharsets.UTF_8), Array<String>::class.java)
-                .mapNotNull { p -> runCatching { Pattern.compile(p) }.onFailure { FishDiag.fail("ChatFilter.1", "bad bundled spam regex '$p'", it) }.getOrNull() }
+                .map { p -> runCatching { Pattern.compile(p) }.onFailure { FishDiag.fail("ChatFilter.1", "bad bundled spam regex '$p'", it) }.getOrNull() }
         }
     } catch (e: Exception) {
         FishDiag.fail("ChatFilter.2", "$file load failed", e)
@@ -121,7 +143,7 @@ object ChatFilter {
     // Abiphone call: hides "✆ Name ✆" and returns the first RING line with the caller folded in.
     @JvmStatic
     fun rewrite(text: Component?): Component? {
-        if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || text == null) return null
+        if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || !FishSettings.cfSpamAbiphone || text == null) return null
         val s = TextStrip.plain(text.string).trim()
         val name = caller
         if (name != null && s.startsWith("✆ RING...") && System.currentTimeMillis() - callerAt < 5000) {
@@ -133,7 +155,7 @@ object ChatFilter {
 
     @JvmStatic
     fun isCallerLine(text: Component?): Boolean {
-        if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || text == null) return false
+        if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || !FishSettings.cfSpamAbiphone || text == null) return false
         val m = CALLER.matcher(TextStrip.plain(text.string).trim())
         if (!m.matches()) return false
         caller = m.group(1); callerAt = System.currentTimeMillis()
@@ -166,7 +188,7 @@ object ChatFilter {
         if (FishSettings.cfBazaar && s.startsWith("[Bazaar] Executing instant buy")) return "Bazaar"
         if (FishSettings.cfWarping && s == "Warping...") return "Warping"
         if (FishSettings.cfNoammSpam && SPAM_LIST.any { it.matcher(s).matches() }) return "Skyblock/Dungeon Spam"
-        if (FishSettings.cfCommonSpam && COMMON_SPAM.any { it.matcher(s).matches() }) return "Common Hypixel Spam"
+        if (FishSettings.cfCommonSpam && COMMON_SPAM.any { (p, on) -> on() && p.matcher(s).matches() }) return "Common Hypixel Spam"
         if (FishSettings.cfCustom && customHides(s)) return "Custom Messages"
         return null
     }
