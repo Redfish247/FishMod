@@ -192,7 +192,8 @@ object DianaTracker {
     private fun hideOnly(s: String): Boolean {
         if (DianaMessageHider.shouldHide(s)) return true
         if (!DianaSettings.dianaMessageHider || s.contains(": ")) return false
-        if (BURROW.containsMatchIn(s)) return true
+        if (BURROW.containsMatchIn(s)) return DianaMessageHider.hideBurrow
+        if (!DianaMessageHider.hideDugMob) return false
         val name = DUG_MOB.find(s)?.groupValues?.get(1) ?: return false
         return PREFIXES.fold(name) { n, p -> n.removePrefix(p) } in MOBS
     }
@@ -206,7 +207,7 @@ object DianaTracker {
 
         if (BURROW.containsMatchIn(s)) {
             if (!dup) track("TOTAL_BURROWS", 1)
-            return DianaSettings.dianaMessageHider
+            return DianaMessageHider.hideBurrow
         }
         COINS.find(s)?.let { m ->
             if (!dup) m.groupValues[1].replace(",", "").toLongOrNull()?.let { track("COINS", it) }
@@ -239,7 +240,7 @@ object DianaTracker {
             PREFIXES.firstOrNull { name.startsWith(it) }?.let { name = name.removePrefix(it) }
             if (name in MOBS) {
                 if (!dup) onMobDug(name)
-                return DianaSettings.dianaMessageHider
+                return DianaMessageHider.hideDugMob
             }
         }
         COCOON_MOB.find(s)?.let { m ->
