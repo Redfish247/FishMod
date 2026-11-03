@@ -134,10 +134,12 @@ object CustomScoreboard {
 
         val top = ArrayList<Component>()
         take { HEADER.containsMatchIn(it.s) }?.let { h ->
-            if (!FishSettings.sbSectionHeader) return@let
             val m = HEADER.find(h.s)!!
-            val irl = if (FishSettings.sbHeaderIrlTime) " §7" + LocalTime.now().format(IRL) else ""
-            top.add(Component.literal("§7${m.groupValues[1]}$irl  §8${m.groupValues[2]}"))
+            if (FishSettings.sbSectionHeader) {
+                val irl = if (FishSettings.sbHeaderIrlTime) " " + LocalTime.now().format(IRL) else ""
+                top.add(Component.literal("§7${m.groupValues[1]}$irl"))
+            }
+            if (FishSettings.sbSectionServer && m.groupValues[2].isNotBlank()) top.add(Component.literal("§8${m.groupValues[2]}"))
         }
         groups.add(top)
 
