@@ -1,9 +1,7 @@
 package fishmod.features.scoreboard
 
 import fishmod.utils.debug.FishDiag
-import fishmod.features.dungeon.PartyCommandHandler
 import fishmod.utils.MayorApi
-import fishmod.utils.PingTracker
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
@@ -163,7 +161,7 @@ object CustomScoreboard {
         take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionGems) money.add(kv(bare(it.s), "§a")) }
         while (true) {
             val r = take { ScoreboardSection.classify(it.s) in OTHER_CURRENCIES } ?: break
-            if (FishSettings.sbSectionOther && sectionEnabled(ScoreboardSection.classify(r.s))) money.add(compact(r, ChatFormatting.WHITE))
+            if (FishSettings.sbSectionOther) money.add(compact(r, ChatFormatting.WHITE))
         }
         groups.add(money)
 
@@ -188,14 +186,13 @@ object CustomScoreboard {
             val sec = if (r.s.startsWith("- ") && last != null) last else ScoreboardSection.classify(r.s)
             last = sec
             if (sec == ScoreboardSection.POWDER || sec == ScoreboardSection.PARTY) continue
-            if (sectionEnabled(sec)) area.add(compact(r, ChatFormatting.WHITE))
+            if (FishSettings.sbSectionOther) area.add(compact(r, ChatFormatting.WHITE))
         }
         groups.add(area)
 
         if (FishSettings.sbSectionPowder && SkyblockLocation.getCurrentLocation() in MINING) groups.add(powderLines())
         if (FishSettings.sbSectionMayor) groups.add(mayorLines())
         if (FishSettings.sbSectionParty) groups.add(partyLines())
-        if (FishSettings.sbShowExtras) groups.add(extraLines(mc))
 
         val out = ArrayList<Component>()
         for (g in groups) {
@@ -287,75 +284,5 @@ object CustomScoreboard {
             j++
         }
         return out
-    }
-
-    private fun extraLines(mc: Minecraft): List<Component> {
-        val out = ArrayList<Component>()
-        if (FishSettings.sbSectionTps) {
-            val tps = PartyCommandHandler.currentTps()
-            out.add(Component.literal("§7TPS: " + (if (tps < 0) "§c—" else (if (tps < 19) "§c" else "§a") + String.format("%.2f", tps))))
-        }
-        if (FishSettings.sbSectionPing) {
-            val ping = realPing(mc)
-            out.add(Component.literal("§7Ping: " + (if (ping < 0) "§c—" else "§a${ping}ms")))
-        }
-        if (FishSettings.sbSectionFps) out.add(Component.literal("§7FPS: §a${mc.fps}"))
-        if (FishSettings.sbSectionPetExtra) fishmod.features.PetHud.currentPetLine()?.let { out.add(Component.literal(it)) }
-        if (FishSettings.sbSectionSkills) for (l in SkillLevels.lines()) out.add(Component.literal(l))
-        if (FishSettings.sbSectionBestiary) for (l in BestiaryProgress.lines()) out.add(Component.literal(l))
-        if (FishSettings.sbSectionCollections) for (l in CollectionsProgress.lines()) out.add(Component.literal(l))
-        if (FishSettings.sbSectionElection && !FishSettings.sbSectionMayor) for (l in ElectionInfo.lines()) out.add(Component.literal(l))
-        if (FishSettings.sbSectionFireSales) for (l in FireSaleInfo.lines()) out.add(Component.literal(l))
-        return out
-    }
-
-    private fun realPing(mc: Minecraft): Int {
-        val live = PingTracker.latest()
-        if (live > 0) return live
-        try {
-            val uuid = mc.player?.uuid ?: return -1
-            val self = mc.connection?.getPlayerInfo(uuid)
-            if (self != null && self.latency > 0) return self.latency
-        } catch (e: Exception) {
-            FishDiag.fail("CustomScoreboard.2", "failed to read own tab latency", e)
-        }
-        try {
-            val si = mc.currentServer
-            if (si != null && si.ping > 0) return si.ping.toInt()
-        } catch (e: Exception) {
-            FishDiag.fail("CustomScoreboard.3", "failed to read server ping", e)
-        }
-        return -1
-    }
-
-    private fun sectionEnabled(section: ScoreboardSection): Boolean = when (section) {
-        ScoreboardSection.DATE -> FishSettings.sbSectionDate
-        ScoreboardSection.TIME -> FishSettings.sbSectionTime
-        ScoreboardSection.LOCATION -> FishSettings.sbSectionLocation
-        ScoreboardSection.PLAYERS -> FishSettings.sbSectionPlayers
-        ScoreboardSection.GAME_MODE -> FishSettings.sbSectionGameMode
-        ScoreboardSection.PURSE -> FishSettings.sbSectionPurse
-        ScoreboardSection.BANK -> FishSettings.sbSectionBank
-        ScoreboardSection.MOTES -> FishSettings.sbSectionMotes
-        ScoreboardSection.BITS -> FishSettings.sbSectionBits
-        ScoreboardSection.COPPER -> FishSettings.sbSectionCopper
-        ScoreboardSection.SOWDUST -> FishSettings.sbSectionSowdust
-        ScoreboardSection.GEMS -> FishSettings.sbSectionGems
-        ScoreboardSection.HEAT -> FishSettings.sbSectionHeat
-        ScoreboardSection.COLD -> FishSettings.sbSectionCold
-        ScoreboardSection.NORTH_STARS -> FishSettings.sbSectionNorthStars
-        ScoreboardSection.SOULFLOW -> FishSettings.sbSectionSoulflow
-        ScoreboardSection.GUILD -> FishSettings.sbSectionGuild
-        ScoreboardSection.COOKIE -> FishSettings.sbSectionCookie
-        ScoreboardSection.SKILL_AVERAGE -> FishSettings.sbSectionSkillAverage
-        ScoreboardSection.OBJECTIVE -> FishSettings.sbSectionObjective
-        ScoreboardSection.SLAYER -> FishSettings.sbSectionSlayer
-        ScoreboardSection.POWDER -> FishSettings.sbSectionPowder
-        ScoreboardSection.DIANA -> FishSettings.sbSectionDiana
-        ScoreboardSection.PARTY -> FishSettings.sbSectionParty
-        ScoreboardSection.EQUIPMENT -> FishSettings.sbSectionEquipment
-        ScoreboardSection.DUNGEON -> FishSettings.sbSectionDungeon
-        ScoreboardSection.PET -> FishSettings.sbSectionPet
-        ScoreboardSection.OTHER -> FishSettings.sbSectionOther
     }
 }
