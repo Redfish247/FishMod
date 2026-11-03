@@ -1,8 +1,8 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
 import fishmod.features.dungeon.f7.terminal.MelodyHandler
 import fishmod.features.dungeon.f7.terminal.TerminalSolver
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -18,7 +18,7 @@ object MelodyMessage {
         ClientTickEvents.END_CLIENT_TICK.register {
             try { tick() } catch (e: Exception) { FishDiag.fail("MelodyMessage.1", "melody message tick threw", e) }
         }
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.worldChange.register { reset(); false }
     }
 
     private fun reset() { wasOpen = false; lastPctSent = -1 }
@@ -26,7 +26,7 @@ object MelodyMessage {
     private fun tick() {
         if (!FishSettings.melodyMessageEnabled) { reset(); return }
         val melody = TerminalSolver.current as? MelodyHandler
-        val open = melody != null && Phase.inP3()
+        val open = melody != null && BossPhase.inP3()
 
         if (open && !wasOpen) {
             wasOpen = true

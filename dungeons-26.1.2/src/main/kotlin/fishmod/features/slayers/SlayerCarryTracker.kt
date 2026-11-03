@@ -4,9 +4,9 @@ import fishmod.compat.hudHidden
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.features.FishHudEditor
-import fishmod.utils.Constants
-import fishmod.utils.Misc
-import fishmod.utils.Scheduler
+import fishmod.utils.FishConstants
+import fishmod.utils.FishUtil
+import fishmod.utils.TickScheduler
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -53,7 +53,7 @@ object SlayerCarryTracker {
             { FishSettings.slayerCarryHudEnabled },
         )
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("SlayerCarryTracker.1", "carry tracker tick failed") { tick(mc) } }
-        fishmod.utils.events.Events.ON_LOCATION_CHANGE.register { loc -> onLocation(loc); false }
+        fishmod.utils.events.FishEvents.locationChange.register { loc -> onLocation(loc); false }
     }
 
     private fun tick(mc: Minecraft) {
@@ -112,20 +112,20 @@ object SlayerCarryTracker {
         if (w.boss.isNotEmpty()) c.boss = w.boss
         save()
         val left = if (c.total > 0) " §7(${c.done}/${c.total})" else " §7(${c.done})"
-        Misc.addChatMessage(Component.literal("§b[FM] §fCarry boss for §e${c.ign}§f done$left"))
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fCarry boss for §e${c.ign}§f done$left"))
         if (c.total > 0 && c.done >= c.total) {
-            Misc.forceTitle(Component.literal("§aCarry done!"), Component.literal("§e${c.ign} §7${c.done}/${c.total}"))
-            Scheduler.scheduleSound(SoundEvents.PLAYER_LEVELUP, 1f, 1f)
+            FishUtil.forceTitle(Component.literal("§aCarry done!"), Component.literal("§e${c.ign} §7${c.done}/${c.total}"))
+            TickScheduler.scheduleSound(SoundEvents.PLAYER_LEVELUP, 1f, 1f)
         }
     }
 
     // Leaving the slayer islands drops the carries
-    private fun onLocation(loc: fishmod.utils.Location) {
-        if (carries.isEmpty() || loc == fishmod.utils.Location.UNKNOWN) return
+    private fun onLocation(loc: fishmod.utils.SkyblockLocation) {
+        if (carries.isEmpty() || loc == fishmod.utils.SkyblockLocation.UNKNOWN) return
         if (SlayerType.entries.any { it.island == loc }) return
         val n = carries.size
         carries.clear(); watched.clear(); save()
-        Misc.addChatMessage(Component.literal("§b[FM] §fLeft the slayer area, cleared $n carr${if (n == 1) "y" else "ies"}"))
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fLeft the slayer area, cleared $n carr${if (n == 1) "y" else "ies"}"))
     }
 
     // ── commands ──
@@ -139,11 +139,11 @@ object SlayerCarryTracker {
         for (e in lvl.getEntities(p, p.boundingBox.inflate(10.0))) {
             val name = e.customName?.string ?: continue
             val line = "${e.type.description.string} #${e.id} '${name}' d=${"%.1f".format(e.distanceTo(p))}"
-            fishmod.utils.debug.Debug.LOGGER.info("[CarryDebug] $line")
-            Misc.addChatMessage(Component.literal("§8[carry] §7$line"))
+            fishmod.utils.debug.FishDebug.LOGGER.info("[CarryDebug] $line")
+            FishUtil.addChatMessage(Component.literal("§8[carry] §7$line"))
             n++
         }
-        Misc.addChatMessage(Component.literal("§b[FM] §f$n named entities within 10 blocks · watching ${watched.size} · tracking ${carries.keys}"))
+        FishUtil.addChatMessage(Component.literal("§b[FM] §f$n named entities within 10 blocks · watching ${watched.size} · tracking ${carries.keys}"))
     }
 
     @JvmStatic
@@ -153,7 +153,7 @@ object SlayerCarryTracker {
         val c = carries.getOrPut(key) { Carry(ign) }
         if (total >= 0) c.total = total
         save()
-        Misc.addChatMessage(Component.literal("§b[FM] §fTracking carries for §e${c.ign}§f: §a${c.done}§7/§f${if (c.total > 0) c.total else "∞"}"))
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fTracking carries for §e${c.ign}§f: §a${c.done}§7/§f${if (c.total > 0) c.total else "∞"}"))
     }
 
     @JvmStatic
@@ -161,22 +161,22 @@ object SlayerCarryTracker {
         val removed = carries.remove(ign.lowercase())
         watched.values.removeIf { it.ign == ign.lowercase() }
         save()
-        Misc.addChatMessage(Component.literal(if (removed != null) "§b[FM] §fStopped tracking §e${removed.ign}§f (${removed.done} done)" else "§b[FM] §cNot tracking $ign"))
+        FishUtil.addChatMessage(Component.literal(if (removed != null) "§b[FM] §fStopped tracking §e${removed.ign}§f (${removed.done} done)" else "§b[FM] §cNot tracking $ign"))
     }
 
     @JvmStatic
     fun clear() {
         carries.clear(); watched.clear(); save()
-        Misc.addChatMessage(Component.literal("§b[FM] §fCleared all carries"))
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fCleared all carries"))
     }
 
     @JvmStatic
     fun list() {
         if (carries.isEmpty()) {
-            Misc.addChatMessage(Component.literal("§b[FM] §7No carries tracked. §f/trackcarry <ign> [amount]"))
+            FishUtil.addChatMessage(Component.literal("§b[FM] §7No carries tracked. §f/trackcarry <ign> [amount]"))
             return
         }
-        for (c in carries.values) Misc.addChatMessage(Component.literal("§b[FM] §e${c.ign} §7${c.boss} §a${c.done}§7/§f${if (c.total > 0) c.total else "∞"}"))
+        for (c in carries.values) FishUtil.addChatMessage(Component.literal("§b[FM] §e${c.ign} §7${c.boss} §a${c.done}§7/§f${if (c.total > 0) c.total else "∞"}"))
     }
 
     // ── HUD ──
@@ -193,7 +193,7 @@ object SlayerCarryTracker {
             val boss = if (c.boss.isNotEmpty()) " §7${c.boss}" else ""
             lines.add("§e${c.ign}$boss§7: $col${c.done}§7/§f${if (c.total > 0) c.total else "∞"}")
         }
-        val lh = Constants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT + 2
         val sc = FishSettings.slayerCarryHudScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.slayerCarryHudX.toFloat(), FishSettings.slayerCarryHudY.toFloat())

@@ -3,12 +3,12 @@ package fishmod.features
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -30,7 +30,7 @@ object EtherwarpHelper {
 
     private fun holdingEtherItem(): Boolean {
         val p = Minecraft.getInstance().player ?: return false
-        return ItemUtil.getId(p.mainHandItem) in ITEMS
+        return ItemTools.getId(p.mainHandItem) in ITEMS
     }
 
     @JvmStatic
@@ -38,15 +38,15 @@ object EtherwarpHelper {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             target = null
             if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpShowGuess) return@register
-            if (!Location.inSkyblock()) return@register
+            if (!SkyblockLocation.inSkyblock()) return@register
             val p = mc.player ?: return@register
             if (!p.isShiftKeyDown || !holdingEtherItem()) return@register
             try { raycast(mc) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.1", "etherwarp raycast failed", t) }
         }
 
-        Events.ON_SOUND.register { event, volume, pitch ->
+        FishEvents.sound.register { event, volume, pitch ->
             if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpSoundEnabled) return@register false
-            if (volume != 1f || pitch != ETHERWARP_PITCH || !Location.inSkyblock()) return@register false
+            if (volume != 1f || pitch != ETHERWARP_PITCH || !SkyblockLocation.inSkyblock()) return@register false
             val looksRight = event == SoundEvents.ENDER_DRAGON_HURT ||
                 event.location.path.let { it.contains("dragon") && (it.contains("hurt") || it.contains("hit")) } ||
                 holdingEtherItem()
@@ -56,17 +56,17 @@ object EtherwarpHelper {
             lastCue = now
             val vol = FishSettings.etherwarpSoundVolume.coerceIn(0, 500) / 100f
             val pit = FishSettings.etherwarpSoundPitch.toFloat().coerceIn(0.5f, 2f)
-            try { fishmod.utils.Misc.sendSound(SoundManager.preset(FishSettings.etherwarpSoundName), vol, pit) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.2", "etherwarp sound '${FishSettings.etherwarpSoundName}' failed", t) }
+            try { fishmod.utils.FishUtil.sendSound(SoundManager.preset(FishSettings.etherwarpSoundName), vol, pit) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.2", "etherwarp sound '${FishSettings.etherwarpSoundName}' failed", t) }
             true
         }
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!FishSettings.etherwarpDepth) try { renderGizmo() } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.3", "etherwarp gizmo render failed at $target", t) }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             if (FishSettings.etherwarpDepth) try { render(m, vc, fill = true) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.4", "etherwarp fill render failed at $target", t) }
         }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc ->
             if (FishSettings.etherwarpDepth) try { render(m, vc, fill = false) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.5", "etherwarp outline render failed at $target", t) }
         }
     }
@@ -134,17 +134,17 @@ object EtherwarpHelper {
         val color = guessColor()
         val fillArgb = ARGB.multiplyAlpha(color, 0.4f)
         val lineArgb = ARGB.opaque(color)
-        for (box in boxes) RenderUtils.gizmoBox(box, fillArgb, lineArgb)
+        for (box in boxes) FishDraw.gizmoBox(box, fillArgb, lineArgb)
     }
 
     private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
         val boxes = guessBoxes() ?: return
-        val rgba = RenderUtils.toFloats(guessColor())
+        val rgba = FishDraw.toFloats(guessColor())
         val fillRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], rgba[3] * 0.4f)
         val lineRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], 1f)
         for (box in boxes) {
-            if (fill) RenderUtils.renderFilled(matrices, vc, box, fillRgba)
-            else RenderUtils.renderOutline(matrices, vc, box, lineRgba)
+            if (fill) FishDraw.renderFilled(matrices, vc, box, fillRgba)
+            else FishDraw.renderOutline(matrices, vc, box, lineRgba)
         }
     }
 }

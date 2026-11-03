@@ -44,7 +44,7 @@ class GlStateGuard {
             readFrameBuffer = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING)
             if (!frameBufferLogged) {
                 frameBufferLogged = true
-                fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] framebuffer bound at paint time: {}", frameBuffer)
+                fishmod.utils.debug.FishDebug.LOGGER.info("[UiRenderer] framebuffer bound at paint time: {}", frameBuffer)
             }
 
             vao = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING)
@@ -60,7 +60,7 @@ class GlStateGuard {
                     GL33.glBindSampler(0, 0)
                 } catch (t: Throwable) {
                     samplerObjectsSupported = false
-                    fishmod.utils.debug.Debug.LOGGER.warn("[UiRenderer] GL33 sampler objects unsupported - skipping sampler unbind", t)
+                    fishmod.utils.debug.FishDebug.LOGGER.warn("[UiRenderer] GL33 sampler objects unsupported - skipping sampler unbind", t)
                     FishDiag.fail("GlStateGuard.1", "GL33 sampler binding unsupported", t)
                 }
             }
@@ -86,7 +86,7 @@ class GlStateGuard {
             unpackAlignment = GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT)
             GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1)
         } catch (t: Throwable) {
-            fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] GlStateGuard.capture() failed", t)
+            fishmod.utils.debug.FishDebug.LOGGER.error("[UiRenderer] GlStateGuard.capture() failed", t)
             FishDiag.fail("GlStateGuard.2", "capture GL state before UI paint", t)
         }
     }
@@ -126,7 +126,7 @@ class GlStateGuard {
 
             GL13.glActiveTexture(activeTexture)
         } catch (t: Throwable) {
-            fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] GlStateGuard.restore() failed", t)
+            fishmod.utils.debug.FishDebug.LOGGER.error("[UiRenderer] GlStateGuard.restore() failed", t)
             FishDiag.fail("GlStateGuard.5", "restore GL state after UI paint", t)
         }
     }

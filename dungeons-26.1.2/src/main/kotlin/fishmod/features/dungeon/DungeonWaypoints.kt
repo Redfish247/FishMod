@@ -5,16 +5,16 @@ import fishmod.compat.showScreen
 import com.mojang.blaze3d.platform.InputConstants
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.waypoints.DungeonWaypointStore
 import fishmod.utils.dungeon.waypoints.StoredWaypoint
 import fishmod.utils.dungeon.waypoints.TimerType
 import fishmod.utils.dungeon.waypoints.WaypointType
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
@@ -126,7 +126,7 @@ object DungeonWaypoints {
 
     @JvmStatic
     fun init() {
-        val category = fishmod.utils.Keybinds.category()
+        val category = fishmod.utils.FishKeys.category()
         placeKey = KeyMappingHelper.registerKeyMapping(
             KeyMapping(
                 "Dungeon Waypoint Place/Remove",
@@ -137,20 +137,20 @@ object DungeonWaypoints {
         )
 
         // New world = new run: drop route progress so reached points don't stay hidden.
-        fishmod.utils.events.Events.ON_WORLD_CHANGE.register {
+        fishmod.utils.events.FishEvents.worldChange.register {
             if (routeReached.isNotEmpty() || routeLoopCursor.isNotEmpty()) { routeReached.clear(); routeLoopCursor.clear(); progressVersion++ }
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
             try { onTick(mc) } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.1", "waypoint tick failed (key=$lastGlobalDim, ${liveWaypoints.size} live)", e) }
         })
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             try { renderGizmo() } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.2", "waypoint gizmo render failed (${liveWaypoints.size} live)", e) }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { ctx, matrices, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { ctx, matrices, vc ->
             try { render(ctx, matrices, vc) } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.3", "waypoint through-wall render failed (${liveWaypoints.size} live)", e) }
         }
-        RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { _, matrices, vc ->
             try { renderLines(matrices, vc) } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.4", "waypoint route line render failed", e) }
         }
     }
@@ -159,14 +159,14 @@ object DungeonWaypoints {
     fun togglePmEdit() {
         pmEditMode = !pmEditMode
         if (pmEditMode) editMode = false
-        Misc.addChatMessage(Component.literal("Positional Message editing " + (if (pmEditMode) "§aenabled" else "§cdisabled") + "§r!"
+        FishUtil.addChatMessage(Component.literal("Positional Message editing " + (if (pmEditMode) "§aenabled" else "§cdisabled") + "§r!"
             + (if (pmEditMode) " §7Message: §f" + (pmMessage ?: "§cnone - /fm pm message <text>") else "")))
     }
 
     @JvmStatic
     fun setPmMessage(text: String) {
         pmMessage = text.trim().ifEmpty { null }
-        Misc.addChatMessage(Component.literal("§7[fm pm] Message: §f" + (pmMessage ?: "§cnone")))
+        FishUtil.addChatMessage(Component.literal("§7[fm pm] Message: §f" + (pmMessage ?: "§cnone")))
     }
 
     @JvmStatic fun isPmEditMode(): Boolean = pmEditMode
@@ -177,34 +177,34 @@ object DungeonWaypoints {
     fun toggleEdit() {
         editMode = !editMode
         if (editMode) pmEditMode = false
-        Misc.addChatMessage(Component.literal("Dungeon Waypoint editing " + (if (editMode) "§aenabled" else "§cdisabled") + "§r!"))
+        FishUtil.addChatMessage(Component.literal("Dungeon Waypoint editing " + (if (editMode) "§aenabled" else "§cdisabled") + "§r!"))
     }
 
     @JvmStatic
     fun toggleFill() {
         fill = !fill
-        Misc.addChatMessage(Component.literal("§7[fm wp] Fill: " + (if (fill) "§afilled" else "§coutline")))
+        FishUtil.addChatMessage(Component.literal("§7[fm wp] Fill: " + (if (fill) "§afilled" else "§coutline")))
     }
 
     @JvmStatic
     fun setSize(s: Double) {
         size = s.coerceIn(0.1, 1.0)
-        Misc.addChatMessage(Component.literal("§7[fm wp] Size: §f$size"))
+        FishUtil.addChatMessage(Component.literal("§7[fm wp] Size: §f$size"))
     }
 
     @JvmStatic
     fun setDistance(d: Int) {
         distance = maxOf(1, d)
-        Misc.addChatMessage(Component.literal("§7[fm wp] Distance: §f$distance"))
+        FishUtil.addChatMessage(Component.literal("§7[fm wp] Distance: §f$distance"))
     }
 
     @JvmStatic
     fun setType(name: String) {
         try {
             type = WaypointType.valueOf(name.uppercase())
-            Misc.addChatMessage(Component.literal("§7[fm wp] Type: §f$type"))
+            FishUtil.addChatMessage(Component.literal("§7[fm wp] Type: §f$type"))
         } catch (e: IllegalArgumentException) {
-            Misc.addChatMessage(Component.literal("§cUnknown waypoint type: $name"))
+            FishUtil.addChatMessage(Component.literal("§cUnknown waypoint type: $name"))
         }
     }
 
@@ -212,28 +212,28 @@ object DungeonWaypoints {
     fun setTimer(name: String) {
         try {
             timer = TimerType.valueOf(name.uppercase())
-            Misc.addChatMessage(Component.literal("§7[fm wp] Timer: §f$timer"))
+            FishUtil.addChatMessage(Component.literal("§7[fm wp] Timer: §f$timer"))
         } catch (e: IllegalArgumentException) {
-            Misc.addChatMessage(Component.literal("§cUnknown timer type: $name"))
+            FishUtil.addChatMessage(Component.literal("§cUnknown timer type: $name"))
         }
     }
 
     @JvmStatic
     fun toggleUseBlockSize() {
         useBlockSize = !useBlockSize
-        Misc.addChatMessage(Component.literal("§7[fm wp] Use block size: " + (if (useBlockSize) "§aon" else "§coff")))
+        FishUtil.addChatMessage(Component.literal("§7[fm wp] Use block size: " + (if (useBlockSize) "§aon" else "§coff")))
     }
 
     @JvmStatic
     fun setOffset(x: Double, y: Double, z: Double) {
         offsetX = x; offsetY = y; offsetZ = z
-        Misc.addChatMessage(Component.literal("§7[fm wp] One-shot offset set to §f$x, $y, $z"))
+        FishUtil.addChatMessage(Component.literal("§7[fm wp] One-shot offset set to §f$x, $y, $z"))
     }
 
     @JvmStatic
     fun togglePixelMode() {
         pixelMode = !pixelMode
-        Misc.addChatMessage(Component.literal("§7[fm wp] Pixel mode: " + (if (pixelMode) "§aon §7(1/16-block precision, snapped to the pixel you're aiming at)" else "§coff")))
+        FishUtil.addChatMessage(Component.literal("§7[fm wp] Pixel mode: " + (if (pixelMode) "§aon §7(1/16-block precision, snapped to the pixel you're aiming at)" else "§coff")))
     }
 
     private fun snapToPixel(v: Double): Double = Math.round(v / PIXEL_SIZE) * PIXEL_SIZE
@@ -251,19 +251,19 @@ object DungeonWaypoints {
     @JvmStatic
     fun toggleThrough() {
         through = !through
-        Misc.addChatMessage(Component.literal("§7[fm wp] Through walls: " + (if (through) "§aon" else "§coff")))
+        FishUtil.addChatMessage(Component.literal("§7[fm wp] Through walls: " + (if (through) "§aon" else "§coff")))
     }
 
     @JvmStatic
     fun setLineWidth(w: Double) {
         lineWidth = w.coerceIn(0.01, 0.5)
-        Misc.addChatMessage(Component.literal("§7[fm wp] Line size: §f$lineWidth"))
+        FishUtil.addChatMessage(Component.literal("§7[fm wp] Line size: §f$lineWidth"))
     }
 
     @JvmStatic
     fun setColor(hex: String?) {
         if (hex == null || hex.length != 8) {
-            Misc.addChatMessage(Component.literal("§cColor must be 8 hex chars (RRGGBBAA)."))
+            FishUtil.addChatMessage(Component.literal("§cColor must be 8 hex chars (RRGGBBAA)."))
             return
         }
         try {
@@ -273,9 +273,9 @@ object DungeonWaypoints {
             val b = ((rgba shr 8) and 0xFF).toInt()
             val a = (rgba and 0xFF).toInt()
             color = (a shl 24) or (r shl 16) or (g shl 8) or b
-            Misc.addChatMessage(Component.literal("§7[fm wp] Color set."))
+            FishUtil.addChatMessage(Component.literal("§7[fm wp] Color set."))
         } catch (e: NumberFormatException) {
-            Misc.addChatMessage(Component.literal("§cInvalid hex color: $hex"))
+            FishUtil.addChatMessage(Component.literal("§cInvalid hex color: $hex"))
         }
     }
 
@@ -284,12 +284,12 @@ object DungeonWaypoints {
         val b64 = DungeonWaypointStore.exportBase64()
         if (b64 == null) {
             FishDiag.fail("DungeonWaypoints.5", "waypoint export returned null (${DungeonWaypointStore.allData().size} areas)")
-            Misc.addChatMessage(Component.literal("§cExport failed."))
+            FishUtil.addChatMessage(Component.literal("§cExport failed."))
             return
         }
         val mc = Minecraft.getInstance()
         mc.keyboardHandler.clipboard = b64
-        Misc.addChatMessage(Component.literal("§aWaypoint database copied to clipboard."))
+        FishUtil.addChatMessage(Component.literal("§aWaypoint database copied to clipboard."))
     }
 
     @JvmStatic
@@ -299,9 +299,9 @@ object DungeonWaypoints {
         val ok = DungeonWaypointStore.importBase64(clip)
         if (ok) {
             refreshLive()
-            Misc.addChatMessage(Component.literal("§aWaypoint database imported from clipboard."))
+            FishUtil.addChatMessage(Component.literal("§aWaypoint database imported from clipboard."))
         } else {
-            Misc.addChatMessage(Component.literal("§cImport failed — clipboard doesn't look like a valid waypoint export."))
+            FishUtil.addChatMessage(Component.literal("§cImport failed — clipboard doesn't look like a valid waypoint export."))
         }
     }
 
@@ -309,7 +309,7 @@ object DungeonWaypoints {
     fun resetCurrentArea() {
         DungeonWaypointStore.clearRoom(globalKey())
         applyGlobal()
-        Misc.addChatMessage(Component.literal("§aCleared waypoints for the current area."))
+        FishUtil.addChatMessage(Component.literal("§aCleared waypoints for the current area."))
     }
 
     @JvmStatic
@@ -339,13 +339,13 @@ object DungeonWaypoints {
     @JvmStatic
     fun toggleRoute(name: String?) {
         if (recordingRouteId != null) {
-            Misc.addChatMessage(Component.literal("§aFinished recording route '$recordingRouteId' ($recordingNextOrder point(s))."))
+            FishUtil.addChatMessage(Component.literal("§aFinished recording route '$recordingRouteId' ($recordingNextOrder point(s))."))
             recordingRouteId = null
             return
         }
         recordingRouteId = if (name == null || name.isBlank()) nextAutoRouteName() else name
         recordingNextOrder = 0
-        Misc.addChatMessage(Component.literal("§aRecording route '$recordingRouteId' — place waypoints in order, then §f/fm wp route§a to finish."))
+        FishUtil.addChatMessage(Component.literal("§aRecording route '$recordingRouteId' — place waypoints in order, then §f/fm wp route§a to finish."))
     }
 
     @JvmStatic
@@ -369,19 +369,19 @@ object DungeonWaypoints {
             routeReached.clear()
             routeLoopCursor.clear()
             progressVersion++
-            Misc.addChatMessage(Component.literal("§aAll routes reset — waypoints visible again."))
+            FishUtil.addChatMessage(Component.literal("§aAll routes reset — waypoints visible again."))
         } else {
             routeReached.remove(name)
             routeLoopCursor.remove(name)
             progressVersion++
-            Misc.addChatMessage(Component.literal("§aRoute '$name' reset — waypoints visible again."))
+            FishUtil.addChatMessage(Component.literal("§aRoute '$name' reset — waypoints visible again."))
         }
     }
 
     @JvmStatic
     fun deleteRoute(name: String?) {
         if (name == null || name.isBlank()) {
-            Misc.addChatMessage(Component.literal("§cGive a route name: /fm wp route delete <name>"))
+            FishUtil.addChatMessage(Component.literal("§cGive a route name: /fm wp route delete <name>"))
             return
         }
         val n = DungeonWaypointStore.removeRoute(name)
@@ -389,7 +389,7 @@ object DungeonWaypoints {
         routeLoopCursor.remove(name)
         progressVersion++
         refreshLive()
-        Misc.addChatMessage(
+        FishUtil.addChatMessage(
             Component.literal(
                 if (n > 0) "§aDeleted route '$name' ($n point(s))."
                 else "§cNo route named '$name' found."
@@ -400,12 +400,12 @@ object DungeonWaypoints {
     private const val ROOM_KEY_PREFIX = "dungeon:room:"
     private fun isRoomKey(key: String) = key.startsWith(ROOM_KEY_PREFIX)
 
-    private fun globalKey(): String = globalKey(if (Location.inDungeon()) DungeonRoomAnchor.current() else null)
+    private fun globalKey(): String = globalKey(if (SkyblockLocation.inDungeon()) DungeonRoomAnchor.current() else null)
 
     private fun globalKey(anchor: DungeonRoomAnchor.Anchor?): String {
         if (anchor != null) return ROOM_KEY_PREFIX + anchor.name
-        if (Location.inSkyblock()) {
-            return "global:skyblock:" + Location.getCurrentLocation().name
+        if (SkyblockLocation.inSkyblock()) {
+            return "global:skyblock:" + SkyblockLocation.getCurrentLocation().name
         }
 
         val mc = Minecraft.getInstance()
@@ -428,7 +428,7 @@ object DungeonWaypoints {
             return
         }
 
-        val anchor = if (Location.inDungeon()) DungeonRoomAnchor.current() else null
+        val anchor = if (SkyblockLocation.inDungeon()) DungeonRoomAnchor.current() else null
         val key = globalKey(anchor)
         if (key != lastGlobalDim) {
             lastGlobalDim = key
@@ -539,7 +539,7 @@ object DungeonWaypoints {
 
     private fun playerEyePos(mc: Minecraft): Vec3? {
         if (mc.player == null) return null
-        return RenderUtils.cameraLineStart(0.2)
+        return FishDraw.cameraLineStart(0.2)
     }
 
     private fun aimPoint(mc: Minecraft): AimResult {
@@ -916,26 +916,26 @@ object DungeonWaypoints {
         }
 
     private fun drawMergedFillGizmo(g: MergedGroup) {
-        for (q in g.quads) RenderUtils.gizmoQuad(q, g.color, 0)
+        for (q in g.quads) FishDraw.gizmoQuad(q, g.color, 0)
     }
 
     private fun drawMergedFillThrough(matrices: PoseStack, vc: VertexConsumer, g: MergedGroup) {
-        val rgba = RenderUtils.toFloats(g.color)
+        val rgba = FishDraw.toFloats(g.color)
         if (rgba[3] == 0f) return
-        for (q in g.quads) RenderUtils.renderFilledQuad(matrices, vc, q, rgba)
+        for (q in g.quads) FishDraw.renderFilledQuad(matrices, vc, q, rgba)
     }
 
     private fun drawMergedOutlineGizmo(g: MergedGroup) {
         if ((g.color ushr 24) == 0) return
         val hw = lineWidth / 2.0
-        for (e in g.edges) RenderUtils.gizmoThickEdge(e[0], e[1], e[2], e[3], e[4], e[5], hw, g.color)
+        for (e in g.edges) FishDraw.gizmoThickEdge(e[0], e[1], e[2], e[3], e[4], e[5], hw, g.color)
     }
 
     private fun drawMergedOutlineThrough(matrices: PoseStack, vc: VertexConsumer, g: MergedGroup) {
-        val rgba = RenderUtils.toFloats(g.color)
+        val rgba = FishDraw.toFloats(g.color)
         if (rgba[3] == 0f) return
         val hw = lineWidth / 2.0
-        for (e in g.edges) RenderUtils.renderThickEdge(matrices, vc, Vec3(e[0], e[1], e[2]), Vec3(e[3], e[4], e[5]), hw, rgba)
+        for (e in g.edges) FishDraw.renderThickEdge(matrices, vc, Vec3(e[0], e[1], e[2]), Vec3(e[3], e[4], e[5]), hw, rgba)
     }
 
     private fun renderGizmo() {
@@ -948,18 +948,18 @@ object DungeonWaypoints {
             if (g.filled) drawMergedFillGizmo(g) else drawMergedOutlineGizmo(g)
         }
         for (w in buildSingles(throughWalls = false)) {
-            if (w.filled) RenderUtils.gizmoBox(w.box.inflate(FACE_OFFSET), w.color, 0)
-            else RenderUtils.gizmoThickOutline(w.box, w.color, lineWidth)
+            if (w.filled) FishDraw.gizmoBox(w.box.inflate(FACE_OFFSET), w.color, 0)
+            else FishDraw.gizmoThickOutline(w.box, w.color, lineWidth)
         }
         for (w in liveWaypoints) {
             if (w.message != null || w.throughWalls || reached(w) || w.titleComponent == null) continue
-            RenderUtils.gizmoText(w.titleComponent, Vec3(w.center.x, w.box.maxY + 0.4, w.center.z), 1.0f, -0x1)
+            FishDraw.gizmoText(w.titleComponent, Vec3(w.center.x, w.box.maxY + 0.4, w.center.z), 1.0f, -0x1)
         }
         val eye = playerEyePos(mc)
         if (eye != null) {
             for ((_, value) in groupRoutes()) {
                 val next = value.firstOrNull { !reached(it) } ?: continue
-                if (!next.throughWalls) RenderUtils.gizmoThickLine(eye, next.center, lineWidth / 2.0, ROUTE_LINE_ARGB)
+                if (!next.throughWalls) FishDraw.gizmoThickLine(eye, next.center, lineWidth / 2.0, ROUTE_LINE_ARGB)
             }
         }
     }
@@ -971,18 +971,18 @@ object DungeonWaypoints {
                 if (g.filled) drawMergedFillThrough(matrices, vc, g) else drawMergedOutlineThrough(matrices, vc, g)
             }
             for (w in buildSingles(throughWalls = true)) {
-                val rgba = RenderUtils.toFloats(w.color)
-                if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box.inflate(FACE_OFFSET), rgba)
-                else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
+                val rgba = FishDraw.toFloats(w.color)
+                if (w.filled) FishDraw.renderFilled(matrices, vc, w.box.inflate(FACE_OFFSET), rgba)
+                else FishDraw.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
             }
             for (w in liveWaypoints) {
                 if (w.message != null || !w.throughWalls || reached(w) || w.titleComponent == null) continue
-                RenderUtils.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
+                FishDraw.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
             }
         }
 
         if (pmEditMode && mc.player != null && mc.level != null) {
-            aimPoint(mc).blockBox?.let { RenderUtils.renderThickOutline(matrices, vc, it, floatArrayOf(1f, 0.67f, 0f, 0.9f), lineWidth) }
+            aimPoint(mc).blockBox?.let { FishDraw.renderThickOutline(matrices, vc, it, floatArrayOf(1f, 0.67f, 0f, 0.9f), lineWidth) }
         }
         if (editMode) {
             if (mc.player != null && mc.level != null) {
@@ -997,8 +997,8 @@ object DungeonWaypoints {
                     val half = if (useBlockSize) 0.5 else size / 2.0
                     AABB(aim.x - half, aim.y - half, aim.z - half, aim.x + half, aim.y + half, aim.z + half)
                 }
-                if (pixelMode) RenderUtils.renderFilled(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f))
-                else RenderUtils.renderThickOutline(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f), lineWidth)
+                if (pixelMode) FishDraw.renderFilled(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f))
+                else FishDraw.renderThickOutline(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f), lineWidth)
             }
         }
     }
@@ -1009,7 +1009,7 @@ object DungeonWaypoints {
         for ((key, value) in groupRoutes()) {
             val reached = routeReached.getOrDefault(key, emptySet())
             val next = value.firstOrNull { !reached.contains(it.routeOrder) } ?: continue
-            if (next.throughWalls) RenderUtils.renderThickLine(matrices, vc, eye, next.center, lineWidth / 2.0, ROUTE_LINE_RGBA)
+            if (next.throughWalls) FishDraw.renderThickLine(matrices, vc, eye, next.center, lineWidth / 2.0, ROUTE_LINE_RGBA)
         }
     }
 

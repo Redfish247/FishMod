@@ -7,7 +7,7 @@ import fishmod.features.ProfitTrackerKit
 import fishmod.features.ProfitTrackerKit.Row
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.FishMsg
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -49,6 +49,8 @@ object MiningProfitTracker {
     var version = 0; private set
 
     private val CORPSE = Regex("""^\s*(LAPIS|UMBER|TUNGSTEN|VANGUARD) CORPSE LOOT!""")
+    // Key consumed per corpse, tracked as a negative item so profit nets it out
+    private val CORPSE_KEY = mapOf("UMBER" to "Tungsten Key", "TUNGSTEN" to "Umber Key", "VANGUARD" to "Skeleton Key")
     private val BAR = Regex("""^▬{20,}$""")
     private val ITEM = Regex("""^\s{2,}[☠✦+]?\s*(.+?)(?:\s+x([\d,]+))?\s*$""")
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
@@ -66,8 +68,8 @@ object MiningProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        Events.ON_WORLD_CHANGE.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
+        FishEvents.chat.register { text ->
             if (S.miningProfit && Mining.inMiningIsland()) onChat(text)
             false
         }
@@ -76,7 +78,7 @@ object MiningProfitTracker {
         FishHudEditor.register("Mining Profit", { S.miningProfitHudX }, { S.miningProfitHudX = it },
             { S.miningProfitHudY }, { S.miningProfitHudY = it }, 180, 120, { S.miningProfitHudScale }, { S.miningProfitHudScale = it },
             { S.miningProfit })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_profit")) { ctx, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_profit")) { ctx, _ ->
             val mc = Minecraft.getInstance()
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
                 MiningHuds.draw(ctx, lines(), S.miningProfitHudX, S.miningProfitHudY, S.miningProfitHudScale)
@@ -114,7 +116,11 @@ object MiningProfitTracker {
         val s = Mining.strip(text.string)
         val now = System.currentTimeMillis()
         if (s.startsWith("[Sacks]")) { onSacks(text, now); return }
-        CORPSE.find(s)?.let { startLoot(Cat.CORPSES, "Corpses", it.groupValues[1].lowercase().replaceFirstChar(Char::uppercase) + " Corpses"); return }
+        CORPSE.find(s)?.let {
+            startLoot(Cat.CORPSES, "Corpses", it.groupValues[1].lowercase().replaceFirstChar(Char::uppercase) + " Corpses")
+            CORPSE_KEY[it.groupValues[1]]?.let { key -> add(Cat.CORPSES, key, -1) }
+            return
+        }
         when {
             s.contains("EXCAVATION COMPLETE") -> { startLoot(Cat.FOSSIL, "Excavations", null); return }
             s.contains("CRYSTAL NUCLEUS LOOT BUNDLE") -> { startLoot(Cat.NUCLEUS, "Nucleus Runs", null); return }
@@ -291,7 +297,7 @@ object MiningProfitTracker {
         out += "§e§lMining Profit §7(${S.miningProfitCategory}, ${S.miningProfitMode})"
         if (scroll > 0) out += "§8  ▲ $scroll more"
         for (r in rows.drop(scroll).take(max)) {
-            val v = if (r.value > 0) "§6${Mining.short(r.value)}" else ""
+            val v = if (r.value > 0) "§6${Mining.short(r.value)}" else if (r.value < 0) "§c-${Mining.short(-r.value)}" else ""
             out += ProfitTrackerKit.rowLine(r, v, ProfitTrackerKit.rarityColor(idOf(r.name)), S.miningProfitShowSources)
         }
         val below = rows.size - scroll - max

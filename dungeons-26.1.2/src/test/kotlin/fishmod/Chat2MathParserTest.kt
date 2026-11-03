@@ -1,12 +1,12 @@
 package fishmod
 
-import fishmod.utils.MathParser
+import fishmod.utils.ExprParser
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class Chat2MathParserTest {
-    private fun p(s: String?) = MathParser.parseExpression(s)
+    private fun p(s: String?) = ExprParser.parseExpression(s)
 
     @Test fun basics() {
         assertEquals(7.0, p("1+2*3"))

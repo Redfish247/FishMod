@@ -2,9 +2,9 @@ package fishmod.features
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.util.concurrent.ConcurrentHashMap
@@ -47,7 +47,7 @@ object NametagStats {
     @JvmStatic
     fun init() {
         // Keep entries across lobby swaps (TTL expires them); just cap size.
-        Events.ON_WORLD_CHANGE.register { pruneExpired(); false }
+        FishEvents.worldChange.register { pruneExpired(); false }
     }
 
     private fun canKick(now: Long): Boolean =
@@ -55,12 +55,12 @@ object NametagStats {
 
     @JvmStatic
     fun linesFor(name: String): List<Component>? {
-        if (!Location.inSkyblock()) return null
+        if (!SkyblockLocation.inSkyblock()) return null
         if (!VALID_IGN.matches(name)) return null
         fishmod.features.rift.RiftNametag.override(name)?.let { return it.ifEmpty { null } }
         if (!FishSettings.nametagStatsEnabled) return null
 
-        val hub = Location.inDungeonHub()
+        val hub = SkyblockLocation.inDungeonHub()
         if (cache.size > MAX_ENTRIES) pruneExpired()
         val e = cache.computeIfAbsent(name.lowercase()) { Entry() }
         val now = System.currentTimeMillis()

@@ -102,8 +102,6 @@ public class HypixelApi {
         return proxy(path, timeoutSec).GET().build();
     }
 
-    private static final HttpClient RAW_HTTP = fishmod.utils.Http.CLIENT;
-
     private static final CachingHttp HTTP = new CachingHttp();
 
     // Profile/networth GETs are shared + cached client-side so every feature asking about the same player reuses one proxy call.
@@ -135,7 +133,7 @@ public class HypixelApi {
             CompletableFuture<HttpResponse<String>> out = new CompletableFuture<>();
             Runnable task = () -> {
                 CompletableFuture<HttpResponse<String>> f;
-                try { f = RAW_HTTP.sendAsync(req, handler); }
+                try { f = fishmod.utils.Http.sendAsync(req, handler); }
                 catch (Throwable t) { release(); out.completeExceptionally(t); return; }
                 f.whenComplete((r, t) -> {
                     release();
@@ -251,7 +249,9 @@ public class HypixelApi {
         try {
             var file = FabricLoader.getInstance().getConfigDir().resolve("fishmod_uuid_cache.json");
             if (Files.exists(file)) {
-                JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+                JsonElement parsed = JsonParser.parseString(Files.readString(file));
+                // Blank or literal null file parses to JsonNull: same as no cache.
+                JsonObject root = parsed.isJsonNull() ? new JsonObject() : parsed.getAsJsonObject();
                 JsonObject entries = root.has("entries") ? root.getAsJsonObject("entries") : new JsonObject();
                 long now = System.currentTimeMillis();
                 for (Map.Entry<String, JsonElement> e : entries.entrySet()) {
@@ -295,7 +295,14 @@ public class HypixelApi {
             JsonObject root = new JsonObject();
             root.addProperty("version", 1);
             root.add("entries", entries);
-            Files.writeString(file, root.toString());
+            // Temp then move: a crash or full disk mid-write keeps the old file.
+            var tmp = file.resolveSibling("fishmod_uuid_cache.json.tmp");
+            Files.writeString(tmp, root.toString());
+            try {
+                Files.move(tmp, file, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } catch (java.nio.file.AtomicMoveNotSupportedException notAtomic) {
+                Files.move(tmp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.4", "saveUuidCacheNow failed", ignored);}
     }
 
@@ -743,10 +750,10 @@ public class HypixelApi {
     }
 
     public static void getByName(Minecraft mc, String ign, DungeonDataCallback callback) {
-        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + "...")));
+        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§7Looking up " + ign + "...")));
         resolveUuid(ign, 0, uuid -> {
             if (uuid == null) {
-                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cPlayer not found: " + ign)));
+                mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cPlayer not found: " + ign)));
                 return;
             }
             fetchProfiles(mc, uuid, callback);
@@ -965,13 +972,13 @@ public class HypixelApi {
             .thenAccept(resp -> {
                 String friendly = friendlyProxyError(resp);
                 if (friendly != null) {
-                    mc.schedule(() -> Misc.addChatMessage(Component.literal(friendly)));
+                    mc.schedule(() -> FishUtil.addChatMessage(Component.literal(friendly)));
                     return;
                 }
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
                     if (!root.get("success").getAsBoolean()) {
-                        mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI error — proxy rejected request.")));
+                        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cAPI error — proxy rejected request.")));
                         return;
                     }
                     JsonArray profiles = root.has("profiles") && root.get("profiles").isJsonArray() ? root.getAsJsonArray("profiles") : new JsonArray();
@@ -985,12 +992,12 @@ public class HypixelApi {
                         callback.onData(parseDungeonData(uuidStr, member));
                         return;
                     }
-                    mc.schedule(() -> Misc.addChatMessage(Component.literal("§cNo active Skyblock profile found.")));
+                    mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cNo active Skyblock profile found.")));
                 } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.33", "fetchProfiles failed", e);
-                    mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI parse error: " + e.getMessage())));
+                    mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cAPI parse error: " + e.getMessage())));
                 }
             })
-            .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.34", "fetchProfiles request future failed", e); mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI request failed."))); return null; });
+            .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.34", "fetchProfiles request future failed", e); mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cAPI request failed."))); return null; });
     }
 
     private static String friendlyProxyError(HttpResponse<String> resp) {
@@ -1011,7 +1018,7 @@ public class HypixelApi {
     }
 
     public static void dumpMemberKeys(Minecraft mc, String ign) {
-        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + " (raw)...")));
+        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§7Looking up " + ign + " (raw)...")));
         HttpRequest uuidReq;
         try {
             uuidReq = HttpRequest.newBuilder()
@@ -1030,34 +1037,34 @@ public class HypixelApi {
                             if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
                             JsonObject members = profile.getAsJsonObject("members");
                             JsonObject member = members == null ? null : members.getAsJsonObject(uuid);
-                            if (member == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cmember not found"))); return; }
+                            if (member == null) { mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cmember not found"))); return; }
                             mc.schedule(() -> {
-                                Misc.addChatMessage(Component.literal("§b--- accessory_bag_storage keys ---"));
+                                FishUtil.addChatMessage(Component.literal("§b--- accessory_bag_storage keys ---"));
                                 if (member.has("accessory_bag_storage")) {
                                     JsonObject abs = member.getAsJsonObject("accessory_bag_storage");
                                     for (String key : abs.keySet())
-                                        Misc.addChatMessage(Component.literal("§7" + key + " = " + abs.get(key).toString().substring(0, Math.min(60, abs.get(key).toString().length()))));
+                                        FishUtil.addChatMessage(Component.literal("§7" + key + " = " + abs.get(key).toString().substring(0, Math.min(60, abs.get(key).toString().length()))));
                                 } else {
-                                    Misc.addChatMessage(Component.literal("§cmissing"));
+                                    FishUtil.addChatMessage(Component.literal("§cmissing"));
                                 }
-                                Misc.addChatMessage(Component.literal("§b--- End ---"));
+                                FishUtil.addChatMessage(Component.literal("§b--- End ---"));
                             });
                             return;
                         }
                     } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.36", "dumpMemberKeys failed", e);
-                        mc.schedule(() -> Misc.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
+                        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
                     }
                 }).exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.37a", "dumpMemberKeys profile request failed", e);
-                    mc.schedule(() -> Misc.addChatMessage(Component.literal("§cRequest failed: " + e.getMessage()))); return null; });
+                    mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cRequest failed: " + e.getMessage()))); return null; });
             } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.37", "dumpMemberKeys failed", e);
-                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
+                mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
             }
         }).exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.37b", "dumpMemberKeys uuid request failed", e);
-            mc.schedule(() -> Misc.addChatMessage(Component.literal("§cRequest failed: " + e.getMessage()))); return null; });
+            mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cRequest failed: " + e.getMessage()))); return null; });
     }
 
     public static void dumpSkillKeys(Minecraft mc, String ign) {
-        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + " (skills, raw)...")));
+        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§7Looking up " + ign + " (skills, raw)...")));
         HttpRequest uuidReq;
         try {
             uuidReq = HttpRequest.newBuilder()
@@ -1076,40 +1083,40 @@ public class HypixelApi {
                             if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
                             JsonObject member = profile.getAsJsonObject("members").getAsJsonObject(uuid);
                             mc.schedule(() -> {
-                                Misc.addChatMessage(Component.literal("§b--- top-level skill/experience keys ---"));
+                                FishUtil.addChatMessage(Component.literal("§b--- top-level skill/experience keys ---"));
                                 boolean any = false;
                                 for (String key : member.keySet()) {
                                     String lower = key.toLowerCase(java.util.Locale.ROOT);
                                     if (lower.contains("skill") || lower.contains("experience")) {
                                         any = true;
                                         String val = member.get(key).toString();
-                                        Misc.addChatMessage(Component.literal("§7" + key + " = " + val.substring(0, Math.min(80, val.length()))));
+                                        FishUtil.addChatMessage(Component.literal("§7" + key + " = " + val.substring(0, Math.min(80, val.length()))));
                                     }
                                 }
-                                if (!any) Misc.addChatMessage(Component.literal("§cnone found"));
-                                Misc.addChatMessage(Component.literal("§b--- player_data.experience ---"));
+                                if (!any) FishUtil.addChatMessage(Component.literal("§cnone found"));
+                                FishUtil.addChatMessage(Component.literal("§b--- player_data.experience ---"));
                                 if (member.has("player_data") && member.get("player_data").isJsonObject()) {
                                     JsonObject pd = member.getAsJsonObject("player_data");
                                     if (pd.has("experience") && pd.get("experience").isJsonObject()) {
                                         JsonObject exp = pd.getAsJsonObject("experience");
                                         for (String key : exp.keySet())
-                                            Misc.addChatMessage(Component.literal("§7" + key + " = " + exp.get(key).toString()));
+                                            FishUtil.addChatMessage(Component.literal("§7" + key + " = " + exp.get(key).toString()));
                                     } else {
-                                        Misc.addChatMessage(Component.literal("§cno experience object"));
+                                        FishUtil.addChatMessage(Component.literal("§cno experience object"));
                                     }
                                 } else {
-                                    Misc.addChatMessage(Component.literal("§cno player_data"));
+                                    FishUtil.addChatMessage(Component.literal("§cno player_data"));
                                 }
-                                Misc.addChatMessage(Component.literal("§b--- End ---"));
+                                FishUtil.addChatMessage(Component.literal("§b--- End ---"));
                             });
                             return;
                         }
                     } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.39", "dumpSkillKeys failed", e);
-                        mc.schedule(() -> Misc.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
+                        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
                     }
                 });
             } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.40", "dumpSkillKeys failed", e);
-                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
+                mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
             }
         });
     }
@@ -1177,7 +1184,7 @@ public class HypixelApi {
             cb.onData(nw, pname);
             return null;
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.41", "getNetworthRemote failed", e);
-            fishmod.utils.debug.Debug.LOGGER.warn("[Networth] remote endpoint: {}", e.toString());
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[Networth] remote endpoint: {}", e.toString());
             return Boolean.FALSE;
         }
     }
@@ -1244,7 +1251,7 @@ public class HypixelApi {
                     }
                 }
                 total = liquid + invVal + storageVal + bagsVal + wardrobeVal + equipLoadoutVal;
-                fishmod.utils.debug.Debug.LOGGER.debug(
+                fishmod.utils.debug.FishDebug.LOGGER.debug(
                         "[Networth] buckets: liquid={} inv(NW_STORAGES)={} storage/backpacks={} bag_contents={} wardrobe={} equipLoadout={}",
                         liquid, invVal, storageVal, bagsVal, wardrobeVal, equipLoadoutVal);
                 double liquidAndItems = total;
@@ -1255,13 +1262,13 @@ public class HypixelApi {
                 double museum = chosen.has("profile_id")
                         ? museumValueNw(uuid, chosen.get("profile_id").getAsString(), prices) : 0;
                 total = liquidAndItems + pets + sacks + essence + toolkits + museum;
-                fishmod.utils.debug.Debug.LOGGER.debug(
+                fishmod.utils.debug.FishDebug.LOGGER.debug(
                         "[Networth] {} total={} (liquid+items={} pets={} sacks={} essence={} toolkits={} museum={})",
                         pname, total, liquidAndItems, pets, sacks, essence, toolkits, museum);
 
                 cb.onData(total, pname);
             } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.42", "getNetworthLocal failed", ex);
-                fishmod.utils.debug.Debug.LOGGER.warn("[Networth] error: {}", ex.toString());
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[Networth] error: {}", ex.toString());
                 cb.onData(-1, null);
             }
     }
@@ -1283,7 +1290,7 @@ public class HypixelApi {
                     try { fetched.put(e.getKey(), e.getValue().getAsDouble()); } catch (Exception ignored) {}
                 }
             }
-        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.43", "nwPrices failed", e); fishmod.utils.debug.Debug.LOGGER.warn("[Networth] prices fetch: {}", e.getMessage()); }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.43", "nwPrices failed", e); fishmod.utils.debug.FishDebug.LOGGER.warn("[Networth] prices fetch: {}", e.getMessage()); }
         if (fetched == null || fetched.isEmpty()) {
             nwPricesFailAt = System.currentTimeMillis();
             return NW_PRICES;
@@ -1834,7 +1841,7 @@ public class HypixelApi {
             HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
             if (!root.has("members") || !root.getAsJsonObject("members").has(uuid)) {
-                fishmod.utils.debug.Debug.LOGGER.debug("[Networth] museum: http={} no members/uuid (body {}b)",
+                fishmod.utils.debug.FishDebug.LOGGER.debug("[Networth] museum: http={} no members/uuid (body {}b)",
                         r.statusCode(), r.body().length());
                 return 0;
             }
@@ -1865,11 +1872,11 @@ public class HypixelApi {
                     } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.91", "museumValueNw failed", ignored);}
                 }
             }
-            fishmod.utils.debug.Debug.LOGGER.debug("[Networth] museum: {} slots, {} items decoded, value {}",
+            fishmod.utils.debug.FishDebug.LOGGER.debug("[Networth] museum: {} slots, {} items decoded, value {}",
                     slots, decoded, total);
             return total;
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.92", "museumValueNw failed", e);
-            fishmod.utils.debug.Debug.LOGGER.warn("[Networth] museum fetch: {}", e.toString());
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[Networth] museum fetch: {}", e.toString());
             return 0;
         }
     }
@@ -1925,10 +1932,10 @@ public class HypixelApi {
     public interface PowderCallback { void onData(PowderData data); }
 
     public static void getPowderByName(Minecraft mc, String ign, PowderCallback cb) {
-        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + "'s powder...")));
+        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§7Looking up " + ign + "'s powder...")));
         resolveUuid(ign, 0, uuid -> {
             if (uuid == null) {
-                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cPlayer not found: " + ign)));
+                mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cPlayer not found: " + ign)));
                 mc.execute(() -> cb.onData(new PowderData()));
                 return;
             }
@@ -1953,20 +1960,20 @@ public class HypixelApi {
                         String msg = (root.has("cause") && "blocked".equals(root.get("cause").getAsString()))
                             ? "§cFishMod API access is blocked for you by an admin."
                             : "§cAPI error — proxy rejected request.";
-                        mc.schedule(() -> Misc.addChatMessage(Component.literal(msg)));
+                        mc.schedule(() -> FishUtil.addChatMessage(Component.literal(msg)));
                         mc.execute(() -> cb.onData(new PowderData()));
                         return;
                     }
                     JsonObject member = findSelectedMember(root, uuidStr);
                     if (member != null) result = parsePowder(member);
                 } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.97", "fetchPowder failed", e);
-                    mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI parse error: " + e.getMessage())));
+                    mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cAPI parse error: " + e.getMessage())));
                 }
                 PowderData finalResult = result;
                 mc.execute(() -> cb.onData(finalResult));
             })
             .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.98", "fetchPowder request future failed", e);
-                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI request failed.")));
+                mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cAPI request failed.")));
                 mc.execute(() -> cb.onData(new PowderData()));
                 return null;
             });
@@ -2069,14 +2076,31 @@ public class HypixelApi {
 
     public static void fetchNicks(java.util.Collection<String> uuidsNoDashes,
                                   java.util.function.Consumer<Map<String, String>> cb) {
+        fetchNicks(uuidsNoDashes, cb, true);
+    }
+
+    private static void fetchNicks(java.util.Collection<String> uuidsNoDashes,
+                                   java.util.function.Consumer<Map<String, String>> cb, boolean mayRetry) {
         if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.accept(java.util.Map.of()); return; }
         try {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = proxyGet("/nicks?uuids=" + q, 10);
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                // Proxy error page (HTML, non-200) is an outage, not a bug: retry once, log locally.
+                String body = r.body();
+                if (r.statusCode() != 200 || body == null || !body.stripLeading().startsWith("{")) {
+                    if (mayRetry) {
+                        CompletableFuture.delayedExecutor(5, java.util.concurrent.TimeUnit.SECONDS)
+                            .execute(() -> fetchNicks(uuidsNoDashes, cb, false));
+                    } else {
+                        fishmod.utils.debug.FishDebug.LOGGER.debug("[Nicks] bad response: http={}", r.statusCode());
+                        cb.accept(java.util.Map.of());
+                    }
+                    return;
+                }
                 Map<String, String> out = new HashMap<>();
                 try {
-                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    JsonObject root = JsonParser.parseString(body).getAsJsonObject();
                     if (root.has("nicks") && root.get("nicks").isJsonObject())
                         for (var e : root.getAsJsonObject("nicks").entrySet())
                             if (e.getValue() != null && !e.getValue().isJsonNull())
@@ -2124,7 +2148,11 @@ public class HypixelApi {
             HttpRequest req = proxyGet("/sync?since=" + version + "&uuids=" + q, 10);
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                 try {
-                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    String body = r.body();
+                    com.google.gson.JsonElement el = body == null || body.isBlank() ? null : JsonParser.parseString(body);
+                    // Proxy can answer "null" or an error page; skip quietly and retry next sync.
+                    if (el == null || !el.isJsonObject()) { cb.onData(version, null, null, null, null, null, null); return; }
+                    JsonObject root = el.getAsJsonObject();
                     if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null, null, null, null, null); return; }
                     long ver = root.has("version") ? root.get("version").getAsLong() : version;
                     if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null, null, null, null, null); return; }
@@ -2275,7 +2303,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                 }
                 cb.onData(bank, purse, corpses);
             } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.117", "getEconomyByName failed", ex);
-                fishmod.utils.debug.Debug.LOGGER.warn("[Economy] error: {}", ex.toString());
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[Economy] error: {}", ex.toString());
                 cb.onData(-1, -1, null);
             }
         }, API_EXECUTOR);
@@ -2306,7 +2334,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
     public static void dumpEconomy(Minecraft mc) {
         if (mc.player == null) return;
         String uuid = mc.player.getUUID().toString().replace("-", "");
-        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Fetching profile economy fields...")));
+        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§7Fetching profile economy fields...")));
         HttpRequest req;
         try {
             req = proxyGet("/skyblock/profiles?uuid=" + uuid, 10);
@@ -2319,30 +2347,30 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                     if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
                     JsonObject member = profile.getAsJsonObject("members").getAsJsonObject(uuid);
                     mc.schedule(() -> {
-                        Misc.addChatMessage(Component.literal("§b--- Economy dump ---"));
+                        FishUtil.addChatMessage(Component.literal("§b--- Economy dump ---"));
                         if (profile.has("banking") && profile.getAsJsonObject("banking").has("balance"))
-                            Misc.addChatMessage(Component.literal("§7banking.balance = §f" + profile.getAsJsonObject("banking").get("balance")));
-                        else Misc.addChatMessage(Component.literal("§7banking.balance = §cmissing"));
-                        if (member.has("coin_purse")) Misc.addChatMessage(Component.literal("§7coin_purse = §f" + member.get("coin_purse")));
+                            FishUtil.addChatMessage(Component.literal("§7banking.balance = §f" + profile.getAsJsonObject("banking").get("balance")));
+                        else FishUtil.addChatMessage(Component.literal("§7banking.balance = §cmissing"));
+                        if (member.has("coin_purse")) FishUtil.addChatMessage(Component.literal("§7coin_purse = §f" + member.get("coin_purse")));
                         if (member.has("currencies")) {
                             JsonObject cur = member.getAsJsonObject("currencies");
-                            Misc.addChatMessage(Component.literal("§7currencies keys = §f" + cur.keySet()));
-                            if (cur.has("coin_purse")) Misc.addChatMessage(Component.literal("§7currencies.coin_purse = §f" + cur.get("coin_purse")));
+                            FishUtil.addChatMessage(Component.literal("§7currencies keys = §f" + cur.keySet()));
+                            if (cur.has("coin_purse")) FishUtil.addChatMessage(Component.literal("§7currencies.coin_purse = §f" + cur.get("coin_purse")));
                         }
                         if (member.has("glacite_player_data")) {
                             JsonObject g = member.getAsJsonObject("glacite_player_data");
-                            Misc.addChatMessage(Component.literal("§7glacite_player_data keys = §f" + g.keySet()));
-                            if (g.has("corpses")) Misc.addChatMessage(Component.literal("§7glacite.corpses = §f" + g.get("corpses")));
+                            FishUtil.addChatMessage(Component.literal("§7glacite_player_data keys = §f" + g.keySet()));
+                            if (g.has("corpses")) FishUtil.addChatMessage(Component.literal("§7glacite.corpses = §f" + g.get("corpses")));
                         } else {
-                            Misc.addChatMessage(Component.literal("§7glacite_player_data = §cmissing"));
+                            FishUtil.addChatMessage(Component.literal("§7glacite_player_data = §cmissing"));
                         }
-                        Misc.addChatMessage(Component.literal("§7member top keys = §f" + member.keySet()));
-                        Misc.addChatMessage(Component.literal("§b--- End ---"));
+                        FishUtil.addChatMessage(Component.literal("§7member top keys = §f" + member.keySet()));
+                        FishUtil.addChatMessage(Component.literal("§b--- End ---"));
                     });
                     return;
                 }
             } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.120", "dumpEconomy failed", e);
-                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cdump error: " + e.getMessage())));
+                mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cdump error: " + e.getMessage())));
             }
         });
     }
@@ -2545,30 +2573,30 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
     public static void dumpGarden(Minecraft mc) {
         if (mc.player == null) return;
         String uuid = mc.player.getUUID().toString().replace("-", "");
-        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Fetching garden...")));
+        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§7Fetching garden...")));
         CompletableFuture.runAsync(() -> {
             try {
                 HttpRequest pr = proxyGet("/skyblock/profiles?uuid=" + uuid, 12);
                 JsonObject root = JsonParser.parseString(HTTP.send(pr, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
                 JsonObject chosenProfile = findSelectedProfile(root);
                 String profileId = chosenProfile != null && chosenProfile.has("profile_id") ? chosenProfile.get("profile_id").getAsString() : null;
-                if (profileId == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cno profile"))); return; }
+                if (profileId == null) { mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cno profile"))); return; }
                 HttpRequest gr = proxyGet("/skyblock/garden?profile=" + profileId, 12);
                 String body = HTTP.send(gr, HttpResponse.BodyHandlers.ofString()).body();
                 JsonObject g = JsonParser.parseString(body).getAsJsonObject();
                 JsonObject garden = g.has("garden") && g.get("garden").isJsonObject() ? g.getAsJsonObject("garden") : g;
                 mc.schedule(() -> {
-                    Misc.addChatMessage(Component.literal("§b--- Garden keys ---"));
-                    Misc.addChatMessage(Component.literal("§7top: §f" + garden.keySet()));
+                    FishUtil.addChatMessage(Component.literal("§b--- Garden keys ---"));
+                    FishUtil.addChatMessage(Component.literal("§7top: §f" + garden.keySet()));
                     for (String k : new String[]{"commission_data","resources_collected","crop_milestones","unlocked_plots_ids"}) {
                         if (garden.has(k) && garden.get(k).isJsonObject())
-                            Misc.addChatMessage(Component.literal("§7" + k + ": §f" + garden.getAsJsonObject(k)));
+                            FishUtil.addChatMessage(Component.literal("§7" + k + ": §f" + garden.getAsJsonObject(k)));
                         else if (garden.has(k))
-                            Misc.addChatMessage(Component.literal("§7" + k + ": §f" + garden.get(k)));
+                            FishUtil.addChatMessage(Component.literal("§7" + k + ": §f" + garden.get(k)));
                     }
                 });
             } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.126", "dumpGarden failed", ex);
-                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cgarden err: " + ex)));
+                mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cgarden err: " + ex)));
             }
         }, API_EXECUTOR);
     }
@@ -2634,27 +2662,27 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
     public static void dumpNucleus(Minecraft mc) {
         if (mc.player == null) return;
         String uuid = mc.player.getUUID().toString().replace("-", "");
-        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Searching nucleus/crystal fields...")));
+        mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§7Searching nucleus/crystal fields...")));
         CompletableFuture.runAsync(() -> {
             try {
                 HttpRequest req = proxyGet("/skyblock/profiles?uuid=" + uuid, 12);
                 JsonObject root = JsonParser.parseString(HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
                 JsonObject chosen = findSelectedProfile(root);
-                if (chosen == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cno profile"))); return; }
+                if (chosen == null) { mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cno profile"))); return; }
                 JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
                 java.util.Map<String, Integer> nuc = new java.util.LinkedHashMap<>();
                 collectNumbersByKey(member, "nucleus", nuc);
                 java.util.Map<String, Integer> cry = new java.util.LinkedHashMap<>();
                 collectNumbersByKey(member, "crystal", cry);
                 mc.schedule(() -> {
-                    Misc.addChatMessage(Component.literal("§b--- nucleus keys ---"));
-                    if (nuc.isEmpty()) Misc.addChatMessage(Component.literal("§7(none)"));
-                    nuc.forEach((k, v) -> Misc.addChatMessage(Component.literal("§7" + k + ": §f" + v)));
-                    Misc.addChatMessage(Component.literal("§b--- crystal keys ---"));
-                    cry.forEach((k, v) -> Misc.addChatMessage(Component.literal("§7" + k + ": §f" + v)));
+                    FishUtil.addChatMessage(Component.literal("§b--- nucleus keys ---"));
+                    if (nuc.isEmpty()) FishUtil.addChatMessage(Component.literal("§7(none)"));
+                    nuc.forEach((k, v) -> FishUtil.addChatMessage(Component.literal("§7" + k + ": §f" + v)));
+                    FishUtil.addChatMessage(Component.literal("§b--- crystal keys ---"));
+                    cry.forEach((k, v) -> FishUtil.addChatMessage(Component.literal("§7" + k + ": §f" + v)));
                 });
             } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.127", "dumpNucleus failed", ex);
-                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cnuc dump err: " + ex)));
+                mc.schedule(() -> FishUtil.addChatMessage(Component.literal("§cnuc dump err: " + ex)));
             }
         }, API_EXECUTOR);
     }
@@ -2677,7 +2705,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                 }
                 cb.onData(runs);
             } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.128", "getNucleusRuns failed", ex);
-                fishmod.utils.debug.Debug.LOGGER.warn("[Nucleus] error: {}", ex.toString());
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[Nucleus] error: {}", ex.toString());
                 cb.onData(-1);
             }
         }, API_EXECUTOR);
@@ -2710,7 +2738,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                 }
                 cb.onData(sb, farm);
             } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.129", "getProfileStats failed", ex);
-                fishmod.utils.debug.Debug.LOGGER.warn("[ProfileStats] error: {}", ex.toString());
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[ProfileStats] error: {}", ex.toString());
                 cb.onData(-1, -1);
             }
         }, API_EXECUTOR);
@@ -2780,7 +2808,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                 s.found = found;
                 cb.onData(s);
             } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.130", "getWormStats failed", ex);
-                fishmod.utils.debug.Debug.LOGGER.warn("[WormStats] error: {}", ex.toString());
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[WormStats] error: {}", ex.toString());
                 cb.onData(new WormStats());
             }
         }, API_EXECUTOR);

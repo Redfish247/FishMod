@@ -3,7 +3,7 @@ import fishmod.compat.curScreen
 import fishmod.utils.TextStrip
 
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.Keybinds
+import fishmod.utils.FishKeys
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.KeyMapping
@@ -62,7 +62,7 @@ object WardrobeHotkeys {
 
     private fun tryActivate(screen: AbstractContainerScreen<*>, matches: Predicate<KeyMapping>): Boolean {
         if (!FishSettings.wardrobeHotkeysEnabled) return false
-        val slots = Keybinds.wardrobeSlots ?: return false
+        val slots = FishKeys.wardrobeSlots ?: return false
 
         val title = fishmod.utils.ScreenTitle.plain(screen).trim()
         val isWardrobe = title.contains("Armor Sets") || title == "Wardrobe"
@@ -73,8 +73,8 @@ object WardrobeHotkeys {
         val containerSize = handler.slots.size - PLAYER_INV_SLOTS
         if (containerSize < 27 || containerSize % 9 != 0) return false
 
-        if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobeNextPage, matches, "next page")) return true
-        if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobePrevPage, matches, "previous page")) return true
+        if (tryPageTurn(handler, containerSize, screen, FishKeys.wardrobeNextPage, matches, "next page")) return true
+        if (tryPageTurn(handler, containerSize, screen, FishKeys.wardrobePrevPage, matches, "previous page")) return true
 
         for (i in slots.indices) {
             val mapping = slots[i]

@@ -14,7 +14,7 @@ object RoomSecrets {
 
     private fun onActionBarInner(message: Component) {
         if (!DungeonState.isInDungeon()) return
-        val m = SECRETS.find(fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(message.string, "")) ?: return
+        val m = SECRETS.find(fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(message.string, "")) ?: return
         fishmod.features.dungeon.SecretOverlay.onSecrets(m.groupValues[1].toInt(), m.groupValues[2].toInt())
         val player = Minecraft.getInstance().player ?: return
         val idx = MapVec2i(player.blockX, player.blockZ).index()

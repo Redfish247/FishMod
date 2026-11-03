@@ -12,11 +12,11 @@ import fishmod.features.dungeon.puzzles.odin.QuizSolver
 import fishmod.features.dungeon.puzzles.odin.TPMazeSolver
 import fishmod.features.dungeon.puzzles.odin.WaterSolver
 import fishmod.features.dungeon.puzzles.odin.WeirdosSolver
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.client.Minecraft
@@ -30,7 +30,7 @@ object PuzzleSolvers {
     private var tickAcc = 0
 
     private val enabled: Boolean get() = FishSettings.puzzleSolversEnabled
-    private val inClear: Boolean get() = Location.inDungeon() && !Phase.inBoss()
+    private val inClear: Boolean get() = SkyblockLocation.inDungeon() && !BossPhase.inBoss()
     private val isInPuzzle: Boolean get() = OdinScan.currentRoom?.data?.type == ORoomType.PUZZLE
 
     @JvmStatic
@@ -59,12 +59,12 @@ object PuzzleSolvers {
             if (FishSettings.tttSolver) FishDiag.guard("PuzzleSolvers.11", "tic tac toe solver tick failed") { TicTacToeSolver.onTick() }
         }
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (inClear && FishSettings.waterSolver) FishDiag.guard("PuzzleSolvers.12", "water solver server tick failed") { WaterSolver.onServerTick() }
             false
         }
 
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             FishDiag.guard("PuzzleSolvers.13", "puzzle solver reset on world change failed") {
                 IceFillSolver.reset(); WeirdosSolver.reset(); BoulderSolver.reset(); TPMazeSolver.reset()
                 WaterSolver.reset(); BlazeSolver.reset(); BeamsSolver.reset(); QuizSolver.reset()
@@ -73,7 +73,7 @@ object PuzzleSolvers {
             false
         }
 
-        Events.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (enabled && isInPuzzle && FishSettings.tpMazeSolver && packet is ClientboundPlayerPositionPacket) {
                 val from = Minecraft.getInstance().player?.position()
                 Minecraft.getInstance().execute { FishDiag.guard("PuzzleSolvers.14", "tp maze teleport handling failed") { TPMazeSolver.tpPacket(packet, from) } }
@@ -92,8 +92,8 @@ object PuzzleSolvers {
             InteractionResult.PASS
         })
 
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (!enabled || !Location.inDungeon()) return@register false
+        FishEvents.chat.register { text ->
+            if (!enabled || !SkyblockLocation.inDungeon()) return@register false
             val msg = TextStrip.plain(text.string)
             if (FishSettings.weirdosSolver) weirdosRegex.find(msg)?.let {
                 FishDiag.guard("PuzzleSolvers.18", "weirdos NPC message handling failed '$msg'") { WeirdosSolver.onNPCMessage(it.groupValues[1], it.groupValues[2]) }
@@ -103,7 +103,7 @@ object PuzzleSolvers {
             false
         }
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!enabled || !inClear) return@register
             if (FishSettings.iceFillSolver) FishDiag.guard("PuzzleSolvers.21", "ice fill render failed") { IceFillSolver.onRenderWorld() }
             if (FishSettings.weirdosSolver) FishDiag.guard("PuzzleSolvers.22", "weirdos render failed") { WeirdosSolver.onRenderWorld() }
@@ -119,7 +119,7 @@ object PuzzleSolvers {
 
     @JvmStatic
     fun onPuzzleComplete(puzzleName: String) {
-        fishmod.utils.Misc.addChatMessage(
+        fishmod.utils.FishUtil.addChatMessage(
             net.minecraft.network.chat.Component.literal("§b[Puzzle] §a$puzzleName solved"))
     }
 }

@@ -3,11 +3,11 @@ package fishmod.features.kuudra
 import fishmod.features.mining.Mining
 import fishmod.utils.ChatQueue
 import fishmod.utils.FishMsg
-import fishmod.utils.Location
-import fishmod.utils.Misc
-import fishmod.utils.data.PartyUtil
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
+import fishmod.utils.data.PartyTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.features.kuudra.KuudraSettings as S
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -72,13 +72,13 @@ object Kuudra {
     private const val NOT_AGAIN = "[NPC] Elle: Not again!"
     private const val END = "[NPC] Elle: Good job everyone. A hard fought battle come to an end. Let's get out of here before we run into any more trouble!"
 
-    fun inKuudra(): Boolean = Location.`in`(Location.KUUDRA)
+    fun inKuudra(): Boolean = SkyblockLocation.`in`(SkyblockLocation.KUUDRA)
     fun now() = System.currentTimeMillis()
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { c -> inKuudra() && (FishDiag.guard("Kuudra.1", "kuudra chat failed") { onChat(Mining.strip(c.string)) } ?: false) }
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.chat.register { c -> inKuudra() && (FishDiag.guard("Kuudra.1", "kuudra chat failed") { onChat(Mining.strip(c.string)) } ?: false) }
+        FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !inKuudra() || tick++ % 10 != 0) return@register
             FishDiag.guard("Kuudra.2", "kuudra entity scan failed") { scan(mc) }
@@ -242,14 +242,14 @@ object Kuudra {
         if (S.kuudraAlerts && S.kuudraAlertNoPre) alert("§c§lNo ${s.name}!", "")
         if (!S.kuudraCratePriority) return
         val pr = KuudraPriority.of(s, preSpot, S.kuudraCratePriorityAdvanced)
-        if (pr.isNotEmpty()) { FishMsg.send("§eCrate Priority: §f$pr"); Misc.forceTitle(Component.literal("§e$pr"), Component.empty(), 2500) }
+        if (pr.isNotEmpty()) { FishMsg.send("§eCrate Priority: §f$pr"); FishUtil.forceTitle(Component.literal("§e$pr"), Component.empty(), 2500) }
     }
 
-    fun party(msg: String) { if (PartyUtil.isInParty()) ChatQueue.enqueue("pc $msg") }
+    fun party(msg: String) { if (PartyTools.isInParty()) ChatQueue.enqueue("pc $msg") }
 
     fun alert(title: String, sub: String) {
-        Misc.forceTitle(Component.literal(title), Component.literal(sub), 2000)
-        if (S.kuudraAlertSound) Misc.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
+        FishUtil.forceTitle(Component.literal(title), Component.literal(sub), 2000)
+        if (S.kuudraAlertSound) FishUtil.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
     }
 
     fun fmt(ms: Long): String = "%.2fs".format(ms / 1000.0)

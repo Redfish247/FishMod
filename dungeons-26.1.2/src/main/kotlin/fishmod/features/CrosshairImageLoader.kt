@@ -2,7 +2,7 @@ package fishmod.features
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.NativeImage
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
@@ -127,7 +127,7 @@ object CrosshairImageLoader {
                                 FishDiag.fail("CrosshairImageLoader.4", "releasing old crosshair texture ${prev.id} failed", e)
                             }
                         }
-                        if (!quiet) Misc.addChatMessage(Component.literal("§a[Crosshair] Loaded image: §f$fileName §7(${w}x$h)"))
+                        if (!quiet) FishUtil.addChatMessage(Component.literal("§a[Crosshair] Loaded image: §f$fileName §7(${w}x$h)"))
                     } catch (t: Throwable) {
                         FishDiag.fail("CrosshairImageLoader.5", "registering crosshair texture '$fileName' (${w}x$h) failed", t)
                     }
@@ -135,7 +135,7 @@ object CrosshairImageLoader {
             }
         } catch (e: Exception) {
             FishDiag.fail("CrosshairImageLoader.6", "crosshair image '$fileName' load failed", e)
-            Misc.addChatMessage(Component.literal("§c[Crosshair] Failed to load image '$fileName': ${e.message}"))
+            FishUtil.addChatMessage(Component.literal("§c[Crosshair] Failed to load image '$fileName': ${e.message}"))
         }
     }
 

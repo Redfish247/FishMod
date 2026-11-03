@@ -4,9 +4,9 @@ import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.tags.BlockTags
 import net.minecraft.world.phys.AABB
@@ -22,7 +22,7 @@ object GyroHelper {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc ->
             try { render(m, vc) } catch (t: Throwable) { FishDiag.fail("GyroHelper.1", "gyro ring render failed", t) }
         }
     }
@@ -32,7 +32,7 @@ object GyroHelper {
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
         val level = mc.level ?: return
-        if (ItemUtil.getId(p.mainHandItem) != "GYROKINETIC_WAND") return
+        if (ItemTools.getId(p.mainHandItem) != "GYROKINETIC_WAND") return
 
         val hit = p.pick(25.0, 0f, false) as? BlockHitResult ?: return
         if (hit.type != HitResult.Type.BLOCK) return
@@ -44,10 +44,10 @@ object GyroHelper {
 
         val cx = pos.x + 0.5
         val cz = pos.z + 0.5
-        val boxColor = RenderUtils.toFloats(FishSettings.gyroBoxColor)
-        val ringColor = RenderUtils.toFloats(FishSettings.gyroRingColor)
+        val boxColor = FishDraw.toFloats(FishSettings.gyroBoxColor)
+        val ringColor = FishDraw.toFloats(FishSettings.gyroRingColor)
 
-        RenderUtils.renderOutline(matrices, vc,
+        FishDraw.renderOutline(matrices, vc,
             AABB(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble(), pos.x + 1.0, pos.y + 1.0, pos.z + 1.0),
             boxColor)
 
@@ -56,7 +56,7 @@ object GyroHelper {
         for (i in 0..SEGMENTS) {
             val a = i.toDouble() / SEGMENTS * Math.PI * 2
             val cur = Vec3(cx + cos(a) * 10.0, ry, cz + sin(a) * 10.0)
-            if (prev != null) RenderUtils.renderLine(matrices, vc, prev, cur, ringColor)
+            if (prev != null) FishDraw.renderLine(matrices, vc, prev, cur, ringColor)
             prev = cur
         }
     }

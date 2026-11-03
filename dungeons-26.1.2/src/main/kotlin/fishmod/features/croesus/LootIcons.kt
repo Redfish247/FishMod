@@ -6,7 +6,7 @@ import fishmod.compat.CI
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import fishmod.features.storage.NBTInventory
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -49,7 +49,7 @@ object LootIcons {
         for (slot in player.containerMenu.slots) {
             val st = slot.item
             if (st.isEmpty) continue
-            val id = ItemUtil.getId(st) ?: continue
+            val id = ItemTools.getId(st) ?: continue
             if (id !in wanted) continue
             val copy = st.copyWithCount(1)
             copy.remove(DataComponents.LORE)
@@ -141,7 +141,8 @@ object LootIcons {
         val item = itemFor(material, dur) ?: run { FishDiag.fail("LootIcons.7", "no vanilla item for material '$material' (id=$id dur=$dur)"); return null }
         val stack = ItemStack(item)
         if (item == Items.PLAYER_HEAD) {
-            val skin = o.getAsJsonObject("skin")?.get("value")?.asString ?: run { FishDiag.fail("LootIcons.8", "player head $id has no skin value"); return null }
+            // some heads (e.g. SKELETON_TALISMAN) have no skin in the db; keep the plain head
+            val skin = o.getAsJsonObject("skin")?.get("value")?.asString ?: return stack
             val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", skin))
             val profile = com.mojang.authlib.GameProfile(java.util.UUID.nameUUIDFromBytes(id.toByteArray()), "fmloot", com.mojang.authlib.properties.PropertyMap(props))
             stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile))
@@ -172,7 +173,7 @@ object LootIcons {
             val type = object : TypeToken<MutableMap<String, String>>() {}.type
             FILE.reader().use { r -> GSON.fromJson<MutableMap<String, String>>(r, type)?.let { learned = it } }
         } catch (e: Exception) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[LootIcons] load failed: {}", e.toString())
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[LootIcons] load failed: {}", e.toString())
             FishDiag.fail("LootIcons.9", "loot icons load failed", e)
         }
     }
@@ -182,7 +183,7 @@ object LootIcons {
             FILE.parentFile?.mkdirs()
             FILE.writer().use { w -> GSON.toJson(learned, w) }
         } catch (e: Exception) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[LootIcons] save failed: {}", e.toString())
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[LootIcons] save failed: {}", e.toString())
             FishDiag.fail("LootIcons.10", "loot icons save failed (${learned.size} entries)", e)
         }
     }

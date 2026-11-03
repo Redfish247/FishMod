@@ -25,13 +25,29 @@ object AchRegistry {
         "frame_perfect" to "Beat yourself by less than a blink.",
         "the_chosen_one" to "Lightning strikes twice, in the same sitting.",
         "the_fish_king" to "He who rules every other secret wears the crown.",
-        "i_hate_bers" to "That plate in the fourth room can't take the pressure.",
-        "wrong_floor" to "A catacombs master visiting the very first floor. Lost?",
+        "wrong_floor" to "A catacombs veteran visiting the very first floor. Lost?",
         "hot_tub" to "The floor is lava. Literally. Over and over.",
         "splash_zone" to "It's hot, it's bright, and it's the last thing you see.",
         "the_one_that_got_away" to "Some prey vanishes if you take too long to finish it.",
         "party_of_one" to "The hardest floor needs no friends. Prove it.",
-        "fish_friend" to "A certain fish enjoys your company, run after run.",
+        "early_bird" to "The sun is barely up and you're already underground.",
+        "speed_bump" to "The door hadn't even finished opening.",
+        "so_close" to "One point. One single point.",
+        "bare_minimum" to "All those chests, and you left them all shut.",
+        "nine_lives" to "A cat would have stopped by now.",
+        "case_of_the_mondays" to "Nobody likes the first day of the week, especially down there.",
+        "coffee_break" to "Step away for a while. The game will wait.",
+        "lucky_sevens" to "Three sevens on the final tally.",
+        "assembly_line" to "Five heads in five minutes. Keep the line moving.",
+        "puzzled" to "Some rooms just aren't for you. Three of them, in fact.",
+        "slumming_it" to "The king of the wastes returns to the basic tier.",
+        "full_house" to "Trickster, royalty and not one funeral.",
+        "open_door_policy" to "The line outside your farm never ends.",
+        "overtime" to "The King's paperwork can't keep up with you.",
+        "night_shift" to "The bosses clock in late, and so do you.",
+        "midnight_catch" to "Something shiny bites while the world sleeps.",
+        "bug_zapper" to "Your crops have never felt safer, and the pests have never felt worse.",
+        "variety_pack" to "Why hunt one kind of monster when you can sample the menu?",
     )
 
     val ALL = ArrayList<Ach>()
@@ -221,11 +237,11 @@ object AchRegistry {
         a("feast_addict", "Farming", "Feast Addict", "15 Feasts", "Insane", 50, "garden.feasts", 15L, "", false)
         a("perfect_harvest", "Farming", "Perfect Harvest", "10M farming profit in one session", "Medium", 10, "farming.sessionBest", 10000000L, "coins", false)
         a("farming_fortune", "Farming", "Farming Fortune", "100M farming profit in one session", "Hard", 20, "farming.sessionBest", 100000000L, "coins", false)
-        a("rock_collector", "Mining", "Rock Collector", "5,000 blocks mined", "Easy", 10, "mining.blocks", 5000L, "", false)
-        a("pickaxe_enthusiast", "Mining", "Pickaxe Enthusiast", "50,000 blocks", "Medium", 15, "mining.blocks", 50000L, "", false)
-        a("tunnel_rat", "Mining", "Tunnel Rat", "250,000 blocks", "Hard", 20, "mining.blocks", 250000L, "", false)
-        a("deep_delver", "Mining", "Deep Delver", "750,000 blocks", "Insane", 30, "mining.blocks", 750000L, "", false)
-        a("the_excavator", "Mining", "The Excavator", "1M blocks", "Impossible", 50, "mining.blocks", 1000000L, "", false)
+        a("rock_collector", "Mining", "Rock Collector", "5,000 ores mined", "Easy", 10, "mining.blocks", 5000L, "", false)
+        a("pickaxe_enthusiast", "Mining", "Pickaxe Enthusiast", "50,000 ores", "Medium", 15, "mining.blocks", 50000L, "", false)
+        a("tunnel_rat", "Mining", "Tunnel Rat", "250,000 ores", "Hard", 20, "mining.blocks", 250000L, "", false)
+        a("deep_delver", "Mining", "Deep Delver", "750,000 ores", "Insane", 30, "mining.blocks", 750000L, "", false)
+        a("the_excavator", "Mining", "The Excavator", "1M ores", "Impossible", 50, "mining.blocks", 1000000L, "", false)
         a("powder_beginner", "Mining", "Powder Beginner", "100K powder", "Easy", 5, "mining.powder", 100000L, "", false)
         a("powder_grinder", "Mining", "Powder Grinder", "1M total powder", "Medium", 10, "mining.powder", 1000000L, "", false)
         a("powder_addict", "Mining", "Powder Addict", "10M total powder", "Hard", 20, "mining.powder", 10000000L, "", false)
@@ -374,27 +390,42 @@ object AchRegistry {
         a("hud_architect", "FishMod / General", "HUD Architect", "Save 5 HUD layouts", "Medium", 10, "fm.hudSaves", 5L, "", false)
         a("the_optimizer", "FishMod / General", "The Optimizer", "Enable performance settings", "Medium", 10, "fm.perfOn", 1L, "", false)
         a("feature_tester", "FishMod / General", "Feature Tester", "Use 25 FishMod features", "Hard", 15, "fm.featuresUsed", 25L, "", false)
-        a("bug_hunter", "FishMod / General", "Bug Hunter", "Submit a verified bug report", "Hard", 15, "server.bugReport", 1L, "", false)
+        a("bug_hunter", "FishMod / General", "Bug Hunter", "Send a bug report from in-game", "Hard", 15, "fm.bugReports", 1L, "", false)
         a("the_perfect_setup", "FishMod / General", "The Perfect Setup", "Save configurations for 5 activities", "Hard", 15, "fm.hudAreas", 5L, "", false)
         a("fishmod_veteran", "FishMod / General", "FishMod Veteran", "Use FishMod on 150 different days", "Insane", 35, "fm.days", 150L, "", false)
         a("the_ultimate_tester", "FishMod / General", "The Ultimate Tester", "Use 90% of major FishMod features", "Insane", 45, "fm.featuresPct", 90L, "", false)
         a("the_fishmodder", "FishMod / General", "The Fishmodder", "Say “Hi Fish” While in lobby w/ Him", "Impossible", 50, "hifish.said", 1L, "", false)
         a("stat_nerd", "FishMod / General", "Stat Nerd", "Open session stats 100 times", "Easy", 5, "fm.statsOpened", 100L, "", false)
         a("pb_machine", "FishMod / General", "PB Machine", "Set 25 new personal bests", "Hard", 20, "fm.pbs", 25L, "", false)
-        a("early_adopter", "FishMod / General", "Early Adopter", "Use a FishMod prerelease build", "Medium", 15, "fm.prerelease", 1L, "", false)
-        a("board_contributor", "FishMod / General", "Board Contributor", "Leave 10 notes on the test board", "Medium", 10, "server.boardNotes", 10L, "", false)
+        a("board_contributor", "FishMod / General", "Board Contributor", "Send 3 bug reports or suggestions from in-game", "Medium", 10, "fm.boardReports", 3L, "", false)
         a("fish_out_of_water", "Secret Achievements", "Fish Out of Water", "Open FishMod while standing in water", "Secret", 50, "secret.waterGui", 1L, "", true)
         a("one_more_run", "Secret Achievements", "One More Run", "Start another dungeon run after midnight", "Secret", 25, "secret.midnightRun", 1L, "", true)
         a("frame_perfect", "Secret Achievements", "Frame Perfect", "Beat your previous PB by <0.01s", "Secret", 25, "secret.framePerfect", 1L, "", true)
         a("the_chosen_one", "Secret Achievements", "The Chosen One", "Obtain the same designated rare RNG twice in one session", "Secret", 25, "secret.chosenOne", 1L, "", true)
         a("the_fish_king", "Secret Achievements", "The Fish King", "Unlock every secret achievement", "Impossible", 100, "meta.fishKing", 1L, "", true)
-        a("i_hate_bers", "Secret Achievements", "I Hate Bers", "Break the I4 Pressure Plate", "Secret", 25, "secret.i4Plate", 1L, "", true)
-        a("wrong_floor", "Secret Achievements", "Wrong Floor", "Enter F1 while Catacombs 50", "Secret", 25, "secret.wrongFloor", 1L, "", true)
+        a("wrong_floor", "Secret Achievements", "Wrong Floor", "Enter F1 while Catacombs 35+","Secret", 25, "secret.wrongFloor", 1L, "", true)
         a("hot_tub", "Secret Achievements", "Hot Tub", "Fall in lava 10 times in 1 run", "Secret", 25, "secret.lavaFalls", 1L, "", true)
         a("splash_zone", "Secret Achievements", "Splash Zone", "Die to lava in a dungeon", "Secret", 25, "secret.lavaDeath", 1L, "", true)
-        a("the_one_that_got_away", "Secret Achievements", "The One That Got Away", "An Inquisitor despawns before you kill it", "Secret", 25, "secret.inqDespawn", 1L, "", true)
+        a("the_one_that_got_away", "Secret Achievements", "The One That Got Away", "A slayer boss gets away before you kill it", "Secret", 25, "secret.slayerEscape", 1L, "", true)
         a("party_of_one", "Secret Achievements", "Party of One", "Complete an M7 solo", "Secret", 100, "secret.soloM7", 1L, "", true)
-        a("fish_friend", "Secret Achievements", "Fish Friend", "Complete 10 runs with Fish in your party", "Secret", 50, "secret.fishFriend", 1L, "", true)
+        a("early_bird", "Secret Achievements", "Early Bird", "Start a dungeon run between 5 and 7 AM", "Secret", 25, "secret.earlyBird", 1L, "", true)
+        a("speed_bump", "Secret Achievements", "Speed Bump", "Die within 30 seconds of a run starting", "Secret", 25, "secret.speedBump", 1L, "", true)
+        a("so_close", "Secret Achievements", "So Close", "Finish a run with a score of exactly 299", "Secret", 50, "secret.score299", 1L, "", true)
+        a("bare_minimum", "Secret Achievements", "Bare Minimum", "Finish a run without finding a single secret", "Secret", 25, "secret.noSecrets", 1L, "", true)
+        a("nine_lives", "Secret Achievements", "Nine Lives", "Finish a run with 9 or more team deaths", "Secret", 25, "secret.nineDeaths", 1L, "", true)
+        a("case_of_the_mondays", "Secret Achievements", "Case of the Mondays", "Die in a dungeon on a Monday", "Secret", 25, "secret.mondayDeath", 1L, "", true)
+        a("coffee_break", "Secret Achievements", "Coffee Break", "Stand still in Skyblock for an hour", "Secret", 25, "secret.afkHour", 1L, "", true)
+        a("lucky_sevens", "Secret Achievements", "Lucky Sevens", "Finish a run with a score of exactly 277", "Secret", 50, "secret.score277", 1L, "", true)
+        a("assembly_line", "Secret Achievements", "Assembly Line", "Kill 5 slayer bosses in 5 minutes", "Secret", 50, "secret.slayerRush", 1L, "", true)
+        a("puzzled", "Secret Achievements", "Puzzled", "Fail 3 puzzles in one run", "Secret", 25, "secret.threeFails", 1L, "", true)
+        a("slumming_it", "Secret Achievements", "Slumming It", "Finish a T1 Kuudra after clearing T5", "Secret", 25, "secret.slumming", 1L, "", true)
+        a("full_house", "Secret Achievements", "Full House", "Kill a Mimic and a Prince in one deathless run", "Secret", 50, "secret.fullHouse", 1L, "", true)
+        a("open_door_policy", "Secret Achievements", "Open Door Policy", "Accept 10 garden visitors in 10 minutes", "Secret", 25, "secret.visitorRush", 1L, "", true)
+        a("overtime", "Secret Achievements", "Overtime", "Finish 5 mining commissions in 10 minutes", "Secret", 25, "secret.commissionRush", 1L, "", true)
+        a("night_shift", "Secret Achievements", "Night Shift", "Kill a slayer boss between midnight and 5 AM", "Secret", 25, "secret.nightSlayer", 1L, "", true)
+        a("midnight_catch", "Secret Achievements", "Midnight Catch", "Catch a Golden Fish trophy between midnight and 5 AM", "Secret", 50, "secret.midnightGolden", 1L, "", true)
+        a("bug_zapper", "Secret Achievements", "Bug Zapper", "Kill 15 garden pests in 10 minutes", "Secret", 25, "secret.pestRush", 1L, "", true)
+        a("variety_pack", "Secret Achievements", "Variety Pack", "Kill all 5 slayer types within 1 hour", "Secret", 50, "secret.slayerVariety", 1L, "", true)
         a("fishmod_completionist", "Ultimate", "FishMod Completionist", "Unlock every non-secret achievement", "Impossible", 250, "meta.completionist", 1L, "", false)
         a("the_fish_emperor", "Ultimate", "The Fish Emperor", "Unlock every achievement, secrets included", "Impossible", 500, "meta.emperor", 1L, "", false)
     }

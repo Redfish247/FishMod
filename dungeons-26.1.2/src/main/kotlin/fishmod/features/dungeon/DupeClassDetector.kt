@@ -1,47 +1,47 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.config.values.Dungeons
-import fishmod.utils.dungeon.DungeonClass
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
+import fishmod.utils.config.values.DungeonSettings
+import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
 import net.minecraft.network.chat.Component
 import java.util.EnumMap
 import java.util.concurrent.ConcurrentHashMap
 
 object DupeClassDetector {
 
-    private val announced: MutableSet<DungeonClass> = ConcurrentHashMap.newKeySet()
+    private val announced: MutableSet<DungeonRole> = ConcurrentHashMap.newKeySet()
 
     @JvmStatic
     fun init() {
 
-        Events.ON_PHASE_CHANGE.register {
-            if (Phase.runJustStarted()) {
+        FishEvents.phaseChange.register {
+            if (BossPhase.runJustStarted()) {
                 announced.clear()
             }
             false
         }
 
-        Events.ON_RUN_END.register {
+        FishEvents.runEnd.register {
             announced.clear()
             false
         }
 
-        Events.ON_PLAYER_ENTRY.register { _ ->
-            if (!Dungeons.detectDuplicateClass) return@register false
-            try { checkForDupes() } catch (e: Exception) { FishDiag.fail("DupeClassDetector.1", "dupe class check failed (${DungeonClass.getAll().size} players)", e) }
+        FishEvents.tabEntry.register { _ ->
+            if (!DungeonSettings.dupeClassAlert) return@register false
+            try { checkForDupes() } catch (e: Exception) { FishDiag.fail("DupeClassDetector.1", "dupe class check failed (${DungeonRole.getAll().size} players)", e) }
             false
         }
     }
 
     private fun checkForDupes() {
-        val byClass: MutableMap<DungeonClass, MutableList<String>> = EnumMap(DungeonClass::class.java)
+        val byClass: MutableMap<DungeonRole, MutableList<String>> = EnumMap(DungeonRole::class.java)
 
-        DungeonClass.getAll().forEach { name, dungeonClass ->
+        DungeonRole.getAll().forEach { name, dungeonClass ->
             if (dungeonClass == null) { FishDiag.fail("DupeClassDetector.2", "player $name has null dungeon class"); return@forEach }
-            if (dungeonClass == DungeonClass.MAGE && Dungeons.ignoreDupeMage) return@forEach
+            if (dungeonClass == DungeonRole.MAGE && DungeonSettings.dupeClassSkipMage) return@forEach
             byClass.computeIfAbsent(dungeonClass) { ArrayList() }.add(name)
         }
 
@@ -49,14 +49,14 @@ object DupeClassDetector {
             if (names.size < 2) return@forEach
             if (!announced.add(dungeonClass)) return@forEach
 
-            Misc.addChatMessage(
+            FishUtil.addChatMessage(
                 Component.literal(
                     "§c§lDupe Class Detected §8> §f" + names.size +
                         " " + capitalize(dungeonClass.name) + " §7(" + joinNames(names) + ")"
                 )
             )
 
-            if (Dungeons.dupeClassPartyChat) {
+            if (DungeonSettings.dupeClassPartyChat) {
                 fishmod.utils.ChatQueue.enqueue(
                     "pc Dupe Class Detected > " + names.size +
                         " " + capitalize(dungeonClass.name) + " (" + joinNames(names) + ")"

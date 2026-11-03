@@ -62,7 +62,7 @@ object RemoteSync {
 
     private fun tabSize(): Int {
         val mc = Minecraft.getInstance()
-        return if (mc.connection == null) 0 else fishmod.utils.TabListCache.entries.size
+        return if (mc.connection == null) 0 else fishmod.utils.TabListCache.entries.size + (mc.level?.players()?.size ?: 0)
     }
 
     @JvmStatic
@@ -101,6 +101,15 @@ object RemoteSync {
             names[name] = u
             if (u == selfUuid) continue
             uuidToName[u] = name
+        }
+        // Hypixel drops real players from the tab list once spawned, so take nearby players from the world too
+        mc.level?.players()?.forEach { p ->
+            if (p.uuid.version() != 4) return@forEach
+            val name = p.gameProfile.name()
+            if (name == null || name.isEmpty()) return@forEach
+            val u = dashless(p.uuid)
+            names[name] = u
+            if (u != selfUuid) uuidToName[u] = name
         }
         fishmod.cosmetic.badge.BadgeManager.replaceNames(names)
         if (dashlessIds.size > 1024) dashlessIds.clear()

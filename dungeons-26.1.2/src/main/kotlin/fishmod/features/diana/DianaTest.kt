@@ -2,7 +2,7 @@ package fishmod.features.diana
 import fishmod.compat.mainTarget
 import fishmod.compat.showScreen
 
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.core.BlockPos
 import org.slf4j.LoggerFactory
 
@@ -16,13 +16,13 @@ object DianaTest {
 
     fun init() {
         LOG.info("Diana test mode on")
-        Events.ON_PARTICLE.register { p ->
+        FishEvents.particle.register { p ->
             val t = p.particle.type
             if (t === net.minecraft.core.particles.ParticleTypes.DUST || t === net.minecraft.core.particles.ParticleTypes.DRIPPING_LAVA)
                 LOG.info("particle {} count={} speed={} off={},{},{} at {},{},{}", net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getKey(t), p.count, p.maxSpeed, p.xDist, p.yDist, p.zDist, p.x, p.y, p.z)
             false
         }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             val s = text.string
             if (!s.startsWith("[fmtest]")) return@register false
             when {
@@ -53,7 +53,7 @@ object DianaTest {
     // Delay a few frames so the tp/rotation and new waypoints are rendered
     private fun shot(name: String) {
         val mc = net.minecraft.client.Minecraft.getInstance()
-        fishmod.utils.Scheduler.scheduleTask(Runnable {
+        fishmod.utils.TickScheduler.scheduleTask(Runnable {
             net.minecraft.client.Screenshot.grab(mc.gameDirectory, "diana_$name.png", mc.mainTarget, 1) { LOG.info("shot {}", name) }
         }, 10)
     }

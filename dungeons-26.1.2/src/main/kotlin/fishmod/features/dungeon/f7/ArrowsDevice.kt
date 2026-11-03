@@ -5,13 +5,13 @@ import fishmod.compat.CI
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -54,8 +54,8 @@ object ArrowsDevice {
     }
 
     private fun inP3(): Boolean =
-        (try { Phase.inP3() } catch (t: Throwable) { FishDiag.fail("ArrowsDevice.1", "Phase.inP3 threw", t); false }) ||
-            (Location.inDungeon() && Minecraft.getInstance().player?.let { it.y in 100.0..156.0 } == true)
+        (try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("ArrowsDevice.1", "BossPhase.inP3 threw", t); false }) ||
+            (SkyblockLocation.inDungeon() && Minecraft.getInstance().player?.let { it.y in 100.0..156.0 } == true)
 
     private val isPlayerInRoom: Boolean
         get() = Minecraft.getInstance().player?.let { roomBoundingBox.contains(it.position()) } == true
@@ -68,14 +68,10 @@ object ArrowsDevice {
 
     @JvmStatic
     fun init() {
-        Events.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             try {
                 when (packet) {
-                    is ClientboundBlockUpdatePacket -> {
-                        if (packet.blockState.isAir && inP3() && isPlayerInRoom &&
-                            Minecraft.getInstance().level?.getBlockState(packet.pos)?.block is net.minecraft.world.level.block.BasePressurePlateBlock) fishmod.features.achievements.AchHooks.i4Plate()
-                        onBlock(packet.pos, packet.blockState)
-                    }
+                    is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                     is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
                     is ClientboundSetEntityDataPacket -> onEntityData(packet)
                 }
@@ -83,23 +79,23 @@ object ArrowsDevice {
             false
         }
 
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             resetSolver(); isDeviceComplete = false; prev.clear(); false
         }
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.arrowsDeviceEnabled || !inP3() || !isPlayerInRoom || isDeviceComplete) return@register false
-            val plain = text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+            val plain = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
             val name = deviceCompleteRegex.find(plain)?.groupValues?.get(1)
             if (name == null && plain.contains(" completed a device! (")) FishDiag.fail("ArrowsDevice.3", "device-complete line didn't match: '$plain'")
             if (name == Minecraft.getInstance().player?.gameProfile?.name) onComplete("Chat")
             false
         }
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!FishSettings.arrowsDeviceDepth) try { drawGizmo() } catch (e: Exception) { FishDiag.fail("ArrowsDevice.4", "arrows device gizmo render threw", e) }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             if (FishSettings.arrowsDeviceDepth) try { draw(m, vc) } catch (e: Exception) { FishDiag.fail("ArrowsDevice.5", "arrows device fill render threw", e) }
         }
 
@@ -143,8 +139,8 @@ object ArrowsDevice {
     private fun onComplete(method: String) {
         isDeviceComplete = true
         if (FishSettings.arrowsDeviceCompleteAlert) {
-            Misc.addChatMessage(Component.literal("§aSharp shooter device complete §7($method)"))
-            Misc.forceTitle(Component.literal("§aDevice Complete"), Component.empty())
+            FishUtil.addChatMessage(Component.literal("§aSharp shooter device complete §7($method)"))
+            FishUtil.forceTitle(Component.literal("§aDevice Complete"), Component.empty())
         }
         resetSolver()
     }
@@ -155,12 +151,12 @@ object ArrowsDevice {
 
     private fun drawGizmo() {
         if (!FishSettings.arrowsDeviceEnabled || !inP3()) return
-        for (p in markedPositions) RenderUtils.gizmoBox(AABB(p), FishSettings.arrowsDeviceMarkedColor, 0)
-        targetPosition?.let { RenderUtils.gizmoBox(AABB(it), FishSettings.arrowsDeviceTargetColor, 0) }
+        for (p in markedPositions) FishDraw.gizmoBox(AABB(p), FishSettings.arrowsDeviceMarkedColor, 0)
+        targetPosition?.let { FishDraw.gizmoBox(AABB(it), FishSettings.arrowsDeviceTargetColor, 0) }
         if (FishSettings.arrowsDeviceShowAim) {
             val cols = aimColors()
             optimalAimPositions.take(3).forEachIndexed { i, aim ->
-                RenderUtils.gizmoBox(AABB.unitCubeFromLowerCorner(aim.position.add(-0.5, -0.5, -0.1)), cols[i], 0)
+                FishDraw.gizmoBox(AABB.unitCubeFromLowerCorner(aim.position.add(-0.5, -0.5, -0.1)), cols[i], 0)
             }
         }
     }
@@ -178,8 +174,8 @@ object ArrowsDevice {
     }
 
     private fun fill(matrices: PoseStack, vc: VertexConsumer, box: AABB, color: Int) {
-        val rgba = RenderUtils.toFloats(color)
-        RenderUtils.renderFilled(matrices, vc, box, rgba)
+        val rgba = FishDraw.toFloats(color)
+        FishDraw.renderFilled(matrices, vc, box, rgba)
     }
 
     private fun calculateOptimalAimPositions(target: BlockPos): List<AimPosition> {

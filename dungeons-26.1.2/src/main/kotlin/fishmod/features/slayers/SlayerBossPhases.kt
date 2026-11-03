@@ -1,14 +1,14 @@
 package fishmod.features.slayers
 import fishmod.compat.hudHidden
 
-import fishmod.utils.Constants
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.player.AbstractClientPlayer
@@ -70,18 +70,18 @@ object SlayerBossPhases {
                 FishDiag.fail("SlayerBossPhases.1", "boss phase tick failed (type=${SlayerManager.type}, tier=${SlayerManager.tier})", e)
             }
         })
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (enabled()) {
                 try {
-                    onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+                    onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim())
                 } catch (e: Exception) {
                     FishDiag.fail("SlayerBossPhases.2", "boss phase chat handler failed", e)
                 }
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { hardReset(); false }
-        RenderingEvents.GIZMO.register { _ ->
+        FishEvents.worldChange.register { hardReset(); false }
+        RenderHooks.GIZMO.register { _ ->
             try {
                 render()
             } catch (e: Exception) {
@@ -111,7 +111,7 @@ object SlayerBossPhases {
     private fun tick() {
         if (!enabled()) { show = false; line1 = ""; line2 = ""; return }
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.level == null || mc.hudHidden || !Location.inSkyblock()) {
+        if (mc.player == null || mc.level == null || mc.hudHidden || !SkyblockLocation.inSkyblock()) {
             show = false; line1 = ""; line2 = ""; return
         }
 
@@ -128,7 +128,7 @@ object SlayerBossPhases {
             boss = combatBoss
             val r = computeCombat(combatType, combatBoss, SlayerManager.tier)
             l1 = r.first; l2 = r.second
-        } else if (Location.`in`(Location.THE_RIFT)) {
+        } else if (SkyblockLocation.`in`(SkyblockLocation.THE_RIFT)) {
             val bf = findBloodfiend(mc)
             if (bf != null) {
                 boss = bf
@@ -279,7 +279,7 @@ object SlayerBossPhases {
         val level = Minecraft.getInstance().level ?: return emptyList()
         val box = e.boundingBox.inflate(radius, up, radius)
         return level.getEntitiesOfClass(ArmorStand::class.java, box) { it.hasCustomName() }
-            .mapNotNull { it.customName?.string?.replace(Constants.STRIP_COLOR_REGEX, "")?.trim() }
+            .mapNotNull { it.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "")?.trim() }
     }
 
     private fun healthSplit(hp: Double, maxHp: Double, steps: Int): String {
@@ -325,14 +325,14 @@ object SlayerBossPhases {
         val now = System.currentTimeMillis()
         if (now - (titleAt[key] ?: 0L) < cooldownMs) return
         titleAt[key] = now
-        Misc.forceTitle(Component.literal(text), Component.empty(), 1_500)
+        FishUtil.forceTitle(Component.literal(text), Component.empty(), 1_500)
     }
 
     private fun fmt(v: Double): String = String.format("%.1f", v)
 
     private fun render() {
         if (!show || !enabled() || !FishSettings.slayerPhaseWorldText) return
-        if (line1.isNotEmpty()) RenderUtils.gizmoText(Component.literal(line1), Vec3(ax, ay, az), 1.4f, -0x1)
-        if (line2.isNotEmpty()) RenderUtils.gizmoText(Component.literal(line2), Vec3(ax, ay + 0.36, az), 0.95f, -0x1)
+        if (line1.isNotEmpty()) FishDraw.gizmoText(Component.literal(line1), Vec3(ax, ay, az), 1.4f, -0x1)
+        if (line2.isNotEmpty()) FishDraw.gizmoText(Component.literal(line2), Vec3(ax, ay + 0.36, az), 0.95f, -0x1)
     }
 }

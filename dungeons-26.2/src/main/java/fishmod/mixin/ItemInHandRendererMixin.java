@@ -6,8 +6,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import fishmod.utils.config.values.FishSettings;
-import fishmod.utils.config.values.Visual;
-import fishmod.utils.data.ItemUtil;
+import fishmod.utils.config.values.VisualSettings;
+import fishmod.utils.data.ItemTools;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
@@ -58,8 +58,8 @@ public abstract class ItemInHandRendererMixin {
     @ModifyVariable(method = "submitArmWithItem", at = @At("HEAD"), ordinal = 2, argsOnly = true)
     private float fishmod$noSwing(float attack) {
         try {
-            if (Visual.renderOptimizer && Visual.noSwingAnimation) {
-                if (!Visual.noSwingTerminatorOnly || "TERMINATOR".equals(ItemUtil.getId(mainHandItem))) return 1f;
+            if (VisualSettings.renderOptimizer && VisualSettings.noSwingAnimation) {
+                if (!VisualSettings.noSwingTerminatorOnly || "TERMINATOR".equals(ItemTools.getId(mainHandItem))) return 1f;
             }
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("ItemInHandRendererMixin.1", "no-swing terminator check failed", t);

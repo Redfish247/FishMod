@@ -59,7 +59,7 @@ object UiFont {
             loaded = true
         } catch (t: Throwable) {
             failed = true
-            fishmod.utils.debug.Debug.LOGGER.error("[UiFont] failed to load Inter", t)
+            fishmod.utils.debug.FishDebug.LOGGER.error("[UiFont] failed to load Inter", t)
             FishDiag.fail("UiFont.1", "load bundled Inter font", t)
         }
         return loaded
@@ -138,7 +138,7 @@ object UiFont {
             if (!(interScale > 0f)) FishDiag.fail("UiFont.4", "Inter scale invalid ($interScale) while loading fallback $path")
             return Fallback(fi, buf, STBTruetype.stbtt_ScaleForPixelHeight(fi, 1f) / interScale)
         } catch (t: Throwable) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[UiFont] fallback font $path failed: $t")
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[UiFont] fallback font $path failed: $t")
             FishDiag.fail("UiFont.5", "load fallback font $path", t)
             return null
         }

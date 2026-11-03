@@ -21,6 +21,46 @@ object Http {
         .followRedirects(HttpClient.Redirect.ALWAYS)
         .build()
 
+    // Too many parallel HTTP/2 streams fail with "too many concurrent streams", so cap and queue.
+    private const val MAX_CONCURRENT = 8
+    private const val MAX_RETRIES = 3
+    private var active = 0
+    private val waiting = java.util.ArrayDeque<Runnable>()
+    private val retryTimer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "FishMod-HttpRetry").apply { isDaemon = true }
+    }
+
+    // CLIENT.sendAsync behind a global concurrency cap, retrying IO failures with backoff.
+    @JvmStatic
+    fun <T> sendAsync(req: HttpRequest, handler: HttpResponse.BodyHandler<T>): java.util.concurrent.CompletableFuture<HttpResponse<T>> {
+        val out = java.util.concurrent.CompletableFuture<HttpResponse<T>>()
+        attempt(req, handler, out, 0)
+        return out
+    }
+
+    private fun <T> attempt(req: HttpRequest, handler: HttpResponse.BodyHandler<T>, out: java.util.concurrent.CompletableFuture<HttpResponse<T>>, n: Int) {
+        val task = Runnable {
+            val f = try { CLIENT.sendAsync(req, handler) } catch (t: Throwable) { release(); out.completeExceptionally(t); return@Runnable }
+            f.whenComplete { r, t ->
+                release()
+                val cause = (t as? java.util.concurrent.CompletionException)?.cause ?: t
+                when {
+                    t == null -> out.complete(r)
+                    cause is IOException && n < MAX_RETRIES ->
+                        retryTimer.schedule({ attempt(req, handler, out, n + 1) }, 500L shl n, java.util.concurrent.TimeUnit.MILLISECONDS)
+                    else -> out.completeExceptionally(cause)
+                }
+            }
+        }
+        val runNow = synchronized(this) { (active < MAX_CONCURRENT).also { if (it) active++ else waiting.add(task) } }
+        if (runNow) task.run()
+    }
+
+    private fun release() {
+        val next = synchronized(this) { waiting.poll().also { if (it == null) active-- } }
+        if (next != null) java.util.concurrent.ForkJoinPool.commonPool().execute(next)
+    }
+
     @JvmStatic
     @JvmOverloads
     @Throws(IOException::class, InterruptedException::class)

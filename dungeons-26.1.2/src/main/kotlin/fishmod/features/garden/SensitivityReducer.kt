@@ -2,7 +2,7 @@ package fishmod.features.garden
 
 import fishmod.features.mining.Mining
 import fishmod.utils.FishMsg
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -19,7 +19,7 @@ object SensitivityReducer {
         if (!S.gardenSensItemsOnly) return true
         val held = Minecraft.getInstance().player?.mainHandItem ?: return false
         if (S.gardenSensRod && held.`is`(net.minecraft.world.item.Items.FISHING_ROD)) return true
-        val id = fishmod.utils.data.ItemUtil.getId(held) ?: return false
+        val id = fishmod.utils.data.ItemTools.getId(held) ?: return false
         return (S.gardenSensHoe && GardenCrops.holdingFarmingTool()) ||
             (S.gardenSensVacuum && id.contains("VACUUM")) ||
             (S.gardenSensSprayonator && id.contains("SPRAYONATOR")) ||
@@ -38,7 +38,7 @@ object SensitivityReducer {
         // A crash while reduced leaves the saved original behind; put it back on the next launch
         ClientLifecycleEvents.CLIENT_STARTED.register { mc -> if (S.gardenSensOriginal >= 0) restore(mc, false) }
         ClientLifecycleEvents.CLIENT_STOPPING.register { mc -> if (reduced) restore(mc, false) }
-        Events.ON_WORLD_CHANGE.register { Minecraft.getInstance().let { mc -> if (reduced) restore(mc, false) }; false }
+        FishEvents.worldChange.register { Minecraft.getInstance().let { mc -> if (reduced) restore(mc, false) }; false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             val p = mc.player
             if (p == null) return@register

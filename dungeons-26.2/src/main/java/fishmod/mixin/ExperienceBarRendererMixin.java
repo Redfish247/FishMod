@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.utils.Location;
+import fishmod.utils.SkyblockLocation;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -15,6 +15,6 @@ public class ExperienceBarRendererMixin {
 
     @Inject(method = {"extractRenderState", "extractBackground"}, at = @At("HEAD"), cancellable = true)
     private void fishmod$hideXpBar(GuiGraphicsExtractor extractor, DeltaTracker delta, CallbackInfo ci) {
-        if (FishSettings.actionBarEnabled && FishSettings.abHideXpBar && Location.inSkyblock()) ci.cancel();
+        if (FishSettings.actionBarEnabled && FishSettings.abHideXpBar && SkyblockLocation.inSkyblock()) ci.cancel();
     }
 }

@@ -3,7 +3,7 @@ package fishmod.mixin;
 import com.mojang.blaze3d.platform.InputConstants;
 import fishmod.features.chat.ChatSearch;
 import fishmod.mixin.accessors.KeyBindingAccessor;
-import fishmod.utils.Keybinds;
+import fishmod.utils.FishKeys;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -52,7 +52,7 @@ public abstract class ChatSearchMixin extends Screen {
         int y = this.height - 38;
 
         ChatComponent chat = fishmod.compat.McCompatKt.getHud(Minecraft.getInstance()).getChat();
-        ChatHudInvoker acc = (ChatHudInvoker) chat;
+        FishChatInvoker acc = (FishChatInvoker) chat;
         int x = 4;
         int w = Math.max(40, (int) (acc.invokeWidth() * acc.invokeChatScale()));
 
@@ -93,7 +93,7 @@ public abstract class ChatSearchMixin extends Screen {
         if (!FishSettings.chatFeatureEnabled || !FishSettings.chatSearch) return;
         int key = event.key();
 
-        InputConstants.Key bound = ((KeyBindingAccessor) Keybinds.chatSearchToggle).getBoundKey();
+        InputConstants.Key bound = ((KeyBindingAccessor) FishKeys.chatSearchToggle).getBoundKey();
         if (bound == null) {
             fishmod.utils.debug.FishDiag.fail("ChatSearchMixin.2", "chat search toggle keybind has no bound key");
             return;

@@ -3,9 +3,9 @@ package fishmod.features.diana
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import fishmod.utils.FishMsg
-import fishmod.utils.Location
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -33,7 +33,7 @@ object Diana {
     val recentClicks = HashMap<BlockPos, Long>()
     var lastClickedWaypoint: BlockPos? = null
 
-    @JvmStatic fun inHub(): Boolean = testMode || Location.`in`(Location.HUB)
+    @JvmStatic fun inHub(): Boolean = testMode || SkyblockLocation.`in`(SkyblockLocation.HUB)
 
     @JvmStatic fun active(): Boolean = inHub() && hasSpade
 
@@ -50,8 +50,8 @@ object Diana {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             val p = mc.player ?: return@register
-            if (tick++ % 20 == 0) hasSpade = p.inventory.nonEquipmentItems.any { ItemUtil.getId(it) in SPADES }
-            holdingSpade = ItemUtil.getId(p.mainHandItem)?.contains("SPADE") == true
+            if (tick++ % 20 == 0) hasSpade = p.inventory.nonEquipmentItems.any { ItemTools.getId(it) in SPADES }
+            holdingSpade = ItemTools.getId(p.mainHandItem)?.contains("SPADE") == true
             val now = System.currentTimeMillis()
             if (holdingSpade) {
                 if (now - lastHoldMs > 200) holdStartMs = now
@@ -77,7 +77,7 @@ object Diana {
             if (level.isClientSide && inHub() && player.getItemInHand(hand).hoverName.string.contains("Spade")) SpadeGuess.onSpadeUse()
             InteractionResult.PASS
         })
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             recentClicks.clear(); lastClickedWaypoint = null
             false
         }

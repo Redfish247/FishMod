@@ -4,11 +4,11 @@ import fishmod.compat.CB
 import fishmod.compat.CI
 
 import fishmod.features.dungeon.map.DungeonState
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -47,7 +47,7 @@ object LividSolver {
 
     @JvmStatic
     fun init() {
-        Events.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (!active()) return@register false
             try {
                 when (packet) {
@@ -59,16 +59,16 @@ object LividSolver {
             false
         }
 
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             current = Livid.HOCKEY
             Livid.entries.forEach { it.entity = null }
             false
         }
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!active()) return@register
             if (Minecraft.getInstance().player?.getEffect(MobEffects.BLINDNESS) != null) return@register
-            try { current.entity?.let { RenderUtils.gizmoBox(it.boundingBox, 0, FishSettings.lividSolverColor) } }
+            try { current.entity?.let { FishDraw.gizmoBox(it.boundingBox, 0, FishSettings.lividSolverColor) } }
             catch (e: Exception) { FishDiag.fail("LividSolver.2", "livid box render threw (${current.entityName})", e) }
         }
     }
@@ -81,7 +81,7 @@ object LividSolver {
         }
         if (hit != current) {
             current = hit
-            Misc.addChatMessage(Component.literal("§b[Livid] §7real Livid: §${hit.colorCode}${hit.entityName}"))
+            FishUtil.addChatMessage(Component.literal("§b[Livid] §7real Livid: §${hit.colorCode}${hit.entityName}"))
         }
     }
 

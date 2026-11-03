@@ -3,12 +3,12 @@ import fishmod.compat.hudHidden
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.client.DeltaTracker
@@ -81,13 +81,13 @@ object CooldownOverlay {
 
     @JvmStatic
     fun init() {
-        Events.ON_SOUND.register { event, volume, pitch ->
+        FishEvents.sound.register { event, volume, pitch ->
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {
                 if (pitch <= 0.05f && volume >= 3f && event.location == SoundEvents.ENDERMAN_TELEPORT.location) {
                     if (debugDumpSound) {
-                        Misc.addChatMessage(Component.literal("§d[fmcd] cooldown sound detected"))
+                        FishUtil.addChatMessage(Component.literal("§d[fmcd] cooldown sound detected"))
                     }
                     onAbilityFired()
                 }
@@ -95,13 +95,13 @@ object CooldownOverlay {
             }
         }
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {
                 val s = HypixelApi.STRIP_COLOR.matcher(text!!.string).replaceAll("")
                 if (debugDumpSound && s.lowercase().contains("mana")) {
-                    Misc.addChatMessage(Component.literal("§d[fmcd] chat: §7$s"))
+                    FishUtil.addChatMessage(Component.literal("§d[fmcd] chat: §7$s"))
                 }
                 val cdrM = MAGE_CDR_LINE.matcher(s)
                 if (cdrM.find()) {
@@ -115,7 +115,7 @@ object CooldownOverlay {
                 val m = MANA_LINE.matcher(s)
                 if (m.find()) {
                     if (debugDumpSound) {
-                        Misc.addChatMessage(Component.literal("§d[fmcd] mana line matched: " + m.group(1)))
+                        FishUtil.addChatMessage(Component.literal("§d[fmcd] mana line matched: " + m.group(1)))
                     }
                     onAbilityFired()
                 }
@@ -140,7 +140,7 @@ object CooldownOverlay {
                 pendingManaBefore >= 0 && mana < pendingManaBefore
             ) {
                 if (debugDumpSound) {
-                    Misc.addChatMessage(Component.literal("§d[fmcd] mana $pendingManaBefore→$mana confirms $pid"))
+                    FishUtil.addChatMessage(Component.literal("§d[fmcd] mana $pendingManaBefore→$mana confirms $pid"))
                 }
                 pendingId = null
                 onAbilityFired()
@@ -153,13 +153,13 @@ object CooldownOverlay {
             if (hand != InteractionHand.MAIN_HAND) return@UseItemCallback InteractionResult.PASS
             val stack = player.getItemInHand(hand)
             if (stack != null && !stack.isEmpty) {
-                val id = ItemUtil.getId(stack)
+                val id = ItemTools.getId(stack)
                 if (id != null && COOLDOWNS.containsKey(id)) {
                     pendingId = id
                     pendingAt = System.currentTimeMillis()
                     pendingManaBefore = lastMana
                     if (debugDumpSound) {
-                        Misc.addChatMessage(Component.literal("§d[fmcd] armed $id (mana=$lastMana)"))
+                        FishUtil.addChatMessage(Component.literal("§d[fmcd] armed $id (mana=$lastMana)"))
                     }
                     if (lastMana < 0) {
                         pendingId = null
@@ -170,7 +170,7 @@ object CooldownOverlay {
             InteractionResult.PASS
         })
 
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!FishSettings.cooldownOverlayEnabled || !FishSettings.cooldownInInventory) return@register
             try { drawOverlay(ctx, stack, x, y) } catch (t: Throwable) { FishDiag.fail("CooldownOverlay.4", "inventory cooldown overlay draw failed", t) }
         }
@@ -204,7 +204,7 @@ object CooldownOverlay {
         val held = p.mainHandItem
         if (held == null || held.isEmpty) return
 
-        val id = ItemUtil.getId(held) ?: return
+        val id = ItemTools.getId(held) ?: return
 
         val baseCdRaw = COOLDOWNS[id] ?: return
 
@@ -212,7 +212,7 @@ object CooldownOverlay {
         var isMage = false
         val baseCd = baseCdRaw.toDouble()
         var finalCdResult: Double
-        val inDungeon = Location.inDungeon()
+        val inDungeon = SkyblockLocation.inDungeon()
 
         for (entry in fishmod.utils.TabListCache.entries) {
             if (entry.info.tabListDisplayName != null) {
@@ -254,7 +254,7 @@ object CooldownOverlay {
         }
 
         if (debugDumpSound) {
-            Misc.addChatMessage(
+            FishUtil.addChatMessage(
                 Component.literal(
                     "§b[fmcd] Final CD: " + String.format("%.1fs", finalCdResult / 1000.0) + (if (inDungeon) " (Dungeon)" else " (Outside)")
                 )
@@ -299,7 +299,7 @@ object CooldownOverlay {
 
     @JvmStatic
     fun shouldHideVanillaCooldown(): Boolean =
-        FishSettings.cooldownOverlayEnabled && fishmod.utils.config.values.Visual.hideCooldown && Location.inSkyblock()
+        FishSettings.cooldownOverlayEnabled && fishmod.utils.config.values.VisualSettings.hideItemCooldown && SkyblockLocation.inSkyblock()
 
     @JvmStatic
     fun debugState(): String {
@@ -316,7 +316,7 @@ object CooldownOverlay {
         val mc = Minecraft.getInstance()
         if (mc.player != null) {
             val held = mc.player!!.mainHandItem
-            sb.append(" | heldId=").append(if (held == null || held.isEmpty) "none" else ItemUtil.getId(held))
+            sb.append(" | heldId=").append(if (held == null || held.isEmpty) "none" else ItemTools.getId(held))
         }
         return sb.toString()
     }
@@ -329,7 +329,7 @@ object CooldownOverlay {
 
     private fun drawOverlay(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
         if (stack == null || stack.isEmpty) return
-        val id = ItemUtil.getId(stack) ?: return
+        val id = ItemTools.getId(stack) ?: return
         val endAt = active[id] ?: return
         val now = System.currentTimeMillis()
         val remaining = endAt - now
@@ -341,7 +341,7 @@ object CooldownOverlay {
         if (FishSettings.cooldownOnlyUnder3s && !inFocusWindow) return
 
         val shade = (16 * remaining / total).toInt().coerceIn(1, 16)
-        if (!fishmod.utils.config.values.Visual.hideCooldown) ctx.fill(x, y + 16 - shade, x + 16, y + 16, 0x80FFFFFF.toInt())
+        if (!fishmod.utils.config.values.VisualSettings.hideItemCooldown) ctx.fill(x, y + 16 - shade, x + 16, y + 16, 0x80FFFFFF.toInt())
 
         if (FishSettings.cooldownShowText) {
             val secs = remaining / 1000.0

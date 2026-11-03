@@ -4,7 +4,7 @@ import fishmod.compat.curScreen
 import fishmod.compat.CB
 import fishmod.compat.CI
 
-import fishmod.utils.config.FolderUtility
+import fishmod.utils.config.FishPaths
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -26,7 +26,7 @@ import java.util.TreeMap
 
 object StorageCache {
 
-    private val dir: Path = Paths.get(FolderUtility.CONFIG_PATH + "storage")
+    private val dir: Path = Paths.get(FishPaths.CONFIG_PATH + "storage")
     private val EMPTY_MARKERS = setOf(
         CB.RED_STAINED_GLASS_PANE.asItem(),
         CB.BROWN_STAINED_GLASS_PANE.asItem(),
@@ -163,7 +163,7 @@ object StorageCache {
             Files.move(tmp, dir.resolve("$id.nbt"), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         } catch (e: Exception) {
             FishDiag.fail("StorageCache.3", "failed to save storage cache (${pages.size} pages)", e)
-            fishmod.utils.debug.Debug.LOGGER.error("Failed to save storage cache", e)
+            fishmod.utils.debug.FishDebug.LOGGER.error("Failed to save storage cache", e)
         }
     }
 }

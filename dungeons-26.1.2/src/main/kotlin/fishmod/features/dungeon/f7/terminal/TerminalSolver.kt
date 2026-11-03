@@ -5,14 +5,14 @@ import fishmod.utils.TextStrip
 import fishmod.compat.CB
 import fishmod.compat.CI
 
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.mixin.accessors.HandledScreenAccessor
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import fishmod.utils.sound.SoundManager
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -96,17 +96,17 @@ object TerminalSolver {
 
     @JvmStatic
     fun init() {
-        Events.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             when (packet) {
                 is ClientboundOpenScreenPacket -> onOpen(packet)
                 is net.minecraft.network.protocol.game.ClientboundContainerClosePacket -> if (!simActive) onScreenClosed()
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.worldChange.register { reset(); false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { tickSync() }
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             try {
                 val m = ACTIVATED.matcher(TextStrip.plain(text.string))
                 if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) {
@@ -119,10 +119,10 @@ object TerminalSolver {
             false
         }
 
-        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             try { drawSlot(ctx, x, y, before = true) } catch (e: Exception) { FishDiag.fail("TerminalSolver.4", "terminal slot draw (before) failed type=${current?.type}", e) }
         }
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             try { drawSlot(ctx, x, y, before = false) } catch (e: Exception) { FishDiag.fail("TerminalSolver.5", "terminal slot draw (after) failed type=${current?.type}", e) }
         }
 
@@ -135,7 +135,7 @@ object TerminalSolver {
     }
 
     private fun onOpen(packet: ClientboundOpenScreenPacket) {
-        if (!Location.inDungeon()) { reset(); return }
+        if (!SkyblockLocation.inDungeon()) { reset(); return }
         debug("open '${TextStrip.plain(packet.title.string).take(30)}' id=${packet.containerId}")
         try { ensureHandler(packet.title.string) } catch (e: Exception) { FishDiag.fail("TerminalSolver.6", "terminal handler build failed on open '${packet.title.string}'", e) }
     }
@@ -177,7 +177,7 @@ object TerminalSolver {
         if (term.type == TerminalType.MELODY && FishSettings.terminalStopMelody) return
         val mc = Minecraft.getInstance()
         val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
-        val slot = DrawEvents.currentSlot ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
+        val slot = DrawHooks.currentSlot ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
         if (slot.container is Inventory) return
         val idx = slot.index
         val inSol = idx in term.solution
@@ -259,7 +259,7 @@ object TerminalSolver {
 
     private fun tickSyncInner() {
         if (simActive) return
-        if (!FishSettings.terminalSolverEnabled || !fishmod.utils.Location.inDungeon()) return
+        if (!FishSettings.terminalSolverEnabled || !fishmod.utils.SkyblockLocation.inDungeon()) return
         val screen = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val term = ensureHandler(screen.title.string) ?: return
 
@@ -278,7 +278,7 @@ object TerminalSolver {
             term.handleSlotUpdate(n - 1)
             if (changed) {
                 debug("sync ${term.type} items=${term.items.count { it != null && !it.isEmpty }} sol=${term.solution.size}")
-                if (Debug.termInfo && term.solution.isEmpty()) FishDiag.guard("TerminalSolver.10", "terminal board dump failed") { dumpBoard(term, n) }
+                if (FishDebug.termInfo && term.solution.isEmpty()) FishDiag.guard("TerminalSolver.10", "terminal board dump failed") { dumpBoard(term, n) }
             }
         }
     }
@@ -295,6 +295,6 @@ object TerminalSolver {
     }
 
     private fun debug(msg: String) {
-        if (Debug.termInfo) Misc.addChatMessage(Component.literal("§b[term] §7$msg"))
+        if (FishDebug.termInfo) FishUtil.addChatMessage(Component.literal("§b[term] §7$msg"))
     }
 }

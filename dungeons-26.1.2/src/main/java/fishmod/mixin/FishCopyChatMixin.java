@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
-import fishmod.utils.config.values.ExtraOptions;
-import fishmod.utils.data.TextUtil;
+import fishmod.utils.config.values.MiscSettings;
+import fishmod.utils.data.TextTools;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -29,17 +29,17 @@ public class FishCopyChatMixin extends Screen {
     private static void mouseClicked(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         boolean smart = fishmod.utils.config.values.FishSettings.chatFeatureEnabled
                 && fishmod.utils.config.values.FishSettings.smartCopyChat;
-        if ((!ExtraOptions.copyChat && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
+        if ((!MiscSettings.chatCopy && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
 
         try {
             Minecraft mc = Minecraft.getInstance();
-            ChatHudInvoker hudInvoker = (ChatHudInvoker) fishmod.compat.McCompatKt.getHud(mc).getChat();
+            FishChatInvoker hudInvoker = (FishChatInvoker) fishmod.compat.McCompatKt.getHud(mc).getChat();
 
             double x = toChatLineX(hudInvoker, click.x());
             double y = toChatLineY(hudInvoker, click.y(), mc);
 
             String string;
-            if (ExtraOptions.copyLineOnly && !smart) {
+            if (MiscSettings.chatCopySingleLine && !smart) {
                 int index = getMessageLineIndex(hudInvoker, mc, x, y);
                 List<GuiMessage.Line> visibleMessages = hudInvoker.getVisibleMessages();
                 if (visibleMessages == null) {
@@ -49,16 +49,16 @@ public class FishCopyChatMixin extends Screen {
                 if (index < 0 || index >= visibleMessages.size()) return;
 
                 GuiMessage.Line msg = visibleMessages.get(index);
-                string = TextUtil.orderedTextToString(msg.content());
+                string = TextTools.orderedTextToString(msg.content());
             } else {
                 string = copyChat(hudInvoker, mc, x, y);
             }
 
             if (string == null) return;
 
-            if (ExtraOptions.removeColorCodes || smart) {
+            if (MiscSettings.chatCopyStripColors || smart) {
                 string = string.replaceAll("§.", "");
-            } else if (ExtraOptions.replaceColorChars) {
+            } else if (MiscSettings.chatCopyAmpersand) {
                 string = string.replaceAll("§", "&");
             }
 
@@ -81,18 +81,18 @@ public class FishCopyChatMixin extends Screen {
     }
 
     @Unique
-    private static double toChatLineX(ChatHudInvoker hud, double screenX) {
+    private static double toChatLineX(FishChatInvoker hud, double screenX) {
         return screenX / hud.invokeChatScale() - 2.0;
     }
 
     @Unique
-    private static double toChatLineY(ChatHudInvoker hud, double screenY, Minecraft mc) {
+    private static double toChatLineY(FishChatInvoker hud, double screenY, Minecraft mc) {
         int scaledHeight = mc.getWindow().getGuiScaledHeight();
         return ((double)(scaledHeight - 40) - screenY) / hud.invokeChatScale();
     }
 
     @Unique
-    private static int getMessageLineIndex(ChatHudInvoker hud, Minecraft mc, double chatX, double chatY) {
+    private static int getMessageLineIndex(FishChatInvoker hud, Minecraft mc, double chatX, double chatY) {
         if (chatX < 0.0 || chatY < 0.0) return -1;
         List<GuiMessage.Line> messages = hud.getVisibleMessages();
         int lh = hud.invokeLineHeight();
@@ -105,7 +105,7 @@ public class FishCopyChatMixin extends Screen {
     }
 
     @Unique
-    private static String copyChat(ChatHudInvoker hudInvoker, Minecraft mc, double x, double y) {
+    private static String copyChat(FishChatInvoker hudInvoker, Minecraft mc, double x, double y) {
         List<GuiMessage.Line> messages = hudInvoker.getVisibleMessages();
         int endIndex = getMessageLineIndex(hudInvoker, mc, x, y);
 
@@ -133,7 +133,7 @@ public class FishCopyChatMixin extends Screen {
         StringBuilder builder = new StringBuilder();
         for (int i = endIndex; i >= startIndex; i--) {
             GuiMessage.Line chatHudLine = messages.get(i);
-            TextUtil.acceptOrderedText(builder, chatHudLine.content());
+            TextTools.acceptOrderedText(builder, chatHudLine.content());
         }
         return builder.toString();
     }

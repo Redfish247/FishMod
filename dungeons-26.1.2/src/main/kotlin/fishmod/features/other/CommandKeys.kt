@@ -3,8 +3,8 @@ import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
-import fishmod.utils.Misc
-import fishmod.utils.config.FolderUtility
+import fishmod.utils.FishUtil
+import fishmod.utils.config.FishPaths
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import org.lwjgl.glfw.GLFW
@@ -25,7 +25,7 @@ object CommandKeys {
         fun enabled(): Boolean = enabledValue
     }
 
-    private val FILE: Path = Paths.get(FolderUtility.CONFIG_PATH + "command_keys.txt")
+    private val FILE: Path = Paths.get(FishPaths.CONFIG_PATH + "command_keys.txt")
     private val entries: MutableList<Entry> = ArrayList()
     private val held: MutableSet<InputConstants.Key> = HashSet()
     private var loaded = false
@@ -73,7 +73,7 @@ object CommandKeys {
                 InputConstants.isKeyDown(client.window, e.key().value)
             val wasDown = held.contains(e.key())
 
-            if (down && !wasDown && !inScreen) Misc.executeCommand(e.command())
+            if (down && !wasDown && !inScreen) FishUtil.executeCommand(e.command())
             if (down) held.add(e.key()) else held.remove(e.key())
         }
     }

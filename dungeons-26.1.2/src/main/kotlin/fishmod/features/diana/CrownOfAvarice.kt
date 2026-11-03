@@ -7,12 +7,12 @@ import com.google.gson.reflect.TypeToken
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import fishmod.features.item.fishmodCustomDataTag
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.FishMsg
 import fishmod.utils.IoExecutor
 import fishmod.utils.SafeFiles
-import fishmod.utils.data.ItemUtil
-import fishmod.utils.events.Events
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -68,19 +68,19 @@ object CrownOfAvarice {
     fun init() {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 10 == 0) onTick(it) }
-        Events.ON_GAME_MESSAGE.register { text ->
-            val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
+        FishEvents.chat.register { text ->
+            val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
             val now = System.currentTimeMillis()
             if (NOT_CROWN.containsMatchIn(s)) lastNonCrownMs = now
             else if (Diana.inHub() && DUG_COINS.containsMatchIn(s)) lastDugCoinsMs = now
             false
         }
-        Events.ON_WORLD_CHANGE.register { lastPurse = -1L; false }
+        FishEvents.worldChange.register { lastPurse = -1L; false }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> editTooltip(stack, lines) })
         FishHudEditor.register("Crown of Avarice", { DianaSettings.dianaCrownHudX }, { DianaSettings.dianaCrownHudX = it },
             { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,
             { DianaSettings.dianaCrownHudScale }, { DianaSettings.dianaCrownHudScale = it }, { DianaSettings.dianaCrownHud })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ ->
             if (Minecraft.getInstance().curScreen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
         }
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
@@ -98,7 +98,7 @@ object CrownOfAvarice {
     }
 
     private fun trackRate(helmet: ItemStack) {
-        if (ItemUtil.getId(helmet) != ID) return
+        if (ItemTools.getId(helmet) != ID) return
         val cur = total(helmet) ?: itemCoins(helmet)
         val now = System.currentTimeMillis()
         val r = sessions.getOrPut(uuidOf(helmet) ?: "crown") { Session(lastTotal = cur, lastTickMs = now) }
@@ -132,7 +132,7 @@ object CrownOfAvarice {
 
     private fun hudLines(): List<String> {
         val p = Minecraft.getInstance().player ?: return emptyList()
-        val crown = listOf(p.getItemBySlot(EquipmentSlot.HEAD), p.mainHandItem).firstOrNull { ItemUtil.getId(it) == ID } ?: return emptyList()
+        val crown = listOf(p.getItemBySlot(EquipmentSlot.HEAD), p.mainHandItem).firstOrNull { ItemTools.getId(it) == ID } ?: return emptyList()
         val cur = total(crown) ?: itemCoins(crown)
         val session = sessions[uuidOf(crown) ?: "crown"]
         val rate = perHour(session)
@@ -151,7 +151,7 @@ object CrownOfAvarice {
     // Returns how many lines were drawn
     private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor): Int {
         val mc = Minecraft.getInstance()
-        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.hudHidden || mc.player == null) return 0
+        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.hudHidden || mc.player == null || !Diana.active()) return 0
         val lines = hudLines()
         if (lines.isEmpty()) return 0
         val pose = ctx.pose()
@@ -165,7 +165,7 @@ object CrownOfAvarice {
     }
 
     private fun uuidOf(stack: ItemStack): String? =
-        if (ItemUtil.getId(stack) == ID) ItemUtil.getUuid(stack)?.takeIf { it.isNotEmpty() } else null
+        if (ItemTools.getId(stack) == ID) ItemTools.getUuid(stack)?.takeIf { it.isNotEmpty() } else null
 
     private fun itemCoins(stack: ItemStack): Long = stack.fishmodCustomDataTag()?.getLongOr("collected_coins", 0L) ?: 0L
 

@@ -79,7 +79,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
 
     private fun matches(stack: ItemStack, q: String): Boolean =
         !stack.isEmpty && searchNames.getOrPut(stack) {
-            stack.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase()
+            stack.hoverName.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").lowercase()
         }.contains(q)
 
     override fun paintUiOverlay() {
@@ -96,7 +96,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         updateScale()
         val mouseX = (rawMouseX / k).toInt()
         val mouseY = (rawMouseY / k).toInt()
-        runCatching { ctx.blurBeforeThisStratum() }.onFailure { FishDiag.fail("StorageViewerScreen.1", "blurBeforeThisStratum failed", it) }
+        runCatching { ctx.blurBeforeThisStratum() }.onFailure { if (it !is IllegalStateException) FishDiag.fail("StorageViewerScreen.1", "blurBeforeThisStratum failed", it) } // already blurred this frame
         runCatching { ctx.nextStratum() }.onFailure { FishDiag.fail("StorageViewerScreen.2", "nextStratum failed", it) }
         ctx.pose().pushMatrix()
         ctx.pose().scale(k, k)

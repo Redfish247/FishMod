@@ -1,9 +1,9 @@
 package fishmod.features
 
 import fishmod.compat.cam
-import fishmod.utils.config.values.Visual
+import fishmod.utils.config.values.VisualSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -26,13 +26,13 @@ object HologramText {
     @JvmStatic
     fun init() {
         // Level pass runs every frame: freeze this frame's lines and camera for the HUD
-        RenderingEvents.NO_DEPTH_FILLED.register { ctx, _, _ ->
+        RenderHooks.NO_DEPTH_FILLED.register { ctx, _, _ ->
             val cam = ctx.levelState().cameraRenderState
             view.set(cam.viewRotationMatrix); proj.set(cam.projectionMatrix); camPos = cam.pos
             shown = ArrayList(pending)
             pending.clear()
         }
-        HudElementRegistry.addFirst(Identifier.fromNamespaceAndPath("fishmod", "hologram_text")) { g, _ ->
+        fishmod.utils.rendering.FishHudLayer.addFirst(Identifier.fromNamespaceAndPath("fishmod", "hologram_text")) { g, _ ->
             if (shown.isEmpty()) return@addFirst
             try {
                 val font = Minecraft.getInstance().font
@@ -85,7 +85,7 @@ object HologramText {
     // Returns true when the line was taken over (caller hides the vanilla nametag)
     @JvmStatic
     fun take(base: Vec3, attachment: Vec3?, text: Component?): Boolean {
-        if (!Visual.nametagsOnTop || text == null || attachment == null || pending.size >= 512) return false
+        if (!VisualSettings.nametagsOnTop || text == null || attachment == null || pending.size >= 512) return false
         val pos = base.add(attachment)
         if (!blockedByTranslucent(pos)) return false
         pending += Line(pos, text)

@@ -1,9 +1,9 @@
 package fishmod.features.rift
 
-import fishmod.utils.Misc
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.FishUtil
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
@@ -34,16 +34,16 @@ object RiftParkour {
     private fun box(p: IntArray) = AABB(p[0] - 1.0, p[1] - 1.0, p[2] - 1.0, p[0] + 1.0, p[1].toDouble(), p[2] + 1.0)
 
     fun init() {
-        Events.ON_WORLD_CHANGE.register { COURSES.forEach { it.idx = -1 }; false }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { COURSES.forEach { it.idx = -1 }; false }
+        FishEvents.chat.register { text ->
             if (!Rift.inRift()) return@register false
             val m = Rift.strip(text.string)
             if (m.contains("THE LAVA OOFED YOU BACK TO THE START")) COURSES.forEach { it.idx = -1 }
             if (S.riftKillZone && Rift.inRift() && m.contains("Get back in the arena or you will DIE"))
-                Misc.forceTitle(Component.literal("§c§lGet back in the arena!"), Component.empty(), 1000)
+                FishUtil.forceTitle(Component.literal("§c§lGet back in the arena!"), Component.empty(), 1000)
             false
         }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        RenderHooks.GIZMO.register { _ -> render() }
     }
 
     private fun render() {
@@ -60,10 +60,10 @@ object RiftParkour {
             val c = S.riftParkourColor
             for (i in from until minOf(co.pts.size, from + S.riftParkourAhead + 1)) {
                 val a = if (i == from) 0x20 else (0x50 - (i - from) * 0x10).coerceAtLeast(0x18)
-                RenderUtils.gizmoBox(box(co.pts[i]), (a shl 24) or (c and 0xFFFFFF), c, true)
+                FishDraw.gizmoBox(box(co.pts[i]), (a shl 24) or (c and 0xFFFFFF), c, true)
             }
             co.shortcuts.filter { it[0] in from..(from + S.riftParkourAhead) }.forEach {
-                RenderUtils.gizmoBox(box(co.pts[it[1]]), 0x4055FF55, 0xFF55FF55.toInt(), true)
+                FishDraw.gizmoBox(box(co.pts[it[1]]), 0x4055FF55, 0xFF55FF55.toInt(), true)
             }
         }
         if (S.riftEffigies && Rift.inArea("Stillgore", "Oubliette", "Chateau", "Château")) {
@@ -72,10 +72,10 @@ object RiftParkour {
             for ((i, e) in EFFIGIES.withIndex()) {
                 if (i >= live.size || !live[i]) continue
                 val b = AABB(e[0].toDouble(), e[1].toDouble(), e[2].toDouble(), e[0] + 1.0, e[1] + 1.0, e[2] + 1.0)
-                RenderUtils.gizmoBox(b, (0x40 shl 24) or (c and 0xFFFFFF), c, true)
+                FishDraw.gizmoBox(b, (0x40 shl 24) or (c and 0xFFFFFF), c, true)
                 val d = Math.sqrt(me.distanceToSqr(e[0] + 0.5, e[1] + 0.5, e[2] + 0.5)).toInt()
-                RenderUtils.gizmoText(Component.literal("§cEffigy ${i + 1} §7${d}m"), Vec3(e[0] + 0.5, e[1] + 1.6, e[2] + 0.5), 1.5f, -1, true)
-                RenderUtils.gizmoBox(AABB(e[0] + 0.4, e[1] + 1.0, e[2] + 0.4, e[0] + 0.6, e[1] + 40.0, e[2] + 0.6), (0x30 shl 24) or (c and 0xFFFFFF), c, true)
+                FishDraw.gizmoText(Component.literal("§cEffigy ${i + 1} §7${d}m"), Vec3(e[0] + 0.5, e[1] + 1.6, e[2] + 0.5), 1.5f, -1, true)
+                FishDraw.gizmoBox(AABB(e[0] + 0.4, e[1] + 1.0, e[2] + 0.4, e[0] + 0.6, e[1] + 40.0, e[2] + 0.6), (0x30 shl 24) or (c and 0xFFFFFF), c, true)
             }
         }
     }

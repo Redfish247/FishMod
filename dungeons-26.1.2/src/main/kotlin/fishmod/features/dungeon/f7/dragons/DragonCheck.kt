@@ -55,7 +55,7 @@ object DragonCheck {
             it.state == WitherDragonState.SPAWNING &&
                 v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
         }
-        if (fishmod.utils.debug.Debug.dragonDebug) {
+        if (fishmod.utils.debug.FishDebug.dragonDebug) {
             modMessage("&7dragonSpawn id=${p.id} pos=${v} matched=${inBox?.name ?: "none"}")
         }
         if (inBox != null) { inBox.setAlive(p.id, tick); return }
@@ -66,7 +66,7 @@ object DragonCheck {
         }
         if (late != null) {
             if (isAliveOnScoreboard(late)) late.setAlive(p.id, tick)
-            else if (fishmod.utils.debug.Debug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: ${late.name} not on scoreboard")
+            else if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: ${late.name} not on scoreboard")
             return
         }
         WitherDragon.real.firstOrNull { it.state == WitherDragonState.ALIVE && it.entity == null && it.entityId == p.id }
@@ -78,14 +78,14 @@ object DragonCheck {
         val d = WitherDragon.byEntityId(p.id()) ?: return
         if (d.entity == null || d.entity?.isAlive != true) {
             d.entity = Minecraft.getInstance().level?.getEntity(p.id()) as? EnderDragon
-            if (fishmod.utils.debug.Debug.dragonDebug) {
+            if (fishmod.utils.debug.FishDebug.dragonDebug) {
                 modMessage("&7dragonUpdate ${d.name} resolved entity=${d.entity != null}")
             }
         }
         val hpRaw = p.packedItems().firstOrNull { it.id() == HEALTH_DATA_ID }?.value
         val hp = hpRaw as? Float
         if (hpRaw != null && hp == null) FishDiag.fail("DragonCheck.3", "dragon health data id $HEALTH_DATA_ID is ${hpRaw.javaClass.simpleName}, not Float")
-        if (fishmod.utils.debug.Debug.dragonDebug) {
+        if (fishmod.utils.debug.FishDebug.dragonDebug) {
             modMessage("&7dragonUpdate ${d.name} ids=${p.packedItems().map { it.id() }} hp=${hp ?: "none"}")
         }
         if (hp == null) return

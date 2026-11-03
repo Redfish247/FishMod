@@ -2,7 +2,7 @@ package fishmod.features.mining
 import fishmod.compat.curScreen
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
@@ -81,9 +81,9 @@ object FossilSolver {
             val s = items.joinToString { it.item.hoverName.string }.hashCode()
             if (s != sig) { sig = s; update(items) }
         }
-        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, _, x, y ->
+        DrawHooks.INVENTORY_SLOT_BEFORE.register { ctx, _, x, y ->
             if (!S.miningFossilSolver || bestSlot < 0 || screen() == null) return@register
-            val slot = DrawEvents.currentSlot ?: return@register
+            val slot = DrawHooks.currentSlot ?: return@register
             if (slot.container === Minecraft.getInstance().player?.inventory) return@register
             when {
                 slot.index in sure -> ctx.fill(x, y, x + 16, y + 16, Mining.alpha(0x55FF55, S.miningFossilOpacity))
@@ -91,9 +91,9 @@ object FossilSolver {
                 slot.index in possible -> ctx.fill(x, y, x + 16, y + 16, Mining.alpha(S.miningFossilColor, (S.miningFossilOpacity * (0.15 + 0.5 * possible.getValue(slot.index))).toInt().coerceAtLeast(12)))
             }
         }
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, _, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, _, x, y ->
             if (!S.miningFossilSolver || !S.miningFossilPercent || bestSlot < 0 || sure.isNotEmpty() || screen() == null) return@register
-            val slot = DrawEvents.currentSlot ?: return@register
+            val slot = DrawHooks.currentSlot ?: return@register
             if (slot.index != bestSlot || slot.container === Minecraft.getInstance().player?.inventory) return@register
             val pose = ctx.pose(); pose.pushMatrix(); pose.translate(x.toFloat(), y + 10f); pose.scale(0.5f, 0.5f)
             ctx.text(Minecraft.getInstance().font, "§2${"%.1f".format(bestPct * 100)}%", 0, 0, -1, true)

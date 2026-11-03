@@ -1,7 +1,7 @@
 package fishmod.features.mining
 
-import fishmod.utils.Location
-import fishmod.utils.events.Events
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.events.FishEvents
 import fishmod.features.mining.MiningSettings as S
 
 // Glacite Mineshaft pity: tab widget when shown, otherwise weighted block count (SkyHanni weights, max 2000)
@@ -22,12 +22,12 @@ object MineshaftPity {
             S.miningPityPoints = halfPoints.toInt().coerceAtMost(MAX)
             S.miningPityBlocks++
         }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (S.miningPity && Mining.strip(text.string).contains("You found a Glacite Mineshaft portal!")) reset()
             false
         }
-        Events.ON_LOCATION_CHANGE.register { loc ->
-            if (loc == Location.MINESHAFT) reset()
+        FishEvents.locationChange.register { loc ->
+            if (loc == SkyblockLocation.MINESHAFT) reset()
             false
         }
         MiningHuds.reg("Mineshaft Pity", "mining_pity", 150, 40,

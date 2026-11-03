@@ -1,9 +1,9 @@
 package fishmod.features.diana
 import fishmod.compat.cam
 
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
@@ -74,15 +74,15 @@ object DianaWaypoints {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
-        Events.ON_WORLD_CHANGE.register { clearAll(); false }
+        FishEvents.worldChange.register { clearAll(); false }
         // Boxes, lines and labels all go through our own see-through pass, no vanilla gizmos
-        RenderingEvents.NO_DEPTH_FILLED.register { ctx, ps, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc ->
             rCtx = ctx; rPs = ps; rVc = vc
             render()
         }
     }
 
-    private fun line(a: Vec3, b: Vec3, argb: Int, px: Float) = RenderUtils.screenLine(rPs, rVc, a, b, argb, px)
+    private fun line(a: Vec3, b: Vec3, argb: Int, px: Float) = FishDraw.screenLine(rPs, rVc, a, b, argb, px)
 
     fun inHubBounds(p: BlockPos) =
         p.x > MIN_X && p.x <= MAX_X && p.y > MIN_Y && p.y <= MAX_Y && p.z > MIN_Z && p.z <= MAX_Z
@@ -258,20 +258,20 @@ object DianaWaypoints {
             val a = opacity(d)
             val rgb = baseColor(w, closest)
             // Past render distance, draw a shrunken copy closer along the same ray so it isn't far-clipped
-            val (c, k) = RenderUtils.pullIn(w.center, eye)
-            RenderUtils.fillBox(rPs, rVc, AABB.ofSize(c, k, k, k), withAlpha(rgb, a))
+            val (c, k) = FishDraw.pullIn(w.center, eye)
+            FishDraw.fillBox(rPs, rVc, AABB.ofSize(c, k, k, k), withAlpha(rgb, a))
             if (DianaSettings.dianaBeaconBeam && w.type != WpType.SUB && d > DianaSettings.dianaBeaconDistance) {
                 val bb = c.add(0.0, k * 100.5, 0.0)
-                RenderUtils.fillBox(rPs, rVc, AABB.ofSize(bb, k * 0.4, k * 200, k * 0.4), withAlpha(rgb, a * 0.45f))
+                FishDraw.fillBox(rPs, rVc, AABB.ofSize(bb, k * 0.4, k * 200, k * 0.4), withAlpha(rgb, a * 0.45f))
             }
             val text = if (w.type == WpType.SUB) (if (DianaSettings.dianaSubGuessText) "Possible" else "") else label(w, d)
             if (text.isNotEmpty()) {
                 // World size per font pixel grows with distance so labels stay the same size on screen;
                 // past render distance the label is pulled in along the same ray (SBO does the same)
-                val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.2 + d / 60.0, w.pos.z + 0.5), eye)
+                val (pos, pk) = FishDraw.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.2 + d / 60.0, w.pos.z + 0.5), eye)
                 val px = (DianaSettings.dianaTextScale * maxOf(0.035, d * 0.0035) * pk).toFloat()
                 val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
-                RenderUtils.renderSeeThroughText(rCtx, rPs, Component.literal(colorCode(w, closest) + text), pos, px, textColor, DianaSettings.dianaTextShadow)
+                FishDraw.renderSeeThroughText(rCtx, rPs, Component.literal(colorCode(w, closest) + text), pos, px, textColor, DianaSettings.dianaTextShadow)
             }
         }
 

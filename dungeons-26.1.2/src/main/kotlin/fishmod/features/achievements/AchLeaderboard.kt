@@ -5,11 +5,11 @@ import com.google.gson.JsonParser
 import com.mojang.blaze3d.vertex.PoseStack
 import fishmod.utils.FishMsg
 import fishmod.utils.Http
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.FishConfig
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -68,7 +68,7 @@ object AchLeaderboard {
     fun init() {
         if (registered) return
         registered = true
-        RenderingEvents.NO_DEPTH_LINE.register { ctx, m, _ ->
+        RenderHooks.NO_DEPTH_LINE.register { ctx, m, _ ->
             if (!AchSettings.achEnabled || !AchSettings.achLbEnabled) return@register
             FishDiag.guard("AchLeaderboard.1", "board render") { renderBoard(ctx, m) }
         }
@@ -77,7 +77,7 @@ object AchLeaderboard {
     fun onTick(mc: Minecraft) {
         if (mc.player == null) return
         val now = System.currentTimeMillis()
-        if (!submitting && now - lastSubmit > SUBMIT_GAP_MS && Location.inSkyblock() && key() != lastSubmittedKey) submit(false)
+        if (!submitting && now - lastSubmit > SUBMIT_GAP_MS && SkyblockLocation.inSkyblock() && key() != lastSubmittedKey) submit(false)
         val gap = if (offline) FETCH_RETRY_MS else FETCH_GAP_MS
         if (!fetching && now - wantedAt < 3000 && (now - lastFetch > gap || (limit() > loadedLimit && now - lastFetch > 3000))) fetch()
     }
@@ -179,9 +179,9 @@ object AchLeaderboard {
     }
 
     private fun areaOk(): Boolean {
-        if (AchSettings.achLbVillageOnly && !(Location.getCurrentLocation() == Location.HUB)) return false
+        if (AchSettings.achLbVillageOnly && !(SkyblockLocation.getCurrentLocation() == SkyblockLocation.HUB)) return false
         val a = AchSettings.achLbArea
-        return a.isEmpty() || a == "Any" || Location.getCurrentLocation().name2 == a
+        return a.isEmpty() || a == "Any" || SkyblockLocation.getCurrentLocation().label == a
     }
 
     private fun renderBoard(ctx: LevelRenderContext, m: PoseStack) {
@@ -207,10 +207,10 @@ object AchLeaderboard {
             val ls = lines(secretList)
             val rows = if (loaded) ls.size else 0
             var y = 0.8 + (rows + 2) * lh
-            RenderUtils.renderBoardText(m, Component.literal(title), base, yaw, 0.0, y, (sc * 1.1).toFloat())
+            FishDraw.renderBoardText(m, Component.literal(title), base, yaw, 0.0, y, (sc * 1.1).toFloat())
             y -= lh * 1.4
-            for (l in ls) { RenderUtils.renderBoardText(m, Component.literal(l), base, yaw, 0.0, y, sc.toFloat()); y -= lh }
-            RenderUtils.renderBoardText(m, Component.literal(status), base, yaw, 0.0, 0.8, (sc * 0.9).toFloat())
+            for (l in ls) { FishDraw.renderBoardText(m, Component.literal(l), base, yaw, 0.0, y, sc.toFloat()); y -= lh }
+            FishDraw.renderBoardText(m, Component.literal(status), base, yaw, 0.0, 0.8, (sc * 0.9).toFloat())
         }
     }
 

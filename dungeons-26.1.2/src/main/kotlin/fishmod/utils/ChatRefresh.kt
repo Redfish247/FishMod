@@ -1,13 +1,13 @@
 package fishmod.utils
 
-import fishmod.mixin.ChatHudInvoker
+import fishmod.mixin.FishChatInvoker
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.gui.components.ChatComponent
 
 object ChatRefresh {
     // Vanilla refreshTrimmedMessages() calls scrollChat(1) per rebuilt line while scrolled up, flinging the view.
     @JvmStatic
-    fun refreshKeepScroll(acc: ChatHudInvoker) {
+    fun refreshKeepScroll(acc: FishChatInvoker) {
         val pos = acc.scrolledLines
         val newSince = acc.newMessageSinceScroll
         try {

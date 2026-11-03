@@ -2,7 +2,7 @@ package fishmod.features.dungeon.f7.dragons
 
 import fishmod.features.dungeon.Blessings
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.DungeonClass
+import fishmod.utils.dungeon.DungeonRole
 import fishmod.utils.debug.FishDiag
 
 object DragonPriority {
@@ -21,8 +21,8 @@ object DragonPriority {
 
     private fun sortPriority(spawning: MutableList<WitherDragon>): WitherDragon {
         val totalPower = Blessings.Type.POWER.current + (if (Blessings.Type.TIME.current > 0) 2.5 else 0.0)
-        val clazz = DungeonClass.currentClass
-            ?: DungeonClass.getClass(net.minecraft.client.Minecraft.getInstance().player)
+        val clazz = DungeonRole.currentClass
+            ?: DungeonRole.getClass(net.minecraft.client.Minecraft.getInstance().player)
             ?: run {
                 FishDiag.fail("DragonPriority.2", "own dungeon class unknown during dragon priority")
                 return spawning.sortedBy { FIXED.indexOf(it) }.first()
@@ -32,7 +32,7 @@ object DragonPriority {
         val priorityList = when {
             totalPower >= FishSettings.witherDragonsNormalPower ||
                 (spawning.any { it == WitherDragon.PURPLE } && totalPower >= FishSettings.witherDragonsEasyPower) ->
-                if (clazz == DungeonClass.BERSERK || clazz == DungeonClass.MAGE) order else order.reversed()
+                if (clazz == DungeonRole.BERSERK || clazz == DungeonRole.MAGE) order else order.reversed()
             else -> FIXED
         }
 
@@ -43,9 +43,9 @@ object DragonPriority {
             val solo = FishSettings.witherDragonsSoloDebuff
             val onAll = FishSettings.witherDragonsSoloDebuffAll
             val hasPurple = spawning.any { it == WitherDragon.PURPLE }
-            if (solo == 1 && clazz == DungeonClass.TANK && (hasPurple || onAll))
+            if (solo == 1 && clazz == DungeonRole.TANK && (hasPurple || onAll))
                 spawning.sortByDescending { priorityList.indexOf(it) }
-            else if (solo == 0 && clazz == DungeonClass.HEALER && (hasPurple || onAll))
+            else if (solo == 0 && clazz == DungeonRole.HEALER && (hasPurple || onAll))
                 spawning.sortByDescending { priorityList.indexOf(it) }
         }
 

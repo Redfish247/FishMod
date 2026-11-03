@@ -2,7 +2,7 @@ package fishmod.features.dungeon.puzzles.odin
 import fishmod.compat.cam
 
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
@@ -21,25 +21,25 @@ object ORender {
     fun styledBox(box: AABB, argb: Int, style: Int, throughWalls: Boolean = false) {
         val fill = if (style == 0 || style == 2) argb else 0
         val stroke = if (style == 1 || style == 2) outline(argb) else 0
-        RenderUtils.gizmoBox(box, fill, stroke, throughWalls)
+        FishDraw.gizmoBox(box, fill, stroke, throughWalls)
     }
 
-    fun filledBox(box: AABB, argb: Int) = RenderUtils.gizmoBox(box, argb, 0)
+    fun filledBox(box: AABB, argb: Int) = FishDraw.gizmoBox(box, argb, 0)
 
     fun line(points: List<Vec3>, argb: Int) {
-        for (i in 1 until points.size) RenderUtils.gizmoLine(points[i - 1], points[i], argb)
+        for (i in 1 until points.size) FishDraw.gizmoLine(points[i - 1], points[i], argb)
     }
 
-    fun line(a: Vec3, b: Vec3, argb: Int) = RenderUtils.gizmoLine(a, b, argb)
+    fun line(a: Vec3, b: Vec3, argb: Int) = FishDraw.gizmoLine(a, b, argb)
 
-    fun wideLine(a: Vec3, b: Vec3, argb: Int, width: Float) = RenderUtils.gizmoLine(a, b, argb, width)
+    fun wideLine(a: Vec3, b: Vec3, argb: Int, width: Float) = FishDraw.gizmoLine(a, b, argb, width)
 
     fun text(str: String, pos: Vec3, scale: Float) =
-        RenderUtils.gizmoText(Component.literal(str), pos, scale, -0x1)
+        FishDraw.gizmoText(Component.literal(str), pos, scale, -0x1)
 
     fun beaconBeam(base: Vec3, argb: Int) {
         val a = 0x40 shl 24 or (argb and 0xFFFFFF)
-        RenderUtils.gizmoBox(
+        FishDraw.gizmoBox(
             AABB(base.x + 0.35, base.y, base.z + 0.35, base.x + 0.65, base.y + 24.0, base.z + 0.65), a, 0,
         )
     }
@@ -47,7 +47,7 @@ object ORender {
     fun tracer(target: Vec3, argb: Int) {
         val cam = Minecraft.getInstance().cam
         val start = cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))
-        RenderUtils.gizmoLine(start, target, argb)
+        FishDraw.gizmoLine(start, target, argb)
     }
 
 }

@@ -79,7 +79,7 @@ object PetIcons {
             val type = object : TypeToken<MutableMap<String, String>>() {}.type
             f.reader().use { r -> GSON.fromJson<MutableMap<String, String>>(r, type)?.let { textures = it } }
         } catch (e: Exception) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[PetIcons] load failed: {}", e.toString())
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[PetIcons] load failed: {}", e.toString())
             FishDiag.fail("PetIcons.3", "pet icons load failed", e)
         }
     }
@@ -90,7 +90,7 @@ object PetIcons {
             f.parentFile?.mkdirs()
             f.writer().use { w -> GSON.toJson(textures, w) }
         } catch (e: Exception) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[PetIcons] save failed: {}", e.toString())
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[PetIcons] save failed: {}", e.toString())
             FishDiag.fail("PetIcons.4", "pet icons save failed (${textures.size} entries)", e)
         }
     }

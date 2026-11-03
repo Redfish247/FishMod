@@ -38,7 +38,7 @@ public abstract class ItemModelResolverIconProbeMixin {
 			target = "Lnet/minecraft/client/renderer/item/ItemModelResolver;getItemModel(Lnet/minecraft/resources/Identifier;)Lnet/minecraft/client/renderer/item/ItemModel;"
 		)
 	)
-	private void betterpv$captureResolvedModel(
+	private void fishpv$captureResolvedModel(
 		ItemStackRenderState output,
 		ItemStack item,
 		ItemDisplayContext displayContext,

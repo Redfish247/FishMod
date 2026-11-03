@@ -3,7 +3,7 @@ package fishmod.features.item
 import fishmod.utils.debug.FishDiag
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.data.LegacyFormatting
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiScale
@@ -239,7 +239,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         return dyeCache
     }
 
-    private fun uuidOf(st: ItemStack): String? = if (st.isEmpty) null else ItemUtil.getUuid(st)
+    private fun uuidOf(st: ItemStack): String? = if (st.isEmpty) null else ItemTools.getUuid(st)
 
     private fun hasCustom(st: ItemStack): Boolean {
         val id = uuidOf(st) ?: return false

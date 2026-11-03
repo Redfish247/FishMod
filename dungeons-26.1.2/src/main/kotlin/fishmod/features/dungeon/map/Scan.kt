@@ -75,7 +75,7 @@ object Scan {
                     try {
                         scan(world)
                     } catch (t: Throwable) {
-                        fishmod.utils.debug.Debug.LOGGER.error("[Scan] scan failed", t)
+                        fishmod.utils.debug.FishDebug.LOGGER.error("[Scan] scan failed", t)
                         FishDiag.fail("Scan.1", "dungeon room scan failed rooms=${rooms.size} doors=${doors.size} loadedAll=$loadedAllRooms", t)
                     }
                 }
@@ -110,9 +110,9 @@ object Scan {
     @JvmStatic
     fun scan(world: ClientLevel) {
         if (!DungeonState.isInDungeon()) return
-        // tab list lags a world change; trust a known non-dungeon location
-        val loc = fishmod.utils.Location.getCurrentLocation()
-        if (loc != fishmod.utils.Location.DUNGEON && loc != fishmod.utils.Location.UNKNOWN && !fishmod.utils.dungeon.PracticeMode.active) return
+        // tab list lags a world change; only scan once location says dungeon (hub cores spammed Scan.5)
+        val loc = fishmod.utils.SkyblockLocation.getCurrentLocation()
+        if (loc != fishmod.utils.SkyblockLocation.DUNGEON && !fishmod.utils.dungeon.PracticeMode.active) return
         if (!DungeonMap.anyFeatureEnabled()) return
 
         if (!RoomData.isLoaded()) {
@@ -252,8 +252,8 @@ object Scan {
                 if (coreHash == 48696) continue
 
                 val rd = RoomData.getRoomData(coreHash)
-                if (fishmod.utils.debug.Debug.roomCores) {
-                    fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(
+                if (fishmod.utils.debug.FishDebug.roomCores) {
+                    fishmod.utils.FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal(
                         "§b[roomCore] §7cell ($x,$z) §fhash=§e$coreHash §7-> §f${rd?.name ?: "§cUNKNOWN"}"))
                 }
                 if (rd == null) {

@@ -1,7 +1,7 @@
 package fishmod.features.mining
 
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.world.phys.AABB
@@ -43,11 +43,11 @@ object GemstoneLocator {
             val here = found.filterValues { l -> l.any { Vec3.atCenterOf(it).distanceToSqr(eye) < 8.0 * 8.0 } }.keys
             paths = if (S.miningGemPaths) findPaths(want - here, p.position()) else emptyList()
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!S.miningGemLines || !S.miningGemBoxes || targets.isEmpty() || !Mining.inTunnels()) return@register
-            if (S.miningGemBoxes) for ((g, pos) in targets) RenderUtils.fillBox(ps, vc, AABB(pos), Mining.alpha(g.rgb, S.miningGemOpacity))
+            if (S.miningGemBoxes) for ((g, pos) in targets) FishDraw.fillBox(ps, vc, AABB(pos), Mining.alpha(g.rgb, S.miningGemOpacity))
         }
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!S.miningGemLines || !S.miningGemPaths || paths.isEmpty() || !Mining.inTunnels()) return@register
             val feet = net.minecraft.client.Minecraft.getInstance().player?.position() ?: return@register
             for ((g, pts) in paths) {
@@ -58,7 +58,7 @@ object GemstoneLocator {
                 if (floor.size > 1 && floor[1].distanceToSqr(feet) < floor[0].distanceToSqr(floor[1])) floor = floor.drop(1)
                 // World-space ribbon (flat + upright) so it's wide from above and from the side
                 val curve = smooth(listOf(feet.add(0.0, 0.1, 0.0)) + floor)
-                RenderUtils.gizmoRibbon(curve, S.miningGemLineWidth * 0.05, argb) { it.distanceToSqr(feet) < 20.0 * 20.0 }
+                FishDraw.gizmoRibbon(curve, S.miningGemLineWidth * 0.05, argb) { it.distanceToSqr(feet) < 20.0 * 20.0 }
             }
         }
     }

@@ -5,7 +5,7 @@ import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.block.Blocks
@@ -22,7 +22,7 @@ object BeamsSolver {
                 object : TypeToken<List<List<Int>>>() {}.type)
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Creeper beams solutions failed to load", e)
+        FishDebug.LOGGER.error("Creeper beams solutions failed to load", e)
         FishDiag.fail("BeamsSolver.1", "creeperBeamsSolutions.json failed to load", e)
         emptyList()
     }

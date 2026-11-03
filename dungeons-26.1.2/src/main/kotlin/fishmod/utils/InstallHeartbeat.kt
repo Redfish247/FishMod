@@ -69,7 +69,7 @@ object InstallHeartbeat {
         if (blocked) {
             if (NickState.isActive()) {
                 NickState.reset()
-                Misc.addChatMessage(Component.literal("Your FishMod access was removed by an admin.").withStyle(ChatFormatting.RED))
+                FishUtil.addChatMessage(Component.literal("Your FishMod access was removed by an admin.").withStyle(ChatFormatting.RED))
             }
             return
         }
@@ -80,7 +80,7 @@ object InstallHeartbeat {
         if (nickClearedAt <= 0 || !NickState.isActive()) return
         if (NickData.lastSetAtMs() >= nickClearedAt) return
         NickState.reset()
-        Misc.addChatMessage(
+        FishUtil.addChatMessage(
             Component.literal("Your FishMod custom name was removed by an admin.").withStyle(ChatFormatting.RED)
         )
     }
@@ -89,14 +89,14 @@ object InstallHeartbeat {
         Component.literal(" ".repeat(BORDER_WIDTH)).withStyle(ChatFormatting.AQUA, ChatFormatting.STRIKETHROUGH)
 
     private fun sendWelcomeBox(text: String?, discordUrl: String?) {
-        Misc.addChatMessage(border())
-        Misc.addChatMessage(Component.literal("Welcome to FishMod!").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
-        if (!text.isNullOrBlank()) Misc.addChatMessage(Component.literal(text).withStyle(ChatFormatting.WHITE))
+        FishUtil.addChatMessage(border())
+        FishUtil.addChatMessage(Component.literal("Welcome to FishMod!").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
+        if (!text.isNullOrBlank()) FishUtil.addChatMessage(Component.literal(text).withStyle(ChatFormatting.WHITE))
         if (!discordUrl.isNullOrBlank()) {
-            Misc.addChatMessage(Component.literal(""))
-            Misc.addChatMessage(linkLine("Discord link", discordUrl))
+            FishUtil.addChatMessage(Component.literal(""))
+            FishUtil.addChatMessage(linkLine("Discord link", discordUrl))
         }
-        Misc.addChatMessage(border())
+        FishUtil.addChatMessage(border())
     }
 
     private fun linkLine(label: String, url: String): Component =

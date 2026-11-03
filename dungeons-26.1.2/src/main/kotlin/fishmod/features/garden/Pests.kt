@@ -2,9 +2,9 @@ package fishmod.features.garden
 import fishmod.compat.curScreen
 
 import fishmod.features.mining.Mining
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.world.phys.AABB
@@ -42,7 +42,7 @@ object Pests {
 
     private fun holdingVacuum(): Boolean =
         net.minecraft.client.Minecraft.getInstance().player?.mainHandItem
-            ?.let { fishmod.utils.data.ItemUtil.getId(it) }?.contains("VACUUM") == true
+            ?.let { fishmod.utils.data.ItemTools.getId(it) }?.contains("VACUUM") == true
 
     private fun updateGuess() {
         val me = net.minecraft.client.Minecraft.getInstance().player ?: return
@@ -51,9 +51,9 @@ object Pests {
     }
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.string).trim()); false }
-        Events.ON_WORLD_CHANGE.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
-        Events.ON_PARTICLE.register { p ->
+        FishEvents.chat.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.string).trim()); false }
+        FishEvents.worldChange.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
+        FishEvents.particle.register { p ->
             if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.maxSpeed == 0f && Garden.inGarden() && holdingVacuum()) {
                 val now = System.currentTimeMillis()
                 if (now - lastTrail > 2500L) { trail.clear(); guess = null }
@@ -73,7 +73,7 @@ object Pests {
             spray = Mining.tabLine("Spray:")?.substringAfter(":")?.trim() ?: ""
             bonus = Mining.tabLine("Bonus:")?.substringAfter(":")?.trim() ?: ""
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!S.gardenPestFinder || !Garden.inGarden()) return@register
             val now = System.currentTimeMillis()
             remembered.entries.removeIf { now - it.value > 6 * 60_000L }
@@ -86,18 +86,18 @@ object Pests {
             }
             guess?.let { gp ->
                 val gb = AABB(gp.x - 0.5, gp.y - 0.5, gp.z - 0.5, gp.x + 0.5, gp.y + 0.5, gp.z + 0.5)
-                RenderUtils.fillBox(ps, vc, gb, Mining.alpha(S.gardenPestMarkerColor, 120))
+                FishDraw.fillBox(ps, vc, gb, Mining.alpha(S.gardenPestMarkerColor, 120))
                 Mining.outline(ps, vc, gb, Mining.alpha(S.gardenPestMarkerColor, 255), 2f)
-                if (S.gardenPestFinderLine) RenderUtils.screenLine(ps, vc, start, gp, Mining.alpha(S.gardenPestLineColor, 255), 2f)
+                if (S.gardenPestFinderLine) FishDraw.screenLine(ps, vc, start, gp, Mining.alpha(S.gardenPestLineColor, 255), 2f)
             }
             for (id in plots) {
                 val c = centerOf(id) ?: continue
                 val b = AABB(c.x - 48, 66.0, c.z - 48, c.x + 48, 110.0, c.z + 48)
                 val me = net.minecraft.client.Minecraft.getInstance().player
                 val inside = me != null && me.x >= b.minX && me.x <= b.maxX && me.z >= b.minZ && me.z <= b.maxZ
-                if (!inside) RenderUtils.fillBox(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, S.gardenPestFinderOpacity))
+                if (!inside) FishDraw.fillBox(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, S.gardenPestFinderOpacity))
                 Mining.outline(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, 100), 2f)
-                if (S.gardenPestFinderLine && guess == null) RenderUtils.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestLineColor, 100), 2f)
+                if (S.gardenPestFinderLine && guess == null) FishDraw.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestLineColor, 100), 2f)
             }
         }
         Garden.hud("Pest Timer", "garden_pests", 150, 40,

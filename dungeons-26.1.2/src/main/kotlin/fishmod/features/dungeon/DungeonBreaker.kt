@@ -1,9 +1,9 @@
 package fishmod.features.dungeon
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -83,13 +83,13 @@ object DungeonBreaker {
     }
 
     private fun activeHere(): Boolean =
-        if (FishSettings.dungeonBreakerDungeonOnly) Location.inDungeon() else Location.inSkyblock()
+        if (FishSettings.dungeonBreakerDungeonOnly) SkyblockLocation.inDungeon() else SkyblockLocation.inSkyblock()
 
     private fun isBreaker(stack: ItemStack): Boolean =
-        !stack.isEmpty && ItemUtil.getId(stack) == ITEM_ID
+        !stack.isEmpty && ItemTools.getId(stack) == ITEM_ID
 
     private fun playBreakSound() {
-        fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] break sound")
+        fishmod.utils.debug.FishDebug.LOGGER.debug("[DungeonBreaker] break sound")
         FishDiag.guard("DungeonBreaker.4", "dungeonbreaker sound '${FishSettings.dungeonBreakerSoundName}' failed") { SoundManager.play2D(
             SoundManager.preset(FishSettings.dungeonBreakerSoundName),
             FishSettings.dungeonBreakerSoundVolume.coerceIn(0, 500) / 100f,
@@ -107,7 +107,7 @@ object DungeonBreaker {
             val lore = stack.get(DataComponents.LORE)?.lines() ?: continue
             if (!loggedLore) {
                 loggedLore = true
-                fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] lore: " + lore.joinToString(" | ") { it.string })
+                fishmod.utils.debug.FishDebug.LOGGER.debug("[DungeonBreaker] lore: " + lore.joinToString(" | ") { it.string })
             }
             for (line in lore) {
                 val m = CHARGES.find(line.string)
@@ -118,7 +118,7 @@ object DungeonBreaker {
                 val c = m.groupValues[1].toIntOrNull() ?: run { FishDiag.fail("DungeonBreaker.6", "charges not an int: '${m.value}'"); continue }
                 val mx = m.groupValues[2].toIntOrNull() ?: run { FishDiag.fail("DungeonBreaker.7", "max charges not an int: '${m.value}'"); continue }
                 FishDiag.check(mx > 0 && c <= mx, "DungeonBreaker.8") { "implausible charges $c/$mx" }
-                if (c != charges || mx != maxCharges) fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] charges $c/$mx")
+                if (c != charges || mx != maxCharges) fishmod.utils.debug.FishDebug.LOGGER.debug("[DungeonBreaker] charges $c/$mx")
                 charges = c
                 maxCharges = mx
                 return

@@ -1,7 +1,7 @@
 package fishmod.features.garden
 
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.ChatFormatting
@@ -20,14 +20,14 @@ object GardenCarrolyn {
 
     fun init() {
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
-            if (S.gardenCarrolyn && Location.inSkyblock() && isCarrolynItem(stack)) {
+            if (S.gardenCarrolyn && SkyblockLocation.inSkyblock() && isCarrolynItem(stack)) {
                 lines += Component.literal("")
                 lines += Component.literal("§eRight-click to warp to Carrolyn (Crimson Isle)")
             }
         })
         UseItemCallback.EVENT.register(UseItemCallback { player, level, hand ->
-            if (level.isClientSide && S.gardenCarrolyn && Location.inSkyblock() && isCarrolynItem(player.getItemInHand(hand))) {
-                Misc.addChatMessage(
+            if (level.isClientSide && S.gardenCarrolyn && SkyblockLocation.inSkyblock() && isCarrolynItem(player.getItemInHand(hand))) {
+                FishUtil.addChatMessage(
                     Component.literal("Carrolyn is on the Crimson Isle. Click here to warp there!").withStyle { st ->
                         st.withColor(ChatFormatting.LIGHT_PURPLE)
                             .withClickEvent(ClickEvent.RunCommand("/warp crimson"))

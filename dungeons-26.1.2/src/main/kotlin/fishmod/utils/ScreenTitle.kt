@@ -12,7 +12,7 @@ object ScreenTitle {
         val title = screen.title
         if (title !== last) {
             last = title
-            lastPlain = Constants.STRIP_COLOR_REGEX.replace(title.string, "")
+            lastPlain = FishConstants.STRIP_COLOR_REGEX.replace(title.string, "")
         }
         return lastPlain
     }

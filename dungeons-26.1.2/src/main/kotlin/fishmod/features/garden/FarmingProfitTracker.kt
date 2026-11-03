@@ -8,7 +8,7 @@ import fishmod.features.ProfitTrackerKit.Row
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishMsg
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -68,8 +68,8 @@ object FarmingProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        Events.ON_WORLD_CHANGE.register { save(true); pending.clear(); rewardUntil = 0L; false }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { save(true); pending.clear(); rewardUntil = 0L; false }
+        FishEvents.chat.register { text ->
             if (S.gardenProfit && Garden.inGarden()) runCatching { onChat(text) }
             false
         }
@@ -77,7 +77,7 @@ object FarmingProfitTracker {
         FishHudEditor.register("Farming Profit", { S.gardenProfitHudX }, { S.gardenProfitHudX = it },
             { S.gardenProfitHudY }, { S.gardenProfitHudY = it }, 180, 120, { S.gardenProfitHudScale }, { S.gardenProfitHudScale = it },
             { S.gardenProfit })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_profit")) { ctx, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_profit")) { ctx, _ ->
             val mc = Minecraft.getInstance()
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
                 MiningHuds.draw(ctx, lines(), S.gardenProfitHudX, S.gardenProfitHudY, S.gardenProfitHudScale)

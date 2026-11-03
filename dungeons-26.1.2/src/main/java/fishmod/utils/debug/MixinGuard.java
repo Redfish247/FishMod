@@ -19,6 +19,6 @@ public final class MixinGuard {
 
     public static void fail(String code, String message, Throwable t) {
         FishDiag.fail(code, message, t);
-        if (LOGGED.add(code)) Debug.LOGGER.error("[FishMod] " + message + "; suppressed (logged once)", t);
+        if (LOGGED.add(code)) FishDebug.LOGGER.error("[FishMod] " + message + "; suppressed (logged once)", t);
     }
 }

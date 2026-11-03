@@ -75,7 +75,14 @@ object StorageOverlay {
     private val dragArmed get() = dragStartSlot != null
     private val dragActive get() = dragSlots.size >= 2
 
-    var search = ""
+    private val searchField = SearchFieldState()
+    var search: String
+        get() = searchField.text
+        set(value) { searchField.text = value }
+    private var searchSelecting = false
+    private var searchShift = 0f
+    // page switches reopen within ~1.5s and keep the search
+    private var closedAt = 0L
     private var searchFocused = false
 
     private val mc get() = Minecraft.getInstance()
@@ -90,7 +97,7 @@ object StorageOverlay {
         val title = screen.title
         if (title === titleFor) return
         titleFor = title
-        val t = title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+        val t = title.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
         titlePage = StoragePage.fromTitle(t)
         titleIsStorage = StoragePage.isOverviewTitle(t) || titlePage != null
     }
@@ -291,9 +298,11 @@ object StorageOverlay {
 
     private fun renderInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!on(screen)) return
+        if (closedAt != 0L) { if (System.currentTimeMillis() - closedAt > 1500) search = ""; closedAt = 0L }
         UiRecorder.clear()
         pendingPaint = false
         carriedLayer = null
+        tooltipLayer = null
         recomputeGeometry()
         dragPreview = computeDragPreview()
         tooltipStack = null
@@ -306,7 +315,7 @@ object StorageOverlay {
         lastMouseX = mouseX / s.toDouble()
         lastMouseY = mouseY / s.toDouble()
 
-        runCatching { ctx.blurBeforeThisStratum() }.onFailure { FishDiag.fail("StorageOverlay.1", "blurBeforeThisStratum failed", it) }
+        runCatching { ctx.blurBeforeThisStratum() }.onFailure { if (it !is IllegalStateException) FishDiag.fail("StorageOverlay.1", "blurBeforeThisStratum failed", it) } // already blurred this frame
         runCatching { ctx.nextStratum() }.onFailure { FishDiag.fail("StorageOverlay.2", "nextStratum failed", it) }
         rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0A0A12)
 
@@ -333,11 +342,7 @@ object StorageOverlay {
 
         ctx.pose().popMatrix()
 
-        tooltipStack?.let {
-            val lines = runCatching { Screen.getTooltipFromItem(mc, it) }
-                .onFailure { e -> FishDiag.fail("StorageOverlay.3", "tooltip build failed for ${it.hoverName.string}", e) }.getOrNull()
-            if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s, s)
-        }
+        tooltipLayer = tooltipStack?.let { Triple(it, mouseX, mouseY) }
         pendingPaint = true
     }
 
@@ -359,22 +364,49 @@ object StorageOverlay {
         val fw = 130; val fh = 13
         val fx = mx0 + overviewW - fw - PADDING; val fy = my0 + 7
         UiRecorder.roundedRectRing(fx.toFloat(), fy.toFloat(), fw.toFloat(), fh.toFloat(), 4f, 1f, FIELD_BG, if (searchFocused) ACCENT else SLOT_CELL_BORDER)
-        val size = 7f
-        val pad = 4f
-        val textY = fy + (fh - size) / 2f
-        val tw = UiRecorder.textWidth(search, size)
-        val shift = (tw - (fw - pad * 2 - 2)).coerceAtLeast(0f)
+        val textY = fy + (fh - SEARCH_SIZE) / 2f
+        val tw = UiRecorder.textWidth(search, SEARCH_SIZE)
+        val viewW = fw - SEARCH_PAD * 2 - 2
+        val caretX = searchWidthTo(searchField.caret)
+        // keep the caret in view, no gap past the text end
+        if (caretX - searchShift > viewW) searchShift = caretX - viewW
+        if (caretX < searchShift) searchShift = caretX
+        searchShift = searchShift.coerceIn(0f, (tw - viewW).coerceAtLeast(0f))
+        val originX = fx + SEARCH_PAD - searchShift
         UiRecorder.pushScissor(fx + 1f, fy + 1f, fw - 2f, fh - 2f)
-        if (search.isEmpty()) UiRecorder.text("Search…", fx + pad, textY, size, ScreenTheme.SUBTEXT_COLOR)
-        else UiRecorder.text(search, fx + pad - shift, textY, size, ScreenTheme.TEXT_COLOR)
+        if (searchFocused && searchField.hasSelection) {
+            val sx = searchWidthTo(searchField.selStart)
+            val color = (ACCENT and 0xFFFFFF) or 0x66000000
+            UiRecorder.fillRect(originX + sx, fy + 2f, searchWidthTo(searchField.selEnd) - sx, fh - 4f, color)
+        }
+        if (search.isEmpty()) UiRecorder.text("Search…", fx + SEARCH_PAD, textY, SEARCH_SIZE, ScreenTheme.SUBTEXT_COLOR)
+        else UiRecorder.text(search, originX, textY, SEARCH_SIZE, ScreenTheme.TEXT_COLOR)
         if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
-            UiRecorder.fillRect(fx + pad + tw - shift + 0.5f, fy + 3f, 1f, fh - 6f, ScreenTheme.TEXT_COLOR)
+            UiRecorder.fillRect(originX + caretX, fy + 3f, 1f, fh - 6f, ScreenTheme.TEXT_COLOR)
         }
         UiRecorder.popScissor()
         searchFieldRect = intArrayOf(fx, fy, fw, fh)
     }
 
     private var searchFieldRect = IntArray(4)
+    private const val SEARCH_SIZE = 7f
+    private const val SEARCH_PAD = 4f
+
+    private fun searchWidthTo(index: Int) = UiRecorder.textWidth(search.substring(0, index), SEARCH_SIZE)
+
+    // Nearest caret index to a scaled mouse x, on code point boundaries
+    private fun searchIndexAt(rx: Double): Int {
+        val target = (rx - (searchFieldRect[0] + SEARCH_PAD - searchShift)).toFloat()
+        var best = 0
+        var bestDist = Float.MAX_VALUE
+        var i = 0
+        while (true) {
+            val dist = kotlin.math.abs(searchWidthTo(i) - target)
+            if (dist < bestDist) { bestDist = dist; best = i }
+            if (i >= search.length) return best
+            i = search.offsetByCodePoints(i, 1)
+        }
+    }
 
     private fun cardHeight(inv: NBTInventory?): Int = inv?.let { it.rows * SLOT_SIZE + GRID_TOP + 3 } ?: 18
 
@@ -581,13 +613,22 @@ object StorageOverlay {
     }
 
     private var carriedLayer: Triple<ItemStack, Int, Int>? = null
+    private var tooltipLayer: Triple<ItemStack, Int, Int>? = null
 
-    // Held item goes in its own GUI pass after the UI paint so panels never cover it.
+    // Held item and vanilla tooltip go in their own GUI pass after the UI paint so panels never cover them.
     @JvmStatic
     fun extractCarriedLayer(state: net.minecraft.client.renderer.state.gui.GuiRenderState): Boolean {
-        val (stack, x, y) = carriedLayer ?: return false
+        val tip = tooltipLayer
+        tooltipLayer = null
+        val carried = carriedLayer
         carriedLayer = null
+        if (tip == null && carried == null) return false
         val ctx = GuiGraphicsExtractor(mc, state, 0, 0)
+        if (tip != null) {
+            ctx.setTooltipForNextFrame(font, tip.first, tip.second, tip.third)
+            ctx.extractDeferredElements(tip.second, tip.third, 0f)
+        }
+        val (stack, x, y) = carried ?: return true
         ctx.pose().pushMatrix()
         ctx.pose().scale(scale, scale)
         ctx.item(stack, x, y)
@@ -695,7 +736,16 @@ object StorageOverlay {
         val modifiers = click.modifiers()
 
         if (inRect(rx, ry, searchFieldRect[0], searchFieldRect[1], searchFieldRect[2], searchFieldRect[3])) {
-            searchFocused = true; return true
+            searchFocused = true
+            if (button == 0) {
+                val index = searchIndexAt(rx)
+                if (doubled) searchField.selectWordAt(index)
+                else {
+                    searchField.moveTo(index, modifiers and GLFW.GLFW_MOD_SHIFT != 0)
+                    searchSelecting = true
+                }
+            }
+            return true
         }
         searchFocused = false
 
@@ -736,6 +786,7 @@ object StorageOverlay {
     @JvmStatic
     fun mouseReleased(screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
+        searchSelecting = false
         if (dragArmed) {
             if (dragActive) endDrag()
             else dragStartSlot?.let {
@@ -757,6 +808,10 @@ object StorageOverlay {
         val s = scale
         val rx = mouseX / s
         val ry = mouseY / s
+        if (searchSelecting) {
+            searchField.moveTo(searchIndexAt(rx), true)
+            return true
+        }
         if (dragArmed) {
             resolveSlotUnder(rx, ry, activePage(screen))?.let { dragSlots.add(it.index) }
             return true
@@ -784,16 +839,18 @@ object StorageOverlay {
     private var lastMouseX = 0.0
     private var lastMouseY = 0.0
 
+    // Runs before every other container key hook; a focused field takes all keys
+    @JvmStatic
+    fun searchKeyPressed(input: KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on(screen) || !searchFocused) return false
+        if (input.key() == GLFW.GLFW_KEY_ESCAPE) searchFocused = false
+        else searchField.keyPressed(input.key(), input.modifiers())
+        return true
+    }
+
     @JvmStatic
     fun keyPressed(input: KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
-        if (searchFocused) {
-            when (input.key()) {
-                GLFW.GLFW_KEY_ESCAPE -> searchFocused = false
-                GLFW.GLFW_KEY_BACKSPACE -> if (search.isNotEmpty()) search = search.dropLast(1)
-            }
-            return true
-        }
         val options = mc.options
         val hotbar = options.keyHotbarSlots.indexOfFirst { it.matches(input) }
         val drop = options.keyDrop.matches(input)
@@ -809,14 +866,16 @@ object StorageOverlay {
         if (!on(screen) || !searchFocused) return false
         val cp = input.codepoint()
         if (Character.isISOControl(cp)) return true
-        search += String(Character.toChars(cp))
+        searchField.insert(String(Character.toChars(cp)))
         return true
     }
 
     @JvmStatic
     fun onClosed() {
         if (!FishSettings.storageRetainScroll) scroll = 0f
+        closedAt = System.currentTimeMillis()
         searchFocused = false
+        searchSelecting = false
         knobGrabbed = false
         dragStartSlot = null
         dragSlots.clear()

@@ -32,6 +32,21 @@ object DungeonWaypointStore {
         save()
     }
 
+    // Bulk merge with one save; skips entries at a position already used in that room.
+    @JvmStatic
+    fun addAll(entries: Map<String, List<StoredWaypoint>>, epsilon: Double): Int {
+        var added = 0
+        for ((key, list) in entries) {
+            val dest = data.computeIfAbsent(key) { ArrayList() }
+            for (w in list) {
+                if (dest.any { Math.abs(it.x - w.x) < epsilon && Math.abs(it.y - w.y) < epsilon && Math.abs(it.z - w.z) < epsilon }) continue
+                dest.add(w); added++
+            }
+        }
+        if (added > 0) save()
+        return added
+    }
+
     @JvmStatic
     fun removeNear(roomKey: String, x: Double, y: Double, z: Double, epsilon: Double): Boolean {
         val list = data[roomKey] ?: return false

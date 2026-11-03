@@ -1,10 +1,10 @@
 package fishmod.features.dungeon.f7
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.boss.wither.WitherBoss
@@ -21,19 +21,19 @@ object WitherESP {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
             try { tick() } catch (e: Exception) { FishDiag.fail("WitherESP.1", "wither ESP scan threw", e) }
         })
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!active()) return@register
             try {
                 val stroke = color()
                 for (wither in cachedWithers) {
-                    if (wither.isAlive) RenderUtils.gizmoBox(wither.boundingBox, 0, stroke)
+                    if (wither.isAlive) FishDraw.gizmoBox(wither.boundingBox, 0, stroke)
                 }
             } catch (e: Exception) { FishDiag.fail("WitherESP.2", "wither ESP render threw (n=${cachedWithers.size})", e) }
         }
     }
 
     private fun active(): Boolean =
-        FishSettings.witherEspEnabled && Location.inDungeon() && Phase.inBoss() && !Phase.inP5()
+        FishSettings.witherEspEnabled && SkyblockLocation.inDungeon() && BossPhase.inBoss() && !BossPhase.inP5()
 
     private fun tick() {
         if (!active()) { cachedWithers = emptyList(); scanCounter = 0; return }
@@ -48,9 +48,9 @@ object WitherESP {
     }
 
     private fun color(): Int = when {
-        Phase.inP1() -> FishSettings.witherEspMaxorColor
-        Phase.inP2() -> FishSettings.witherEspStormColor
-        Phase.inP3() -> FishSettings.witherEspGoldorColor
+        BossPhase.inP1() -> FishSettings.witherEspMaxorColor
+        BossPhase.inP2() -> FishSettings.witherEspStormColor
+        BossPhase.inP3() -> FishSettings.witherEspGoldorColor
         else -> FishSettings.witherEspNecronColor
     }
 }

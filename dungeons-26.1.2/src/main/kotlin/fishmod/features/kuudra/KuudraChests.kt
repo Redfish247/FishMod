@@ -8,8 +8,8 @@ import fishmod.features.mining.MiningHuds
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.FishMsg
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.DrawHooks
 import fishmod.features.kuudra.KuudraSettings as S
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents
@@ -31,7 +31,7 @@ object KuudraChests {
     private var pending: Parsed? = null
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { c ->
+        FishEvents.chat.register { c ->
             if (S.kuudraChestsMaster && S.kuudraProfit && Mining.strip(c.string).contains("PAID CHEST REWARDS")) FishDiag.guard("KuudraChests.2", "paid rewards failed") { onPaidRewards() }
             false
         }
@@ -62,11 +62,11 @@ object KuudraChests {
             }
         })
 
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!(S.kuudraChestsMaster && S.kuudraOpenedHighlight) || stack.isEmpty) return@register
             val t = Minecraft.getInstance().curScreen?.title?.string ?: return@register
             if (!t.contains("Vesuvius") && !t.contains("Croesus")) return@register
-            val slot = DrawEvents.currentSlot ?: return@register
+            val slot = DrawHooks.currentSlot ?: return@register
             if (slot.container === Minecraft.getInstance().player?.inventory) return@register
             val lore = lore(stack)
             val col = when {

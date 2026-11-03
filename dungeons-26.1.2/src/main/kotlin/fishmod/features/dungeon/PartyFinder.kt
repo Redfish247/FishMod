@@ -4,14 +4,14 @@ import fishmod.utils.TextStrip
 
 import fishmod.utils.FishMsg
 import fishmod.utils.HypixelApi
-import fishmod.utils.Misc
-import fishmod.utils.Scheduler
+import fishmod.utils.FishUtil
+import fishmod.utils.TickScheduler
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.PartyUtil
+import fishmod.utils.data.PartyTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.DungeonClass
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.DrawHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.fabricmc.fabric.api.event.Event
@@ -50,13 +50,13 @@ object PartyFinder {
 
     @JvmStatic
     fun init() {
-        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y -> onSlotBefore(ctx, stack, x, y) }
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y -> onSlot(ctx, stack, x, y) }
+        DrawHooks.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y -> onSlotBefore(ctx, stack, x, y) }
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y -> onSlot(ctx, stack, x, y) }
         ItemTooltipCallback.EVENT.addPhaseOrdering(Event.DEFAULT_PHASE, TOOLTIP_LAST_PHASE)
         ItemTooltipCallback.EVENT.register(TOOLTIP_LAST_PHASE, ItemTooltipCallback { stack, _, _, lines -> onTooltip(stack, lines) })
         ClientTickEvents.END_CLIENT_TICK.register { captureSelectedClass() }
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (FishSettings.pfAutoKick) {
                 try {
                     val plain = TextStrip.plain(text.string)
@@ -69,20 +69,20 @@ object PartyFinder {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { gen++; kicked.clear(); cache.clear(); sbCache.clear(); pending.clear(); failedAt.clear(); false }
+        FishEvents.worldChange.register { gen++; kicked.clear(); cache.clear(); sbCache.clear(); pending.clear(); failedAt.clear(); false }
     }
 
     private fun tryAutoKick(name: String, clazz: String?) {
         val mc = Minecraft.getInstance()
         val self = mc.player?.name?.string ?: return
         if (name.equals(self, ignoreCase = true)) return
-        if (!PartyUtil.amLeader()) return
+        if (!PartyTools.amLeader()) return
 
         val key = name.lowercase()
         if (key in kicked) {
             mc.execute {
                 FishMsg.send("§9AutoKick §7> re-kicking §e$name §7(previously kicked)")
-                Misc.executeCommand("party kick $name")
+                FishUtil.executeCommand("party kick $name")
             }
             return
         }
@@ -148,13 +148,13 @@ object PartyFinder {
     private fun finishAutoKick(name: String, key: String, reasons: List<String>) {
         if (reasons.isEmpty() || !kicked.add(key)) return
         Minecraft.getInstance().execute {
-            if (!PartyUtil.amLeader()) { kicked.remove(key); return@execute }
+            if (!PartyTools.amLeader()) { kicked.remove(key); return@execute }
             FishMsg.send("§9AutoKick §7> kicking §e$name§7: §f${reasons.joinToString(", ")}")
             if (FishSettings.pfAutoKickInform) {
                 fishmod.utils.ChatQueue.enqueue("pc AutoKick $name: ${reasons.joinToString(", ")}")
-                Scheduler.scheduleTask({ Misc.executeCommand("party kick $name") }, 6)
+                TickScheduler.scheduleTask({ FishUtil.executeCommand("party kick $name") }, 6)
             } else {
-                Misc.executeCommand("party kick $name")
+                FishUtil.executeCommand("party kick $name")
             }
         }
     }
@@ -225,7 +225,7 @@ object PartyFinder {
     private fun myClass(): String? {
         val cfg = FishSettings.pfMyClass
         if (cfg in CLASSES) return cfg
-        DungeonClass.currentClass?.let { return it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
+        DungeonRole.currentClass?.let { return it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
         return capturedClass
     }
 
@@ -377,7 +377,7 @@ object PartyFinder {
             pending.remove(key)
             if (data.failed) {
                 // expected (nicked/unknown name, proxy rate limit); real HTTP/parse faults report in HypixelApi
-                fishmod.utils.debug.Debug.LOGGER.info("PF stats lookup failed for {}", name)
+                fishmod.utils.debug.FishDebug.LOGGER.info("PF stats lookup failed for {}", name)
                 failedAt[key] = System.currentTimeMillis()
             } else { failedAt.remove(key); cache[key] = data }
         }

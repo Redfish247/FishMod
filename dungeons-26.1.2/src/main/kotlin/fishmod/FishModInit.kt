@@ -16,22 +16,22 @@ import fishmod.features.dungeon.FishPuzzleDisplay
 import fishmod.features.dungeon.LagTracker
 import fishmod.features.dungeon.PartyCommandHandler
 import fishmod.features.dungeon.SessionStats
-import fishmod.utils.Constants
-import fishmod.utils.Keybinds
-import fishmod.utils.Location
+import fishmod.utils.FishConstants
+import fishmod.utils.FishKeys
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.MayorApi
-import fishmod.utils.Misc
-import fishmod.utils.Scheduler
-import fishmod.utils.config.Config
+import fishmod.utils.FishUtil
+import fishmod.utils.TickScheduler
+import fishmod.utils.config.ConfigRoot
 import fishmod.utils.config.FishConfig
-import fishmod.utils.config.FolderUtility
-import fishmod.utils.data.PartyUtil
-import fishmod.utils.debug.Debug
+import fishmod.utils.config.FishPaths
+import fishmod.utils.data.PartyTools
+import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.dungeon.Section
-import fishmod.utils.events.CustomEvents
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.dungeon.GoldorSection
+import fishmod.utils.events.EventDispatch
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
@@ -72,22 +72,22 @@ class FishModInit : ClientModInitializer {
         @JvmStatic
         private fun runLocalLookup(cmd: String, arg1: String?, arg2: String?, arg3: String?): Int {
             val mc = Minecraft.getInstance()
-            val self = mc.player?.gameProfile?.name ?: return Constants.SUCCESS
+            val self = mc.player?.gameProfile?.name ?: return FishConstants.SUCCESS
             if (!fishmod.features.dungeon.PartyCommandHandler.localEnabled(cmd)) {
                 // raw packet: sendCommand() would re-enter our own client command and recurse forever
                 mc.connection?.send(net.minecraft.network.protocol.game.ServerboundChatCommandPacket(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" ")))
-                return Constants.SUCCESS
+                return FishConstants.SUCCESS
             }
             fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
                 self, cmd, arg1, arg2, arg3, fishmod.features.dungeon.PartyCommandHandler.LOCAL
             )
-            return Constants.SUCCESS
+            return FishConstants.SUCCESS
         }
 
         @JvmStatic
         private fun printNameList(label: String, csv: String) {
             val names = fishmod.utils.NameList.toList(csv)
-            Misc.addChatMessage(
+            FishUtil.addChatMessage(
                 Component.literal(
                     "§b[FM] Party-Action $label §7(${names.size}): §f" +
                         (if (names.isEmpty()) "(empty)" else names.joinToString(", "))
@@ -106,7 +106,7 @@ class FishModInit : ClientModInitializer {
                 if (m.find()) cmd = null
             }
             if (cmd == null) {
-                Misc.addChatMessage(Component.literal(text))
+                FishUtil.addChatMessage(Component.literal(text))
                 return
             }
             val suggest = cmd
@@ -116,7 +116,7 @@ class FishModInit : ClientModInitializer {
                     .withClickEvent(ClickEvent.SuggestCommand(suggest))
                     .withHoverEvent(HoverEvent.ShowText(Component.literal("§7Click to put §f$suggest§7 in chat")))
             )
-            Misc.addChatMessage(t)
+            FishUtil.addChatMessage(t)
         }
 
         // Builds an Odin-style /fm <alias> [n] get-from-sacks subcommand.
@@ -125,19 +125,19 @@ class FishModInit : ClientModInitializer {
             ClientCommands.literal(alias)
                 .then(ClientCommands.argument("amount", IntegerArgumentType.integer(1)).executes { ctx ->
                     fishmod.features.other.SackFill.fill(alias, IntegerArgumentType.getInteger(ctx, "amount"))
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 })
-                .executes { fishmod.features.other.SackFill.fill(alias, null); Constants.SUCCESS }
+                .executes { fishmod.features.other.SackFill.fill(alias, null); FishConstants.SUCCESS }
 
         @JvmStatic
         private fun waypointSubcommand(name: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
             val tree = ClientCommands.literal(name)
-                .executes { fishmod.features.dungeon.DungeonWaypoints.toggleEdit(); Constants.SUCCESS }
+                .executes { fishmod.features.dungeon.DungeonWaypoints.toggleEdit(); FishConstants.SUCCESS }
                 .then(ClientCommands.literal("edit").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.toggleEdit(); Constants.SUCCESS
+                    fishmod.features.dungeon.DungeonWaypoints.toggleEdit(); FishConstants.SUCCESS
                 })
                 .then(ClientCommands.literal("fill").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.toggleFill(); Constants.SUCCESS
+                    fishmod.features.dungeon.DungeonWaypoints.toggleFill(); FishConstants.SUCCESS
                 })
                 .then(
                     ClientCommands.literal("size")
@@ -147,7 +147,7 @@ class FishModInit : ClientModInitializer {
                                     fishmod.features.dungeon.DungeonWaypoints.setSize(
                                         DoubleArgumentType.getDouble(ctx, "value")
                                     )
-                                    Constants.SUCCESS
+                                    FishConstants.SUCCESS
                                 }
                         )
                 )
@@ -159,7 +159,7 @@ class FishModInit : ClientModInitializer {
                                     fishmod.features.dungeon.DungeonWaypoints.setDistance(
                                         IntegerArgumentType.getInteger(ctx, "value")
                                     )
-                                    Constants.SUCCESS
+                                    FishConstants.SUCCESS
                                 }
                         )
                 )
@@ -173,7 +173,7 @@ class FishModInit : ClientModInitializer {
                                 }
                                 .executes { ctx ->
                                     fishmod.features.dungeon.DungeonWaypoints.setType(StringArgumentType.getString(ctx, "value"))
-                                    Constants.SUCCESS
+                                    FishConstants.SUCCESS
                                 }
                         )
                 )
@@ -187,15 +187,15 @@ class FishModInit : ClientModInitializer {
                                 }
                                 .executes { ctx ->
                                     fishmod.features.dungeon.DungeonWaypoints.setTimer(StringArgumentType.getString(ctx, "value"))
-                                    Constants.SUCCESS
+                                    FishConstants.SUCCESS
                                 }
                         )
                 )
                 .then(ClientCommands.literal("useblocksize").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.toggleUseBlockSize(); Constants.SUCCESS
+                    fishmod.features.dungeon.DungeonWaypoints.toggleUseBlockSize(); FishConstants.SUCCESS
                 })
                 .then(ClientCommands.literal("pixel").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.togglePixelMode(); Constants.SUCCESS
+                    fishmod.features.dungeon.DungeonWaypoints.togglePixelMode(); FishConstants.SUCCESS
                 })
                 .then(
                     ClientCommands.literal("offset")
@@ -211,14 +211,14 @@ class FishModInit : ClientModInitializer {
                                                         DoubleArgumentType.getDouble(ctx, "y"),
                                                         DoubleArgumentType.getDouble(ctx, "z")
                                                     )
-                                                    Constants.SUCCESS
+                                                    FishConstants.SUCCESS
                                                 }
                                         )
                                 )
                         )
                 )
                 .then(ClientCommands.literal("through").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.toggleThrough(); Constants.SUCCESS
+                    fishmod.features.dungeon.DungeonWaypoints.toggleThrough(); FishConstants.SUCCESS
                 })
                 .then(
                     ClientCommands.literal("linesize")
@@ -228,7 +228,7 @@ class FishModInit : ClientModInitializer {
                                     fishmod.features.dungeon.DungeonWaypoints.setLineWidth(
                                         DoubleArgumentType.getDouble(ctx, "value")
                                     )
-                                    Constants.SUCCESS
+                                    FishConstants.SUCCESS
                                 }
                         )
                 )
@@ -238,41 +238,47 @@ class FishModInit : ClientModInitializer {
                             ClientCommands.argument("hex", StringArgumentType.word())
                                 .executes { ctx ->
                                     fishmod.features.dungeon.DungeonWaypoints.setColor(StringArgumentType.getString(ctx, "hex"))
-                                    Constants.SUCCESS
+                                    FishConstants.SUCCESS
                                 }
                         )
                 )
                 .then(ClientCommands.literal("export").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.exportToClipboard(); Constants.SUCCESS
+                    fishmod.features.dungeon.DungeonWaypoints.exportToClipboard(); FishConstants.SUCCESS
                 })
                 .then(ClientCommands.literal("import").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.importFromClipboard(); Constants.SUCCESS
-                })
+                    fishmod.features.dungeon.DungeonWaypoints.importFromClipboard(); FishConstants.SUCCESS
+                }
+                    .then(ClientCommands.literal("odin").executes {
+                        fishmod.features.dungeon.OdinWaypointImport.importFromOdinConfig(); FishConstants.SUCCESS
+                    }
+                        .then(ClientCommands.literal("clipboard").executes {
+                            fishmod.features.dungeon.OdinWaypointImport.importFromClipboard(); FishConstants.SUCCESS
+                        })))
                 .then(ClientCommands.literal("reset").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.resetCurrentArea(); Constants.SUCCESS
+                    fishmod.features.dungeon.DungeonWaypoints.resetCurrentArea(); FishConstants.SUCCESS
                 })
                 .then(
                     ClientCommands.literal("route")
                         .executes {
-                            fishmod.features.dungeon.DungeonWaypoints.toggleRoute(null); Constants.SUCCESS
+                            fishmod.features.dungeon.DungeonWaypoints.toggleRoute(null); FishConstants.SUCCESS
                         }
                         .then(
                             ClientCommands.argument("name", StringArgumentType.word())
                                 .executes { ctx ->
                                     fishmod.features.dungeon.DungeonWaypoints.toggleRoute(StringArgumentType.getString(ctx, "name"))
-                                    Constants.SUCCESS
+                                    FishConstants.SUCCESS
                                 }
                         )
                         .then(
                             ClientCommands.literal("reset")
                                 .executes {
-                                    fishmod.features.dungeon.DungeonWaypoints.endRoute(null); Constants.SUCCESS
+                                    fishmod.features.dungeon.DungeonWaypoints.endRoute(null); FishConstants.SUCCESS
                                 }
                                 .then(
                                     ClientCommands.argument("name", StringArgumentType.word())
                                         .executes { ctx ->
                                             fishmod.features.dungeon.DungeonWaypoints.endRoute(StringArgumentType.getString(ctx, "name"))
-                                            Constants.SUCCESS
+                                            FishConstants.SUCCESS
                                         }
                                 )
                         )
@@ -282,7 +288,7 @@ class FishModInit : ClientModInitializer {
                                     ClientCommands.argument("name", StringArgumentType.word())
                                         .executes { ctx ->
                                             fishmod.features.dungeon.DungeonWaypoints.deleteRoute(StringArgumentType.getString(ctx, "name"))
-                                            Constants.SUCCESS
+                                            FishConstants.SUCCESS
                                         }
                                 )
                         )
@@ -296,17 +302,17 @@ class FishModInit : ClientModInitializer {
                     Minecraft.getInstance().schedule {
                         Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(tab))
                     }
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 }
                 .then(ClientCommands.literal("on").executes {
                     fishmod.features.chat.ChatRuleStore.setMasterEnabled(true)
-                    Misc.addChatMessage(Component.literal("§b[FM] Chat Notifications: §aON"))
-                    Constants.SUCCESS
+                    FishUtil.addChatMessage(Component.literal("§b[FM] Chat Notifications: §aON"))
+                    FishConstants.SUCCESS
                 })
                 .then(ClientCommands.literal("off").executes {
                     fishmod.features.chat.ChatRuleStore.setMasterEnabled(false)
-                    Misc.addChatMessage(Component.literal("§b[FM] Chat Notifications: §cOFF"))
-                    Constants.SUCCESS
+                    FishUtil.addChatMessage(Component.literal("§b[FM] Chat Notifications: §cOFF"))
+                    FishConstants.SUCCESS
                 })
         }
 
@@ -383,8 +389,10 @@ class FishModInit : ClientModInitializer {
 
     override fun onInitializeClient() {
         FishDiag.guard("FishModInit.1", "FishConfig.manager.load() failed") { FishConfig.manager.load() }
-        safeInit("Config") { Config.manager.load() }
-        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("fishpv")) safeInit("ProfileViewer") { fishmod.pv.BetterPVClient.init() }
+        safeInit("Config") { ConfigRoot.manager.load() }
+        if (!fishmod.pv.ProfileViewer.standaloneLoaded()) safeInit("ProfileViewer") { fishmod.pv.PvClient.init() }
+        else fishmod.pv.PvClient.registerStandaloneNote()
+        safeInit("EnchantColors") { fishmod.pv.gui.inventories.EnchantTooltip.init() }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
         FishDiag.guard("FishModInit.2", "fishmod.utils.IoExecutor.init() failed") { fishmod.utils.IoExecutor.init() }
 
@@ -409,10 +417,11 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.13", "FishPuzzleDisplay.init() failed") { FishPuzzleDisplay.init() }
         FishDiag.guard("FishModInit.14", "FishEstTotal.init() failed") { FishEstTotal.init() }
         FishDiag.guard("FishModInit.15", "DungeonDeathMessage.init() failed") { DungeonDeathMessage.init() }
-        FishDiag.guard("FishModInit.16", "fishmod.features.ExplosiveShot.init() failed") { fishmod.features.ExplosiveShot.init() }
+        FishDiag.guard("FishModInit.16", "fishmod.features.ExplosiveShotHud.init() failed") { fishmod.features.ExplosiveShotHud.init() }
         FishDiag.guard("FishModInit.17", "fishmod.features.CritTracker.init() failed") { fishmod.features.CritTracker.init() }
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
+        FishDiag.guard("FishModInit.CalTimes", "CalendarTimes.init() failed") { fishmod.features.extras.CalendarTimes.init() }
         FishDiag.guard("FishModInit.Extras", "Extras.init() failed") { fishmod.features.extras.Extras.init() }
         FishDiag.guard("FishModInit.20", "PetHud.init() failed") { PetHud.init() }
         FishDiag.guard("FishModInit.201", "ExperimentProfitTracker.init() failed") { fishmod.features.ExperimentProfitTracker.init() }
@@ -428,6 +437,8 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.29", "fishmod.features.other.WardrobeHotkeys.init() failed") { fishmod.features.other.WardrobeHotkeys.init() }
         FishDiag.guard("FishModInit.30", "ItemRarityHotbar.init() failed") { ItemRarityHotbar.init() }
         FishDiag.guard("FishModInit.31", "fishmod.features.item.ItemQualityTooltip.init() failed") { fishmod.features.item.ItemQualityTooltip.init() }
+        FishDiag.guard("FishModInit.31b", "fishmod.features.item.ExoticTooltip.init() failed") { fishmod.features.item.ExoticTooltip.init() }
+        FishDiag.guard("FishModInit.31b", "fishmod.features.item.ItemOverlays.init() failed") { fishmod.features.item.ItemOverlays.init() }
         FishDiag.guard("FishModInit.32", "fishmod.features.item.ItemPriceTooltip.init() failed") { fishmod.features.item.ItemPriceTooltip.init() }
         FishDiag.guard("FishModInit.32b", "fishmod.features.item.RecipeViewer.init() failed") { fishmod.features.item.RecipeViewer.init() }
         FishDiag.guard("FishModInit.32c", "fishmod.features.item.TooltipPinBottom.init() failed") { fishmod.features.item.TooltipPinBottom.init() }
@@ -437,7 +448,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.36", "fishmod.features.FireFreezeTimer.init() failed") { fishmod.features.FireFreezeTimer.init() }
         FishDiag.guard("FishModInit.37", "fishmod.features.LoadoutTitle.init() failed") { fishmod.features.LoadoutTitle.init() }
         FishDiag.guard("FishModInit.38", "fishmod.features.AutoSprint.init() failed") { fishmod.features.AutoSprint.init() }
-        FishDiag.guard("FishModInit.39", "fishmod.features.WarpCooldown.init() failed") { fishmod.features.WarpCooldown.init() }
+        FishDiag.guard("FishModInit.39", "fishmod.features.PartyWarpTimer.init() failed") { fishmod.features.PartyWarpTimer.init() }
         FishDiag.guard("FishModInit.40", "fishmod.features.dungeon.DungeonBreaker.init() failed") { fishmod.features.dungeon.DungeonBreaker.init() }
         FishDiag.guard("FishModInit.41", "fishmod.features.BlockOverlay.init() failed") { fishmod.features.BlockOverlay.init() }
         FishDiag.guard("FishModInit.41b", "fishmod.features.HologramText.init() failed") { fishmod.features.HologramText.init() }
@@ -451,12 +462,13 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.49", "fishmod.features.NoCursorReset.init() failed") { fishmod.features.NoCursorReset.init() }
         FishDiag.guard("FishModInit.50", "fishmod.features.SlotBinds.init() failed") { fishmod.features.SlotBinds.init() }
         FishDiag.guard("FishModInit.51", "fishmod.features.SlotLocking.init() failed") { fishmod.features.SlotLocking.init() }
-        FishDiag.guard("FishModInit.52", "fishmod.features.other.SearchBar.init() failed") { fishmod.features.other.SearchBar.init() }
+        FishDiag.guard("FishModInit.52", "fishmod.features.other.InvSearchBar.init() failed") { fishmod.features.other.InvSearchBar.init() }
         FishDiag.guard("FishModInit.53", "fishmod.features.BridgeBot.init() failed") { fishmod.features.BridgeBot.init() }
         FishDiag.guard("FishModInit.54", "twitchbridge.TwitchBridgeClient.init() failed") { twitchbridge.TwitchBridgeClient.init() }
         FishDiag.guard("FishModInit.55", "fishmod.features.LavaToWater.init() failed") { fishmod.features.LavaToWater.init() }
         FishDiag.guard("FishModInit.56", "fishmod.features.storage.StorageCache.init() failed") { fishmod.features.storage.StorageCache.init() }
         FishDiag.guard("FishModInit.57", "fishmod.features.dungeon.ExtraStats.init() failed") { fishmod.features.dungeon.ExtraStats.init() }
+        FishDiag.guard("FishModInit.57c", "ExperimentSolver.init() failed") { fishmod.features.ExperimentSolver.init() }
         FishDiag.guard("FishModInit.58", "fishmod.features.EtherwarpHelper.init() failed") { fishmod.features.EtherwarpHelper.init() }
         FishDiag.guard("FishModInit.59", "fishmod.features.dungeon.DungeonAbilities.init() failed") { fishmod.features.dungeon.DungeonAbilities.init() }
         FishDiag.guard("FishModInit.60", "fishmod.features.dungeon.f6.TerracottaTimer.init() failed") { fishmod.features.dungeon.f6.TerracottaTimer.init() }
@@ -468,8 +480,8 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.66", "fishmod.features.dungeon.LeapAnnounce.init() failed") { fishmod.features.dungeon.LeapAnnounce.init() }
         FishDiag.guard("FishModInit.67", "fishmod.features.dungeon.MimicAnnounce.init() failed") { fishmod.features.dungeon.MimicAnnounce.init() }
         FishDiag.guard("FishModInit.68", "fishmod.features.dungeon.RoomTimer.init() failed") { fishmod.features.dungeon.RoomTimer.init() }
-        FishDiag.guard("FishModInit.69", "fishmod.features.dungeon.KeyNotifier.init() failed") { fishmod.features.dungeon.KeyNotifier.init() }
-        FishDiag.guard("FishModInit.70", "fishmod.features.dungeon.AutoRequeue.init() failed") { fishmod.features.dungeon.AutoRequeue.init() }
+        FishDiag.guard("FishModInit.69", "fishmod.features.dungeon.KeyPickupAlert.init() failed") { fishmod.features.dungeon.KeyPickupAlert.init() }
+        FishDiag.guard("FishModInit.70", "fishmod.features.dungeon.DungeonRequeue.init() failed") { fishmod.features.dungeon.DungeonRequeue.init() }
         FishDiag.guard("FishModInit.71", "fishmod.features.dungeon.Blessings.init() failed") { fishmod.features.dungeon.Blessings.init() }
         FishDiag.guard("FishModInit.72", "fishmod.features.dungeon.QuizHud.init() failed") { fishmod.features.dungeon.QuizHud.init() }
         FishDiag.guard("FishModInit.73", "fishmod.features.dungeon.SecretOverlay.init() failed") { fishmod.features.dungeon.SecretOverlay.init() }
@@ -503,6 +515,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.99", "fishmod.features.dungeon.M7LeverWaypoints.init() failed") { fishmod.features.dungeon.M7LeverWaypoints.init() }
         FishDiag.guard("FishModInit.100", "fishmod.features.dungeon.DungeonWaypoints.init() failed") { fishmod.features.dungeon.DungeonWaypoints.init() }
         FishDiag.guard("FishModInit.101", "fishmod.features.dungeon.StarredMobHighlight.init() failed") { fishmod.features.dungeon.StarredMobHighlight.init() }
+        FishDiag.guard("FishModInit.MiningBoxes", "MiningBoxes.init() failed") { fishmod.features.mining.MiningBoxes.init() }
         FishDiag.guard("FishModInit.102", "fishmod.features.slayers.SlayerManager.init() failed") { fishmod.features.slayers.SlayerManager.init() }
         FishDiag.guard("FishModInit.156", "fishmod.features.diana.Diana.init() failed") { fishmod.features.diana.Diana.init() }
         FishDiag.guard("FishModInit.158", "TrackerResetButton.init() failed") { fishmod.features.other.TrackerResetButton.init() }
@@ -512,45 +525,46 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.garden", "fishmod.features.garden.Garden.init() failed") { fishmod.features.garden.Garden.init() }
         FishDiag.guard("FishModInit.ach", "AchEngine.init() failed") { fishmod.features.achievements.AchEngine.init() }
         FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.f7.F7Huds.init() failed") { fishmod.features.dungeon.f7.F7Huds.init() }
-        FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.Buttons.init() failed") { fishmod.utils.config.values.Buttons.init() }
-        FishHudEditor.register("Tick Timer", fishmod.features.dungeon.f7.F7Huds.tickTimer)
-        FishHudEditor.register("Crystal Spawn Time", fishmod.features.dungeon.f7.F7Huds.crystalSpawnTime)
-        FishHudEditor.register("Crystal Reminder", fishmod.features.dungeon.f7.F7Huds.crystalReminder)
-        FishHudEditor.register("Storm Death Time", fishmod.features.dungeon.f7.F7Huds.stormDeathTime)
+        FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.InvButtonSettings.init() failed") { fishmod.utils.config.values.InvButtonSettings.init() }
+        FishDiag.guard("FishModInit.104b", "EquipmentDisplay.init() failed") { fishmod.features.other.EquipmentDisplay.init() }
+        FishHudEditor.register("Boss Tick Clock", fishmod.features.dungeon.f7.F7Huds.tickTimer)
+        FishHudEditor.register("Crystal Respawn", fishmod.features.dungeon.f7.F7Huds.crystalRespawnBox)
+        FishHudEditor.register("Crystal Not Placed", fishmod.features.dungeon.f7.F7Huds.crystalReminder)
+        FishHudEditor.register("Storm Kill Time", fishmod.features.dungeon.f7.F7Huds.stormKillBox)
         FishHudEditor.register("LB Release Timer", fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer)
         FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.f7.F7Huds.pyTimer)
         FishHudEditor.register("Necron LB Timer", fishmod.features.dungeon.f7.F7Huds.necronLbTimer)
         FishHudEditor.register("Necron Drag Timer", fishmod.features.dungeon.f7.F7Huds.necronDragTimer)
         FishHudEditor.register("Necron Drop Lava/Platform", fishmod.features.dungeon.f7.F7Huds.necronDropLanding)
-        FishHudEditor.register("Storm Crushed", fishmod.features.dungeon.f7.F7Huds.stormCrush)
-        FishHudEditor.register("Pillar Explosion Timer", fishmod.features.dungeon.f7.F7Huds.pillarExplosion)
-        FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
-        FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
-        FishHudEditor.register("Current Section", fishmod.features.dungeon.f7.F7Huds.currentSection)
-        FishHudEditor.register("Device Completed", fishmod.features.dungeon.f7.F7Huds.deviceNotifier)
-        FishHudEditor.register("Melody Warning", fishmod.features.dungeon.f7.F7Huds.melodyWarning)
-        FishHudEditor.register("Section Completion", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
+        FishHudEditor.register("Storm Crush Banner", fishmod.features.dungeon.f7.F7Huds.stormCrush)
+        FishHudEditor.register("Pillar Blast Timer", fishmod.features.dungeon.f7.F7Huds.pillarExplosion)
+        FishHudEditor.register("Terminals Open In", fishmod.features.dungeon.f7.F7Huds.termOpenBox)
+        FishHudEditor.register("Section Count", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
+        FishHudEditor.register("P3 Section", fishmod.features.dungeon.f7.F7Huds.currentSection)
+        FishHudEditor.register("Device Done", fishmod.features.dungeon.f7.F7Huds.deviceNotifier)
+        FishHudEditor.register("Melody Callout", fishmod.features.dungeon.f7.F7Huds.melodyWarning)
+        FishHudEditor.register("Section Cleared", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
         FishHudEditor.register("Players Leaped", fishmod.features.dungeon.f7.F7Huds.playersLeaped)
-        FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.Section.terminalSplits)
+        FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.GoldorSection.goldorSplitsBox)
         FishHudEditor.register("Terminal Tracker", fishmod.features.dungeon.f7.TerminalTracker.terminalTrackerHud)
-        FishDiag.guard("FishModInit.105", "fishmod.utils.dungeon.DungeonClass.init() failed") { fishmod.utils.dungeon.DungeonClass.init() }
+        FishDiag.guard("FishModInit.105", "fishmod.utils.dungeon.DungeonRole.init() failed") { fishmod.utils.dungeon.DungeonRole.init() }
         FishDiag.guard("FishModInit.106", "fishmod.features.ClassColoredBoots.init() failed") { fishmod.features.ClassColoredBoots.init() }
         FishDiag.guard("FishModInit.107", "fishmod.features.dungeon.DupeClassDetector.init() failed") { fishmod.features.dungeon.DupeClassDetector.init() }
 
-        FishHudEditor.register("Splits", Phase.splitTimer)
+        FishHudEditor.register("Run Splits", BossPhase.runSplitsBox)
         FishHudEditor.registerLocked(
             "Est. Total (follows Splits)",
-            { try { Phase.splitTimer.scaledX } catch (t: Throwable) { FishDiag.fail("FishModInit.108", "Est. Total x lookup failed", t); 0 } },
+            { try { BossPhase.runSplitsBox.scaledX } catch (t: Throwable) { FishDiag.fail("FishModInit.108", "Est. Total x lookup failed", t); 0 } },
             {
                 try {
                     // outside a run the editor shows the 6-row Splits preview
-                    Phase.splitTimer.scaledY + Constants.TEXT_HEIGHT * Phase.getVisibleRowCount().let { if (it > 0) it else 6 } + 8
+                    BossPhase.runSplitsBox.scaledY + FishConstants.TEXT_HEIGHT * BossPhase.getVisibleRowCount().let { if (it > 0) it else 6 } + 8
                 } catch (t: Throwable) {
                     FishDiag.fail("FishModInit.109", "Est. Total y lookup failed", t)
-                    Phase.splitTimer.scaledY + 20
+                    BossPhase.runSplitsBox.scaledY + 20
                 }
             },
-            Phase.SPLIT_LENGTH, Constants.TEXT_HEIGHT + 4
+            BossPhase.SPLIT_LENGTH, FishConstants.TEXT_HEIGHT + 4
         )
         FishHudEditor.register("Puzzles", FishPuzzleDisplay.puzzleHud)
 
@@ -562,63 +576,63 @@ class FishModInit : ClientModInitializer {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
                         }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("customize").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.item.ItemCustomizeScreen())
                         }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("aliases").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.ALIASES))
                         }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("whitelist").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST))
                         }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("blacklist").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST))
                         }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("kicklist").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK))
                         }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("commandhelp").executes {
                         printCommandHelp()
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("help").executes {
                         printCommandHelp()
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("debug")
                         .executes {
                             debugReport()
-                            Constants.SUCCESS
+                            FishConstants.SUCCESS
                         }
-                        .then(ClientCommands.literal("report").executes { debugReport(); Constants.SUCCESS })
+                        .then(ClientCommands.literal("report").executes { debugReport(); FishConstants.SUCCESS })
                         .then(ClientCommands.literal("clear").executes {
                             fishmod.utils.debug.FishDiag.clear()
-                            fishmod.utils.Misc.addChatMessage(Component.literal("§a[FishMod] Debug codes cleared."))
-                            Constants.SUCCESS
+                            fishmod.utils.FishUtil.addChatMessage(Component.literal("§a[FishMod] Debug codes cleared."))
+                            FishConstants.SUCCESS
                         }))
                     .then(waypointSubcommand("wp"))
                     .then(ClientCommands.literal("pm")
-                        .executes { fishmod.features.dungeon.DungeonWaypoints.togglePmEdit(); Constants.SUCCESS }
+                        .executes { fishmod.features.dungeon.DungeonWaypoints.togglePmEdit(); FishConstants.SUCCESS }
                         .then(ClientCommands.literal("message")
                             .then(ClientCommands.argument("text", StringArgumentType.greedyString()).executes { ctx ->
-                                fishmod.features.dungeon.DungeonWaypoints.setPmMessage(StringArgumentType.getString(ctx, "text")); Constants.SUCCESS
+                                fishmod.features.dungeon.DungeonWaypoints.setPmMessage(StringArgumentType.getString(ctx, "text")); FishConstants.SUCCESS
                             })))
                     .then(waypointSubcommand("waypoint"))
                     .then(waypointSubcommand("waypoints"))
@@ -645,37 +659,37 @@ class FishModInit : ClientModInitializer {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.FishModScreen())
                         }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
                 ClientCommands.literal("trackcarry")
-                    .then(ClientCommands.literal("clear").executes { fishmod.features.slayers.SlayerCarryTracker.clear(); Constants.SUCCESS })
-                    .then(ClientCommands.literal("debug").executes { fishmod.features.slayers.SlayerCarryTracker.debug(); Constants.SUCCESS })
+                    .then(ClientCommands.literal("clear").executes { fishmod.features.slayers.SlayerCarryTracker.clear(); FishConstants.SUCCESS })
+                    .then(ClientCommands.literal("debug").executes { fishmod.features.slayers.SlayerCarryTracker.debug(); FishConstants.SUCCESS })
                     .then(ClientCommands.literal("remove").then(ClientCommands.argument("ign", StringArgumentType.word()).executes { ctx ->
-                        fishmod.features.slayers.SlayerCarryTracker.remove(StringArgumentType.getString(ctx, "ign")); Constants.SUCCESS
+                        fishmod.features.slayers.SlayerCarryTracker.remove(StringArgumentType.getString(ctx, "ign")); FishConstants.SUCCESS
                     }))
                     .then(ClientCommands.argument("ign", StringArgumentType.word())
                         .then(ClientCommands.argument("amount", IntegerArgumentType.integer(0, 1000)).executes { ctx ->
-                            fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), IntegerArgumentType.getInteger(ctx, "amount")); Constants.SUCCESS
+                            fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), IntegerArgumentType.getInteger(ctx, "amount")); FishConstants.SUCCESS
                         })
-                        .executes { ctx -> fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), -1); Constants.SUCCESS })
-                    .executes { fishmod.features.slayers.SlayerCarryTracker.list(); Constants.SUCCESS }
+                        .executes { ctx -> fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), -1); FishConstants.SUCCESS })
+                    .executes { fishmod.features.slayers.SlayerCarryTracker.list(); FishConstants.SUCCESS }
             )
             dispatcher.register(ClientCommands.literal("termreplay")
                 .then(ClientCommands.argument("replay", StringArgumentType.greedyString())
                     .suggests { _, b -> (listOf("latest") + fishmod.features.dungeon.f7.TerminalTracker.replayNames()).forEach(b::suggest); b.buildFuture() }
-                    .executes { ctx -> fishmod.features.dungeon.f7.TerminalTracker.replay(StringArgumentType.getString(ctx, "replay")); Constants.SUCCESS })
-                .executes { fishmod.features.dungeon.f7.TerminalTracker.replay(); Constants.SUCCESS })
+                    .executes { ctx -> fishmod.features.dungeon.f7.TerminalTracker.replay(StringArgumentType.getString(ctx, "replay")); FishConstants.SUCCESS })
+                .executes { fishmod.features.dungeon.f7.TerminalTracker.replay(); FishConstants.SUCCESS })
             for (cmd in arrayOf("pbsplits", "splitspb")) dispatcher.register(
                 ClientCommands.literal(cmd)
                     .then(ClientCommands.argument("floor", StringArgumentType.word()).executes { ctx ->
-                        fishmod.utils.dungeon.Phase.pbSplitsCommand(StringArgumentType.getString(ctx, "floor"))
-                        Constants.SUCCESS
+                        fishmod.utils.dungeon.BossPhase.pbSplitsCommand(StringArgumentType.getString(ctx, "floor"))
+                        FishConstants.SUCCESS
                     })
                     .executes {
-                        fishmod.utils.dungeon.Phase.pbSplitsCommand(null)
-                        Constants.SUCCESS
+                        fishmod.utils.dungeon.BossPhase.pbSplitsCommand(null)
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
@@ -684,29 +698,29 @@ class FishModInit : ClientModInitializer {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.LOOT))
                         }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
                 ClientCommands.literal("pfs")
                     .then(ClientCommands.argument("name", StringArgumentType.word()).executes { ctx ->
                         fishmod.features.dungeon.PartyFinderStats.command(StringArgumentType.getString(ctx, "name"))
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .executes {
                         fishmod.features.dungeon.PartyFinderStats.command(null)
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
                 ClientCommands.literal("fmpractice")
                     .then(ClientCommands.argument("arg", StringArgumentType.word()).executes { ctx ->
                         fishmod.utils.dungeon.PracticeMode.command(StringArgumentType.getString(ctx, "arg"))
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .executes {
                         fishmod.utils.dungeon.PracticeMode.command(null)
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
@@ -714,42 +728,42 @@ class FishModInit : ClientModInitializer {
                     .then(ClientCommands.argument("type", StringArgumentType.word()).executes { ctx ->
                         val a = StringArgumentType.getString(ctx, "type")
                         Minecraft.getInstance().schedule { fishmod.features.dungeon.f7.terminal.TermSimScreen.open(a) }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .executes {
                         Minecraft.getInstance().schedule { fishmod.features.dungeon.f7.terminal.TermSimScreen.open(null) }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
                 ClientCommands.literal("storageview")
                     .executes {
                         Minecraft.getInstance().schedule { fishmod.features.storage.StorageViewerScreen.open() }
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
                 ClientCommands.literal("storageload")
                     .then(ClientCommands.literal("stop").executes {
                         fishmod.features.storage.StorageAutoLoader.stop()
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     })
                     .executes {
                         fishmod.features.storage.StorageAutoLoader.start()
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
                 ClientCommands.literal("fmnicktest")
                     .executes { ctx ->
-                        if (fishmod.utils.DevOnly.deny(ctx.source)) return@executes Constants.SUCCESS
+                        if (fishmod.utils.DevOnly.deny(ctx.source)) return@executes FishConstants.SUCCESS
                         val mc = Minecraft.getInstance()
                         if (mc.player == null || mc.connection == null) {
-                            Misc.addChatMessage(Component.literal("§cNot in a world."))
-                            return@executes Constants.SUCCESS
+                            FishUtil.addChatMessage(Component.literal("§cNot in a world."))
+                            return@executes FishConstants.SUCCESS
                         }
                         val remoteOn = fishmod.utils.config.values.FishSettings.remoteNicksEnabled
-                        Misc.addChatMessage(
+                        FishUtil.addChatMessage(
                             Component.literal(
                                 "§b[fmnicktest] §7See Others: §f$remoteOn" +
                                     " §8|§7 own nick active: §f" + fishmod.cosmetic.NickState.isActive() +
@@ -757,28 +771,42 @@ class FishModInit : ClientModInitializer {
                             )
                         )
                         fishmod.cosmetic.RemoteNicks.uploadOwn()
-                        Misc.addChatMessage(Component.literal("§b[fmnicktest] §7re-uploaded own nick."))
+                        FishUtil.addChatMessage(Component.literal("§b[fmnicktest] §7re-uploaded own nick."))
                         fishmod.cosmetic.RemoteNicks.forceRefresh()
-                        Misc.addChatMessage(Component.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"))
-                        Scheduler.scheduleTask({
+                        FishUtil.addChatMessage(Component.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"))
+                        TickScheduler.scheduleTask({
                             val cache = fishmod.cosmetic.RemoteNicks.snapshot()
-                            Misc.addChatMessage(Component.literal("§b[fmnicktest] §7styledByName cache: §f" + cache.size + " §7entries"))
+                            FishUtil.addChatMessage(Component.literal("§b[fmnicktest] §7styledByName cache: §f" + cache.size + " §7entries"))
                             var count = 0
                             for (e in cache.entries) {
                                 val line: MutableComponent = Component.literal("§7  " + e.key + " §8→ ").copy()
                                 line.append(e.value)
-                                Misc.addChatMessage(line)
+                                FishUtil.addChatMessage(line)
                                 if (++count > 10) {
-                                    Misc.addChatMessage(Component.literal("§8  (…more)")); break
+                                    FishUtil.addChatMessage(Component.literal("§8  (…more)")); break
+                                }
+                            }
+                            // Per nearby player: live socket copy vs a direct /nicks fetch
+                            FishUtil.addChatMessage(Component.literal("§b[fmnicktest] §7live ready: §f" + fishmod.cosmetic.CosmeticLive.ready + " §8|§7 rev: §f" + fishmod.cosmetic.CosmeticLive.rev))
+                            val self = mc.player?.uuid
+                            val me = mc.player
+                            mc.level?.players()?.filter { it.uuid != self }?.sortedBy { if (me == null) 0.0 else it.distanceToSqr(me) }?.take(8)?.forEach { p ->
+                                val u = p.uuid.toString().replace("-", "")
+                                val live = fishmod.cosmetic.CosmeticLive.slice(setOf(u))?.nicks?.get(u)
+                                fishmod.utils.HypixelApi.fetchNicks(setOf(u)) { nicks ->
+                                    mc.execute {
+                                        FishUtil.addChatMessage(Component.literal("§7  " + p.gameProfile.name() + " §8v" + p.uuid.version() +
+                                            " §7live: §f" + (live ?: "-") + " §7server: §f" + (nicks[u] ?: "-")))
+                                    }
                                 }
                             }
                             if (cache.isEmpty()) {
-                                Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
+                                FishUtil.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
                             } else {
-                                Misc.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."))
+                                FishUtil.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."))
                             }
                         }, 24)
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
@@ -789,7 +817,7 @@ class FishModInit : ClientModInitializer {
                                 val name = StringArgumentType.getString(ctx, "name")
                                 val mc = Minecraft.getInstance()
                                 if (mc.connection != null) mc.connection!!.sendCommand("p kick $name")
-                                Constants.SUCCESS
+                                FishConstants.SUCCESS
                             }
                     )
             )
@@ -798,7 +826,7 @@ class FishModInit : ClientModInitializer {
                     .executes {
                         val mc = Minecraft.getInstance()
                         if (mc.connection != null) mc.connection!!.sendCommand("p warp")
-                        Constants.SUCCESS
+                        FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
@@ -809,7 +837,7 @@ class FishModInit : ClientModInitializer {
                                 val name = StringArgumentType.getString(ctx, "name")
                                 val mc = Minecraft.getInstance()
                                 if (mc.connection != null) mc.connection!!.sendCommand("p transfer $name")
-                                Constants.SUCCESS
+                                FishConstants.SUCCESS
                             }
                     )
             )
@@ -821,7 +849,7 @@ class FishModInit : ClientModInitializer {
                                 val name = StringArgumentType.getString(ctx, "name")
                                 val mc = Minecraft.getInstance()
                                 if (mc.connection != null) mc.connection!!.sendCommand("p promote $name")
-                                Constants.SUCCESS
+                                FishConstants.SUCCESS
                             }
                     )
             )
@@ -833,59 +861,59 @@ class FishModInit : ClientModInitializer {
                                 val name = StringArgumentType.getString(ctx, "name")
                                 val mc = Minecraft.getInstance()
                                 if (mc.connection != null) mc.connection!!.sendCommand("p demote $name")
-                                Constants.SUCCESS
+                                FishConstants.SUCCESS
                             }
                     )
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmpet").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     val mc = Minecraft.getInstance()
                     mc.schedule {
-                        Misc.addChatMessage(Component.literal("§b--- Pet HUD ---"))
-                        Misc.addChatMessage(Component.literal("§7" + PetHud.debugState()))
-                        Misc.addChatMessage(Component.literal("§b--- Cooldown Overlay ---"))
-                        Misc.addChatMessage(Component.literal("§7" + CooldownOverlay.debugState()))
+                        FishUtil.addChatMessage(Component.literal("§b--- Pet HUD ---"))
+                        FishUtil.addChatMessage(Component.literal("§7" + PetHud.debugState()))
+                        FishUtil.addChatMessage(Component.literal("§b--- Cooldown Overlay ---"))
+                        FishUtil.addChatMessage(Component.literal("§7" + CooldownOverlay.debugState()))
                     }
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmpetdump").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     PetHud.debugDumpPetLines = !PetHud.debugDumpPetLines
-                    Misc.addChatMessage(Component.literal("§b[fmpet] dump pet-related chat lines: §f" + PetHud.debugDumpPetLines))
-                    Constants.SUCCESS
+                    FishUtil.addChatMessage(Component.literal("§b[fmpet] dump pet-related chat lines: §f" + PetHud.debugDumpPetLines))
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmcddump").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     CooldownOverlay.debugDumpSound = !CooldownOverlay.debugDumpSound
-                    Misc.addChatMessage(Component.literal("§b[fmcd] dump cooldown sound events: §f" + CooldownOverlay.debugDumpSound))
-                    Constants.SUCCESS
+                    FishUtil.addChatMessage(Component.literal("§b[fmcd] dump cooldown sound events: §f" + CooldownOverlay.debugDumpSound))
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmcatadump").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     fishmod.features.CatacombsOverflowOverlay.debugDumpLines = !fishmod.features.CatacombsOverflowOverlay.debugDumpLines
-                    Misc.addChatMessage(Component.literal("§b[fmcata] dump Catacombs/class menu item lines: §f" + fishmod.features.CatacombsOverflowOverlay.debugDumpLines))
-                    Constants.SUCCESS
+                    FishUtil.addChatMessage(Component.literal("§b[fmcata] dump Catacombs/class menu item lines: §f" + fishmod.features.CatacombsOverflowOverlay.debugDumpLines))
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmblocks").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     val mc = Minecraft.getInstance()
                     mc.schedule {
                         if (mc.player == null || mc.level == null) {
-                            Misc.addChatMessage(Component.literal("§cNo world")); return@schedule
+                            FishUtil.addChatMessage(Component.literal("§cNo world")); return@schedule
                         }
                         val c = mc.player!!.blockPosition()
                         val counts = HashMap<String, Int>()
@@ -898,104 +926,104 @@ class FishModInit : ClientModInitializer {
                             val id = BuiltInRegistries.BLOCK.getKey(b).toString()
                             counts.merge(id, 1, Integer::sum)
                         }
-                        Misc.addChatMessage(Component.literal("§b--- Blocks within $R (top 20) ---"))
+                        FishUtil.addChatMessage(Component.literal("§b--- Blocks within $R (top 20) ---"))
                         counts.entries.sortedByDescending { it.value }.take(20)
-                            .forEach { e -> Misc.addChatMessage(Component.literal("§7" + e.value + "x §f" + e.key)) }
+                            .forEach { e -> FishUtil.addChatMessage(Component.literal("§7" + e.value + "x §f" + e.key)) }
                     }
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmssdebug").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     fishmod.features.dungeon.SimonSaysTracker.debug = !fishmod.features.dungeon.SimonSaysTracker.debug
-                    Misc.addChatMessage(Component.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.SimonSaysTracker.debug))
-                    Constants.SUCCESS
+                    FishUtil.addChatMessage(Component.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.SimonSaysTracker.debug))
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmnuc").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     fishmod.utils.HypixelApi.dumpNucleus(Minecraft.getInstance())
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmgarden").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     fishmod.utils.HypixelApi.dumpGarden(Minecraft.getInstance())
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmprofile").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     fishmod.utils.HypixelApi.dumpEconomy(Minecraft.getInstance())
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmtabdump").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     val mc = Minecraft.getInstance()
                     mc.schedule {
                         if (mc.connection == null) {
-                            Misc.addChatMessage(Component.literal("§cNo network")); return@schedule
+                            FishUtil.addChatMessage(Component.literal("§cNo network")); return@schedule
                         }
-                        Misc.addChatMessage(Component.literal("§b--- Tab entries (non-empty) ---"))
+                        FishUtil.addChatMessage(Component.literal("§b--- Tab entries (non-empty) ---"))
                         var n = 0
                         for (te in fishmod.utils.TabListCache.entries) {
                             if (te.info.tabListDisplayName == null) continue
                             val s = te.stripped.trim()
                             if (s.isEmpty()) continue
                             if (s.lowercase().contains("pet") || s.contains("Lvl") || s.contains("XP") || s.contains("/")) {
-                                Misc.addChatMessage(Component.literal("§7$s"))
+                                FishUtil.addChatMessage(Component.literal("§7$s"))
                                 if (++n > 30) break
                             }
                         }
-                        Misc.addChatMessage(Component.literal("§b--- End ($n) ---"))
+                        FishUtil.addChatMessage(Component.literal("§b--- End ($n) ---"))
                     }
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 }
             )
 
             dispatcher.register(
                 ClientCommands.literal("fmdbg").executes { context ->
-                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
+                    if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
                     val mc = Minecraft.getInstance()
                     mc.schedule {
-                        Misc.addChatMessage(Component.literal("§b--- FishMod Debug ---"))
-                        Misc.addChatMessage(Component.literal("§7Location: §f" + Location.getCurrentLocation()))
-                        Misc.addChatMessage(Component.literal("§7inSkyblock: §f" + Location.inSkyblock()))
-                        Misc.addChatMessage(Component.literal("§7inDungeon: §f" + Location.inDungeon()))
-                        Misc.addChatMessage(Component.literal("§7showPuzzles: §f" + fishmod.utils.config.values.FishSettings.showPuzzles))
-                        Misc.addChatMessage(Component.literal("§7Puzzle list (" + FishPuzzleDisplay.getPuzzles().size + "): §f" + FishPuzzleDisplay.getPuzzles()))
+                        FishUtil.addChatMessage(Component.literal("§b--- FishMod Debug ---"))
+                        FishUtil.addChatMessage(Component.literal("§7Location: §f" + SkyblockLocation.getCurrentLocation()))
+                        FishUtil.addChatMessage(Component.literal("§7inSkyblock: §f" + SkyblockLocation.inSkyblock()))
+                        FishUtil.addChatMessage(Component.literal("§7inDungeon: §f" + SkyblockLocation.inDungeon()))
+                        FishUtil.addChatMessage(Component.literal("§7showPuzzles: §f" + fishmod.utils.config.values.FishSettings.showPuzzles))
+                        FishUtil.addChatMessage(Component.literal("§7Puzzle list (" + FishPuzzleDisplay.getPuzzles().size + "): §f" + FishPuzzleDisplay.getPuzzles()))
                         try {
-                            Misc.addChatMessage(Component.literal("§7Phase.runStarted: §f" + Phase.runStarted()))
+                            FishUtil.addChatMessage(Component.literal("§7Phase.runStarted: §f" + BossPhase.runStarted()))
                         } catch (t: Throwable) {
-                            FishDiag.fail("FishModInit.110", "fmdbg Phase.runStarted failed", t)
-                            Misc.addChatMessage(Component.literal("§cPhase.runStarted ERR: " + t.message))
+                            FishDiag.fail("FishModInit.110", "fmdbg BossPhase.runStarted failed", t)
+                            FishUtil.addChatMessage(Component.literal("§cPhase.runStarted ERR: " + t.message))
                         }
                         try {
-                            Misc.addChatMessage(Component.literal("§7Phase.enableSplits: §f" + Phase.enableSplits))
+                            FishUtil.addChatMessage(Component.literal("§7Phase.enableSplits: §f" + BossPhase.runSplitsEnabled))
                         } catch (t: Throwable) {
-                            FishDiag.fail("FishModInit.111", "fmdbg Phase.enableSplits failed", t)
-                            Misc.addChatMessage(Component.literal("§cPhase.enableSplits ERR: " + t.message))
+                            FishDiag.fail("FishModInit.111", "fmdbg BossPhase.enableSplits failed", t)
+                            FishUtil.addChatMessage(Component.literal("§cPhase.enableSplits ERR: " + t.message))
                         }
                         try {
-                            Misc.addChatMessage(Component.literal("§7blade loaded: §f" + FabricLoader.getInstance().isModLoaded("blade-addons")))
+                            FishUtil.addChatMessage(Component.literal("§7Blade compat: §f" + fishmod.compat.BladeCompat.active))
                         } catch (t: Throwable) {
                             FishDiag.fail("FishModInit.112", "fmdbg mod loader query failed", t)
-                            Misc.addChatMessage(Component.literal("§cloader ERR"))
+                            FishUtil.addChatMessage(Component.literal("§cloader ERR"))
                         }
                         val handler: ClientPacketListener? = mc.connection
                         if (handler == null) {
-                            Misc.addChatMessage(Component.literal("§cNo network handler"))
+                            FishUtil.addChatMessage(Component.literal("§cNo network handler"))
                         } else {
                             var total = 0
                             var nullName = 0
@@ -1006,17 +1034,17 @@ class FishModInit : ClientModInitializer {
                                 }
                                 val clean = te.stripped.trim()
                                 if (clean.isNotEmpty())
-                                    Misc.addChatMessage(Component.literal("§8TAB: §7$clean"))
+                                    FishUtil.addChatMessage(Component.literal("§8TAB: §7$clean"))
                             }
-                            Misc.addChatMessage(Component.literal("§7Tab entries: §f$total (§c$nullName null§7)"))
+                            FishUtil.addChatMessage(Component.literal("§7Tab entries: §f$total (§c$nullName null§7)"))
                         }
                         if (mc.level != null) {
                             val sb: Scoreboard = mc.level!!.scoreboard
                             val sidebar: Objective? = sb.getDisplayObjective(DisplaySlot.SIDEBAR)
                             if (sidebar == null) {
-                                Misc.addChatMessage(Component.literal("§7Sidebar: §cnone"))
+                                FishUtil.addChatMessage(Component.literal("§7Sidebar: §cnone"))
                             } else {
-                                Misc.addChatMessage(Component.literal("§7Sidebar obj: §f" + sidebar.displayName.string))
+                                FishUtil.addChatMessage(Component.literal("§7Sidebar obj: §f" + sidebar.displayName.string))
                                 for (entry: PlayerScoreEntry in sb.listPlayerScores(sidebar)) {
                                     val owner = entry.owner
                                     val team: PlayerTeam? = sb.getPlayersTeam(owner)
@@ -1024,15 +1052,15 @@ class FishModInit : ClientModInitializer {
                                         team.playerPrefix.string + owner + team.playerSuffix.string
                                     else
                                         entry.ownerName().string
-                                    val clean = line.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
+                                    val clean = line.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
                                     if (clean.isNotEmpty())
-                                        Misc.addChatMessage(Component.literal("§8SB: §7$clean"))
+                                        FishUtil.addChatMessage(Component.literal("§8SB: §7$clean"))
                                 }
                             }
                         }
-                        Misc.addChatMessage(Component.literal("§b--- End Debug ---"))
+                        FishUtil.addChatMessage(Component.literal("§b--- End Debug ---"))
                     }
-                    Constants.SUCCESS
+                    FishConstants.SUCCESS
                 }.then(
                     ClientCommands.argument("sub", StringArgumentType.greedyString())
                         .executes { ctx ->
@@ -1041,66 +1069,66 @@ class FishModInit : ClientModInitializer {
                             val parts = arg.trim().split(Regex("\\s+"), 2)
                             if (parts[0] == "cprice") {
                                 if (parts.size < 2) {
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg cprice <ITEM_ID>")) }
-                                    return@executes Constants.SUCCESS
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§cUsage: /fmdbg cprice <ITEM_ID>")) }
+                                    return@executes FishConstants.SUCCESS
                                 }
                                 val pid = parts[1].trim().uppercase()
                                 fishmod.features.croesus.CroesusPrices.refreshIfStale().whenComplete { _, _ ->
                                     mc.schedule {
-                                        Misc.addChatMessage(
+                                        FishUtil.addChatMessage(
                                             Component.literal(
                                                 "§b$pid §7→ §f" + fishmod.features.croesus.CroesusPrices.debugSource(pid)
                                             )
                                         )
                                     }
                                 }
-                                return@executes Constants.SUCCESS
+                                return@executes FishConstants.SUCCESS
                             }
                             if (parts[0] == "mp") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg mp <ign>")) }
-                                    return@executes Constants.SUCCESS
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§cUsage: /fmdbg mp <ign>")) }
+                                    return@executes FishConstants.SUCCESS
                                 }
                                 fishmod.utils.HypixelApi.getByName(mc, ign) { data ->
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§b$ign magicalPower=§f" + data.magicalPower)) }
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§b$ign magicalPower=§f" + data.magicalPower)) }
                                 }
-                                return@executes Constants.SUCCESS
+                                return@executes FishConstants.SUCCESS
                             }
                             if (parts[0] == "mpraw") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg mpraw <ign>")) }
-                                    return@executes Constants.SUCCESS
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§cUsage: /fmdbg mpraw <ign>")) }
+                                    return@executes FishConstants.SUCCESS
                                 }
                                 fishmod.utils.HypixelApi.dumpMemberKeys(mc, ign)
-                                return@executes Constants.SUCCESS
+                                return@executes FishConstants.SUCCESS
                             }
                             if (parts[0] == "sklraw") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg sklraw <ign>")) }
-                                    return@executes Constants.SUCCESS
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§cUsage: /fmdbg sklraw <ign>")) }
+                                    return@executes FishConstants.SUCCESS
                                 }
                                 fishmod.utils.HypixelApi.dumpSkillKeys(mc, ign)
-                                return@executes Constants.SUCCESS
+                                return@executes FishConstants.SUCCESS
                             }
                             if (parts[0] == "skl") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg skl <ign>")) }
-                                    return@executes Constants.SUCCESS
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§cUsage: /fmdbg skl <ign>")) }
+                                    return@executes FishConstants.SUCCESS
                                 }
                                 fishmod.utils.HypixelApi.getByName(mc, ign) { data ->
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§b$ign skillAverage=§f" + data.skillAverage)) }
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§b$ign skillAverage=§f" + data.skillAverage)) }
                                 }
-                                return@executes Constants.SUCCESS
+                                return@executes FishConstants.SUCCESS
                             }
                             if (parts[0] == "col") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg col <ign>")) }
-                                    return@executes Constants.SUCCESS
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§cUsage: /fmdbg col <ign>")) }
+                                    return@executes FishConstants.SUCCESS
                                 }
                                 fishmod.utils.HypixelApi.getByName(mc, ign) { data ->
                                     mc.schedule {
@@ -1109,40 +1137,40 @@ class FishModInit : ClientModInitializer {
                                         var masterTotal = 0L
                                         for (i in 1..7) masterTotal += data.masterTimes[i]
                                         val col = cataTotal + masterTotal * 2
-                                        Misc.addChatMessage(Component.literal("§b--- Collection debug: $ign ---"))
+                                        FishUtil.addChatMessage(Component.literal("§b--- Collection debug: $ign ---"))
                                         val cata = StringBuilder("§7cata: ")
                                         for (i in 0..7) cata.append(if (i == 0) "E" else "F$i").append("=").append(data.cataTimes[i]).append(" ")
-                                        Misc.addChatMessage(Component.literal(cata.toString()))
+                                        FishUtil.addChatMessage(Component.literal(cata.toString()))
                                         val master = StringBuilder("§7master: ")
                                         for (i in 1..7) master.append("M").append(i).append("=").append(data.masterTimes[i]).append(" ")
-                                        Misc.addChatMessage(Component.literal(master.toString()))
-                                        Misc.addChatMessage(Component.literal("§7cataTotal=§f$cataTotal §7masterTotal=§f$masterTotal"))
-                                        Misc.addChatMessage(Component.literal("§7computed col=§f$col §7(cata×1 + master×2)"))
+                                        FishUtil.addChatMessage(Component.literal(master.toString()))
+                                        FishUtil.addChatMessage(Component.literal("§7cataTotal=§f$cataTotal §7masterTotal=§f$masterTotal"))
+                                        FishUtil.addChatMessage(Component.literal("§7computed col=§f$col §7(cata×1 + master×2)"))
                                     }
                                 }
-                                return@executes Constants.SUCCESS
+                                return@executes FishConstants.SUCCESS
                             }
                             if (parts[0] == "runs") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
-                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg runs <ign>")) }
-                                    return@executes Constants.SUCCESS
+                                    mc.schedule { FishUtil.addChatMessage(Component.literal("§cUsage: /fmdbg runs <ign>")) }
+                                    return@executes FishConstants.SUCCESS
                                 }
                                 fishmod.utils.HypixelApi.getByName(mc, ign) { data ->
                                     mc.schedule {
-                                        Misc.addChatMessage(Component.literal("§b--- Runs debug: $ign ---"))
-                                        Misc.addChatMessage(Component.literal("§7totalRuns: §f" + data.totalRuns))
+                                        FishUtil.addChatMessage(Component.literal("§b--- Runs debug: $ign ---"))
+                                        FishUtil.addChatMessage(Component.literal("§7totalRuns: §f" + data.totalRuns))
                                         val cata = StringBuilder("§7cataTimes: ")
                                         for (i in 0..7) cata.append("F").append(if (i == 0) "E" else i.toString()).append("=").append(data.cataTimes[i]).append(" ")
-                                        Misc.addChatMessage(Component.literal(cata.toString()))
+                                        FishUtil.addChatMessage(Component.literal(cata.toString()))
                                         val master = StringBuilder("§7masterTimes: ")
                                         for (i in 1..7) master.append("M").append(i).append("=").append(data.masterTimes[i]).append(" ")
-                                        Misc.addChatMessage(Component.literal(master.toString()))
-                                        Misc.addChatMessage(Component.literal("§b--- End ---"))
+                                        FishUtil.addChatMessage(Component.literal(master.toString()))
+                                        FishUtil.addChatMessage(Component.literal("§b--- End ---"))
                                     }
                                 }
                             }
-                            Constants.SUCCESS
+                            FishConstants.SUCCESS
                         }
                 )
             )
@@ -1171,8 +1199,8 @@ class FishModInit : ClientModInitializer {
                 ClientCommands.literal("fmcmd")
                     .then(
                         ClientCommands.literal("whitelist")
-                            .executes { printNameList("Whitelist", fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist); Constants.SUCCESS }
-                            .then(ClientCommands.literal("list").executes { printNameList("Whitelist", fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist); Constants.SUCCESS })
+                            .executes { printNameList("Whitelist", fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist); FishConstants.SUCCESS }
+                            .then(ClientCommands.literal("list").executes { printNameList("Whitelist", fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist); FishConstants.SUCCESS })
                             .then(
                                 ClientCommands.literal("add").then(
                                     ClientCommands.argument("name", StringArgumentType.word()).suggests(playerSuggest)
@@ -1181,8 +1209,8 @@ class FishModInit : ClientModInitializer {
                                             fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist =
                                                 fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
-                                            Misc.addChatMessage(Component.literal("§7[FM] Added §f$name §7to the party-action whitelist."))
-                                            Constants.SUCCESS
+                                            FishUtil.addChatMessage(Component.literal("§7[FM] Added §f$name §7to the party-action whitelist."))
+                                            FishConstants.SUCCESS
                                         }
                                 )
                             )
@@ -1194,16 +1222,16 @@ class FishModInit : ClientModInitializer {
                                             fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist =
                                                 fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
-                                            Misc.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the party-action whitelist."))
-                                            Constants.SUCCESS
+                                            FishUtil.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the party-action whitelist."))
+                                            FishConstants.SUCCESS
                                         }
                                 )
                             )
                     )
                     .then(
                         ClientCommands.literal("blacklist")
-                            .executes { printNameList("Blacklist", fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist); Constants.SUCCESS }
-                            .then(ClientCommands.literal("list").executes { printNameList("Blacklist", fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist); Constants.SUCCESS })
+                            .executes { printNameList("Blacklist", fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist); FishConstants.SUCCESS }
+                            .then(ClientCommands.literal("list").executes { printNameList("Blacklist", fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist); FishConstants.SUCCESS })
                             .then(
                                 ClientCommands.literal("add").then(
                                     ClientCommands.argument("name", StringArgumentType.word()).suggests(playerSuggest)
@@ -1212,8 +1240,8 @@ class FishModInit : ClientModInitializer {
                                             fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist =
                                                 fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
-                                            Misc.addChatMessage(Component.literal("§7[FM] Added §f$name §7to the party-action blacklist."))
-                                            Constants.SUCCESS
+                                            FishUtil.addChatMessage(Component.literal("§7[FM] Added §f$name §7to the party-action blacklist."))
+                                            FishConstants.SUCCESS
                                         }
                                 )
                             )
@@ -1225,16 +1253,16 @@ class FishModInit : ClientModInitializer {
                                             fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist =
                                                 fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
-                                            Misc.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the party-action blacklist."))
-                                            Constants.SUCCESS
+                                            FishUtil.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the party-action blacklist."))
+                                            FishConstants.SUCCESS
                                         }
                                 )
                             )
                     )
                     .then(
                         ClientCommands.literal("kicklist")
-                            .executes { printNameList("Kick List", fishmod.utils.config.values.FishSettings.pcKickList); Constants.SUCCESS }
-                            .then(ClientCommands.literal("list").executes { printNameList("Kick List", fishmod.utils.config.values.FishSettings.pcKickList); Constants.SUCCESS })
+                            .executes { printNameList("Kick List", fishmod.utils.config.values.FishSettings.pcKickList); FishConstants.SUCCESS }
+                            .then(ClientCommands.literal("list").executes { printNameList("Kick List", fishmod.utils.config.values.FishSettings.pcKickList); FishConstants.SUCCESS })
                             .then(
                                 ClientCommands.literal("add").then(
                                     ClientCommands.argument("name", StringArgumentType.word()).suggests(playerSuggest)
@@ -1243,8 +1271,8 @@ class FishModInit : ClientModInitializer {
                                             fishmod.utils.config.values.FishSettings.pcKickList =
                                                 fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcKickList, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
-                                            Misc.addChatMessage(Component.literal("§7[FM] Added §f$name §7to the kick list."))
-                                            Constants.SUCCESS
+                                            FishUtil.addChatMessage(Component.literal("§7[FM] Added §f$name §7to the kick list."))
+                                            FishConstants.SUCCESS
                                         }
                                 )
                             )
@@ -1256,8 +1284,8 @@ class FishModInit : ClientModInitializer {
                                             fishmod.utils.config.values.FishSettings.pcKickList =
                                                 fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcKickList, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
-                                            Misc.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the kick list."))
-                                            Constants.SUCCESS
+                                            FishUtil.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the kick list."))
+                                            FishConstants.SUCCESS
                                         }
                                 )
                             )
@@ -1338,40 +1366,42 @@ class FishModInit : ClientModInitializer {
 
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
             fishmod.utils.config.values.DungeonMapSettings.mapLegitMode = true
+            fishmod.utils.TickScheduler.scheduleTask({ fishmod.compat.BladeCompat.tellOnce() }, 60)
         })
 
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) SoulflowHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.113", "soulflow_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_breaker_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.DungeonBreaker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.114", "dungeon_breaker_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) PetHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.115", "pet_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar")) { ctx, tickCounter -> try { CooldownOverlay.renderHotbar(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.116", "cooldown_overlay_hotbar render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) Phase.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.117", "phase_splits render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.118", "f7_huds render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_waypoints_overlay")) { ctx, _ -> try { fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.119", "dungeon_waypoints_overlay render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) SessionStats.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.120", "session_stats render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.WarpCooldown.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.121", "warp_cooldown render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "blessings")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.Blessings.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.122", "blessings render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "quiz_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.QuizHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.123", "quiz_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "secret_overlay")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.SecretOverlay.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.124", "secret_overlay render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "storm_over")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.StormOverAlert.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.125", "storm_over render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "veno_stacks")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.VenoStackCount.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.126", "veno_stacks render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "performance")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PerformanceHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.127", "performance render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.128", "invincibility render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.129", "relic_timer render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.SpringBoots.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.130", "spring_boots render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "stopwatch")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.other.Stopwatch.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.204", "stopwatch render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.TacTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.131", "tac_timer render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "rag_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.Ragnarock.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.132", "rag_timer render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spirit_bear")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f4.SpiritBear.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.133", "spirit_bear render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "wither_dragons")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.dragons.WitherDragons.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.134", "wither_dragons render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) SoulflowHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.113", "soulflow_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_breaker_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.DungeonBreaker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.114", "dungeon_breaker_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) PetHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.115", "pet_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar")) { ctx, tickCounter -> try { CooldownOverlay.renderHotbar(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.116", "cooldown_overlay_hotbar render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) BossPhase.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.117", "phase_splits render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.118", "f7_huds render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_waypoints_overlay")) { ctx, _ -> try { fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.119", "dungeon_waypoints_overlay render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) SessionStats.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.120", "session_stats render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PartyWarpTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.121", "warp_cooldown render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "blessings")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.Blessings.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.122", "blessings render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "quiz_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.QuizHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.123", "quiz_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "secret_overlay")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.SecretOverlay.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.124", "secret_overlay render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "storm_over")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.StormOverAlert.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.125", "storm_over render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "veno_stacks")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.VenoStackCount.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.126", "veno_stacks render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "performance")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PerformanceHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.127", "performance render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.128", "invincibility render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.129", "relic_timer render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.SpringBoots.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.130", "spring_boots render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "stopwatch")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.other.Stopwatch.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.204", "stopwatch render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.TacTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.131", "tac_timer render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "rag_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.Ragnarock.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.132", "rag_timer render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "spirit_bear")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f4.SpiritBear.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.133", "spirit_bear render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "wither_dragons")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.dragons.WitherDragons.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.134", "wither_dragons render failed", t) } }
         FishDiag.guard("FishModInit.135", "fishmod.utils.networth.ItemsDb.initAsync() failed") { fishmod.utils.networth.ItemsDb.initAsync() }
 
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PbPaceHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.136", "pb_pace_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderSpawn(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.137", "slayer_spawn_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderStats(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.138", "slayer_stats_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderTimer(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.139", "slayer_timer_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "experiment_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.ExperimentProfitTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.202", "experiment_profit_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_carry_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerCarryTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.200", "slayer_carry_hud render failed", t) } }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderProfit(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.140", "slayer_profit_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PbPaceHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.136", "pb_pace_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderSpawn(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.137", "slayer_spawn_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderStats(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.138", "slayer_stats_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_rng_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderRng(ctx, tickCounter) }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderTimer(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.139", "slayer_timer_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "experiment_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.ExperimentProfitTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.202", "experiment_profit_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_carry_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerCarryTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.200", "slayer_carry_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderProfit(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.140", "slayer_profit_hud render failed", t) } }
         FishHudEditor.register(
             "PB Pace",
             { fishmod.utils.config.values.FishSettings.pbPaceHudX },
@@ -1393,7 +1423,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.148", "fishmod.features.CustomCrosshair.register() failed") { fishmod.features.CustomCrosshair.register() }
         FishDiag.guard("FishModInit.149", "fishmod.features.dungeon.map.DungeonScore.register() failed") { fishmod.features.dungeon.map.DungeonScore.register() }
         FishDiag.guard("FishModInit.150", "fishmod.features.dungeon.map.DoorHighlight.init() failed") { fishmod.features.dungeon.map.DoorHighlight.init() }
-        fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
+        fishmod.utils.events.FishEvents.chat.register { message ->
             try {
                 fishmod.features.dungeon.map.DungeonState.onChatMessage(message.string)
                 fishmod.features.dungeon.map.DungeonScore.onChatMessage(message.string)
@@ -1402,7 +1432,7 @@ class FishModInit : ClientModInitializer {
             }
             false
         }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> try { if (!FishHudEditor.isOpen()) fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.151", "dungeon_map_score_messages render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> try { if (!FishHudEditor.isOpen()) fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.151", "dungeon_map_score_messages render failed", t) } }
 
         FishHudEditor.register(
             "Dungeon Score Title",
@@ -1481,19 +1511,19 @@ class FishModInit : ClientModInitializer {
             })
         })
 
-        safeInit("FolderUtility") { FolderUtility.init() }
-        safeInit("Keybinds") { Keybinds.init() }
-        safeInit("CustomEvents") { CustomEvents.init() }
-        safeInit("Debug") { Debug.init() }
-        safeInit("Location") { Location.init() }
-        safeInit("Phase") { Phase.init() }
+        safeInit("FolderUtility") { FishPaths.init() }
+        safeInit("Keybinds") { FishKeys.init() }
+        safeInit("CustomEvents") { EventDispatch.init() }
+        safeInit("Debug") { FishDebug.init() }
+        safeInit("Location") { SkyblockLocation.init() }
+        safeInit("Phase") { BossPhase.init() }
         safeInit("PracticeMode") { fishmod.utils.dungeon.PracticeMode.init() }
-        safeInit("Section") { Section.init() }
+        safeInit("Section") { GoldorSection.init() }
         safeInit("TerminalTracker") { fishmod.features.dungeon.f7.TerminalTracker.init() }
         safeInit("Stopwatch") { fishmod.features.other.Stopwatch.init() }
-        safeInit("PartyUtil") { PartyUtil.init() }
-        safeInit("RenderingEvents") { RenderingEvents.init() }
-        safeInit("Scheduler") { Scheduler.init() }
+        safeInit("PartyUtil") { PartyTools.init() }
+        safeInit("RenderingEvents") { RenderHooks.init() }
+        safeInit("Scheduler") { TickScheduler.init() }
         safeInit("ChatQueue") { fishmod.utils.ChatQueue.init() }
         safeInit("PrestigeChatFade") { fishmod.cosmetic.prestige.PrestigeChatFade.init() }
         safeInit("NametagCullingCompat") { fishmod.cosmetic.NametagCullingCompat.init() }
@@ -1505,11 +1535,11 @@ private fun debugReport() {
     val mc = Minecraft.getInstance()
     val n = fishmod.utils.debug.FishDiag.count()
     if (n == 0) {
-        fishmod.utils.Misc.addChatMessage(Component.literal("§a[FishMod] No problems recorded this session."))
+        fishmod.utils.FishUtil.addChatMessage(Component.literal("§a[FishMod] No problems recorded this session."))
     } else {
         mc.execute { mc.keyboardHandler.clipboard = fishmod.utils.debug.FishDiag.buildReport() }
-        fishmod.utils.Misc.addChatMessage(Component.literal("§e[FishMod] Debug report copied ($n issue codes). Paste it to RedFish on Discord."))
-        fishmod.utils.debug.FishDiag.summaryLines(5).forEach { fishmod.utils.Misc.addChatMessage(Component.literal("§7  $it")) }
-        fishmod.utils.Misc.addChatMessage(Component.literal("§8  Full log: ${fishmod.utils.debug.FishDiag.logPath()}"))
+        fishmod.utils.FishUtil.addChatMessage(Component.literal("§e[FishMod] Debug report copied ($n issue codes). Paste it to RedFish on Discord."))
+        fishmod.utils.debug.FishDiag.summaryLines(5).forEach { fishmod.utils.FishUtil.addChatMessage(Component.literal("§7  $it")) }
+        fishmod.utils.FishUtil.addChatMessage(Component.literal("§8  Full log: ${fishmod.utils.debug.FishDiag.logPath()}"))
     }
 }

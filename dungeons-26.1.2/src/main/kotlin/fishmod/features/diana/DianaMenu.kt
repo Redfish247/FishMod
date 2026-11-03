@@ -119,7 +119,16 @@ object DianaMenu {
         col.features.add(ann)
 
         col.features.add(Feature("Diana Party Commands", S::dianaPartyCommands))
-        col.features.add(Feature("Diana Message Hider", S::dianaMessageHider))
+        run {
+            val f = Feature("Diana Message Hider", S::dianaMessageHider)
+            f.sub.add(ToggleSetting("Follow the Arrows", "", S::dianaHideArrows))
+            f.sub.add(ToggleSetting("Warping...", "", S::dianaHideWarping))
+            f.sub.add(ToggleSetting("Blocks in the Way", "", S::dianaHideBlocked))
+            f.sub.add(ToggleSetting("Ability Cooldown", "", S::dianaHideCooldown))
+            f.sub.add(ToggleSetting("Griffin Burrow Lines", "", S::dianaHideBurrow))
+            f.sub.add(ToggleSetting("Dug Mob Lines", "", S::dianaHideDugMob))
+            col.features.add(f)
+        }
         col.features.add(Feature("Sphinx Solver", S::dianaSphinxSolver))
         col.features.add(Feature("Crown of Avarice Counter", S::dianaCrownCounter))
         col.features.add(Feature("Crown of Avarice Milestones", S::dianaCrownMilestones))

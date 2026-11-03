@@ -4,7 +4,7 @@ import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.world.phys.AABB
@@ -25,7 +25,7 @@ object BoulderSolver {
                 object : TypeToken<Map<String, List<List<Int>>>>() {}.type)
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Boulder solutions failed to load", e)
+        FishDebug.LOGGER.error("Boulder solutions failed to load", e)
         FishDiag.fail("BoulderSolver.1", "boulderSolutions.json failed to load", e)
         emptyMap()
     }

@@ -47,7 +47,7 @@ object Mimic {
                     }
                 }
             } catch (t: Throwable) {
-                fishmod.utils.debug.Debug.LOGGER.error("[Mimic] tick failed", t)
+                fishmod.utils.debug.FishDebug.LOGGER.error("[Mimic] tick failed", t)
                 FishDiag.fail("Mimic.2", "mimic chest scan tick failed rooms=${Scan.rooms.size}", t)
             }
         })

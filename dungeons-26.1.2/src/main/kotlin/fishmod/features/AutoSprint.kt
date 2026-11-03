@@ -2,7 +2,7 @@ package fishmod.features
 import fishmod.compat.curScreen
 
 import com.mojang.blaze3d.platform.InputConstants
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
@@ -30,8 +30,8 @@ object AutoSprint {
     private fun active(mc: Minecraft): Boolean {
         if (!FishSettings.autoSprintEnabled) return false
         if (mc.player == null || mc.curScreen != null) return false
-        if (!Location.inSkyblock()) return false
-        return !(FishSettings.autoSprintDungeonOnly && !Location.inDungeon())
+        if (!SkyblockLocation.inSkyblock()) return false
+        return !(FishSettings.autoSprintDungeonOnly && !SkyblockLocation.inDungeon())
     }
 
     private fun physicallyDown(mc: Minecraft): Boolean {

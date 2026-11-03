@@ -5,10 +5,10 @@ import com.google.gson.reflect.TypeToken
 import fishmod.features.dungeon.map.DungeonMap
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.features.dungeon.map.Room
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
-import fishmod.utils.events.Events
+import fishmod.utils.debug.FishDebug
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.network.chat.Component
 import java.nio.file.Files
@@ -36,7 +36,7 @@ object RoomTimer {
 
     @JvmStatic
     fun init() {
-        Events.ON_WORLD_CHANGE.register { room = null; toldClear = false; toldSecrets = false; false }
+        FishEvents.worldChange.register { room = null; toldClear = false; toldSecrets = false; false }
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
             if (!FishSettings.roomTimerEnabled || !DungeonState.isInDungeon() || DungeonState.isInBoss()) return@EndTick
@@ -90,7 +90,7 @@ object RoomTimer {
             if (beat && prev != Long.MAX_VALUE) sb.append(" §6§lPB!")
             else if (!beat && prev != Long.MAX_VALUE) sb.append(" §8[PB ").append(fmt(prev)).append("]")
         }
-        Misc.forceTitle(Component.literal(sb.toString()), Component.empty(), 1500)
+        FishUtil.forceTitle(Component.literal(sb.toString()), Component.empty(), 1500)
     }
 
     private fun fmt(ms: Long): String {
@@ -109,7 +109,7 @@ object RoomTimer {
             }
         } catch (e: Exception) {
             FishDiag.fail("RoomTimer.3", "loading room_timers.json failed", e)
-            Debug.LOGGER.warn("[RoomTimer] load failed: {}", e.toString())
+            FishDebug.LOGGER.warn("[RoomTimer] load failed: {}", e.toString())
         }
     }
 
@@ -121,7 +121,7 @@ object RoomTimer {
                 Files.writeString(FILE, json)
             } catch (e: Exception) {
                 FishDiag.fail("RoomTimer.4", "saving room_timers.json failed", e)
-                Debug.LOGGER.warn("[RoomTimer] save failed: {}", e.toString())
+                FishDebug.LOGGER.warn("[RoomTimer] save failed: {}", e.toString())
             }
         }
     }
