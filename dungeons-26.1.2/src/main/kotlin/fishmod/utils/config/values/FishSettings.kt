@@ -946,6 +946,7 @@ object FishSettings {
     @ConfigValue @JvmField var sbHeaderIrlTime: Boolean = false
     @ConfigValue @JvmField var sbSectionServer: Boolean = true
     @ConfigValue @JvmField var customScoreboardAnchor: String = "Custom"
+    @ConfigValue @JvmField var customScoreboardRadius: Int = 0
     @ConfigValue @JvmField var sbSectionLevel: Boolean = true
     @ConfigValue @JvmField var sbSectionMayor: Boolean = true
     @ConfigValue @JvmField var sbSectionFooter: Boolean = true

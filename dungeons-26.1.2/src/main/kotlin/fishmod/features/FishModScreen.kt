@@ -505,6 +505,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Custom Scoreboard", FishSettings::customScoreboardEnabled)
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::customScoreboardOpacity, 0, 100))
+            f.sub.add(SliderIntSetting("Corner Radius", "", FishSettings::customScoreboardRadius, 0, 10))
             f.sub.add(DropdownSetting("Position", "Custom = HUD editor spot",
                 arrayOf("Custom", "Top Left", "Middle Left", "Bottom Left", "Top Right", "Middle Right", "Bottom Right"),
                 { FishSettings.customScoreboardAnchor },
