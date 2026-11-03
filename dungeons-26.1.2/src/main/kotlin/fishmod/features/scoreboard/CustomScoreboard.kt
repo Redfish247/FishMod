@@ -145,9 +145,18 @@ object CustomScoreboard {
 
         val world = ArrayList<Component>()
         take { ScoreboardSection.DATE.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionDate) world.add(Component.literal("§f" + bare(it.s))) }
-        take { ScoreboardSection.TIME.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionTime) world.add(Component.literal("§7" + bare(it.s))) }
-        take { LOCATION.containsMatchIn(it.s) || ScoreboardSection.classify(it.s) == ScoreboardSection.LOCATION }
-            ?.let { if (FishSettings.sbSectionLocation) world.add(Component.literal("§a" + it.s)) }
+        val timeIdx = raw.indices.firstOrNull { !used[it] && ScoreboardSection.TIME.matches(bare(raw[it].s)) }
+        if (timeIdx != null) {
+            used[timeIdx] = true
+            if (FishSettings.sbSectionTime) world.add(Component.literal("§7" + bare(raw[timeIdx].s)))
+        }
+        // Location follows the time; its icon is a custom font glyph, so keep Hypixel's component
+        val locIdx = timeIdx?.plus(1)?.takeIf { it < raw.size && !used[it] }
+            ?: raw.indices.firstOrNull { !used[it] && (LOCATION.containsMatchIn(raw[it].s) || ScoreboardSection.classify(raw[it].s) == ScoreboardSection.LOCATION) }
+        if (locIdx != null) {
+            used[locIdx] = true
+            if (FishSettings.sbSectionLocation) world.add(raw[locIdx].c)
+        }
         groups.add(world)
 
         val money = ArrayList<Component>()
