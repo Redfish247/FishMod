@@ -948,7 +948,6 @@ object FishSettings {
     @ConfigValue @JvmField var sbSectionMayor: Boolean = true
     @ConfigValue @JvmField var sbSectionFooter: Boolean = true
     @ConfigValue @JvmField var sbFooterText: String = ""
-    @ConfigValue @JvmField var sbShowExtras: Boolean = false
     @ConfigValue @JvmField var sbSectionDate: Boolean = true
     @ConfigValue @JvmField var sbSectionTime: Boolean = true
     @ConfigValue @JvmField var sbSectionLocation: Boolean = true
