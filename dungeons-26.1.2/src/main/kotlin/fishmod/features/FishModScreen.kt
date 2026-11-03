@@ -548,6 +548,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Pet", "", FishSettings::sbSectionPet))
             f.sub.add(ToggleSetting("Other Lines", "", FishSettings::sbSectionOther))
             f.sub.add(SubcategoryHeader("Extras"))
+            f.sub.add(ToggleSetting("Show Extras", "Lines below, not part of Hypixel's board", FishSettings::sbShowExtras))
             f.sub.add(ToggleSetting("TPS", "", FishSettings::sbSectionTps))
             f.sub.add(ToggleSetting("Ping", "", FishSettings::sbSectionPing))
             f.sub.add(ToggleSetting("FPS", "", FishSettings::sbSectionFps))

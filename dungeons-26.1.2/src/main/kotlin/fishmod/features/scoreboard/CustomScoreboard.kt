@@ -99,7 +99,7 @@ object CustomScoreboard {
             if (l !== BLANK) ctx.text(tr, l, x1 + 1, y, 0xFFFFFFFF.toInt(), true)
             y += LINE_H
         }
-        footer?.let { ctx.centeredText(tr, it, (x1 + x2) / 2, y, 0xFFFFFFFF.toInt()) }
+        footer?.let { ctx.text(tr, it, x1 + 1, y, 0xFFFFFFFF.toInt(), true) }
     }
 
     private fun readScoreboard(mc: Minecraft, obj: Objective): List<Raw> {
@@ -140,24 +140,27 @@ object CustomScoreboard {
             val irl = if (FishSettings.sbHeaderIrlTime) " §7" + LocalTime.now().format(IRL) else ""
             top.add(Component.literal("§7${m.groupValues[1]}$irl  §8${m.groupValues[2]}"))
         }
-        take { ScoreboardSection.DATE.matches(it.s) }?.let { if (FishSettings.sbSectionDate) top.add(it.c) }
-        take { ScoreboardSection.TIME.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionTime) top.add(it.c) }
-        take { LOCATION.containsMatchIn(it.s) || ScoreboardSection.classify(it.s) == ScoreboardSection.LOCATION }
-            ?.let { if (FishSettings.sbSectionLocation) top.add(it.c) }
         groups.add(top)
+
+        val world = ArrayList<Component>()
+        take { ScoreboardSection.DATE.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionDate) world.add(Component.literal("§f" + bare(it.s))) }
+        take { ScoreboardSection.TIME.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionTime) world.add(Component.literal("§7" + bare(it.s))) }
+        take { LOCATION.containsMatchIn(it.s) || ScoreboardSection.classify(it.s) == ScoreboardSection.LOCATION }
+            ?.let { if (FishSettings.sbSectionLocation) world.add(Component.literal("§a" + it.s)) }
+        groups.add(world)
 
         val money = ArrayList<Component>()
         if (FishSettings.sbSectionLevel) levelLine(mc)?.let { money.add(it) }
-        take { PURSE.containsMatchIn(it.s) }?.let { if (FishSettings.sbSectionPurse) money.add(compact(it, ChatFormatting.GOLD)) }
+        take { PURSE.containsMatchIn(it.s) }?.let { if (FishSettings.sbSectionPurse) money.add(kv(it.s, "§6")) }
         val bits = take { BITS.containsMatchIn(it.s) }
         val motes = take { MOTES.containsMatchIn(it.s) }
         val showBits = bits != null && FishSettings.sbSectionBits
         val showMotes = motes != null && FishSettings.sbSectionMotes
         if (showBits && showMotes) {
-            money.add(Component.literal("§fBits/Motes: §b${num(BITS.find(bits!!.s)!!.groupValues[1])}§7/§d${num(MOTES.find(motes!!.s)!!.groupValues[1])}"))
-        } else if (showBits) money.add(compact(bits!!, ChatFormatting.AQUA))
-        else if (showMotes) money.add(compact(motes!!, ChatFormatting.LIGHT_PURPLE))
-        take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionGems) money.add(compact(it, ChatFormatting.GREEN)) }
+            money.add(Component.literal("§fBits/Motes: §b${num(BITS.find(bits!!.s)!!.groupValues[1])}§7/§5${num(MOTES.find(motes!!.s)!!.groupValues[1])}"))
+        } else if (showBits) money.add(kv(bits!!.s, "§b"))
+        else if (showMotes) money.add(kv(motes!!.s, "§5"))
+        take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionGems) money.add(kv(bare(it.s), "§a")) }
         while (true) {
             val r = take { ScoreboardSection.classify(it.s) in OTHER_CURRENCIES } ?: break
             if (FishSettings.sbSectionOther && sectionEnabled(ScoreboardSection.classify(r.s))) money.add(compact(r, ChatFormatting.WHITE))
@@ -168,7 +171,11 @@ object CustomScoreboard {
         if (slayerIdx != null) {
             val slayer = ArrayList<Component>()
             var i = slayerIdx
-            while (i < raw.size && i <= slayerIdx + 2 && raw[i].s.isNotEmpty()) { used[i] = true; slayer.add(raw[i].c); i++ }
+            while (i < raw.size && i <= slayerIdx + 2 && raw[i].s.isNotEmpty()) {
+                used[i] = true
+                slayer.add(if (i == slayerIdx) Component.literal("§fSlayer Quest") else compact(raw[i], ChatFormatting.GRAY))
+                i++
+            }
             if (FishSettings.sbSectionSlayer) groups.add(slayer)
         }
 
@@ -188,7 +195,7 @@ object CustomScoreboard {
         if (FishSettings.sbSectionPowder && SkyblockLocation.getCurrentLocation() in MINING) groups.add(powderLines())
         if (FishSettings.sbSectionMayor) groups.add(mayorLines())
         if (FishSettings.sbSectionParty) groups.add(partyLines())
-        groups.add(extraLines(mc))
+        if (FishSettings.sbShowExtras) groups.add(extraLines(mc))
 
         val out = ArrayList<Component>()
         for (g in groups) {
@@ -203,6 +210,13 @@ object CustomScoreboard {
     private fun clean(s: String): String = s.filter {
         !Character.isSurrogate(it) && Character.getType(it).toByte() != Character.FORMAT && Character.getType(it).toByte() != Character.PRIVATE_USE
     }.trim()
+
+    // White label, coloured value: "Purse: 1,234" -> §fPurse: §6...
+    private fun kv(s: String, col: String): Component {
+        val i = s.indexOf(':')
+        if (i < 0) return Component.literal("§f$s")
+        return Component.literal("§f${s.substring(0, i)}: $col${num(s.substring(i + 1).trim())}")
+    }
 
     private fun bare(s: String): String = s.replace(Regex("""^[^\p{L}\p{N}]+"""), "").trim()
 
@@ -254,7 +268,7 @@ object CustomScoreboard {
         val name = MayorApi.mayorName() ?: return emptyList()
         val left = MayorApi.termMsLeft() / 60_000
         val time = if (left >= 1440) "${left / 1440}d ${left % 1440 / 60}h" else "${left / 60}h ${left % 60}m"
-        val out = arrayListOf<Component>(Component.literal("§eMayor $name §7($time)"))
+        val out = arrayListOf<Component>(Component.literal("§fMayor $name §7($time)"))
         for (p in MayorApi.mayorPerks()) out.add(Component.literal(" §7- §f$p"))
         return out
     }
@@ -264,7 +278,7 @@ object CustomScoreboard {
         val tab = TabListCache.entries
         val i = tab.indexOfFirst { PARTY.containsMatchIn(it.stripped.trim()) }
         if (i < 0) return emptyList()
-        val out = arrayListOf<Component>(Component.literal("§9Party §7(${PARTY.find(tab[i].stripped.trim())!!.groupValues[1]})"))
+        val out = arrayListOf<Component>(Component.literal("§fParty §7(${PARTY.find(tab[i].stripped.trim())!!.groupValues[1]})"))
         var j = i + 1
         while (j < tab.size && out.size < 6) {
             val s = tab[j].stripped.trim()
