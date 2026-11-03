@@ -8,7 +8,9 @@
 package fishmod.pv.gui.inventories
 
 import com.google.gson.JsonParser
+import fishmod.features.extras.ExtrasSettings
 import fishmod.pv.ProfileViewer
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import fishmod.pv.gui.PvDraw
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -71,7 +73,15 @@ object EnchantTooltip {
 			any = true
 			val ultimate = ultimateByName[name.lowercase(Locale.ROOT).trim()] == true
 			val label = name + " " + match.groupValues[2].uppercase(Locale.ROOT)
-			if (level >= max) {
+			if (ExtrasSettings.enchantColors) {
+				val s = ExtrasSettings
+				out.append(when {
+					level >= max -> tier(label, s.enchantMaxColor, s.enchantMaxChroma, s.enchantBold)
+					level == max - 1 -> tier(label, s.enchantHighColor, s.enchantHighChroma, s.enchantBold)
+					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true)
+					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false)
+				})
+			} else if (level >= max) {
 				out.append(PvDraw.chromaText(label, true))
 			} else if (level == max - 1) {
 				out.append(PvDraw.styled(label, T6_GOLD, true))
@@ -90,6 +100,19 @@ object EnchantTooltip {
 			}
 		}
 		return if (any) out else line
+	}
+
+	private fun tier(label: String, argb: Int, chroma: Boolean, bold: Boolean): Component =
+		if (chroma) PvDraw.chromaText(label, bold)
+		else Component.literal(label).withStyle(Style.EMPTY.withColor(argb and 0xFFFFFF).withBold(bold).withItalic(false))
+
+	/** Recolours enchant lines in every item tooltip when Enchant Colors is on. */
+	@JvmStatic
+	fun init() {
+		ItemTooltipCallback.EVENT.register(ItemTooltipCallback { _, _, _, lines ->
+			if (!ExtrasSettings.enchantColors) return@ItemTooltipCallback
+			for (i in 1 until lines.size) lines[i] = colorize(lines[i])
+		})
 	}
 
 	// Java String.split semantics: trailing empty parts dropped.

@@ -466,6 +466,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val x = fishmod.features.extras.ExtrasSettings
+            val f = Feature("Enchant Colors", x::enchantColors)
+            f.sub.add(LabelSetting("Colours enchants by tier in item tooltips and /pv", ""))
+            f.sub.add(ColorPickerSetting("Max Tier Color", "Enchant at its max level", x::enchantMaxColor).gatedBy { !x.enchantMaxChroma })
+            f.sub.add(ToggleSetting("Max Tier Chroma", "Same rainbow as the profile viewer", x::enchantMaxChroma))
+            f.sub.add(ColorPickerSetting("Max-1 Tier Color", "One below max", x::enchantHighColor).gatedBy { !x.enchantHighChroma })
+            f.sub.add(ToggleSetting("Max-1 Tier Chroma", "", x::enchantHighChroma))
+            f.sub.add(ColorPickerSetting("Ultimate Color", "Ultimate enchants below max-1", x::enchantUltColor).gatedBy { !x.enchantUltChroma })
+            f.sub.add(ToggleSetting("Ultimate Chroma", "", x::enchantUltChroma))
+            f.sub.add(ColorPickerSetting("Normal Color", "Every other enchant", x::enchantNormalColor).gatedBy { !x.enchantNormalChroma })
+            f.sub.add(ToggleSetting("Normal Chroma", "", x::enchantNormalChroma))
+            f.sub.add(ToggleSetting("Bold Top Tiers", "Bold max and max-1", x::enchantBold))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Compact Tab", FishSettings::compactTabEnabled)
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::compactTabOpacity, 0, 100))
             f.sub.add(ToggleSetting("Stat Bar", "SERVER/TPS/FPS/PING strip", FishSettings::compactTabStatBarEnabled))
@@ -741,11 +756,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(InputSetting("Bat Text", "", { FishSettings.batMsgText }, { v -> FishSettings.batMsgText = v ?: "" })
                 .gatedBy { FishSettings.batMsgEnabled })
             f.sub.add(ButtonSetting("Bat Killed", "Send the bat message now.", Runnable { fishmod.features.dungeon.MimicAnnounce.batKilled(true) }))
-            dungeon.features.add(f)
-        }
-        run {
-            val f = Feature("Boss Damage Calculator", FishSettings::bossDamageCalcEnabled)
-            f.sub.add(SubcategoryHeader("Run end: your estimated share of each boss's health (health drops right after your hits)"))
             dungeon.features.add(f)
         }
         run {
