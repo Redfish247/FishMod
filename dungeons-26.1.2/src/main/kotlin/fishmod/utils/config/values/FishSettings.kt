@@ -609,6 +609,7 @@ object FishSettings {
     @ConfigValue @JvmField var relicTimerScale: Double = 1.0
 
     @ConfigValue @JvmField var itemQualityTooltip: Boolean = false
+    @ConfigValue @JvmField var exoticTooltip: Boolean = true
 
     @ConfigValue @JvmField var gyroHelperEnabled: Boolean = false
     @ConfigValue @JvmField var gyroBoxColor: Int = 0xFF55FFFF.toInt()
