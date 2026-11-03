@@ -30,6 +30,10 @@ object MayorApi {
     @Volatile
     private var mayorLine: String? = null
     @Volatile
+    private var mayorName: String? = null
+    @Volatile
+    private var mayorPerks: List<String> = emptyList()
+    @Volatile
     private var lastFetch = 0L
     @Volatile
     private var fetching = false
@@ -94,6 +98,7 @@ object MayorApi {
                 paulDungeonBonus = parsePaul(root)
                 dianaRitual = hasPerk(root, "diana", "mythological ritual")
                 mayorLine = parseMayorLine(root)
+                parseMayorDetail(root)
                 lastFetch = System.currentTimeMillis()
             } catch (e: Exception) {
                 FishDiag.fail("MayorApi.2", "election response parse failed", e)
@@ -109,6 +114,21 @@ object MayorApi {
             fetching = false
             null
         }
+    }
+
+    @JvmStatic
+    fun mayorName(): String? { refreshIfStale(); return mayorName }
+
+    @JvmStatic
+    fun mayorPerks(): List<String> { refreshIfStale(); return mayorPerks }
+
+    @JvmStatic
+    fun termMsLeft(): Long { val now = System.currentTimeMillis(); return lastSwitchMs(now) + YEAR_MS - now }
+
+    private fun parseMayorDetail(root: JsonObject) {
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject
+        mayorName = mayor?.get("name")?.takeIf { it.isJsonPrimitive }?.asString
+        mayorPerks = runCatching { mayor?.getAsJsonArray("perks")?.mapNotNull { it.asJsonObject.get("name")?.asString } }.getOrNull() ?: emptyList()
     }
 
     private fun parseMayorLine(root: JsonObject): String? {

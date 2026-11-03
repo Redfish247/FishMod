@@ -331,8 +331,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 center = true,
                 lineH = 9,
                 right = listOf(
-                    "", "§707/14/26 §8m12AB", "", "Late Summer 5th", "§7☀ 2:40pm", "§7⏣ §bVillage",
-                    "", "Purse: §61,234,567", "Bits: §b1,024", "", "§7TPS: §a19.98", "§7Ping: §a42ms", "",
+                    "", "§711/02/26  §8m117DM", "Winter 8th", "§712:00am", "§7⏣ §aYour Island",
+                    "", "Level: §b312", "Purse: §61,234,567", "Bits/Motes: §b1,024§7/§d850", "Gems: §a120", "",
+                    "§eMayor Diana §7(3d 4h)", " §7- §fPet XP Buff",
                     "§ewww.hypixel.net",
                 ),
                 width = SCOREBOARD_W,
