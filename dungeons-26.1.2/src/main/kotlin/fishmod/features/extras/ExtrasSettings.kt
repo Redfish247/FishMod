@@ -78,4 +78,16 @@ object ExtrasSettings {
     // PV maxed highlight
     @ConfigValue @JvmField var pvMaxedColor: Int = 0xFFFFAA00.toInt()
     @ConfigValue @JvmField var pvMaxedRainbow: Boolean = false
+
+    // Enchant colours (item tooltips + PV)
+    @ConfigValue @JvmField var enchantColors: Boolean = false
+    @ConfigValue @JvmField var enchantMaxColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var enchantMaxChroma: Boolean = true
+    @ConfigValue @JvmField var enchantHighColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var enchantHighChroma: Boolean = false
+    @ConfigValue @JvmField var enchantUltColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var enchantUltChroma: Boolean = false
+    @ConfigValue @JvmField var enchantNormalColor: Int = 0xFF5555FF.toInt()
+    @ConfigValue @JvmField var enchantNormalChroma: Boolean = false
+    @ConfigValue @JvmField var enchantBold: Boolean = true
 }
