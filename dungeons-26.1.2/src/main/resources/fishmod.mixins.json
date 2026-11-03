@@ -38,7 +38,6 @@
     "WorldTextShadowMixin",
     "SignRendererShadowMixin",
     "SubmitTextShadowMixin",
-    "StatusBarsMixin",
     "FishPacketHandlerMixin",
     "PacketErrorGuardMixin",
     "ContainerScreenMixin",

@@ -422,7 +422,6 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
         FishDiag.guard("FishModInit.CalTimes", "CalendarTimes.init() failed") { fishmod.features.extras.CalendarTimes.init() }
-        FishDiag.guard("FishModInit.StatusBars", "StatusBars.init() failed") { fishmod.features.extras.StatusBars.init() }
         FishDiag.guard("FishModInit.Extras", "Extras.init() failed") { fishmod.features.extras.Extras.init() }
         FishDiag.guard("FishModInit.20", "PetHud.init() failed") { PetHud.init() }
         FishDiag.guard("FishModInit.201", "ExperimentProfitTracker.init() failed") { fishmod.features.ExperimentProfitTracker.init() }
