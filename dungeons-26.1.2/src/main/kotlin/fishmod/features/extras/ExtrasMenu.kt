@@ -82,6 +82,7 @@ object ExtrasMenu {
         "Arrow HUD" -> "Selected arrow + quiver count, low/out warnings"
         "Quiver Warning" -> "Title + sound when the quiver runs low, without the Arrow HUD"
         "Calendar Real Times" -> "Real date + time next to every countdown in the /calendar menu"
+        "Status Bars" -> "Defense + health/mana bars above the hotbar (replaces vanilla hearts); move in the HUD editor"
         "Limbo Alert" -> "Title and sound when you get sent to Limbo"
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
