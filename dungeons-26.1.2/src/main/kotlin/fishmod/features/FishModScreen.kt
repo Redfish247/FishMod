@@ -316,6 +316,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Kill Combo", "", FishSettings::cfKillCombo))
             f.sub.add(ToggleSetting("Boss Messages", "", FishSettings::cfBossMessages))
             f.sub.add(ToggleSetting("Friend Join/Leave", "", FishSettings::cfFriendJoinLeave))
+            f.sub.add(ToggleSetting("Guild Message Of The Day", "Hides the guild MOTD box shown when you join", FishSettings::cfGuildMotd))
             f.sub.add(ToggleSetting("Bazaar", "", FishSettings::cfBazaar))
             f.sub.add(ToggleSetting("Warping", "", FishSettings::cfWarping))
             f.sub.add(ToggleSetting("Collapse Blank Lines", "Drop repeated empty chat lines", FishSettings::cfCollapseBlank))

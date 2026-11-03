@@ -163,6 +163,21 @@ object ChatFilter {
     }
 
     @Volatile private var lastBlank = false
+    @Volatile private var motdUntil = 0L
+    @Volatile private var motdLines = 0
+
+    // MOTD box: header line, guild-specific lines, then a dashes-only closing line.
+    private fun inGuildMotd(s: String): Boolean {
+        if (!FishSettings.cfGuildMotd) return false
+        if (s.contains("Guild: Message Of The Day")) {
+            if ('
+' !in s) { motdUntil = System.currentTimeMillis() + 2000; motdLines = 0 }
+            return true
+        }
+        if (System.currentTimeMillis() > motdUntil) return false
+        if (++motdLines > 40 || s.all { it == '-' || it == '▬' || it == '─' }) motdUntil = 0
+        return true
+    }
 
     @JvmStatic
     fun shouldHide(text: Component?): Boolean {
@@ -176,6 +191,7 @@ object ChatFilter {
             return hide
         }
         lastBlank = false
+        if (inGuildMotd(s)) return true
         return reason(s) != null
     }
 
@@ -185,6 +201,7 @@ object ChatFilter {
         if (FishSettings.cfKillCombo && s.contains("Kill Combo")) return "Kill Combo"
         if (FishSettings.cfBossMessages && s.contains("[BOSS]")) return "Boss Messages"
         if (FishSettings.cfFriendJoinLeave && FRIEND_JOIN_LEAVE.matcher(s).find()) return "Friend Join/Leave"
+        if (FishSettings.cfGuildMotd && s.contains("Guild: Message Of The Day")) return "Guild Message Of The Day"
         if (FishSettings.cfBazaar && s.startsWith("[Bazaar] Executing instant buy")) return "Bazaar"
         if (FishSettings.cfWarping && s == "Warping...") return "Warping"
         if (FishSettings.cfNoammSpam && SPAM_LIST.any { it.matcher(s).matches() }) return "Skyblock/Dungeon Spam"

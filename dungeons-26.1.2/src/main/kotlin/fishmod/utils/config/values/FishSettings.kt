@@ -236,6 +236,7 @@ object FishSettings {
     @ConfigValue @JvmField var cfKillCombo: Boolean = true
     @ConfigValue @JvmField var cfBossMessages: Boolean = false
     @ConfigValue @JvmField var cfFriendJoinLeave: Boolean = false
+    @ConfigValue @JvmField var cfGuildMotd: Boolean = false
     @ConfigValue @JvmField var cfBazaar: Boolean = false
     @ConfigValue @JvmField var cfWarping: Boolean = false
     @ConfigValue @JvmField var cfNoammSpam: Boolean = false
