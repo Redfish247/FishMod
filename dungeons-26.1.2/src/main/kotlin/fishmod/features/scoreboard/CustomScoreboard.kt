@@ -304,8 +304,8 @@ object CustomScoreboard {
         val name = MayorApi.mayorName() ?: return emptyList()
         val left = MayorApi.termMsLeft() / 60_000
         val time = if (left >= 1440) "${left / 1440}d ${left % 1440 / 60}h" else "${left / 60}h ${left % 60}m"
-        val out = arrayListOf<Component>(Component.literal("§fMayor $name §7($time)"))
-        for (p in MayorApi.mayorPerks()) out.add(Component.literal(" §7- §f$p"))
+        val out = arrayListOf<Component>(Component.literal("§6$name §7($time)"))
+        for (p in MayorApi.mayorPerks()) out.add(Component.literal(" §8- §e$p"))
         return out
     }
 
@@ -314,7 +314,7 @@ object CustomScoreboard {
         val tab = TabListCache.entries
         val i = tab.indexOfFirst { PARTY.containsMatchIn(it.stripped.trim()) }
         if (i < 0) return emptyList()
-        val out = arrayListOf<Component>(Component.literal("§fParty §7(${PARTY.find(tab[i].stripped.trim())!!.groupValues[1]})"))
+        val out = arrayListOf<Component>(Component.literal("§9Party §7(${PARTY.find(tab[i].stripped.trim())!!.groupValues[1]})"))
         var j = i + 1
         while (j < tab.size && out.size < 6) {
             val s = tab[j].stripped.trim()
