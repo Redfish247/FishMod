@@ -58,12 +58,13 @@ public class FishMouseMixin {
         this.fishmod$beforeY = this.ypos;
     }
 
-    @Inject(method = "releaseMouse", at = @At(value = "FIELD",
-            target = "Lnet/minecraft/client/MouseHandler;xpos:D", opcode = Opcodes.GETFIELD, ordinal = 0))
+    @Inject(method = "releaseMouse", at = @At("TAIL"))
     private void fishmod$restoreCursor(CallbackInfo ci) {
         if (NoCursorReset.shouldHook() && fishmod.compat.McCompatKt.getCurScreen(Minecraft.getInstance()) instanceof AbstractContainerScreen) {
             this.xpos = this.fishmod$beforeX;
             this.ypos = this.fishmod$beforeY;
+            // Move the real OS cursor too, or the next mouse move snaps back to centre
+            org.lwjgl.glfw.GLFW.glfwSetCursorPos(Minecraft.getInstance().getWindow().handle(), this.xpos, this.ypos);
         }
     }
 }
