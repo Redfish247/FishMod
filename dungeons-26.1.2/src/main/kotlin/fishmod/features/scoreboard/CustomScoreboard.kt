@@ -205,7 +205,9 @@ object CustomScoreboard {
     }
 
     // Hypixel pads each line with hidden emoji to keep them unique
-    private fun clean(s: String): String = s.filter {
+    private val LEGACY_CODE = Regex("§.")
+
+    private fun clean(s: String): String = s.replace(LEGACY_CODE, "").filter {
         !Character.isSurrogate(it) && Character.getType(it).toByte() != Character.FORMAT && Character.getType(it).toByte() != Character.PRIVATE_USE
     }.trim()
 
