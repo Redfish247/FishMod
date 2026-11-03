@@ -170,11 +170,15 @@ object CustomScoreboard {
             money.add(Component.literal("§fBits/Motes: §b${num(BITS.find(bits!!.s)!!.groupValues[1])}§7/§5${num(MOTES.find(motes!!.s)!!.groupValues[1])}"))
         } else if (showBits) money.add(kv(bits!!.s, "§b"))
         else if (showMotes) money.add(kv(motes!!.s, "§5"))
-        take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionGems) money.add(kv(bare(it.s), "§a")) }
+        val gems = take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { bare(it.s) } ?: tabValue(TAB_GEMS)?.let { "Gems: $it" }
+        if (gems != null && FishSettings.sbSectionGems) money.add(kv(gems, "§a"))
+        var soulflowShown = false
         while (true) {
             val r = take { ScoreboardSection.classify(it.s) in OTHER_CURRENCIES } ?: break
+            if (ScoreboardSection.classify(r.s) == ScoreboardSection.SOULFLOW) soulflowShown = true
             if (FishSettings.sbSectionOther) money.add(compact(r, ChatFormatting.WHITE))
         }
+        if (!soulflowShown && FishSettings.sbSectionOther) tabValue(TAB_SOULFLOW)?.let { money.add(kv("Soulflow: $it", "§3")) }
         groups.add(money)
 
         val slayerIdx = raw.indices.firstOrNull { !used[it] && raw[it].s.equals("Slayer Quest", true) }
@@ -217,6 +221,14 @@ object CustomScoreboard {
 
     // Hypixel pads each line with hidden emoji to keep them unique
     private val LEGACY_CODE = Regex("§.")
+    private val TAB_GEMS = Regex("""^Gems:\s*([\d,]+)""")
+    private val TAB_SOULFLOW = Regex("""^Soulflow:\s*([\d,]+)""")
+
+    // Value from a tab widget row like " Gems: 57,873"
+    private fun tabValue(re: Regex): String? {
+        for (e in TabListCache.entries) re.find(clean(e.stripped))?.let { return it.groupValues[1] }
+        return null
+    }
 
     private fun clean(s: String): String = s.replace(LEGACY_CODE, "").filter {
         !Character.isSurrogate(it) && Character.getType(it).toByte() != Character.FORMAT && Character.getType(it).toByte() != Character.PRIVATE_USE
