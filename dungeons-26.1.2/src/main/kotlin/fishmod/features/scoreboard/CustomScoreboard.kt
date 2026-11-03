@@ -233,8 +233,8 @@ object CustomScoreboard {
 
     // Hypixel pads each line with hidden emoji to keep them unique
     private val LEGACY_CODE = Regex("§.")
-    private val TAB_GEMS = Regex("""^Gems:\s*([\d,]+)""")
-    private val TAB_SOULFLOW = Regex("""^Soulflow:\s*([\d,]+)""")
+    private val TAB_GEMS = Regex("""^Gems:\s*([\d,.]+[kKmMbB]?)""")
+    private val TAB_SOULFLOW = Regex("""^Soulflow:\s*([\d,.]+[kKmMbB]?)""")
 
     // Value from a tab widget row like " Gems: 57,873"
     private fun tabValue(re: Regex): String? {
