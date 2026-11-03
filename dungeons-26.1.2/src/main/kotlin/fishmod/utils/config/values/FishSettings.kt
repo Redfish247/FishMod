@@ -177,6 +177,7 @@ object FishSettings {
     @ConfigValue @JvmField var pvOverflowSkills: Boolean = false
     @ConfigValue @JvmField var pvTheme: String = "Dark Glass"
 
+    @ConfigValue @JvmField var hideHudsUnderTab: Boolean = true
     @ConfigValue @JvmField var compactTabEnabled: Boolean = false
     @ConfigValue @JvmField var compactTabOpacity: Int = 70
     @ConfigValue @JvmField var compactTabStatBarEnabled: Boolean = true
