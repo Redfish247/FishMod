@@ -51,7 +51,7 @@ object MiningBoxes {
 
     private fun render() {
         if (FishSettings.corpseHighlightEnabled) for (e in corpses) if (e.isAlive)
-            FishDraw.gizmoBox(e.boundingBox, 0, FishSettings.corpseHighlightColor, true)
+            FishDraw.gizmoBox(e.boundingBox, 0, FishSettings.corpseHighlightColor, false)
         if (FishSettings.ghostBoxEnabled) for (e in ghosts) if (e.isAlive)
             FishDraw.gizmoBox(e.boundingBox, if (FishSettings.ghostBoxFilled) FishSettings.ghostBoxFillColor else 0, FishSettings.ghostBoxColor)
     }
