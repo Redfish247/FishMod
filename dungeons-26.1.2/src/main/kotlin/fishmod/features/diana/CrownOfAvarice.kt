@@ -151,7 +151,7 @@ object CrownOfAvarice {
     // Returns how many lines were drawn
     private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor): Int {
         val mc = Minecraft.getInstance()
-        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.hudHidden || mc.player == null) return 0
+        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.hudHidden || mc.player == null || !Diana.active()) return 0
         val lines = hudLines()
         if (lines.isEmpty()) return 0
         val pose = ctx.pose()
