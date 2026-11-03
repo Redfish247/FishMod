@@ -63,7 +63,7 @@ object ItemTooltipEnricher {
 		}
 		for (i in lines.indices) {
 			val line = lines[i]
-			val colored = EnchantTooltip.colorize(line)
+			val colored = EnchantTooltip.colorize(line, i)
 			if (colored !== line) {
 				lines[i] = colored
 			}
