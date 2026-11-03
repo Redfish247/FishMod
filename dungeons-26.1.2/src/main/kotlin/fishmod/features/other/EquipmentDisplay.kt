@@ -45,14 +45,15 @@ object EquipmentDisplay {
     private fun storedSets(): JsonObject =
         runCatching { JsonParser.parseString(InvButtonSettings.equipmentByLoadout).asJsonObject }.getOrElse { JsonObject() }
 
-    // show what this loadout wore when last seen, or nothing rather than the old loadout's gear
+    // show what this loadout wore when last seen; unknown names (single items too) keep current gear
     private fun onSwap(name: String) {
         currentLoadout = name
-        val encoded = storedSets().get(name)?.asString ?: ""
-        val stacks = if (encoded.isEmpty()) null else NBTInventory.decode(encoded)?.stacks
-        for (i in 0..3) cached[i] = stacks?.getOrNull(i)
+        val encoded = storedSets().get(name)?.asString ?: return
+        val stacks = NBTInventory.decode(encoded)?.stacks ?: return
+        ensureLoaded()
+        for (i in 0..3) cached[i] = stacks.getOrNull(i) ?: ItemStack.EMPTY
         loaded = true
-        InvButtonSettings.equipmentCache = if (stacks == null) "" else encoded
+        InvButtonSettings.equipmentCache = encoded
         save()
     }
 
