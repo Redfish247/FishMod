@@ -84,11 +84,23 @@ object CustomScoreboard {
         }
         if (lines.isEmpty() && footer == null) return
 
-        val x2 = if (FishSettings.customScoreboardHudX < 0) screenW - 3 else min(FishSettings.customScoreboardHudX, screenW - 3)
-        val x1 = x2 - width
-        val y0 = FishSettings.customScoreboardHudY
         val top = if (FishSettings.sbSectionTitle) TITLE_H else 2
         val totalH = top + (lines.size + (if (footer != null) 1 else 0)) * LINE_H + 2
+        val screenH = mc.window.guiScaledHeight
+        val anchor = FishSettings.customScoreboardAnchor
+        val x2 = when {
+            anchor.endsWith("Left") -> width + 3
+            anchor.endsWith("Right") -> screenW - 3
+            FishSettings.customScoreboardHudX < 0 -> screenW - 3
+            else -> min(FishSettings.customScoreboardHudX, screenW - 3)
+        }
+        val x1 = x2 - width
+        val y0 = when {
+            anchor.startsWith("Top") -> 3
+            anchor.startsWith("Middle") -> (screenH - totalH) / 2
+            anchor.startsWith("Bottom") -> screenH - totalH - 3
+            else -> FishSettings.customScoreboardHudY
+        }
 
         ctx.fill(x1 - 2, y0, x2 + 2, y0 + totalH, bgColor())
         if (FishSettings.sbSectionTitle) ctx.centeredText(tr, title, (x1 + x2) / 2, y0 + 1, 0xFFFFFFFF.toInt())
