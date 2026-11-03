@@ -944,6 +944,7 @@ object FishSettings {
     @ConfigValue @JvmField var sbSectionTitle: Boolean = true
     @ConfigValue @JvmField var sbSectionHeader: Boolean = true
     @ConfigValue @JvmField var sbHeaderIrlTime: Boolean = false
+    @ConfigValue @JvmField var sbSectionServer: Boolean = true
     @ConfigValue @JvmField var sbSectionLevel: Boolean = true
     @ConfigValue @JvmField var sbSectionMayor: Boolean = true
     @ConfigValue @JvmField var sbSectionFooter: Boolean = true
