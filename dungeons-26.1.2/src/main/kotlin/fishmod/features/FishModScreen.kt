@@ -481,6 +481,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Hide HUDs Under Tab", FishSettings::hideHudsUnderTab)
+            f.sub.add(LabelSetting("Hides any HUD touching the tab list while tab is held", ""))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Compact Tab", FishSettings::compactTabEnabled)
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::compactTabOpacity, 0, 100))
             f.sub.add(ToggleSetting("Stat Bar", "SERVER/TPS/FPS/PING strip", FishSettings::compactTabStatBarEnabled))
