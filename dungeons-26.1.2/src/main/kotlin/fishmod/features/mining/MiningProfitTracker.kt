@@ -49,6 +49,8 @@ object MiningProfitTracker {
     var version = 0; private set
 
     private val CORPSE = Regex("""^\s*(LAPIS|UMBER|TUNGSTEN|VANGUARD) CORPSE LOOT!""")
+    // Key consumed per corpse, tracked as a negative item so profit nets it out
+    private val CORPSE_KEY = mapOf("UMBER" to "Tungsten Key", "TUNGSTEN" to "Umber Key", "VANGUARD" to "Skeleton Key")
     private val BAR = Regex("""^▬{20,}$""")
     private val ITEM = Regex("""^\s{2,}[☠✦+]?\s*(.+?)(?:\s+x([\d,]+))?\s*$""")
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
@@ -114,7 +116,11 @@ object MiningProfitTracker {
         val s = Mining.strip(text.string)
         val now = System.currentTimeMillis()
         if (s.startsWith("[Sacks]")) { onSacks(text, now); return }
-        CORPSE.find(s)?.let { startLoot(Cat.CORPSES, "Corpses", it.groupValues[1].lowercase().replaceFirstChar(Char::uppercase) + " Corpses"); return }
+        CORPSE.find(s)?.let {
+            startLoot(Cat.CORPSES, "Corpses", it.groupValues[1].lowercase().replaceFirstChar(Char::uppercase) + " Corpses")
+            CORPSE_KEY[it.groupValues[1]]?.let { key -> add(Cat.CORPSES, key, -1) }
+            return
+        }
         when {
             s.contains("EXCAVATION COMPLETE") -> { startLoot(Cat.FOSSIL, "Excavations", null); return }
             s.contains("CRYSTAL NUCLEUS LOOT BUNDLE") -> { startLoot(Cat.NUCLEUS, "Nucleus Runs", null); return }
@@ -291,7 +297,7 @@ object MiningProfitTracker {
         out += "§e§lMining Profit §7(${S.miningProfitCategory}, ${S.miningProfitMode})"
         if (scroll > 0) out += "§8  ▲ $scroll more"
         for (r in rows.drop(scroll).take(max)) {
-            val v = if (r.value > 0) "§6${Mining.short(r.value)}" else ""
+            val v = if (r.value > 0) "§6${Mining.short(r.value)}" else if (r.value < 0) "§c-${Mining.short(-r.value)}" else ""
             out += ProfitTrackerKit.rowLine(r, v, ProfitTrackerKit.rarityColor(idOf(r.name)), S.miningProfitShowSources)
         }
         val below = rows.size - scroll - max
