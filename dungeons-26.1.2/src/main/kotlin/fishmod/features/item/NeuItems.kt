@@ -21,19 +21,21 @@ object NeuItems {
 
     const val PREFIX = "neu:"
 
-    data class Entry(val id: String, val name: String, val model: String, val texture: String?, val hex: String? = null)
+    data class Entry(val id: String, val name: String, val model: String, val texture: String?, val hex: String? = null, val color: Int? = null)
 
     private const val ZIP_URL = "https://codeload.github.com/NotEnoughUpdates/NotEnoughUpdates-REPO/zip/refs/heads/master"
-    private val CACHE = File("config/fishmod/neu_cosmetics.json")
+    private val CACHE = File("config/fishmod/neu_cosmetics2.json")
     private const val MAX_AGE_MS = 24L * 60 * 60 * 1000
 
     private val MODEL_RE = Regex("""ItemModel:"([a-z0-9_.:/-]+)"""")
     private val TEXTURE_RE = Regex("""Value:"([A-Za-z0-9+/=]+)"""")
     private val HEX_RE = Regex("#([0-9A-Fa-f]{6})")
+    private val COLOR_RE = Regex("""color:(\d+)""")
 
     @Volatile private var entries: Map<String, Entry> = emptyMap()
     @Volatile private var sorted: List<Entry> = emptyList()
     @Volatile private var dyeList: List<Entry> = emptyList()
+    @Volatile private var armorColors: Map<String, Int> = emptyMap()
     @Volatile var loading = false; private set
     @Volatile var failed = false; private set
     @Volatile private var started = false
@@ -65,9 +67,11 @@ object NeuItems {
     }
 
     private fun publish(list: List<Entry>) {
-        sorted = list.filter { it.hex == null }.sortedBy { it.name.lowercase() }
-        dyeList = list.filter { it.hex != null }.sortedBy { it.name.lowercase() }
-        entries = list.associateBy { it.id }
+        val cosmetic = list.filter { it.color == null }
+        armorColors = list.filter { it.color != null }.associate { it.id to it.color!! }
+        sorted = cosmetic.filter { it.hex == null }.sortedBy { it.name.lowercase() }
+        dyeList = cosmetic.filter { it.hex != null }.sortedBy { it.name.lowercase() }
+        entries = cosmetic.associateBy { it.id }
     }
 
     private fun readCache(): List<Entry>? = try {
@@ -105,8 +109,8 @@ object NeuItems {
 
     private fun parse(id: String, text: String): Entry? = try {
         val dye = id.startsWith("DYE_")
-        if (!dye && !isSkin(id)) return null
         val o = JsonParser.parseString(text).asJsonObject
+        if (!dye && !isSkin(id)) return armorColor(id, o)
         val nbt = o.get("nbttag")?.asString ?: ""
         val name = fishmod.utils.TextStrip.plain(o.get("displayname")?.asString ?: id).trim().ifEmpty { id }
         val legacy = o.get("itemid")?.asString ?: "minecraft:stone"
@@ -115,6 +119,15 @@ object NeuItems {
         if (dye && hex == null) null
         else Entry(id, name.removeSuffix(" Dye"), model, TEXTURE_RE.find(nbt)?.groupValues?.get(1), hex)
     } catch (e: Exception) { null }
+
+    private fun armorColor(id: String, o: com.google.gson.JsonObject): Entry? {
+        if (o.get("itemid")?.asString?.startsWith("minecraft:leather_") != true) return null
+        val c = COLOR_RE.find(o.get("nbttag")?.asString ?: "")?.groupValues?.get(1)?.toIntOrNull() ?: return null
+        return Entry(id, id, "", null, null, c)
+    }
+
+    /** Default NEU dye colour of a leather armor piece, or null. */
+    fun armorColor(id: String): Int? = armorColors[id]
 
     fun get(id: String): Entry? = entries[id]
 

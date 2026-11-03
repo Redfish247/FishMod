@@ -1509,6 +1509,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Prices", "Value = base + modifiers (enchants, HPB, recomb, gems, reforge…)", FishSettings::itemTooltipPrices))
             f.sub.add(ToggleSetting("NPC Sell Price", "", FishSettings::itemTooltipNpcSell))
             f.sub.add(ToggleSetting("Dungeon Quality", "Stat-boost % + floor", FishSettings::itemQualityTooltip))
+            f.sub.add(ToggleSetting("Exotic Armor", "Tags crystal/fairy/exotic dyed armor + hex", FishSettings::exoticTooltip))
             f.sub.add(ToggleSetting("Obtained Date", "When the item was obtained", fishmod.features.extras.ExtrasSettings::obtainedDateTooltip))
             f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", FishSettings::tooltipScrollEnabled))
@@ -2590,10 +2591,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     // Edit HUD pill, right of the search bar
     private fun editHudRect(): IntArray {
-        val bh = 24
-        val x = (right() - 190) / 2 + 190 + 8
+        val bh = 28
+        val x = (right() - 220) / 2 + 220 + 8
         val y = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
-        return intArrayOf(x, y, sw(this.font, "Edit HUD", 0.85f) + 24, bh)
+        return intArrayOf(x, y, sw(this.font, "Edit HUD", 0.95f) + 28, bh)
     }
 
     private fun topBarButtonRects(): Array<IntArray> {
@@ -2642,8 +2643,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun renderSearchBar(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        val bw = 190
-        val bh = 24
+        val bw = 220
+        val bh = 28
         val bx = (right() - bw) / 2
         val by = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
         roundedRectRing(ctx, bx, by, bw, bh, bh / 2, 1, 0xFF14181D.toInt(), if (searchFocused) ACCENT else 0xFF3A3F48.toInt())
@@ -2664,9 +2665,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             field.setX(bx + 30); field.setY(by + 6); field.setWidth(bw - 40)
         }
         if (searchText.isEmpty() && !searchFocused) {
-            sst(ctx, this.font, "Search…", bx + 30, by + (bh - 8) / 2, SUBTEXT_COLOR, 0.9f)
+            sst(ctx, this.font, "Search…", bx + 30, by + (bh - 8) / 2, SUBTEXT_COLOR, 1.15f)
         } else {
-            nvgTextFieldContent(field, bx + 30, by + 6, bw - 40, bh - 12)
+            nvgTextFieldContent(field, bx + 30, by + 6, bw - 40, bh - 12, 9.5f)
         }
         val e = editHudRect()
         drawPillButton(ctx, e[0], e[1], e[2], e[3], "Edit HUD", false, ACCENT, mouseX >= e[0] && mouseX <= e[0] + e[2] && mouseY >= e[1] && mouseY <= e[1] + e[3])
@@ -3105,8 +3106,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (prevInput is ColorPickerSetting) prevInput.hexField?.setFocused(false)
         activeInput = null
 
-        val swW = 190
-        val swH = 24
+        val swW = 220
+        val swH = 28
         val sx = (right() - swW) / 2
         val sy0 = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - swH) / 2 - 8
         searchFocused = mx >= sx && mx <= sx + swW && my >= sy0 && my <= sy0 + swH
@@ -4488,15 +4489,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             nvgTextFieldContent(tf, x, y, w, h)
         }
 
-        fun nvgTextFieldContent(tf: EditBox, x: Int, y: Int, w: Int, h: Int) {
+        fun nvgTextFieldContent(tf: EditBox, x: Int, y: Int, w: Int, h: Int, size: Float = INPUT_TEXT_SIZE) {
             val text = tf.value
             val cursor = Math.min(tf.cursorPosition, text.length)
-            val cursorX = UiRecorder.textWidth(text.substring(0, cursor), INPUT_TEXT_SIZE)
+            val cursorX = UiRecorder.textWidth(text.substring(0, cursor), size)
             val pad = 3f
             val visibleW = w - pad * 2f
             val scroll = Math.max(0f, cursorX - visibleW)
             UiRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
-            UiRecorder.text(text, x + pad - scroll, y + (h - INPUT_TEXT_SIZE) / 2f, INPUT_TEXT_SIZE, TEXT_COLOR)
+            UiRecorder.text(text, x + pad - scroll, y + (h - size) / 2f, size, TEXT_COLOR)
             if (tf.isFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
                 UiRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
             }
