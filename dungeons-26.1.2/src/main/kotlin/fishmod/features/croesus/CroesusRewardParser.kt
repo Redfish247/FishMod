@@ -29,6 +29,7 @@ object CroesusRewardParser {
         ITEM_REPLACEMENTS["Apex Dragon Shard"] = "SHARD_APEX_DRAGON"
         ITEM_REPLACEMENTS["Power Dragon Shard"] = "SHARD_POWER_DRAGON"
         ITEM_REPLACEMENTS["Scarf Shard"] = "SHARD_SCARF"
+        ITEM_REPLACEMENTS["Bonzo Shard"] = "SHARD_BONZO"
         ITEM_REPLACEMENTS["Necron Dye"] = "DYE_NECRON"
         ITEM_REPLACEMENTS["Livid Dye"] = "DYE_LIVID"
     }
@@ -115,7 +116,7 @@ object CroesusRewardParser {
             val result = parseLine(line)
             if (result[0] == "false") {
                 if (errorOut != null) errorOut[0] = result[1]
-                fishmod.utils.debug.Debug.LOGGER.debug("[Loot] unresolved reward line: '{}'", clean)
+                fishmod.utils.debug.FishDebug.LOGGER.debug("[Loot] unresolved reward line: '{}'", clean)
                 FishDiag.fail("CroesusRewardParser.3", "unresolved croesus reward line: '$clean'")
                 continue
             }
@@ -124,7 +125,7 @@ object CroesusRewardParser {
             ri.id = result[0]
             ri.qty = FishDiag.notNull(result[1].toIntOrNull(), "CroesusRewardParser.4") { "reward qty not int: '${result[1]}' for ${result[0]}" }?.coerceAtLeast(1) ?: 1
             ri.displayName = clean
-            fishmod.utils.debug.Debug.LOGGER.debug("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
+            fishmod.utils.debug.FishDebug.LOGGER.debug("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
             info.items.add(ri)
         }
         return info

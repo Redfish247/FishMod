@@ -1,7 +1,7 @@
 package fishmod.features.diana
 import fishmod.compat.hud
 
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents
@@ -52,8 +52,8 @@ object SphinxSolver {
     private fun enabled() = DianaSettings.dianaSphinxSolver && Diana.inHub()
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { msg -> onMessage(msg) }
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.chat.register { msg -> onMessage(msg) }
+        FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is ChatScreen) return@AfterInit

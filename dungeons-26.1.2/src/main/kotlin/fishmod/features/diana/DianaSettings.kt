@@ -102,6 +102,12 @@ object DianaSettings {
     // Chat
     @ConfigValue @JvmField var dianaPartyCommands: Boolean = true
     @ConfigValue @JvmField var dianaMessageHider: Boolean = true
+    @ConfigValue @JvmField var dianaHideArrows: Boolean = true
+    @ConfigValue @JvmField var dianaHideWarping: Boolean = true
+    @ConfigValue @JvmField var dianaHideBlocked: Boolean = true
+    @ConfigValue @JvmField var dianaHideCooldown: Boolean = true
+    @ConfigValue @JvmField var dianaHideBurrow: Boolean = true
+    @ConfigValue @JvmField var dianaHideDugMob: Boolean = true
     @ConfigValue @JvmField var dianaSphinxSolver: Boolean = true
 
     // Waypoint look

@@ -2,12 +2,12 @@ package fishmod.features
 import fishmod.compat.curScreen
 
 import fishmod.mixin.accessors.HandledScreenAccessor
-import fishmod.utils.Keybinds
-import fishmod.utils.config.FolderUtility
+import fishmod.utils.FishKeys
+import fishmod.utils.config.FishPaths
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.rendering.DrawEvents
-import fishmod.utils.rendering.drawevents.SlotEvent
+import fishmod.utils.rendering.DrawHooks
+import fishmod.utils.rendering.drawevents.SlotDrawHook
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -22,7 +22,7 @@ import java.nio.file.Paths
 
 object SlotLocking {
 
-    private val FILE = Paths.get(FolderUtility.CONFIG_PATH + "slot_locks.txt")
+    private val FILE = Paths.get(FishPaths.CONFIG_PATH + "slot_locks.txt")
     private val locked = HashSet<Int>()
     private var loaded = false
     private var lastWarnAt = 0L
@@ -30,7 +30,7 @@ object SlotLocking {
 
     @JvmStatic
     fun init() {
-        DrawEvents.INVENTORY_SLOT_AFTER.register(SlotEvent { ctx, _, x, y -> drawSlot(ctx, x, y) })
+        DrawHooks.INVENTORY_SLOT_AFTER.register(SlotDrawHook { ctx, _, x, y -> drawSlot(ctx, x, y) })
     }
 
     private fun ensureLoaded() {
@@ -94,7 +94,7 @@ object SlotLocking {
     @JvmStatic
     fun keyPressed(input: KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
         if (!FishSettings.slotLockingEnabled) return false
-        val key = Keybinds.slotLock ?: return false
+        val key = FishKeys.slotLock ?: return false
         if (key.isUnbound || !key.matches(input)) return false
         val hovered = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()
         val idx = invIndex(hovered) ?: return false
@@ -109,7 +109,7 @@ object SlotLocking {
         val now = System.currentTimeMillis()
         if (now - lastWarnAt < 1500) return
         lastWarnAt = now
-        fishmod.utils.Misc.addChatMessage(Component.literal("§cThat slot is locked."))
+        fishmod.utils.FishUtil.addChatMessage(Component.literal("§cThat slot is locked."))
     }
 
     private fun drawSlot(ctx: GuiGraphicsExtractor, x: Int, y: Int) {
@@ -117,7 +117,7 @@ object SlotLocking {
         ensureLoaded()
         if (locked.isEmpty()) return
         val screen = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
-        val slot = DrawEvents.currentSlot?.takeIf { it.container is Inventory }
+        val slot = DrawHooks.currentSlot?.takeIf { it.container is Inventory }
             ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y && it.container is Inventory } ?: return
         if (!isLocked(slot)) return
         val c = FishSettings.slotLockingColor

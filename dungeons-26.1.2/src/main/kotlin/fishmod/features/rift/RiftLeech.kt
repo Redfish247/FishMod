@@ -1,8 +1,8 @@
 package fishmod.features.rift
 
-import fishmod.utils.Misc
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.FishUtil
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -42,21 +42,21 @@ object RiftLeech {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) poll() }
-        fishmod.utils.events.Events.ON_WORLD_CHANGE.register { laser = false; false }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        fishmod.utils.events.FishEvents.worldChange.register { laser = false; false }
+        RenderHooks.GIZMO.register { _ -> render() }
     }
 
     private fun render() {
         if (!laser || !S.riftLeech) return
         val c = S.riftLeechColor
         val box = AABB(CHEESE.x - 0.5, CHEESE.y, CHEESE.z - 0.5, CHEESE.x + 0.5, CHEESE.y + 1.0, CHEESE.z + 0.5)
-        RenderUtils.gizmoBox(box, (c and 0xFFFFFF) or 0x60000000, c, true)
-        RenderUtils.gizmoLine(RenderUtils.cameraLineStart(1.0), box.center, c, 2f, true)
+        FishDraw.gizmoBox(box, (c and 0xFFFFFF) or 0x60000000, c, true)
+        FishDraw.gizmoLine(FishDraw.cameraLineStart(1.0), box.center, c, 2f, true)
         if (S.riftLeechTitle) {
             val now = System.currentTimeMillis()
             if (now - lastTitle > 1000L) {
                 lastTitle = now
-                Misc.forceTitle(Component.literal("§c§lLASER!"), Component.literal("§7Go to the safe spot"), 1500)
+                FishUtil.forceTitle(Component.literal("§c§lLASER!"), Component.literal("§7Go to the safe spot"), 1500)
             }
         }
     }

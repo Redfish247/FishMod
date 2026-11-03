@@ -19,7 +19,7 @@ object MapInfoHud {
 
     @JvmStatic
     fun register() {
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_info_hud")) { g, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_info_hud")) { g, _ ->
             if (enabled() && !fishmod.features.FishHudEditor.isOpen()) {
                 val mc = Minecraft.getInstance()
                 if (!mc.hudHidden && DungeonState.isInDungeon()) {

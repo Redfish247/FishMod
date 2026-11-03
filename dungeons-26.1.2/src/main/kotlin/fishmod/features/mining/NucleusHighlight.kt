@@ -1,7 +1,7 @@
 package fishmod.features.mining
 
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.minecraft.world.phys.AABB
 import fishmod.features.mining.MiningSettings as S
 
@@ -30,12 +30,12 @@ object NucleusHighlight {
     }
 
     fun init() {
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!S.miningNucleusBoxes || !Mining.inHollows()) return@register
             if (S.miningNucleusOnlyInside && !inNucleus()) return@register
             for (p in POCKETS) {
                 val c = p.color()
-                if (S.miningNucleusFilled) RenderUtils.fillBox(ps, vc, p.box, Mining.alpha(c, S.miningNucleusOpacity))
+                if (S.miningNucleusFilled) FishDraw.fillBox(ps, vc, p.box, Mining.alpha(c, S.miningNucleusOpacity))
                 Mining.outline(ps, vc, p.box, Mining.alpha(c, 100), 2f)
             }
         }

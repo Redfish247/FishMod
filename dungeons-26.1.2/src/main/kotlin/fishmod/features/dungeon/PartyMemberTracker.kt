@@ -1,7 +1,7 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Constants
-import fishmod.utils.events.Events
+import fishmod.utils.FishConstants
+import fishmod.utils.events.FishEvents
 import java.util.LinkedHashMap
 import java.util.regex.Pattern
 import fishmod.utils.debug.FishDiag
@@ -25,7 +25,7 @@ object PartyMemberTracker {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             try { onChat(text.string) } catch (e: Exception) { FishDiag.fail("PartyMemberTracker.1", "party member chat parse threw", e) }
             false
         }
@@ -33,7 +33,7 @@ object PartyMemberTracker {
 
     private fun onChat(raw: String) {
         run {
-            val stripped = Constants.STRIP_COLOR_REGEX.replace(raw, "")
+            val stripped = FishConstants.STRIP_COLOR_REGEX.replace(raw, "")
             JOIN.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
             INVITE.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
             CHAT.matcher(stripped).let { if (it.find()) remember(it.group(1)) }

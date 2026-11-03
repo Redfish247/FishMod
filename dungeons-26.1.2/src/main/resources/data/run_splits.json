@@ -1,0 +1,732 @@
+{
+ "e": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: Congratulations, you made it through the Entrance.",
+   "avgSec": 30.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: Congratulations, you made it through the Entrance.",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 30.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "f1": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: Ah, you've finally arrived.",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: Ah, you've finally arrived.",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 55.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Bonzo: Gratz for making it this far, but I'm basically unbeatable.",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Bonzo: Gratz for making it this far, but I'm basically unbeatable.",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Bonzo",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Bonzo: Gratz for making it this far, but I'm basically unbeatable.",
+   "to": "some dummy string",
+   "avgSec": 28.25
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "m1": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: Ah, you've finally arrived.",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: Ah, you've finally arrived.",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 55.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Bonzo: Gratz for making it this far, but I'm basically unbeatable.",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Bonzo: Gratz for making it this far, but I'm basically unbeatable.",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Bonzo",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Bonzo: Gratz for making it this far, but I'm basically unbeatable.",
+   "to": "some dummy string",
+   "avgSec": 28.25
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "f2": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: Ah, we meet again...",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: Ah, we meet again...",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 60.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Scarf: This is where the journey ends for you, Adventurers.",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Scarf: This is where the journey ends for you, Adventurers.",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Scarf",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Scarf: This is where the journey ends for you, Adventurers.",
+   "to": "some dummy string",
+   "avgSec": 48.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "m2": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: Ah, we meet again...",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: Ah, we meet again...",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 60.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Scarf: This is where the journey ends for you, Adventurers.",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Scarf: This is where the journey ends for you, Adventurers.",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Scarf",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Scarf: This is where the journey ends for you, Adventurers.",
+   "to": "some dummy string",
+   "avgSec": 48.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "f3": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: So you made it this far... interesting.",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: So you made it this far... interesting.",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] The Professor: I was burdened with terrible news recently...",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Professor: I was burdened with terrible news recently...",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Professor",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] The Professor: I was burdened with terrible news recently...",
+   "to": "some dummy string",
+   "avgSec": 53.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "m3": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: So you made it this far... interesting.",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: So you made it this far... interesting.",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] The Professor: I was burdened with terrible news recently...",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Professor: I was burdened with terrible news recently...",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Professor",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] The Professor: I was burdened with terrible news recently...",
+   "to": "some dummy string",
+   "avgSec": 53.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "f4": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: You've managed to scratch and claw your way here, eh?",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: You've managed to scratch and claw your way here, eh?",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Thorn: Welcome Adventurers! I am Thorn, the Spirit! And host of the Vegan Trials!",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Thorn: Welcome Adventurers! I am Thorn, the Spirit! And host of the Vegan Trials!",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Thorn",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Thorn: Welcome Adventurers! I am Thorn, the Spirit! And host of the Vegan Trials!",
+   "to": "some dummy string",
+   "avgSec": 79.5
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "m4": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: You've managed to scratch and claw your way here, eh?",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: You've managed to scratch and claw your way here, eh?",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Thorn: Welcome Adventurers! I am Thorn, the Spirit! And host of the Vegan Trials!",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Thorn: Welcome Adventurers! I am Thorn, the Spirit! And host of the Vegan Trials!",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Thorn",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Thorn: Welcome Adventurers! I am Thorn, the Spirit! And host of the Vegan Trials!",
+   "to": "some dummy string",
+   "avgSec": 79.5
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "f5": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: I'm starting to get tired of seeing you around here...",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: I'm starting to get tired of seeing you around here...",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Livid",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
+   "to": "some dummy string",
+   "avgSec": 85.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "m5": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: I'm starting to get tired of seeing you around here...",
+   "avgSec": 25.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: I'm starting to get tired of seeing you around here...",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
+   "avgSec": 4.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Livid",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
+   "to": "some dummy string",
+   "avgSec": 85.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "f6": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: Oh.. hello?",
+   "avgSec": 30.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: Oh.. hello?",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
+   "avgSec": 20.0
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Terracottas",
+   "rgb": "#FFFF55",
+   "from": "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
+   "to": "[BOSS] Sadan: ENOUGH!",
+   "avgSec": 40.0
+  },
+  {
+   "label": "Giants",
+   "rgb": "#FFAA00",
+   "from": "[BOSS] Sadan: ENOUGH!",
+   "to": "[BOSS] Sadan: You did it. I understand now, you have earned my respect.",
+   "avgSec": 11.5
+  },
+  {
+   "label": "Sadan",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Sadan: You did it. I understand now, you have earned my respect.",
+   "to": "some dummy string",
+   "avgSec": 13.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "m6": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: Oh.. hello?",
+   "avgSec": 30.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: Oh.. hello?",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
+   "avgSec": 20.0
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Terracottas",
+   "rgb": "#FFFF55",
+   "from": "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
+   "to": "[BOSS] Sadan: ENOUGH!",
+   "avgSec": 40.0
+  },
+  {
+   "label": "Giants",
+   "rgb": "#FFAA00",
+   "from": "[BOSS] Sadan: ENOUGH!",
+   "to": "[BOSS] Sadan: You did it. I understand now, you have earned my respect.",
+   "avgSec": 11.5
+  },
+  {
+   "label": "Sadan",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Sadan: You did it. I understand now, you have earned my respect.",
+   "to": "some dummy string",
+   "avgSec": 13.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "f7": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] The Watcher: Things feel a little more roomy now, eh?",
+   "avgSec": 30.0
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "[BOSS] The Watcher: Things feel a little more roomy now, eh?",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 65.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!",
+   "avgSec": 19.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Maxor",
+   "rgb": "#AA00AA",
+   "from": "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!",
+   "to": "[BOSS] Storm: Pathetic Maxor, just like expected.",
+   "avgSec": 26.0
+  },
+  {
+   "label": "Storm",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Storm: Pathetic Maxor, just like expected.",
+   "to": "[BOSS] Goldor: Who dares trespass into my domain?",
+   "avgSec": 48.5
+  },
+  {
+   "label": "Terminals",
+   "rgb": "#FFFF55",
+   "from": "[BOSS] Goldor: Who dares trespass into my domain?",
+   "to": "The Core entrance is opening!",
+   "avgSec": 50.0
+  },
+  {
+   "label": "Goldor",
+   "rgb": "#FFAA00",
+   "from": "The Core entrance is opening!",
+   "to": "[BOSS] Necron: You went further than any human before, congratulations.",
+   "avgSec": 9.0
+  },
+  {
+   "label": "Necron",
+   "rgb": "#FF5555",
+   "from": "[BOSS] Necron: You went further than any human before, congratulations.",
+   "to": "some dummy string",
+   "avgSec": 57.0
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ],
+ "m7": [
+  {
+   "label": "Blood Open",
+   "rgb": "#AA0000",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "The BLOOD DOOR has been opened!",
+   "avgSec": 25.7
+  },
+  {
+   "label": "Blood Clear",
+   "rgb": "#FF5555",
+   "from": "The BLOOD DOOR has been opened!",
+   "to": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "avgSec": 67.0
+  },
+  {
+   "label": "Portal",
+   "rgb": "#FF55FF",
+   "from": "[BOSS] The Watcher: You have proven yourself. You may pass.",
+   "to": "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!",
+   "avgSec": 18.5
+  },
+  {
+   "label": "Boss Entry",
+   "rgb": "#5555FF",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!",
+   "avgSec": -1.0
+  },
+  {
+   "label": "Maxor",
+   "rgb": "#AA00AA",
+   "from": "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!",
+   "to": "[BOSS] Storm: Pathetic Maxor, just like expected.",
+   "avgSec": 26.0
+  },
+  {
+   "label": "Storm",
+   "rgb": "#00AAAA",
+   "from": "[BOSS] Storm: Pathetic Maxor, just like expected.",
+   "to": "[BOSS] Goldor: Who dares trespass into my domain?",
+   "avgSec": 48.5
+  },
+  {
+   "label": "Terminals",
+   "rgb": "#FFFF55",
+   "from": "[BOSS] Goldor: Who dares trespass into my domain?",
+   "to": "The Core entrance is opening!",
+   "avgSec": 46.5
+  },
+  {
+   "label": "Goldor",
+   "rgb": "#FFAA00",
+   "from": "The Core entrance is opening!",
+   "to": "[BOSS] Necron: You went further than any human before, congratulations.",
+   "avgSec": 8.0
+  },
+  {
+   "label": "Necron",
+   "rgb": "#FF5555",
+   "from": "[BOSS] Necron: You went further than any human before, congratulations.",
+   "to": "[BOSS] Necron: All this, for nothing...",
+   "avgSec": 33.3
+  },
+  {
+   "label": "Dragons",
+   "rgb": "#AA0000",
+   "from": "[BOSS] Necron: All this, for nothing...",
+   "to": "some dummy string",
+   "avgSec": 56.5
+  },
+  {
+   "label": "Run Time",
+   "rgb": "#178D17",
+   "from": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
+   "to": "some dummy string",
+   "avgSec": -1.0
+  }
+ ]
+}

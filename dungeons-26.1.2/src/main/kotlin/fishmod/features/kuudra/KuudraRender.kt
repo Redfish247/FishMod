@@ -4,10 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.kuudra.Kuudra.Supply
 import fishmod.features.mining.Mining
-import fishmod.utils.data.EntityUtil
+import fishmod.utils.data.EntityTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import fishmod.features.kuudra.KuudraSettings as S
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -39,15 +39,15 @@ object KuudraRender {
     )
 
     fun init() {
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraRender.1", "kuudra fill render failed") { fills(ps, vc) }
             // screenLine emits quads, so outlines must go on the QUADS buffer, not DEBUG_LINES
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraRender.2", "kuudra line render failed") { lines(ps, vc) }
         }
-        RenderingEvents.NO_DEPTH_LINE.register { ctx, ps, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { ctx, ps, vc ->
             if (!Kuudra.inKuudra()) return@register
             FishDiag.guard("KuudraRender.3", "kuudra text render failed") {
-                fun txt(s: String, p: Vec3, sc: Float) = RenderUtils.renderText(ctx, ps, Component.literal(s), p, sc)
+                fun txt(s: String, p: Vec3, sc: Float) = FishDraw.renderText(ctx, ps, Component.literal(s), p, sc)
                 val ph = Kuudra.phase
                 if (ph == 1) {
                     if ((S.kuudraSupplyMaster && S.kuudraSupplyWaypoints)) for (g in Kuudra.giants) txt("§ePick Up!", supplyPos(g).add(0.0, 2.5, 0.0), 1.5f)
@@ -69,7 +69,7 @@ object KuudraRender {
 
     // IQ's offset from the giant to the crate on the ground
     fun supplyPos(g: Entity): Vec3 {
-        val p = EntityUtil.getLerpedPos(g)
+        val p = EntityTools.getLerpedPos(g)
         val r = Math.toRadians(g.yRot + 130.0)
         return Vec3(p.x + 3.7 * cos(r) + 0.5, 74.0, p.z + 3.7 * sin(r) + 1.5)
     }
@@ -77,8 +77,8 @@ object KuudraRender {
     private fun drops() = Supply.entries.filter { it != Supply.None && it != Supply.Square && it.active }
 
     private fun beam(ps: PoseStack, vc: VertexConsumer, x: Double, y: Double, z: Double, argb: Int) {
-        RenderUtils.fillBox(ps, vc, AABB(x - 0.5, y, z - 0.5, x + 0.5, y + 1.0, z + 0.5), Mining.alpha(argb, 45))
-        RenderUtils.fillBox(ps, vc, AABB(x - 0.15, y + 1.0, z - 0.15, x + 0.15, y + 60.0, z + 0.15), Mining.alpha(argb, 35))
+        FishDraw.fillBox(ps, vc, AABB(x - 0.5, y, z - 0.5, x + 0.5, y + 1.0, z + 0.5), Mining.alpha(argb, 45))
+        FishDraw.fillBox(ps, vc, AABB(x - 0.15, y + 1.0, z - 0.15, x + 0.15, y + 60.0, z + 0.15), Mining.alpha(argb, 35))
     }
 
     private fun fills(ps: PoseStack, vc: VertexConsumer) {
@@ -89,7 +89,7 @@ object KuudraRender {
                 val c = if (Kuudra.missing == s) 0xFF55FF55.toInt() else 0xFFFF5555.toInt()
                 beam(ps, vc, s.cx, s.drop.y.toDouble(), s.cz, c)
             }
-            if ((S.kuudraSupplyMaster && S.kuudraPearlWaypoints)) pearls { box, c, filled -> if (filled) RenderUtils.fillBox(ps, vc, box, Mining.alpha(c, 60)) }
+            if ((S.kuudraSupplyMaster && S.kuudraPearlWaypoints)) pearls { box, c, filled -> if (filled) FishDraw.fillBox(ps, vc, box, Mining.alpha(c, 60)) }
         }
         if (ph == 2 && (S.kuudraBuildMaster && S.kuudraPileWaypoints)) for (a in Kuudra.piles) beam(ps, vc, a.x, a.y, a.z, S.kuudraPileColor)
     }

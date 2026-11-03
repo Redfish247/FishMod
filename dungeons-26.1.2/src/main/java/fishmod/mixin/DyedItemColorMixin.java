@@ -4,7 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import fishmod.features.item.AnimatedDyeAnimator;
 import fishmod.features.item.ItemCustomizationStore;
-import fishmod.utils.data.ItemUtil;
+import fishmod.utils.data.ItemTools;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.DyedItemColor;
@@ -18,7 +18,7 @@ public class DyedItemColorMixin {
     private static int fishmod$customDyeColor(int originalColor, @Local(name = "itemStack") ItemStack stack) {
         if (!ItemCustomizationStore.hasAny()) return originalColor;
         try {
-            String uuid = ItemUtil.getUuid(stack);
+            String uuid = ItemTools.getUuid(stack);
             if (uuid == null) return originalColor;
 
             ItemCustomizationStore.AnimatedDye animated = ItemCustomizationStore.getAnimatedDye(uuid);

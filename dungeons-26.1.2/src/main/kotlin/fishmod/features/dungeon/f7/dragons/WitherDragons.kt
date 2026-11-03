@@ -5,11 +5,11 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.FishHudEditor
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.EntityUtil
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.data.EntityTools
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.Minecraft
@@ -38,7 +38,7 @@ object WitherDragons {
     private const val SCOREBOARD_GRACE = 40
     private var tick = 0L
 
-    private fun on() = FishSettings.witherDragonsEnabled && Phase.inP5()
+    private fun on() = FishSettings.witherDragonsEnabled && BossPhase.inP5()
 
     @JvmStatic
     fun init() {
@@ -51,7 +51,7 @@ object WitherDragons {
             { FishSettings.witherDragonsEnabled && FishSettings.witherDragonsTimerHud },
         )
 
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             priorityDragon = WitherDragon.NONE
             spawnRank = emptyList()
             WitherDragon.resetAll()
@@ -59,7 +59,7 @@ object WitherDragons {
             false
         }
 
-        Events.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (on()) try {
                 when (packet) {
                     is ClientboundLevelParticlesPacket -> DragonCheck.handleSpawnPacket(packet, tick)
@@ -82,20 +82,20 @@ object WitherDragons {
             }
         }
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             tick++
             if (on()) try { serverTick() } catch (e: Exception) { FishDiag.fail("WitherDragons.3", "dragon server tick threw", e) }
             false
         }
 
-        RenderingEvents.NO_DEPTH_LINE.register { ctx, m, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { ctx, m, vc ->
             if (!on()) return@register
             try {
                 renderLines(ctx, m, vc)
                 renderText(ctx, m)
             } catch (e: Exception) { FishDiag.fail("WitherDragons.4", "dragon line/text render threw", e) }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             if (on()) try { renderFills(m, vc) } catch (e: Exception) { FishDiag.fail("WitherDragons.5", "dragon box fill render threw", e) }
         }
     }
@@ -112,7 +112,7 @@ object WitherDragons {
                 d.timeToSpawn--
                 if (d.timeToSpawn <= -20) {
                     // Ping-tick timer can run slow; a late spawn is recovered in DragonCheck.dragonSpawn.
-                    if (fishmod.utils.debug.Debug.dragonDebug) modMessage("&7${d.name} spawn timer ran out, waiting for late spawn")
+                    if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7${d.name} spawn timer ran out, waiting for late spawn")
                     d.setDead(true, tick)
                 }
             }
@@ -129,13 +129,13 @@ object WitherDragons {
         val prio = priorityDragon
         if (FishSettings.witherDragonsSpawnAlert && prio != WitherDragon.NONE) {
             val subtitle = spawning.joinToString(" ") { "§${it.colorCode}${it.name}" }
-            fishmod.utils.Misc.forceTitle(
+            fishmod.utils.FishUtil.forceTitle(
                 Component.literal("§${prio.colorCode}§l${prio.name}"),
                 Component.literal(subtitle),
             )
         }
         if (FishSettings.witherDragonsSpawnSound)
-            fishmod.utils.Misc.sendSound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f)
+            fishmod.utils.FishUtil.sendSound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f)
         if (FishSettings.witherDragonsSpawnParty && prio != WitherDragon.NONE)
             fishmod.utils.ChatQueue.enqueue("pc ${prio.name} dragon priority")
     }
@@ -154,21 +154,21 @@ object WitherDragons {
     private fun renderLines(ctx: LevelRenderContext, m: PoseStack, vc: VertexConsumer) {
         for (d in WitherDragon.real) {
             if (FishSettings.witherDragonsSkipBox && d.state != WitherDragonState.DEAD) {
-                RenderUtils.renderOutline(m, vc, d.box, rgba(d.rgb, 1f))
+                FishDraw.renderOutline(m, vc, d.box, rgba(d.rgb, 1f))
             }
             if (FishSettings.witherDragonsAimAssist && d.state == WitherDragonState.SPAWNING) {
-                aimPoint(d)?.let { RenderUtils.renderOutline(m, vc, AABB(it.x - .15, it.y - .15, it.z - .15, it.x + .15, it.y + .15, it.z + .15), RenderUtils.toFloats(FishSettings.witherDragonsAimColor)) }
+                aimPoint(d)?.let { FishDraw.renderOutline(m, vc, AABB(it.x - .15, it.y - .15, it.z - .15, it.x + .15, it.y + .15, it.z + .15), FishDraw.toFloats(FishSettings.witherDragonsAimColor)) }
             }
         }
         if (FishSettings.witherDragonsTracer && priorityDragon != WitherDragon.NONE && priorityDragon.state == WitherDragonState.SPAWNING) {
-            RenderUtils.renderLineTo(ctx, m, vc, priorityDragon.spawnPos.add(0.5, 3.5, 0.5), FishSettings.witherDragonsAimColor)
+            FishDraw.renderLineTo(ctx, m, vc, priorityDragon.spawnPos.add(0.5, 3.5, 0.5), FishSettings.witherDragonsAimColor)
         }
     }
 
     private fun renderFills(m: PoseStack, vc: VertexConsumer) {
         if (!FishSettings.witherDragonsSkipBox || !FishSettings.witherDragonsBoxFill) return
         for (d in WitherDragon.real) {
-            if (d.state != WitherDragonState.DEAD) RenderUtils.renderFilled(m, vc, d.box, rgba(d.rgb, 0.18f))
+            if (d.state != WitherDragonState.DEAD) FishDraw.renderFilled(m, vc, d.box, rgba(d.rgb, 0.18f))
         }
     }
 
@@ -176,13 +176,13 @@ object WitherDragons {
         for (d in WitherDragon.real) {
             if (FishSettings.witherDragonsHealth && d.state == WitherDragonState.ALIVE) {
                 d.entity?.let { e ->
-                    val p = EntityUtil.getLerpedPos(e)
-                    RenderUtils.renderText(ctx, m, formatHealth(d.health),
+                    val p = EntityTools.getLerpedPos(e)
+                    FishDraw.renderText(ctx, m, formatHealth(d.health),
                         Vec3(p.x, p.y + 5.0, p.z), 3.0f)
                 }
             }
             if (FishSettings.witherDragonsTimerWorld && d.state == WitherDragonState.SPAWNING && d.timeToSpawn > 0) {
-                RenderUtils.renderText(ctx, m,
+                FishDraw.renderText(ctx, m,
                     Component.literal("${rankTag(d)}${d.name}: ${timerText(d.timeToSpawn)}").withColor(d.rgb),
                     d.box.center, 2.5f)
             }

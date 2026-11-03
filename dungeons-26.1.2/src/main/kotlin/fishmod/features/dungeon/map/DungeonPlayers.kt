@@ -4,7 +4,7 @@ import fishmod.utils.TextStrip
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
-import fishmod.utils.dungeon.DungeonClass
+import fishmod.utils.dungeon.DungeonRole
 import net.minecraft.client.Minecraft
 import net.minecraft.client.player.AbstractClientPlayer
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -160,7 +160,7 @@ object DungeonPlayers {
         val now = System.currentTimeMillis()
         if (now - lastRenderHeadDiag > 3000) {
             lastRenderHeadDiag = now
-            fishmod.utils.debug.Debug.LOGGER.error("[DungeonPlayers] renderHead failed", t)
+            fishmod.utils.debug.FishDebug.LOGGER.error("[DungeonPlayers] renderHead failed", t)
         }
     }
 
@@ -174,22 +174,25 @@ object DungeonPlayers {
     }
 
     @JvmStatic
-    fun classOf(name: String): DungeonClass? = find(name)?.let { resolveClass(it) }
+    fun classOf(name: String): DungeonRole? = find(name)?.let { resolveClass(it) }
 
     private fun isSelf(mc: Minecraft, p: DungeonPlayer): Boolean = mc.player != null && p.entity === mc.player
 
-    private fun classOutlineColor(cls: DungeonClass): Int = when (cls) {
-        DungeonClass.ARCHER -> 0xFFFF0000.toInt()
-        DungeonClass.BERSERK -> 0xFFFF8000.toInt()
-        DungeonClass.MAGE -> 0xFF0000FF.toInt()
-        DungeonClass.TANK -> 0xFF00FF00.toInt()
-        DungeonClass.HEALER -> 0xFF800080.toInt()
+    private fun classOutlineColor(cls: DungeonRole): Int = when (cls) {
+        DungeonRole.ARCHER -> 0xFFFF0000.toInt()
+        DungeonRole.BERSERK -> 0xFFFF8000.toInt()
+        DungeonRole.MAGE -> 0xFF0000FF.toInt()
+        DungeonRole.TANK -> 0xFF00FF00.toInt()
+        DungeonRole.HEALER -> 0xFF800080.toInt()
     }
 
-    private fun resolveClass(player: DungeonPlayer): DungeonClass? =
-        runCatching { DungeonClass.valueOf(player.clazz.uppercase()) }.onFailure {
-            if (player.clazz != "Unknown" && player.clazz != "EMPTY") FishDiag.fail("DungeonPlayers.3", "unknown dungeon class '${player.clazz}' for ${player.name}", it)
-        }.getOrNull() ?: DungeonClass.getClass(player.name)
+    // tab also shows non-class words (Customize, EMPTY); only report real-looking class names
+    private val KNOWN_CLASS_NAMES = setOf("ARCHER", "BERSERK", "BERSERKER", "MAGE", "TANK", "HEALER")
+
+    private fun resolveClass(player: DungeonPlayer): DungeonRole? =
+        runCatching { DungeonRole.valueOf(player.clazz.uppercase()) }.onFailure {
+            if (player.clazz.uppercase() in KNOWN_CLASS_NAMES) FishDiag.fail("DungeonPlayers.3", "unknown dungeon class '${player.clazz}' for ${player.name}", it)
+        }.getOrNull() ?: DungeonRole.getClass(player.name)
 
     private fun renderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {
         if (player.isDead()) return

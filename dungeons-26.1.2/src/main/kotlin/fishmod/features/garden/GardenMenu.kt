@@ -104,7 +104,7 @@ object GardenMenu {
 
         val gk = Feature("Garden Keybinds", S::gardenKeys)
         gk.sub.add(SubcategoryHeader("Your own keys act as the vanilla ones while farming in a plot (not the barn)"))
-        for (i in GardenKeybinds.NAMES.indices) gk.sub.add(KeybindSetting(GardenKeybinds.NAMES[i], "", { fishmod.utils.Keybinds.gardenKeys?.getOrNull(i) }))
+        for (i in GardenKeybinds.NAMES.indices) gk.sub.add(KeybindSetting(GardenKeybinds.NAMES[i], "", { fishmod.utils.FishKeys.gardenKeys?.getOrNull(i) }))
         gk.sub.add(ToggleSetting("Farming Tool", "", S::gardenKeysHoe))
         gk.sub.add(ToggleSetting("Fishing Rod", "", S::gardenKeysRod))
         gk.sub.add(ToggleSetting("Squeaky Mousemat", "", S::gardenKeysMousemat))

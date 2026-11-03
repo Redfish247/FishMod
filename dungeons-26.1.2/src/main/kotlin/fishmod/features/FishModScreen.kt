@@ -1,23 +1,24 @@
 package fishmod.features
+import fishmod.compat.reloadChunks
 import fishmod.compat.curScreen
 import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.utils.Easing
-import fishmod.utils.config.Config
+import fishmod.utils.config.ConfigRoot
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.UserColorStore
-import fishmod.utils.config.values.Buttons
-import fishmod.utils.config.values.Dungeons
+import fishmod.utils.config.values.InvButtonSettings
+import fishmod.utils.config.values.DungeonSettings
 import fishmod.cosmetic.NickState
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.config.values.Floor7
-import fishmod.utils.config.values.Visual
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.dungeon.Section
+import fishmod.utils.config.values.Floor7Settings
+import fishmod.utils.config.values.VisualSettings
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.dungeon.GoldorSection
 import fishmod.features.dungeon.f7.TerminalTracker
-import fishmod.utils.dungeon.Split
+import fishmod.utils.dungeon.RunSplit
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
@@ -90,11 +91,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         try { applySavedColumnOrder() } catch (t: Throwable) { FishDiag.fail("FishModScreen.3", "applySavedColumnOrder failed for '${FishSettings.fmColumnOrder}'", t) }
         try { loadFolders() } catch (t: Throwable) { FishDiag.fail("FishModScreen.29", "loadFolders failed for '${FishSettings.fmSidebarFolders}'", t) }
         loadFoldedColumns()
-        fishmod.utils.Scheduler.scheduleTask({
+        fishmod.utils.TickScheduler.scheduleTask({
             if (paintCount == 0 && Minecraft.getInstance().curScreen === this) {
                 FishDiag.fail("FishModScreen.1", "paintUiOverlay never invoked 40 ticks after open (GameRendererUiMixin hook did not fire)")
-                fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] paintUiOverlay was never invoked - the GameRendererUiMixin hook didn't fire (likely a rendering-mod conflict)")
-                fishmod.utils.Misc.addChatMessage(Component.literal(
+                fishmod.utils.debug.FishDebug.LOGGER.error("[UiRenderer] paintUiOverlay was never invoked - the GameRendererUiMixin hook didn't fire (likely a rendering-mod conflict)")
+                fishmod.utils.FishUtil.addChatMessage(Component.literal(
                     "§c[FishMod] The /fm screen failed to render (a rendering mod may be conflicting). Please report this to the mod author."
                 ))
             }
@@ -164,6 +165,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Update Notice", FishSettings::updateNotice)
+            f.sub.add(DropdownSetting("Style", "Chat Message = clickable download link, Popup = full update window", arrayOf("Chat Message", "Popup"),
+                { FishSettings.updateNoticeStyle },
+                { v -> FishSettings.updateNoticeStyle = v }))
+            general.features.add(f)
+        }
+        general.features.add(Feature("Messages from RedFish", FishSettings::dashboardMessagesEnabled))
+        run {
             val f = Feature("Debug Reports", FishSettings::debugReports)
             f.sub.add(ToggleSetting("Chat Notice", "Short chat line with a copy button when something breaks (max once a minute)", FishSettings::debugChatNotices))
             general.features.add(f)
@@ -183,31 +192,34 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
-            val f = Feature("Inventory Buttons", Buttons::enableInventoryButtons)
-            f.sub.add(makeButtonInput("Button 1", Buttons::command1))
-            f.sub.add(makeButtonInput("Button 2", Buttons::command2))
-            f.sub.add(makeButtonInput("Button 3", Buttons::command3))
-            f.sub.add(makeButtonInput("Button 4", Buttons::command4))
-            f.sub.add(makeButtonInput("Button 5", Buttons::command5))
-            f.sub.add(makeButtonInput("Button 6", Buttons::command6))
-            f.sub.add(makeButtonInput("Button 7", Buttons::command7))
+            val f = Feature("Inventory Buttons", InvButtonSettings::enableInventoryButtons)
+            f.sub.add(ButtonSetting("Edit Buttons", "Opens your inventory to add, move and edit buttons", "Edit",
+                Runnable { fishmod.features.other.InvShortcutButtons.openEditMode() }))
             general.features.add(f)
+        }
+        run {
+            val f = Feature("Inventory Equipment", InvButtonSettings::showEquipment)
+            f.sub.add(SubcategoryHeader("Necklace/cloak/belt/gloves left of your inventory. Open /equipment once to load them."))
+            general.features.add(f)
+        }
+        run {
+            general.features.add(Feature("Hide Inventory Potion Effects", fishmod.utils.config.values.VisualSettings::hideEffectHud))
         }
         run {
             val f = Feature("Wardrobe/Loadout Hotkeys", FishSettings::wardrobeHotkeysEnabled)
             f.sub.add(ToggleSetting("Auto-Close GUI", "", FishSettings::wardrobeHotkeysAutoClose))
             f.sub.add(SubcategoryHeader("Click a slot, then press a key/mouse button (Esc unbinds)"))
-            val slots = fishmod.utils.Keybinds.wardrobeSlots
+            val slots = fishmod.utils.FishKeys.wardrobeSlots
             if (slots != null) {
                 for (i in slots.indices) {
                     val idx = i
                     f.sub.add(KeybindSetting("Slot " + (idx + 1), "",
-                        { fishmod.utils.Keybinds.wardrobeSlots?.getOrNull(idx) }))
+                        { fishmod.utils.FishKeys.wardrobeSlots?.getOrNull(idx) }))
                 }
             }
             f.sub.add(SubcategoryHeader("Pagination"))
-            f.sub.add(KeybindSetting("Next Page", "", { fishmod.utils.Keybinds.wardrobeNextPage }))
-            f.sub.add(KeybindSetting("Previous Page", "", { fishmod.utils.Keybinds.wardrobePrevPage }))
+            f.sub.add(KeybindSetting("Next Page", "", { fishmod.utils.FishKeys.wardrobeNextPage }))
+            f.sub.add(KeybindSetting("Previous Page", "", { fishmod.utils.FishKeys.wardrobePrevPage }))
             general.features.add(f)
         }
         run {
@@ -217,14 +229,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Open /pets yourself, then press a key to select that pet"))
             for (i in 0 until fishmod.features.other.PetKeybinds.COUNT) {
                 val idx = i
-                f.sub.add(KeybindSetting(fishmod.features.other.PetKeybinds.PETS[idx], "", { fishmod.utils.Keybinds.petKeybinds?.getOrNull(idx) }))
+                f.sub.add(KeybindSetting(fishmod.features.other.PetKeybinds.PETS[idx], "", { fishmod.utils.FishKeys.petKeybinds?.getOrNull(idx) }))
             }
             general.features.add(f)
         }
         run {
             val f = Feature("Slot Binds", FishSettings::slotBindsEnabled)
             f.sub.add(SubcategoryHeader("Hold the bind key + click a hotbar slot then an inv slot to link; shift-left-click to swap"))
-            f.sub.add(KeybindSetting("Bind Key (hold)", "Default R", { fishmod.utils.Keybinds.slotBind }))
+            f.sub.add(KeybindSetting("Bind Key (hold)", "Default R", { fishmod.utils.FishKeys.slotBind }))
             f.sub.add(SubcategoryHeader("Profiles — separate bind sets you can switch between"))
             val slotBindProfiles: Array<String> = fishmod.features.SlotBinds.profileNames().toTypedArray()
             f.sub.add(DropdownSetting("Profile", "", slotBindProfiles,
@@ -232,7 +244,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.slotBindsProfile = v }))
             f.sub.add(ButtonSetting("New Profile", "Fresh empty set", Runnable { fishmod.features.SlotBinds.newProfile() }))
             f.sub.add(ButtonSetting("Delete Profile", "Remove the current set (Default is only cleared)", Runnable { fishmod.features.SlotBinds.deleteActiveProfile() }))
-            f.sub.add(KeybindSetting("Cycle Profile Key", "", { fishmod.utils.Keybinds.slotBindCycleProfile }))
+            f.sub.add(KeybindSetting("Cycle Profile Key", "", { fishmod.utils.FishKeys.slotBindCycleProfile }))
             f.sub.add(ToggleSetting("Show Bound Slots", "", FishSettings::slotBindsShow))
             f.sub.add(ToggleSetting("Connecting Line", "Draw a line between a bound pair", FishSettings::slotBindsLine).gatedBy { FishSettings.slotBindsShow })
             f.sub.add(ToggleSetting("Slot Border", "Outline each bound slot", FishSettings::slotBindsBorder).gatedBy { FishSettings.slotBindsShow })
@@ -243,7 +255,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Slot Locking", FishSettings::slotLockingEnabled)
             f.sub.add(SubcategoryHeader("Hover an inventory slot and press the key to lock/unlock it. Locked slots can't be dropped (Q, Ctrl+Q or clicking outside the window)"))
-            f.sub.add(KeybindSetting("Lock Key", "Default L", { fishmod.utils.Keybinds.slotLock }))
+            f.sub.add(KeybindSetting("Lock Key", "Default L", { fishmod.utils.FishKeys.slotLock }))
             f.sub.add(ColorPickerSetting("Colour", "", FishSettings::slotLockingColor))
             f.sub.add(SliderIntSetting("Tint Opacity", "How strongly locked slots are filled (%)", FishSettings::slotLockingOpacity, 0, 100, 5))
             f.sub.add(ToggleSetting("Outline", "Border around locked slots", FishSettings::slotLockingOutline))
@@ -259,7 +271,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Zoom", FishSettings::zoomEnabled)
-            f.sub.add(KeybindSetting("Zoom Key (hold)", "", { fishmod.utils.Keybinds.zoom }))
+            f.sub.add(KeybindSetting("Zoom Key (hold)", "", { fishmod.utils.FishKeys.zoom }))
             f.sub.add(SliderDoubleSetting("Zoom Amount", "How far the key zooms in (x times)", { FishSettings.zoomFactor }, { FishSettings.zoomFactor = it }, 1.5, 10.0))
             f.sub.add(ToggleSetting("Scroll to Zoom", "Scroll while holding the key to zoom further in or out", FishSettings::zoomScroll))
             f.sub.add(ToggleSetting("Smooth Zoom", "Animate the zoom instead of snapping", FishSettings::zoomSmoothAnim))
@@ -280,17 +292,31 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 .gatedBy { FishSettings.chatSearch })
             f.sub.add(SubcategoryHeader("Chat Peek"))
             f.sub.add(ToggleSetting("Chat Peek", "Hold the bound key to pull up chat fully opaque and scroll through it, without opening the chat box", FishSettings::chatPeek))
-            f.sub.add(KeybindSetting("Peek Key (hold)", "Unbound by default", { fishmod.utils.Keybinds.chatPeek }).gatedBy { FishSettings.chatPeek })
+            f.sub.add(KeybindSetting("Peek Key (hold)", "Unbound by default", { fishmod.utils.FishKeys.chatPeek }).gatedBy { FishSettings.chatPeek })
             general.features.add(f)
         }
         run {
             val f = Feature("Chat Filter", FishSettings::chatFilterEnabled)
             f.sub.add(SubcategoryHeader("Hides lines from your chat only; they still go to the log and other mods"))
             f.sub.add(ToggleSetting("Common Hypixel Spam", "Most frequent useless lines from real logs (event rewards, stash, class perks, leaps...)", FishSettings::cfCommonSpam))
+            f.sub.add(ToggleSetting("  Event Rewards", "", FishSettings::cfSpamEventRewards).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Radio", "", FishSettings::cfSpamRadio).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Potions", "", FishSettings::cfSpamPotions).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Class Milestones & Abilities", "", FishSettings::cfSpamClassAbilities).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Equip & Autopet", "", FishSettings::cfSpamEquip).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Sacks & Stash", "", FishSettings::cfSpamSacksStash).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Hype & Tips", "", FishSettings::cfSpamHype).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Hoppity Eggs", "", FishSettings::cfSpamHoppity).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Dungeon Progress (keys, crystals, devices, leaps)", "", FishSettings::cfSpamDungeonProgress).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Abiphone Calls", "", FishSettings::cfSpamAbiphone).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Launch Pad", "", FishSettings::cfSpamLaunchPad).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Loot Share", "", FishSettings::cfSpamLootShare).gatedBy { FishSettings.cfCommonSpam })
+            f.sub.add(ToggleSetting("  Other Common Spam", "", FishSettings::cfSpamMisc).gatedBy { FishSettings.cfCommonSpam })
             f.sub.add(ToggleSetting("Skyblock/Dungeon Spam", "NoammAddons' full useless-message list", FishSettings::cfNoammSpam))
             f.sub.add(ToggleSetting("Kill Combo", "", FishSettings::cfKillCombo))
             f.sub.add(ToggleSetting("Boss Messages", "", FishSettings::cfBossMessages))
             f.sub.add(ToggleSetting("Friend Join/Leave", "", FishSettings::cfFriendJoinLeave))
+            f.sub.add(ToggleSetting("Guild Message Of The Day", "Hides the guild MOTD box shown when you join", FishSettings::cfGuildMotd))
             f.sub.add(ToggleSetting("Bazaar", "", FishSettings::cfBazaar))
             f.sub.add(ToggleSetting("Warping", "", FishSettings::cfWarping))
             f.sub.add(ToggleSetting("Collapse Blank Lines", "Drop repeated empty chat lines", FishSettings::cfCollapseBlank))
@@ -314,6 +340,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Cast Alert", "Title when you start casting", FishSettings::ragnarockCastAlert))
             f.sub.add(ToggleSetting("Cancelled Alert", "Title when a cast is interrupted", FishSettings::ragnarockCancelAlert))
             f.sub.add(ToggleSetting("Announce Cast to Party", "", FishSettings::ragnarockAnnounceParty))
+            f.sub.add(ToggleSetting("Strength Gained Notification", "Show the Strength gained on screen when you cast", FishSettings::ragnarockStrengthTitle))
+            f.sub.add(ToggleSetting("Strength Gained in Party Chat", "Send the Strength gained to party chat when you cast", FishSettings::ragnarockStrengthParty))
             f.sub.add(ToggleSetting("Strength Timer", "Moveable HUD countdown of the 10s Ragnarock buff (edit position in the HUD editor)", FishSettings::ragnarockTimer))
             f.sub.add(ToggleSetting("P5 Rag", "Title \"Rag\" when Wither King's pre-fight taunt appears", FishSettings::p5RagEnabled))
             general.features.add(f)
@@ -360,6 +388,30 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Custom Tint", "", FishSettings::lavaToWaterTint))
             f.sub.add(ColorPickerSetting("Tint Color", "", FishSettings::lavaToWaterColor).gatedBy { FishSettings.lavaToWaterTint })
             f.sub.add(ToggleSetting("Hide Lava Fog", "", FishSettings::lavaToWaterHideFog))
+            visuals.features.add(f)
+        }
+        visuals.features.add(Feature("No Fog", FishSettings::noFogEnabled))
+        run {
+            val f = Feature("Corpse Highlight", FishSettings::corpseHighlightEnabled)
+            f.sub.add(SubcategoryHeader("Boxes Glacite Mineshaft corpses through walls"))
+            f.sub.add(ColorPickerSetting("Colour", "", FishSettings::corpseHighlightColor))
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Ghost Box", FishSettings::ghostBoxEnabled)
+            f.sub.add(ToggleSetting("Hide Ghost Model", "", FishSettings::ghostBoxHideModel))
+            f.sub.add(ColorPickerSetting("Colour", "", FishSettings::ghostBoxColor))
+            f.sub.add(ToggleSetting("Filled", "", FishSettings::ghostBoxFilled))
+            f.sub.add(ColorPickerSetting("Fill Colour", "", FishSettings::ghostBoxFillColor).gatedBy { FishSettings.ghostBoxFilled })
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Custom Water Colour",
+                { FishSettings.customWaterEnabled },
+                { v -> FishSettings.customWaterEnabled = v; net.minecraft.client.Minecraft.getInstance().reloadChunks() })
+            f.sub.add(ColorPickerSetting("Water Colour", "",
+                { FishSettings.customWaterColor },
+                { v -> FishSettings.customWaterColor = v; net.minecraft.client.Minecraft.getInstance().reloadChunks() }))
             visuals.features.add(f)
         }
         run {
@@ -424,6 +476,28 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { FishSettings.pvTheme },
                 { v -> FishSettings.pvTheme = v }))
             f.sub.add(ToggleSetting("Show Overflow Skill Levels", "Uncapped skill levels in the viewer; maxed bars stay gold but fill toward the next level", FishSettings::pvOverflowSkills))
+            f.sub.add(ColorPickerSetting("Maxed Color", "Fill colour of maxed bars", fishmod.features.extras.ExtrasSettings::pvMaxedColor))
+            f.sub.add(ToggleSetting("Maxed Chroma", "Maxed bars slide through every colour", fishmod.features.extras.ExtrasSettings::pvMaxedRainbow))
+            general.features.add(f)
+        }
+        run {
+            val x = fishmod.features.extras.ExtrasSettings
+            val f = Feature("Enchant Colors", x::enchantColors)
+            f.sub.add(LabelSetting("Colours enchants by tier in item tooltips and /pv", ""))
+            f.sub.add(ColorPickerSetting("Max Tier Color", "Enchant at its max level", x::enchantMaxColor).gatedBy { !x.enchantMaxChroma })
+            f.sub.add(ToggleSetting("Max Tier Chroma", "Same rainbow as the profile viewer", x::enchantMaxChroma))
+            f.sub.add(ColorPickerSetting("Max-1 Tier Color", "One below max", x::enchantHighColor).gatedBy { !x.enchantHighChroma })
+            f.sub.add(ToggleSetting("Max-1 Tier Chroma", "", x::enchantHighChroma))
+            f.sub.add(ColorPickerSetting("Ultimate Color", "Ultimate enchants below max-1", x::enchantUltColor).gatedBy { !x.enchantUltChroma })
+            f.sub.add(ToggleSetting("Ultimate Chroma", "", x::enchantUltChroma))
+            f.sub.add(ColorPickerSetting("Normal Color", "Every other enchant", x::enchantNormalColor).gatedBy { !x.enchantNormalChroma })
+            f.sub.add(ToggleSetting("Normal Chroma", "", x::enchantNormalChroma))
+            f.sub.add(ToggleSetting("Bold Top Tiers", "Bold max and max-1", x::enchantBold))
+            general.features.add(f)
+        }
+        run {
+            val f = Feature("Hide HUDs Under Tab", FishSettings::hideHudsUnderTab)
+            f.sub.add(LabelSetting("Hides any HUD touching the tab list while tab is held", ""))
             general.features.add(f)
         }
         run {
@@ -444,55 +518,37 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.compactTabFooterMode = v }))
             f.sub.add(InputSetting("Bottom Line Text", "& colours; {cookie} {godpot} {effects}",
                 FishSettings::compactTabFooterText).gatedBy { FishSettings.compactTabFooterMode == "Custom" })
+            f.sub.add(ToggleSetting("Show Potion Effects", "Effects count on the bottom line", FishSettings::compactTabShowEffects)
+                .gatedBy { FishSettings.compactTabFooterMode == "Stats" || FishSettings.compactTabFooterMode == "Custom" })
             general.features.add(f)
         }
         run {
             val f = Feature("Custom Scoreboard", FishSettings::customScoreboardEnabled)
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::customScoreboardOpacity, 0, 100))
-            f.sub.add(SliderIntSetting("Y Offset", "", FishSettings::customScoreboardHudY, 0, 200))
-            f.sub.add(ToggleSetting("Compact Numbers", "1,234,567 -> 1.2M", FishSettings::customScoreboardCompactNumbers))
-            f.sub.add(ToggleSetting("Vanilla In Dungeons", "Show vanilla's sidebar while in a dungeon", FishSettings::customScoreboardHideInDungeon))
-            f.sub.add(SubcategoryHeader("Location & Time"))
-            f.sub.add(ToggleSetting("Date", "", FishSettings::sbSectionDate))
-            f.sub.add(ToggleSetting("Time of Day", "", FishSettings::sbSectionTime))
+            f.sub.add(SliderIntSetting("Corner Radius", "", FishSettings::customScoreboardRadius, 0, 10))
+            f.sub.add(DropdownSetting("Position", "Custom = HUD editor spot",
+                arrayOf("Custom", "Top Left", "Middle Left", "Bottom Left", "Top Right", "Middle Right", "Bottom Right"),
+                { FishSettings.customScoreboardAnchor },
+                { v -> FishSettings.customScoreboardAnchor = v }))
+            f.sub.add(ToggleSetting("Title", "SKYBLOCK title", FishSettings::sbSectionTitle))
+            f.sub.add(ToggleSetting("Date", "11/02/26", FishSettings::sbSectionHeader))
+            f.sub.add(ToggleSetting("IRL Time", "Real time next to the date", FishSettings::sbHeaderIrlTime))
+            f.sub.add(ToggleSetting("Server", "m117DM, own line", FishSettings::sbSectionServer))
+            f.sub.add(ToggleSetting("Skyblock Date", "", FishSettings::sbSectionDate))
+            f.sub.add(ToggleSetting("Skyblock Time", "", FishSettings::sbSectionTime))
             f.sub.add(ToggleSetting("Location", "", FishSettings::sbSectionLocation))
-            f.sub.add(ToggleSetting("Players", "", FishSettings::sbSectionPlayers))
-            f.sub.add(ToggleSetting("Game Mode", "", FishSettings::sbSectionGameMode))
-            f.sub.add(SubcategoryHeader("Currencies"))
+            f.sub.add(ToggleSetting("Level", "Prestige colours if enabled", FishSettings::sbSectionLevel))
             f.sub.add(ToggleSetting("Purse", "", FishSettings::sbSectionPurse))
-            f.sub.add(ToggleSetting("Bank", "", FishSettings::sbSectionBank))
-            f.sub.add(ToggleSetting("Motes", "", FishSettings::sbSectionMotes))
             f.sub.add(ToggleSetting("Bits", "", FishSettings::sbSectionBits))
-            f.sub.add(ToggleSetting("Copper", "", FishSettings::sbSectionCopper))
-            f.sub.add(ToggleSetting("Sowdust", "", FishSettings::sbSectionSowdust))
+            f.sub.add(ToggleSetting("Motes", "", FishSettings::sbSectionMotes))
             f.sub.add(ToggleSetting("Gems", "", FishSettings::sbSectionGems))
-            f.sub.add(ToggleSetting("North Stars", "", FishSettings::sbSectionNorthStars))
-            f.sub.add(ToggleSetting("Soulflow", "", FishSettings::sbSectionSoulflow))
-            f.sub.add(SubcategoryHeader("Activities"))
-            f.sub.add(ToggleSetting("Heat", "", FishSettings::sbSectionHeat))
-            f.sub.add(ToggleSetting("Cold", "", FishSettings::sbSectionCold))
-            f.sub.add(ToggleSetting("Guild", "", FishSettings::sbSectionGuild))
-            f.sub.add(ToggleSetting("Cookie Buff", "", FishSettings::sbSectionCookie))
-            f.sub.add(ToggleSetting("Skill Average", "", FishSettings::sbSectionSkillAverage))
-            f.sub.add(ToggleSetting("Objective", "", FishSettings::sbSectionObjective))
-            f.sub.add(ToggleSetting("Slayer", "", FishSettings::sbSectionSlayer))
-            f.sub.add(ToggleSetting("Powder (HotM)", "", FishSettings::sbSectionPowder))
-            f.sub.add(ToggleSetting("Diana", "", FishSettings::sbSectionDiana))
-            f.sub.add(ToggleSetting("Party", "", FishSettings::sbSectionParty))
-            f.sub.add(ToggleSetting("Power/Tuning", "", FishSettings::sbSectionEquipment))
-            f.sub.add(ToggleSetting("Dungeon Stats", "", FishSettings::sbSectionDungeon))
-            f.sub.add(ToggleSetting("Pet", "", FishSettings::sbSectionPet))
-            f.sub.add(ToggleSetting("Other Lines", "", FishSettings::sbSectionOther))
-            f.sub.add(SubcategoryHeader("Extras"))
-            f.sub.add(ToggleSetting("TPS", "", FishSettings::sbSectionTps))
-            f.sub.add(ToggleSetting("Ping", "", FishSettings::sbSectionPing))
-            f.sub.add(ToggleSetting("FPS", "", FishSettings::sbSectionFps))
-            f.sub.add(ToggleSetting("Pet", "Same pet PetHud already tracks", FishSettings::sbSectionPetExtra))
-            f.sub.add(ToggleSetting("Skills", "Hypixel API, refreshes every 60s", FishSettings::sbSectionSkills))
-            f.sub.add(ToggleSetting("Bestiary %", "Hypixel API, refreshes every 60s", FishSettings::sbSectionBestiary))
-            f.sub.add(ToggleSetting("Collections", "Hypixel API, refreshes every 60s", FishSettings::sbSectionCollections))
-            f.sub.add(ToggleSetting("Election (Mayor)", "Public Hypixel API, refreshes hourly", FishSettings::sbSectionElection))
-            f.sub.add(ToggleSetting("Fire Sales", "Public Hypixel API, refreshes every 5min", FishSettings::sbSectionFireSales))
+            f.sub.add(ToggleSetting("Other", "Other Hypixel lines", FishSettings::sbSectionOther))
+            f.sub.add(ToggleSetting("Slayer", "Only while a quest is active", FishSettings::sbSectionSlayer))
+            f.sub.add(ToggleSetting("Powder", "Mining islands only", FishSettings::sbSectionPowder))
+            f.sub.add(ToggleSetting("Mayor", "", FishSettings::sbSectionMayor))
+            f.sub.add(ToggleSetting("Party", "Only while in a party", FishSettings::sbSectionParty))
+            f.sub.add(ToggleSetting("Footer", "", FishSettings::sbSectionFooter))
+            f.sub.add(InputSetting("Footer Text", "& colours; blank = Hypixel's", FishSettings::sbFooterText))
             general.features.add(f)
         }
         dungeonTrackers.features.add(Feature("PB Pace", FishSettings::pbPaceEnabled))
@@ -548,15 +604,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Key & Room Timer",
-                { Dungeons.enableKeyNotifier || FishSettings.roomTimerEnabled },
-                { v -> Dungeons.enableKeyNotifier = v; FishSettings.roomTimerEnabled = v })
-            f.sub.add(SubcategoryHeader("Key Notifier"))
-            f.sub.add(ToggleSetting("Key Notifier", "", Dungeons::enableKeyNotifier))
-            f.sub.add(ToggleSetting("Title", "", FishSettings::keyNotifierTitle).gatedBy { Dungeons.enableKeyNotifier })
-            f.sub.add(ToggleSetting("Chat", "", FishSettings::keyNotifierChat).gatedBy { Dungeons.enableKeyNotifier })
-            f.sub.add(ToggleSetting("Sound", "", FishSettings::keyNotifierSound).gatedBy { Dungeons.enableKeyNotifier })
+                { DungeonSettings.keyPickupAlert || FishSettings.roomTimerEnabled || FishSettings.keyHighlight },
+                { v -> DungeonSettings.keyPickupAlert = v; FishSettings.roomTimerEnabled = v; FishSettings.keyHighlight = v })
+            f.sub.add(SubcategoryHeader("Key Pickup Alert"))
+            f.sub.add(ToggleSetting("Key Pickup Alert", "", DungeonSettings::keyPickupAlert))
+            f.sub.add(ToggleSetting("Title", "", FishSettings::keyNotifierTitle).gatedBy { DungeonSettings.keyPickupAlert })
+            f.sub.add(ToggleSetting("Chat", "", FishSettings::keyNotifierChat).gatedBy { DungeonSettings.keyPickupAlert })
+            f.sub.add(ToggleSetting("Sound", "", FishSettings::keyNotifierSound).gatedBy { DungeonSettings.keyPickupAlert })
             f.sub.add(SliderIntSetting("Title Duration (ms)", "", FishSettings::keyNotifierDurationMs, 500, 8000, 250)
-                .gatedBy { Dungeons.enableKeyNotifier && FishSettings.keyNotifierTitle })
+                .gatedBy { DungeonSettings.keyPickupAlert && FishSettings.keyNotifierTitle })
+            f.sub.add(SubcategoryHeader("Key Highlight"))
+            f.sub.add(ToggleSetting("Key Highlight", "Box dropped Wither and Blood keys through walls", FishSettings::keyHighlight))
+            f.sub.add(ToggleSetting("Tracer", "Line from your crosshair to the key", FishSettings::keyHighlightTracer).gatedBy { FishSettings.keyHighlight })
+            f.sub.add(ColorPickerSetting("Wither Key Color", "", FishSettings::keyHighlightWitherColor).gatedBy { FishSettings.keyHighlight })
+            f.sub.add(ColorPickerSetting("Blood Key Color", "", FishSettings::keyHighlightBloodColor).gatedBy { FishSettings.keyHighlight })
             f.sub.add(SubcategoryHeader("Room Timer"))
             f.sub.add(ToggleSetting("Room Timer", "On-screen title when the room you're in clears / all its secrets are done", FishSettings::roomTimerEnabled))
             f.sub.add(ToggleSetting("\"Cleared\" Title", "Show when the room's mobs are done", FishSettings::roomTimerClear).gatedBy { FishSettings.roomTimerEnabled })
@@ -578,7 +639,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::dungeonBreakerSoundPitch, 0.0, 2.0).gatedBy { FishSettings.dungeonBreakerSoundEnabled })
             dungeon.features.add(f)
         }
-        dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
+        dungeon.features.add(Feature("Boss Health Numbers", DungeonSettings::bossHpNumbers))
         run {
             val f = Feature("Ice Spray Timer", FishSettings::iceSprayTimerEnabled)
             f.sub.add(SubcategoryHeader("After your Ice Spray, one countdown above each group of frozen mobs"))
@@ -591,11 +652,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Outlines teammates in their class colour, through walls"))
             f.sub.add(SliderIntSetting("Range (blocks)", "", FishSettings::playerHighlightRange, 5, 150, 5))
             f.sub.add(SubcategoryHeader("Class Colours (shared with the rest of the mod)"))
-            f.sub.add(ColorPickerSetting("Archer", "", Dungeons::archerColor))
-            f.sub.add(ColorPickerSetting("Berserk", "", Dungeons::berserkColor))
-            f.sub.add(ColorPickerSetting("Healer", "", Dungeons::healerColor))
-            f.sub.add(ColorPickerSetting("Mage", "", Dungeons::mageColor))
-            f.sub.add(ColorPickerSetting("Tank", "", Dungeons::tankColor))
+            f.sub.add(ColorPickerSetting("Archer", "", DungeonSettings::roleColorArcher))
+            f.sub.add(ColorPickerSetting("Berserk", "", DungeonSettings::roleColorBerserk))
+            f.sub.add(ColorPickerSetting("Healer", "", DungeonSettings::roleColorHealer))
+            f.sub.add(ColorPickerSetting("Mage", "", DungeonSettings::roleColorMage))
+            f.sub.add(ColorPickerSetting("Tank", "", DungeonSettings::roleColorTank))
             dungeon.features.add(f)
         }
         run {
@@ -621,6 +682,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Database"))
             f.sub.add(ButtonSetting("Export to Clipboard", "Copy this world's waypoint database as text", "Copy", Runnable { wp.exportToClipboard() }))
             f.sub.add(ButtonSetting("Import from Clipboard", "Replace with a previously exported database", "Paste", Runnable { wp.importFromClipboard() }))
+            f.sub.add(ButtonSetting("Import Odin Config", "Add waypoints from Odin's packs in config/odin (keeps yours)", "Import", Runnable { fishmod.features.dungeon.OdinWaypointImport.importFromOdinConfig() }))
+            f.sub.add(ButtonSetting("Import Odin Clipboard", "Add waypoints from an Odin /dwp export string (keeps yours)", "Paste", Runnable { fishmod.features.dungeon.OdinWaypointImport.importFromClipboard() }))
             f.sub.add(ButtonSetting("Clear Current Area", "Delete every waypoint in the room/zone you're in now", "Clear", Runnable { wp.resetCurrentArea() }))
             f.sub.add(SubcategoryHeader("Routes"))
             f.sub.add(ButtonSetting("Start/Stop Recording", "Tags each waypoint placed next, in order, as a route",
@@ -655,19 +718,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.leapMenuSort = sortByOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }).gatedBy { FishSettings.leapMenuSort == 0 })
-            f.sub.add(SubcategoryHeader("Hide Players"))
+            f.sub.add(SubcategoryHeader("Hide Nearby Players"))
             f.sub.add(ToggleSetting("Hide Players After Leap", "Hide other players for a moment after you leap", FishSettings::leapHidePlayers))
             f.sub.add(SliderDoubleSetting("Duration", "Seconds", FishSettings::leapHidePlayersSeconds, 0.5, 5.0).gatedBy { FishSettings.leapHidePlayers })
             f.sub.add(SubcategoryHeader("Message"))
-            f.sub.add(ToggleSetting("Leap Message", "", Dungeons::enableLeapMessages))
+            f.sub.add(ToggleSetting("Leap Message", "", DungeonSettings::leapAnnounce))
             f.sub.add(LabelSetting("{name} target  {class} class", "{c} class letter  ·  & = colours")
-                .gatedBy { Dungeons.enableLeapMessages })
+                .gatedBy { DungeonSettings.leapAnnounce })
             f.sub.add(InputSetting("Message Text", "",
                 { FishSettings.leapMessagesText }, { v -> FishSettings.leapMessagesText = v ?: "" })
-                .gatedBy { Dungeons.enableLeapMessages })
-            f.sub.add(ToggleSetting("As Title", "", FishSettings::leapMessagesTitle).gatedBy { Dungeons.enableLeapMessages })
-            f.sub.add(ToggleSetting("Send to Party", "Post the message in party chat", FishSettings::leapMessagesParty).gatedBy { Dungeons.enableLeapMessages })
-            f.sub.add(ToggleSetting("Cue Sound", "", FishSettings::leapMessagesSound).gatedBy { Dungeons.enableLeapMessages })
+                .gatedBy { DungeonSettings.leapAnnounce })
+            f.sub.add(ToggleSetting("As Title", "", FishSettings::leapMessagesTitle).gatedBy { DungeonSettings.leapAnnounce })
+            f.sub.add(ToggleSetting("Send to Party", "Post the message in party chat", FishSettings::leapMessagesParty).gatedBy { DungeonSettings.leapAnnounce })
+            f.sub.add(ToggleSetting("Cue Sound", "", FishSettings::leapMessagesSound).gatedBy { DungeonSettings.leapAnnounce })
             dungeon.features.add(f)
         }
         run {
@@ -716,8 +779,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Dungeon Abilities", FishSettings::dungeonAbilitiesEnabled)
             f.sub.add(SubcategoryHeader("Ult = tap-drop (one item) · Mini Ult = ctrl-drop (whole stack)"))
-            f.sub.add(KeybindSetting("Ult (drop)", "", { fishmod.utils.Keybinds.dungeonAbility }))
-            f.sub.add(KeybindSetting("Mini Ult (ctrl+drop)", "", { fishmod.utils.Keybinds.dungeonAbilityMini }))
+            f.sub.add(KeybindSetting("Ult (drop)", "", { fishmod.utils.FishKeys.dungeonAbility }))
+            f.sub.add(KeybindSetting("Mini Ult (ctrl+drop)", "", { fishmod.utils.FishKeys.dungeonAbilityMini }))
             dungeon.features.add(f)
         }
         dungeon.features.add(Feature("Secret Overlay", FishSettings::secretOverlayEnabled).also {
@@ -738,10 +801,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Invincibility Timer", Dungeons::displayInvincibilityTimer)
+            val f = Feature("Mask & Phoenix Timer", DungeonSettings::invincibilityTimerHud)
             f.sub.add(ToggleSetting("Announce Proc to Party", "", FishSettings::invincAnnounce))
-            f.sub.add(ToggleSetting("Show Numeric Time", "X.Xs vs a dot", Dungeons::InvincibilityDuration))
-            f.sub.add(ToggleSetting("State Colors", "Gold active / red cooldown / green ready", Dungeons::useStatusColorForInvincibility))
+            f.sub.add(ToggleSetting("Show Numeric Time", "X.Xs vs a dot", DungeonSettings::invincibilityHud))
+            f.sub.add(ToggleSetting("State Colors", "Gold active / red cooldown / green ready", DungeonSettings::invincibilityStatusColor))
             f.sub.add(ToggleSetting("Mask Cooldown Bar", "Durability-style bar on the mask item", FishSettings::invincShowCooldown))
             f.sub.add(DropdownSetting("Show", "", arrayOf("Always", "Any", "Active", "Cooldown"),
                 { FishSettings.invincShowWhen }, { v -> FishSettings.invincShowWhen = v }))
@@ -818,14 +881,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Auto Requeue", Dungeons::enableAutoRequeue)
+            val f = Feature("Auto Requeue", DungeonSettings::autoRequeueEnabled)
             f.sub.add(SliderDoubleSetting("Delay (s)", "After the \"> EXTRA STATS <\" line",
                 { FishSettings.autoRequeueDelayMs / 1000.0 },
                 { v -> FishSettings.autoRequeueDelayMs = (v * 1000).toInt() }, 0.0, 10.0))
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Warp Cooldown", Dungeons::enableWarpCooldown)
+            val f = Feature("Party Warp Timer", DungeonSettings::partyWarpTimer)
             f.sub.add(SliderIntSetting("Cooldown (s)", "Hypixel's real gate is 30s", FishSettings::warpCooldownSeconds, 1, 120))
             f.sub.add(ColorPickerSetting("Timer Color", "", FishSettings::warpCooldownColor))
             f.sub.add(ToggleSetting("Announce Kick", "Post to party chat if you get kicked mid-join", FishSettings::warpAnnounceKick))
@@ -843,29 +906,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         dungeon.features.add(Feature("Send Lag to Party", FishSettings::sendLagToParty))
         run {
-            val f = Feature("Splits", Phase::enableSplits)
-            f.sub.add(ToggleSetting("Total Time", "", Phase::includeTotalTime))
-            f.sub.add(ToggleSetting("Send in Chat", "", Phase::sendSplitInChat))
-            f.sub.add(DropdownSetting("Tick Timer", "",
-                Split.TimerType.values(), { Split.timerType }, { v -> Split.timerType = v }))
-            f.sub.add(ToggleSetting("Activated Only", "", Phase::onlyShowActivatedSplits))
+            val f = Feature("Run Splits", BossPhase::runSplitsEnabled)
+            f.sub.add(ToggleSetting("Total Time", "", BossPhase::runSplitsTotal))
+            f.sub.add(ToggleSetting("Send in Chat", "", BossPhase::runSplitsToChat))
+            f.sub.add(DropdownSetting("Clock Source", "",
+                RunSplit.ClockKind.values(), { RunSplit.splitClock }, { v -> RunSplit.splitClock = v }))
+            f.sub.add(ToggleSetting("Activated Only", "", BossPhase::runSplitsReachedOnly))
             f.sub.add(ToggleSetting("PB Colors", "Finished split time: pink = new PB, orange = faster than your average", FishSettings::splitPbColors))
             f.sub.add(SubcategoryHeader("Time Colors"))
             f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
             f.sub.add(ColorPickerSetting("Faster Than Avg", "", FishSettings::splitAvgColor).gatedBy { FishSettings.splitPbColors })
-            f.sub.add(ColorPickerSetting("Not Started", "", Split.Companion::realTimeColorInactive))
-            f.sub.add(ColorPickerSetting("Running", "", Split.Companion::realTimeColorOngoing))
-            f.sub.add(ColorPickerSetting("Finished", "", Split.Companion::realTimeColorComplete))
-            f.sub.add(ColorPickerSetting("Tick Time", "The time in brackets", { Split.serverTimeColorComplete },
-                { v -> Split.serverTimeColorInactive = v; Split.serverTimeColorOngoing = v; Split.serverTimeColorComplete = v },
-                ColorDefaults.of(Split::class.java, "serverTimeColorComplete")))
+            f.sub.add(ColorPickerSetting("Not Started", "", RunSplit.Companion::splitRealIdle))
+            f.sub.add(ColorPickerSetting("Running", "", RunSplit.Companion::splitRealLive))
+            f.sub.add(ColorPickerSetting("Finished", "", RunSplit.Companion::splitRealDone))
+            f.sub.add(ColorPickerSetting("Tick Time", "The time in brackets", { RunSplit.splitTickDone },
+                { v -> RunSplit.splitTickIdle = v; RunSplit.splitTickLive = v; RunSplit.splitTickDone = v },
+                ColorDefaults.of(RunSplit::class.java, "splitTickDone")))
             f.sub.add(SubcategoryHeader("Split Name Colors"))
-            for (s in Phase.distinctSplits()) {
-                f.sub.add(ColorPickerSetting(s.name, "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }, s.defaultNameColor()))
+            for (s in BossPhase.distinctSplits()) {
+                f.sub.add(ColorPickerSetting(s.name, "", { s.nameColor() }, { v -> RunSplit.setNameColor(s.name, v) }, s.defaultNameColor()))
             }
-            f.sub.add(ButtonSetting("Reset Names", "Back to the default split name colors", { "Reset" }, Runnable { Split.resetNameColors() }))
+            f.sub.add(ButtonSetting("Reset Names", "Back to the default split name colors", { "Reset" }, Runnable { RunSplit.resetNameColors() }))
             f.sub.add(SubcategoryHeader("Reset Data — click twice to confirm"))
-            val resetFloors = arrayOf("All") + Phase.splitFloors().toTypedArray()
+            val resetFloors = arrayOf("All") + BossPhase.splitFloors().toTypedArray()
             f.sub.add(DropdownSetting("Floor", "", resetFloors, { FishSettings.splitResetFloor.takeIf { it in resetFloors } ?: "All" }, { v -> FishSettings.splitResetFloor = v }))
             fun floorArg(): String? = FishSettings.splitResetFloor.takeIf { it != "All" && it in resetFloors }
             var pbArmedAt = 0L
@@ -874,8 +937,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }, Runnable {
                 if (System.currentTimeMillis() - pbArmedAt > 3000) { pbArmedAt = System.currentTimeMillis(); return@Runnable }
                 pbArmedAt = 0L
-                val n = fishmod.features.dungeon.PbMessages.resetSplits(floorArg(), Phase.splitFloors())
-                fishmod.utils.Misc.addChatMessage(Component.literal("§aCleared §f$n§a split PBs (${FishSettings.splitResetFloor})."))
+                val n = fishmod.features.dungeon.PbMessages.resetSplits(floorArg(), BossPhase.splitFloors())
+                fishmod.utils.FishUtil.addChatMessage(Component.literal("§aCleared §f$n§a split PBs (${FishSettings.splitResetFloor})."))
             }))
             var avgArmedAt = 0L
             f.sub.add(ButtonSetting("Clear Split Averages", "Wipe the last-30-runs history used for averages and Est. Total", {
@@ -884,14 +947,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (System.currentTimeMillis() - avgArmedAt > 3000) { avgArmedAt = System.currentTimeMillis(); return@Runnable }
                 avgArmedAt = 0L
                 val n = fishmod.utils.dungeon.RunHistory.clear(floorArg())
-                fishmod.utils.Misc.addChatMessage(Component.literal("§aCleared averages for §f$n§a splits (${FishSettings.splitResetFloor})."))
+                fishmod.utils.FishUtil.addChatMessage(Component.literal("§aCleared averages for §f$n§a splits (${FishSettings.splitResetFloor})."))
             }))
             dungeon.features.add(f)
         }
         run {
             val f = Feature("PB Messages", FishSettings::pbMessagesEnabled)
             f.sub.add(ToggleSetting("Only On PB", "Off = also print slower times with the gap to your PB", FishSettings::pbMessagesOnlyPb))
-            f.sub.add(ToggleSetting("Splits", "Run splits (Blood Open, Maxor, Terminals, Run Time…)", FishSettings::pbMessagesSplits))
+            f.sub.add(ToggleSetting("Run Splits", "Run splits (Blood Open, Maxor, Terminals, Run Time…)", FishSettings::pbMessagesSplits))
             f.sub.add(ToggleSetting("Goldor Sections", "S1–S4 terminal sections", FishSettings::pbMessagesGoldor))
             f.sub.add(ToggleSetting("Terminals", "Your open-to-solve time per terminal type", FishSettings::pbMessagesTerminals))
             f.sub.add(ToggleSetting("Relics", "P5 start to your relic placed (M7)", FishSettings::pbMessagesRelics))
@@ -980,18 +1043,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Class Colored Glow", Dungeons::classColoredGlow)
-            f.sub.add(ColorPickerSetting("Archer", "", Dungeons::archerColor))
-            f.sub.add(ColorPickerSetting("Berserk", "", Dungeons::berserkColor))
-            f.sub.add(ColorPickerSetting("Healer", "", Dungeons::healerColor))
-            f.sub.add(ColorPickerSetting("Mage", "", Dungeons::mageColor))
-            f.sub.add(ColorPickerSetting("Tank", "", Dungeons::tankColor))
+            val f = Feature("Class Colored Glow", DungeonSettings::classColoredGlow)
+            f.sub.add(ColorPickerSetting("Archer", "", DungeonSettings::roleColorArcher))
+            f.sub.add(ColorPickerSetting("Berserk", "", DungeonSettings::roleColorBerserk))
+            f.sub.add(ColorPickerSetting("Healer", "", DungeonSettings::roleColorHealer))
+            f.sub.add(ColorPickerSetting("Mage", "", DungeonSettings::roleColorMage))
+            f.sub.add(ColorPickerSetting("Tank", "", DungeonSettings::roleColorTank))
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Dupe Class Detector", Dungeons::detectDuplicateClass)
-            f.sub.add(ToggleSetting("Ignore Mage", "", Dungeons::ignoreDupeMage))
-            f.sub.add(ToggleSetting("To Party", "", Dungeons::dupeClassPartyChat))
+            val f = Feature("Dupe Class Detector", DungeonSettings::dupeClassAlert)
+            f.sub.add(ToggleSetting("Ignore Mage", "", DungeonSettings::dupeClassSkipMage))
+            f.sub.add(ToggleSetting("To Party", "", DungeonSettings::dupeClassPartyChat))
             dungeon.features.add(f)
         }
         run {
@@ -1053,7 +1116,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Nametag Stats", FishSettings::nametagStatsEnabled)
             f.sub.add(SubcategoryHeader("Networth + skill avg everywhere; Cata level + secret avg in the Dungeon Hub"))
-            f.sub.add(ToggleSetting("Show Own", "", FishSettings::nametagStatsShowSelf))
             f.sub.add(DropdownSetting("Position", "", arrayOf("ABOVE", "BELOW"),
                 { if (FishSettings.nametagStatsAbove) "ABOVE" else "BELOW" },
                 { v -> FishSettings.nametagStatsAbove = v == "ABOVE" }))
@@ -1145,6 +1207,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync() }
                     else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll() }
                 }))
+            cosmetics.features.add(f)
+        }
+        run {
+            val f = Feature("Force Others' Size", FishSettings::forceOthersSizeEnabled)
+            f.sub.add(SubcategoryHeader("Everyone else renders at this size, overriding shared sizes"))
+            f.sub.add(SliderDoubleSetting("Size", "", FishSettings::forceOthersSizeScale,
+                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
             cosmetics.features.add(f)
         }
         run {
@@ -1290,12 +1359,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Number", "", FishSettings::cooldownShowText))
             f.sub.add(ToggleSetting("Under 3s Only", "", FishSettings::cooldownOnlyUnder3s))
             f.sub.add(ToggleSetting("In Inventory", "", FishSettings::cooldownInInventory))
-            f.sub.add(ToggleSetting("Disable Cooldown Background", "Hide the white cooldown sweep behind the timer", Visual::hideCooldown))
+            f.sub.add(ToggleSetting("Disable Cooldown Background", "Hide the white cooldown sweep behind the timer", VisualSettings::hideItemCooldown))
             hud.features.add(f)
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
         run {
             hud.features.add(Feature("Anita Medal Profit", FishSettings::anitaProfitEnabled))
+            val s = Feature("Experiment Solver", FishSettings::experimentSolverEnabled)
+            s.sub.add(SubcategoryHeader("Highlights Chronomatron, Ultrasequencer and Superpairs slots. Never clicks."))
+            general.features.add(s)
             val f = Feature("Experiment Profit Tracker", FishSettings::expProfitEnabled)
             f.sub.add(SubcategoryHeader("Experimentation Table drops, value, Enchanting XP and XP per experiment  ·  drag with Edit HUD"))
             f.sub.add(ToggleSetting("Only On Private Island", "", FishSettings::expProfitOnlyIsland))
@@ -1370,6 +1442,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Missing Warn", "", FishSettings::soulflowMissingNotifier))
             hud.features.add(f)
         }
+        run {
+            val f = Feature("Text Shadow", FishSettings::textShadowEnabled)
+            f.sub.add(SubcategoryHeader("Drop shadow on in-world text (chat already has one)"))
+            f.sub.add(ToggleSetting("Nametags", "Player, mob and armor stand names", FishSettings::textShadowNametags))
+            f.sub.add(ToggleSetting("World Text", "Floating text displays / holograms", FishSettings::textShadowWorldText))
+            hud.features.add(f)
+        }
 
         hud.features.add(Feature("Fire Freeze Timer", FishSettings::fireFreezeTimerEnabled))
         hud.features.add(Feature("Loadout Title", FishSettings::loadoutTitleEnabled))
@@ -1413,16 +1492,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             visuals.features.add(f)
         }
         run {
-            val f = Feature("Item Rarity Background", Visual::itemRarityBackground)
-            f.sub.add(SliderIntSetting("Opacity %", "", Visual::itemRarityOpacity, 0, 100))
-            f.sub.add(ToggleSetting("Hypixel Colors", "Brighter, accurate per-rarity colours", Visual::itemRarityHypixelColors))
-            f.sub.add(ToggleSetting("Circular", "", Visual::circularRarityBackground))
+            val f = Feature("Item Rarity Background", VisualSettings::rarityBackground)
+            f.sub.add(SliderIntSetting("Opacity %", "", VisualSettings::itemRarityOpacity, 0, 100))
+            f.sub.add(ToggleSetting("Hypixel Colors", "Brighter, accurate per-rarity colours", VisualSettings::itemRarityHypixelColors))
+            f.sub.add(ToggleSetting("Circular", "", VisualSettings::rarityBgCircle))
             visuals.features.add(f)
         }
         run {
-            val f = Feature("Dark Mode", Visual::darkModeEnabled)
-            f.sub.add(SliderIntSetting("Opacity %", "", Visual::darkModeOpacity, 1, 80))
-            f.sub.add(ToggleSetting("Tint HUD", "Also darken the hotbar/chat/etc, not just the world", Visual::darkModeTintHud))
+            val f = Feature("Dark Mode", VisualSettings::darkModeEnabled)
+            f.sub.add(SliderIntSetting("Opacity %", "", VisualSettings::darkModeOpacity, 1, 80))
+            f.sub.add(ToggleSetting("Tint HUD", "Also darken the hotbar/chat/etc, not just the world", VisualSettings::darkModeTintHud))
             visuals.features.add(f)
         }
         run {
@@ -1431,6 +1510,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Prices", "Value = base + modifiers (enchants, HPB, recomb, gems, reforge…)", FishSettings::itemTooltipPrices))
             f.sub.add(ToggleSetting("NPC Sell Price", "", FishSettings::itemTooltipNpcSell))
             f.sub.add(ToggleSetting("Dungeon Quality", "Stat-boost % + floor", FishSettings::itemQualityTooltip))
+            f.sub.add(ToggleSetting("Exotic Armor", "Tags crystal/fairy/exotic dyed armor + hex", FishSettings::exoticTooltip))
+            f.sub.add(ToggleSetting("Obtained Date", "When the item was obtained", fishmod.features.extras.ExtrasSettings::obtainedDateTooltip))
             f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", FishSettings::tooltipScrollEnabled))
             f.sub.add(SliderIntSetting("Tooltip Scale %", "", FishSettings::tooltipScrollScale, 30, 150, 5).gatedBy { FishSettings.tooltipScrollEnabled })
@@ -1451,32 +1532,32 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
-            val f = Feature("Render Optimizer", Visual::renderOptimizer)
-            f.sub.add(ToggleSetting("Hide Nearby Players", "Hide other players within range", Visual::hidePlayersInRange))
-            f.sub.add(SliderDoubleSetting("Player Range", "Blocks", Visual::hidePlayerRange, 1.0, 12.0).gatedBy { Visual.hidePlayersInRange })
-            f.sub.add(ToggleSetting("Hide Dead Entities", "Drop dying / 0-HP mobs from the render pass", Visual::hideDeadEntities))
-            f.sub.add(ToggleSetting("No Swing Animation", "Suppress the first-person hand swing", Visual::noSwingAnimation))
-            f.sub.add(ToggleSetting("Swing: Terminator Only", "Only suppress while holding a Terminator", Visual::noSwingTerminatorOnly).gatedBy { Visual.noSwingAnimation })
-            f.sub.add(ToggleSetting("Stop Shovel Flattening", "Cancel the shovel make-path interaction", Visual::stopShovelFlattening))
+            val f = Feature("Render Optimizer", VisualSettings::renderOptimizer)
+            f.sub.add(ToggleSetting("Hide Nearby Players", "Hide other players within range", VisualSettings::hideNearbyPlayers))
+            f.sub.add(SliderDoubleSetting("Player Range", "Blocks", VisualSettings::hidePlayersRadius, 1.0, 12.0).gatedBy { VisualSettings.hideNearbyPlayers })
+            f.sub.add(ToggleSetting("Hide Dead Entities", "Drop dying / 0-HP mobs from the render pass", VisualSettings::hideDeadMobs))
+            f.sub.add(ToggleSetting("No Swing Animation", "Suppress the first-person hand swing", VisualSettings::noSwingAnimation))
+            f.sub.add(ToggleSetting("Swing: Terminator Only", "Only suppress while holding a Terminator", VisualSettings::noSwingTerminatorOnly).gatedBy { VisualSettings.noSwingAnimation })
+            f.sub.add(ToggleSetting("Stop Shovel Flattening", "Cancel the shovel make-path interaction", VisualSettings::noShovelPath))
             f.sub.add(SubcategoryHeader("Clutter hiders"))
-            f.sub.add(ToggleSetting("Hide Falling Blocks", "", Visual::roHideFallingBlocks))
-            f.sub.add(ToggleSetting("Hide Lightning", "", Visual::roHideLightning))
-            f.sub.add(ToggleSetting("Hide Experience Orbs", "", Visual::roHideExperienceOrbs))
-            f.sub.add(ToggleSetting("Hide Death Animation", "Hide mobs that are dying", Visual::roHideDeathAnimation))
-            f.sub.add(ToggleSetting("Hide Armor Stands", "Nametag stands on dying mobs (needs Hide Death Animation)", Visual::roHideDyingArmorStands).gatedBy { Visual.roHideDeathAnimation })
-            f.sub.add(ToggleSetting("Hide Explosion Particles", "", Visual::roHideExplosionParticles))
-            f.sub.add(ToggleSetting("Hide Archer Passive", "The archer passive's floating bone meal", Visual::roHideArcherPassive))
-            f.sub.add(ToggleSetting("Hide Healer Fairy", "The healer fairy held by some mobs", Visual::roHideHealerFairy))
-            f.sub.add(ToggleSetting("Hide Soul Weaver", "The soul weaver helmet worn by some mobs", Visual::roHideSoulWeaver))
-            f.sub.add(ToggleSetting("Hide Tentacle Head", "The tentacle head worn by some mobs", Visual::roHideTentacleHead))
-            f.sub.add(ToggleSetting("Hide Fire Overlay", "The first-person fire overlay", Visual::roHideFireOverlay))
-            f.sub.add(ToggleSetting("Hide Inventory Labels", "The \"Crafting\" text in your inventory", Visual::roHideInventoryLabels))
-            f.sub.add(ToggleSetting("Hide Objective", "The \"Objective:\" boss bar (e.g. Rift races)", Visual::roHideObjective))
+            f.sub.add(ToggleSetting("Hide Falling Blocks", "", VisualSettings::roHideFallingBlocks))
+            f.sub.add(ToggleSetting("Hide Lightning", "", VisualSettings::roHideLightning))
+            f.sub.add(ToggleSetting("Hide Experience Orbs", "", VisualSettings::roHideExperienceOrbs))
+            f.sub.add(ToggleSetting("Hide Death Animation", "Hide mobs that are dying", VisualSettings::roHideDeathAnimation))
+            f.sub.add(ToggleSetting("Hide Armor Stands", "Nametag stands on dying mobs (needs Hide Death Animation)", VisualSettings::roHideDyingArmorStands).gatedBy { VisualSettings.roHideDeathAnimation })
+            f.sub.add(ToggleSetting("Hide Explosion Particles", "", VisualSettings::roHideExplosionParticles))
+            f.sub.add(ToggleSetting("Hide Archer Passive", "The archer passive's floating bone meal", VisualSettings::roHideArcherPassive))
+            f.sub.add(ToggleSetting("Hide Healer Fairy", "The healer fairy held by some mobs", VisualSettings::roHideHealerFairy))
+            f.sub.add(ToggleSetting("Hide Soul Weaver", "The soul weaver helmet worn by some mobs", VisualSettings::roHideSoulWeaver))
+            f.sub.add(ToggleSetting("Hide Tentacle Head", "The tentacle head worn by some mobs", VisualSettings::roHideTentacleHead))
+            f.sub.add(ToggleSetting("Hide Fire Overlay", "The first-person fire overlay", VisualSettings::roHideFireOverlay))
+            f.sub.add(ToggleSetting("Hide Inventory Labels", "The \"Crafting\" text in your inventory", VisualSettings::roHideInventoryLabels))
+            f.sub.add(ToggleSetting("Hide Objective", "The \"Objective:\" boss bar (e.g. Rift races)", VisualSettings::roHideObjective))
             // Mutually exclusive: turning one on turns the other off
             f.sub.add(ToggleSetting("Remove Damage Indicator", "Hide the floating damage numbers",
-                { Visual.roRemoveDamageIndicator }, { v -> Visual.roRemoveDamageIndicator = v; if (v) Visual.roFormatDamageIndicator = false }))
+                { VisualSettings.roRemoveDamageIndicator }, { v -> VisualSettings.roRemoveDamageIndicator = v; if (v) VisualSettings.roFormatDamageIndicator = false }))
             f.sub.add(ToggleSetting("Format Damage Indicator", "Shorten damage numbers, e.g. 1,234,567 -> 1.23M",
-                { Visual.roFormatDamageIndicator }, { v -> Visual.roFormatDamageIndicator = v; if (v) Visual.roRemoveDamageIndicator = false }))
+                { VisualSettings.roFormatDamageIndicator }, { v -> VisualSettings.roFormatDamageIndicator = v; if (v) VisualSettings.roRemoveDamageIndicator = false }))
             visuals.features.add(f)
         }
         run {
@@ -1558,53 +1639,53 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         run {
-            val f = Feature("Tick Timers", Floor7::enableTickTimers)
+            val f = Feature("Boss Tick Clocks", Floor7Settings::enableTickTimers)
             f.sub.add(SubcategoryHeader("Maxor"))
-            f.sub.add(ToggleSetting("Maxor", "", Floor7::enableMaxorTickTimer))
+            f.sub.add(ToggleSetting("Maxor", "", Floor7Settings::maxorTicksHud))
             f.sub.add(SubcategoryHeader("Storm"))
-            f.sub.add(ToggleSetting("Storm", "", Floor7::enableStormTickTimer))
-            f.sub.add(ToggleSetting("Tick Down From 5", "", Floor7::tickDownStormTickTimer).gatedBy { Floor7.enableStormTickTimer })
-            f.sub.add(ColorPickerSetting("Storm Timer Color", "", Floor7::stormTickTimerColor).gatedBy { Floor7.enableStormTickTimer })
-            f.sub.add(ToggleSetting("Storm Death Time", "", Floor7::enableStormDeathTime))
-            f.sub.add(ToggleSetting("LB Release Timer", "", Floor7::enableLbReleaseTimer))
-            f.sub.add(ColorPickerSetting("LB Release Timer Color", "", Floor7::lbReleaseTimerColor).gatedBy { Floor7.enableLbReleaseTimer })
-            f.sub.add(SliderIntSetting("LB Release Ping (ms)", "Fires the release cue this much earlier to offset latency", Floor7::lbReleaseTimerPingMs, 0, 500).gatedBy { Floor7.enableLbReleaseTimer })
-            f.sub.add(ToggleSetting("Py Tick Timer", "Counts down 5s to 29.5s, then tells you to stand on the crusher", Floor7::enablePyTimer))
-            f.sub.add(ColorPickerSetting("Py Timer Color", "", Floor7::pyTimerColor).gatedBy { Floor7.enablePyTimer })
-            f.sub.add(SliderIntSetting("Py Ping (ms)", "Ends the countdown this much earlier so high ping doesn't make you late", Floor7::pyTimerPingMs, 0, 500).gatedBy { Floor7.enablePyTimer })
-            f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
-            f.sub.add(ToggleSetting("Pillar Explosion Timer", "Counts down the second before the crushed pillar explodes", Floor7::timePillarExplosion))
+            f.sub.add(ToggleSetting("Storm", "", Floor7Settings::stormTicksHud))
+            f.sub.add(ToggleSetting("Tick Down From 5", "", Floor7Settings::stormTicksCountDown).gatedBy { Floor7Settings.stormTicksHud })
+            f.sub.add(ColorPickerSetting("Storm Timer Color", "", Floor7Settings::stormTicksColor).gatedBy { Floor7Settings.stormTicksHud })
+            f.sub.add(ToggleSetting("Storm Kill Time", "", Floor7Settings::stormKillTimeHud))
+            f.sub.add(ToggleSetting("LB Release Timer", "", Floor7Settings::enableLbReleaseTimer))
+            f.sub.add(ColorPickerSetting("LB Release Timer Color", "", Floor7Settings::lbReleaseTimerColor).gatedBy { Floor7Settings.enableLbReleaseTimer })
+            f.sub.add(SliderIntSetting("LB Release Ping (ms)", "Fires the release cue this much earlier to offset latency", Floor7Settings::lbReleaseTimerPingMs, 0, 500).gatedBy { Floor7Settings.enableLbReleaseTimer })
+            f.sub.add(ToggleSetting("Py Tick Timer", "Counts down 5s to 29.5s, then tells you to stand on the crusher", Floor7Settings::enablePyTimer))
+            f.sub.add(ColorPickerSetting("Py Timer Color", "", Floor7Settings::pyTimerColor).gatedBy { Floor7Settings.enablePyTimer })
+            f.sub.add(SliderIntSetting("Py Ping (ms)", "Ends the countdown this much earlier so high ping doesn't make you late", Floor7Settings::pyTimerPingMs, 0, 500).gatedBy { Floor7Settings.enablePyTimer })
+            f.sub.add(ToggleSetting("Storm Crush Banner", "", Floor7Settings::stormCrushAlert))
+            f.sub.add(ToggleSetting("Pillar Blast Timer", "Counts down the second before the crushed pillar explodes", Floor7Settings::pillarBlastTimer))
             f.sub.add(SubcategoryHeader("Necron"))
-            f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 4s into Necron's phase, then says SHOOT LB", Floor7::enableNecronLbTimer))
-            f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7::necronLbPingMs, 0, 500).gatedBy { Floor7.enableNecronLbTimer })
-            f.sub.add(ColorPickerSetting("Necron LB Color", "", Floor7::necronLbColor).gatedBy { Floor7.enableNecronLbTimer })
-            f.sub.add(ToggleSetting("Necron Drop Prediction", "Red box where Necron's drag will drop you, from your velocity and the known drag time", Floor7::enableNecronDropPredict))
+            f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 4s into Necron's phase, then says SHOOT LB", Floor7Settings::enableNecronLbTimer))
+            f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7Settings::necronLbPingMs, 0, 500).gatedBy { Floor7Settings.enableNecronLbTimer })
+            f.sub.add(ColorPickerSetting("Necron LB Color", "", Floor7Settings::necronLbColor).gatedBy { Floor7Settings.enableNecronLbTimer })
+            f.sub.add(ToggleSetting("Necron Drop Prediction", "Red box where Necron's drag will drop you, from your velocity and the known drag time", Floor7Settings::enableNecronDropPredict))
             f.sub.add(DropdownSetting("Drop Marker Style", "", arrayOf("Box", "Beacon"),
-                { Floor7.necronDropStyle },
-                { v -> Floor7.necronDropStyle = v }).gatedBy { Floor7.enableNecronDropPredict })
-            f.sub.add(ColorPickerSetting("Drop Marker Color", "", Floor7::necronDropColor).gatedBy { Floor7.enableNecronDropPredict })
-            f.sub.add(ToggleSetting("Lava/Platform Popup", "Says if the predicted drop is over lava or a platform (move it in the HUD editor)", Floor7::necronDropLavaPopup).gatedBy { Floor7.enableNecronDropPredict })
+                { Floor7Settings.necronDropStyle },
+                { v -> Floor7Settings.necronDropStyle = v }).gatedBy { Floor7Settings.enableNecronDropPredict })
+            f.sub.add(ColorPickerSetting("Drop Marker Color", "", Floor7Settings::necronDropColor).gatedBy { Floor7Settings.enableNecronDropPredict })
+            f.sub.add(ToggleSetting("Lava/Platform Popup", "Says if the predicted drop is over lava or a platform (move it in the HUD editor)", Floor7Settings::necronDropLavaPopup).gatedBy { Floor7Settings.enableNecronDropPredict })
             f.sub.add(SubcategoryHeader("Goldor"))
-            f.sub.add(ToggleSetting("Goldor", "", Floor7::enableGoldorTickTimer))
-            f.sub.add(ToggleSetting("In 3s Increments", "", Floor7::inDeathTicks).gatedBy { Floor7.enableGoldorTickTimer })
-            f.sub.add(ToggleSetting("Tick Up", "", Floor7::makeGoldorTickUp).gatedBy { Floor7.enableGoldorTickTimer })
-            f.sub.add(ToggleSetting("Term Start Timer", "", Floor7::enableTermStartTimer))
+            f.sub.add(ToggleSetting("Goldor", "", Floor7Settings::goldorTicksHud))
+            f.sub.add(ToggleSetting("In 3s Increments", "", Floor7Settings::goldorUseDeathTicks).gatedBy { Floor7Settings.goldorTicksHud })
+            f.sub.add(ToggleSetting("Tick Up", "", Floor7Settings::goldorTicksCountUp).gatedBy { Floor7Settings.goldorTicksHud })
+            f.sub.add(ToggleSetting("Terminals Open In", "", Floor7Settings::termOpenHud))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Crystal Spawn", Floor7::enableCrystalSpawnTime)
-            f.sub.add(ToggleSetting("Place Reminder", "", Floor7::crystalPlaceReminder))
-            f.sub.add(ToggleSetting("Instant Reminder", "", Floor7::instantlyDisplayCrystalReminder).gatedBy { Floor7.crystalPlaceReminder })
+            val f = Feature("Crystal Respawn", Floor7Settings::crystalSpawnHud)
+            f.sub.add(ToggleSetting("Place Reminder", "", Floor7Settings::crystalPlaceAlert))
+            f.sub.add(ToggleSetting("Instant Reminder", "", Floor7Settings::crystalAlertInstant).gatedBy { Floor7Settings.crystalPlaceAlert })
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Section Progress", Floor7::showSectionProgress)
-            f.sub.add(ToggleSetting("Color w/ Progress", "", Floor7::sectionColorProgress))
-            f.sub.add(ToggleSetting("Prev Objective", "", Floor7::sectionPrevObjective))
+            val f = Feature("Section Count", Floor7Settings::sectionProgressHud)
+            f.sub.add(ToggleSetting("Color w/ Progress", "", Floor7Settings::sectionProgressColored))
+            f.sub.add(ToggleSetting("Prev Objective", "", Floor7Settings::sectionShowPrevious))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Hide Terminal Titles", Floor7::hideTerminalTitles)
+            val f = Feature("Hide Terminal Titles", Floor7Settings::muteTerminalTitles)
             f.sub.add(SubcategoryHeader("Hides Hypixel titles and subtitles during P3 (terminal/device/gate spam). Death and revive titles still show."))
             floor7.features.add(f)
         }
@@ -1620,41 +1701,41 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Goldor Splits", Section::enableTerminalSplits)
+            val f = Feature("Goldor Splits", GoldorSection::goldorSplitsEnabled)
             f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
             f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
-            Section.sectionSplits().forEachIndexed { i, s ->
-                f.sub.add(ColorPickerSetting("S${i + 1} Name", "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }, s.defaultNameColor()))
+            GoldorSection.sectionSplits().forEachIndexed { i, s ->
+                f.sub.add(ColorPickerSetting("S${i + 1} Name", "", { s.nameColor() }, { v -> RunSplit.setNameColor(s.name, v) }, s.defaultNameColor()))
             }
             f.sub.add(DropdownSetting("Show During", "",
-                Section.DisplayTerminalSplitsWhen.values(),
-                { Section.displayTerminalSplitsWhen },
-                { v -> Section.displayTerminalSplitsWhen = v }))
+                GoldorSection.SplitsShownIn.values(),
+                { GoldorSection.goldorSplitsShownIn },
+                { v -> GoldorSection.goldorSplitsShownIn = v }))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Gate Display", Floor7::gateDisplayEnabled)
+            val f = Feature("Gate Display", Floor7Settings::gateDisplayEnabled)
             f.sub.add(SliderDoubleSetting("Text Scale", "",
-                { Floor7.gateDisplayScale.toDouble() },
-                { v -> Floor7.gateDisplayScale = v.toFloat() },
+                { Floor7Settings.gateDisplayScale.toDouble() },
+                { v -> Floor7Settings.gateDisplayScale = v.toFloat() },
                 1.0, 12.0))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Blood Solver", Floor7::bloodSolverEnabled)
-            f.sub.add(ToggleSetting("Kill Mobs Title", "Title when the blood mobs are ready to kill — learn your own move times for accuracy", Floor7::bloodSolverKillTitle))
-            f.sub.add(ToggleSetting("Watcher Speed Alert", "Title + sound for fast / normal / slow Watcher", Floor7::bloodSolverSpeedAlert))
-            f.sub.add(ToggleSetting("Send Speed In Party", "Also /pc the Watcher speed", Floor7::bloodSolverSpeedAlertParty).gatedBy { Floor7.bloodSolverSpeedAlert })
-            f.sub.add(SliderIntSetting("Timer Decimals", "", Floor7::bloodSolverDecimals, 0, 2))
-            f.sub.add(ColorPickerSetting("Box Color", "", Floor7::bloodSolverBoxColor))
-            f.sub.add(ColorPickerSetting("Line Color", "", Floor7::bloodSolverLineColor))
-            f.sub.add(ColorPickerSetting("Timer Color", "", Floor7::bloodSolverTimerColor))
+            val f = Feature("Blood Solver", Floor7Settings::bloodSolverEnabled)
+            f.sub.add(ToggleSetting("Kill Mobs Title", "Title when the blood mobs are ready to kill — learn your own move times for accuracy", Floor7Settings::bloodSolverKillTitle))
+            f.sub.add(ToggleSetting("Watcher Speed Alert", "Title + sound for fast / normal / slow Watcher", Floor7Settings::bloodSolverSpeedAlert))
+            f.sub.add(ToggleSetting("Send Speed In Party", "Also /pc the Watcher speed", Floor7Settings::bloodSolverSpeedAlertParty).gatedBy { Floor7Settings.bloodSolverSpeedAlert })
+            f.sub.add(SliderIntSetting("Timer Decimals", "", Floor7Settings::bloodSolverDecimals, 0, 2))
+            f.sub.add(ColorPickerSetting("Box Color", "", Floor7Settings::bloodSolverBoxColor))
+            f.sub.add(ColorPickerSetting("Line Color", "", Floor7Settings::bloodSolverLineColor))
+            f.sub.add(ColorPickerSetting("Timer Color", "", Floor7Settings::bloodSolverTimerColor))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Players Leaped", Floor7::playersLeapedEnabled)
+            val f = Feature("Players Leaped", Floor7Settings::playersLeapedEnabled)
             f.sub.add(SubcategoryHeader("Stand in your leap spot to see how many teammates are there: Mage HEE2 ?/4, Bers S1 ?/1, Healer EE3 ?/3, Mage Core ?/4, Healer Dragons ?/4"))
-            f.sub.add(ToggleSetting("Any Class", "Show at every spot regardless of your class (for testing)", Floor7::playersLeapedAnyClass))
+            f.sub.add(ToggleSetting("Any Class", "Show at every spot regardless of your class (for testing)", Floor7Settings::playersLeapedAnyClass))
             floor7.features.add(f)
         }
         run {
@@ -1757,14 +1838,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             floor7.features.add(f)
         }
         run {
-            val f = Feature("M7 Relics", Floor7::enableRelicStartTimer)
-            f.sub.add(ToggleSetting("Cauldron Box", "Box + tracer the cauldron for the relic you hold", Floor7::renderRelicHighlight))
+            val f = Feature("M7 Relics", Floor7Settings::relicStartHud)
+            f.sub.add(ToggleSetting("Cauldron Box", "Box + tracer the cauldron for the relic you hold", Floor7Settings::relicHighlight))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Relic Times", Floor7::relicTimesEnabled)
+            val f = Feature("Relic Times", Floor7Settings::relicTimesEnabled)
             f.sub.add(SubcategoryHeader("Once all 5 relics are placed, lists each one's place time (from P5 start) and who placed it"))
-            f.sub.add(ToggleSetting("Send To Party Chat", "Off = only you see it", Floor7::relicTimesParty))
+            f.sub.add(ToggleSetting("Send To Party Chat", "Off = only you see it", Floor7Settings::relicTimesParty))
             floor7.features.add(f)
         }
         run {
@@ -1905,6 +1986,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsEnabled)
             f.sub.add(ToggleSetting("Prince Crown Icon", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince))
+            f.sub.add(ToggleSetting("Room Checkmarks", "Corner checkmark when a named room is cleared, recoloured when all secrets are done", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsChecks))
+            f.sub.add(ColorPickerSetting("Cleared Check", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomCheckClearedColor))
+            f.sub.add(ColorPickerSetting("Secrets Done Check", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomCheckSecretsColor))
             f.sub.add(SliderIntSetting("Darken Multiplier %", "",
                 { (fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier = v / 100.0f },
@@ -2015,10 +2099,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             cocoon.sub.add(SliderIntSetting("Alert Duration (ms)", "", FishSettings::slayerCocoonAlertDurationMs, 250, 8000, 250))
             slayer.features.add(cocoon)
 
-            val rngTitle = Feature("RNG Meter Title", FishSettings::slayerRngTitleEnabled)
-            rngTitle.sub.add(SubcategoryHeader("Shows the \"RNG Meter - ...\" chat line as an on-screen title"))
-            rngTitle.sub.add(ColorPickerSetting("Title Colour", "", { FishSettings.slayerRngTitleColor }, { v -> FishSettings.slayerRngTitleColor = v }, 0xFFFF55FF.toInt()))
-            rngTitle.sub.add(SliderIntSetting("Duration (ms)", "", FishSettings::slayerRngTitleDurationMs, 250, 8000, 250))
+            val rngTitle = Feature("RNG Meter HUD", FishSettings::slayerRngTitleEnabled)
+            rngTitle.sub.add(SubcategoryHeader("Last \"RNG Meter - ...\" value, updates after every boss  ·  drag position with Edit HUD"))
+            rngTitle.sub.add(ColorPickerSetting("Label Colour", "", { FishSettings.slayerRngTitleColor }, { v -> FishSettings.slayerRngTitleColor = v }, 0xFFFF55FF.toInt()))
+            rngTitle.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerRngHudScale, 0.5, 3.0))
             slayer.features.add(rngTitle)
 
             val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
@@ -2027,13 +2111,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             slayer.features.add(spawnHud)
 
             val statsHud = Feature("Slayer Stats HUD", FishSettings::slayerStatsHudEnabled)
-            statsHud.sub.add(SubcategoryHeader("Session XP / kills / rates  ·  drag position with Edit HUD"))
+            statsHud.sub.add(SubcategoryHeader("Total XP / kills per slayer  ·  drag position with Edit HUD"))
             statsHud.sub.add(ToggleSetting("Show XP", "", FishSettings::slayerStatsShowXp))
             statsHud.sub.add(ToggleSetting("Show Kills", "", FishSettings::slayerStatsShowKills))
-            statsHud.sub.add(ToggleSetting("Show XP/hr", "", FishSettings::slayerStatsShowXpHr))
-            statsHud.sub.add(ToggleSetting("Show Kills/hr", "", FishSettings::slayerStatsShowKillsHr))
             statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
-            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
+            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
             slayer.features.add(statsHud)
 
             val carry = Feature("Carry Tracker HUD", FishSettings::slayerCarryHudEnabled)
@@ -2468,7 +2550,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         if (closing && !closeFinalized && System.currentTimeMillis() - closeStartTime >= exitTotalDurationMs()) {
             closeFinalized = true
-            try { Config.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.8", "Config save on /fm close failed", t) }
+            try { ConfigRoot.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.8", "Config save on /fm close failed", t) }
             try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.9", "FishConfig save on /fm close failed", t) }
             fishmod.features.achievements.AchUsage.onConfigSaved()
             FishDiag.guard("FishModScreen.ach", "achievement feature scan failed") { fishmod.features.achievements.AchUsage.onFeatureScan(columns.flatMap { it.features }) }
@@ -2496,13 +2578,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             FishDiag.fail("FishModScreen.10", "widget rendering failed search='$searchText' hScroll=$hScroll", t)
             if (!widgetRenderFailureLogged) {
                 widgetRenderFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[FishModScreen] widget rendering failed - screen will show blur only", t)
+                fishmod.utils.debug.FishDebug.LOGGER.error("[FishModScreen] widget rendering failed - screen will show blur only", t)
             }
         }
 
         if (!recorderSizeLogged) {
             recorderSizeLogged = true
-            fishmod.utils.debug.Debug.LOGGER.debug("[UiRenderer] extractRenderState queued {} draw commands", UiRecorder.size())
+            fishmod.utils.debug.FishDebug.LOGGER.debug("[UiRenderer] extractRenderState queued {} draw commands", UiRecorder.size())
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
@@ -2510,10 +2592,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     // Edit HUD pill, right of the search bar
     private fun editHudRect(): IntArray {
-        val bh = 24
-        val x = (right() - 190) / 2 + 190 + 8
+        val bh = 28
+        val x = (right() - 220) / 2 + 220 + 8
         val y = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
-        return intArrayOf(x, y, sw(this.font, "Edit HUD", 0.85f) + 24, bh)
+        return intArrayOf(x, y, sw(this.font, "Edit HUD", 0.95f) + 28, bh)
     }
 
     private fun topBarButtonRects(): Array<IntArray> {
@@ -2562,8 +2644,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun renderSearchBar(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        val bw = 190
-        val bh = 24
+        val bw = 220
+        val bh = 28
         val bx = (right() - bw) / 2
         val by = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
         roundedRectRing(ctx, bx, by, bw, bh, bh / 2, 1, 0xFF14181D.toInt(), if (searchFocused) ACCENT else 0xFF3A3F48.toInt())
@@ -2584,9 +2666,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             field.setX(bx + 30); field.setY(by + 6); field.setWidth(bw - 40)
         }
         if (searchText.isEmpty() && !searchFocused) {
-            sst(ctx, this.font, "Search…", bx + 30, by + (bh - 8) / 2, SUBTEXT_COLOR, 0.9f)
+            sst(ctx, this.font, "Search…", bx + 30, by + (bh - 8) / 2, SUBTEXT_COLOR, 1.15f)
         } else {
-            nvgTextFieldContent(field, bx + 30, by + 6, bw - 40, bh - 12)
+            nvgTextFieldContent(field, bx + 30, by + 6, bw - 40, bh - 12, 9.5f)
         }
         val e = editHudRect()
         drawPillButton(ctx, e[0], e[1], e[2], e[3], "Edit HUD", false, ACCENT, mouseX >= e[0] && mouseX <= e[0] + e[2] && mouseY >= e[1] && mouseY <= e[1] + e[3])
@@ -3025,8 +3107,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (prevInput is ColorPickerSetting) prevInput.hexField?.setFocused(false)
         activeInput = null
 
-        val swW = 190
-        val swH = 24
+        val swW = 220
+        val swH = 28
         val sx = (right() - swW) / 2
         val sy0 = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - swH) / 2 - 8
         searchFocused = mx >= sx && mx <= sx + swW && my >= sy0 && my <= sy0 + swH
@@ -3575,10 +3657,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             FishDiag.check(values.isNotEmpty(), "FishModScreen.30") { "dropdown '$name' has no options" }
         }
 
+        // Stale stored value (old config) shows as the first option; stored value kept until the player picks
         private fun indexOfCurrent(): Int {
             val cur = getter()
             for (i in values.indices) if (values[i] === cur || values[i] == cur) return i
-            FishDiag.fail("FishModScreen.29", "dropdown '$name' value '$cur' not in options")
             return 0
         }
 
@@ -3587,7 +3669,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            val currentValue = getter()
+            val currentValue = values.getOrElse(indexOfCurrent()) { getter() }
             val current = label(currentValue)
             val textW = stw(tr, current)
             val sw = swatch
@@ -3712,7 +3794,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val vol = (volumePct?.invoke() ?: 100).coerceIn(0, 500) / 100f
             val pit = (pitchGetter?.invoke() ?: 1.0).toFloat().coerceIn(0f, 2f)
             try {
-                fishmod.utils.Misc.sendSound(fishmod.utils.sound.SoundManager.preset(valueGetter()), vol, pit)
+                fishmod.utils.FishUtil.sendSound(fishmod.utils.sound.SoundManager.preset(valueGetter()), vol, pit)
             } catch (t: Throwable) {
                 FishDiag.fail("FishModScreen.34", "sound preview failed for '${valueGetter()}'", t)
             }
@@ -4408,15 +4490,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             nvgTextFieldContent(tf, x, y, w, h)
         }
 
-        fun nvgTextFieldContent(tf: EditBox, x: Int, y: Int, w: Int, h: Int) {
+        fun nvgTextFieldContent(tf: EditBox, x: Int, y: Int, w: Int, h: Int, size: Float = INPUT_TEXT_SIZE) {
             val text = tf.value
             val cursor = Math.min(tf.cursorPosition, text.length)
-            val cursorX = UiRecorder.textWidth(text.substring(0, cursor), INPUT_TEXT_SIZE)
+            val cursorX = UiRecorder.textWidth(text.substring(0, cursor), size)
             val pad = 3f
             val visibleW = w - pad * 2f
             val scroll = Math.max(0f, cursorX - visibleW)
             UiRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
-            UiRecorder.text(text, x + pad - scroll, y + (h - INPUT_TEXT_SIZE) / 2f, INPUT_TEXT_SIZE, TEXT_COLOR)
+            UiRecorder.text(text, x + pad - scroll, y + (h - size) / 2f, size, TEXT_COLOR)
             if (tf.isFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
                 UiRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
             }
@@ -4445,7 +4527,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Sound Manager" -> "Master toggle & volume for FishMod cues"
                 "Boss Health Numbers" -> "Numeric HP on the M7 boss bar"
                 "Blessing Display" -> "Active dungeon blessings from the tab footer"
-                "Invincibility Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
+                "Mask & Phoenix Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
                 "Secret Clicked" -> "Box + chime when you click a dungeon secret"
                 "Puzzle Solvers" -> "In-world solutions for dungeon puzzles"
                 "Arrow Align" -> "F7 P3 arrow device — clicks needed per frame"
@@ -4458,10 +4540,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Wither Highlight" -> "Outline the F7 wither boss by phase"
                 "M7 Relics" -> "P5 relic spawn timer + cauldron box"
                 "Auto Requeue" -> "Re-queue the same floor when a run ends (leader only)"
-                "Warp Cooldown" -> "Countdown until you can /warp again"
+                "Party Warp Timer" -> "Countdown until you can /warp again"
                 "Death Message" -> "Announce deaths with a template"
                 "Send Lag to Party" -> "Warn the party when your game lags"
-                "Splits" -> "Phase split timers for runs"
+                "Run Splits" -> "Phase split timers for runs"
                 "PB Messages" -> "Chat PB alerts for splits, Goldor sections, terminals and relics"
                 "Session Stats" -> "Per-session run statistics HUD"
                 "Loot Tracker" -> "Manual drop & profit tracker (D Hub inv)"
@@ -4469,9 +4551,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Class Colored Boots" -> "Dye boots by your dungeon class"
                 "M7 Lever Waypoints" -> "See F7/M7 levers through walls"
                 "Starred Mob Highlight" -> "Outline dungeon mobs that need to be killed to clear the floor"
-                "Tick Timers" -> "Maxor/Storm/Goldor tick timers + related P2/terminal notifications"
-                "Crystal Spawn" -> "Crystal spawn countdown + reminder"
-                "Section Progress" -> "Terminal section completed/total"
+                "Boss Tick Clocks" -> "Maxor/Storm/Goldor tick timers + related P2/terminal notifications"
+                "Crystal Respawn" -> "Crystal spawn countdown + reminder"
+                "Section Count" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
                 "Name Color" -> "Recolor your username gradient"
                 "Nametag" -> "Show your own above-head nametag"

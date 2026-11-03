@@ -164,26 +164,26 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Spirit Bear", doubleArrayOf(10.0, 165.0, 1.5)),
             java.util.Map.entry("Blessings", doubleArrayOf(10.0, 100.0, 1.0)),
             java.util.Map.entry("PB Pace", doubleArrayOf(10.0, 300.0, 1.0)),
-            java.util.Map.entry("Tick Timer", doubleArrayOf(10.0, 80.0, 1.0)),
+            java.util.Map.entry("Boss Tick Clock", doubleArrayOf(10.0, 80.0, 1.0)),
             java.util.Map.entry("Wither Dragon Timer", doubleArrayOf(-1.0, 100.0, 2.0)),
-            java.util.Map.entry("Crystal Spawn Time", doubleArrayOf(10.0, 92.0, 1.0)),
-            java.util.Map.entry("Crystal Reminder", doubleArrayOf(0.0, 0.0, 1.0)),
-            java.util.Map.entry("Storm Death Time", doubleArrayOf(10.0, 92.0, 1.0)),
+            java.util.Map.entry("Crystal Respawn", doubleArrayOf(10.0, 92.0, 1.0)),
+            java.util.Map.entry("Crystal Not Placed", doubleArrayOf(0.0, 0.0, 1.0)),
+            java.util.Map.entry("Storm Kill Time", doubleArrayOf(10.0, 92.0, 1.0)),
             java.util.Map.entry("LB Release Timer", doubleArrayOf(10.0, 104.0, 1.0)),
             java.util.Map.entry("Py Tick Timer", doubleArrayOf(10.0, 116.0, 1.0)),
             java.util.Map.entry("Necron LB Timer", doubleArrayOf(10.0, 128.0, 1.0)),
-            java.util.Map.entry("Storm Crushed", doubleArrayOf(0.0, 0.0, 1.0)),
-            java.util.Map.entry("Pillar Explosion Timer", doubleArrayOf(10.0, 140.0, 1.0)),
-            java.util.Map.entry("Term Start Timer", doubleArrayOf(10.0, 104.0, 1.0)),
-            java.util.Map.entry("Section Progress", doubleArrayOf(10.0, 116.0, 1.0)),
-            java.util.Map.entry("Current Section", doubleArrayOf(10.0, 190.0, 1.0)),
-            java.util.Map.entry("Device Completed", doubleArrayOf(0.0, 0.0, 1.0)),
-            java.util.Map.entry("Melody Warning", doubleArrayOf(0.0, 0.0, 1.0)),
-            java.util.Map.entry("Section Completion", doubleArrayOf(0.0, 0.0, 1.0)),
+            java.util.Map.entry("Storm Crush Banner", doubleArrayOf(0.0, 0.0, 1.0)),
+            java.util.Map.entry("Pillar Blast Timer", doubleArrayOf(10.0, 140.0, 1.0)),
+            java.util.Map.entry("Terminals Open In", doubleArrayOf(10.0, 104.0, 1.0)),
+            java.util.Map.entry("Section Count", doubleArrayOf(10.0, 116.0, 1.0)),
+            java.util.Map.entry("P3 Section", doubleArrayOf(10.0, 190.0, 1.0)),
+            java.util.Map.entry("Device Done", doubleArrayOf(0.0, 0.0, 1.0)),
+            java.util.Map.entry("Melody Callout", doubleArrayOf(0.0, 0.0, 1.0)),
+            java.util.Map.entry("Section Cleared", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Players Leaped", doubleArrayOf(10.0, 90.0, 1.0)),
-            java.util.Map.entry("Relic Spawn Timer", doubleArrayOf(10.0, 180.0, 1.0)),
+            java.util.Map.entry("Relic Countdown", doubleArrayOf(10.0, 180.0, 1.0)),
             java.util.Map.entry("Goldor Splits", doubleArrayOf(10.0, 128.0, 1.0)),
-            java.util.Map.entry("Splits", doubleArrayOf(0.0, 0.0, 1.0)),
+            java.util.Map.entry("Run Splits", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Puzzles", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Party Finder List", doubleArrayOf(6.0, 45.0, 1.0)),
             java.util.Map.entry("Dungeon Map", doubleArrayOf(100.0, 100.0, 1.0)),
@@ -196,7 +196,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         )
 
         private val RESETTERS: Map<String, Runnable> = mapOf(
-            "Invincibility Timer" to Runnable { FishSettings.invincHudX = 10; FishSettings.invincHudY = 140; FishSettings.invincScale = 1.0 },
+            "Mask & Phoenix Timer" to Runnable { FishSettings.invincHudX = 10; FishSettings.invincHudY = 140; FishSettings.invincScale = 1.0 },
             "Dungeon Breaker" to Runnable { FishSettings.dungeonBreakerHudX = 10; FishSettings.dungeonBreakerHudY = 80; FishSettings.dungeonBreakerHudScale = 1.0 },
             "Secret Overlay" to Runnable { FishSettings.secretOverlayX = 10; FishSettings.secretOverlayY = 180; FishSettings.secretOverlayScale = 1.5 },
             "Quiz Timer" to Runnable { FishSettings.quizHudX = 10; FishSettings.quizHudY = 200; FishSettings.quizHudScale = 1.5 },
@@ -206,8 +206,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Veno Stack Count" to Runnable { FishSettings.venoStackHudX = 200; FishSettings.venoStackHudY = 140; FishSettings.venoStackScale = 1.5 },
             "Custom Scoreboard" to Runnable { FishSettings.customScoreboardHudX = -1; FishSettings.customScoreboardHudY = 2 },
             "Performance" to Runnable { FishSettings.perfHudX = 10; FishSettings.perfHudY = 60; FishSettings.perfHudScale = 1.0 },
-            "Chat Notifications" to Runnable { ChatRuleStore.setHudX(10); ChatRuleStore.setHudY(400); ChatRuleStore.setHudScale(1.0) },
-            "Warp Cooldown" to Runnable { FishSettings.warpCooldownHudX = 10; FishSettings.warpCooldownHudY = 160; FishSettings.warpCooldownScale = 1.0 },
+            "Chat Alerts" to Runnable { ChatRuleStore.setHudX(10); ChatRuleStore.setHudY(400); ChatRuleStore.setHudScale(1.0) },
+            "Party Warp Timer" to Runnable { FishSettings.warpCooldownHudX = 10; FishSettings.warpCooldownHudY = 160; FishSettings.warpCooldownScale = 1.0 },
             "Tac Timer" to Runnable { FishSettings.tacTimerHudX = 10; FishSettings.tacTimerHudY = 180; FishSettings.tacTimerScale = 1.0 },
             "Rag Timer" to Runnable { FishSettings.ragnarockTimerHudX = 10; FishSettings.ragnarockTimerHudY = 150; FishSettings.ragnarockTimerScale = 1.5 },
             "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
@@ -215,19 +215,19 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
             "Dungeons" to listOf(
-                "Splits", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
-                "Spirit Bear", "Invincibility Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
+                "Run Splits", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
+                "Spirit Bear", "Mask & Phoenix Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
             ),
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
             "Floor 7" to listOf(
-                "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
-                "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Pillar Explosion Timer", "Term Start Timer",
-                "Section Progress", "Goldor Splits", "Terminal Tracker", "Current Section", "Device Completed",
-                "Melody Warning", "Section Completion", "Storm Over Alert", "Veno Stack Count", "Players Leaped",
-                "Relic Spawn Timer",
+                "Boss Tick Clock", "Wither Dragon Timer", "Crystal Respawn", "Crystal Not Placed",
+                "Storm Kill Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crush Banner", "Pillar Blast Timer", "Terminals Open In",
+                "Section Count", "Goldor Splits", "Terminal Tracker", "P3 Section", "Device Done",
+                "Melody Callout", "Section Cleared", "Storm Over Alert", "Veno Stack Count", "Players Leaped",
+                "Relic Countdown",
             ),
             "HUD & Overlays" to listOf(
-                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Notifications", "Warp Cooldown", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
+                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
             ),
             "Party & Social" to listOf("Party Finder List"),
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries"),
@@ -256,24 +256,24 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             Sample(rows.map { it.first }, lineH = lineH, right = rows.map { it.second }, width = width)
 
         private val SAMPLES: Map<String, Sample> = mapOf(
-            "Tick Timer" to c("§f12.35"),
-            "Crystal Spawn Time" to c("§d1.20"),
-            "Crystal Reminder" to c("§bPlace Crystal!"),
-            "Storm Death Time" to c("§538.45"),
+            "Boss Tick Clock" to c("§f12.35"),
+            "Crystal Respawn" to c("§d1.20"),
+            "Crystal Not Placed" to c("§d§lCRYSTAL NOT PLACED"),
+            "Storm Kill Time" to c("§538.45"),
             "LB Release Timer" to c("§c2.35"),
-            "Storm Crushed" to c("§6||| §bStorm crushed! §6|||"),
-            "Pillar Explosion Timer" to c("§c0.85"),
-            "Term Start Timer" to c("§e3.45"),
-            "Section Progress" to c("§a(§c3§a/7)"),
-            "Current Section" to s("§5Section: §f 2"),
-            "Device Completed" to c("§aDevice Completed!"),
-            "Melody Warning" to c("§5§lHEALER §r§dhas melody! 2/4"),
-            "Section Completion" to c("§aSection completed!"),
+            "Storm Crush Banner" to c("§d§lSTORM CRUSHED"),
+            "Pillar Blast Timer" to c("§c0.85"),
+            "Terminals Open In" to c("§e3.45"),
+            "Section Count" to c("§a(§c3§a/7)"),
+            "P3 Section" to s("§5P3: §f 2/4"),
+            "Device Done" to c("§a§lDEVICE DONE"),
+            "Melody Callout" to c("§5§lHEALER §7» §dMelody §f2§7/§f4"),
+            "Section Cleared" to c("§a§lSECTION CLEARED"),
             "Goldor Splits" to cols(listOf(
-                "§61st " to "§a12.34s§8 (§712.05s§8)",
-                "§62nd " to "§a13.10s§8 (§712.80s§8)",
-                "§63rd " to "§a11.92s§8 (§711.70s§8)",
-                "§64th " to "§a14.05s§8 (§713.85s§8)",
+                "§6S1 " to "§a12.34s§8 (§712.05s§8)",
+                "§6S2 " to "§a13.10s§8 (§712.80s§8)",
+                "§6S3 " to "§a11.92s§8 (§711.70s§8)",
+                "§6S4 " to "§a14.05s§8 (§713.85s§8)",
             ), width = 120),
             "Terminal Tracker" to Sample(
                 listOf("§fTerminals", "§fS2 (5/8)", " §bTerm #1 §fTechnoFish", " §bTerm #2 §fGoldorMain",
@@ -281,7 +281,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 lineH = 10,
                 bg = 0x66000000,
             ),
-            "Splits" to cols(listOf(
+            "Run Splits" to cols(listOf(
                 "§4Blood Open " to "§a25.70s§8 (§725.10s§8)",
                 "§cBlood Clear " to "§a1m 7.02s§8 (§765.40s§8)",
                 "§dPortal " to "§a31.44s§8 (§730.90s§8)",
@@ -299,11 +299,17 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "§fSecrets: §b34§7-§e41§7-§c52   §fScore: §e287",
                 "§fDeaths: §a0   §fM: §a✔   §fP: §c✖   §fCrypts: §e3",
             ),
-            "Warp Cooldown" to s("§eWarp: §a23.4s"),
+            "Party Warp Timer" to s("§eWarp: §a23.4s"),
             "Blessings" to s("§4Power: §a34", "§5Time: §a5"),
-            "Invincibility Timer" to s("§eBonzo §7●", "§7Spirit §7●", "§7Phoenix §7✔"),
+            "Mask & Phoenix Timer" to s("§eBonzo §7●", "§7Spirit §7●", "§7Phoenix §7✔"),
             "Dungeon Breaker" to s("§cCharges: §e17§7/§e20§c⸕"),
             "Spirit Bear" to s("§cBear: §f18/25"),
+            "Rift Guide" to s("§d§lMirrorverse", "§f• Lava maze: follow the glass", "§f• Upside-down parkour", "§f• Turn on the red lever", "§f• Dance room: copy the moves"),
+            "Slayer RNG Meter" to s("§dRNG Meter: §eWarden Heart §8(§a62.4%§8)"),
+            "Achievement Popup" to Sample(listOf("§6§lAchievement Unlocked!", "§fFlawless Floor 7", "§7S+ on F7 without dying", "§e+25 points"), lineH = 12, bg = 0xC0101018.toInt()),
+            "Mooshroom Cow Perk" to s("§c§lMooshroom Cow Perk", "§7Mushroom Milestone §f24", "§e182,340§8/§e300,000 §8(60.8%)", "§7ETA: §b1h 12m"),
+            "Necron Drag Timer" to s("§bDragged: §f3.45"),
+            "Kuudra Backbone" to s("§6Backbone §c||||||||||||§7||||||||"),
             "Session Stats" to s("§7Runs: §a14", "§7Deaths: §c3", "§7R/hr: §e9.2", "§7Time: §f1h 31m", lineH = 12),
             "Simon Says" to s("§bSimon Says: §a3§7/4"),
             "Party Finder List" to s(
@@ -313,9 +319,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "§8· §fGoldorMain  §b§lF7 §8[§e2§7/5§8]  §7lv §f38  §8· §7wPB §fTechnoFish §f6:02",
                 "   §7need §aT §9M  §8· §7chill run",
             ),
-            "Relic Spawn Timer" to s("§dRelic §f1.85s"),
+            "Relic Countdown" to s("§dRelic §f1.85s"),
             "Wither Dragon Timer" to s("§53450ms"),
-            "Chat Notifications" to c("§e⚑ Wither Key Picked Up!", lineH = 11),
+            "Chat Alerts" to c("§e⚑ Wither Key Picked Up!", lineH = 11),
             "Soulflow" to s("§3Soulflow: §f12,345"),
             "Quiz Timer" to s("§dQuiz §7(§f2/3§7): §b8.4s"),
             "Secret Overlay" to s("§7Secrets: §e5§7/§e9"),
@@ -331,8 +337,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 center = true,
                 lineH = 9,
                 right = listOf(
-                    "", "§707/14/26 §8m12AB", "", "Late Summer 5th", "§7☀ 2:40pm", "§7⏣ §bVillage",
-                    "", "Purse: §61,234,567", "Bits: §b1,024", "", "§7TPS: §a19.98", "§7Ping: §a42ms", "",
+                    "", "§711/02/26  §8m117DM", "Winter 8th", "§712:00am", "§7⏣ §aYour Island",
+                    "", "Level: §b312", "Purse: §61,234,567", "Bits/Motes: §b1,024§7/§d850", "Gems: §a120", "",
+                    "§eMayor Diana §7(3d 4h)", " §7- §fPet XP Buff",
                     "§ewww.hypixel.net",
                 ),
                 width = SCOREBOARD_W,
@@ -779,7 +786,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         try {
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(sc, sc)
-        if (s != null) {
+        if (e.name() == "Dungeon Map") {
+            drawMapExample(ctx, e.w(), e.h())
+        } else if (s != null) {
             val bw = baseW(e)
             if (s.bg != 0) ctx.fill(0, 0, bw, baseH(e), s.bg)
             s.lines.forEachIndexed { i, line ->
@@ -793,6 +802,25 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
         } finally {
             pose.popMatrix()
+        }
+    }
+
+    // Fake 6x6 dungeon layout: 0 empty, 1 normal, 2 puzzle, 3 trap, 4 blood, 5 entrance, 6 fairy, 7 mini
+    private val MAP_EXAMPLE = arrayOf(
+        intArrayOf(5, 1, 1, 0, 2, 1), intArrayOf(0, 1, 6, 1, 1, 0), intArrayOf(1, 1, 0, 7, 1, 1),
+        intArrayOf(2, 1, 1, 1, 0, 1), intArrayOf(1, 0, 3, 1, 1, 1), intArrayOf(1, 1, 1, 0, 1, 4),
+    )
+
+    private fun drawMapExample(ctx: GuiGraphicsExtractor, w: Int, h: Int) {
+        ctx.fill(0, 0, w, h, 0x80000000.toInt())
+        val cell = minOf(w, h) / 6
+        val room = cell * 4 / 5
+        val ox = (w - cell * 6) / 2 + (cell - room) / 2
+        val oy = (h - cell * 6) / 2 + (cell - room) / 2
+        val cols = intArrayOf(0, 0xFF6B3A1E.toInt(), 0xFF8A2BE2.toInt(), 0xFFD87F33.toInt(), 0xFFE02020.toInt(), 0xFF20A020.toInt(), 0xFFF070C0.toInt(), 0xFFE0C020.toInt())
+        for (r in 0 until 6) for (c in 0 until 6) {
+            val t = MAP_EXAMPLE[r][c]
+            if (t != 0) ctx.fill(ox + c * cell, oy + r * cell, ox + c * cell + room, oy + r * cell + room, cols[t])
         }
     }
 

@@ -3,11 +3,15 @@ package fishmod.cosmetic
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.utils.HypixelApi
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
 import java.net.URI
 import java.net.http.WebSocket
 import java.util.concurrent.CompletionStage
@@ -16,7 +20,9 @@ import java.util.concurrent.ConcurrentHashMap
 // Live cosmetics: one WebSocket to fishmod.dev/live; full set on connect, then pushed changes only.
 object CosmeticLive {
     private const val URL = "wss://fishmod.dev/live"
-    private const val PING_MS = 45_000L
+    private const val PING_MS = 30_000L
+    // No frame (pong included) for this long = half-open socket; drop it and reconnect
+    private const val DEAD_MS = 75_000L
     private const val MIN_BACKOFF_MS = 5_000L
     private const val MAX_BACKOFF_MS = 5 * 60_000L
 
@@ -34,12 +40,15 @@ object CosmeticLive {
     private val badges = ConcurrentHashMap<String, String>()
     private val cleared = ConcurrentHashMap<String, Long>()
     @Volatile private var blocked: Set<String> = emptySet()
+    // Dashboard message ids already shown (server may resend on reconnect).
+    private val seenMsgs = LinkedHashSet<Long>()
 
     @Volatile private var ws: WebSocket? = null
     @Volatile private var connecting = false
     private var retryAt = 0L
     private var backoff = MIN_BACKOFF_MS
     private var lastPing = 0L
+    @Volatile private var lastRx = 0L
 
     @JvmStatic
     fun init() {
@@ -56,6 +65,13 @@ object CosmeticLive {
         val now = System.currentTimeMillis()
         val socket = ws
         if (socket != null) {
+            if (now - lastRx > DEAD_MS) {
+                FishDiag.fail("CosmeticLive.3", "live socket silent ${(now - lastRx) / 1000}s, reconnecting")
+                ws = null
+                try { socket.abort() } catch (_: Exception) {}
+                failed()
+                return
+            }
             if (now - lastPing >= PING_MS) { lastPing = now; socket.sendText("ping", true) }
             return
         }
@@ -70,6 +86,7 @@ object CosmeticLive {
                 if (t != null || s == null) { failed(); return@whenComplete }
                 ws = s
                 lastPing = System.currentTimeMillis()
+                lastRx = lastPing
                 backoff = MIN_BACKOFF_MS
             }
     }
@@ -101,7 +118,9 @@ object CosmeticLive {
     private fun accept(text: String) {
         if (text == "pong") return
         val root = JsonParser.parseString(text).asJsonObject
-        val full = root.get("t")?.asString == "snap"
+        val type = root.get("t")?.asString
+        if (type == "msg") { dashboardMessage(root); return }
+        val full = type == "snap"
         if (full) { nicks.clear(); items.clear(); scales.clear(); badges.clear(); cleared.clear() }
         mergeStrings(root, "nicks", nicks)
         mergeStrings(root, "items", items)
@@ -113,6 +132,25 @@ object CosmeticLive {
         rev++
     }
 
+    private fun dashboardMessage(root: JsonObject) {
+        if (!FishSettings.dashboardMessagesEnabled) return
+        val id = root.get("id")?.takeIf { !it.isJsonNull }?.asLong ?: return
+        val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.take(256)?.takeIf { it.isNotBlank() } ?: return
+        val from = root.get("from")?.takeIf { !it.isJsonNull }?.asString?.take(32)?.takeIf { it.isNotBlank() } ?: "FishMod"
+        synchronized(seenMsgs) {
+            if (!seenMsgs.add(id)) return
+            if (seenMsgs.size > 200) seenMsgs.remove(seenMsgs.first())
+        }
+        Minecraft.getInstance().execute {
+            FishUtil.addChatMessage(
+                Component.literal("[FishMod] ").withStyle(ChatFormatting.AQUA)
+                    .append(Component.literal("$from: ").withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(text).withStyle(ChatFormatting.WHITE))
+            )
+            FishUtil.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.5f, 1.2f)
+        }
+    }
+
     private fun mergeStrings(root: JsonObject, key: String, into: MutableMap<String, String>) {
         root.getAsJsonObject(key)?.entrySet()?.forEach { (k, v) -> if (v.isJsonNull) into.remove(k) else into[k] = v.asString }
     }
@@ -121,6 +159,7 @@ object CosmeticLive {
         private val buf = StringBuilder()
 
         override fun onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage<*>? {
+            lastRx = System.currentTimeMillis()
             buf.append(data)
             if (last) {
                 val text = buf.toString()

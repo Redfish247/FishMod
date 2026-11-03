@@ -1,6 +1,6 @@
 package fishmod.features
 
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
@@ -37,7 +37,7 @@ object SoulflowHud {
                 soulflow = -1
                 return@register
             }
-            if (!Location.inSkyblock()) {
+            if (!SkyblockLocation.inSkyblock()) {
                 soulflow = -1
                 return@register
             }
@@ -72,7 +72,7 @@ object SoulflowHud {
             missCount >= MISS_SCANS_BEFORE_WARN
         ) {
             warnedThisSession = true
-            fishmod.utils.Misc.addChatMessage(
+            fishmod.utils.FishUtil.addChatMessage(
                 net.minecraft.network.chat.Component.literal(
                     "§3[FishMod] §eSoulflow not visible in /tab. Run §b/tab §e→ click §bProfile §e→ enable §bSoulflow§e."
                 )
@@ -85,7 +85,7 @@ object SoulflowHud {
         if (!FishSettings.soulflowHudEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.level == null) return
-        if (!Location.inSkyblock()) return
+        if (!SkyblockLocation.inSkyblock()) return
         if (soulflow < 0) return
 
         val warn = FishSettings.soulflowWarningThreshold > 0 && soulflow < FishSettings.soulflowWarningThreshold

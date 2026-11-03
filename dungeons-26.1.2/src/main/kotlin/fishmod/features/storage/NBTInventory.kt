@@ -47,13 +47,45 @@ class NBTInventory(val stacks: List<ItemStack>, private var encoded: String? = n
                 for (i in list.indices) {
                     val tag = list.getCompoundOrEmpty(i)
                     if (tag.isEmpty) { items.add(ItemStack.EMPTY); continue }
-                    val parsed = ItemStack.OPTIONAL_CODEC.parse(ops, tag)
+                    var parsed = ItemStack.OPTIONAL_CODEC.parse(ops, tag)
+                    // unknown registry entries (server-side enchants like "m7:hit"): retry without the bad components
+                    if (parsed.error().isPresent) parsed = ItemStack.OPTIONAL_CODEC.parse(ops, stripBadComponents(ops, tag))
                     parsed.error().ifPresent { err -> FishDiag.fail("NBTInventory.2", "failed to decode stored item $i: ${err.message()}") }
                     items.add(parsed.result().orElse(ItemStack.EMPTY))
                 }
                 NBTInventory(items, encoded)
             }
         }.onFailure { FishDiag.fail("NBTInventory.3", "failed to decode storage page (${encoded.length} chars)", it) }.getOrNull()
+
+        private fun stripBadComponents(ops: net.minecraft.resources.RegistryOps<Tag>, tag: CompoundTag): CompoundTag {
+            val comps = tag.getCompoundOrEmpty("components")
+            if (comps.isEmpty) return tag
+            val out = tag.copy()
+            val kept = CompoundTag()
+            fun accepts(key: String, value: Tag): Boolean {
+                val probe = tag.copy()
+                probe.put("components", CompoundTag().also { it.put(key, value) })
+                return ItemStack.OPTIONAL_CODEC.parse(ops, probe).result().isPresent
+            }
+            for (key in comps.keySet()) {
+                val value = comps.get(key) ?: continue
+                if (accepts(key, value)) { kept.put(key, value); continue }
+                if (key != ENCHANTMENTS_KEY || value !is CompoundTag) continue
+                // drop only the unknown enchants; keep the glint they gave
+                val good = CompoundTag()
+                for (id in value.keySet()) {
+                    val level = value.get(id) ?: continue
+                    if (accepts(key, CompoundTag().also { it.put(id, level) })) good.put(id, level)
+                }
+                if (!good.isEmpty) kept.put(key, good)
+                if (!comps.contains(GLINT_KEY)) kept.putBoolean(GLINT_KEY, true)
+            }
+            out.put("components", kept)
+            return out
+        }
+
+        private const val ENCHANTMENTS_KEY = "minecraft:enchantments"
+        private const val GLINT_KEY = "minecraft:enchantment_glint_override"
 
         private fun registryOps() =
             (Minecraft.getInstance().connection?.registryAccess()

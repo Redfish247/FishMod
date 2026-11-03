@@ -3,7 +3,7 @@ import fishmod.features.dungeon.f7.dragons.DragonCheck
 import fishmod.features.garden.FarmingProfitTracker
 import fishmod.features.garden.Pests
 import fishmod.features.mining.MiningProfitTracker
-import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.rendering.FishDraw
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.util.Locale
@@ -20,11 +20,11 @@ class R4SolverProfitTest {
     }
 
     @Test fun renderUtilsNoKRollover() {
-        assertEquals("1.0M", RenderUtils.formatNumber(999_999f, true))
-        assertEquals("999.9k", RenderUtils.formatNumber(999_900f, false))
-        assertEquals("1.0B", RenderUtils.formatNumber(999_999_000f, true))
-        assertEquals("1.5K", RenderUtils.formatNumber(1500f, true))
-        assertEquals("42", RenderUtils.formatNumber(42f, true))
+        assertEquals("1.0M", FishDraw.formatNumber(999_999f, true))
+        assertEquals("999.9k", FishDraw.formatNumber(999_900f, false))
+        assertEquals("1.0B", FishDraw.formatNumber(999_999_000f, true))
+        assertEquals("1.5K", FishDraw.formatNumber(1500f, true))
+        assertEquals("42", FishDraw.formatNumber(42f, true))
     }
 
     @Test fun croesusFmtNoRollover() {

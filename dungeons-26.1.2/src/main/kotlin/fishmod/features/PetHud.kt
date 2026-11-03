@@ -1,12 +1,12 @@
 package fishmod.features
 import fishmod.compat.curScreen
 
-import fishmod.features.item.ItemRarity
+import fishmod.features.item.RarityTier
 import fishmod.utils.HypixelApi
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
@@ -40,10 +40,10 @@ object PetHud {
 
     @JvmStatic fun activePetName(): String? = petName
     @JvmStatic fun activePetLevel(): Int = petLevel
-    @JvmStatic fun activePetRarity(): ItemRarity = petRarity
+    @JvmStatic fun activePetRarity(): RarityTier = petRarity
 
     private var petName: String? = null
-    private var petRarity: ItemRarity = ItemRarity.NONE
+    private var petRarity: RarityTier = RarityTier.NONE
     private var petLevel = -1
     private var petOverflowLevel = -1
     private var petMaxed = false
@@ -125,7 +125,7 @@ object PetHud {
                 lastChatPetName = petName; lastChatPetChangeAt = System.currentTimeMillis()
                 lastApiFetchAt = 0
                 forceScanTicks = 10
-                if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] autopet → [$petLevel] $petName"))
+                if (debugDumpPetLines) fishmod.utils.FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] autopet → [$petLevel] $petName"))
                 return@register
             }
             val su = SUMMON_PAT.matcher(s)
@@ -139,13 +139,13 @@ object PetHud {
                 lastChatPetName = petName; lastChatPetChangeAt = System.currentTimeMillis()
                 lastApiFetchAt = 0
                 forceScanTicks = 10
-                if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] summon → $petName"))
+                if (debugDumpPetLines) fishmod.utils.FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] summon → $petName"))
                 return@register
             }
             val lo = LOADOUT_EQUIP_PAT.matcher(s)
             if (lo.find()) {
                 lastApiFetchAt = 0
-                if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] loadout equip → re-sync"))
+                if (debugDumpPetLines) fishmod.utils.FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] loadout equip → re-sync"))
             }
             } catch (e: Exception) {
                 FishDiag.fail("PetHud.1", "pet chat parse failed", e)
@@ -178,7 +178,7 @@ object PetHud {
 
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             if (!FishSettings.petHudEnabled || client.connection == null) return@register
-            if (!Location.inSkyblock()) {
+            if (!SkyblockLocation.inSkyblock()) {
                 reset()
                 return@register
             }
@@ -191,7 +191,7 @@ object PetHud {
                 HypixelApi.getActivePet(client, ::applyApiPet)
             }
 
-            if (Location.inDungeon()) return@register
+            if (SkyblockLocation.inDungeon()) return@register
 
             scanPetsMenuIfOpen(client.curScreen)
 
@@ -215,7 +215,7 @@ object PetHud {
     private fun scanTabList() {
         var tempName: String? = null
         var tempLevel = -1
-        var tempRarity = ItemRarity.NONE
+        var tempRarity = RarityTier.NONE
         var maxed = false
         var overflowXp = -1.0
 
@@ -242,7 +242,7 @@ object PetHud {
             }
             petName = tempName
             petLevel = tempLevel
-            if (tempRarity != ItemRarity.NONE) petRarity = tempRarity
+            if (tempRarity != RarityTier.NONE) petRarity = tempRarity
             petMaxed = maxed
             if (maxed) {
                 xpNext = -1.0
@@ -263,7 +263,7 @@ object PetHud {
     private fun applyApiPet(info: HypixelApi.PetInfo?) {
         apiFetchInFlight = false
         if (info == null || !info.ok) return
-        if (info.tier != null && rarityFromTier(info.tier) == ItemRarity.NONE) FishDiag.fail("PetHud.5", "unknown pet tier '${info.tier}' for ${info.name}")
+        if (info.tier != null && rarityFromTier(info.tier) == RarityTier.NONE) FishDiag.fail("PetHud.5", "unknown pet tier '${info.tier}' for ${info.name}")
 
         val withinTrustWindow = System.currentTimeMillis() - lastChatPetChangeAt < CHAT_TRUST_WINDOW_MS
         if (withinTrustWindow && lastChatPetName != null && !lastChatPetName.equals(info.name, ignoreCase = true)) {
@@ -272,7 +272,7 @@ object PetHud {
         }
 
         petName = info.name
-        rarityFromTier(info.tier).let { if (it != ItemRarity.NONE) petRarity = it }
+        rarityFromTier(info.tier).let { if (it != RarityTier.NONE) petRarity = it }
         petLevel = info.level
         petMaxed = info.maxed
         petOverflowLevel = if (info.maxed) info.overflowLevel else -1
@@ -297,14 +297,14 @@ object PetHud {
         val handler: AbstractContainerMenu = current.menu
         for (slot in handler.slots) {
             val stack: ItemStack = slot.item
-            if (stack == null || stack.isEmpty || !ItemUtil.containsLore(stack, "Click to despawn")) continue
+            if (stack == null || stack.isEmpty || !ItemTools.containsLore(stack, "Click to despawn")) continue
 
             val displayName = HypixelApi.STRIP_COLOR.matcher(stack.hoverName.string).replaceAll("").trim()
             val m = PET_ITEM_NAME.matcher(displayName)
             if (m.find()) {
                 petLevel = safeInt(m.group(1), petLevel)
                 petName = m.group(2).trim()
-                rarityBeforeName(stack.hoverName.string, petName).let { if (it != ItemRarity.NONE) petRarity = it }
+                rarityBeforeName(stack.hoverName.string, petName).let { if (it != RarityTier.NONE) petRarity = it }
             } else {
                 FishDiag.fail("PetHud.6", "active pet item name unparsed: '$displayName'")
             }
@@ -349,7 +349,7 @@ object PetHud {
 
     private fun reset() {
         petName = null
-        petRarity = ItemRarity.NONE
+        petRarity = RarityTier.NONE
         petLevel = -1
         petOverflowLevel = -1
         petMaxed = false
@@ -365,18 +365,18 @@ object PetHud {
         return s.replace("✦", "").replace(TRAILING_PUNCT_RE, "").trim()
     }
 
-    private val RARITY_BY_CODE: Map<Char, ItemRarity> = mapOf(
-        'f' to ItemRarity.COMMON, 'a' to ItemRarity.UNCOMMON, '9' to ItemRarity.RARE,
-        '5' to ItemRarity.EPIC, '6' to ItemRarity.LEGENDARY, 'd' to ItemRarity.MYTHIC,
-        'b' to ItemRarity.DIVINE, 'c' to ItemRarity.SPECIAL
+    private val RARITY_BY_CODE: Map<Char, RarityTier> = mapOf(
+        'f' to RarityTier.COMMON, 'a' to RarityTier.UNCOMMON, '9' to RarityTier.RARE,
+        '5' to RarityTier.EPIC, '6' to RarityTier.LEGENDARY, 'd' to RarityTier.MYTHIC,
+        'b' to RarityTier.DIVINE, 'c' to RarityTier.SPECIAL
     )
 
-    private fun rarityBeforeName(raw: String?, name: String?): ItemRarity {
-        if (raw == null || name.isNullOrEmpty()) return ItemRarity.NONE
+    private fun rarityBeforeName(raw: String?, name: String?): RarityTier {
+        if (raw == null || name.isNullOrEmpty()) return RarityTier.NONE
         val plain = name.substringBefore("✦").trim()
-        if (plain.isEmpty()) return ItemRarity.NONE
+        if (plain.isEmpty()) return RarityTier.NONE
         val idx = raw.indexOf(plain)
-        if (idx < 2) return ItemRarity.NONE
+        if (idx < 2) return RarityTier.NONE
         var i = idx - 1
         while (i >= 1) {
             if (raw[i - 1] == '§') {
@@ -387,36 +387,36 @@ object PetHud {
             }
             i--
         }
-        return ItemRarity.NONE
+        return RarityTier.NONE
     }
 
-    private fun rarityFromTier(tier: String?): ItemRarity = when (tier?.uppercase()) {
-        "COMMON" -> ItemRarity.COMMON
-        "UNCOMMON" -> ItemRarity.UNCOMMON
-        "RARE" -> ItemRarity.RARE
-        "EPIC" -> ItemRarity.EPIC
-        "LEGENDARY" -> ItemRarity.LEGENDARY
-        "MYTHIC" -> ItemRarity.MYTHIC
-        "DIVINE" -> ItemRarity.DIVINE
-        "SPECIAL" -> ItemRarity.SPECIAL
-        "VERY_SPECIAL", "VERY SPECIAL" -> ItemRarity.VERY_SPECIAL
-        else -> ItemRarity.NONE
+    private fun rarityFromTier(tier: String?): RarityTier = when (tier?.uppercase()) {
+        "COMMON" -> RarityTier.COMMON
+        "UNCOMMON" -> RarityTier.UNCOMMON
+        "RARE" -> RarityTier.RARE
+        "EPIC" -> RarityTier.EPIC
+        "LEGENDARY" -> RarityTier.LEGENDARY
+        "MYTHIC" -> RarityTier.MYTHIC
+        "DIVINE" -> RarityTier.DIVINE
+        "SPECIAL" -> RarityTier.SPECIAL
+        "VERY_SPECIAL", "VERY SPECIAL" -> RarityTier.VERY_SPECIAL
+        else -> RarityTier.NONE
     }
 
-    private fun rarityCode(r: ItemRarity): String = when (r) {
-        ItemRarity.COMMON -> "§f"
-        ItemRarity.UNCOMMON -> "§a"
-        ItemRarity.RARE -> "§9"
-        ItemRarity.EPIC -> "§5"
-        ItemRarity.LEGENDARY -> "§6"
-        ItemRarity.MYTHIC -> "§d"
-        ItemRarity.DIVINE -> "§b"
-        ItemRarity.SPECIAL, ItemRarity.VERY_SPECIAL -> "§c"
+    private fun rarityCode(r: RarityTier): String = when (r) {
+        RarityTier.COMMON -> "§f"
+        RarityTier.UNCOMMON -> "§a"
+        RarityTier.RARE -> "§9"
+        RarityTier.EPIC -> "§5"
+        RarityTier.LEGENDARY -> "§6"
+        RarityTier.MYTHIC -> "§d"
+        RarityTier.DIVINE -> "§b"
+        RarityTier.SPECIAL, RarityTier.VERY_SPECIAL -> "§c"
         else -> "§6"
     }
 
     private fun nameColorCode(): String =
-        if (FishSettings.petHudShowRarity && petRarity != ItemRarity.NONE) rarityCode(petRarity) else "§6"
+        if (FishSettings.petHudShowRarity && petRarity != RarityTier.NONE) rarityCode(petRarity) else "§6"
 
     private fun safeInt(s: String?, fallback: Int): Int {
         return try { s!!.toInt() } catch (e: NumberFormatException) { FishDiag.fail("PetHud.10", "pet level not an int: '$s'", e); fallback } catch (e: NullPointerException) { FishDiag.fail("PetHud.11", "pet level group missing", e); fallback }
@@ -445,7 +445,7 @@ object PetHud {
     fun renderHud(ctx: GuiGraphicsExtractor, tickCounter: DeltaTracker) {
         if (!FishSettings.petHudEnabled) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || !Location.inSkyblock() || petName == null) return
+        if (mc.player == null || !SkyblockLocation.inSkyblock() || petName == null) return
 
         if (FishSettings.petHudFadeIdle && pendingXp > 0 && (System.currentTimeMillis() - lastXpAt) > FishSettings.petHudFadeMs) {
             pendingXp = 0.0

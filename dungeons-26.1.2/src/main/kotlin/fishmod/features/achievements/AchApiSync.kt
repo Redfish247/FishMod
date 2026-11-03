@@ -73,6 +73,8 @@ object AchApiSync {
             HypixelApi.fetchJson("/skyblock/garden?profile=$pid") { root ->
                 val xp = num(root, "garden.garden_experience")
                 if (xp > 0) land { put("garden.level", (GARDEN_XP.indexOfLast { xp >= it }).toDouble().coerceAtMost(15.0)) }
+                val served = num(root, "garden.commission_data.total_completed")
+                if (served > 0) land { put("garden.visitors", served) }
             }
         }
         HypixelApi.fetchJson("https://api.hypixel.net/v2/resources/skyblock/collections") { root ->
@@ -201,7 +203,7 @@ object AchApiSync {
         put("fish.seaCreatures", num(m, "player_stats.sea_creature_kills"))
         put("diana.mobs", num(m, "player_stats.mythos.kills"))
         put("diana.burrows", listOf("next", "combat", "treasure").sumOf { num(m, "player_stats.mythos.burrows_dug_$it.total") })
-        put("mining.blocks", num(m, "player_stats.pet_milestone_ores_mined"))
+        put("mining.blocks", num(m, "player_stats.pets.milestone.ores_mined"))
         put("candy.collected", num(m, "player_stats.candy_collected.total"))
         put("shards.fused", statSum(obj(m, "player_stats"), "fusion", "fused"))
         put("shards.collected", maxOf(sumNums(el(m, "attributes.stack")), sumNums(el(m, "attributes.stacks")), statSum(obj(m, "player_stats"), "shards_collected")))

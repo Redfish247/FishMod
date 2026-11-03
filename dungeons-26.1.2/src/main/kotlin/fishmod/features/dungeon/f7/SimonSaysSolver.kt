@@ -2,13 +2,13 @@ package fishmod.features.dungeon.f7
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.debug.FishDebug
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -44,14 +44,14 @@ object SimonSaysSolver {
         lastLanternTick = -1
     }
 
-    private fun inP3(): Boolean = FishSettings.simonSolverEnabled && try { Phase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.1", "Phase.inP3 threw", t); false }
+    private fun inP3(): Boolean = FishSettings.simonSolverEnabled && try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.1", "BossPhase.inP3 threw", t); false }
 
-    private fun trackingActive(): Boolean = try { Phase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.2", "Phase.inP3 threw (tracking)", t); false }
+    private fun trackingActive(): Boolean = try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.2", "BossPhase.inP3 threw (tracking)", t); false }
 
     @JvmField var lastRoundCompleteMs: Long = 0L
 
     private fun dbg(msg: String) {
-        if (Debug.ssDebug) Misc.addChatMessage(Component.literal("§7[SS] §f$msg"))
+        if (FishDebug.ssDebug) FishUtil.addChatMessage(Component.literal("§7[SS] §f$msg"))
     }
 
     private fun powered(state: BlockState): Boolean =
@@ -59,7 +59,7 @@ object SimonSaysSolver {
 
     @JvmStatic
     fun init() {
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             Minecraft.getInstance().execute {
                 resetSolution()
                 firstPhase = true
@@ -69,7 +69,7 @@ object SimonSaysSolver {
             false
         }
 
-        Events.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             try {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> queueBlock(packet.pos, packet.blockState)
@@ -79,7 +79,7 @@ object SimonSaysSolver {
             false
         }
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             try { tick() } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.4", "SS solver tick threw", e) }
             false
         }
@@ -116,13 +116,13 @@ object SimonSaysSolver {
             InteractionResult.PASS
         })
 
-        RenderingEvents.GIZMO.register { _ ->
+        RenderHooks.GIZMO.register { _ ->
             if (!FishSettings.simonSolverDepth) try { renderGizmo() } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.6", "SS solver gizmo render threw", e) }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             if (FishSettings.simonSolverDepth) try { render(m, vc, fill = true) } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.7", "SS solver fill render threw", e) }
         }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc ->
             if (FishSettings.simonSolverDepth) try { render(m, vc, fill = false) } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.8", "SS solver line render threw", e) }
         }
     }
@@ -159,7 +159,7 @@ object SimonSaysSolver {
                 if (updated.block === Blocks.OBSIDIAN && old === Blocks.SEA_LANTERN && pos !in clickInOrder) {
                     // a 6th distinct lantern means a new pattern started without a seen reset: restart from it
                     if (clickInOrder.size >= 5) {
-                        Debug.LOGGER.warn("[SS] 6th lantern ${pos.y}:${pos.z}, restarting solution (old=${clickInOrder.map { "${it.y}:${it.z}" }} needed=$clickNeeded firstPhase=$firstPhase)")
+                        FishDebug.LOGGER.warn("[SS] 6th lantern ${pos.y}:${pos.z}, restarting solution (old=${clickInOrder.map { "${it.y}:${it.z}" }} needed=$clickNeeded firstPhase=$firstPhase)")
                         resetSolution()
                     }
                     clickInOrder.add(pos.immutable())
@@ -204,14 +204,14 @@ object SimonSaysSolver {
     }
 
     private fun renderGizmo() {
-        for ((box, color) in buttons()) RenderUtils.gizmoBox(box, ARGB.multiplyAlpha(color, 0.5f), ARGB.opaque(color))
+        for ((box, color) in buttons()) FishDraw.gizmoBox(box, ARGB.multiplyAlpha(color, 0.5f), ARGB.opaque(color))
     }
 
     private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
         for ((box, color) in buttons()) {
-            val rgba = RenderUtils.toFloats(color)
-            if (fill) RenderUtils.renderFilled(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], rgba[3] * 0.5f))
-            else RenderUtils.renderOutline(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], 1f))
+            val rgba = FishDraw.toFloats(color)
+            if (fill) FishDraw.renderFilled(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], rgba[3] * 0.5f))
+            else FishDraw.renderOutline(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], 1f))
         }
     }
 }

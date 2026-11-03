@@ -1,7 +1,7 @@
 package fishmod.features.garden
 
 import fishmod.features.mining.Mining
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import fishmod.features.garden.GardenSettings as S
 
@@ -23,7 +23,7 @@ object GardenWidgets {
             if (idle && !composterWarned && S.gardenComposterWarn) GardenTitles.show(Garden.legacy(S.gardenComposterWarnColor) + "Composter Inactive!", "", 2000, true)
             composterWarned = idle
         }
-        Events.ON_GAME_MESSAGE.register { t ->
+        FishEvents.chat.register { t ->
             val s = if (S.gardenRareCrop) Garden.strip(t.string).trim() else ""
             if (S.gardenRareCrop && RARE_CROP.containsMatchIn(s)) {
                 S.gardenRareCropCount++

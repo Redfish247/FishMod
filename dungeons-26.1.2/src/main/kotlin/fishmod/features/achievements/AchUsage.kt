@@ -11,7 +11,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDate
 
-// FishMod usage: days opened, settings changed, features turned on, HUD saves, prerelease builds
+// FishMod usage: days opened, settings changed, features turned on, HUD saves, board reports
 object AchUsage {
 
     private val CONFIG = Paths.get("config/fishmod-settings.json")
@@ -31,8 +31,16 @@ object AchUsage {
     fun onBind() {
         markDay()
         val ver = FabricLoader.getInstance().getModContainer("fishmod-dungeons").map { it.metadata.version.friendlyString }.orElse("")
-        if (Regex("(?i)(pre|beta|alpha|rc|dev)").containsMatchIn(ver.substringBefore('-' + "26."))) AchStore.max("fm.prerelease", 1)
         if (AchStore.data.verSeen != ver) { AchStore.data.verSeen = ver; AchStore.data.updateDay = LocalDate.now().toString(); AchStore.changed() }
+    }
+
+    // Player-written report accepted by the board; any thread
+    @JvmStatic
+    fun onReportSent(kind: String) {
+        Minecraft.getInstance().execute {
+            AchStore.inc("fm.boardReports")
+            if (kind == "bug") AchStore.inc("fm.bugReports")
+        }
     }
 
     private fun markDay() {
@@ -73,7 +81,7 @@ object AchUsage {
     @JvmStatic
     fun onHudSaved() {
         AchStore.inc("fm.hudSaves")
-        if (AchStore.data.hudAreas.add(fishmod.utils.Location.getCurrentLocation().name)) AchStore.changed()
+        if (AchStore.data.hudAreas.add(fishmod.utils.SkyblockLocation.getCurrentLocation().name)) AchStore.changed()
         AchStore.max("fm.hudAreas", AchStore.data.hudAreas.size.toLong())
     }
 

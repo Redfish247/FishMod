@@ -1,0 +1,70 @@
+package fishmod.mixin;
+
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import fishmod.features.NoCursorReset;
+import fishmod.features.other.Zoom;
+import fishmod.utils.FishKeys;
+import fishmod.utils.config.values.MiscSettings;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.MouseHandler;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import org.objectweb.asm.Opcodes;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(MouseHandler.class)
+public class FishMouseMixin {
+
+    @Shadow private double xpos;
+    @Shadow private double ypos;
+
+    @Unique private double fishmod$beforeX;
+    @Unique private double fishmod$beforeY;
+
+    @Inject(method = "onScroll", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getInventory()Lnet/minecraft/world/entity/player/Inventory;"), cancellable = true, require = 1)
+    private void fishmod$lockHotbarScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
+        if (MiscSettings.lockHotbarScroll) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
+    private void fishmod$chatPeekScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
+        if (!FishKeys.chatPeekActive()) return;
+        double amount = Math.max(-1.0, Math.min(1.0, vertical));
+        if (!Minecraft.getInstance().hasShiftDown()) amount *= 7.0;
+        fishmod.compat.McCompatKt.getHud(Minecraft.getInstance()).getChat().scrollChat((int) amount);
+        ci.cancel();
+    }
+
+    @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
+    private void fishmod$zoomScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
+        if (Zoom.onScroll(vertical)) ci.cancel();
+    }
+
+    @ModifyExpressionValue(method = "turnPlayer", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;smoothCamera:Z"))
+    private boolean fishmod$zoomSmoothCamera(boolean original) {
+        return original || Zoom.smoothCamera();
+    }
+
+    @Inject(method = "grabMouse", at = @At(value = "FIELD",
+            target = "Lnet/minecraft/client/MouseHandler;xpos:D", opcode = Opcodes.PUTFIELD, ordinal = 0))
+    private void fishmod$captureCursor(CallbackInfo ci) {
+        this.fishmod$beforeX = this.xpos;
+        this.fishmod$beforeY = this.ypos;
+    }
+
+    @Inject(method = "releaseMouse", at = @At("TAIL"))
+    private void fishmod$restoreCursor(CallbackInfo ci) {
+        if (NoCursorReset.shouldHook() && fishmod.compat.McCompatKt.getCurScreen(Minecraft.getInstance()) instanceof AbstractContainerScreen) {
+            this.xpos = this.fishmod$beforeX;
+            this.ypos = this.fishmod$beforeY;
+            // Move the real OS cursor too, or the next mouse move snaps back to centre
+            org.lwjgl.glfw.GLFW.glfwSetCursorPos(Minecraft.getInstance().getWindow().handle(), this.xpos, this.ypos);
+        }
+    }
+}

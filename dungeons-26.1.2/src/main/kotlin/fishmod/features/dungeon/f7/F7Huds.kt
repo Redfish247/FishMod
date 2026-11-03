@@ -1,9 +1,10 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.compat.BladeCompat
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
-import fishmod.utils.config.values.Floor7
-import fishmod.utils.dungeon.Section
+import fishmod.utils.config.values.Floor7Settings
+import fishmod.utils.dungeon.GoldorSection
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import fishmod.utils.debug.FishDiag
@@ -16,173 +17,176 @@ object F7Huds {
     @JvmField
     @ConfigValue
     var tickTimer: HUDComponent = HUDComponent(
-        10.0, 80.0, TICK_W, 10, 1f, "Tick Timer",
+        10.0, 80.0, TICK_W, 10, 1f, "Boss Tick Clock",
         { false }, BossTickTimer::render,
-        { Floor7.enableTickTimers && (Floor7.enableMaxorTickTimer || Floor7.enableStormTickTimer || Floor7.enableGoldorTickTimer) }
+        { Floor7Settings.enableTickTimers && (Floor7Settings.maxorTicksHud || Floor7Settings.stormTicksHud || Floor7Settings.goldorTicksHud) }
     )
 
     @JvmField
     @ConfigValue
-    var crystalSpawnTime: HUDComponent = HUDComponent(
-        10.0, 92.0, TICK_W, 10, 1f, "Crystal Spawn Time",
-        { false }, CrystalSpawn::render, { Floor7.enableCrystalSpawnTime }
+    var crystalRespawnBox: HUDComponent = HUDComponent(
+        10.0, 92.0, TICK_W, 10, 1f, "Crystal Respawn",
+        { false }, MaxorCrystalTimer::render, { Floor7Settings.crystalSpawnHud }
     )
 
     @JvmField
     @ConfigValue
     var crystalReminder: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Crystal Reminder",
-        { false }, CrystalSpawn::renderNotification, { Floor7.enableCrystalSpawnTime && Floor7.crystalPlaceReminder }
+        0.0, 0.0, NOTI_W, 10, 1f, "Crystal Not Placed",
+        { false }, MaxorCrystalTimer::renderNotification, { Floor7Settings.crystalSpawnHud && Floor7Settings.crystalPlaceAlert }
     )
 
     @JvmField
     @ConfigValue
-    var stormDeathTime: HUDComponent = HUDComponent(
-        10.0, 92.0, 40, 10, 1f, "Storm Death Time",
-        { false }, StormTickTimer::renderDeathTime, { Floor7.enableTickTimers && Floor7.enableStormDeathTime }
+    var stormKillBox: HUDComponent = HUDComponent(
+        10.0, 92.0, 40, 10, 1f, "Storm Kill Time",
+        { false }, StormTicks::renderDeathTime, { Floor7Settings.enableTickTimers && Floor7Settings.stormKillTimeHud }
     )
 
     @JvmField
     @ConfigValue
     var pyTimer: HUDComponent = HUDComponent(
         10.0, 116.0, TICK_W, 10, 1f, "Py Tick Timer",
-        { false }, StormTickTimer::renderPyTimer, { Floor7.enableTickTimers && Floor7.enablePyTimer }
+        { false }, StormTicks::renderPyTimer, { Floor7Settings.enableTickTimers && Floor7Settings.enablePyTimer }
     )
 
     @JvmField
     @ConfigValue
     var necronLbTimer: HUDComponent = HUDComponent(
         10.0, 128.0, TICK_W, 10, 1f, "Necron LB Timer",
-        { false }, NecronLbTimer::render, { Floor7.enableTickTimers && Floor7.enableNecronLbTimer }
+        { false }, NecronLbTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.enableNecronLbTimer }
     )
 
     @JvmField
     @ConfigValue
     var necronDragTimer: HUDComponent = HUDComponent(
         10.0, 140.0, TICK_W, 10, 1f, "Necron Drag Timer",
-        { false }, NecronDropPredict::render, { Floor7.enableTickTimers && Floor7.enableNecronDropPredict }
+        { false }, NecronDropPredict::render, { Floor7Settings.enableTickTimers && Floor7Settings.enableNecronDropPredict }
     )
 
     @JvmField
     @ConfigValue
     var necronDropLanding: HUDComponent = HUDComponent(
         0.0, 20.0, NOTI_W, 10, 1f, "Necron Drop Lava/Platform",
-        { false }, NecronDropPredict::renderLanding, { Floor7.enableNecronDropPredict && Floor7.necronDropLavaPopup }
+        { false }, NecronDropPredict::renderLanding, { Floor7Settings.enableNecronDropPredict && Floor7Settings.necronDropLavaPopup }
     )
 
     @JvmField
     @ConfigValue
     var lbReleaseTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "LB Release Timer",
-        { false }, StormTickTimer::renderLbReleaseTimer, { Floor7.enableTickTimers && Floor7.enableLbReleaseTimer }
+        { false }, StormTicks::renderLbReleaseTimer, { Floor7Settings.enableTickTimers && Floor7Settings.enableLbReleaseTimer }
     )
 
     @JvmField
     @ConfigValue
     var stormCrush: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Storm Crushed",
-        { false }, PillarExplode::render, { Floor7.enableTickTimers && Floor7.notifyStormCrush }
+        0.0, 0.0, NOTI_W, 10, 1f, "Storm Crush Banner",
+        { false }, StormPillarTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.stormCrushAlert }
     )
 
     @JvmField
     @ConfigValue
     var pillarExplosion: HUDComponent = HUDComponent(
-        10.0, 140.0, TICK_W, 10, 1f, "Pillar Explosion Timer",
-        { false }, PillarExplode::renderTimer, { Floor7.timePillarExplosion }
+        10.0, 140.0, TICK_W, 10, 1f, "Pillar Blast Timer",
+        { false }, StormPillarTimer::renderTimer, { Floor7Settings.pillarBlastTimer }
     )
 
     @JvmField
     @ConfigValue
-    var termStartTimer: HUDComponent = HUDComponent(
-        10.0, 104.0, TICK_W, 10, 1f, "Term Start Timer",
-        { false }, TermStartTimer::render, { Floor7.enableTickTimers && Floor7.enableTermStartTimer }
+    var termOpenBox: HUDComponent = HUDComponent(
+        10.0, 104.0, TICK_W, 10, 1f, "Terminals Open In",
+        { false }, TermOpenTimer::render, { Floor7Settings.enableTickTimers && Floor7Settings.termOpenHud }
     )
 
     @JvmField
     @ConfigValue
     var sectionProgress: HUDComponent = HUDComponent(
-        10.0, 116.0, 40, 10, 1f, "Section Progress",
-        { false }, SectionProgress::render, { Floor7.showSectionProgress }
+        10.0, 116.0, 40, 10, 1f, "Section Count",
+        { false }, SectionCountHud::render, { Floor7Settings.sectionProgressHud }
     )
 
     @JvmField
     @ConfigValue
     var currentSection: HUDComponent = HUDComponent(
-        10.0, 190.0, TICK_W, 10, 1f, "Current Section",
-        { false }, CurrentSection::render, { Floor7.showCurrentSection }
+        10.0, 190.0, TICK_W, 10, 1f, "P3 Section",
+        { false }, GoldorSectionHud::render, { Floor7Settings.currentSectionHud }
     )
 
     @JvmField
     @ConfigValue
     var deviceNotifier: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Device Completed",
-        { false }, DeviceNotifier::render, { Floor7.notifyPre4Completion || Floor7.notifySSCompletion }
+        0.0, 0.0, NOTI_W, 10, 1f, "Device Done",
+        { false }, DeviceDoneAlert::render, { Floor7Settings.pre4DoneAlert || Floor7Settings.ssDoneAlert }
     )
 
     @JvmField
     @ConfigValue
     var melodyWarning: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Melody Warning",
-        { false }, MelodyWarning::render, { Floor7.notifiyMelody }
+        0.0, 0.0, NOTI_W, 10, 1f, "Melody Callout",
+        { false }, MelodyAlert::render, { Floor7Settings.melodyAlert }
     )
 
     @JvmField
     @ConfigValue
     var sectionCompletion: HUDComponent = HUDComponent(
-        0.0, 0.0, NOTI_W, 10, 1f, "Section Completion",
-        { false }, SectionCompletion::render, { Floor7.sectionCompletionNotification }
+        0.0, 0.0, NOTI_W, 10, 1f, "Section Cleared",
+        { false }, SectionDoneHud::render, { Floor7Settings.sectionDoneAlert }
     )
 
     @JvmField
     @ConfigValue
     var playersLeaped: HUDComponent = HUDComponent(
         0.0, 0.0, 110, 10, 1f, "Players Leaped",
-        { false }, PlayersLeaped::render, { Floor7.playersLeapedEnabled }
+        { false }, PlayersLeaped::render, { Floor7Settings.playersLeapedEnabled }
     )
 
     @JvmStatic
     fun init() {
-        MaxorTickTimer.init()
-        CrystalSpawn.init()
-        StormTickTimer.init()
+        StormTicks.init()
         NecronLbTimer.init()
         NecronDropPredict.init()
-        PillarExplode.init()
-        GoldorTickTimer.init()
-        TermStartTimer.init()
-        SectionProgress.init()
-        CurrentSection.init()
-        DeviceNotifier.init()
-        TitleHider.init()
-        MelodyWarning.init()
-        SectionCompletion.init()
         GateDisplay.init()
-        PlayersLeaped.init()
         BloodSolver.init()
+        // Blade Addons ships these, so skip ours to avoid double HUDs/sounds
+        if (BladeCompat.active) return
+        MaxorTicks.init()
+        MaxorCrystalTimer.init()
+        StormPillarTimer.init()
+        GoldorTicks.init()
+        TermOpenTimer.init()
+        SectionCountHud.init()
+        GoldorSectionHud.init()
+        DeviceDoneAlert.init()
+        P3TitleFilter.init()
+        MelodyAlert.init()
+        SectionDoneHud.init()
+        PlayersLeaped.init()
     }
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor) {
-        renderOne(ctx, tickTimer, BossTickTimer.display(), BossTickTimer::render, 10, 70)
-        renderOne(ctx, termStartTimer, TermStartTimer.display(), TermStartTimer::render, 10, 106)
-        renderOne(ctx, crystalSpawnTime, CrystalSpawn.display(), CrystalSpawn::render, 10, 118)
-        renderOne(ctx, stormDeathTime, StormTickTimer.displayDeathTime(), StormTickTimer::renderDeathTime, 10, 130)
-        renderOne(ctx, sectionProgress, SectionProgress.display(), SectionProgress::render, 10, 142)
-        renderOne(ctx, Section.terminalSplits, Section.display(), Section::render, 10, 154)
+        val own = !BladeCompat.active
+        renderOne(ctx, tickTimer, own && BossTickTimer.display(), BossTickTimer::render, 10, 70)
+        renderOne(ctx, termOpenBox, own && TermOpenTimer.display(), TermOpenTimer::render, 10, 106)
+        renderOne(ctx, crystalRespawnBox, own && MaxorCrystalTimer.display(), MaxorCrystalTimer::render, 10, 118)
+        renderOne(ctx, stormKillBox, own && StormTicks.displayDeathTime(), StormTicks::renderDeathTime, 10, 130)
+        renderOne(ctx, sectionProgress, own && SectionCountHud.display(), SectionCountHud::render, 10, 142)
+        renderOne(ctx, GoldorSection.goldorSplitsBox, own && GoldorSection.display(), GoldorSection::render, 10, 154)
         renderOne(ctx, TerminalTracker.terminalTrackerHud, TerminalTracker.display(), TerminalTracker::render, 10, 230)
-        renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
-        renderOne(ctx, pyTimer, StormTickTimer.displayPyTimer(), StormTickTimer::renderPyTimer, 10, 178)
+        renderOne(ctx, lbReleaseTimer, StormTicks.displayLbReleaseTimer(), StormTicks::renderLbReleaseTimer, 10, 166)
+        renderOne(ctx, pyTimer, StormTicks.displayPyTimer(), StormTicks::renderPyTimer, 10, 178)
         renderOne(ctx, necronDragTimer, NecronDropPredict.display(), NecronDropPredict::render, 10, 220)
         renderOne(ctx, necronDropLanding, NecronDropPredict.displayLanding(), NecronDropPredict::renderLanding, 10, 76)
         renderOne(ctx, necronLbTimer, NecronLbTimer.display(), NecronLbTimer::render, 10, 190)
-        renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
-        renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)
-        renderOne(ctx, pillarExplosion, PillarExplode.displayTimer(), PillarExplode::renderTimer, 10, 214)
-        renderOne(ctx, currentSection, CurrentSection.display(), CurrentSection::render, 10, 202)
-        renderOne(ctx, deviceNotifier, DeviceNotifier.display(), DeviceNotifier::render, 10, 52)
-        renderOne(ctx, melodyWarning, MelodyWarning.display(), MelodyWarning::render, 10, 64)
-        renderOne(ctx, sectionCompletion, SectionCompletion.display(), SectionCompletion::render, 10, 16)
-        renderOne(ctx, playersLeaped, PlayersLeaped.display(), PlayersLeaped::render, 10, 90)
+        renderOne(ctx, crystalReminder, own && MaxorCrystalTimer.displayNotification(), MaxorCrystalTimer::renderNotification, 10, 40)
+        renderOne(ctx, stormCrush, own && StormPillarTimer.display(), StormPillarTimer::render, 10, 28)
+        renderOne(ctx, pillarExplosion, own && StormPillarTimer.displayTimer(), StormPillarTimer::renderTimer, 10, 214)
+        renderOne(ctx, currentSection, own && GoldorSectionHud.display(), GoldorSectionHud::render, 10, 202)
+        renderOne(ctx, deviceNotifier, own && DeviceDoneAlert.display(), DeviceDoneAlert::render, 10, 52)
+        renderOne(ctx, melodyWarning, own && MelodyAlert.display(), MelodyAlert::render, 10, 64)
+        renderOne(ctx, sectionCompletion, own && SectionDoneHud.display(), SectionDoneHud::render, 10, 16)
+        renderOne(ctx, playersLeaped, own && PlayersLeaped.display(), PlayersLeaped::render, 10, 90)
     }
 
     private fun renderOne(

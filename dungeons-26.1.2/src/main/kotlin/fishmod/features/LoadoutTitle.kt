@@ -3,7 +3,7 @@ import fishmod.compat.hud
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
@@ -14,7 +14,7 @@ object LoadoutTitle {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text -> onMessage(text) }
+        FishEvents.chat.register { text -> onMessage(text) }
     }
 
     private fun onMessage(text: Component?): Boolean {

@@ -3,8 +3,8 @@ import fishmod.compat.curScreen
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Constants
-import fishmod.utils.Location
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.DeltaTracker
@@ -18,6 +18,7 @@ object SlayerHuds {
     const val STATS_HUD = "Slayer Stats"
     const val TIMER_HUD = "Slayer Boss Timer"
     const val PROFIT_HUD = "Slayer Profit"
+    const val RNG_HUD = "Slayer RNG Meter"
 
     @JvmStatic
     fun init() {
@@ -33,9 +34,17 @@ object SlayerHuds {
             STATS_HUD,
             { FishSettings.slayerStatsHudX }, { v -> FishSettings.slayerStatsHudX = v },
             { FishSettings.slayerStatsHudY }, { v -> FishSettings.slayerStatsHudY = v },
-            110, 14 * 6,
+            110, 14 * 3,
             { FishSettings.slayerStatsHudScale }, { v -> FishSettings.slayerStatsHudScale = v },
             { FishSettings.slayerStatsHudEnabled },
+        )
+        FishHudEditor.register(
+            RNG_HUD,
+            { FishSettings.slayerRngHudX }, { v -> FishSettings.slayerRngHudX = v },
+            { FishSettings.slayerRngHudY }, { v -> FishSettings.slayerRngHudY = v },
+            160, 12,
+            { FishSettings.slayerRngHudScale }, { v -> FishSettings.slayerRngHudScale = v },
+            { FishSettings.slayerRngTitleEnabled },
         )
         FishHudEditor.register(
             TIMER_HUD,
@@ -110,19 +119,42 @@ object SlayerHuds {
         if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea() || !SlayerStatsTracker.hasData()) return
 
         val lines = ArrayList<String>(7)
-        lines.add("§5§lSLAYER STATS")
+        val type = SlayerManager.type ?: return
+        lines.add("§5§l${type.displayName} ${roman(SlayerManager.tier)}")
         if (FishSettings.slayerStatsShowXp)
-            lines.add("§7XP: §f${SlayerStatsTracker.short(SlayerStatsTracker.xpGained.toDouble())}")
+            lines.add("§7XP: §f${SlayerStatsTracker.short(SlayerStatsTracker.xpGained.toDouble())}" +
+                SlayerStatsTracker.rank().let { if (it > 0) " §8(§e#${fishmod.utils.Fmt.grouped(it.toLong())} §8on leaderboard)" else "" })
         if (FishSettings.slayerStatsShowKills)
-            lines.add("§7Kills: §f${SlayerStatsTracker.kills}")
-        if (FishSettings.slayerStatsShowXpHr)
-            lines.add("§7XP/hr: §e${rate(SlayerStatsTracker.xpPerHour())}")
-        if (FishSettings.slayerStatsShowKillsHr)
-            lines.add("§7Kills/hr: §e${rateInt(SlayerStatsTracker.killsPerHour())}")
+            lines.add("§7Kills: §f${fmt(SlayerStatsTracker.kills.toDouble())}")
         if (lines.size == 1) return
+        if (!SlayerStatsTracker.fromApi()) lines.add("§8(session, API not loaded)")
 
         drawBlock(ctx, FishSettings.slayerStatsHudX, FishSettings.slayerStatsHudY,
             FishSettings.slayerStatsHudScale, lines)
+    }
+
+    @JvmStatic
+    fun renderRng(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        try {
+            if (!FishSettings.slayerRngTitleEnabled) return
+            val mc = Minecraft.getInstance()
+            if (mc.player == null || mc.hudHidden) return
+            if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea()) return
+            val text = SlayerStatsTracker.rngText() ?: "§8no data yet"
+            val x = FishSettings.slayerRngHudX
+            val y = FishSettings.slayerRngHudY
+            val sc = FishSettings.slayerRngHudScale.toFloat()
+            val label = "RNG Meter: "
+            val col = FishSettings.slayerRngTitleColor or 0xFF000000.toInt()
+            ctx.pose().pushMatrix()
+            ctx.pose().translate(x.toFloat(), y.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, label, 0, 0, col, true)
+            ctx.text(mc.font, "§e$text", mc.font.width(label), 0, 0xFFFFFFFF.toInt(), true)
+            ctx.pose().popMatrix()
+        } catch (e: Exception) {
+            FishDiag.fail("SlayerHuds.10", "slayer RNG HUD render failed (type=${SlayerManager.type})", e)
+        }
     }
 
     private var profitFrameMs = 0L
@@ -164,7 +196,7 @@ object SlayerHuds {
         if (mc.player == null || mc.hudHidden) return false
         // keep drawing while chat is open so it can be clicked (SkyHanni behaviour)
         if (mc.curScreen != null && mc.curScreen !is net.minecraft.client.gui.screens.ChatScreen && !inInv) return false
-        if (!Location.inSkyblock() || !SlayerManager.inCorrectArea()) return false
+        if (!SkyblockLocation.inSkyblock() || !SlayerManager.inCorrectArea()) return false
         val type = SlayerManager.type ?: return false
         val tier = SlayerManager.tier
         if (!SlayerProfitTracker.hasData(type, tier)) return false
@@ -172,7 +204,7 @@ object SlayerHuds {
         val interactive = mc.curScreen is net.minecraft.client.gui.screens.ChatScreen
         val rows = SlayerProfitTracker.display(type, tier, interactive)
         val f = mc.font
-        val lh = Constants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT + 2
         // value column right-aligned, item text after it (Mining/Diana style)
         val colX = rows.maxOfOrNull { if (it.value.isEmpty()) 0 else f.width(it.value) + 6 } ?: 0
         var panelW = 0
@@ -286,7 +318,7 @@ object SlayerHuds {
         lines: List<String>,
     ) {
         val mc = Minecraft.getInstance()
-        val lh = Constants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT + 2
         val sc = scale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
@@ -296,8 +328,6 @@ object SlayerHuds {
     }
 
     private fun fmt(v: Double): String = fishmod.utils.Fmt.grouped(v.toLong())
-    private fun rate(v: Double): String = if (v <= 0.0) "§8—" else SlayerStatsTracker.short(v)
-    private fun rateInt(v: Double): String = if (v <= 0.0) "§8—" else fishmod.utils.Fmt.grouped(v.toLong())
 
     private fun roman(n: Int): String = when (n) {
         1 -> "I"; 2 -> "II"; 3 -> "III"; 4 -> "IV"; 5 -> "V"

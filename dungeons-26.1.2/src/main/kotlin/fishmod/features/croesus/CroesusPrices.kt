@@ -3,7 +3,7 @@ package fishmod.features.croesus
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
 import java.net.URI
 import java.net.http.HttpClient
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 object CroesusPrices {
 
-    private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
+    private val HTTP = fishmod.utils.Http
 
     private const val TTL_MS = 5 * 60 * 1000L
     private const val FAIL_TTL_MS = 15 * 60 * 1000L
@@ -142,12 +142,12 @@ object CroesusPrices {
                         if (min < Double.MAX_VALUE) result = min
                     }
                 } catch (ex: Exception) {
-                    Debug.LOGGER.warn("[CroesusPrices] qualityBin {} error: {}", key, ex.message)
+                    FishDebug.LOGGER.warn("[CroesusPrices] qualityBin {} error: {}", key, ex.message)
                     FishDiag.fail("CroesusPrices.1", "quality bin parse failed for $key", ex)
                 }
                 trim(qualityBin)
                 qualityBin[key] = result to System.currentTimeMillis()
-                if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] qualityBin {} = {}", key, result)
+                if (result > 0.0) FishDebug.LOGGER.debug("[CroesusPrices] qualityBin {} = {}", key, result)
             }.exceptionally { t -> FishDiag.fail("CroesusPrices.2", "quality bin fetch failed for $key", t); qualityFetching.remove(key); qualityBin[key] = 0.0 to System.currentTimeMillis(); null }
     }
 
@@ -238,13 +238,13 @@ object CroesusPrices {
                             if (min < Double.MAX_VALUE) result = min
                         }
                     } catch (ex: Exception) {
-                        Debug.LOGGER.warn("[CroesusPrices] dynamicBin {} parse error: {}", cacheKey, ex.message)
+                        FishDebug.LOGGER.warn("[CroesusPrices] dynamicBin {} parse error: {}", cacheKey, ex.message)
                         FishDiag.fail("CroesusPrices.5", "dynamic bin parse failed for $cacheKey", ex)
                     }
                 }
                 trim(dynamicBin)
                 dynamicBin[cacheKey] = result to System.currentTimeMillis()
-                if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] dynamicBin {} = {}", cacheKey, result)
+                if (result > 0.0) FishDebug.LOGGER.debug("[CroesusPrices] dynamicBin {} = {}", cacheKey, result)
             }
             .exceptionally { t -> FishDiag.fail("CroesusPrices.6", "dynamic bin fetch failed for $cacheKey", t); dynamicFetching.remove(cacheKey); dynamicBin[cacheKey] = 0.0 to System.currentTimeMillis(); null }
     }
@@ -269,7 +269,7 @@ object CroesusPrices {
                         val p = med.asDouble
                         if (p > 0) {
                             coflnet[id] = p
-                            Debug.LOGGER.debug("[CroesusPrices] coflnet {} = {}", id, p)
+                            FishDebug.LOGGER.debug("[CroesusPrices] coflnet {} = {}", id, p)
                         }
                     }
                     val mean = obj.get("mean")
@@ -277,7 +277,7 @@ object CroesusPrices {
                         threeDayAvg[id] = mean.asDouble
                     }
                 } catch (ex: Exception) {
-                    Debug.LOGGER.warn("[CroesusPrices] coflnet {} error: {}", id, ex.message)
+                    FishDebug.LOGGER.warn("[CroesusPrices] coflnet {} error: {}", id, ex.message)
                     FishDiag.fail("CroesusPrices.7", "coflnet price parse failed for $id", ex)
                 }
                 coflnetAttempted[id] = System.currentTimeMillis()
@@ -335,12 +335,12 @@ object CroesusPrices {
                         if (min < Double.MAX_VALUE) result = min
                     }
                 } catch (ex: Exception) {
-                    Debug.LOGGER.warn("[CroesusPrices] lowBin {} error: {}", id, ex.message)
+                    FishDebug.LOGGER.warn("[CroesusPrices] lowBin {} error: {}", id, ex.message)
                     FishDiag.fail("CroesusPrices.9", "low bin parse failed for $id", ex)
                 }
                 trim(lowBinCache)
                 lowBinCache[id] = result to System.currentTimeMillis()
-                if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] lowBin {} = {}", id, result)
+                if (result > 0.0) FishDebug.LOGGER.debug("[CroesusPrices] lowBin {} = {}", id, result)
             }.exceptionally { t -> FishDiag.fail("CroesusPrices.10", "low bin fetch failed for $id", t); fetchingLowBin.remove(id); lowBinCache[id] = 0.0 to System.currentTimeMillis(); null }
     }
 
@@ -370,13 +370,13 @@ object CroesusPrices {
             .thenAccept { r ->
                 try {
                     if (r.statusCode() != 200) {
-                        Debug.LOGGER.warn("[CroesusPrices] bazaar status={}", r.statusCode())
+                        FishDebug.LOGGER.warn("[CroesusPrices] bazaar status={}", r.statusCode())
                         FishDiag.fail("CroesusPrices.11", "bazaar API returned HTTP ${r.statusCode()}")
                         return@thenAccept
                     }
                     val root = JsonParser.parseString(r.body()).asJsonObject
                     val products = root.getAsJsonObject("products")
-                    if (products == null) { Debug.LOGGER.warn("[CroesusPrices] bazaar: no products"); FishDiag.fail("CroesusPrices.12", "bazaar response has no products"); return@thenAccept }
+                    if (products == null) { FishDebug.LOGGER.warn("[CroesusPrices] bazaar: no products"); FishDiag.fail("CroesusPrices.12", "bazaar response has no products"); return@thenAccept }
                     val buy = HashMap<String, Double>()
                     val sell = HashMap<String, Double>()
                     for ((key, value) in products.entrySet()) {
@@ -397,12 +397,12 @@ object CroesusPrices {
                     bazaarSell = sell
                     applyPriceMode()
                     lastBazaar = System.currentTimeMillis()
-                    Debug.LOGGER.debug("[CroesusPrices] bazaar loaded {} entries", bazaar.size)
+                    FishDebug.LOGGER.debug("[CroesusPrices] bazaar loaded {} entries", bazaar.size)
                 } catch (ex: Exception) {
-                    Debug.LOGGER.warn("[CroesusPrices] bazaar parse error: {}", ex.message)
+                    FishDebug.LOGGER.warn("[CroesusPrices] bazaar parse error: {}", ex.message)
                     FishDiag.fail("CroesusPrices.15", "bazaar parse failed", ex)
                 }
-            }.exceptionally { t -> Debug.LOGGER.warn("[CroesusPrices] bazaar fetch error: {}", t.message); FishDiag.fail("CroesusPrices.16", "bazaar fetch failed", t); null }
+            }.exceptionally { t -> FishDebug.LOGGER.warn("[CroesusPrices] bazaar fetch error: {}", t.message); FishDiag.fail("CroesusPrices.16", "bazaar fetch failed", t); null }
     }
 
     private fun fetchLbin(): CompletableFuture<Void> {
@@ -414,7 +414,7 @@ object CroesusPrices {
             .thenAccept { r ->
                 try {
                     if (r.statusCode() != 200) {
-                        if (!lbinFailLogged) { Debug.LOGGER.warn("[CroesusPrices] lbin status={} - backing off {}m", r.statusCode(), FAIL_TTL_MS / 60000); lbinFailLogged = true }
+                        if (!lbinFailLogged) { FishDebug.LOGGER.warn("[CroesusPrices] lbin status={} - backing off {}m", r.statusCode(), FAIL_TTL_MS / 60000); lbinFailLogged = true }
                         FishDiag.fail("CroesusPrices.17", "coflnet lbin API returned HTTP ${r.statusCode()}")
                         lastLbin = failStamp()
                         return@thenAccept
@@ -426,19 +426,25 @@ object CroesusPrices {
                             try { next[key] = value.asDouble } catch (ex: Exception) { FishDiag.fail("CroesusPrices.18", "lbin value for $key not numeric", ex) }
                         }
                     }
-                    FishDiag.check(next.isNotEmpty(), "CroesusPrices.19") { "coflnet lbin parsed 0 entries" }
+                    // Empty 200 keeps the cached prices and backs off
+                    if (next.isEmpty()) {
+                        val entries = root.size()
+                        if (entries > 0 || lbin.isEmpty()) FishDiag.fail("CroesusPrices.19", "coflnet lbin parsed 0 entries (body had $entries, cached ${lbin.size})")
+                        lastLbin = failStamp()
+                        return@thenAccept
+                    }
                     lbin = next
                     val now = System.currentTimeMillis()
                     lastLbin = now
                     lbinFailLogged = false
-                    Debug.LOGGER.debug("[CroesusPrices] coflnet lbin loaded {} entries", next.size)
+                    FishDebug.LOGGER.debug("[CroesusPrices] coflnet lbin loaded {} entries", next.size)
                 } catch (ex: Exception) {
-                    if (!lbinFailLogged) { Debug.LOGGER.warn("[CroesusPrices] lbin parse error: {}", ex.message); lbinFailLogged = true }
+                    if (!lbinFailLogged) { FishDebug.LOGGER.warn("[CroesusPrices] lbin parse error: {}", ex.message); lbinFailLogged = true }
                     FishDiag.fail("CroesusPrices.20", "coflnet lbin parse failed", ex)
                     lastLbin = failStamp()
                 }
             }.exceptionally { t ->
-                if (!lbinFailLogged) { Debug.LOGGER.warn("[CroesusPrices] lbin fetch error: {}", t.message); lbinFailLogged = true }
+                if (!lbinFailLogged) { FishDebug.LOGGER.warn("[CroesusPrices] lbin fetch error: {}", t.message); lbinFailLogged = true }
                 FishDiag.fail("CroesusPrices.21", "coflnet lbin fetch failed", t)
                 lastLbin = failStamp()
                 null

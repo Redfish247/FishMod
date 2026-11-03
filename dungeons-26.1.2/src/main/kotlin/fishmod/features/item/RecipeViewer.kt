@@ -6,9 +6,9 @@ import fishmod.compat.showScreen
 import com.google.gson.JsonObject
 import fishmod.features.croesus.LootIcons
 import fishmod.mixin.accessors.HandledScreenAccessor
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.data.NeuRepo
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
@@ -44,6 +44,7 @@ object RecipeViewer {
     private val stacks = HashMap<String, ItemStack>()
 
     private var holdId: String? = null
+    private var holdSlot: Any? = null
     private var holdStart = 0L
     private var lastSeen = 0L
     private var fired = false
@@ -57,17 +58,18 @@ object RecipeViewer {
     }
 
     private fun onTooltip(stack: ItemStack, lines: MutableList<Component>) {
-        if (!FishSettings.recipeViewer || !Location.inSkyblock() || stack.isEmpty) return
+        if (!FishSettings.recipeViewer || !SkyblockLocation.inSkyblock() || stack.isEmpty) return
         val mc = Minecraft.getInstance()
         val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
-        if ((screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()?.item !== stack) return
-        val id = ItemUtil.getId(stack) ?: return
+        val slot = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()
+        if (slot?.item !== stack) return
+        val id = ItemTools.getId(stack)?.let { if (it == "ENCHANTED_BOOK") bookId(stack) ?: it else it } ?: return
         NeuRepo.ensureLoaded()
         if (recipesFor(id).isEmpty() && NeuRepo.get(id) == null) return
 
         val now = System.currentTimeMillis()
         val shift = InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_RIGHT_SHIFT)
-        if (!shift || id != holdId || now - lastSeen > 200) { holdId = id; holdStart = now; fired = false }
+        if (!shift || id != holdId || slot !== holdSlot || now - lastSeen > 200) { holdId = id; holdSlot = slot; holdStart = now; fired = false }
         lastSeen = now
         if (!shift) {
             lines.add(Component.literal("§7Recipe §8" + "|".repeat(20) + " §8[§eShift§8]"))
@@ -81,6 +83,14 @@ object RecipeViewer {
             fired = true
             mc.execute { mc.showScreen(RecipeScreen(id, screen)) }
         }
+    }
+
+    // Single-enchant book -> NEU id like ICE_COLD;1
+    private fun bookId(stack: ItemStack): String? {
+        val ench = stack.fishmodCustomDataTag()?.getCompound("enchantments")?.orElse(null) ?: return null
+        val key = ench.keySet().singleOrNull() ?: return null
+        val lvl = ench.getIntOr(key, 0).takeIf { it > 0 } ?: return null
+        return "${key.uppercase()};$lvl"
     }
 
     fun recipesFor(id: String): List<Recipe> {

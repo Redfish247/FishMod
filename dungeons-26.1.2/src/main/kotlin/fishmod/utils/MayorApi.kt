@@ -2,7 +2,7 @@ package fishmod.utils
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import java.net.URI
@@ -29,6 +29,10 @@ object MayorApi {
     private var dianaRitual = false
     @Volatile
     private var mayorLine: String? = null
+    @Volatile
+    private var mayorName: String? = null
+    @Volatile
+    private var mayorPerks: List<String> = emptyList()
     @Volatile
     private var lastFetch = 0L
     @Volatile
@@ -94,21 +98,37 @@ object MayorApi {
                 paulDungeonBonus = parsePaul(root)
                 dianaRitual = hasPerk(root, "diana", "mythological ritual")
                 mayorLine = parseMayorLine(root)
+                parseMayorDetail(root)
                 lastFetch = System.currentTimeMillis()
             } catch (e: Exception) {
                 FishDiag.fail("MayorApi.2", "election response parse failed", e)
-                Debug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
+                FishDebug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
                 lastFetch = failStamp()
             } finally {
                 fetching = false
             }
         }.exceptionally { e ->
             FishDiag.fail("MayorApi.3", "election request failed", e)
-            Debug.LOGGER.warn("MayorApi: fetch failed - {}", e.message)
+            FishDebug.LOGGER.warn("MayorApi: fetch failed - {}", e.message)
             lastFetch = failStamp()
             fetching = false
             null
         }
+    }
+
+    @JvmStatic
+    fun mayorName(): String? { refreshIfStale(); return mayorName }
+
+    @JvmStatic
+    fun mayorPerks(): List<String> { refreshIfStale(); return mayorPerks }
+
+    @JvmStatic
+    fun termMsLeft(): Long { val now = System.currentTimeMillis(); return lastSwitchMs(now) + YEAR_MS - now }
+
+    private fun parseMayorDetail(root: JsonObject) {
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject
+        mayorName = mayor?.get("name")?.takeIf { it.isJsonPrimitive }?.asString
+        mayorPerks = runCatching { mayor?.getAsJsonArray("perks")?.mapNotNull { it.asJsonObject.get("name")?.asString } }.getOrNull() ?: emptyList()
     }
 
     private fun parseMayorLine(root: JsonObject): String? {

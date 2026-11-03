@@ -3,7 +3,7 @@ package fishmod.features.garden
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.networth.ItemsDb
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
@@ -11,7 +11,7 @@ import net.minecraft.world.item.ItemStack
 // Shared Garden helpers and init for all garden parts
 object Garden {
 
-    fun inGarden(): Boolean = Location.`in`(Location.GARDEN)
+    fun inGarden(): Boolean = SkyblockLocation.`in`(SkyblockLocation.GARDEN)
 
     @JvmStatic
     fun init() {

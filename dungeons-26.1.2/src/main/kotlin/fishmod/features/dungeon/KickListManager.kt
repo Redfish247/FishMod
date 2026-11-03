@@ -1,16 +1,16 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.FishMsg
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.NameList
-import fishmod.utils.Scheduler
+import fishmod.utils.TickScheduler
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.data.PartyUtil
+import fishmod.utils.data.PartyTools
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
@@ -32,10 +32,10 @@ object KickListManager {
         ClientTickEvents.END_CLIENT_TICK.register {
             try { onTick() } catch (e: Exception) { FishDiag.fail("KickListManager.1", "kick list tick failed (${pending.size} pending)", e) }
         }
-        Events.ON_WORLD_CHANGE.register { lastKick.clear(); pending.clear(); false }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.worldChange.register { lastKick.clear(); pending.clear(); false }
+        FishEvents.chat.register { text ->
             if (FishSettings.pcKickListEnabled && FishSettings.pcKickList.isNotBlank()) {
-                val stripped = Constants.STRIP_COLOR_REGEX.replace(text.string, "")
+                val stripped = FishConstants.STRIP_COLOR_REGEX.replace(text.string, "")
                 val m = PF_JOIN.matcher(stripped).takeIf { it.find() }
                     ?: JOIN.matcher(stripped).takeIf { it.find() }
                 m?.let { mm -> FishDiag.guard("KickListManager.2", "kick list join handling failed") { onJoin(mm.group(1)) } }
@@ -49,11 +49,11 @@ object KickListManager {
         val self = Minecraft.getInstance().player?.name?.string ?: return
         if (name.equals(self, ignoreCase = true)) return
         if (!NameList.contains(FishSettings.pcKickList, name)) return
-        if (PartyUtil.amLeader()) {
+        if (PartyTools.amLeader()) {
             kick(name)
         } else {
             pending[name] = System.currentTimeMillis()
-            PartyUtil.forceRefresh()
+            PartyTools.forceRefresh()
         }
     }
 
@@ -64,8 +64,8 @@ object KickListManager {
         if (prev != null && now - prev < KICK_COOLDOWN_MS) return
         lastKick[key] = now
         FishMsg.send("§9Kick List §7> kicking §e$name")
-        Scheduler.scheduleTask({ FishDiag.guard("KickListManager.4", "party kick command failed for $name") { Misc.executeCommand("party kick $name") } }, 2)
-        Scheduler.scheduleTask({ PartyUtil.forceRefresh() }, 20)
+        TickScheduler.scheduleTask({ FishDiag.guard("KickListManager.4", "party kick command failed for $name") { FishUtil.executeCommand("party kick $name") } }, 2)
+        TickScheduler.scheduleTask({ PartyTools.forceRefresh() }, 20)
     }
 
     private fun onTick() {
@@ -77,9 +77,9 @@ object KickListManager {
             val it = pending.entries.iterator()
             while (it.hasNext()) {
                 val (name, requested) = it.next()
-                if (PartyUtil.lastReceived >= requested) {
+                if (PartyTools.lastReceived >= requested) {
                     it.remove()
-                    if (PartyUtil.amLeader()) kick(name)
+                    if (PartyTools.amLeader()) kick(name)
                 } else if (now - requested > PENDING_TIMEOUT_MS) {
                     it.remove()
                 }
@@ -91,10 +91,10 @@ object KickListManager {
 
         val mc = Minecraft.getInstance()
         val connection = mc.connection ?: return
-        if (!PartyUtil.amLeader()) return
+        if (!PartyTools.amLeader()) return
         val self = mc.player?.name?.string ?: return
 
-        for (uuid in PartyUtil.getMemberUuids()) {
+        for (uuid in PartyTools.getMemberUuids()) {
             val name = connection.getPlayerInfo(uuid)?.profile?.name ?: continue // member in another lobby
             if (name.equals(self, ignoreCase = true)) continue
             if (!NameList.contains(FishSettings.pcKickList, name)) continue

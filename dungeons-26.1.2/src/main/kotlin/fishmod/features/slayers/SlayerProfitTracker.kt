@@ -6,10 +6,10 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import fishmod.features.croesus.CroesusPrices
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.io.File
@@ -28,7 +28,7 @@ object SlayerProfitTracker {
     private const val COINS_ROW = "Mob Kill Coins"
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    private val DROP_LINE = Pattern.compile("(?:[A-Z]{3,} )+DROP! \\(?(?:([\\d,]+)x )?(.+?)\\)?(?: \\(\\+.*)?$")
+    private val DROP_LINE = Pattern.compile("^(?:[A-Z]{3,} )+DROP! (?!.* just found )\\(?(?:([\\d,]+)x )?(.+?)\\)?(?: \\(\\+.*)?$")
     private val LEADING_GLYPHS = Regex("^[^\\p{L}\\p{N}]+")
     private val SACK_PICKUP = Pattern.compile("^\\+\\s*([\\d,]+)\\s+([A-Za-z'’. ]+?)(?:\\s*\\(.*\\))?$")
     private val AUTO_SLAYER_BANK = Pattern.compile("Took ([\\d,.]+[kmb]?) coins from your bank for auto-slayer")
@@ -91,12 +91,12 @@ object SlayerProfitTracker {
                 FishDiag.fail("SlayerProfitTracker.3", "slayer profit tick failed (key=${curKey()})", e)
             }
         })
-        Events.ON_WORLD_CHANGE.register { FishDiag.guard("SlayerProfitTracker.10", "flush on world change failed") { flushSave(true) }; false }
+        FishEvents.worldChange.register { FishDiag.guard("SlayerProfitTracker.10", "flush on world change failed") { flushSave(true) }; false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishDiag.guard("SlayerProfitTracker.11", "flush on client stop failed") { flushSave(true) } }
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (enabled()) {
                 try {
-                    onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+                    onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim())
                 } catch (e: Exception) {
                     FishDiag.fail("SlayerProfitTracker.4", "slayer profit chat handler failed", e)
                 }
@@ -115,7 +115,7 @@ object SlayerProfitTracker {
         if (resetArmedAt != 0L && now - resetArmedAt > RESET_CONFIRM_MS) resetArmedAt = 0L
 
         val k = curKey()
-        if (k == null || !SlayerManager.isActiveSlayer()) return
+        if (k == null || !SlayerManager.isActiveSlayer() || !SlayerManager.onQuestIsland()) return
         val (t, s) = bothData(k)
 
         if (idlePaused) return
@@ -156,7 +156,7 @@ object SlayerProfitTracker {
         lastPurse = purse
         if (!enabled() || prev < 0) return
         val k = curKey() ?: return
-        if (!SlayerManager.isActiveSlayer()) return
+        if (!SlayerManager.isActiveSlayer() || !SlayerManager.onQuestIsland()) return
 
         val delta = (purse - prev).toLong()
         if (delta == 0L) return
@@ -194,7 +194,7 @@ object SlayerProfitTracker {
             return
         }
 
-        if (!SlayerManager.isActiveSlayer()) return
+        if (!SlayerManager.isActiveSlayer() || !SlayerManager.onQuestIsland()) return
 
         val drop = DROP_LINE.matcher(s)
         if (drop.find()) {
@@ -281,7 +281,25 @@ object SlayerProfitTracker {
         @JvmField val value: Double,
         @JvmField val priced: Boolean,
         @JvmField val coins: Boolean = false,
+        @JvmField val id: String? = null,
     )
+
+    private val RUNE_NAME = Regex("^(.+) Rune ([IVX]+)$")
+    private val SHARD_NAME = Regex("^(.+) Shard$")
+
+    private fun idPart(s: String) = s.uppercase().replace("'", "").replace(Regex("[^A-Z0-9]+"), "_").trim('_')
+
+    // Runes and hunting shards aren't in the items API by name: "Bite Rune I" = RUNE_BITE_1, "Primordial Shard" = SHARD_PRIMORDIAL
+    private fun idFor(name: String): String? {
+        if (name.endsWith("Coins")) return null
+        ItemsDb.idFor(name)?.let { return it }
+        RUNE_NAME.matchEntire(name)?.let { m ->
+            val lvl = fishmod.utils.data.Roman.toInt(m.groupValues[2])
+            if (lvl > 0) return "RUNE_${idPart(m.groupValues[1])}_$lvl"
+        }
+        SHARD_NAME.matchEntire(name)?.let { return "SHARD_${idPart(it.groupValues[1])}" }
+        return null
+    }
 
     fun rows(type: SlayerType, tier: Int): List<Row> {
         val k = key(type, tier)
@@ -289,10 +307,10 @@ object SlayerProfitTracker {
         val snap = synchronized(lock) { if (d != null) LinkedHashMap(d.drops) else LinkedHashMap() }
         val out = ArrayList<Row>(snap.size + 1)
         for ((name, count) in snap) {
-            val id = if (name.endsWith("Coins")) null else ItemsDb.idFor(name)
+            val id = idFor(name)
             val unit = if (id != null) CroesusPrices.price(id) else 0.0
             if (unit.isNaN()) FishDiag.fail("SlayerProfitTracker.12", "price NaN for slayer drop $name ($id)")
-            out.add(Row(name, count, unit * count, id != null && unit > 0))
+            out.add(Row(name, count, unit * count, id != null && unit > 0, id = id))
         }
         if (countKillCoins()) {
             val mkc = d?.mobKillCoins ?: 0L
@@ -311,7 +329,7 @@ object SlayerProfitTracker {
     fun allProfit(sessionOnly: Boolean): Double {
         val snap = synchronized(lock) { (if (sessionOnly) session else total).values.map { Triple(HashMap(it.drops), it.spawnCost, it.mobKillCoins) } }
         return snap.sumOf { (drops, cost, mkc) ->
-            drops.entries.sumOf { (n, c) -> (if (n.endsWith("Coins")) 0.0 else ItemsDb.idFor(n)?.let { CroesusPrices.price(it) } ?: 0.0) * c } + mkc - cost
+            drops.entries.sumOf { (n, c) -> (idFor(n)?.let { CroesusPrices.price(it) } ?: 0.0) * c } + mkc - cost
         }
     }
 
@@ -393,7 +411,7 @@ object SlayerProfitTracker {
             val label = when {
                 hiddenRow -> "§7| §8§m${r.name} ${sep(r.count)}"
                 r.coins -> "§7| §6Mob Kill Coins"
-                else -> "§7| §f${r.name} §f${sep(r.count)}"
+                else -> "§7| ${fishmod.features.ProfitTrackerKit.rarityColor(r.id) ?: "§f"}${r.name} §f${sep(r.count)}"
             }
             val value = when {
                 hiddenRow -> "§8§m${sh(r.value)}"

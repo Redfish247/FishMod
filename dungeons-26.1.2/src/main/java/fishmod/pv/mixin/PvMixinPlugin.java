@@ -7,11 +7,12 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-/** Skips the built-in PV mixins when the standalone FishPV mod is installed. */
+/** Skips the built-in PV mixins when a standalone profile viewer mod is installed. */
 public class PvMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return !FabricLoader.getInstance().isModLoaded("fishpv");
+        FabricLoader loader = FabricLoader.getInstance();
+        return !loader.isModLoaded("betterpv") && !loader.isModLoaded("fishpv");
     }
 
     @Override public void onLoad(String mixinPackage) {}

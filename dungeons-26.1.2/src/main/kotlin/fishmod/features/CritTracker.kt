@@ -4,10 +4,10 @@ import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import fishmod.utils.Constants
-import fishmod.utils.dungeon.DungeonClass
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
+import fishmod.utils.FishConstants
+import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
 import java.io.File
 import java.io.FileReader
 import java.lang.reflect.Type
@@ -33,12 +33,12 @@ object CritTracker {
     @JvmStatic
     fun init() {
         load()
-        Events.ON_GAME_MESSAGE.register { text -> onMessage(text.string) }
+        FishEvents.chat.register { text -> onMessage(text.string) }
     }
 
     private fun onMessage(s: String?): Boolean {
         if (s == null || s.indexOf("Explosive Shot") < 0) return false
-        if (!Phase.inP1()) return false
+        if (!BossPhase.inP1()) return false
 
         val m = PATTERN.matcher(s)
         if (!m.find()) {
@@ -63,7 +63,7 @@ object CritTracker {
 
     @JvmStatic
     fun onStormDeath(seconds: Double) {
-        if (seconds <= 0.0 || !DungeonClass.isClass(DungeonClass.ARCHER)) return
+        if (seconds <= 0.0 || !DungeonRole.isClass(DungeonRole.ARCHER)) return
         add(data.storm, seconds)
     }
 
@@ -82,7 +82,7 @@ object CritTracker {
         return String.format("%,.1f", v)
     }
 
-    private fun formatTime(v: Double): String = if (v <= 0.0) "N/A" else Constants.DECIMAL_FORMAT.format(v) + "s"
+    private fun formatTime(v: Double): String = if (v <= 0.0) "N/A" else FishConstants.DECIMAL_FORMAT.format(v) + "s"
 
     @JvmStatic
     fun buildMessage(): String {

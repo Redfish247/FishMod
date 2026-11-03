@@ -4,7 +4,7 @@ import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import com.google.gson.reflect.TypeToken
 import net.minecraft.core.BlockPos
 import java.io.InputStreamReader
@@ -111,7 +111,7 @@ class RoomData {
                 roomMap = built
                 loaded = true
             } catch (e: Exception) {
-                Debug.LOGGER.error("Failed to load dungeon map rooms.json", e)
+                FishDebug.LOGGER.error("Failed to load dungeon map rooms.json", e)
                 FishDiag.fail("RoomData.10", "failed to load dungeon map rooms.json", e)
             }
         }

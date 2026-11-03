@@ -4,7 +4,7 @@ import fishmod.utils.FishMsg
 import fishmod.utils.TextStrip
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import java.util.regex.Pattern
 import fishmod.utils.debug.FishDiag
@@ -20,7 +20,7 @@ object PartyFinderStats {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (!FishSettings.pfStatsEnabled) return@register false
             try {
                 val plain = TextStrip.plain(text.string)
@@ -49,7 +49,7 @@ object PartyFinderStats {
     }
 
     private fun lookup(sender: String?, joinLine: Boolean) {
-        if (!fishmod.utils.Location.inDungeonHub()) return
+        if (!fishmod.utils.SkyblockLocation.inDungeonHub()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || sender == null) return
         if (sender.equals(mc.player!!.name.string, ignoreCase = true)) return

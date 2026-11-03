@@ -42,7 +42,7 @@ object GardenExtraSettings {
     @ConfigValue @JvmField var gardenGreenhouseHudScale: Double = 1.0
 
     // Mutations link (/fmmutations)
-    @ConfigValue @JvmField var gardenMutationsLinkOn: Boolean = true
+    @ConfigValue @JvmField var gardenMutationsLinkOn: Boolean = false
     @ConfigValue @JvmField var gardenMutationsUrl: String = "https://elitebot.dev/mutations"
 
     // Anita shop

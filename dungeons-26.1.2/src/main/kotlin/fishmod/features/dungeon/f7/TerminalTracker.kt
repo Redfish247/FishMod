@@ -2,13 +2,13 @@ package fishmod.features.dungeon.f7
 
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.DungeonClass
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.dungeon.Section
-import fishmod.utils.events.Events
+import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.dungeon.GoldorSection
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
@@ -32,33 +32,33 @@ object TerminalTracker {
 
     @JvmStatic
     fun init() {
-        Events.ON_LOCATION_CHANGE.register { _ -> st.clear(); false }
-        Events.ON_PHASE_CHANGE.register {
+        FishEvents.locationChange.register { _ -> st.clear(); false }
+        FishEvents.phaseChange.register {
             // Fresh state each P3; leftovers from a run without a location change ate S1
-            if (Phase.inTerminals()) st.terminalsStarted(System.currentTimeMillis())
+            if (BossPhase.inTerminals()) st.terminalsStarted(System.currentTimeMillis())
             false
         }
-        Events.ON_SECTION_CHANGE.register { st.sectionChanged(Section.getSection(), System.currentTimeMillis()); false }
-        Events.ON_TERMINAL.register { name, _, objective, _, _ ->
+        FishEvents.sectionChange.register { st.sectionChanged(GoldorSection.getSection(), System.currentTimeMillis()); false }
+        FishEvents.terminalStep.register { name, _, objective, _, _ ->
             FishDiag.guard("TerminalTracker.1", "record $objective by $name") { record(name, objective) }
             false
         }
-        Events.ON_GAME_MESSAGE.register { msg ->
-            if (Phase.inTerminals() && msg.string == "The gate has been destroyed!") st.gateDestroyed(System.currentTimeMillis())
+        FishEvents.chat.register { msg ->
+            if (BossPhase.inTerminals() && msg.string == "The gate has been destroyed!") st.gateDestroyed(System.currentTimeMillis())
             false
         }
     }
 
     private fun record(name: String, objective: String) {
         val pos = Minecraft.getInstance().level?.players()?.firstOrNull { it.gameProfile.name == name }?.position()
-        val cls = DungeonClass.getClass(name)
-        val s1Dev = cls == null || cls == DungeonClass.HEALER || cls == DungeonClass.TANK
-        val (section, slot) = st.record(name, objective, pos?.x, pos?.z, Section.getSection(), cls == DungeonClass.BERSERK, s1Dev, System.currentTimeMillis()) ?: return
+        val cls = DungeonRole.getClass(name)
+        val s1Dev = cls == null || cls == DungeonRole.HEALER || cls == DungeonRole.TANK
+        val (section, slot) = st.record(name, objective, pos?.x, pos?.z, GoldorSection.getSection(), cls == DungeonRole.BERSERK, s1Dev, System.currentTimeMillis()) ?: return
         if (logPositions) {
             val p = pos?.let { "%.1f, %.1f, %.1f".format(it.x, it.y, it.z) } ?: "unknown"
             val line = "[TermTracker] S$section $objective ${slot.label} by $name at $p"
-            fishmod.utils.debug.Debug.LOGGER.info(line)
-            Misc.addChatMessage(Component.literal("§7$line"))
+            fishmod.utils.debug.FishDebug.LOGGER.info(line)
+            FishUtil.addChatMessage(Component.literal("§7$line"))
         }
     }
 
@@ -117,15 +117,15 @@ object TerminalTracker {
     fun replay(name: String? = null) {
         val mc = Minecraft.getInstance()
         val run = if (name == null) replayRun else try { loadDgr(name) } catch (e: Exception) { null }
-        if (run == null) { Misc.addChatMessage(Component.literal("§c[TermReplay] no Goldor phase in '$name'")); return }
-        if (name != null) Misc.addChatMessage(Component.literal("§7[TermReplay] $name"))
+        if (run == null) { FishUtil.addChatMessage(Component.literal("§c[TermReplay] no Goldor phase in '$name'")); return }
+        if (name != null) FishUtil.addChatMessage(Component.literal("§7[TermReplay] $name"))
         val t0 = System.currentTimeMillis() + 1500
         replayUntil = t0 + (run.lastOrNull()?.substringBefore('|')?.toLong() ?: 0L) + 13000
         mc.execute {
             // Leftovers from a "previous run" so the reset is visible
             st.sectionChanged(4, t0 - 5000)
             listOf("T1", "T2", "L1").forEach { l -> st.list(4).first { it.label == l }.doneAt = t0 - 4000 }
-            Misc.addChatMessage(Component.literal("§7[TermReplay] previous run leftovers in S4, P3 starts in 1.5s"))
+            FishUtil.addChatMessage(Component.literal("§7[TermReplay] previous run leftovers in S4, P3 starts in 1.5s"))
         }
         Thread({
             val counts = HashMap<Int, Int>()
@@ -136,27 +136,27 @@ object TerminalTracker {
                 val sec = p[1].toInt()
                 mc.execute {
                     when {
-                        p.size == 3 && p[1] == "0" -> { Misc.addChatMessage(Component.literal(p[2])); st.terminalsStarted(at) }
+                        p.size == 3 && p[1] == "0" -> { FishUtil.addChatMessage(Component.literal(p[2])); st.terminalsStarted(at) }
                         p[2] == "section" -> st.sectionChanged(sec, at)
-                        p[2] == "gate" -> { Misc.addChatMessage(Component.literal("The gate has been destroyed!")); st.gateDestroyed(at) }
+                        p[2] == "gate" -> { FishUtil.addChatMessage(Component.literal("The gate has been destroyed!")); st.gateDestroyed(at) }
                         else -> {
                             val n = (counts[sec] ?: 0) + 1
                             counts[sec] = n
                             val verb = if (p[3] == "device") "completed" else "activated"
-                            Misc.addChatMessage(Component.literal("§b${p[2]} §a$verb a ${p[3]}! (§c$n§a/${if (sec == 2) 8 else 7})"))
+                            FishUtil.addChatMessage(Component.literal("§b${p[2]} §a$verb a ${p[3]}! (§c$n§a/${if (sec == 2) 8 else 7})"))
                             st.record(p[2], p[3], null, null, sec, p[2] == "RedFish2471", true, at)
                         }
                     }
                 }
             }
             Thread.sleep(maxOf(0L, replayUntil - System.currentTimeMillis()))
-            mc.execute { st.clear(); Misc.addChatMessage(Component.literal("§7[TermReplay] done")) }
+            mc.execute { st.clear(); FishUtil.addChatMessage(Component.literal("§7[TermReplay] done")) }
         }, "TermReplay").apply { isDaemon = true }.start()
     }
 
     @JvmStatic
     fun display(): Boolean = terminalTrackerEnabled && System.currentTimeMillis() < replayUntil ||
-        terminalTrackerEnabled &&Location.inDungeon() && Phase.isInFloor7() && (Phase.inTerminals() || (Phase.inP2() && Phase.stormDead()))
+        terminalTrackerEnabled &&SkyblockLocation.inDungeon() && BossPhase.isInFloor7() && (BossPhase.inTerminals() || (BossPhase.inP2() && BossPhase.stormDead()))
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
@@ -169,7 +169,7 @@ object TerminalTracker {
 
     private fun renderInner(component: HUDComponent, context: GuiGraphicsExtractor) {
         val font = Minecraft.getInstance().font ?: return
-        val cur = st.current(Section.getSection()).coerceIn(1, MAX_SECTION)
+        val cur = st.current(GoldorSection.getSection()).coerceIn(1, MAX_SECTION)
         val lines = ArrayList<Line>()
         for (s in (if (showAllSections) (1..cur).toList() else listOf(cur))) {
             val list = st.list(s)

@@ -1,9 +1,9 @@
 package fishmod.features.rift
 
-import fishmod.utils.Misc
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.FishUtil
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -28,8 +28,8 @@ object RiftHay {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
-        Events.ON_WORLD_CHANGE.register { Minecraft.getInstance().execute { seen.clear(); cleared.clear() }; false }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        FishEvents.worldChange.register { Minecraft.getInstance().execute { seen.clear(); cleared.clear() }; false }
+        RenderHooks.GIZMO.register { _ -> render() }
     }
 
     // Hay seen in range marks a cell; a marked cell that is no longer hay is a cleared cell that will refill
@@ -78,7 +78,7 @@ object RiftHay {
         val now = System.currentTimeMillis()
         if (now - lastWarn < 800L) return
         lastWarn = now; warns++
-        if (S.riftHayTitle) Misc.forceTitle(Component.literal(S.riftHayText), Component.empty(), 700)
+        if (S.riftHayTitle) FishUtil.forceTitle(Component.literal(S.riftHayText), Component.empty(), 700)
         if (S.riftHaySound) Minecraft.getInstance().player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.6f)
     }
 
@@ -91,7 +91,7 @@ object RiftHay {
             if (now - t < due) continue
             val p = BlockPos.of(k)
             if (me.distanceToSqr(p.x + 0.5, p.y + 0.5, p.z + 0.5) > 144.0) continue
-            RenderUtils.gizmoBox(AABB(p), (c and 0xFFFFFF) or 0x40000000, c, false)
+            FishDraw.gizmoBox(AABB(p), (c and 0xFFFFFF) or 0x40000000, c, false)
         }
     }
 }

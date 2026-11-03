@@ -6,19 +6,19 @@ import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.FishHudEditor
 import fishmod.features.dungeon.PbMessages
 import fishmod.utils.ChatQueue
-import fishmod.utils.Constants
+import fishmod.utils.FishConstants
 import fishmod.utils.Fmt
-import fishmod.utils.Location
-import fishmod.utils.Misc
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.config.values.Floor7
+import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.dungeon.DialogueCompat
 import fishmod.utils.dungeon.NecronDeath
 import fishmod.utils.dungeon.NecronTrace
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -41,10 +41,10 @@ object M7Relics {
         PURPLE("Corrupted Purple Relic", Vec3(54.5, 7.5, 41.5), 0xC081006F.toInt(), "§5");
     }
 
-    private const val NAME = "Relic Spawn Timer"
+    private const val NAME = "Relic Countdown"
     // Necron death -> relic stands, measured by NoammAddons: 50-63t
     private const val SPAWN_TICKS = 55
-    private val COLOR = Constants.STRIP_COLOR_REGEX
+    private val COLOR = FishConstants.STRIP_COLOR_REGEX
     private const val RESTART_GUARD_MS = 30_000L
 
     @Volatile private var spawnEndMs = 0L
@@ -65,7 +65,7 @@ object M7Relics {
             { FishSettings.relicTimerScale }, { v -> FishSettings.relicTimerScale = v }
         )
 
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             val msg = COLOR.replace(text.string, "")
             // Old or alpha Necron line; first one wins so a later line can't restart it.
             if (DialogueCompat.isNecronEnd(msg) && System.currentTimeMillis() - p5StartMs > RESTART_GUARD_MS) {
@@ -86,14 +86,14 @@ object M7Relics {
             false
         }
         NecronDeath.onDeath {
-            if (Floor7.enableRelicStartTimer && Phase.getFloor() == "M7") { spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L; spawned = false }
+            if (Floor7Settings.relicStartHud && BossPhase.getFloor() == "M7") { spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L; spawned = false }
         }
-        Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; spawned = false; myRelic = null; pickers.clear(); placed.clear(); relicStands.clear(); false }
+        FishEvents.worldChange.register { spawnEndMs = 0L; p5StartMs = 0L; spawned = false; myRelic = null; pickers.clear(); placed.clear(); relicStands.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
-            try { NecronTrace.tick(); Phase.checkNecronBar(); checkRelics() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
+            try { NecronTrace.tick(); BossPhase.checkNecronBar(); checkRelics() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }
 
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             try { renderBox(m, vc) } catch (e: Exception) { FishDiag.fail("M7Relics.4", "relic cauldron render threw", e) }
         }
     }
@@ -103,9 +103,9 @@ object M7Relics {
     // One entity pass per tick: spawn detection, then placed checks on the "Relic" stands.
     private fun checkRelics() {
         val level = Minecraft.getInstance().level ?: return
-        if (Phase.getFloor() != "M7") { myRelic = null; return }
+        if (BossPhase.getFloor() != "M7") { myRelic = null; return }
         val wantSpawn = !spawned && !(spawnEndMs == 0L && p5StartMs != 0L)
-        val wantAll = Floor7.relicTimesEnabled && p5StartMs != 0L && placed.size < Relic.entries.size
+        val wantAll = Floor7Settings.relicTimesEnabled && p5StartMs != 0L && placed.size < Relic.entries.size
         if (!wantSpawn && myRelic == null && !wantAll) return
         var spawnSeen = false
         relicStands.clear()
@@ -119,7 +119,7 @@ object M7Relics {
         if (wantSpawn && spawnSeen) {
             spawned = true
             spawnEndMs = 0L
-            Phase.onRelicSpawn()
+            BossPhase.onRelicSpawn()
             if (p5StartMs == 0L) { p5StartMs = System.currentTimeMillis(); myRelic = null; pickers.clear(); placed.clear() }
         }
         checkPlaced()
@@ -144,7 +144,7 @@ object M7Relics {
     }
 
     private fun checkAllPlaced() {
-        if (!Floor7.relicTimesEnabled || p5StartMs == 0L || placed.size == Relic.entries.size) return
+        if (!Floor7Settings.relicTimesEnabled || p5StartMs == 0L || placed.size == Relic.entries.size) return
         val now = System.currentTimeMillis()
         for (e in relicStands) for (relic in Relic.entries) {
             if (relic !in placed && onCauldron(e, relic)) placed[relic] = (now - p5StartMs) / 1000.0
@@ -154,8 +154,8 @@ object M7Relics {
             val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
             val who = pickers[relic] ?: run { FishDiag.fail("M7Relics.6", "no picker recorded for ${relic.name} relic"); "?" }
             val time = PbMessages.fmt(secs)
-            if (Floor7.relicTimesParty) ChatQueue.enqueue("pc $color Relic: $time ($who)")
-            else Misc.addChatMessage(Component.literal("${relic.code}$color Relic§7: §e$time §7($who)"))
+            if (Floor7Settings.relicTimesParty) ChatQueue.enqueue("pc $color Relic: $time ($who)")
+            else FishUtil.addChatMessage(Component.literal("${relic.code}$color Relic§7: §e$time §7($who)"))
         }
     }
 
@@ -166,17 +166,17 @@ object M7Relics {
     }
 
     private fun renderBox(matrices: PoseStack, vc: VertexConsumer) {
-        if (!Floor7.enableRelicStartTimer || !Floor7.renderRelicHighlight || !Location.inDungeon() || !Phase.inP5()) return
+        if (!Floor7Settings.relicStartHud || !Floor7Settings.relicHighlight || !SkyblockLocation.inDungeon() || !BossPhase.inP5()) return
         val relic = heldRelic() ?: return
         val c = relic.cauldron
         val box = AABB(c.x - 0.5, c.y - 0.5, c.z - 0.5, c.x + 0.5, c.y + 0.5, c.z + 0.5)
-        RenderUtils.renderFilled(matrices, vc, box, RenderUtils.toFloats((0x66 shl 24) or (relic.argb and 0xFFFFFF)))
-        RenderUtils.renderThickOutline(matrices, vc, box, RenderUtils.toFloats(relic.argb), 0.02)
+        FishDraw.renderFilled(matrices, vc, box, FishDraw.toFloats((0x66 shl 24) or (relic.argb and 0xFFFFFF)))
+        FishDraw.renderThickOutline(matrices, vc, box, FishDraw.toFloats(relic.argb), 0.02)
     }
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!Floor7.enableRelicStartTimer) return
+        if (!Floor7Settings.relicStartHud) return
         val left = spawnEndMs - System.currentTimeMillis()
         FishDiag.check(left <= SPAWN_TICKS * 50L + 1000L, "M7Relics.7") { "relic spawn timer too far in future: ${left}ms" }
         if (left <= 0L) return

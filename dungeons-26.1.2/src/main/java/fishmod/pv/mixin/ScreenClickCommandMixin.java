@@ -17,13 +17,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Vanilla chat RunCommand clicks call {@code sendUnattendedCommand}, which only
- * reaches the server. BetterPV registers {@code /pv} as a Fabric client command,
+ * reaches the server. The PV registers {@code /pv} as a Fabric client command,
  * so open the profile viewer here instead of forwarding to Hypixel.
  */
 @Mixin(Screen.class)
 public abstract class ScreenClickCommandMixin {
 	@Inject(method = "clickCommandAction", at = @At("HEAD"), cancellable = true)
-	private static void betterpv$clientPv(
+	private static void fishpv$clientPv(
 		LocalPlayer player,
 		String command,
 		Screen screen,

@@ -3,7 +3,7 @@ package fishmod.features.dungeon
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import java.util.regex.Pattern
 
 object LagTracker {
@@ -56,7 +56,7 @@ object LagTracker {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { message ->
+        FishEvents.chat.register { message ->
             val s = message.string
 
             if (!active && !ended && s.contains(RUN_START_FRAGMENT)) {
@@ -65,8 +65,8 @@ object LagTracker {
             } else if (active && RUN_END_PATTERN.matcher(s).find()) {
                 val wallSec = (System.currentTimeMillis() - startMs) / 1000.0
                 val tickSec = ticks * 0.05
-                val lag = wallSec - tickSec
-                FishDiag.check(lag > -2.0, "LagTracker.2") { "negative lag ${"%.2f".format(lag)}s (wall=$wallSec ticks=$ticks)" }
+                // Ping ticks can outrun wall time when the server catches up; clamp
+                val lag = maxOf(0.0, wallSec - tickSec)
                 active = false
                 ended = true
 
@@ -79,16 +79,23 @@ object LagTracker {
             false
         }
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (!active && !ended && ++probeTick >= 20) {
                 probeTick = 0
-                if (fishmod.utils.Location.inDungeon() && (FishDiag.guard("LagTracker.3", "run time tab scan failed") { scoreboardRunSeconds() } ?: -1) > 0) start()
+                if (fishmod.utils.SkyblockLocation.inDungeon() && (FishDiag.guard("LagTracker.3", "run time tab scan failed") { scoreboardRunSeconds() } ?: -1) > 0) start()
             }
             if (active) ticks++
             false
         }
 
-        Events.ON_LOCATION_CHANGE.register { _ ->
+        FishEvents.worldChange.register {
+            active = false
+            ended = false
+            ticks = 0
+            false
+        }
+
+        FishEvents.locationChange.register { _ ->
             active = false
             ended = false
             startMs = 0

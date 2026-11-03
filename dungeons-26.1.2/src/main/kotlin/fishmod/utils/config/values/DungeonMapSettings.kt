@@ -228,6 +228,18 @@ object DungeonMapSettings {
     @JvmField
     var mapRoomAdditionsPrince: Boolean = false
 
+    @ConfigValue
+    @JvmField
+    var mapRoomAdditionsChecks: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var mapRoomCheckClearedColor: Int = -1
+
+    @ConfigValue
+    @JvmField
+    var mapRoomCheckSecretsColor: Int = -16711936
+
 
     @ConfigValue
     @JvmField

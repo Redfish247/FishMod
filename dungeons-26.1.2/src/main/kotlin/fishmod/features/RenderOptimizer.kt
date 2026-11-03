@@ -1,9 +1,9 @@
 package fishmod.features
 
-import fishmod.utils.Location
-import fishmod.utils.config.values.Visual
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.config.values.VisualSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -30,18 +30,18 @@ object RenderOptimizer {
 
     @JvmStatic
     fun init() {
-        Events.ON_PARTICLE.register { packet ->
-            Visual.renderOptimizer && Visual.roHideExplosionParticles &&
+        FishEvents.particle.register { packet ->
+            VisualSettings.renderOptimizer && VisualSettings.roHideExplosionParticles &&
                 (packet.particle.type === ParticleTypes.EXPLOSION || packet.particle.type === ParticleTypes.EXPLOSION_EMITTER)
         }
 
-        Events.ON_PACKET.register { packet ->
-            if (!Visual.renderOptimizer) return@register false
+        FishEvents.packet.register { packet ->
+            if (!VisualSettings.renderOptimizer) return@register false
             val mc = Minecraft.getInstance()
             try {
             when (packet) {
                 is ClientboundSetEntityDataPacket -> {
-                    if (Visual.roHideArcherPassive && Location.inDungeon()) {
+                    if (VisualSettings.roHideArcherPassive && SkyblockLocation.inDungeon()) {
                         val item = packet.packedItems().firstOrNull { it.id() == 8 }?.value() as? ItemStack
                         if (item != null && !item.isEmpty && item.`is`(Items.BONE_MEAL)) {
                             mc.execute { FishDiag.guard("RenderOptimizer.1", "archer passive removal failed") { mc.level?.removeEntity(packet.id(), Entity.RemovalReason.DISCARDED) } }
@@ -49,16 +49,16 @@ object RenderOptimizer {
                     }
                 }
                 is ClientboundSetEquipmentPacket -> {
-                    if (Location.inDungeon()) {
+                    if (SkyblockLocation.inDungeon()) {
                         for (pair in packet.slots) {
                             val slot = pair.first ?: continue
                             val stack = pair.second ?: continue
                             if (stack.isEmpty) continue
                             val tex = skullTexture(stack) ?: continue
                             val hide =
-                                (Visual.roHideHealerFairy && slot == EquipmentSlot.MAINHAND && tex == HEALER_FAIRY_TEXTURE) ||
-                                (Visual.roHideSoulWeaver && slot == EquipmentSlot.HEAD && tex == SOUL_WEAVER_TEXTURE) ||
-                                (Visual.roHideTentacleHead && slot == EquipmentSlot.HEAD && tex == TENTACLE_TEXTURE)
+                                (VisualSettings.roHideHealerFairy && slot == EquipmentSlot.MAINHAND && tex == HEALER_FAIRY_TEXTURE) ||
+                                (VisualSettings.roHideSoulWeaver && slot == EquipmentSlot.HEAD && tex == SOUL_WEAVER_TEXTURE) ||
+                                (VisualSettings.roHideTentacleHead && slot == EquipmentSlot.HEAD && tex == TENTACLE_TEXTURE)
                             if (hide) mc.execute { FishDiag.guard("RenderOptimizer.2", "hidden entity removal failed") { mc.level?.removeEntity(packet.entity, Entity.RemovalReason.DISCARDED) } }
                         }
                     }
@@ -78,11 +78,11 @@ object RenderOptimizer {
     // Called while building the nametag, so the raw number never gets a frame on screen; null hides it
     @JvmStatic
     fun damageNameTag(e: Entity, name: Component): Component? {
-        if (!Visual.renderOptimizer || !(Visual.roRemoveDamageIndicator || Visual.roFormatDamageIndicator)) return name
-        if (e !is ArmorStand || !Location.inSkyblock()) return name
+        if (!VisualSettings.renderOptimizer || !(VisualSettings.roRemoveDamageIndicator || VisualSettings.roFormatDamageIndicator)) return name
+        if (e !is ArmorStand || !SkyblockLocation.inSkyblock()) return name
         val raw = name.string
-        val m = DAMAGE.matchEntire(raw.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()) ?: return name
-        if (Visual.roRemoveDamageIndicator) return null
+        val m = DAMAGE.matchEntire(raw.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()) ?: return name
+        if (VisualSettings.roRemoveDamageIndicator) return null
         formatted[e.id]?.let { (k, c) -> if (k == raw) return c }
         val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: return name
         val color = name.toFlatList().firstOrNull { it.string.any(Char::isDigit) }?.style ?: Style.EMPTY
@@ -107,15 +107,15 @@ object RenderOptimizer {
         return profile.partialProfile().properties["textures"].firstOrNull()?.value()
     }
 
-    @JvmStatic fun shouldDisableFireOverlay(): Boolean = Visual.renderOptimizer && Visual.roHideFireOverlay
-    @JvmStatic fun hideDeathAnimation(): Boolean = Visual.renderOptimizer && Visual.roHideDeathAnimation
-    @JvmStatic fun hideDyingArmorStands(): Boolean = Visual.renderOptimizer && Visual.roHideDyingArmorStands
+    @JvmStatic fun shouldDisableFireOverlay(): Boolean = VisualSettings.renderOptimizer && VisualSettings.roHideFireOverlay
+    @JvmStatic fun hideDeathAnimation(): Boolean = VisualSettings.renderOptimizer && VisualSettings.roHideDeathAnimation
+    @JvmStatic fun hideDyingArmorStands(): Boolean = VisualSettings.renderOptimizer && VisualSettings.roHideDyingArmorStands
 
     @JvmStatic
     fun filterBossBars(bars: Collection<LerpingBossEvent>): Collection<LerpingBossEvent> {
-        if (!Visual.renderOptimizer || !Visual.roHideObjective) return bars
+        if (!VisualSettings.renderOptimizer || !VisualSettings.roHideObjective) return bars
         return FishDiag.guard("RenderOptimizer.4", "boss bar filter failed") {
-            bars.filterNot { it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trimStart().startsWith("Objective:") }
+            bars.filterNot { it.name.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trimStart().startsWith("Objective:") }
         } ?: bars
     }
 }

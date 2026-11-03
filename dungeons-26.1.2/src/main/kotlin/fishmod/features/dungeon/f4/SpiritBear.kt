@@ -4,7 +4,7 @@ import fishmod.compat.hudHidden
 import fishmod.features.FishHudEditor
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -38,7 +38,7 @@ object SpiritBear {
             { FishSettings.spiritBearEnabled },
         )
 
-        Events.ON_SERVER_TICK.register {
+        FishEvents.serverTick.register {
             if (timer > 0) timer--
             if (!active()) return@register false
             val level = Minecraft.getInstance().level ?: return@register false
@@ -56,7 +56,7 @@ object SpiritBear {
             false
         }
 
-        Events.ON_WORLD_CHANGE.register {
+        FishEvents.worldChange.register {
             timer = -1; kills = 0; lastWasLantern = false; false
         }
     }

@@ -3,8 +3,8 @@ package fishmod.features.dungeon.map
 import fishmod.utils.debug.FishDiag
 import fishmod.mixin.accessors.MapItemSavedDataAccessor
 import fishmod.utils.config.values.DungeonMapSettings
-import fishmod.utils.debug.Debug
-import fishmod.utils.events.Events
+import fishmod.utils.debug.FishDebug
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket
 import net.minecraft.world.level.saveddata.maps.MapId
@@ -50,14 +50,14 @@ object DungeonMap {
 
     @JvmStatic
     fun init() {
-        Events.ON_PACKET.register { packet ->
+        FishEvents.packet.register { packet ->
             if (packet is ClientboundMapItemDataPacket) {
                 val mc = Minecraft.getInstance()
                 mc.execute {
                     try {
                         rescanMapItem(packet)
                     } catch (t: Throwable) {
-                        Debug.LOGGER.error("[DungeonMap] rescanMapItem failed", t)
+                        FishDebug.LOGGER.error("[DungeonMap] rescanMapItem failed", t)
                         FishDiag.fail("DungeonMap.1", "map item rescan failed mapId=$mapId size=$mapSize roomSize=$roomSize start=$startCoords", t)
                     }
                 }

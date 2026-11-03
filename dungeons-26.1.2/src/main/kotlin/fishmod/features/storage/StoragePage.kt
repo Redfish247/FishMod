@@ -24,7 +24,7 @@ data class StoragePage(val index: Int) : Comparable<StoragePage> {
         const val RIFT_BASE = 27
         const val MAX_INDEX = RIFT_BASE + 2
 
-        fun inRift() = fishmod.utils.Location.`in`(fishmod.utils.Location.THE_RIFT)
+        fun inRift() = fishmod.utils.SkyblockLocation.`in`(fishmod.utils.SkyblockLocation.THE_RIFT)
 
         fun isOverviewTitle(t: String) = t == "Storage" || t == "Rift Storage"
         private val ENDER = Regex("^(?:Ender Chest|Rift Storage) (?:✦ )?\\(([1-9])/[1-9]\\)$")

@@ -1,7 +1,7 @@
 package fishmod.features
 
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -15,7 +15,7 @@ object ArrowFix {
     fun isShortbow(item: ItemStack?): Boolean {
         if (!FishSettings.arrowFixEnabled) return false
         if (item == null || item.isEmpty || !item.`is`(Items.BOW)) return false
-        val id = ItemUtil.getId(item) ?: return false
+        val id = ItemTools.getId(item) ?: return false
         if (id in shortbows) return true
         if (id in others) return false
         val lore = item.get(DataComponents.LORE)?.lines() ?: return false

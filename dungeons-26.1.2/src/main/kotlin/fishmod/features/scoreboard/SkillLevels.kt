@@ -3,7 +3,7 @@ package fishmod.features.scoreboard
 import fishmod.utils.debug.FishDiag
 import com.google.gson.JsonObject
 import fishmod.utils.HypixelApi
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
@@ -47,7 +47,7 @@ object SkillLevels {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             if (!FishSettings.customScoreboardEnabled || !FishSettings.sbSectionSkills ||
-                client.player == null || !Location.inSkyblock()
+                client.player == null || !SkyblockLocation.inSkyblock()
             ) return@register
             val now = System.currentTimeMillis()
             if (fetchInFlight || now - lastFetchAt < REFRESH_MS) return@register

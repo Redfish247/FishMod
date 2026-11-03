@@ -1,8 +1,8 @@
 package fishmod.utils.dungeon
 import fishmod.compat.hud
 
-import fishmod.utils.debug.Debug
-import fishmod.utils.events.Events
+import fishmod.utils.debug.FishDebug
+import fishmod.utils.events.FishEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.boss.wither.WitherBoss
@@ -16,23 +16,23 @@ object NecronTrace {
     private var relicsLogged = false
     private var ticks = 0
 
-    private fun active() = Phase.getFloor()?.endsWith("7") == true && (Phase.getPhase() == 8 || startMs != 0L && !relicsLogged)
+    private fun active() = BossPhase.getFloor()?.endsWith("7") == true && (BossPhase.getPhase() == 8 || startMs != 0L && !relicsLogged)
 
     private fun log(msg: String) {
         if (startMs == 0L) startMs = System.currentTimeMillis()
-        Debug.LOGGER.info("[NecronTrace +%.2fs] %s".format((System.currentTimeMillis() - startMs) / 1000.0, msg))
+        FishDebug.LOGGER.info("[NecronTrace +%.2fs] %s".format((System.currentTimeMillis() - startMs) / 1000.0, msg))
     }
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text ->
+        FishEvents.chat.register { text ->
             if (active()) {
-                val s = text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+                val s = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
                 if (s.startsWith("[BOSS]") || s.contains("Corrupted") || s.contains("Relic")) log("chat: $s")
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { startMs = 0L; lastBar = ""; lastWithers = ""; relicsLogged = false; false }
+        FishEvents.worldChange.register { startMs = 0L; lastBar = ""; lastWithers = ""; relicsLogged = false; false }
     }
 
     @JvmStatic
@@ -43,7 +43,7 @@ object NecronTrace {
         val bars = (mc.hud.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars
         val bar = bars?.values?.joinToString(", ") {
             val pct = (it as fishmod.mixin.accessors.LerpingBossEventAccessor).targetPercent
-            "'${it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()}' %.1f%%".format(pct * 100f)
+            "'${it.name.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()}' %.1f%%".format(pct * 100f)
         } ?: "none"
         val p = mc.player
         if (p != null && ticks++ % 1 == 0 && (System.currentTimeMillis() - startMs) < 20000)

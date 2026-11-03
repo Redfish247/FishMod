@@ -3,7 +3,7 @@ import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.ChatQueue
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -87,7 +87,6 @@ object RareMobs {
     @Volatile var lastDianaMobDeathMs = 0L
 
     private val defeated = HashSet<Int>()
-    private val inqSeen = HashMap<Int, DoubleArray>()
     private val missingTicks = HashMap<Waypoint, Int>()
     private val glow = ConcurrentHashMap<Int, Int>()
     private val pendingSends = ArrayList<Pair<Long, String>>()
@@ -115,17 +114,17 @@ object RareMobs {
             { DianaSettings.dianaShurikenHudScale }, { v -> DianaSettings.dianaShurikenHudScale = v },
             { DianaSettings.dianaNoShuriken },
         )
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "diana_mythos_hp")) { ctx, _ ->
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "diana_mythos_hp")) { ctx, _ ->
             if (!FishHudEditor.isOpen()) renderHud(ctx)
         }
 
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
-        Events.ON_GAME_MESSAGE.register { text -> onChat(text.string); false }
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        FishEvents.chat.register { text -> onChat(text.string); false }
+        FishEvents.worldChange.register { reset(); false }
     }
 
     private fun reset() {
-        defeated.clear(); missingTicks.clear(); glow.clear(); inqSeen.clear()
+        defeated.clear(); missingTicks.clear(); glow.clear()
         hpLines = emptyList(); noShuriken = false
     }
 
@@ -191,14 +190,12 @@ object RareMobs {
                 continue
             }
             lines.add(dist to comp)
-            if (rare == RareMob.INQ) inqSeen.getOrPut(e.id) { doubleArrayOf(System.currentTimeMillis().toDouble(), dist) }[1] = dist
             if (rare == null) continue
             rareStands.add(e.position())
             if (!plain.contains('✯') && dist < shurikenDist) shurikenDist = dist
             if (DianaSettings.dianaRareMobs && DianaSettings.dianaScanRareMobs && e is ArmorStand) scanStand(e, rare)
         }
 
-        checkInqDespawn(alive)
         defeated.retainAll(alive)
         hpLines = lines.sortedBy { it.first }.take(6).map { it.second }
         noShuriken = shurikenDist != Double.MAX_VALUE
@@ -207,17 +204,6 @@ object RareMobs {
     }
 
     // An Inquisitor tag that vanishes up close with no kill: despawned
-    private fun checkInqDespawn(alive: Set<Int>) {
-        val now = System.currentTimeMillis()
-        val it = inqSeen.entries.iterator()
-        while (it.hasNext()) {
-            val (id, v) = it.next()
-            if (id in alive) continue
-            it.remove()
-            if (id !in defeated && v[1] <= 30.0 && now - v[0] > 8_000 && now - lastDianaMobDeathMs > 4_000) fishmod.features.achievements.AchStore.max("secret.inqDespawn", 1)
-        }
-    }
-
     private fun onDeath(name: String, pos: Vec3, dist: Double, rare: RareMob?) {
         lastDianaMobDeathMs = System.currentTimeMillis()
         if (rare != null) DianaWaypoints.removeRareMobsNear(pos, 32.0)

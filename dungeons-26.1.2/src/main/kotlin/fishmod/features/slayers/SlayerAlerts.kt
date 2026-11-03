@@ -1,42 +1,28 @@
 package fishmod.features.slayers
 
-import fishmod.utils.Constants
-import fishmod.utils.Misc
+import fishmod.utils.FishConstants
+import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.minecraft.network.chat.Component
 
 object SlayerAlerts {
 
     private var bossSpawnLatched = false
     private val RNG_METER = Regex("^RNG Meter - (.+)$")
-    private var lastRngMs = 0L
 
     @JvmStatic
     fun init() {
-        Events.ON_WORLD_CHANGE.register { reset(); false }
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (FishSettings.slayerRngTitleEnabled) {
-                val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
-                RNG_METER.find(s)?.let { rngMeter(it.groupValues[1]) }
+        FishEvents.worldChange.register { reset(); false }
+        FishEvents.chat.register { text ->
+            if (FishSettings.slayerAnyEnabled()) {
+                val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
+                RNG_METER.find(s)?.let {
+                    FishDiag.guard("SlayerAlerts.2", "RNG meter line handling failed: '$s'") { SlayerStatsTracker.onRng(it.groupValues[1].trim()) }
+                }
             }
             false
-        }
-    }
-
-    private fun rngMeter(value: String) {
-        val now = System.currentTimeMillis()
-        if (now - lastRngMs < 1_000L) return
-        lastRngMs = now
-        try {
-            Misc.forceTitle(
-                Component.literal("RNG Meter").withStyle { it.withColor(FishSettings.slayerRngTitleColor and 0xFFFFFF).withBold(true) },
-                Component.literal("§e$value"),
-                FishSettings.slayerRngTitleDurationMs.coerceIn(250, 10_000),
-            )
-        } catch (e: Exception) {
-            FishDiag.fail("SlayerAlerts.2", "failed to show RNG meter title", e)
         }
     }
 
@@ -71,7 +57,7 @@ object SlayerAlerts {
 
     private fun titleParts(main: String, sub: String, durationMs: Int) {
         try {
-            Misc.forceTitle(
+            FishUtil.forceTitle(
                 Component.literal(main),
                 if (sub.isEmpty()) Component.empty() else Component.literal(sub),
                 durationMs.coerceIn(250, 10_000),

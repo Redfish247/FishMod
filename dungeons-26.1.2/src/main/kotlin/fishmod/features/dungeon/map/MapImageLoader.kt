@@ -2,7 +2,7 @@ package fishmod.features.dungeon.map
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.NativeImage
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
@@ -102,10 +102,22 @@ object MapImageLoader {
         }
     }
 
+    private val BAD_WARNED = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val PNG_SIG = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+
+    private fun hasPngSignature(path: Path): Boolean = try {
+        Files.newInputStream(path).use { it.readNBytes(8).contentEquals(PNG_SIG) }
+    } catch (e: Exception) { false }
+
     private fun loadImage(path: Path, quiet: Boolean = false) {
         val fileName = nameWithoutExt(path.fileName.toString())
         if (!path.toString().lowercase(Locale.ROOT).endsWith(".png")) return
 
+        // not a real PNG (renamed jpg/webp): tell the player once, no error report
+        if (!hasPngSignature(path)) {
+            if (BAD_WARNED.add(fileName)) FishUtil.addChatMessage(Component.literal("§c[Map] '$fileName' is not a real PNG file, skipping"))
+            return
+        }
         try {
             Files.newInputStream(path).use { input ->
                 val img = NativeImage.read(input)
@@ -127,13 +139,13 @@ object MapImageLoader {
                                 FishDiag.fail("MapImageLoader.5", "releasing previous map image '$fileName' failed", e)
                             }
                         }
-                        if (!quiet) Misc.addChatMessage(Component.literal("§a[Map] Loaded image: §f$fileName §7(${w}x$h)"))
+                        if (!quiet) FishUtil.addChatMessage(Component.literal("§a[Map] Loaded image: §f$fileName §7(${w}x$h)"))
                     }
                 }
             }
         } catch (e: Exception) {
             FishDiag.fail("MapImageLoader.6", "failed to load map image '$fileName'", e)
-            Misc.addChatMessage(Component.literal("§c[Map] Failed to load image '$fileName': ${e.message}"))
+            FishUtil.addChatMessage(Component.literal("§c[Map] Failed to load image '$fileName': ${e.message}"))
         }
     }
 

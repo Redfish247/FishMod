@@ -1,7 +1,7 @@
 package fishmod.features.other
 import fishmod.compat.curScreen
 
-import fishmod.utils.Keybinds
+import fishmod.utils.FishKeys
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import kotlin.math.exp
@@ -19,7 +19,7 @@ object Zoom {
 
     @JvmStatic
     fun active(): Boolean {
-        val key = Keybinds.zoom ?: return false
+        val key = FishKeys.zoom ?: return false
         return FishSettings.zoomEnabled && Minecraft.getInstance().curScreen == null && key.isDown
     }
 

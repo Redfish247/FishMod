@@ -2,7 +2,7 @@ package fishmod.features.chat
 import fishmod.compat.hud
 import fishmod.utils.TextStrip
 
-import fishmod.mixin.ChatHudInvoker
+import fishmod.mixin.FishChatInvoker
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
@@ -43,7 +43,7 @@ object ChatSearch {
         val chat = Minecraft.getInstance().hud?.chat ?: return
         FishDiag.guard("ChatSearch.1", "chat search refresh failed (query='$query')") {
             chat.resetChatScroll()
-            (chat as ChatHudInvoker).invokeRefresh()
+            (chat as FishChatInvoker).invokeRefresh()
         }
     }
 

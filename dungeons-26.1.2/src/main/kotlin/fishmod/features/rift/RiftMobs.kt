@@ -1,10 +1,10 @@
 package fishmod.features.rift
 
-import fishmod.utils.Misc
-import fishmod.utils.data.EntityUtil
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
+import fishmod.utils.FishUtil
+import fishmod.utils.data.EntityTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -51,9 +51,9 @@ object RiftMobs {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
-        Events.ON_GAME_MESSAGE.register { t -> if (S.riftBacte && Rift.inRift()) onBacteChat(Rift.strip(t.string).trim()); false }
-        Events.ON_WORLD_CHANGE.register { bacteUntil = 0L; marks = emptyList(); fleespook = null; bacte = emptyList(); bacteSlimes = emptyList(); still.clear(); bacteId = -1; false }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        FishEvents.chat.register { t -> if (S.riftBacte && Rift.inRift()) onBacteChat(Rift.strip(t.string).trim()); false }
+        FishEvents.worldChange.register { bacteUntil = 0L; marks = emptyList(); fleespook = null; bacte = emptyList(); bacteSlimes = emptyList(); still.clear(); bacteId = -1; false }
+        RenderHooks.GIZMO.register { _ -> render() }
     }
 
     // Chat drives the fight window; the nametag only finds the mob
@@ -63,7 +63,7 @@ object RiftMobs {
         if (BACTE_END.containsMatchIn(m)) { bacteUntil = 0L; bacte = emptyList(); bacteId = -1; return }
         if (now > bacteUntil) {
             bacteStart = now
-            if (S.riftBacteTitle) Misc.forceTitle(Component.literal("§a§lBacte!"), Component.literal("§7Bacte spawned"), 2000)
+            if (S.riftBacteTitle) FishUtil.forceTitle(Component.literal("§a§lBacte!"), Component.literal("§7Bacte spawned"), 2000)
         }
         bacteUntil = now + 120_000L
     }
@@ -134,7 +134,7 @@ object RiftMobs {
         if (S.riftCrux && S.riftShyTitle && S.riftCruxShy) {
             val lv = Minecraft.getInstance().level
             if (lv != null && lv.getEntities(me, me.boundingBox.inflate(8.0)) { e -> e.customName?.string?.let { Rift.strip(it) in SHY_LINES } == true }.isNotEmpty())
-                Misc.forceTitle(Component.literal("§eLook away!"), Component.empty(), 300)
+                FishUtil.forceTitle(Component.literal("§eLook away!"), Component.empty(), 300)
         }
         marks = out; lastCruxNames = names; fleespook = flee
         if (S.riftBacte) findBacte(me, System.currentTimeMillis() < bacteUntil) else { bacte = emptyList(); bacteSlimes = emptyList() }
@@ -147,8 +147,8 @@ object RiftMobs {
         if (!Rift.inRift()) return
         for (m in marks) {
             if (!m.e.isAlive) continue
-            val p = EntityUtil.getLerpedPos(m.e)
-            RenderUtils.gizmoText(Component.literal(m.text), Vec3(p.x, p.y + m.e.bbHeight + 1.2, p.z), S.riftCruxTextPct / 100f, -1, S.riftCruxWalls)
+            val p = EntityTools.getLerpedPos(m.e)
+            FishDraw.gizmoText(Component.literal(m.text), Vec3(p.x, p.y + m.e.bbHeight + 1.2, p.z), S.riftCruxTextPct / 100f, -1, S.riftCruxWalls)
         }
         fleespook?.takeIf { it.isAlive }?.let { line(it, S.riftFleespookColor, "§5Fleespook") }
         if (S.riftBacteLine) bacteAim()
@@ -159,13 +159,13 @@ object RiftMobs {
         val me = Minecraft.getInstance().player ?: return
         val eye = me.eyePosition; val look = me.lookAngle
         if (S.riftBacteSlimeBoxes) for (sl in bacteSlimes) if (sl.isAlive) {
-            val p = EntityUtil.getLerpedPos(sl)
+            val p = EntityTools.getLerpedPos(sl)
             val yaw = sl.yRot.toDouble()
-            RenderUtils.gizmoYawBox(p, sl.bbWidth / 2.0, sl.bbHeight.toDouble(), yaw, 0x5555FF55, true)
+            FishDraw.gizmoYawBox(p, sl.bbWidth / 2.0, sl.bbHeight.toDouble(), yaw, 0x5555FF55, true)
         }
         val targets = bacte.filter { it.isAlive }
         if (targets.isEmpty()) return
-        for (t in targets) RenderUtils.gizmoBox(t.boundingBox, 0x30FF5555, 0xFFFF5555.toInt(), true)
+        for (t in targets) FishDraw.gizmoBox(t.boundingBox, 0x30FF5555, 0xFFFF5555.toInt(), true)
         val slime = bacteSlimes.filter { it.isAlive && it.distanceToSqr(me) < 100.0 }.minByOrNull { sl ->
             val v = sl.boundingBox.center.subtract(eye); val t = v.dot(look)
             if (t <= 0) Double.MAX_VALUE else v.subtract(look.scale(t)).length()
@@ -174,12 +174,12 @@ object RiftMobs {
         val d = Vec3(c.x - me.x, 0.0, c.z - me.z).let { if (it.lengthSqr() < 1e-6) return else it.normalize() }
         val end = c.add(d.scale(40.0))
         val hits = targets.any { t -> t.boundingBox.inflate(0.4).clip(c, end).isPresent }
-        RenderUtils.gizmoLine(c, end, if (hits) 0xFFFF5555.toInt() else S.riftBacteColor, 3f, true)
+        FishDraw.gizmoLine(c, end, if (hits) 0xFFFF5555.toInt() else S.riftBacteColor, 3f, true)
     }
 
     private fun line(e: Entity, argb: Int, label: String?) {
-        val p = EntityUtil.getLerpedPos(e)
-        RenderUtils.gizmoLine(RenderUtils.cameraLineStart(1.0), Vec3(p.x, p.y, p.z), argb, 2f, true)
-        if (label != null) RenderUtils.gizmoText(Component.literal(label), Vec3(p.x, p.y + 0.5, p.z), 1.2f, -1, true)
+        val p = EntityTools.getLerpedPos(e)
+        FishDraw.gizmoLine(FishDraw.cameraLineStart(1.0), Vec3(p.x, p.y, p.z), argb, 2f, true)
+        if (label != null) FishDraw.gizmoText(Component.literal(label), Vec3(p.x, p.y + 0.5, p.z), 1.2f, -1, true)
     }
 }

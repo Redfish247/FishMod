@@ -16,6 +16,9 @@ object ExtrasSettings {
     @ConfigValue @JvmField var arrowLowThreshold: Int = 128
     @ConfigValue @JvmField var arrowOutWarn: Boolean = true
     @ConfigValue @JvmField var arrowWarnSound: String = "Note: Bass"
+    @ConfigValue @JvmField var quiverWarning: Boolean = false
+    @ConfigValue @JvmField var calendarRealTimes: Boolean = false
+    @ConfigValue @JvmField var calendarTimeColor: Int = 0xFF55FFFF.toInt()
 
     // Limbo alert
     @ConfigValue @JvmField var limboAlert: Boolean = false
@@ -36,4 +39,36 @@ object ExtrasSettings {
     @ConfigValue @JvmField var patcherWaypointBeam: Boolean = true
     @ConfigValue @JvmField var patcherWaypointRemoveNear: Boolean = true
     @ConfigValue @JvmField var patcherWaypointTextScale: Double = 1.0
+
+    // Fairy soul waypoints
+    @ConfigValue @JvmField var fairySoulWaypoints: Boolean = false
+    @ConfigValue @JvmField var fairySoulColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var fairySoulBeam: Boolean = true
+    @ConfigValue @JvmField var fairySoulText: Boolean = true
+
+    // Item overlays + tooltip
+    @ConfigValue @JvmField var overlayItemLevels: Boolean = false
+    @ConfigValue @JvmField var overlayBookLevel: Boolean = true
+    @ConfigValue @JvmField var overlayPetLevel: Boolean = true
+    @ConfigValue @JvmField var overlayMinionTier: Boolean = true
+    @ConfigValue @JvmField var overlayCakeYear: Boolean = true
+    @ConfigValue @JvmField var overlayTextColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var obtainedDateTooltip: Boolean = false
+    @ConfigValue @JvmField var suggestionClickAhs: Boolean = true
+
+    // PV maxed highlight
+    @ConfigValue @JvmField var pvMaxedColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var pvMaxedRainbow: Boolean = false
+
+    // Enchant colours (item tooltips + PV)
+    @ConfigValue @JvmField var enchantColors: Boolean = false
+    @ConfigValue @JvmField var enchantMaxColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var enchantMaxChroma: Boolean = true
+    @ConfigValue @JvmField var enchantHighColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var enchantHighChroma: Boolean = false
+    @ConfigValue @JvmField var enchantUltColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var enchantUltChroma: Boolean = false
+    @ConfigValue @JvmField var enchantNormalColor: Int = 0xFF5555FF.toInt()
+    @ConfigValue @JvmField var enchantNormalChroma: Boolean = false
+    @ConfigValue @JvmField var enchantBold: Boolean = true
 }

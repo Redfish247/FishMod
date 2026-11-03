@@ -1,9 +1,9 @@
 package fishmod.features.rift
 
 import fishmod.compat.curScreen
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import fishmod.utils.config.FishConfig
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
@@ -36,7 +36,7 @@ object RiftBurger {
 
     private fun hasHighlite(mc: net.minecraft.client.Minecraft): Boolean {
         val inv = mc.player?.inventory ?: return false
-        for (i in 0 until inv.containerSize) if (ItemUtil.getId(inv.getItem(i)) == "HIGHLITE") return true
+        for (i in 0 until inv.containerSize) if (ItemTools.getId(inv.getItem(i)) == "HIGHLITE") return true
         return false
     }
 
@@ -48,7 +48,7 @@ object RiftBurger {
             val menu = screen.menu
             for (slot in menu.slots) {
                 val item = slot.item
-                if (ItemUtil.getId(item) != "MCGRUBBER_BURGER") continue
+                if (ItemTools.getId(item) != "MCGRUBBER_BURGER") continue
                 val lore = item.get(DataComponents.LORE)?.lines() ?: continue
                 val pct = lore.firstNotNullOfOrNull { PROGRESS.find(Rift.strip(it.string)) }?.groupValues?.get(1)?.toIntOrNull() ?: continue
                 setStacks(pct / 20); scannedThisOpen = true; break
@@ -61,8 +61,8 @@ object RiftBurger {
         val n = S.riftGrubberStacks
         if (n >= 5) return
         val known = if (n < 0) "unknown (eat/check a burger once)" else "$n/5"
-        Misc.addChatMessage(Component.literal("§c[Rift] You are selling Highlite with McGrubber burgers at $known!"))
-        if (S.riftBurgerTitle) Misc.forceTitle(Component.literal("§cBurgers $known"), Component.literal("§7Highlite sells for more with 5/5"), 2500)
+        FishUtil.addChatMessage(Component.literal("§c[Rift] You are selling Highlite with McGrubber burgers at $known!"))
+        if (S.riftBurgerTitle) FishUtil.forceTitle(Component.literal("§cBurgers $known"), Component.literal("§7Highlite sells for more with 5/5"), 2500)
     }
 
     fun init() {

@@ -5,14 +5,14 @@ import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.features.PetHud
-import fishmod.utils.Location
-import fishmod.utils.config.values.Dungeons
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.config.values.DungeonSettings
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemUtil
+import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
-import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.DrawHooks
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -45,7 +45,7 @@ object InvincibilityTracker {
         fun reset() { active = 0; cooldown = 0 }
     }
 
-    private const val NAME = "Invincibility Timer"
+    private const val NAME = "Mask & Phoenix Timer"
     private const val LINE_H = 10
     private const val ICON_LINE_H = 18
     private val WS = Regex("\\s+")
@@ -60,11 +60,11 @@ object InvincibilityTracker {
             { FishSettings.invincScale }, { v -> FishSettings.invincScale = v }
         )
 
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (Dungeons.displayInvincibilityTimer) {
+        FishEvents.chat.register { text ->
+            if (DungeonSettings.invincibilityTimerHud) {
                 val s = TextStrip.plain(text.string).replace(WS, " ").trim()
                 val hit = Type.entries.firstOrNull { it.regex.matches(s) }
-                if (hit == null && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
+                if (hit == null && !s.contains(" > ") && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
                 hit?.let { t ->
                     t.proc()
                     FishDiag.guard("InvincibilityTracker.2", "invincibility proc title/sound failed for ${t.label}") { procTitle(t) }
@@ -75,11 +75,11 @@ object InvincibilityTracker {
             }
             false
         }
-        Events.ON_SERVER_TICK.register { Type.entries.forEach { it.tick() }; FishDiag.guard("InvincibilityTracker.3", "invincibility icon learning failed") { learnIcons() }; false }
-        Events.ON_WORLD_CHANGE.register { Type.entries.forEach { it.reset() }; false }
+        FishEvents.serverTick.register { Type.entries.forEach { it.tick() }; FishDiag.guard("InvincibilityTracker.3", "invincibility icon learning failed") { learnIcons() }; false }
+        FishEvents.worldChange.register { Type.entries.forEach { it.reset() }; false }
 
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
-            if (!Dungeons.displayInvincibilityTimer || !FishSettings.invincShowCooldown) return@register
+        DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+            if (!DungeonSettings.invincibilityTimerHud || !FishSettings.invincShowCooldown) return@register
             try { drawSlotBar(ctx, stack, x, y) } catch (e: Exception) { FishDiag.fail("InvincibilityTracker.4", "invincibility slot bar draw failed", e) }
         }
     }
@@ -91,7 +91,7 @@ object InvincibilityTracker {
             Type.BONZO -> FishSettings.invincProcBonzoText to FishSettings.invincProcBonzoColor
             Type.PHOENIX -> FishSettings.invincProcPhoenixText to FishSettings.invincProcPhoenixColor
         }
-        fishmod.utils.Misc.forceTitle(
+        fishmod.utils.FishUtil.forceTitle(
             net.minecraft.network.chat.Component.literal(text.ifBlank { "${t.label} Procced!" }).withColor(color and 0xFFFFFF),
             net.minecraft.network.chat.Component.empty(), FishSettings.invincProcTitleMs
         )
@@ -141,18 +141,18 @@ object InvincibilityTracker {
     }
 
     private fun learnIcons() {
-        if (!Dungeons.displayInvincibilityTimer || !FishSettings.invincIcons || ++iconTick < 20) return
+        if (!DungeonSettings.invincibilityTimerHud || !FishSettings.invincIcons || ++iconTick < 20) return
         iconTick = 0
         val mc = Minecraft.getInstance()
         val allKnown = Type.entries.all { storedTexture(it).isNotEmpty() }
         if (allKnown && mc.curScreen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return
-        if (!fishmod.utils.Location.inSkyblock()) return
+        if (!fishmod.utils.SkyblockLocation.inSkyblock()) return
         val player = mc.player ?: return
         val inv = player.inventory
         for (i in 0..inv.containerSize) {
             val st = if (i < inv.containerSize) inv.getItem(i) else player.getItemBySlot(EquipmentSlot.HEAD)
             if (st.isEmpty) continue
-            val id = ItemUtil.getId(st) ?: continue
+            val id = ItemTools.getId(st) ?: continue
             val t = Type.entries.firstOrNull { id in it.ids } ?: continue
             texture(st)?.let { storeTexture(t, it) }
         }
@@ -181,7 +181,7 @@ object InvincibilityTracker {
             Type.PHOENIX -> PetHud.activePetName()?.contains("Phoenix", ignoreCase = true) == true
             else -> {
                 val helmet = Minecraft.getInstance().player?.getItemBySlot(EquipmentSlot.HEAD) ?: return false
-                ItemUtil.getId(helmet) in t.ids
+                ItemTools.getId(helmet) in t.ids
             }
         }
     }
@@ -189,7 +189,7 @@ object InvincibilityTracker {
     private fun labelColor(t: Type): String = if (equipped(t)) "§e" else "§7"
 
     private fun stateColor(t: Type): String {
-        if (!Dungeons.useStatusColorForInvincibility) return "§7"
+        if (!DungeonSettings.invincibilityStatusColor) return "§7"
         return when {
             t.active > 0 -> "§6"
             t.cooldown > 0 -> "§c"
@@ -201,8 +201,8 @@ object InvincibilityTracker {
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!Dungeons.displayInvincibilityTimer || !Location.inDungeon()) return
-        if (FishSettings.invincShowInBoss && !Phase.inBoss()) return
+        if (!DungeonSettings.invincibilityTimerHud || !SkyblockLocation.inDungeon()) return
+        if (FishSettings.invincShowInBoss && !BossPhase.inBoss()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
 
@@ -220,7 +220,7 @@ object InvincibilityTracker {
             val c = stateColor(t)
             val value = when {
                 t.active > 0 || t.cooldown > 0 ->
-                    if (Dungeons.InvincibilityDuration)
+                    if (DungeonSettings.invincibilityHud)
                         fishmod.utils.Fmt.f1((if (t.active > 0) t.active else t.cooldown) / 20.0) + "s"
                     else "●"
                 else -> "✔"
@@ -244,7 +244,7 @@ object InvincibilityTracker {
 
     private fun drawSlotBar(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
         if (stack == null || stack.isEmpty) return
-        val id = ItemUtil.getId(stack) ?: return
+        val id = ItemTools.getId(stack) ?: return
         val t = Type.entries.firstOrNull { id in it.ids } ?: return
         if (t.cooldown <= 0) return
         if (!FishDiag.check(t.cooldown <= t.maxCooldown, "InvincibilityTracker.8") { "${t.label} cooldown ${t.cooldown} exceeds max ${t.maxCooldown}" }) return

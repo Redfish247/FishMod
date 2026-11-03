@@ -5,7 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.features.dungeon.puzzles.PuzzleSolvers
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDebug
 import net.minecraft.core.BlockPos
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
@@ -20,7 +20,7 @@ object QuizSolver {
                 object : TypeToken<Map<String, List<String>>>() {}.type)
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Quiz answers failed to load", e)
+        FishDebug.LOGGER.error("Quiz answers failed to load", e)
         FishDiag.fail("QuizSolver.1", "quizAnswers.json failed to load", e)
         emptyMap()
     }
@@ -44,7 +44,7 @@ object QuizSolver {
         val t = msg.trim()
         if ((t.startsWith("ⓐ") || t.startsWith("ⓑ") || t.startsWith("ⓒ")) && triviaAnswers?.any { msg.endsWith(it) } == true) {
             correctOption = when (t[0]) { 'ⓐ' -> 0; 'ⓑ' -> 1; 'ⓒ' -> 2; else -> { FishDiag.fail("QuizSolver.2", "quiz option letter not recognised: '$t'"); -1 } }
-            Debug.LOGGER.info("[Quiz] answer option={} line={}", correctOption, t)
+            FishDebug.LOGGER.info("[Quiz] answer option={} line={}", correctOption, t)
         }
 
         triviaAnswers = when {

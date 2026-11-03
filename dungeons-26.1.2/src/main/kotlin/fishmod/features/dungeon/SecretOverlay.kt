@@ -2,7 +2,7 @@ package fishmod.features.dungeon
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
-import fishmod.utils.Location
+import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -38,7 +38,7 @@ object SecretOverlay {
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!FishSettings.secretOverlayEnabled || !Location.inDungeon()) return
+        if (!FishSettings.secretOverlayEnabled || !SkyblockLocation.inDungeon()) return
         if (System.currentTimeMillis() - seenAt > STALE_MS || total <= 0) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return

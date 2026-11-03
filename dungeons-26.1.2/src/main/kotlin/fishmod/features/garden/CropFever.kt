@@ -2,7 +2,7 @@ package fishmod.features.garden
 
 import fishmod.features.mining.Mining
 import fishmod.utils.TabListCache
-import fishmod.utils.events.Events
+import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import fishmod.features.garden.GardenSettings as S
 
@@ -18,7 +18,7 @@ object CropFever {
         Mining.sidebar.any { it.contains("Crop Fever", true) } || TabListCache.entries.any { it.stripped.contains("Crop Fever", true) }
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { t ->
+        FishEvents.chat.register { t ->
             if (S.gardenFever && Garden.inGarden() && Garden.strip(t.string).contains("Crop Fever", true)) lastSeenMs = System.currentTimeMillis()
             false
         }

@@ -1,7 +1,7 @@
 package fishmod.features.garden
 import fishmod.compat.curScreen
 
-import fishmod.utils.Misc
+import fishmod.utils.FishUtil
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.minecraft.client.Minecraft
@@ -31,12 +31,12 @@ object GardenExtras {
 
     // Clickable + copied link to the mutations website
     private fun mutationsLink() {
-        if (!X.gardenMutationsLinkOn) { Misc.addChatMessage(Component.literal("§7Mutations Link is off in the Farming tab.")); return }
+        if (!X.gardenMutationsLinkOn) { FishUtil.addChatMessage(Component.literal("§7Mutations Link is off in the Farming tab.")); return }
         val url = X.gardenMutationsUrl.trim()
         val mc = Minecraft.getInstance()
         mc.keyboardHandler.setClipboard(url)
         val link = Component.literal("§b§n$url").withStyle { it.withClickEvent(ClickEvent.OpenUrl(java.net.URI.create(url))) }
-        Misc.addChatMessage(Component.literal("§aMutations: ").append(link).append(Component.literal(" §7(copied)")))
+        FishUtil.addChatMessage(Component.literal("§aMutations: ").append(link).append(Component.literal(" §7(copied)")))
     }
 
     fun screen(): AbstractContainerScreen<*>? = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*>
