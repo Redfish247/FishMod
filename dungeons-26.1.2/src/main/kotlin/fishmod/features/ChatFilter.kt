@@ -170,8 +170,7 @@ object ChatFilter {
     private fun inGuildMotd(s: String): Boolean {
         if (!FishSettings.cfGuildMotd) return false
         if (s.contains("Guild: Message Of The Day")) {
-            if ('
-' !in s) { motdUntil = System.currentTimeMillis() + 2000; motdLines = 0 }
+            if ('\n' !in s) { motdUntil = System.currentTimeMillis() + 2000; motdLines = 0 }
             return true
         }
         if (System.currentTimeMillis() > motdUntil) return false
