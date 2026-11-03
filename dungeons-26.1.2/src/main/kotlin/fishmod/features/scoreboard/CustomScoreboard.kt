@@ -108,7 +108,8 @@ object CustomScoreboard {
             .take(20)
             .map { e ->
                 val team = sb.getPlayersTeam(e.owner())
-                val c = if (team != null) PlayerTeam.formatNameForTeam(team, e.ownerName()) else e.ownerName()
+                // Owner is Hypixel's hidden filler; the text is the team prefix + suffix
+                val c = if (team != null) Component.empty().append(team.playerPrefix).append(team.playerSuffix) else e.ownerName()
                 Raw(c, clean(c.string))
             }
     }
@@ -217,14 +218,10 @@ object CustomScoreboard {
 
     private fun bare(s: String): String = s.replace(Regex("""^[^\p{L}\p{N}]+"""), "").trim()
 
-    private fun num(s: String): String =
-        if (FishSettings.customScoreboardCompactNumbers) CompactNumbers.apply(s) else s
+    private fun num(s: String): String = s
 
-    private fun compact(r: Raw, color: ChatFormatting): Component {
-        if (!FishSettings.customScoreboardCompactNumbers) return r.c
-        val c = CompactNumbers.apply(r.s)
-        return if (c == r.s) r.c else Component.literal(c).withStyle(color)
-    }
+    @Suppress("UNUSED_PARAMETER")
+    private fun compact(r: Raw, color: ChatFormatting): Component = r.c
 
     private fun levelLine(mc: Minecraft): Component? {
         val name = mc.player?.gameProfile?.name ?: return null
