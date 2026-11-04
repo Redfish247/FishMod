@@ -271,7 +271,7 @@ object UpdateManager {
             304 -> synchronized(lock) { state.lastCheckAt = now; state.nextCheckAt = 0; save() }
             404 -> synchronized(lock) { state.release = null; state.etag = null; state.lastCheckAt = now; save() }
             403, 429 -> {
-                FishDiag.fail("UpdateManager.9", "GitHub rate limited HTTP ${res.statusCode()} remaining=${res.headers().firstValue("x-ratelimit-remaining").orElse("?")}")
+                // Rate limit is the player's IP quota, not a bug: back off silently.
                 synchronized(lock) { state.nextCheckAt = rateLimitResetAt(res, now); save() }
             }
             else -> {
