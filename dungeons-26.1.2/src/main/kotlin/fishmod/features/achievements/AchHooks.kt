@@ -27,6 +27,7 @@ object AchHooks {
 
     var runStartMs = 0L; private set
     private var bloodSeen = false
+    private var runSecrets = 0
     private var mimicSeen = false
     private var princeSeen = false
     private var sectionStartMs = 0L
@@ -65,7 +66,7 @@ object AchHooks {
 
     private fun resetRun() {
         flushRunEnd(-1)
-        runStartMs = 0L; bloodSeen = false; mimicSeen = false; princeSeen = false
+        runStartMs = 0L; runSecrets = 0; bloodSeen = false; mimicSeen = false; princeSeen = false
         sectionStartMs = 0L; inTerms = false; lavaFalls = 0; wasInLava = false
     }
 
@@ -172,7 +173,7 @@ object AchHooks {
         flushRunEnd(-1)
         // held until Hypixel's "Team Score" line, live score can lag the real one
         pendingEnd = AchEvent.RunEnded(BossPhase.getFloor(), secs, DungeonScore.score, DungeonScore.deaths,
-            DungeonScore.secretsFound, !PartyTools.isInParty(), DungeonScore.percentCleared)
+            maxOf(runSecrets, DungeonScore.secretsFound), !PartyTools.isInParty(), DungeonScore.percentCleared)
         runStartMs = 0L
     }
 
@@ -214,6 +215,8 @@ object AchHooks {
             if (a.isNotEmpty() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
         }
         if (SkyblockLocation.inDungeon() && runStartMs > 0) {
+            // tab secret count can drop to 0 at run end, keep the run's peak
+            runSecrets = maxOf(runSecrets, DungeonScore.secretsFound)
             if (!bloodSeen && DungeonState.bloodOpened) {
                 bloodSeen = true
                 AchBus.post(AchEvent.BloodOpened((System.currentTimeMillis() - runStartMs) / 1000.0))
