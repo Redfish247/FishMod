@@ -166,7 +166,8 @@ object StorageOverlay {
         if (!shouldFilterPages) return data
         return TreeMap<StoragePage, NBTInventory?>().apply {
             for ((page, inv) in data) {
-                val hit = if (page == activePage && activeSlots != null) activeSlots.any { matches(it.item) }
+                // open page stays even after its last match was taken out
+                val hit = if (page == activePage) true
                 else inv?.stacks?.any(::matches) == true
                 if (hit) this[page] = inv
             }
