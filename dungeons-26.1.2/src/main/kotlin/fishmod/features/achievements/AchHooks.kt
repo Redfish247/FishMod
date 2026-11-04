@@ -211,8 +211,9 @@ object AchHooks {
         if (tick++ % 5 != 0) return
         detailedPlaytime()
         if (fishmod.features.rift.Rift.inRift()) {
-            val a = fishmod.features.rift.Rift.strip(Mining.area).replace("⏣", "").trim()
-            if (a.isNotEmpty() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
+            // Rift sidebar uses "ф", Rift.area() resolves it with sidebar/tab fallbacks
+            val a = fishmod.features.rift.Rift.area().trim()
+            if (a.isNotEmpty() && fishmod.features.rift.Rift.knownOtherArea() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
         }
         if (SkyblockLocation.inDungeon() && runStartMs > 0) {
             // tab secret count can drop to 0 at run end, keep the run's peak

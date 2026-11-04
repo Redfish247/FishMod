@@ -28,7 +28,7 @@ object AchApiSync {
     private val FISH_VALUE = listOf("RAW_FISH" to "RAW_FISH", "RAW_FISH:1" to "RAW_SALMON", "RAW_FISH:2" to "CLOWNFISH", "RAW_FISH:3" to "PUFFERFISH",
         "PRISMARINE_SHARD" to "PRISMARINE_SHARD", "PRISMARINE_CRYSTALS" to "PRISMARINE_CRYSTALS", "CLAY_BALL" to "CLAY_BALL", "WATER_LILY" to "WATER_LILY",
         "INK_SACK" to "INK_SACK", "SPONGE" to "SPONGE", "MAGMA_FISH" to "MAGMA_FISH")
-    private val MINI_BOSSES = listOf("bladesoul", "mage_outlaw", "barbarian_duke", "ashfang", "millenia")
+    private val MINI_BOSSES = listOf("bladesoul", "mage_outlaw", "barbarian_duke", "ashfang", "magma_boss")
     private val KUUDRA_TIERS = listOf("none", "hot", "burning", "fiery", "infernal")
 
     fun sync(manual: Boolean) {
@@ -47,7 +47,7 @@ object AchApiSync {
                 if (!AchStore.ownedBy(uuid)) return@execute
                 if (member == null) { if (manual) { FishMsg.send("§cAchievement sync failed (API unreachable or no profile)."); AchLeaderboard.submit(true) }; return@execute }
                 val before = AchStore.data.unlocked.size
-                try { apply(member) } catch (t: Throwable) { fishmod.utils.debug.FishDiag.fail("AchApiSync.1", "apply profile failed", t) }
+                try { apply(member); profile?.let { minions(it, member) } } catch (t: Throwable) { fishmod.utils.debug.FishDiag.fail("AchApiSync.1", "apply profile failed", t) }
                 AchStore.data.lastApiSync = System.currentTimeMillis()
                 AchStore.changed()
                 AchEngine.evaluate()
@@ -67,7 +67,7 @@ object AchApiSync {
         }
         if (pid != null) {
             HypixelApi.fetchJson("/skyblock/museum?profile=$pid") { root ->
-                val items = obj(root, "members.$uuid.items")?.entrySet()?.count { (_, v) -> v.isJsonObject && v.asJsonObject.get("borrowing")?.asBoolean != true } ?: return@fetchJson
+                val items = obj(fishmod.pv.api.ProfileMuseumLookup.findMuseumMember(root, pid, uuid), "items")?.entrySet()?.count { (_, v) -> v.isJsonObject && v.asJsonObject.get("borrowing")?.asBoolean != true } ?: return@fetchJson
                 land { put("museum.items", items.toDouble()) }
             }
             HypixelApi.fetchJson("/skyblock/garden?profile=$pid") { root ->
@@ -92,6 +92,22 @@ object AchApiSync {
             }
             if (total > 0) land { put("coll.maxed", maxed.toDouble()); if (maxed >= total) put("coll.maxedAll", 1.0) }
         }
+    }
+
+    // Crafted minions are shared across coop members; community shop adds up to 5 slots
+    private fun minions(profile: JsonObject, member: JsonObject) {
+        val gens = HashSet<String>()
+        val members = profile.getAsJsonObject("members")?.entrySet()?.map { it.value }.orEmpty() + member
+        for (mem in members) {
+            if (!mem.isJsonObject) continue
+            el(mem.asJsonObject, "player_data.crafted_generators")?.takeIf { it.isJsonArray }?.asJsonArray?.forEach { if (it.isJsonPrimitive) gens.add(it.asString) }
+        }
+        if (gens.isEmpty()) return
+        val bonus = obj(profile, "community_upgrades")?.get("upgrade_states")?.takeIf { it.isJsonArray }?.asJsonArray
+            ?.filter { it.isJsonObject && el(it.asJsonObject, "upgrade")?.asString == "minion_slots" }
+            ?.maxOfOrNull { num(it.asJsonObject, "tier") } ?: 0.0
+        put("minion.slots", (MINION_SLOT_AT.indexOfLast { gens.size >= it } + 5).toDouble() + bonus)
+        if (gens.any { (it.substringAfterLast('_').toIntOrNull() ?: 0) >= 11 }) put("minion.t11", 1.0)
     }
 
     private fun sumNums(e: JsonElement?): Double = when {
@@ -181,7 +197,7 @@ object AchApiSync {
         put("slayer.blazeT4", num(bosses, "blaze.boss_kills_tier_3"))
         if (maxed >= 6) put("slayer.maxedAll", 1.0)
 
-        val hotmXp = num(m, "mining_core.experience")
+        val hotmXp = maxOf(num(m, "skill_tree.experience.mining"), num(m, "mining_core.experience"))
         put("mining.hotm", (HOTM_XP.indexOfLast { hotmXp >= it } + 1).toDouble())
         put("mining.powder", listOf("mithril", "gemstone", "glacite").sumOf { num(m, "mining_core.powder_$it") + num(m, "mining_core.powder_spent_$it") })
         put("mining.corpses", obj(m, "glacite_player_data.corpses_looted")?.entrySet()?.sumOf { it.value.asDouble } ?: 0.0)
@@ -192,11 +208,11 @@ object AchApiSync {
         put("fish.thunder", num(kills, "thunder_400"))
         put("fish.jawbus", num(kills, "lord_jawbus_600"))
         put("fish.hydra", num(kills, "water_hydra_100"))
-        put("diana.inquis", num(kills, "minos_inquisitor_750"))
+        put("diana.inquis", killsLike(kills, "minos_inquisitor"))
         put("fish.plhleg", killsLike(kills, "plhlegblast"))
         put("crimson.ashfang", killsLike(kills, "ashfang"))
         put("crimson.miniBosses", MINI_BOSSES.count { killsLike(kills, it) > 0 }.toDouble())
-        put("rift.vampires", kills?.entrySet()?.filter { (k, v) -> v.isJsonPrimitive && k.contains("bloodfiend") }?.sumOf { it.value.asDouble } ?: 0.0)
+        put("rift.vampires", obj(bosses, "vampire")?.entrySet()?.filter { (k, v) -> k.startsWith("boss_kills_tier_") && v.isJsonPrimitive }?.sumOf { it.value.asDouble } ?: 0.0)
         put("bestiary.milestone", num(m, "bestiary.milestone.last_claimed_milestone"))
         put("garden.pests", kills?.entrySet()?.filter { it.key.startsWith("pest_") && it.value.isJsonPrimitive }?.sumOf { it.value.asDouble } ?: 0.0)
 
@@ -243,11 +259,7 @@ object AchApiSync {
         }
 
         put("purse", num(m, "currencies.coin_purse"))
-        el(m, "player_data.crafted_generators")?.takeIf { it.isJsonArray }?.asJsonArray?.let { gens ->
-            put("minion.slots", (MINION_SLOT_AT.indexOfLast { gens.size() >= it } + 5).toDouble())
-            if (gens.any { (it.asString.substringAfterLast('_').toIntOrNull() ?: 0) >= 11 }) put("minion.t11", 1.0)
-        }
-        put("choc.prestige", num(m, "events.easter.chocolate_level") - 1)
+        put("choc.prestige", num(m, "events.easter.chocolate_level"))
         put("choc.rabbits", obj(m, "events.easter.rabbits")?.keySet()?.count { it != "collected_eggs" && it != "collected_locations" }?.toDouble() ?: 0.0)
 
         var gold = 0; var diamond = 0
