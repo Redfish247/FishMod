@@ -422,7 +422,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderDoubleSetting("Scale", "Overlay size", FishSettings::storageOverlayScale, 0.5, 2.0))
             f.sub.add(SliderIntSetting("Scroll Speed", "", FishSettings::storageScrollSpeed, 1, 50))
             f.sub.add(ToggleSetting("Retain Scroll", "Keep scroll offset after closing", FishSettings::storageRetainScroll))
-            f.sub.add(ToggleSetting("Hide Non-Matching Pages", "While searching", FishSettings::storageHideNonMatching))
+            f.sub.add(ToggleSetting("Keep Search", "Keep the search text when the overlay reopens (off also clears it when switching pages)", FishSettings::storageKeepSearch))
+            f.sub.add(ToggleSetting("Autofocus Search", "Focus the search bar when the overlay opens", FishSettings::storageAutoFocusSearch))
+            f.sub.add(ToggleSetting("Hide Non-Matching Pages","While searching", FishSettings::storageHideNonMatching))
             invStorage.features.add(f)
         }
         invStorage.features.add(Feature("Container Value", FishSettings::containerValueEnabled))
