@@ -409,15 +409,15 @@ class BestiaryPage {
 			return "$shown..."
 		}
 
-		/** Slot background: green when maxed, yellow when started, gray when untouched. */
+		/** Slot background: orange when maxed, green when started, gray when untouched. */
 		private fun slotColor(fam: BestiarySnapshot.FamilyProgress?): Int {
 			if (fam == null || fam.tier <= 0) {
 				return 0xFF2A2A32.toInt()
 			}
 			if (fam.maxed || (fam.tiersMax > 0 && fam.tier >= fam.tiersMax)) {
-				return 0xFF1E5A2A.toInt()
+				return 0xFF8A4A10.toInt()
 			}
-			return 0xFF8A4A10.toInt()
+			return 0xFF1E5A2A.toInt()
 		}
 
 		/** `bogged_10` / `magma_cube_rider_90` → readable title case, level suffix dropped. */
