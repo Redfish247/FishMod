@@ -83,7 +83,7 @@ object EnchantTooltip {
 					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false, row * ROW_SHIFT + out.string.length)
 				})
 			} else if (level >= max) {
-				out.append(PvDraw.chromaText(label, true, row * ROW_SHIFT + out.string.length, CHROMA_MS))
+				out.append(PvDraw.chromaText(label, true, row * ROW_SHIFT + out.string.length, CHROMA_MS, WAVE_STEP))
 			} else if (level == max - 1) {
 				out.append(PvDraw.styled(label, T6_GOLD, true))
 			} else if (ultimate) {
@@ -105,9 +105,10 @@ object EnchantTooltip {
 
 	private const val CHROMA_MS = 6000L
 	private const val ROW_SHIFT = 3 // per-line wave offset so it flows diagonally
+	private const val WAVE_STEP = -0.07f // negative so the wave travels left-to-right, top-to-bottom
 
 	private fun tier(label: String, argb: Int, chroma: Boolean, bold: Boolean, start: Int): Component =
-		if (chroma) PvDraw.chromaText(label, bold, start, CHROMA_MS) // continue the wave from line position
+		if (chroma) PvDraw.chromaText(label, bold, start, CHROMA_MS, WAVE_STEP) // continue the wave from line position
 		else Component.literal(label).withStyle(Style.EMPTY.withColor(argb and 0xFFFFFF).withBold(bold).withItalic(false))
 
 	/** Recolours enchant lines in every item tooltip when Enchant Colors is on. */
