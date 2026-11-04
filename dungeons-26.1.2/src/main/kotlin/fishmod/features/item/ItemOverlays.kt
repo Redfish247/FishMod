@@ -16,7 +16,7 @@ import java.util.Locale
 
 // Skyblocker-style slot text (book level, pet level, minion tier, cake year) + obtained date tooltip
 object ItemOverlays {
-    private val PET_LVL = Regex("^\\[Lvl (\\d+)]")
+    private val PET_LVL = Regex("\\[Lvl (\\d+)]")
     private val MINION_TIER = Regex("_GENERATOR_(\\d+)$")
     private val OLD_STAMP = SimpleDateFormat("M/d/yy h:mm a", Locale.US)
     private val OUT_DATE = SimpleDateFormat("MMM d, yyyy", Locale.US)
@@ -46,7 +46,12 @@ object ItemOverlays {
             return lvl.toString()
         }
         if (S.overlayPetLevel && id == "PET") {
-            return PET_LVL.find(stack.hoverName.string)?.groupValues?.get(1)
+            val name = stack.hoverName.string
+            val lvl = PET_LVL.find(name)?.groupValues?.get(1) ?: return null
+            // Golden/other dragons cap at 200, everything else at 100
+            val max = if (name.contains("Dragon")) 200 else 100
+            if (S.overlayPetHideMax && lvl.toInt() >= max) return null
+            return lvl
         }
         if (S.overlayMinionTier) MINION_TIER.find(id)?.let { return it.groupValues[1] }
         if (S.overlayCakeYear && id == "NEW_YEAR_CAKE") {

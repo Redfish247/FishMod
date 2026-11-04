@@ -69,6 +69,7 @@ object ExtrasMenu {
         val lvl = Feature("Item Level Overlay", S::overlayItemLevels)
         lvl.sub.add(ToggleSetting("Book Level", "Single-enchant books", S::overlayBookLevel))
         lvl.sub.add(ToggleSetting("Pet Level", "", S::overlayPetLevel))
+        lvl.sub.add(ToggleSetting("Hide Max Pet Level", "Skip the overlay on max-level pets", S::overlayPetHideMax))
         lvl.sub.add(ToggleSetting("Minion Tier", "", S::overlayMinionTier))
         lvl.sub.add(ToggleSetting("Cake Year", "New Year Cakes", S::overlayCakeYear))
         lvl.sub.add(ColorPickerSetting("Text Color", "", S::overlayTextColor))
