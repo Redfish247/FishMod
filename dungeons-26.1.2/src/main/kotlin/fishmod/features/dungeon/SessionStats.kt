@@ -291,6 +291,14 @@ object SessionStats {
     private var linesCacheAt = 0L
     private var linesCache: Array<String> = arrayOf("", "", "", "")
 
+    // /fm stats: print the session stats lines to chat
+    @JvmStatic
+    fun printToChat() {
+        linesCacheAt = 0L
+        buildLines().filter { it.isNotBlank() }.forEach { fishmod.utils.FishMsg.send(it) }
+        fishmod.features.achievements.AchStore.inc("fm.statsOpened")
+    }
+
     private fun buildLines(): Array<String> {
         val now = System.currentTimeMillis()
         if (now - linesCacheAt < LINES_CACHE_TTL_MS) return linesCache

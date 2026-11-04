@@ -572,6 +572,10 @@ class FishModInit : ClientModInitializer {
             fishmod.features.other.CommandAliases.registerAll(dispatcher)
             dispatcher.register(
                 ClientCommands.literal("fm")
+                    .then(ClientCommands.literal("stats").executes {
+                        Minecraft.getInstance().execute { fishmod.features.dungeon.SessionStats.printToChat() }
+                        FishConstants.SUCCESS
+                    })
                     .then(ClientCommands.literal("commandkeys").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
