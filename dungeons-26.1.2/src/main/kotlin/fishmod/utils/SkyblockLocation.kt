@@ -20,6 +20,7 @@ enum class SkyblockLocation(val label: String) {
     MOONGLADE_MARSH("Moonglade Marsh"),
     TORRHUS_CANYON("Torrhus Canyon"),
     LOTUS_ATOLL("Lotus Atoll"),
+    SAFARI("Safari"),
     THE_PARK("The Park"),
     THE_FARMING_ISLANDS("The Farming Islands"),
     GOLD_MINE("Gold Mine"),
