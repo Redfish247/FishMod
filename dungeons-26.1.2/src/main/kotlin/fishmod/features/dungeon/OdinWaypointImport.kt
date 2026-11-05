@@ -115,7 +115,20 @@ object OdinWaypointImport {
     // Odin Color serializes as HSB + alpha; fall back to its cached rgba int.
     private fun color(e: JsonElement?): Int {
         if (e == null || e.isJsonNull) return 0xFFFFFFFF.toInt()
-        if (e.isJsonPrimitive) return e.asInt
+        if (e.isJsonPrimitive) {
+            val s = e.asString.trim()
+            // Hex string "#RRGGBB" or "#RRGGBBAA" -> ARGB int.
+            if (s.startsWith("#")) {
+                val h = s.substring(1)
+                val v = h.toLongOrNull(16) ?: return 0xFFFFFFFF.toInt()
+                return when (h.length) {
+                    6 -> (0xFF000000L or v).toInt()
+                    8 -> (((v and 0xFF) shl 24) or (v ushr 8)).toInt()
+                    else -> 0xFFFFFFFF.toInt()
+                }
+            }
+            return s.toDoubleOrNull()?.toInt() ?: 0xFFFFFFFF.toInt()
+        }
         val c = e.asJsonObject
         if (c.has("hue")) {
             val alpha = (c.get("alphaFloat") ?: c.get("alpha"))?.asFloat ?: 1f
