@@ -1,6 +1,7 @@
 package fishmod.features.gamble
 
 import com.google.gson.JsonObject
+import fishmod.compat.curScreen
 import fishmod.utils.FishMsg
 import fishmod.utils.SkyblockLocation
 import net.minecraft.client.Minecraft
@@ -57,7 +58,7 @@ object PlaytimeTracker {
         hasLast = true
         lastX = p.x; lastY = p.y; lastZ = p.z; lastYaw = yaw; lastPitch = pitch
 
-        if (mc.screen == null) {
+        if (mc.curScreen == null) {
             val maps = mc.options.keyMappings
             if (keysDown.size != maps.size) keysDown = BooleanArray(maps.size)
             for (i in maps.indices) {
