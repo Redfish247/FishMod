@@ -91,7 +91,7 @@ object SessionStats {
         paused = true
         autoPaused = true
         autoPauseReason = reason
-        pauseStartedMs = if (freezeAtMs > 0) freezeAtMs else System.currentTimeMillis()
+        pauseStartedMs = if (freezeAtMs > 0) minOf(freezeAtMs, System.currentTimeMillis()) else System.currentTimeMillis()
         // last activity can predate the session start (moved, then first run began)
         if (sessionStartMs > 0 && pauseStartedMs < sessionStartMs) pauseStartedMs = sessionStartMs
     }
@@ -236,6 +236,10 @@ object SessionStats {
             pauseStartedMs = d.pauseStartedMs
             autoPaused = d.autoPaused
             lastActivityMs = d.lastActivityMs
+            // saved clock values from the future (clock change / bad save) would corrupt the session timer
+            val nowMs = System.currentTimeMillis()
+            if (pauseStartedMs > nowMs) pauseStartedMs = nowMs
+            if (lastActivityMs > nowMs) lastActivityMs = nowMs
             if (paused && sessionStartMs > 0 && pauseStartedMs in 1 until sessionStartMs) pauseStartedMs = sessionStartMs
             if (!paused && sessionStartMs > 0) {
                 autoPause(1, if (lastActivityMs > 0) lastActivityMs else sessionStartMs)
