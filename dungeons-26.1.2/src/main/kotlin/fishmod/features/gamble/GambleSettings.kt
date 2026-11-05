@@ -11,6 +11,4 @@ object GambleSettings {
     @ConfigValue @JvmField var gambleLeaderboard: Boolean = true
     @ConfigValue @JvmField var gambleCrown: Boolean = true
     @ConfigValue @JvmField var gambleCrownChat: Boolean = true
-    @ConfigValue @JvmField var gambleCrownNametag: Boolean = true
-    @ConfigValue @JvmField var gambleCrownTab: Boolean = true
 }

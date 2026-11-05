@@ -23,8 +23,6 @@ object GambleMenu {
 
         val crown = Feature("Crown Badge", S::gambleCrown)
         crown.sub.add(ToggleSetting("Chat", "", S::gambleCrownChat))
-        crown.sub.add(ToggleSetting("Nametag", "", S::gambleCrownNametag))
-        crown.sub.add(ToggleSetting("Tab List", "", S::gambleCrownTab))
         col.features.add(crown)
         return col
     }

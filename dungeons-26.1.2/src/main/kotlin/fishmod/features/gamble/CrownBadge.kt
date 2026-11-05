@@ -20,6 +20,10 @@ object CrownBadge {
     private val cache = ConcurrentHashMap<String, Entry>()
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
     @Volatile private var holder = ""
+    @Volatile private var holderUuid = ""
+
+    // Crown holder's uuid (no dashes) for the badge system, only when the crown is on
+    @JvmStatic fun crownUuid(): String = if (active()) holderUuid else ""
     @Volatile private var lastHolderFetch = 0L
 
     private fun key(name: String) = name.lowercase()
@@ -28,6 +32,7 @@ object CrownBadge {
         val now = System.currentTimeMillis()
         val old = holder
         holder = name
+        holderUuid = uuid.replace("-", "")
         if (old.isNotEmpty() && !old.equals(name, true)) cache[key(old)] = Entry(false, now)
         cache[key(name)] = Entry(true, now)
         if (uuid.isNotEmpty()) cache[key(uuid.replace("-", ""))] = Entry(true, now)
