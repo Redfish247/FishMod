@@ -148,7 +148,7 @@ object CroesusProfit {
     private fun tooltip(stack: ItemStack): MutableList<String> {
         val out = ArrayList<String>()
         out.add(stack.hoverName.string)
-        stack.get(DataComponents.LORE)?.lines()?.forEach { out.add(it.string) }
+        stack.get(DataComponents.LORE)?.lines()?.forEach { out.add(CroesusRewardParser.coded(it)) }
         return out
     }
 
