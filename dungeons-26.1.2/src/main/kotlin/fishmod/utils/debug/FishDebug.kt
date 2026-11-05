@@ -63,6 +63,33 @@ object FishDebug {
     @JvmField
     var leapDebug = false
 
+    // Bisect switches for the player-glitch hunt: true = that hook is skipped
+    @JvmField var skipExtract = false
+    @JvmField var skipCull = false
+    @JvmField var skipScale = false
+    @JvmField var skipName = false
+    @JvmField var skipEcCompat = false
+
+    private fun bisectLine(): String =
+        "extract=${if (skipExtract) "OFF" else "on"} cull=${if (skipCull) "OFF" else "on"} scale=${if (skipScale) "OFF" else "on"} " +
+            "name=${if (skipName) "OFF" else "on"} ec=${if (skipEcCompat) "OFF" else "on"}"
+
+    private fun bisect(what: String): Boolean {
+        when (what) {
+            "extract" -> skipExtract = !skipExtract
+            "cull" -> skipCull = !skipCull
+            "scale" -> skipScale = !skipScale
+            "name" -> skipName = !skipName
+            "ec" -> skipEcCompat = !skipEcCompat
+            "all" -> { val v = !(skipExtract && skipCull && skipScale && skipName && skipEcCompat); skipExtract = v; skipCull = v; skipScale = v; skipName = v; skipEcCompat = v }
+            "reset" -> { skipExtract = false; skipCull = false; skipScale = false; skipName = false; skipEcCompat = false }
+            "" -> {}
+            else -> return false
+        }
+        FishUtil.addChatMessage(Component.literal("Bisect: " + bisectLine()))
+        return true
+    }
+
     @JvmStatic
     fun init() {
         ClientCommandRegistrationCallback.EVENT.register(ClientCommandRegistrationCallback { dispatcher, registryAccess ->
@@ -138,6 +165,14 @@ object FishDebug {
                     FishUtil.addChatMessage(Component.literal("Wither dragon debug: ").append(FishUtil.getStatusText(dragonDebug)))
                     FishConstants.SUCCESS
                 })
+
+                .then(ClientCommands.literal("bisect")
+                    .executes { bisect(""); FishConstants.SUCCESS }
+                    .then(ClientCommands.argument("hook", StringArgumentType.word()).executes { ctx ->
+                        if (!bisect(StringArgumentType.getString(ctx, "hook")))
+                            FishUtil.addChatMessage(Component.literal("Hooks: extract cull scale name ec all reset"))
+                        FishConstants.SUCCESS
+                    }))
 
                 .then(ClientCommands.literal("leapSort").executes { _ ->
                     leapDebug = !leapDebug
