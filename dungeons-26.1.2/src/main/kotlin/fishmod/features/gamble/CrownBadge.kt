@@ -47,11 +47,15 @@ object CrownBadge {
 
     private fun lookup(k: String, uuid: String?, name: String) {
         if (!inFlight.add(k)) return
-        val q = "/crown?uuid=" + (uuid ?: "").replace("-", "") + "&name=" + java.net.URLEncoder.encode(name, "UTF-8")
-        GambleApi.call("GET", q, null) { res ->
+        GambleApi.call("GET", "/crown", null) { res ->
             val o = res?.json
-            val crowned = res?.status == 200 && (o?.get("crowned")?.asBoolean ?: o?.get("crown")?.asBoolean) == true
-            cache[k] = Entry(if (res == null) false else crowned, System.currentTimeMillis())
+            val hName = o?.get("name")?.takeIf { !it.isJsonNull }?.asString
+            val hUuid = o?.get("uuid")?.takeIf { !it.isJsonNull }?.asString
+            if (res?.status == 200 && !hName.isNullOrEmpty()) setHolder(hName, hUuid ?: "")
+            val me = uuid?.replace("-", "")
+            val crowned = res?.status == 200 && hName != null &&
+                (hName.equals(name, true) || (!me.isNullOrEmpty() && hUuid?.replace("-", "") == me))
+            cache[k] = Entry(crowned, System.currentTimeMillis())
             inFlight.remove(k)
         }
     }

@@ -9,6 +9,8 @@ import net.minecraft.client.Minecraft
 // 5 min windows of input counts for POST /heartbeat; counts only, nothing is read from or sent to Hypixel
 object PlaytimeTracker {
 
+    @Volatile var lastBalance = -1L
+
     private const val WINDOW_MS = 5 * 60_000L
     private const val MINUTE_MS = 60_000L
 
@@ -87,10 +89,13 @@ object PlaytimeTracker {
         reset(now)
         GambleApi.call("POST", "/heartbeat", body) { res ->
             val o = res?.json ?: return@call
-            if (o.get("ok")?.asBoolean != true || !GambleSettings.gambleShowPoints) return@call
-            val awarded = (o.get("awarded") ?: o.get("points"))?.let { runCatching { it.asLong }.getOrNull() } ?: return@call
-            if (awarded <= 0) return@call
+            if (!GambleSettings.gambleShowPoints) return@call
             val bal = o.get("balance")?.let { runCatching { it.asLong }.getOrNull() }
+            val prev = lastBalance
+            if (bal != null) lastBalance = bal
+            // Worker sends no amount: awarded = balance change since the last heartbeat
+            val awarded = if (bal != null && prev >= 0) bal - prev else if (o.get("credited")?.asBoolean == true) 5L else 0L
+            if (awarded <= 0) return@call
             Minecraft.getInstance().execute {
                 FishMsg.send("§a+%,d gamble points".format(awarded) + (if (bal != null) " §7(balance §e%,d§7)".format(bal) else ""))
             }

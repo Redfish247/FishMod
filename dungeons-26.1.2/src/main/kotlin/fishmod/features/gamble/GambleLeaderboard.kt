@@ -11,22 +11,21 @@ object GambleLeaderboard {
 
     fun fetch(cb: (List<Entry>?) -> Unit) {
         GambleApi.call("GET", "/leaderboard?limit=10", null) { res ->
-            val o = res?.json
-            if (res == null || o == null || res.status != 200) { cb(null); return@call }
-            val list = parse(o)
+            val a = res?.arr
+            if (res == null || a == null || res.status != 200) { cb(null); return@call }
+            val list = parse(a)
             entries = list
             list.firstOrNull()?.let { CrownBadge.setHolder(it.name, it.uuid) }
             cb(list)
         }
     }
 
-    // Accepts entries/leaderboard/top arrays with balance or points
-    private fun parse(o: JsonObject): List<Entry> {
-        val arr = listOf("entries", "leaderboard", "top").firstNotNullOfOrNull { o.getAsJsonArray(it) } ?: return emptyList()
+    // Worker returns a bare array of {rank, uuid, name, points}
+    private fun parse(arr: com.google.gson.JsonArray): List<Entry> {
         return arr.mapNotNull {
             val e = it.takeIf { x -> x.isJsonObject }?.asJsonObject ?: return@mapNotNull null
             val name = e.get("name")?.asString ?: return@mapNotNull null
-            val bal = (e.get("balance") ?: e.get("points"))?.let { v -> runCatching { v.asLong }.getOrNull() } ?: 0L
+            val bal = e.get("points")?.let { v -> runCatching { v.asLong }.getOrNull() } ?: 0L
             Entry(name, e.get("uuid")?.asString ?: "", bal)
         }
     }

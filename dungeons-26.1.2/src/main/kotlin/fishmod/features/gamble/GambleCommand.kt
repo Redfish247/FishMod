@@ -55,6 +55,7 @@ object GambleCommand {
             val won = o.get("won")?.asBoolean == true
             val bet = o.get("bet")?.let { runCatching { it.asLong }.getOrNull() }
             val balance = o.get("balance")?.let { runCatching { it.asLong }.getOrNull() }
+            if (balance != null) PlaytimeTracker.lastBalance = balance
             val amt = if (bet != null) "%,d".format(bet) else "your bet"
             val bal = if (balance != null) " §7Balance: §e%,d".format(balance) else ""
             FishMsg.send(if (won) "§aYou won §e$amt §apoints!$bal" else "§cYou lost §e$amt §cpoints.$bal")
@@ -66,8 +67,8 @@ object GambleCommand {
             return
         }
         FishMsg.send("§c" + when (err) {
-            "insufficient", "insufficient_balance", "no_balance" -> "Not enough points."
-            "bad_bet", "invalid_bet" -> "Invalid bet."
+            "no_points" -> "You have no points to gamble."
+            "bad_bet" -> "Invalid bet."
             "unauthorized" -> "Gamble sign-in failed."
             else -> "Gamble failed ($err)."
         })

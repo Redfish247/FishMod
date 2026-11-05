@@ -15,7 +15,7 @@ import java.util.concurrent.Executors
 // Worker client: Mojang session auth, cached Bearer token, one retry on 401
 object GambleApi {
 
-    class Result(val status: Int, val json: JsonObject?)
+    class Result(val status: Int, val json: JsonObject?, val arr: com.google.gson.JsonArray? = null)
 
     private const val DEFAULT_TTL_MS = 25 * 60_000L
     private val pool = Executors.newSingleThreadExecutor { r -> Thread(r, "FishMod-Gamble").apply { isDaemon = true } }
@@ -48,8 +48,8 @@ object GambleApi {
         val req = if (method == "POST") b.header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString((body ?: JsonObject()).toString())).build() else b.GET().build()
         val resp = Http.CLIENT.send(req, HttpResponse.BodyHandlers.ofString())
-        val json = try { JsonParser.parseString(resp.body()).asJsonObject } catch (_: Throwable) { null }
-        return Result(resp.statusCode(), json)
+        val el = try { JsonParser.parseString(resp.body()) } catch (_: Throwable) { null }
+        return Result(resp.statusCode(), el?.takeIf { it.isJsonObject }?.asJsonObject, el?.takeIf { it.isJsonArray }?.asJsonArray)
     }
 
     private fun authToken(force: Boolean): String? {
