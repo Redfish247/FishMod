@@ -77,9 +77,9 @@ object EnchantTooltip {
 			if (ExtrasSettings.enchantColors) {
 				val s = ExtrasSettings
 				out.append(when {
+					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true, out.string.length) // ultimates always use their own colour
 					level >= max -> tier(label, s.enchantMaxColor, s.enchantMaxChroma, s.enchantBold, out.string.length)
 					level == max - 1 -> tier(label, s.enchantHighColor, s.enchantHighChroma, s.enchantBold, out.string.length)
-					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true, out.string.length)
 					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false, out.string.length)
 				})
 			} else if (level >= max) {

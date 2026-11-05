@@ -490,7 +490,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Max Tier Chroma", "Same rainbow as the profile viewer", x::enchantMaxChroma))
             f.sub.add(ColorPickerSetting("Max-1 Tier Color", "One below max", x::enchantHighColor).gatedBy { !x.enchantHighChroma })
             f.sub.add(ToggleSetting("Max-1 Tier Chroma", "", x::enchantHighChroma))
-            f.sub.add(ColorPickerSetting("Ultimate Color", "Ultimate enchants below max-1", x::enchantUltColor).gatedBy { !x.enchantUltChroma })
+            f.sub.add(ColorPickerSetting("Ultimate Color", "Ultimate enchants at any level", x::enchantUltColor).gatedBy { !x.enchantUltChroma })
             f.sub.add(ToggleSetting("Ultimate Chroma", "", x::enchantUltChroma))
             f.sub.add(ColorPickerSetting("Normal Color", "Every other enchant", x::enchantNormalColor).gatedBy { !x.enchantNormalChroma })
             f.sub.add(ToggleSetting("Normal Chroma", "", x::enchantNormalChroma))
