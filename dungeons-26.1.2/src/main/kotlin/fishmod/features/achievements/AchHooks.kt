@@ -161,7 +161,7 @@ object AchHooks {
             s.startsWith("PUZZLE FAIL!") && SkyblockLocation.inDungeon() -> AchBus.post(AchEvent.PuzzleDone(true))
             s.startsWith("☠ You ") -> AchBus.post(AchEvent.OwnDeath(s))
             s.startsWith("OFFER ACCEPTED with") -> AchBus.post(AchEvent.VisitorAccepted)
-            s.contains("COMMISSION COMPLETE") -> AchBus.post(AchEvent.CommissionDone)
+            s.contains("Commission Complete", ignoreCase = true) -> AchBus.post(AchEvent.CommissionDone)
             BAZAAR_FILL.containsMatchIn(s) -> AchBus.post(AchEvent.MarketFill("bz"))
             AH_SOLD.containsMatchIn(s) -> AchBus.post(AchEvent.MarketFill("ah"))
         }
