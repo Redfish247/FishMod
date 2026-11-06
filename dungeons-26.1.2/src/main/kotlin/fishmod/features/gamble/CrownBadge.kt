@@ -51,6 +51,11 @@ object CrownBadge {
     }
 
     private fun lookup(k: String, uuid: String?, name: String) {
+        if (GambleLeaderboard.fake != null) {
+            val me = uuid?.replace("-", "")
+            cache[k] = Entry(holder.equals(name, true) || (!me.isNullOrEmpty() && me == holderUuid), System.currentTimeMillis())
+            return
+        }
         if (!inFlight.add(k)) return
         GambleApi.call("GET", "/crown", null) { res ->
             val o = res?.json
@@ -84,6 +89,12 @@ object CrownBadge {
         if (now - lastHolderFetch < HOLDER_REFRESH_MS) return
         lastHolderFetch = now
         GambleLeaderboard.fetch { }
+    }
+
+    // Dev reset: forget holder and cached answers
+    fun clear() {
+        holder = ""; holderUuid = ""; lastHolderFetch = 0L
+        cache.clear()
     }
 
     private fun isWordChar(c: Char) = c.isLetterOrDigit() || c == '_'

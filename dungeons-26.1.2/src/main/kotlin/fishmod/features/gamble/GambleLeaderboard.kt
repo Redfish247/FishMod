@@ -9,7 +9,16 @@ object GambleLeaderboard {
 
     @Volatile var entries: List<Entry> = emptyList(); private set
 
+    // Dev-only offline board (/gamble dev); null = live worker
+    @Volatile var fake: List<Entry>? = null
+
     fun fetch(cb: (List<Entry>?) -> Unit) {
+        fake?.let { f ->
+            entries = f
+            f.firstOrNull()?.let { CrownBadge.setHolder(it.name, it.uuid) }
+            cb(f)
+            return
+        }
         GambleApi.call("GET", "/leaderboard?limit=10", null) { res ->
             val a = res?.arr
             if (res == null || a == null || res.status != 200) { cb(null); return@call }
