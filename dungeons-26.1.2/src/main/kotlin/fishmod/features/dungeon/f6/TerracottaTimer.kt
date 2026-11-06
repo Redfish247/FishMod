@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f6
 
 import fishmod.features.dungeon.map.DungeonState
+import fishmod.utils.Fmt
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
@@ -50,7 +51,7 @@ object TerracottaTimer {
             try {
                 for (t in spawning) {
                     FishDraw.gizmoText(
-                        Component.literal("§${color(t.time)}%.1fs".format(t.time)),
+                        Component.literal("§${color(t.time)}${Fmt.f1(t.time.toDouble())}s"),
                         Vec3(t.pos.x + 0.5, t.pos.y + 1.5, t.pos.z + 0.5), 1f, -0x1,
                     )
                 }

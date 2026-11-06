@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishUtil
+import fishmod.utils.Fmt
 import fishmod.utils.PingTracker
 import fishmod.utils.TickScheduler
 import fishmod.utils.config.values.Floor7Settings
@@ -188,7 +189,7 @@ object BloodSolver {
                 EntityTools.getLerpedPos(stand).add(0.0, 2.0, 0.0), end.add(0.0, 2.0, 0.0), lineRgba
             )
 
-            val label = if (decimals > 0) "%.${decimals}f".format(secondsLeft) else ceil(secondsLeft).toInt().toString()
+            val label = when (decimals) { 1 -> Fmt.f1(secondsLeft); 2 -> Fmt.f2(secondsLeft); else -> ceil(secondsLeft).toInt().toString() }
             FishDraw.renderText(
                 ctx, matrices,
                 Component.literal(label).withColor(Floor7Settings.bloodSolverTimerColor and 0xFFFFFF),
