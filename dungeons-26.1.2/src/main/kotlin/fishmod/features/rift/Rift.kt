@@ -47,7 +47,7 @@ object Rift {
 
     fun inArea(vararg names: String): Boolean = inRift() && names.any { area().contains(it, ignoreCase = true) }
 
-    fun strip(s: String) = s.replace(FishConstants.STRIP_COLOR_REGEX, "")
+    fun strip(s: String) = if (s.indexOf('§') < 0) s else s.replace(FishConstants.STRIP_COLOR_REGEX, "")
 
     // Named armor stands within r blocks of the player
     fun namedStands(r: Double): List<Pair<ArmorStand, String>> {
