@@ -17,7 +17,7 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import fishmod.compat.GLFW
-import kotlin.reflect.KMutableProperty0
+import fishmod.utils.config.SettingRef
 import kotlin.math.max
 import kotlin.math.min
 
@@ -60,7 +60,7 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         private val SPAWN_TAGS = listOf("{since}", "{chance}")
     }
 
-    private class Entry(val name: String, val prop: KMutableProperty0<String>, val default: String, val drop: Boolean, val field: EditBox)
+    private class Entry(val name: String, val prop: SettingRef<String>, val default: String, val drop: Boolean, val field: EditBox)
     private class Hit(val x: Int, val y: Int, val w: Int, val h: Int, val action: () -> Unit) {
         fun contains(mx: Int, my: Int) = mx >= x && mx < x + w && my >= y && my < y + h
     }
@@ -82,10 +82,10 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
     override fun init() {
         if (!loaded) {
             val props = mapOf(
-                "CHIMERA" to DianaSettings::dianaMsgChimera, "MANTI_CORE" to DianaSettings::dianaMsgCore,
-                "FATEFUL_STINGER" to DianaSettings::dianaMsgStinger, "BRAIN_FOOD" to DianaSettings::dianaMsgFood,
-                "SHIMMERING_WOOL" to DianaSettings::dianaMsgWool,
-            )
+                "CHIMERA" to "dianaMsgChimera", "MANTI_CORE" to "dianaMsgCore",
+                "FATEFUL_STINGER" to "dianaMsgStinger", "BRAIN_FOOD" to "dianaMsgFood",
+                "SHIMMERING_WOOL" to "dianaMsgWool",
+            ).mapValues { SettingRef(DianaSettings::class.java, it.value, "") }
             for (k in DianaTracker.EDITABLE) {
                 val d = DianaTracker.drop(k)
                 val p = props.getValue(k)
@@ -93,9 +93,12 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
                 drops += Entry(d.name, p, def, true, mkField(p.get().ifBlank { def }))
             }
             for ((n, p) in listOf(
-                "Inquisitor" to DianaSettings::dianaInqSpawnText, "King Minos" to DianaSettings::dianaKingSpawnText,
-                "Manticore" to DianaSettings::dianaMantiSpawnText, "Sphinx" to DianaSettings::dianaSphinxSpawnText,
-            )) spawns += Entry(n, p, "", false, mkField(p.get()))
+                "Inquisitor" to "dianaInqSpawnText", "King Minos" to "dianaKingSpawnText",
+                "Manticore" to "dianaMantiSpawnText", "Sphinx" to "dianaSphinxSpawnText",
+            )) {
+                val r = SettingRef(DianaSettings::class.java, p, "")
+                spawns += Entry(n, r, "", false, mkField(r.get()))
+            }
             loaded = true
         }
         val f = UiScale.factor()

@@ -2,6 +2,7 @@ package fishmod.features
 
 import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
+import fishmod.utils.config.SettingRef
 import fishmod.compat.showScreen
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.features.chat.ChatRule
@@ -469,15 +470,15 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
     }
 
     private val filterToggles = listOf(
-        "Common Hypixel Spam" to fishmod.utils.config.values.FishSettings::cfCommonSpam,
-        "Skyblock/Dungeon Spam" to fishmod.utils.config.values.FishSettings::cfNoammSpam,
-        "Kill Combo" to fishmod.utils.config.values.FishSettings::cfKillCombo,
-        "Boss Messages" to fishmod.utils.config.values.FishSettings::cfBossMessages,
-        "Friend Join/Leave" to fishmod.utils.config.values.FishSettings::cfFriendJoinLeave,
-        "Bazaar" to fishmod.utils.config.values.FishSettings::cfBazaar,
-        "Warping" to fishmod.utils.config.values.FishSettings::cfWarping,
-        "Collapse Blank Lines" to fishmod.utils.config.values.FishSettings::cfCollapseBlank,
-        "Custom Messages" to fishmod.utils.config.values.FishSettings::cfCustom,
+        "Common Hypixel Spam" to SettingRef("cfCommonSpam", false),
+        "Skyblock/Dungeon Spam" to SettingRef("cfNoammSpam", false),
+        "Kill Combo" to SettingRef("cfKillCombo", false),
+        "Boss Messages" to SettingRef("cfBossMessages", false),
+        "Friend Join/Leave" to SettingRef("cfFriendJoinLeave", false),
+        "Bazaar" to SettingRef("cfBazaar", false),
+        "Warping" to SettingRef("cfWarping", false),
+        "Collapse Blank Lines" to SettingRef("cfCollapseBlank", false),
+        "Custom Messages" to SettingRef("cfCustom", false),
     )
 
     private fun importNotifications() {
