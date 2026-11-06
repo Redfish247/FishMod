@@ -26,7 +26,7 @@ object GambleApi {
     @Volatile private var tokenFor = ""
     @Volatile private var authFailUntil = 0L
 
-    private fun base(): String = GambleSettings.gambleApiBase.trim().trimEnd('/')
+    private fun base(): String = GambleSettings.API_BASE.trim().trimEnd('/')
 
     // Runs on the worker thread; cb is called on the same thread (use mc.execute for UI)
     fun call(method: String, path: String, body: JsonObject?, cb: (Result?) -> Unit) {

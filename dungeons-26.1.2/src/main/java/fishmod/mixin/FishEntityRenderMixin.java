@@ -34,7 +34,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
-
+        if (fishmod.utils.debug.FishDebug.skipExtract) return;
         try {
             if (state.nameTag != null && fishmod.utils.debug.FishDebug.INSTANCE.getHoloTrace()) {
                 fishmod.utils.debug.FishDebug.INSTANCE.holoTraceMsg(entity.getType().toShortString(), state.nameTag.getString());
@@ -128,6 +128,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ,
                                      CallbackInfoReturnable<Boolean> cir) {
+        if (fishmod.utils.debug.FishDebug.skipCull) return;
         try {
             if (fishmod.features.rift.RiftMobs.INSTANCE.shouldHideSlime(entity)) {
                 cir.setReturnValue(false);

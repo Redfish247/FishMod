@@ -74,7 +74,6 @@ object ExtrasMenu {
         lvl.sub.add(ToggleSetting("Cake Year", "New Year Cakes", S::overlayCakeYear))
         lvl.sub.add(ColorPickerSetting("Text Color", "", S::overlayTextColor))
         col.features.add(lvl)
-        col.features.add(Feature("Click Suggestion For /ahs", S::suggestionClickAhs))
 
         return col
     }
@@ -88,7 +87,6 @@ object ExtrasMenu {
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
         "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
-        "Click Suggestion For /ahs" -> "Clicking a missing pet / museum suggestion in FishMod screens runs /ahs <item>"
         else -> null
     }
 }

@@ -480,6 +480,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Overflow Skill Levels", "Uncapped skill levels in the viewer; maxed bars stay gold but fill toward the next level", FishSettings::pvOverflowSkills))
             f.sub.add(ColorPickerSetting("Maxed Color", "Fill colour of maxed bars", fishmod.features.extras.ExtrasSettings::pvMaxedColor))
             f.sub.add(ToggleSetting("Maxed Chroma", "Maxed bars slide through every colour", fishmod.features.extras.ExtrasSettings::pvMaxedRainbow))
+            f.sub.add(ToggleSetting("Click Suggestion For /ahs", "Clicking a missing pet / museum suggestion in FishMod screens runs /ahs <item>", fishmod.features.extras.ExtrasSettings::suggestionClickAhs))
             general.features.add(f)
         }
         run {
@@ -4416,6 +4417,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "Extras" to "Misc & utilities",
             "Farming" to "Garden farming tools",
             "Achievements" to "Goals & progress",
+            "Gamble Points" to "Playtime points & /gamble",
         )
         private const val HEADER_STRIP_H = 3
         private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
