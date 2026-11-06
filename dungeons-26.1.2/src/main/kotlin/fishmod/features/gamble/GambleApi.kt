@@ -36,15 +36,25 @@ object GambleApi {
         }
     }
 
+    // Why the last call returned nothing (shown in chat so "offline" is diagnosable)
+    @Volatile @JvmField var lastError: String = ""
+
+    // Public boards need no session; skip the Mojang login for them
+    private fun isPublic(method: String, path: String) = method == "GET" && (path.startsWith("/leaderboard") || path.startsWith("/crown"))
+
     private fun callBlocking(method: String, path: String, body: JsonObject?): Result? {
+        if (isPublic(method, path)) {
+            return try { send(method, path, body, null) } catch (t: Throwable) { lastError = "${t.javaClass.simpleName}: ${t.message}"; null }
+        }
         var res = send(method, path, body, authToken(false) ?: return null)
         if (res.status == 401) res = send(method, path, body, authToken(true) ?: return null)
         return res
     }
 
-    private fun send(method: String, path: String, body: JsonObject?, tok: String): Result {
+    private fun send(method: String, path: String, body: JsonObject?, tok: String?): Result {
         val b = HttpRequest.newBuilder().uri(URI.create(base() + path))
-            .header("Authorization", "Bearer $tok").header("User-Agent", "FishMod").timeout(Duration.ofSeconds(10))
+            .header("User-Agent", "FishMod").timeout(Duration.ofSeconds(10))
+        if (tok != null) b.header("Authorization", "Bearer $tok")
         val req = if (method == "POST") b.header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString((body ?: JsonObject()).toString())).build() else b.GET().build()
         val resp = Http.CLIENT.send(req, HttpResponse.BodyHandlers.ofString())
@@ -78,6 +88,8 @@ object GambleApi {
             return newTok
         } catch (t: Throwable) {
             authFailUntil = now + 60_000L
+            lastError = "login: ${t.javaClass.simpleName}: ${t.message}"
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[Gamble] auth failed", t)
             return null
         }
     }

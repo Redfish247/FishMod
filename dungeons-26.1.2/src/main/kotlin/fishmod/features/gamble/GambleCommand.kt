@@ -50,7 +50,7 @@ object GambleCommand {
 
     private fun handle(res: GambleApi.Result?) {
         val o = res?.json
-        if (res == null || o == null) { FishMsg.send("§cGamble is offline."); return }
+        if (res == null || o == null) { FishMsg.send("§cGamble is offline." + GambleApi.lastError.takeIf { it.isNotEmpty() }?.let { " §7($it)" }.orEmpty()); return }
         if (o.get("ok")?.asBoolean == true) {
             val won = o.get("won")?.asBoolean == true
             val bet = o.get("bet")?.let { runCatching { it.asLong }.getOrNull() }
@@ -86,7 +86,7 @@ object GambleCommand {
         if (!GambleSettings.gambleLeaderboard) { FishMsg.send("§7Gamble leaderboard is off in settings."); return }
         GambleLeaderboard.fetch { entries ->
             Minecraft.getInstance().execute {
-                if (entries == null) { FishMsg.send("§cLeaderboard offline."); return@execute }
+                if (entries == null) { FishMsg.send("§cLeaderboard offline." + GambleApi.lastError.takeIf { it.isNotEmpty() }?.let { " §7($it)" }.orEmpty()); return@execute }
                 if (entries.isEmpty()) { FishMsg.send("§7Nobody on the gamble board yet."); return@execute }
                 FishMsg.send("§6Gamble Points top ${entries.size}")
                 entries.forEachIndexed { i, e ->
