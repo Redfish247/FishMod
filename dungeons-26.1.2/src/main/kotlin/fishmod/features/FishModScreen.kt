@@ -1434,7 +1434,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Spotify Display", "spotifyHudEnabled")
             f.sub.add(SubcategoryHeader("Windows only, reads the Spotify desktop window title (no login). Move it in the HUD editor"))
-            f.sub.add(ToggleSetting("Show Icon", "Music note before the title", "spotifyHudIcon"))
+            f.sub.add(ToggleSetting("Show Icon", "Animated bars before the title", "spotifyHudIcon"))
+            f.sub.add(ToggleSetting("Lyrics", "Current lyric line under the pill (artist and song are sent to lrclib.net)", "spotifyHudLyrics"))
+            f.sub.add(SliderIntSetting("Max Characters", "Longer text scrolls in a loop", "spotifyHudMaxChars", 8, 80, 1))
+            f.sub.add(SliderIntSetting("Lyric Offset (ms)", "Shift lyrics earlier (negative) or later", "spotifyHudLyricOffset", -5000, 5000, 100).gatedBy { FishSettings.spotifyHudLyrics })
             f.sub.add(ToggleSetting("Show Paused", "Show Paused instead of hiding when nothing plays", "spotifyHudShowPaused"))
             f.sub.add(ToggleSetting("Background", "", "spotifyHudBackground"))
             f.sub.add(ColorPickerSetting("Text Color", "", "spotifyHudTextColor"))
