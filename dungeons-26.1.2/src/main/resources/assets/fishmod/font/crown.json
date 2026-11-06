@@ -1,0 +1,5 @@
+{
+  "providers": [
+    { "type": "bitmap", "file": "fishmod:font/crown.png", "ascent": 7, "height": 7, "chars": [""] }
+  ]
+}

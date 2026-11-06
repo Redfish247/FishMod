@@ -162,8 +162,10 @@ object GambleCommand {
                 if (entries.isEmpty()) { FishMsg.send("§7Nobody on the gamble board yet."); return@execute }
                 FishMsg.send("§6Gamble Points top ${entries.size}")
                 entries.forEachIndexed { i, e ->
-                    val crown = if (i == 0) "${CrownBadge.GLYPH} " else ""
-                    FishMsg.send("§7${i + 1}. $crown§f${e.name} §e%,d".format(e.balance))
+                    val line = net.minecraft.network.chat.Component.literal("§7${i + 1}. ")
+                    if (i == 0) line.append(CrownBadge.icon()).append(net.minecraft.network.chat.Component.literal(" "))
+                    line.append(net.minecraft.network.chat.Component.literal("§f${e.name} §e%,d".format(e.balance)))
+                    FishMsg.send(line)
                 }
             }
         }

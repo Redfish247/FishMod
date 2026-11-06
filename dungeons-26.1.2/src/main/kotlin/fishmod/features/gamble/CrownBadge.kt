@@ -12,6 +12,11 @@ import java.util.concurrent.ConcurrentHashMap
 object CrownBadge {
 
     const val GLYPH = "§6♛§r"
+    private val FONT = net.minecraft.network.chat.FontDescription.Resource(net.minecraft.resources.Identifier.fromNamespaceAndPath("fishmod", "crown"))
+
+    // Pixel crown from our own font (the unicode queen glyph renders as a squid)
+    @JvmStatic fun icon(rgb: Int = 0xFFAA00): net.minecraft.network.chat.MutableComponent =
+        Component.literal("").setStyle(Style.EMPTY.withFont(FONT).withColor(rgb))
     private const val TTL_MS = 60_000L
     private const val HOLDER_REFRESH_MS = 60_000L
 
@@ -74,7 +79,7 @@ object CrownBadge {
     fun prefix(uuid: String?, name: String?): String = if (isCrowned(uuid, name)) "$GLYPH " else ""
 
     fun decorate(c: Component, uuid: String?, name: String?): Component =
-        if (isCrowned(uuid, name)) Component.literal("$GLYPH ").append(c) else c
+        if (isCrowned(uuid, name)) icon().append(Component.literal(" ")).append(c) else c
 
     fun init() {
         ClientReceiveMessageEvents.MODIFY_GAME.register { msg, overlay ->
@@ -115,7 +120,7 @@ object CrownBadge {
                 val after = if (i + h.length < s.length) s[i + h.length] else ' '
                 if (isWordChar(before) || isWordChar(after) || before == '♛') { from = i + h.length; continue }
                 out.append(Component.literal(s.substring(0, i)).setStyle(style))
-                out.append(Component.literal("♛ ").setStyle(Style.EMPTY.withColor(0xFFAA00)))
+                out.append(icon()).append(Component.literal(" "))
                 changed = true
                 // Only the first hit per segment is badged
                 out.append(Component.literal(s.substring(i)).setStyle(style))

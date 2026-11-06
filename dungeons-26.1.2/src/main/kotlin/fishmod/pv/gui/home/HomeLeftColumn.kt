@@ -539,7 +539,7 @@ class HomeLeftColumn {
 		if (uuid != null) {
 			// FishMod badges, then the name, then any emblem the player wears in the tab list.
 			for (badge in BadgeManager.badgesFor(uuid.toString().replace("-", ""))) {
-				styled.append(Component.literal(badge.symbol + " ").withColor(0xFF000000.toInt() or badge.colorRgb))
+				styled.append(badge.component(" "))
 			}
 		}
 		styled.append(namePart)
