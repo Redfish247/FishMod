@@ -14,7 +14,7 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import fishmod.utils.update.UpdateManager.DownloadState as DS
 
 class UpdateScreen(private val release: UpdateManager.Release) : Screen(Component.literal("FishMod Update")), HasUiOverlay {

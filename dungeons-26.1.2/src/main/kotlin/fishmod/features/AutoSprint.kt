@@ -36,6 +36,6 @@ object AutoSprint {
 
     private fun physicallyDown(mc: Minecraft): Boolean {
         val bound = KeyMappingHelper.getBoundKeyOf(mc.options.keySprint)
-        return bound.type == InputConstants.Type.KEYSYM && InputConstants.isKeyDown(mc.window, bound.value)
+        return bound.type == fishmod.compat.GLFW.KEYSYM && fishmod.compat.GLFW.keyDown(mc.window, bound.value)
     }
 }

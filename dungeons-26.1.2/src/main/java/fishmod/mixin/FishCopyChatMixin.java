@@ -2,7 +2,7 @@ package fishmod.mixin;
 
 import fishmod.utils.config.values.MiscSettings;
 import fishmod.utils.data.TextTools;
-import org.lwjgl.glfw.GLFW;
+import fishmod.compat.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;

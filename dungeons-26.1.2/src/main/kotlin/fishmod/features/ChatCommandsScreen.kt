@@ -19,7 +19,7 @@ import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.util.IdentityHashMap
 import kotlin.math.max
 import kotlin.math.min

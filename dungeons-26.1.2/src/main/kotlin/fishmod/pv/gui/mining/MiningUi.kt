@@ -245,7 +245,7 @@ object MiningUi {
 	@JvmStatic
 	fun leftShiftDown(): Boolean {
 		val window = Minecraft.getInstance()?.window ?: return false
-		return InputConstants.isKeyDown(window, InputConstants.KEY_LSHIFT)
+		return fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_LSHIFT)
 	}
 
 	@JvmRecord

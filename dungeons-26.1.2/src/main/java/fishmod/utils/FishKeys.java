@@ -8,7 +8,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
+import fishmod.compat.GLFW;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -72,21 +72,21 @@ public class FishKeys {
 
         openConfig = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Open Config",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
                 category));
         TRACKED.put("open_config", openConfig);
 
         trades = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Trades Menu",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("trades", trades);
 
         potions = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Potion Bag",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("potions", potions);
@@ -95,7 +95,7 @@ public class FishKeys {
         for (int i = 0; i < wardrobeSlots.length; i++) {
             wardrobeSlots[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                     "Wardrobe Slot " + (i + 1),
-                    InputConstants.Type.KEYSYM,
+                    fishmod.compat.GLFW.KEYSYM,
                     GLFW.GLFW_KEY_UNKNOWN,
                     category));
             TRACKED.put("wardrobe_slot_" + i, wardrobeSlots[i]);
@@ -105,7 +105,7 @@ public class FishKeys {
         for (int i = 0; i < petKeybinds.length; i++) {
             petKeybinds[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                     "Pet: " + fishmod.features.other.PetKeybinds.PETS[i],
-                    InputConstants.Type.KEYSYM,
+                    fishmod.compat.GLFW.KEYSYM,
                     GLFW.GLFW_KEY_UNKNOWN,
                     category));
             TRACKED.put("pet_key_" + fishmod.features.other.PetKeybinds.PETS[i].toLowerCase().replace(' ', '_'), petKeybinds[i]);
@@ -115,7 +115,7 @@ public class FishKeys {
         for (int i = 0; i < gardenKeys.length; i++) {
             gardenKeys[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                     "Garden: " + fishmod.features.garden.GardenKeybinds.NAMES[i],
-                    InputConstants.Type.KEYSYM,
+                    fishmod.compat.GLFW.KEYSYM,
                     GLFW.GLFW_KEY_UNKNOWN,
                     category));
             TRACKED.put("garden_key_" + fishmod.features.garden.GardenKeybinds.NAMES[i].toLowerCase().replace(' ', '_'), gardenKeys[i]);
@@ -123,70 +123,70 @@ public class FishKeys {
 
         wardrobeNextPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Wardrobe Next Page",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("wardrobe_next_page", wardrobeNextPage);
 
         wardrobePrevPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Wardrobe Previous Page",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("wardrobe_prev_page", wardrobePrevPage);
 
         slotBind = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Slot Bind (Hold)",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_R,
                 category));
         TRACKED.put("slot_bind", slotBind);
 
         slotLock = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Lock Slot (in inventory)",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_L,
                 category));
         TRACKED.put("slot_lock", slotLock);
 
         slotBindCycleProfile = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Slot Bind - Cycle Profile",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("slot_bind_cycle_profile", slotBindCycleProfile);
 
         dungeonAbility = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Dungeon Ability - Ult (Drop)",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("dungeon_ability", dungeonAbility);
 
         dungeonAbilityMini = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Dungeon Ability - Mini Ult (Ctrl+Drop)",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("dungeon_ability_mini", dungeonAbilityMini);
 
         chatSearchToggle = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Toggle Chat Search",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("chat_search_toggle", chatSearchToggle);
 
         chatPeek = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Chat Peek (Hold to View Chat)",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("chat_peek", chatPeek);
 
         zoom = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Zoom (Hold)",
-                InputConstants.Type.KEYSYM,
+                fishmod.compat.GLFW.KEYSYM,
                 GLFW.GLFW_KEY_C,
                 category));
         TRACKED.put("zoom", zoom);

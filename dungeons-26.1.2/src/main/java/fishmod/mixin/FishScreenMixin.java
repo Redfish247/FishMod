@@ -206,10 +206,10 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                 Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
                 if (hs != null && !hs.getItem().isEmpty()) {
                     long win = net.minecraft.client.Minecraft.getInstance().getWindow().handle();
-                    boolean shift = org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS
-                            || org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-                    boolean ctrl = org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS
-                            || org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                    boolean shift = fishmod.compat.GLFW.glfwGetKey(win, fishmod.compat.GLFW.GLFW_KEY_LEFT_SHIFT) == fishmod.compat.GLFW.GLFW_PRESS
+                            || fishmod.compat.GLFW.glfwGetKey(win, fishmod.compat.GLFW.GLFW_KEY_RIGHT_SHIFT) == fishmod.compat.GLFW.GLFW_PRESS;
+                    boolean ctrl = fishmod.compat.GLFW.glfwGetKey(win, fishmod.compat.GLFW.GLFW_KEY_LEFT_CONTROL) == fishmod.compat.GLFW.GLFW_PRESS
+                            || fishmod.compat.GLFW.glfwGetKey(win, fishmod.compat.GLFW.GLFW_KEY_RIGHT_CONTROL) == fishmod.compat.GLFW.GLFW_PRESS;
                     if (fishmod.features.ScrollableTooltip.onScroll(vt, hs.index, shift, ctrl)) {
                         cir.setReturnValue(true);
                     }

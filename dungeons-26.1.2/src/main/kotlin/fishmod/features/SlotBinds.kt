@@ -17,7 +17,7 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.world.inventory.ContainerInput
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -137,7 +137,7 @@ object SlotBinds {
         val handle = Minecraft.getInstance().window.handle()
         return when (key.type) {
             InputConstants.Type.MOUSE -> GLFW.glfwGetMouseButton(handle, key.value) == GLFW.GLFW_PRESS
-            else -> InputConstants.isKeyDown(Minecraft.getInstance().window, key.value)
+            else -> fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, key.value)
         }
     }
 

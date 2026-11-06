@@ -15,7 +15,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.Identifier
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 
 // One user button; x/y are relative to the inventory's top-left corner.
 class InvButton(
@@ -115,7 +115,7 @@ object InvShortcutButtons {
 
     private fun altDown(): Boolean {
         val w = Minecraft.getInstance().window
-        return InputConstants.isKeyDown(w, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(w, GLFW.GLFW_KEY_RIGHT_ALT)
+        return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_ALT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_ALT)
     }
 
     private fun carried(): ItemStack = Minecraft.getInstance().player?.containerMenu?.carried ?: ItemStack.EMPTY

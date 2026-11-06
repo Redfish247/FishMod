@@ -12,7 +12,7 @@ import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import kotlin.math.min
 
 // Bug report / feature request form, sent to the test board inbox.

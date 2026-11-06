@@ -29,8 +29,8 @@ object DianaWarp {
 
     fun init() {
         val cat = fishmod.utils.FishKeys.category()
-        guessKey = KeyMappingHelper.registerKeyMapping(KeyMapping("Diana Guess Warp", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.value, cat))
-        rareMobKey = KeyMappingHelper.registerKeyMapping(KeyMapping("Diana Rare Mob Warp", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.value, cat))
+        guessKey = KeyMappingHelper.registerKeyMapping(KeyMapping("Diana Guess Warp", fishmod.compat.GLFW.KEYSYM, InputConstants.UNKNOWN.value, cat))
+        rareMobKey = KeyMappingHelper.registerKeyMapping(KeyMapping("Diana Rare Mob Warp", fishmod.compat.GLFW.KEYSYM, InputConstants.UNKNOWN.value, cat))
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
     }
 

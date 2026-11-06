@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.speed
 import fishmod.compat.mainTarget
 import fishmod.compat.showScreen
 
@@ -19,7 +20,7 @@ object DianaTest {
         FishEvents.particle.register { p ->
             val t = p.particle.type
             if (t === net.minecraft.core.particles.ParticleTypes.DUST || t === net.minecraft.core.particles.ParticleTypes.DRIPPING_LAVA)
-                LOG.info("particle {} count={} speed={} off={},{},{} at {},{},{}", net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getKey(t), p.count, p.maxSpeed, p.xDist, p.yDist, p.zDist, p.x, p.y, p.z)
+                LOG.info("particle {} count={} speed={} off={},{},{} at {},{},{}", net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getKey(t), p.count, p.speed, p.xDist, p.yDist, p.zDist, p.x, p.y, p.z)
             false
         }
         FishEvents.chat.register { text ->

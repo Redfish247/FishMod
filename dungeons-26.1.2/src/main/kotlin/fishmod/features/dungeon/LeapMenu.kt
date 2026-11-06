@@ -17,7 +17,7 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.network.chat.Component
 import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.Items
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 
 object LeapMenu {
 

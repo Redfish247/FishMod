@@ -20,7 +20,7 @@ import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.util.TreeMap
 
 object StorageOverlay {

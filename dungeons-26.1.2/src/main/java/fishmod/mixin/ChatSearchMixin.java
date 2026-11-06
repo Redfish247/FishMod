@@ -13,7 +13,7 @@ import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
+import fishmod.compat.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -98,7 +98,7 @@ public abstract class ChatSearchMixin extends Screen {
             fishmod.utils.debug.FishDiag.fail("ChatSearchMixin.2", "chat search toggle keybind has no bound key");
             return;
         }
-        if (bound.getType() == InputConstants.Type.KEYSYM
+        if (bound.getType() == fishmod.compat.GLFW.KEYSYM
                 && bound.getValue() != InputConstants.UNKNOWN.getValue()
                 && key == bound.getValue()) {
             fishmod$searchShown = !fishmod$searchShown;

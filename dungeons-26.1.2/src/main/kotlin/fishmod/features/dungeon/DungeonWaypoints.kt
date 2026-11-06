@@ -29,7 +29,7 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.util.LinkedHashMap
 
 object DungeonWaypoints {

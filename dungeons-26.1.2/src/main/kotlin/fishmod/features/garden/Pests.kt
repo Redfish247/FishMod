@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.speed
 import fishmod.compat.curScreen
 
 import fishmod.features.mining.Mining
@@ -54,7 +55,7 @@ object Pests {
         FishEvents.chat.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.string).trim()); false }
         FishEvents.worldChange.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
         FishEvents.particle.register { p ->
-            if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.maxSpeed == 0f && Garden.inGarden() && holdingVacuum()) {
+            if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.speed == 0f && Garden.inGarden() && holdingVacuum()) {
                 val now = System.currentTimeMillis()
                 if (now - lastTrail > 2500L) { trail.clear(); guess = null }
                 lastTrail = now

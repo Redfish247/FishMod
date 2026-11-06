@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.compat.movedTo
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.SkyblockLocation
@@ -142,7 +143,6 @@ object BloodSolver {
 
     private fun onMobMove(packet: ClientboundMoveEntityPacket) {
         if (!Floor7Settings.bloodSolverEnabled || BossPhase.inBoss()) return
-        if (packet.xa.toInt() == 0 && packet.ya.toInt() == 0 && packet.za.toInt() == 0) return
         val level = Minecraft.getInstance().level ?: return
         val w = watcher ?: return
         val stand = packet.getEntity(level) as? ArmorStand ?: return
@@ -150,11 +150,7 @@ object BloodSolver {
         val head = stand.getItemBySlot(EquipmentSlot.HEAD)
         if (!head.`is`(Items.PLAYER_HEAD) || skullTexture(head) !in MOB_SKULLS) return
 
-        val pos = Vec3(
-            stand.x + packet.xa / 4096.0,
-            stand.y + packet.ya / 4096.0,
-            stand.z + packet.za / 4096.0,
-        )
+        val pos = packet.movedTo(stand) ?: return
         val data = bloodMobs.getOrPut(stand) { BloodEntity(pos, dungeonTick, firstSpawns) }
 
         val delta = pos.subtract(data.lastPosition)

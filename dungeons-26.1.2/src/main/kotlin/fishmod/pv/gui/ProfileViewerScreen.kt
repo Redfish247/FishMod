@@ -1214,8 +1214,8 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		// Screens don't keep options.keyShift updated; poll GLFW instead.
 		fun shiftDown(): Boolean {
 			val window = Minecraft.getInstance()?.window ?: return false
-			return InputConstants.isKeyDown(window, InputConstants.KEY_LSHIFT) ||
-				InputConstants.isKeyDown(window, InputConstants.KEY_RSHIFT)
+			return fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_LSHIFT) ||
+				fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_RSHIFT)
 		}
 	}
 }

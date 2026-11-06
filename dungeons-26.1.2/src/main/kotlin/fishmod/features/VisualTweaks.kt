@@ -1,11 +1,11 @@
 package fishmod.features
 
+import fishmod.compat.isShovel
 import fishmod.utils.config.values.VisualSettings
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.world.InteractionResult
-import net.minecraft.world.item.ShovelItem
 import net.minecraft.world.level.block.Blocks
 
 object VisualTweaks {
@@ -21,7 +21,7 @@ object VisualTweaks {
             try {
                 if (VisualSettings.renderOptimizer && VisualSettings.noShovelPath
                     && player === Minecraft.getInstance().player
-                    && player.getItemInHand(hand).item is ShovelItem
+                    && player.getItemInHand(hand).isShovel()
                     && level.getBlockState(hit.blockPos).block in FLATTENABLE
                 ) {
                     return@UseBlockCallback InteractionResult.FAIL

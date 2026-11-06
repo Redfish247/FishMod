@@ -1,10 +1,10 @@
 package fishmod.features.slayers
 
+import fishmod.compat.EndermanT
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.monster.Blaze
-import net.minecraft.world.entity.monster.EnderMan
 import net.minecraft.world.entity.monster.spider.Spider
 import net.minecraft.world.entity.monster.zombie.Zombie
 import net.minecraft.world.entity.animal.wolf.Wolf
@@ -46,7 +46,7 @@ enum class SlayerType(
         setOf("Voidgloom Seraph"),
         setOf("Voidling Devotee", "Voidling Radical", "Voidcrazed Maniac"),
         SkyblockLocation.THE_END,
-        EnderMan::class.java,
+        EndermanT::class.java,
         mapOf(1 to 5, 2 to 25, 3 to 100, 4 to 500),
     ),
     INFERNO(

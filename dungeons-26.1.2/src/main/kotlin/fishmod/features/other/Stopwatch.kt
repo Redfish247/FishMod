@@ -19,7 +19,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 
 object Stopwatch {
     enum class Trigger(private val label: String) {
@@ -139,7 +139,7 @@ object Stopwatch {
     }
 
     private fun key(name: String): KeyMapping = KeyMappingHelper.registerKeyMapping(
-        KeyMapping(name, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, FishKeys.category())
+        KeyMapping(name, fishmod.compat.GLFW.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, FishKeys.category())
     )
 
     private fun tick(mc: Minecraft) {

@@ -64,7 +64,7 @@ public class FishMouseMixin {
             this.xpos = this.fishmod$beforeX;
             this.ypos = this.fishmod$beforeY;
             // Move the real OS cursor too, or the next mouse move snaps back to centre
-            org.lwjgl.glfw.GLFW.glfwSetCursorPos(Minecraft.getInstance().getWindow().handle(), this.xpos, this.ypos);
+            fishmod.compat.GLFW.glfwSetCursorPos(Minecraft.getInstance().getWindow().handle(), this.xpos, this.ypos);
         }
     }
 }

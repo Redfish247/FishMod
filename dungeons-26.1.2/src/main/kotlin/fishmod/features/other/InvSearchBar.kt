@@ -17,7 +17,7 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 
 object InvSearchBar {
 

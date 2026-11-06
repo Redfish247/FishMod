@@ -330,7 +330,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         }
         if (inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)) {
             try {
-                Util.getPlatform().openUri(DISCORD_URL)
+                fishmod.compat.GLFW.openUri(java.net.URI.create(DISCORD_URL))
             } catch (t: Throwable) {
                 FishDiag.fail("CreditsScreen.1", "could not open discord link", t)
             }

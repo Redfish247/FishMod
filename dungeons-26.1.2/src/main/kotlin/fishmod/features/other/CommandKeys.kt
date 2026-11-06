@@ -7,7 +7,7 @@ import fishmod.utils.FishUtil
 import fishmod.utils.config.FishPaths
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -70,7 +70,7 @@ object CommandKeys {
             val down = if (e.key().type == InputConstants.Type.MOUSE)
                 GLFW.glfwGetMouseButton(client.window.handle(), e.key().value) == GLFW.GLFW_PRESS
             else
-                InputConstants.isKeyDown(client.window, e.key().value)
+                fishmod.compat.GLFW.keyDown(client.window, e.key().value)
             val wasDown = held.contains(e.key())
 
             if (down && !wasDown && !inScreen) FishUtil.executeCommand(e.command())

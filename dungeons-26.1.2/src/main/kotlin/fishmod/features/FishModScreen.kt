@@ -31,7 +31,7 @@ import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
 import fishmod.utils.rendering.UiRecorder
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import kotlin.reflect.KMutableProperty0
 import fishmod.utils.config.ColorDefaults
 
@@ -1168,7 +1168,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ButtonSetting("Open Crosshairs Folder", "") {
                 try {
                     fishmod.features.CrosshairImageLoader.init()
-                    net.minecraft.util.Util.getPlatform().openUri(fishmod.features.CrosshairImageLoader.getImagesPath().toUri())
+                    fishmod.compat.GLFW.openUri(fishmod.features.CrosshairImageLoader.getImagesPath().toUri())
                 } catch (e: Exception) {
                     FishDiag.fail("FishModScreen.4", "open crosshairs folder failed", e)
                 }
@@ -1935,7 +1935,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ButtonSetting("Open Images Folder", "") {
                 try {
                     fishmod.features.dungeon.map.MapImageLoader.init()
-                    net.minecraft.util.Util.getPlatform().openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
+                    fishmod.compat.GLFW.openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
                 } catch (e: Exception) {
                     FishDiag.fail("FishModScreen.5", "open map images folder failed", e)
                 }
@@ -3145,8 +3145,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             when {
                 r.isAdd() -> if (btn == 0) createFolder()
                 f != null && btn == 1 -> {
-                    val shift = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
-                        InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
+                    val shift = fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
+                        fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
                     if (shift) startRename(f)
                     else { f.open = !f.open; saveFolders(); stackScroll = Mth.clamp(stackScroll, 0, stackMaxScroll()) }
                 }
@@ -3351,8 +3351,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun scrollInner(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         if (anyColumnAnimating()) return true
 
-        val shiftDown = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
-            InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
+        val shiftDown = fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
+            fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
 
         val mouseX = vx(mouseX).toDouble()
         val mouseY = vx(mouseY).toDouble()

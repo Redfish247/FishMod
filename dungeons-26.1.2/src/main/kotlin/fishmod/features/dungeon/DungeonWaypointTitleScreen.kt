@@ -13,7 +13,7 @@ import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.util.function.Consumer
 
 class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Screen(Component.literal("Dungeon Waypoint Title")), HasUiOverlay {

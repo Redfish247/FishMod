@@ -20,7 +20,7 @@ import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.util.function.BooleanSupplier
 import java.util.function.DoubleConsumer
 import java.util.function.DoubleSupplier
@@ -617,7 +617,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun shiftDown(): Boolean {
         val w = Minecraft.getInstance().window
-        return InputConstants.isKeyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT)
+        return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT)
     }
 
     private fun sample(e: HudEntry): Sample? =
@@ -702,7 +702,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun altDown(): Boolean {
         val w = Minecraft.getInstance().window
-        return InputConstants.isKeyDown(w, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(w, GLFW.GLFW_KEY_RIGHT_ALT)
+        return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_ALT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_ALT)
     }
 
     private fun snap(e: HudEntry, x: Int, y: Int): Pair<Int, Int> {
