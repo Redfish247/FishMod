@@ -3,6 +3,7 @@ package fishmod.mixin;
 import fishmod.features.dungeon.SessionStats;
 import fishmod.features.other.InvSearchBar;
 import fishmod.features.other.WardrobeHotkeys;
+import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.debug.MixinGuard;
 import fishmod.utils.rendering.DrawHooks;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -34,23 +35,24 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
             Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
             fishmod.features.ScrollableTooltip.trackHoveredSlot(hs != null && !hs.getItem().isEmpty() ? hs.index : -1);
         });
-        MixinGuard.run("FishScreenMixin.1", "InvSearchBar.render failed", () -> InvSearchBar.render(context, mouseX, mouseY, deltaTicks));
+        // Setting checks up front skip the per-frame lambda when a feature is off
+        if (FishSettings.inventorySearchEnabled) MixinGuard.run("FishScreenMixin.1", "InvSearchBar.render failed", () -> InvSearchBar.render(context, mouseX, mouseY, deltaTicks));
         MixinGuard.run("FishScreenMixin.2", "LeapMenu.render failed", () -> fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, self));
         MixinGuard.run("FishScreenMixin.3", "PartyFinderPanel.render failed", () -> fishmod.features.dungeon.PartyFinderPanel.render(context, mouseX, mouseY, self));
         MixinGuard.run("FishScreenMixin.4", "StorageOverlay.render failed", () -> fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, self));
         MixinGuard.run("FishScreenMixin.5", "CroesusProfit.render failed", () -> fishmod.features.croesus.CroesusProfit.render(context, self));
-        MixinGuard.run("FishScreenMixin.20", "AnitaShop.render failed", () -> fishmod.features.item.AnitaShop.render(context, self));
-        MixinGuard.run("FishScreenMixin.6", "ContainerValue.render failed", () -> fishmod.features.item.ContainerValue.render(context, self));
+        if (FishSettings.anitaProfitEnabled) MixinGuard.run("FishScreenMixin.20", "AnitaShop.render failed", () -> fishmod.features.item.AnitaShop.render(context, self));
+        if (FishSettings.containerValueEnabled) MixinGuard.run("FishScreenMixin.6", "ContainerValue.render failed", () -> fishmod.features.item.ContainerValue.render(context, self));
         MixinGuard.run("FishScreenMixin.16", "Visitors.renderShopping failed", () -> fishmod.features.garden.Visitors.renderShopping(context, self));
-        MixinGuard.run("FishScreenMixin.7", "AuctionPriceAutofill.trackScreen failed", () -> fishmod.features.item.AuctionPriceAutofill.trackScreen(self));
+        if (FishSettings.auctionPriceAutofillEnabled) MixinGuard.run("FishScreenMixin.7", "AuctionPriceAutofill.trackScreen failed", () -> fishmod.features.item.AuctionPriceAutofill.trackScreen(self));
         MixinGuard.run("FishScreenMixin.8", "TermCustomGui.render failed", () -> {
             if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(self)) {
                 fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
             }
         });
-        MixinGuard.run("FishScreenMixin.10", "term sim overlay failed", () -> {
-            if (self instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) ts.overlay(context);
-        });
+        if (self instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) {
+            MixinGuard.run("FishScreenMixin.10", "term sim overlay failed", () -> ts.overlay(context));
+        }
     }
 
     @Inject(method = "extractSlots", at = @At("HEAD"), cancellable = true)
