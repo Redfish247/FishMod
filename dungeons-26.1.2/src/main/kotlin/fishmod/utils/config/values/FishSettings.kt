@@ -832,6 +832,7 @@ object FishSettings {
     @ConfigValue @JvmField var spotifyHudShowPaused: Boolean = false
     @ConfigValue @JvmField var spotifyHudIcon: Boolean = true
     @ConfigValue @JvmField var spotifyHudLyrics: Boolean = true
+    @ConfigValue @JvmField var spotifyHudConnected: Boolean = true
     @ConfigValue @JvmField var spotifyHudMaxChars: Int = 28
     @ConfigValue @JvmField var spotifyHudLyricOffset: Int = 0
     @ConfigValue @JvmField var spotifyHudBackground: Boolean = true

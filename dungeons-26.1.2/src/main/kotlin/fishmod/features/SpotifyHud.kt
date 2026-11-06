@@ -141,12 +141,64 @@ object SpotifyHud {
 
     // Rounded pill drawn as one-pixel rows
     private fun pill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) {
-        val r = h / 2.0
+        val r = minOf(h / 2.0, 7.0)
         for (row in 0 until h) {
-            val dy = r - minOf(row, h - 1 - row) - 0.5
-            val inset = ceil(r - sqrt(maxOf(0.0, r * r - dy * dy))).toInt()
+            val d = minOf(row, h - 1 - row)
+            val inset = if (d >= r) 0 else { val dy = r - d - 0.5; ceil(r - sqrt(maxOf(0.0, r * r - dy * dy))).toInt() }
             ctx.fill(x + inset, y + row, x + w - inset, y + row + 1, color)
         }
+    }
+
+    // Sizes: separate pills stacked with a gap, or one box holding both rows
+    private fun boxW(tm: Marq, lm: Marq, hasLyric: Boolean): Int {
+        val tw = PAD_X * 2 + (if (FishSettings.spotifyHudIcon) 11 else 0) + tm.fixedW
+        return if (hasLyric) maxOf(tw, PAD_X * 2 + lm.fixedW) else tw
+    }
+    private fun boxH(hasLyric: Boolean): Int =
+        if (!hasLyric) H else if (FishSettings.spotifyHudConnected) PAD_Y * 2 + 9 + 11 else H * 2 + GAP
+
+    // Draws at the current pose origin; used by the live HUD and the HUD editor example
+    private fun body(ctx: GuiGraphicsExtractor, mc: Minecraft, tm: Marq, lm: Marq, shown: String, lyric: String, playing: Boolean) {
+        val cap = FishSettings.spotifyHudMaxChars.coerceIn(8, 80)
+        val now = System.currentTimeMillis()
+        tm.set(shown, cap, mc)
+        val hasLyric = lyric.isNotEmpty()
+        if (hasLyric) lm.set(lyric, cap, mc)
+        val icon = FishSettings.spotifyHudIcon
+        val col = FishSettings.spotifyHudTextColor
+        val bg = FishSettings.spotifyHudBackground
+        val bgc = FishSettings.spotifyHudBgColor
+        val conn = FishSettings.spotifyHudConnected
+        val w = boxW(tm, lm, hasLyric)
+        if (bg) {
+            if (hasLyric && conn) pill(ctx, 0, 0, w, boxH(true), bgc)
+            else {
+                pill(ctx, 0, 0, if (hasLyric) PAD_X * 2 + (if (icon) 11 else 0) + tm.fixedW else w, H, bgc)
+                if (hasLyric) pill(ctx, 0, H + GAP, PAD_X * 2 + lm.fixedW, H, bgc)
+            }
+        }
+        if (icon) bars(ctx, PAD_X, PAD_Y, playing, col, now)
+        ctx.text(mc.font, tm.view(now), PAD_X + (if (icon) 11 else 0), PAD_Y, col, true)
+        if (hasLyric) {
+            val y = if (conn) PAD_Y + 11 else H + GAP + PAD_Y
+            ctx.text(mc.font, lm.view(now), PAD_X, y, col, true)
+        }
+    }
+
+    private val pvT = Marq()
+    private val pvL = Marq()
+    private const val PV_TITLE = "Daft Punk - Digital Love"
+    private const val PV_LYRIC = "Last night I had a dream about you"
+    private fun pvLyric() = if (FishSettings.spotifyHudLyrics) PV_LYRIC else ""
+
+    // HUD editor example
+    @JvmStatic fun drawPreview(ctx: GuiGraphicsExtractor) = body(ctx, Minecraft.getInstance(), pvT, pvL, PV_TITLE, pvLyric(), true)
+    @JvmStatic fun previewSize(): IntArray {
+        val mc = Minecraft.getInstance()
+        val cap = FishSettings.spotifyHudMaxChars.coerceIn(8, 80)
+        pvT.set(PV_TITLE, cap, mc); pvL.set(PV_LYRIC, cap, mc)
+        val has = pvLyric().isNotEmpty()
+        return intArrayOf(boxW(pvT, pvL, has), boxH(has))
     }
 
     private fun bars(ctx: GuiGraphicsExtractor, x: Int, y: Int, playing: Boolean, color: Int, now: Long) {
@@ -174,34 +226,12 @@ object SpotifyHud {
         val shown = if (playing) t else if (FishSettings.spotifyHudShowPaused) "Paused" else ""
         if (shown.isEmpty()) return
 
-        val cap = FishSettings.spotifyHudMaxChars.coerceIn(8, 80)
-        val now = System.currentTimeMillis()
-        titleMarq.set(shown, cap, mc)
-        val icon = FishSettings.spotifyHudIcon
-        val col = FishSettings.spotifyHudTextColor
-        val bg = FishSettings.spotifyHudBackground
         val sc = FishSettings.spotifyHudScale.toFloat()
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(FishSettings.spotifyHudX.toFloat(), FishSettings.spotifyHudY.toFloat())
         pose.scale(sc, sc)
-
-        val iconW = if (icon) 11 else 0
-        val w = PAD_X * 2 + iconW + titleMarq.fixedW
-        if (bg) pill(ctx, 0, 0, w, H, FishSettings.spotifyHudBgColor)
-        if (icon) bars(ctx, PAD_X, PAD_Y, playing, col, now)
-        ctx.text(mc.font, titleMarq.view(now), PAD_X + iconW, PAD_Y, col, true)
-
-        if (playing && FishSettings.spotifyHudLyrics) {
-            val lyric = currentLyric()
-            if (lyric.isNotEmpty()) {
-                lyricMarq.set(lyric, cap, mc)
-                val lw = PAD_X * 2 + lyricMarq.fixedW
-                val y = H + GAP
-                if (bg) pill(ctx, 0, y, lw, H, FishSettings.spotifyHudBgColor)
-                ctx.text(mc.font, lyricMarq.view(now), PAD_X, y + PAD_Y, col, true)
-            }
-        }
+        body(ctx, mc, titleMarq, lyricMarq, shown, if (playing && FishSettings.spotifyHudLyrics) currentLyric() else "", playing)
         pose.popMatrix()
     }
 

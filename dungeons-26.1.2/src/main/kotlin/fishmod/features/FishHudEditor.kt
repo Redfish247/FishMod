@@ -638,6 +638,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     private fun baseW(e: HudEntry): Int {
+        if (e.name() == "Spotify") return SpotifyHud.previewSize()[0]
         val s = sample(e) ?: return e.w()
         s.width?.let { return it }
         val r = s.right
@@ -647,6 +648,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     private fun baseH(e: HudEntry): Int {
+        if (e.name() == "Spotify") return SpotifyHud.previewSize()[1]
         val s = sample(e) ?: return e.h()
         return (s.lines.size - 1) * s.lineH + 9
     }
@@ -788,6 +790,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         pose.scale(sc, sc)
         if (e.name() == "Dungeon Map") {
             drawMapExample(ctx, e.w(), e.h())
+        } else if (e.name() == "Spotify") {
+            SpotifyHud.drawPreview(ctx)
         } else if (s != null) {
             val bw = baseW(e)
             if (s.bg != 0) ctx.fill(0, 0, bw, baseH(e), s.bg)
