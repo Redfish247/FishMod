@@ -21,7 +21,7 @@ object TrackerResetButton {
             if (screen !is InventoryScreen) return@AfterInit
             ScreenEvents.beforeExtract(screen).register(ScreenEvents.BeforeExtract { _, _, _, _, _ -> btns.clear() })
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
-                if (click.button() != 0) return@AllowMouseClick true
+                if (fishmod.compat.GLFW.btn(click) != 0) return@AllowMouseClick true
                 val b = btns.firstOrNull { click.x() in it.x0..it.x1 && click.y() in it.y0..it.y1 } ?: return@AllowMouseClick true
                 if (armed(b.key)) { armedAt.remove(b.key); b.reset() } else armedAt[b.key] = System.currentTimeMillis()
                 false

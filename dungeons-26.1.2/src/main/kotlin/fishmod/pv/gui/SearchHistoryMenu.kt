@@ -145,7 +145,7 @@ class SearchHistoryMenu(
 	fun mouseScrolled(mx: Double, my: Double): Boolean = blocksMouse(mx, my)
 
 	fun keyPressed(key: Int): Boolean {
-		if (key == 256 && isVisible()) {
+		if (key == fishmod.compat.GLFW.GLFW_KEY_ESCAPE && isVisible()) {
 			open = false
 			return true
 		}

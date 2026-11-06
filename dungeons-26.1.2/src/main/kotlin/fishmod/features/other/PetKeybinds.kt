@@ -32,7 +32,7 @@ object PetKeybinds {
 
     @JvmStatic
     fun mouseClicked(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
-        if (click.button() == 0 || click.button() == 1) return false
+        if (fishmod.compat.GLFW.btn(click) == 0 || fishmod.compat.GLFW.btn(click) == 1) return false
         return handleInput(screen) { it.matchesMouse(click) }
     }
 

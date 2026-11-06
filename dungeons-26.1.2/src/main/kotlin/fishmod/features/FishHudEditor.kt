@@ -1050,7 +1050,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         try {
             clickInner(click, bl)
         } catch (t: Throwable) {
-            FishDiag.fail("FishHudEditor.5", "HUD editor click failed at ${click.x()},${click.y()} button=${click.button()}", t)
+            FishDiag.fail("FishHudEditor.5", "HUD editor click failed at ${click.x()},${click.y()} button=${fishmod.compat.GLFW.btn(click)}", t)
             true
         }
 

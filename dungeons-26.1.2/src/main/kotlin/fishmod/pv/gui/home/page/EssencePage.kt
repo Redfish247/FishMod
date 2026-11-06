@@ -112,11 +112,11 @@ class EssencePage {
 	}
 
 	fun keyPressed(keyCode: Int): Boolean {
-		if (keyCode == 264) {
+		if (keyCode == fishmod.compat.GLFW.GLFW_KEY_DOWN) {
 			select(selected + 1)
 			return true
 		}
-		if (keyCode == 265) {
+		if (keyCode == fishmod.compat.GLFW.GLFW_KEY_UP) {
 			select(selected - 1)
 			return true
 		}

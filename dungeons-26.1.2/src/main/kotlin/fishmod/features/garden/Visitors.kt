@@ -246,7 +246,7 @@ object Visitors {
 
     @JvmStatic
     fun mouseClicked(click: net.minecraft.client.input.MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
-        if (click.button() != 0 || hits.isEmpty() || !isBazaar(screen)) return false
+        if (fishmod.compat.GLFW.btn(click) != 0 || hits.isEmpty() || !isBazaar(screen)) return false
         val h = hits.firstOrNull { click.x() >= it.x0 && click.x() <= it.x1 && click.y() >= it.y0 && click.y() < it.y1 } ?: return false
         val mc = Minecraft.getInstance()
         mc.keyboardHandler.setClipboard(h.amount.toString())

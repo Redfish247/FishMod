@@ -46,10 +46,10 @@ public abstract class FishInventoryMixin extends AbstractRecipeBookScreen<Invent
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-        if (InvButtonSettings.showEquipment && click.button() == 0 && fishmod.features.other.EquipmentDisplay.click(click.x() - this.leftPos, click.y() - this.topPos)) return true;
+        if (InvButtonSettings.showEquipment && fishmod.compat.GLFW.btn(click) == 0 && fishmod.features.other.EquipmentDisplay.click(click.x() - this.leftPos, click.y() - this.topPos)) return true;
         if (InvShortcutButtons.on()) {
             try {
-                if (InvShortcutButtons.parseClicks(click.x() - this.leftPos, click.y() - this.topPos, click.button())) return true;
+                if (InvShortcutButtons.parseClicks(click.x() - this.leftPos, click.y() - this.topPos, fishmod.compat.GLFW.btn(click))) return true;
             } catch (Throwable t) {
                 fishmod.utils.debug.FishDiag.fail("FishInventoryMixin.2", "inventory button click failed", t);
             }

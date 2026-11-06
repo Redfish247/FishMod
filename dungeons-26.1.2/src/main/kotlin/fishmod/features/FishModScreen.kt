@@ -3081,7 +3081,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         try {
             clickInner(click, bl)
         } catch (t: Throwable) {
-            FishDiag.fail("FishModScreen.12", "click failed at ${click.x()},${click.y()} button=${click.button()} search='$searchText'", t)
+            FishDiag.fail("FishModScreen.12", "click failed at ${click.x()},${click.y()} button=${fishmod.compat.GLFW.btn(click)} search='$searchText'", t)
             true
         }
 
@@ -3090,7 +3090,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         val mx = vx(click.x())
         val my = vx(click.y())
-        val btn = click.button()
+        val btn = fishmod.compat.GLFW.btn(click)
 
         val rnf = renamingFolder
         if (rnf != null) {

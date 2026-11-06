@@ -54,8 +54,8 @@ public final class GLFW {
     public static final int GLFW_MOD_CONTROL = InputConstants.MOD_CONTROL;
     public static final int GLFW_MOD_ALT = InputConstants.MOD_ALT;
     public static final int GLFW_MOD_SUPER = InputConstants.MOD_SUPER;
-    public static final int GLFW_MOUSE_BUTTON_4 = InputConstants.MOUSE_BUTTON_4;
-    public static final int GLFW_MOUSE_BUTTON_RIGHT = InputConstants.MOUSE_BUTTON_RIGHT;
+    public static final int GLFW_MOUSE_BUTTON_4 = 3;
+    public static final int GLFW_MOUSE_BUTTON_RIGHT = 1;
 
     public static int glfwGetKey(long window, int key) { return InputConstants.isKeyDown(key) ? 1 : 0; }
     public static int glfwGetMouseButton(long window, int button) {
@@ -65,4 +65,7 @@ public final class GLFW {
     public static void glfwSetCursorPos(long window, double x, double y) { org.lwjgl.sdl.SDLMouse.SDL_WarpMouseInWindow(window, (float) x, (float) y); }
     public static boolean keyDown(Window window, int key) { return InputConstants.isKeyDown(key); }
     public static void openUri(java.net.URI uri) { org.lwjgl.sdl.SDLMisc.SDL_OpenURL(uri.toString()); }
+    // 0 = left, 1 = right, 2 = middle like GLFW; SDL buttons are 1-based.
+    public static final int KEY_MOUSE_RIGHT = InputConstants.MOUSE_BUTTON_RIGHT;
+    public static int btn(net.minecraft.client.input.MouseButtonEvent click) { return click.button() - 1; }
 }

@@ -180,12 +180,12 @@ class SlayerCalcOverlay {
 
 	fun keyPressed(key: Int): Boolean {
 		if (!open) return false
-		if (key == 256) {
+		if (key == fishmod.compat.GLFW.GLFW_KEY_ESCAPE) {
 			close()
 			return true
 		}
 		if (!fieldFocus) return false
-		if (key == 259) {
+		if (key == fishmod.compat.GLFW.GLFW_KEY_BACKSPACE) {
 			if (replaceOnType) {
 				levelText = ""
 				replaceOnType = false

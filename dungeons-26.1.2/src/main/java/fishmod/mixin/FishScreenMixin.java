@@ -141,13 +141,13 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
             if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
                 int idx = fishmod.features.dungeon.f7.terminal.TermCustomGui.slotAt((int) cx, (int) cy);
                 fishmod.features.dungeon.f7.terminal.TermCustomGui.handleClick(
-                        (AbstractContainerScreen<?>) (Object) this, idx, click.button());
+                        (AbstractContainerScreen<?>) (Object) this, idx, fishmod.compat.GLFW.btn(click));
                 cir.setReturnValue(true);
                 return;
             }
 
             if (fishmod.features.dungeon.f7.terminal.TerminalSolver.onMouseClick(
-                    click.button(), (AbstractContainerScreen<?>) (Object) this)) {
+                    fishmod.compat.GLFW.btn(click), (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
@@ -162,12 +162,12 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                 return;
             }
 
-            if (fishmod.features.dungeon.LeapMenu.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.dungeon.LeapMenu.mouseClicked(fishmod.compat.GLFW.btn(click), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
 
-            if (fishmod.features.dungeon.PartyFinderPanel.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.dungeon.PartyFinderPanel.mouseClicked(fishmod.compat.GLFW.btn(click), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
@@ -187,7 +187,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
 
             InvSearchBar.onMouseClick(click);
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("FishScreenMixin.15", "container mouseClicked hooks failed button=" + click.button(), t);
+            fishmod.utils.debug.FishDiag.fail("FishScreenMixin.15", "container mouseClicked hooks failed button=" + fishmod.compat.GLFW.btn(click), t);
         }
     }
 

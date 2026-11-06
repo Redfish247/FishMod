@@ -735,7 +735,7 @@ object StorageOverlay {
         val s = scale
         val rx = click.x() / s
         val ry = click.y() / s
-        val button = click.button()
+        val button = fishmod.compat.GLFW.btn(click)
         val modifiers = click.modifiers()
 
         if (inRect(rx, ry, searchFieldRect[0], searchFieldRect[1], searchFieldRect[2], searchFieldRect[3])) {

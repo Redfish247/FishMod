@@ -1506,7 +1506,7 @@ class FishModInit : ClientModInitializer {
             if (screen !is net.minecraft.client.gui.screens.ChatScreen) return@AfterInit
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
                 val handled = try {
-                    fishmod.features.slayers.SlayerHuds.onProfitClick(click.x(), click.y(), click.button())
+                    fishmod.features.slayers.SlayerHuds.onProfitClick(click.x(), click.y(), fishmod.compat.GLFW.btn(click))
                 } catch (t: Throwable) {
                     FishDiag.fail("FishModInit.155", "SlayerHuds.onProfitClick failed", t); false
                 }

@@ -62,4 +62,8 @@ public final class GLFW {
     public static void glfwSetCursorPos(long window, double x, double y) { fishmod.compat.GLFW.glfwSetCursorPos(window, x, y); }
     public static boolean keyDown(Window window, int key) { return fishmod.compat.GLFW.keyDown(window, key); }
     public static void openUri(java.net.URI uri) { fishmod.compat.GLFW.openUri(uri); }
+    // 0 = left, 1 = right, 2 = middle on every version.
+    // Raw Minecraft mouse key value for KeyMapping(Type.MOUSE, ...).
+    public static final int KEY_MOUSE_RIGHT = org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
+    public static int btn(net.minecraft.client.input.MouseButtonEvent click) { return click.button(); }
 }

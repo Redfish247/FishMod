@@ -90,7 +90,7 @@ object DianaTrackerHud {
                 }
             })
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
-                click.button() != 0 || !onClick(click.x(), click.y())
+                fishmod.compat.GLFW.btn(click) != 0 || !onClick(click.x(), click.y())
             })
         })
     }

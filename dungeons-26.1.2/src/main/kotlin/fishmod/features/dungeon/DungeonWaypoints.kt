@@ -131,7 +131,7 @@ object DungeonWaypoints {
             KeyMapping(
                 "Dungeon Waypoint Place/Remove",
                 InputConstants.Type.MOUSE,
-                GLFW.GLFW_MOUSE_BUTTON_RIGHT,
+                GLFW.KEY_MOUSE_RIGHT,
                 category
             )
         )

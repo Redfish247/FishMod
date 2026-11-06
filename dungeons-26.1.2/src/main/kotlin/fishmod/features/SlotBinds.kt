@@ -179,7 +179,7 @@ object SlotBinds {
             return true
         }
 
-        if (click.button() != 0 || !hasShiftDown()) return false
+        if (fishmod.compat.GLFW.btn(click) != 0 || !hasShiftDown()) return false
         val partner = partnerOf(slotId) ?: return false
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return false
