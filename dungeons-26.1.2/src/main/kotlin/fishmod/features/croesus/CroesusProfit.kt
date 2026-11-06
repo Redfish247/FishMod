@@ -16,6 +16,7 @@ object CroesusProfit {
     private val PREVIEW_TITLE = Regex("^(?:Master )?Catacombs - .*")
     private val CROESUS_TITLE = Regex("(?:\\(\\d+/\\d+\\) )?Croesus")
     private val COST =Regex("([\\d,]+) Coins?")
+    private val OPENED = Regex("Opened [cC]hest:")
 
     private class Chest(val slot: Int, val name: String, val value: Double, val cost: Double) {
         val profit get() = value - cost
@@ -94,10 +95,9 @@ object CroesusProfit {
             val kismetUsed = raw.any { l -> l.string.contains("Kismet Feather") && strike(l) }
             val rgb = when {
                 lore.any { it.contains("No more chests to open!", true) } -> continue
-                lore.any { Regex("Opened [cC]hest:").containsMatchIn(it) } -> FishSettings.croesusKeyColor
+                lore.any { OPENED.containsMatchIn(it) } -> FishSettings.croesusKeyColor
                 !kismetUsed && lore.any { it.contains("Kismet Feather") } -> FishSettings.croesusKismetColor
                 lore.any { it.contains("No chests opened yet!", true) } -> FishSettings.croesusUnopenedColor
-                lore.any { Regex("Opened [cC]hest:").containsMatchIn(it) } -> FishSettings.croesusKeyColor
                 else -> continue
             }
             val color = (rgb and 0xFFFFFF) or ((FishSettings.croesusHighlightOpacity.coerceIn(0, 100) * 255 / 100) shl 24)
