@@ -427,6 +427,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.201", "ExperimentProfitTracker.init() failed") { fishmod.features.ExperimentProfitTracker.init() }
         FishDiag.guard("FishModInit.203", "AnitaShop.init() failed") { fishmod.features.item.AnitaShop.init() }
         FishDiag.guard("FishModInit.21", "CooldownOverlay.init() failed") { CooldownOverlay.init() }
+        FishDiag.guard("FishModInit.HuntaxeLock", "HuntaxeLock.init() failed") { fishmod.features.HuntaxeLock.init() }
         FishDiag.guard("FishModInit.22", "fishmod.features.croesus.CroesusLootDetector.init() failed") { fishmod.features.croesus.CroesusLootDetector.init() }
         FishDiag.guard("FishModInit.23", "fishmod.features.CatacombsOverflowOverlay.init() failed") { fishmod.features.CatacombsOverflowOverlay.init() }
         FishDiag.guard("FishModInit.24", "fishmod.features.scoreboard.SkillLevels.init() failed") { fishmod.features.scoreboard.SkillLevels.init() }
@@ -438,6 +439,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.30", "ItemRarityHotbar.init() failed") { ItemRarityHotbar.init() }
         FishDiag.guard("FishModInit.31", "fishmod.features.item.ItemQualityTooltip.init() failed") { fishmod.features.item.ItemQualityTooltip.init() }
         FishDiag.guard("FishModInit.31b", "fishmod.features.item.ExoticTooltip.init() failed") { fishmod.features.item.ExoticTooltip.init() }
+        FishDiag.guard("FishModInit.31c", "fishmod.features.item.OriginalNameTooltip.init() failed") { fishmod.features.item.OriginalNameTooltip.init() }
         FishDiag.guard("FishModInit.31b", "fishmod.features.item.ItemOverlays.init() failed") { fishmod.features.item.ItemOverlays.init() }
         FishDiag.guard("FishModInit.32", "fishmod.features.item.ItemPriceTooltip.init() failed") { fishmod.features.item.ItemPriceTooltip.init() }
         FishDiag.guard("FishModInit.32b", "fishmod.features.item.RecipeViewer.init() failed") { fishmod.features.item.RecipeViewer.init() }

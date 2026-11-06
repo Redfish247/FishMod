@@ -1365,6 +1365,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Disable Cooldown Background", "Hide the white cooldown sweep behind the timer", VisualSettings::class.java, "hideItemCooldown"))
             hud.features.add(f)
         }
+        run {
+            val f = Feature("Huntaxe Lock", "huntaxeLockEnabled")
+            f.sub.add(SubcategoryHeader("Single right click with a Huntaxe is cancelled; double right click opens it"))
+            f.sub.add(SliderIntSetting("Double Click Window", "Max time between the two clicks (ms)", "huntaxeLockWindowMs", 150, 1000, 25))
+            general.features.add(f)
+        }
         hud.features.add(Feature("Catacombs Overflow Levels", "catacombsOverflowEnabled"))
         run {
             hud.features.add(Feature("Anita Medal Profit", "anitaProfitEnabled"))
@@ -1514,6 +1520,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("NPC Sell Price", "", "itemTooltipNpcSell"))
             f.sub.add(ToggleSetting("Dungeon Quality", "Stat-boost % + floor", "itemQualityTooltip"))
             f.sub.add(ToggleSetting("Exotic Armor", "Tags crystal/fairy/exotic dyed armor + hex", "exoticTooltip"))
+            f.sub.add(ToggleSetting("Original Name", "On items with a custom name, shows the original name", "originalNameTooltip"))
+            f.sub.add(InputSetting("Original Name Text", "", "originalNameLabel").gatedBy { FishSettings.originalNameTooltip })
+            f.sub.add(ColorPickerSetting("Original Name Color", "", "originalNameColor").gatedBy { FishSettings.originalNameTooltip })
             f.sub.add(ToggleSetting("Obtained Date", "When the item was obtained", fishmod.features.extras.ExtrasSettings::class.java, "obtainedDateTooltip"))
             f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", "tooltipScrollEnabled"))

@@ -88,6 +88,8 @@ object FishSettings {
     @ConfigValue @JvmField var petHudX: Int = 10
     @ConfigValue @JvmField var petHudY: Int = 80
 
+    @ConfigValue @JvmField var huntaxeLockEnabled: Boolean = false
+    @ConfigValue @JvmField var huntaxeLockWindowMs: Int = 400
     @ConfigValue @JvmField var cooldownOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var cooldownShowText: Boolean = false
     @ConfigValue @JvmField var cooldownOnlyUnder3s: Boolean = false
@@ -613,6 +615,9 @@ object FishSettings {
 
     @ConfigValue @JvmField var itemQualityTooltip: Boolean = false
     @ConfigValue @JvmField var exoticTooltip: Boolean = true
+    @ConfigValue @JvmField var originalNameTooltip: Boolean = true
+    @ConfigValue @JvmField var originalNameLabel: String = "Original: "
+    @ConfigValue @JvmField var originalNameColor: Int = 0xFFAAAAAA.toInt()
 
     @ConfigValue @JvmField var gyroHelperEnabled: Boolean = false
     @ConfigValue @JvmField var gyroBoxColor: Int = 0xFF55FFFF.toInt()
