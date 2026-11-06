@@ -3100,7 +3100,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         val cap = capturingKeybind
         if (cap != null) {
-            cap.applyKey(InputConstants.Type.MOUSE.getOrCreate(btn))
+            cap.applyKey(InputConstants.Type.MOUSE.getOrCreate(click.button()))
             capturingKeybind = null
             return true
         }
