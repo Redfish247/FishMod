@@ -275,7 +275,8 @@ object UpdateManager {
                 synchronized(lock) { state.nextCheckAt = rateLimitResetAt(res, now); save() }
             }
             else -> {
-                FishDiag.fail("UpdateManager.10", "GitHub release check HTTP ${res.statusCode()}")
+                // GitHub 5xx is their outage, not a bug: back off without a report.
+                if (res.statusCode() < 500) FishDiag.fail("UpdateManager.10", "GitHub release check HTTP ${res.statusCode()}")
                 synchronized(lock) { state.nextCheckAt = now + FAILURE_BACKOFF_MS; save() }
             }
         }
