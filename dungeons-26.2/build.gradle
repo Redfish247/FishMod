@@ -106,7 +106,10 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 	compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
+	compilerOptions.freeCompilerArgs.addAll('-Xno-param-assertions', '-Xno-call-assertions', '-Xno-receiver-assertions')
 }
+
+apply from: rootProject.file('gradle/strip-debug.gradle')
 
 jar {
 	inputs.property "archivesName", project.base.archivesName
