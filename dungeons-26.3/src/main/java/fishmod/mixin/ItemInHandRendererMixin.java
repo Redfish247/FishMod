@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// 26.3 side: the renderer is FirstPersonHandsAndItemsRenderer and hand heights live in the render state, so animNoEquip has no effect here.
+// 26.3 side: the renderer is FirstPersonHandsAndItemsRenderer; the no-equip option lives in FirstPersonItemsMixin.
 @Mixin(FirstPersonHandsAndItemsRenderer.class)
 public abstract class ItemInHandRendererMixin {
 
