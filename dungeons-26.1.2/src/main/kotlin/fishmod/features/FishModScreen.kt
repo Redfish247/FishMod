@@ -1432,6 +1432,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Spotify Display", "spotifyHudEnabled")
+            f.sub.add(SubcategoryHeader("Windows only, reads the Spotify desktop window title (no login). Move it in the HUD editor"))
+            f.sub.add(ToggleSetting("Show Icon", "Music note before the title", "spotifyHudIcon"))
+            f.sub.add(ToggleSetting("Show Paused", "Show Paused instead of hiding when nothing plays", "spotifyHudShowPaused"))
+            f.sub.add(ToggleSetting("Background", "", "spotifyHudBackground"))
+            f.sub.add(ColorPickerSetting("Text Color", "", "spotifyHudTextColor"))
+            f.sub.add(ColorPickerSetting("Background Color", "Alpha sets the opacity", "spotifyHudBgColor").gatedBy { FishSettings.spotifyHudBackground })
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Pet HUD", "petHudEnabled")
             f.sub.add(ToggleSetting("Show Level", "", "petHudShowLevel"))
             f.sub.add(ToggleSetting("Show Icon", "Pet head instead of its name (learned when you open /pets)", "petHudIcon"))
