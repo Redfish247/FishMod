@@ -4308,17 +4308,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 textField = tf
             }
         }
-        override fun getHeight(): Int = TWO_LINE_H
+        override fun getHeight(): Int = INPUT_ROW_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             initField(tr)
             val ix = leftX + 2
-            val iy = sy + TWO_LINE_CTRL_Y
+            val iy = sy + INPUT_CTRL_Y
             nvgTextField(textField!!, ix, iy, INPUT_W, INPUT_H)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
             val ix = leftX + 2
-            val iy = sy + TWO_LINE_CTRL_Y
+            val iy = sy + INPUT_CTRL_Y
             if (mx >= ix && mx <= ix + INPUT_W && my >= iy && my <= iy + INPUT_H) {
                 textField?.setFocused(true)
                 return true
@@ -4343,17 +4343,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 textField = tf
             }
         }
-        override fun getHeight(): Int = TWO_LINE_H
+        override fun getHeight(): Int = INPUT_ROW_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             initField(tr)
             val ix = leftX + 2
-            val iy = sy + TWO_LINE_CTRL_Y
+            val iy = sy + INPUT_CTRL_Y
             nvgTextField(textField!!, ix, iy, INPUT_W, INPUT_H)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
             val ix = leftX + 2
-            val iy = sy + TWO_LINE_CTRL_Y
+            val iy = sy + INPUT_CTRL_Y
             if (mx >= ix && mx <= ix + INPUT_W && my >= iy && my <= iy + INPUT_H) {
                 textField?.setFocused(true)
                 return true
@@ -4444,6 +4444,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val SLIDER_ROW_H = 24
         private const val SLIDER_CTRL_Y = 13
         private const val TWO_LINE_CTRL_Y = 20
+        // Label sits right above its own box with a clear gap before the next row
+        private const val INPUT_CTRL_Y = 12
+        private const val INPUT_ROW_H = 30
 
         private const val NVG_BASE_TEXT_SIZE = 9.5f
         private const val INPUT_TEXT_SIZE = 7f
