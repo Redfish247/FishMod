@@ -108,7 +108,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
         DrawHooks.currentSlot = null;
     }
 
-    @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V", at = @At("HEAD"), cancellable = true)
     private void fishmod$slotLock(Slot slot, int slotId, int button, net.minecraft.world.inventory.ContainerInput input, CallbackInfo ci) {
         try {
             fishmod.features.ExperimentSolver.onSlotClicked(slotId);
