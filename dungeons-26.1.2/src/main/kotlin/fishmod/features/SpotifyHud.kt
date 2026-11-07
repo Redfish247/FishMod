@@ -25,7 +25,7 @@ object SpotifyHud {
     private const val PAD_Y = 3
     private const val H = 9 + PAD_Y * 2
     private const val GAP = 2
-    private const val SCROLL_MS = 150L
+    private const val SPEED = 24f
     private const val HOLD_MS = 1500L
     private const val SCRIPT = "while(\$true){\$t=(Get-Process Spotify -ErrorAction SilentlyContinue|Where-Object{\$_.MainWindowTitle}|Select-Object -First 1).MainWindowTitle;[Console]::Out.WriteLine(\$t);[Console]::Out.Flush();Start-Sleep -Seconds 2}"
 
@@ -48,20 +48,27 @@ object SpotifyHud {
 
     // Fixed-width window over text longer than the cap, looping with a pause at the start
     private class Marq {
-        var src = ""; var cap = 0; var fixedW = 0; var scroll = false; var loop = ""; var startMs = 0L
+        var src = ""; var cap = 0; var fixedW = 0; var scroll = false; var loopW = 0; var startMs = 0L
         fun set(s: String, c: Int, mc: Minecraft) {
             if (s == src && c == cap) return
             src = s; cap = c; startMs = System.currentTimeMillis()
             scroll = s.length > c
-            loop = if (scroll) "$s   " else s
-            fixedW = if (!scroll) mc.font.width(s) else (0 until loop.length).maxOf { mc.font.width(window(it)) }
+            fixedW = mc.font.width(if (scroll) s.take(c) else s)
+            loopW = if (scroll) mc.font.width("$s   ") else 0
         }
-        fun window(i: Int): String = (loop + loop).substring(i, i + cap)
-        fun view(now: Long): String {
-            if (!scroll) return src
-            val cycle = loop.length * SCROLL_MS + HOLD_MS
-            val t = (now - startMs) % cycle
-            return window(if (t < HOLD_MS) 0 else ((t - HOLD_MS) / SCROLL_MS).toInt())
+        // Pixel-smooth scroll clipped to the box, held still for a moment at the start of each loop
+        fun draw(ctx: GuiGraphicsExtractor, mc: Minecraft, x: Int, y: Int, col: Int, now: Long) {
+            if (!scroll) { ctx.text(mc.font, src, x, y, col, true); return }
+            val t = (now - startMs) % (HOLD_MS + loopW * 1000L / SPEED)
+            val off = if (t < HOLD_MS) 0f else (t - HOLD_MS) * SPEED / 1000f
+            ctx.enableScissor(x, y - 1, x + fixedW, y + 10)
+            val pose = ctx.pose()
+            pose.pushMatrix()
+            pose.translate(x - off, y.toFloat())
+            ctx.text(mc.font, src, 0, 0, col, true)
+            ctx.text(mc.font, src, loopW, 0, col, true)
+            pose.popMatrix()
+            ctx.disableScissor()
         }
     }
 
@@ -142,10 +149,20 @@ object SpotifyHud {
     // Rounded pill drawn as one-pixel rows
     private fun pill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) {
         val r = minOf(h / 2.0, 7.0)
+        val a = color ushr 24
+        val rgb = color and 0xFFFFFF
         for (row in 0 until h) {
             val d = minOf(row, h - 1 - row)
-            val inset = if (d >= r) 0 else { val dy = r - d - 0.5; ceil(r - sqrt(maxOf(0.0, r * r - dy * dy))).toInt() }
-            ctx.fill(x + inset, y + row, x + w - inset, y + row + 1, color)
+            val inset = if (d >= r) 0.0 else { val dy = r - d - 0.5; r - sqrt(maxOf(0.0, r * r - dy * dy)) }
+            val solid = ceil(inset).toInt()
+            ctx.fill(x + solid, y + row, x + w - solid, y + row + 1, color)
+            // Edge pixel at partial coverage for smooth corners
+            val cov = solid - inset
+            if (cov > 0.02 && solid > 0) {
+                val edge = ((a * cov).toInt() shl 24) or rgb
+                ctx.fill(x + solid - 1, y + row, x + solid, y + row + 1, edge)
+                ctx.fill(x + w - solid, y + row, x + w - solid + 1, y + row + 1, edge)
+            }
         }
     }
 
@@ -178,10 +195,10 @@ object SpotifyHud {
             }
         }
         if (icon) bars(ctx, PAD_X, PAD_Y, playing, col, now)
-        ctx.text(mc.font, tm.view(now), PAD_X + (if (icon) 11 else 0), PAD_Y, col, true)
+        tm.draw(ctx, mc, PAD_X + (if (icon) 11 else 0), PAD_Y, col, now)
         if (hasLyric) {
             val y = if (conn) PAD_Y + 11 else H + GAP + PAD_Y
-            ctx.text(mc.font, lm.view(now), PAD_X, y, col, true)
+            lm.draw(ctx, mc, PAD_X, y, col, now)
         }
     }
 
