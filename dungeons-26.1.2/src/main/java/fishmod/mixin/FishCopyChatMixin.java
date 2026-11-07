@@ -2,7 +2,7 @@ package fishmod.mixin;
 
 import fishmod.utils.config.values.MiscSettings;
 import fishmod.utils.data.TextTools;
-import org.lwjgl.glfw.GLFW;
+import fishmod.compat.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,7 +29,7 @@ public class FishCopyChatMixin extends Screen {
     private static void mouseClicked(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         boolean smart = fishmod.utils.config.values.FishSettings.chatFeatureEnabled
                 && fishmod.utils.config.values.FishSettings.smartCopyChat;
-        if ((!MiscSettings.chatCopy && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
+        if ((!MiscSettings.chatCopy && !smart) || fishmod.compat.GLFW.btn(click) != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
 
         try {
             Minecraft mc = Minecraft.getInstance();
@@ -68,7 +68,7 @@ public class FishCopyChatMixin extends Screen {
             mc.keyboardHandler.setClipboard(string);
             fishmod.utils.FishMsg.send("§aChat Message Copied");
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("FishCopyChatMixin.1", "chat copy failed button=" + click.button(), t);
+            fishmod.utils.debug.FishDiag.fail("FishCopyChatMixin.1", "chat copy failed button=" + fishmod.compat.GLFW.btn(click), t);
         }
     }
 

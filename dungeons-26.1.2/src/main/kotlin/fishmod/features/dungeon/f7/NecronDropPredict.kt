@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.compat.blocksMotionCompat
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
@@ -177,7 +178,7 @@ object NecronDropPredict {
         while (pos.y > level.minY) {
             val st = level.getBlockState(pos)
             if (st.fluidState.`is`(net.minecraft.tags.FluidTags.LAVA)) return true
-            if (!st.isAir && st.blocksMotion()) return false
+            if (!st.isAir && st.blocksMotionCompat()) return false
             pos.move(0, -1, 0)
         }
         return null

@@ -187,7 +187,7 @@ class DungeonPage {
 
 	fun keyPressed(key: Int): Boolean {
 		if (overlay.isOpen()) {
-			if (key == 256) {
+			if (key == fishmod.compat.GLFW.GLFW_KEY_ESCAPE) {
 				overlay.close()
 				return true
 			}
@@ -198,7 +198,7 @@ class DungeonPage {
 		}
 		when (key) {
 			256 -> blurField() // Esc
-			257, 335 -> if (focus == FieldFocus.CLASS) runClassCalc() else runCataCalc() // Enter
+			fishmod.compat.GLFW.GLFW_KEY_ENTER, fishmod.compat.GLFW.GLFW_KEY_KP_ENTER -> if (focus == FieldFocus.CLASS) runClassCalc() else runCataCalc() // Enter
 			259 -> { // Backspace
 				if (replaceOnType) {
 					if (focus == FieldFocus.CLASS) classLevelText = "" else cataLevelText = ""

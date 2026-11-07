@@ -53,7 +53,7 @@ object WardrobeHotkeys {
 
     @JvmStatic
     fun mouseClicked(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
-        if (click.button() == 0 || click.button() == 1) {
+        if (fishmod.compat.GLFW.btn(click) == 0 || fishmod.compat.GLFW.btn(click) == 1) {
             val hovered = (screen as fishmod.mixin.accessors.HandledScreenAccessor).`fishmod$getHoveredSlot`()
             if (hovered != null && !hovered.item.isEmpty) return false
         }

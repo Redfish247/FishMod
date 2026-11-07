@@ -240,7 +240,7 @@ object WitherDragons {
             h >= 750_000_000 -> 0x55FF55; h >= 500_000_000 -> 0xFFFF55; h >= 250_000_000 -> 0xFFAA00; else -> 0xFF5555
         }
         val s = when {
-            h >= 1_000_000_000 -> { val b = h / 1_000_000_000; if (b > 1) "%.1fb".format(b) else "${b.toInt()}b" }
+            h >= 1_000_000_000 -> { val b = h / 1_000_000_000; if (b > 1) fishmod.utils.Fmt.f1(b.toDouble()) + "b" else "${b.toInt()}b" }
             h >= 1_000_000 -> "${(h / 1_000_000).toInt()}m"
             h >= 1_000 -> "${(h / 1_000).toInt()}k"
             else -> "${h.toInt()}"

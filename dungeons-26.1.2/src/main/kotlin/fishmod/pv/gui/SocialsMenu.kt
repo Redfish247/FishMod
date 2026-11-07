@@ -124,7 +124,7 @@ class SocialsMenu(
 	fun mouseScrolled(mx: Double, my: Double): Boolean = blocksMouse(mx, my)
 
 	fun keyPressed(key: Int): Boolean {
-		if (open && key == 256) {
+		if (open && key == fishmod.compat.GLFW.GLFW_KEY_ESCAPE) {
 			open = false
 			return true
 		}

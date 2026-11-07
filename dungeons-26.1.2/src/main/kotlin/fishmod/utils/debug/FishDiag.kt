@@ -174,7 +174,8 @@ object FishDiag {
                 c is java.net.SocketTimeoutException || c is java.net.UnknownHostException ||
                 c is java.nio.channels.ClosedChannelException || c is javax.net.ssl.SSLException ||
                 c is java.net.SocketException || c is java.io.EOFException) return true
-            if (c is java.io.IOException && c.message?.contains("closed", ignoreCase = true) == true) return true
+            if (c is java.io.IOException && (c.message?.contains("closed", ignoreCase = true) == true ||
+                    c.message?.contains("too many concurrent streams", ignoreCase = true) == true)) return true
             c = c.cause
         }
         return false

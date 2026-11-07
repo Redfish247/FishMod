@@ -20,7 +20,7 @@ import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import kotlin.random.Random
 import fishmod.utils.debug.FishDiag
 

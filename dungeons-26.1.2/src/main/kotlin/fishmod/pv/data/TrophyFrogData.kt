@@ -21,6 +21,7 @@ object TrophyFrogData {
         "HIGHLANDS_FROG",
         "BULLFROG",
         "BLESSED_FROG",
+        "PUDDLE_JUMPER",
     ).map { TrophyFishData.Def(it, pretty(it)) }
 
     @JvmStatic

@@ -72,13 +72,14 @@ object VenoStackCount {
             if (BossPhase.stormDead() || !SkyblockLocation.inDungeon()) stacks = 0
             return
         }
-        run {
-            stormBox = mc.level?.entitiesForRendering()?.asSequence()
-                ?.filterIsInstance<WitherBoss>()
-                ?.filter { !it.isInvisible && it.isAlive && it.invulnerableTicks != 800 && it.boundingBox.ysize >= 2.0 }
-                ?.minByOrNull { it.distanceToSqr(p ?: return@minByOrNull 0.0) }
-                ?.let { it.boundingBox.inflate(1.0) }
+        var best: WitherBoss? = null
+        var bestD = Double.MAX_VALUE
+        for (e in mc.level?.entitiesForRendering() ?: emptyList()) {
+            if (e !is WitherBoss || e.isInvisible || !e.isAlive || e.invulnerableTicks == 800 || e.boundingBox.ysize < 2.0) continue
+            val d = if (p == null) 0.0 else e.distanceToSqr(p)
+            if (d < bestD) { best = e; bestD = d }
         }
+        stormBox = best?.boundingBox?.inflate(1.0)
     }
 
     private fun isVenomous(stack: net.minecraft.world.item.ItemStack): Boolean {

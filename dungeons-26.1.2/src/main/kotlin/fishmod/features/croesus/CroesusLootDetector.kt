@@ -92,7 +92,7 @@ object CroesusLootDetector {
         tooltip.add(stack.hoverName.string)
         val lore = stack.get(DataComponents.LORE)
         if (lore != null) {
-            for (c in lore.lines()) tooltip.add(c.string)
+            for (c in lore.lines()) tooltip.add(CroesusRewardParser.coded(c))
         }
         return tooltip
     }

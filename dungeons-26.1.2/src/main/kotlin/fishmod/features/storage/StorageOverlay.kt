@@ -20,7 +20,7 @@ import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.util.TreeMap
 
 object StorageOverlay {
@@ -83,6 +83,7 @@ object StorageOverlay {
     private var searchShift = 0f
     // page switches reopen within ~1.5s and keep the search
     private var closedAt = 0L
+    private var focusedScreen: Any? = null
     private var searchFocused = false
 
     private val mc get() = Minecraft.getInstance()
@@ -166,7 +167,8 @@ object StorageOverlay {
         if (!shouldFilterPages) return data
         return TreeMap<StoragePage, NBTInventory?>().apply {
             for ((page, inv) in data) {
-                val hit = if (page == activePage && activeSlots != null) activeSlots.any { matches(it.item) }
+                // open page stays even after its last match was taken out
+                val hit = if (page == activePage) true
                 else inv?.stacks?.any(::matches) == true
                 if (hit) this[page] = inv
             }
@@ -299,6 +301,7 @@ object StorageOverlay {
     private fun renderInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!on(screen)) return
         if (closedAt != 0L) { if (System.currentTimeMillis() - closedAt > 1500) search = ""; closedAt = 0L }
+        if (focusedScreen !== screen) { focusedScreen = screen; if (FishSettings.storageAutoFocusSearch) searchFocused = true }
         UiRecorder.clear()
         pendingPaint = false
         carriedLayer = null
@@ -732,7 +735,7 @@ object StorageOverlay {
         val s = scale
         val rx = click.x() / s
         val ry = click.y() / s
-        val button = click.button()
+        val button = fishmod.compat.GLFW.btn(click)
         val modifiers = click.modifiers()
 
         if (inRect(rx, ry, searchFieldRect[0], searchFieldRect[1], searchFieldRect[2], searchFieldRect[3])) {
@@ -874,6 +877,8 @@ object StorageOverlay {
     fun onClosed() {
         if (!FishSettings.storageRetainScroll) scroll = 0f
         closedAt = System.currentTimeMillis()
+        focusedScreen = null
+        if (!FishSettings.storageKeepSearch) search = ""
         searchFocused = false
         searchSelecting = false
         knobGrabbed = false

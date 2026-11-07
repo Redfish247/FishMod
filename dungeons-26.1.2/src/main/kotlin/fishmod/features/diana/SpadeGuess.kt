@@ -1,5 +1,6 @@
 package fishmod.features.diana
 
+import fishmod.compat.speed
 import fishmod.utils.events.FishEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
@@ -25,7 +26,7 @@ object SpadeGuess {
     fun init() {
         FishEvents.particle.register { p ->
             if (DianaSettings.dianaGuessing && DianaSettings.dianaSpadeGuess && Diana.inHub() && p.particle.type === ParticleTypes.DRIPPING_LAVA &&
-                p.count == 2 && (abs(p.maxSpeed + 0.5f) < 1e-4f || testTrail(p))
+                p.count == 2 && (abs(p.speed + 0.5f) < 1e-4f || testTrail(p))
             ) onPoint(Vec3(p.x, p.y, p.z))
             false
         }
@@ -34,7 +35,7 @@ object SpadeGuess {
 
     // /particle can't send a negative speed, so test worlds use speed 0 with no spread
     private fun testTrail(p: net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket) =
-        Diana.testMode && p.maxSpeed == 0f && p.xDist == 0f && p.yDist == 0f && p.zDist == 0f
+        Diana.testMode && p.speed == 0f && p.xDist == 0f && p.yDist == 0f && p.zDist == 0f
 
     fun onSpadeUse() {
         val now = System.currentTimeMillis()

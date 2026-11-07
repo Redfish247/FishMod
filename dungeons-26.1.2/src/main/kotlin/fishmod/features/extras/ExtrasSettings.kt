@@ -50,6 +50,7 @@ object ExtrasSettings {
     @ConfigValue @JvmField var overlayItemLevels: Boolean = false
     @ConfigValue @JvmField var overlayBookLevel: Boolean = true
     @ConfigValue @JvmField var overlayPetLevel: Boolean = true
+    @ConfigValue @JvmField var overlayPetHideMax: Boolean = false
     @ConfigValue @JvmField var overlayMinionTier: Boolean = true
     @ConfigValue @JvmField var overlayCakeYear: Boolean = true
     @ConfigValue @JvmField var overlayTextColor: Int = 0xFFFFFFFF.toInt()

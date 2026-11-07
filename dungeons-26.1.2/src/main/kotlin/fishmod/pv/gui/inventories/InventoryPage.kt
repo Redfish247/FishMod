@@ -1854,8 +1854,8 @@ class InventoryPage {
 		private fun controlDown(): Boolean {
 			val mc: Minecraft? = Minecraft.getInstance()
 			val window = mc?.window ?: return false
-			return InputConstants.isKeyDown(window, InputConstants.KEY_LCONTROL) ||
-				InputConstants.isKeyDown(window, InputConstants.KEY_RCONTROL)
+			return fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_LCONTROL) ||
+				fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_RCONTROL)
 		}
 	}
 }

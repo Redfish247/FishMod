@@ -22,7 +22,7 @@ public abstract class CosmeticEntityNameMixin {
 
     @ModifyReturnValue(method = "getNameTag(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/network/chat/Component;", at = @At("RETURN"))
     private Component fishmod$cosmeticNameTag(Component original, Entity entity) {
-        if (original == null) return original;
+        if (original == null || fishmod.utils.debug.FishDebug.skipName) return original;
         if (entity instanceof ArmorStand) {
             Component dmg = fishmod.features.RenderOptimizer.damageNameTag(entity, original);
             if (dmg != original) return dmg;

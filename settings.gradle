@@ -15,4 +15,8 @@ include 'common'
 include 'dungeons-1.21.11'
 include 'dungeons-26.1.2'
 include 'dungeons-26.2'
+// 26.3 port in progress: opt in with -Pwith263 (or with263=true in ~/.gradle/gradle.properties)
+if (gradle.startParameter.projectProperties.containsKey('with263') || providers.gradleProperty('with263').isPresent()) {
+	include 'dungeons-26.3'
+}
 include 'practical-config-relocated'

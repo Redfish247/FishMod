@@ -15,6 +15,7 @@ public class PlayerEntityRendererScaleMixin {
     @Inject(method = "scale(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;)V",
             at = @At("TAIL"))
     private void fishmod$applyCustomSize(AvatarRenderState state, PoseStack matrices, CallbackInfo ci) {
+        if (fishmod.utils.debug.FishDebug.skipScale) return;
         ScaleHolder h = (ScaleHolder) state;
         float x = h.fishmod$getScaleX(), y = h.fishmod$getScaleY(), z = h.fishmod$getScaleZ();
         boolean changed = x != 1.0f || y != 1.0f || z != 1.0f;

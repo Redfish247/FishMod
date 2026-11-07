@@ -211,7 +211,7 @@ void main(){
 
     // Draw into the GUI's own target, not whatever FBO is left bound (vanilla unbinds to 0, ImmediatelyFast doesn't) or a guess at the main target (other mods redirect GUI output).
     private fun bindMainTarget() {
-        val mainTex = (Minecraft.getInstance().mainTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: 0
+        val mainTex = fishmod.compat.glTextureId(Minecraft.getInstance().mainTarget.colorTexture)
         val passTex = lastPassColorTex
         if (!targetLogged) {
             targetLogged = true

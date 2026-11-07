@@ -1,0 +1,58 @@
+// Drops LocalVariableTable from the shipped jar (keeps line numbers for crash traces).
+buildscript {
+	repositories { mavenCentral() }
+	dependencies { classpath 'org.ow2.asm:asm:9.8' }
+}
+
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
+
+def stripClass = { byte[] bytes ->
+	def cr = new ClassReader(bytes)
+	def cw = new ClassWriter(0)
+	cr.accept(new ClassVisitor(Opcodes.ASM9, cw) {
+		@Override
+		MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] exc) {
+			def mv = super.visitMethod(access, name, desc, sig, exc)
+			return new MethodVisitor(Opcodes.ASM9, mv) {
+				@Override
+				void visitLocalVariable(String n, String d, String s, org.objectweb.asm.Label a, org.objectweb.asm.Label b, int i) {}
+			}
+		}
+	}, 0)
+	return cw.toByteArray()
+}
+
+tasks.named('jar').configure {
+	doLast {
+		def jarFile = archiveFile.get().asFile
+		def tmp = new File(jarFile.parentFile, jarFile.name + '.tmp')
+		long before = jarFile.length()
+		new ZipFile(jarFile).withCloseable { zin ->
+			new ZipOutputStream(new FileOutputStream(tmp)).withCloseable { zout ->
+				zout.setLevel(9)
+				zin.entries().each { ZipEntry e ->
+					def ne = new ZipEntry(e.name)
+					ne.time = e.time
+					zout.putNextEntry(ne)
+					if (!e.directory) {
+						byte[] data = zin.getInputStream(e).bytes
+						// mixin classes are left untouched
+						if (e.name.endsWith('.class') && !e.name.startsWith('fishmod/mixin/') && !e.name.startsWith('fishmod/pv/mixin/')) data = stripClass(data)
+						zout.write(data)
+					}
+					zout.closeEntry()
+				}
+			}
+		}
+		jarFile.delete()
+		tmp.renameTo(jarFile)
+		logger.lifecycle("stripDebug: ${jarFile.name} ${before} -> ${jarFile.length()} bytes")
+	}
+}

@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.compat.dropHeld
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishKeys
 import fishmod.utils.config.values.FishSettings
@@ -26,6 +27,6 @@ object DungeonAbilities {
     private fun drop(mc: Minecraft, fullStack: Boolean) {
         val p = mc.player ?: return
         if (p.mainHandItem.isEmpty) return
-        FishDiag.guard("DungeonAbilities.1", "dungeon ability drop failed (fullStack=$fullStack)") { p.drop(fullStack) }
+        FishDiag.guard("DungeonAbilities.1", "dungeon ability drop failed (fullStack=$fullStack)") { p.dropHeld(fullStack) }
     }
 }

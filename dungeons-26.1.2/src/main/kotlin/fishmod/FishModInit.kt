@@ -427,6 +427,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.201", "ExperimentProfitTracker.init() failed") { fishmod.features.ExperimentProfitTracker.init() }
         FishDiag.guard("FishModInit.203", "AnitaShop.init() failed") { fishmod.features.item.AnitaShop.init() }
         FishDiag.guard("FishModInit.21", "CooldownOverlay.init() failed") { CooldownOverlay.init() }
+        FishDiag.guard("FishModInit.HuntaxeLock", "HuntaxeLock.init() failed") { fishmod.features.HuntaxeLock.init() }
         FishDiag.guard("FishModInit.22", "fishmod.features.croesus.CroesusLootDetector.init() failed") { fishmod.features.croesus.CroesusLootDetector.init() }
         FishDiag.guard("FishModInit.23", "fishmod.features.CatacombsOverflowOverlay.init() failed") { fishmod.features.CatacombsOverflowOverlay.init() }
         FishDiag.guard("FishModInit.24", "fishmod.features.scoreboard.SkillLevels.init() failed") { fishmod.features.scoreboard.SkillLevels.init() }
@@ -438,6 +439,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.30", "ItemRarityHotbar.init() failed") { ItemRarityHotbar.init() }
         FishDiag.guard("FishModInit.31", "fishmod.features.item.ItemQualityTooltip.init() failed") { fishmod.features.item.ItemQualityTooltip.init() }
         FishDiag.guard("FishModInit.31b", "fishmod.features.item.ExoticTooltip.init() failed") { fishmod.features.item.ExoticTooltip.init() }
+        FishDiag.guard("FishModInit.31c", "fishmod.features.item.OriginalNameTooltip.init() failed") { fishmod.features.item.OriginalNameTooltip.init() }
         FishDiag.guard("FishModInit.31b", "fishmod.features.item.ItemOverlays.init() failed") { fishmod.features.item.ItemOverlays.init() }
         FishDiag.guard("FishModInit.32", "fishmod.features.item.ItemPriceTooltip.init() failed") { fishmod.features.item.ItemPriceTooltip.init() }
         FishDiag.guard("FishModInit.32b", "fishmod.features.item.RecipeViewer.init() failed") { fishmod.features.item.RecipeViewer.init() }
@@ -524,6 +526,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.R1", "fishmod.features.rift.Rift.init() failed") { fishmod.features.rift.Rift.init() }
         FishDiag.guard("FishModInit.garden", "fishmod.features.garden.Garden.init() failed") { fishmod.features.garden.Garden.init() }
         FishDiag.guard("FishModInit.ach", "AchEngine.init() failed") { fishmod.features.achievements.AchEngine.init() }
+        FishDiag.guard("FishModInit.gamble", "GambleEngine.init() failed") { fishmod.features.gamble.GambleEngine.init() }
         FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.f7.F7Huds.init() failed") { fishmod.features.dungeon.f7.F7Huds.init() }
         FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.InvButtonSettings.init() failed") { fishmod.utils.config.values.InvButtonSettings.init() }
         FishDiag.guard("FishModInit.104b", "EquipmentDisplay.init() failed") { fishmod.features.other.EquipmentDisplay.init() }
@@ -572,6 +575,10 @@ class FishModInit : ClientModInitializer {
             fishmod.features.other.CommandAliases.registerAll(dispatcher)
             dispatcher.register(
                 ClientCommands.literal("fm")
+                    .then(ClientCommands.literal("stats").executes {
+                        Minecraft.getInstance().execute { fishmod.features.dungeon.SessionStats.printToChat() }
+                        FishConstants.SUCCESS
+                    })
                     .then(ClientCommands.literal("commandkeys").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
@@ -1501,7 +1508,7 @@ class FishModInit : ClientModInitializer {
             if (screen !is net.minecraft.client.gui.screens.ChatScreen) return@AfterInit
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
                 val handled = try {
-                    fishmod.features.slayers.SlayerHuds.onProfitClick(click.x(), click.y(), click.button())
+                    fishmod.features.slayers.SlayerHuds.onProfitClick(click.x(), click.y(), fishmod.compat.GLFW.btn(click))
                 } catch (t: Throwable) {
                     FishDiag.fail("FishModInit.155", "SlayerHuds.onProfitClick failed", t); false
                 }

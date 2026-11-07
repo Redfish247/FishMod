@@ -13,7 +13,7 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 
 class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Component.literal("Recipe")), HasUiOverlay {
 
@@ -255,7 +255,7 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val mx = UiScale.vx(click.x())
         val my = UiScale.vx(click.y())
-        if (click.button() == GLFW.GLFW_MOUSE_BUTTON_4) { goBack(); return true }
+        if (fishmod.compat.GLFW.btn(click) == GLFW.GLFW_MOUSE_BUTTON_4) { goBack(); return true }
         if (history.isNotEmpty() && inside(mx, my, backX(), py + 15, 46, TAB_H)) { goBack(); return true }
         val n = recipes().size
         val tabs = tabs()

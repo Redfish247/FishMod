@@ -909,7 +909,7 @@ class ProfileViewerScreen @JvmOverloads constructor(
 	override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
 		val mx = virtualMouseX(click.x())
 		val my = virtualMouseY(click.y())
-		if (searchHistory.mouseClicked(mx, my, click.button())) {
+		if (searchHistory.mouseClicked(mx, my, fishmod.compat.GLFW.btn(click))) {
 			return true
 		}
 		if (uiInteractive() && playerSearchHit(mx, my)) {
@@ -923,13 +923,13 @@ class ProfileViewerScreen @JvmOverloads constructor(
 			}
 			return true
 		}
-		if (socialsMenu.isOpen() && socialsMenu.mouseClicked(mx, my, click.button())) {
+		if (socialsMenu.isOpen() && socialsMenu.mouseClicked(mx, my, fishmod.compat.GLFW.btn(click))) {
 			return true
 		}
 		if (!uiInteractive()) {
 			return true
 		}
-		if (socialsMenu.mouseClicked(mx, my, click.button())) {
+		if (socialsMenu.mouseClicked(mx, my, fishmod.compat.GLFW.btn(click))) {
 			if (socialsMenu.isOpen()) {
 				profileSelector.closeMenu()
 			}
@@ -965,7 +965,7 @@ class ProfileViewerScreen @JvmOverloads constructor(
 			if (homePage.clickWeight(mx, my)) {
 				return true
 			}
-			if (homePage.clickNetworth(mx, my, click.button())) {
+			if (homePage.clickNetworth(mx, my, fishmod.compat.GLFW.btn(click))) {
 				return true
 			}
 			if (homePage.clickLeftPanel(mx, my)) {
@@ -1084,7 +1084,7 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		}
 		val typingInvSearch = inventorySearch?.let { it.isVisible && it.isFocused } == true
 		val typingPlayerSearch = playerSearch?.let { it.isVisible && it.isFocused } == true
-		if (typingPlayerSearch && (key == 257 || key == 335)) {
+		if (typingPlayerSearch && (key == fishmod.compat.GLFW.GLFW_KEY_ENTER || key == fishmod.compat.GLFW.GLFW_KEY_KP_ENTER)) {
 			submitPlayerSearch()
 			return true
 		}
@@ -1107,7 +1107,7 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		if (uiInteractive() && homeOverview && homePage.slayerKeyPressed(key)) {
 			return true
 		}
-		if (uiInteractive() && homeOverview && (key == 256 || key == 259) && homePage.requestSbLevelBack()) {
+		if (uiInteractive() && homeOverview && (key == fishmod.compat.GLFW.GLFW_KEY_ESCAPE || key == fishmod.compat.GLFW.GLFW_KEY_BACKSPACE) && homePage.requestSbLevelBack()) {
 			// ESC / Backspace collapses SB Level overlay without closing PV.
 			return true
 		}
@@ -1120,7 +1120,7 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		) {
 			return true
 		}
-		if (uiInteractive() && profileSelector.menuOpen() && key == 256) {
+		if (uiInteractive() && profileSelector.menuOpen() && key == fishmod.compat.GLFW.GLFW_KEY_ESCAPE) {
 			profileSelector.closeMenu()
 			return true
 		}
@@ -1209,13 +1209,13 @@ class ProfileViewerScreen @JvmOverloads constructor(
 			return raw
 		}
 
-		fun isDirectionalKey(key: Int): Boolean = key == 262 || key == 263 || key == 264 || key == 265
+		fun isDirectionalKey(key: Int): Boolean = key == fishmod.compat.GLFW.GLFW_KEY_RIGHT || key == fishmod.compat.GLFW.GLFW_KEY_LEFT || key == fishmod.compat.GLFW.GLFW_KEY_DOWN || key == fishmod.compat.GLFW.GLFW_KEY_UP
 
 		// Screens don't keep options.keyShift updated; poll GLFW instead.
 		fun shiftDown(): Boolean {
 			val window = Minecraft.getInstance()?.window ?: return false
-			return InputConstants.isKeyDown(window, InputConstants.KEY_LSHIFT) ||
-				InputConstants.isKeyDown(window, InputConstants.KEY_RSHIFT)
+			return fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_LSHIFT) ||
+				fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_RSHIFT)
 		}
 	}
 }

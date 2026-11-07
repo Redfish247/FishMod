@@ -1,5 +1,7 @@
 package fishmod.features.dungeon.f7.dragons
 
+import fishmod.compat.limiterOverridden
+import fishmod.compat.speed
 import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket
@@ -25,7 +27,7 @@ object DragonCheck {
     fun handleSpawnPacket(p: ClientboundLevelParticlesPacket, tick: Long) {
         if (p.particle.type !== ParticleTypes.FLAME) return
         if (p.x % 1.0 != 0.0 || p.z % 1.0 != 0.0) return
-        if (p.count != 20 || p.y != 19.0 || p.maxSpeed != 0f || !p.isOverrideLimiter) return
+        if (p.count != 20 || p.y != 19.0 || p.speed != 0f || !p.limiterOverridden) return
         if (p.xDist != 2f || p.yDist != 3f || p.zDist != 2f) return
 
         val spawning = mutableListOf<WitherDragon>()

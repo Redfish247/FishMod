@@ -99,7 +99,7 @@ internal class CollectionDetailView {
 	fun pageCount(): Int = item?.let { pageCount(it.tiers.size, perPage) } ?: 0
 
 	fun keyPressed(key: Int): Boolean {
-		if (item != null && key == 256) {
+		if (item != null && key == fishmod.compat.GLFW.GLFW_KEY_ESCAPE) {
 			close()
 			return true
 		}

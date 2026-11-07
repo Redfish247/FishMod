@@ -249,9 +249,11 @@ public class HypixelApi {
         try {
             var file = FabricLoader.getInstance().getConfigDir().resolve("fishmod_uuid_cache.json");
             if (Files.exists(file)) {
-                JsonElement parsed = JsonParser.parseString(Files.readString(file));
-                // Blank or literal null file parses to JsonNull: same as no cache.
-                JsonObject root = parsed.isJsonNull() ? new JsonObject() : parsed.getAsJsonObject();
+                JsonElement parsed;
+                try { parsed = JsonParser.parseString(Files.readString(file)); } catch (Exception bad) { parsed = null; }
+                // Corrupt (e.g. NUL-filled after a crash), blank or non-object file: drop it and rebuild.
+                if (parsed == null || !parsed.isJsonObject()) { Files.deleteIfExists(file); parsed = new JsonObject(); }
+                JsonObject root = parsed.getAsJsonObject();
                 JsonObject entries = root.has("entries") ? root.getAsJsonObject("entries") : new JsonObject();
                 long now = System.currentTimeMillis();
                 for (Map.Entry<String, JsonElement> e : entries.entrySet()) {

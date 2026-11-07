@@ -1,7 +1,7 @@
 package fishmod.features.storage
 
 import net.minecraft.client.Minecraft
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 
 // Caret, selection and hotkeys for a text field the UI recorder draws itself
 class SearchFieldState(private val maxLength: Int = 256) {

@@ -66,7 +66,8 @@ object CosmeticLive {
         val socket = ws
         if (socket != null) {
             if (now - lastRx > DEAD_MS) {
-                FishDiag.fail("CosmeticLive.3", "live socket silent ${(now - lastRx) / 1000}s, reconnecting")
+                // network drop, expected: log only
+                fishmod.utils.debug.FishDebug.LOGGER.info("[CosmeticLive] live socket silent {}s, reconnecting", (now - lastRx) / 1000)
                 ws = null
                 try { socket.abort() } catch (_: Exception) {}
                 failed()

@@ -58,7 +58,7 @@ object SphinxSolver {
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is ChatScreen) return@AfterInit
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
-                !(click.button() == 0 && answer())
+                !(fishmod.compat.GLFW.btn(click) == 0 && answer())
             })
         })
     }

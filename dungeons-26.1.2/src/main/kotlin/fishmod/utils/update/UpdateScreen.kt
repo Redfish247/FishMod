@@ -14,7 +14,7 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import fishmod.utils.update.UpdateManager.DownloadState as DS
 
 class UpdateScreen(private val release: UpdateManager.Release) : Screen(Component.literal("FishMod Update")), HasUiOverlay {
@@ -243,20 +243,26 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         return (a shl 24) or (color and 0x00FFFFFF)
     }
 
+    private val MD_RULE = Regex("^[-*_]{3,}$")
+    private val MD_IMAGE = Regex("""!\[[^\]]*]\([^)]*\)""")
+    private val MD_LINK = Regex("""\[([^\]]*)]\([^)]*\)""")
+    private val MD_TAG = Regex("<[^>]+>")
+    private val MD_BULLET = Regex("""^[-*+]\s+""")
+
     // Release markdown → plain lines; headings are tagged with \u0001 so they render bold.
     private fun changelog(body: String): List<String> {
         val out = ArrayList<String>()
         for (raw in body.replace("\r", "").lines()) {
             var s = raw.trim()
-            if (s.startsWith("```") || s.matches(Regex("^[-*_]{3,}$"))) continue
-            s = s.replace(Regex("""!\[[^\]]*]\([^)]*\)"""), "")
-                .replace(Regex("""\[([^\]]*)]\([^)]*\)"""), "$1")
-                .replace(Regex("<[^>]+>"), "")
+            if (s.startsWith("```") || s.matches(MD_RULE)) continue
+            s = s.replace(MD_IMAGE, "")
+                .replace(MD_LINK, "$1")
+                .replace(MD_TAG, "")
                 .replace("**", "").replace("__", "").replace("`", "")
             s = s.removePrefix(">").trim()
             val heading = s.startsWith("#")
             s = s.trimStart('#', ' ')
-            s = s.replace(Regex("""^[-*+]\s+"""), "• ")
+            s = s.replace(MD_BULLET, "• ")
             if (s.isEmpty()) { if (out.isNotEmpty() && out.last().isNotEmpty()) out.add(""); continue }
             out.add(if (heading) "\u0001$s" else s)
         }

@@ -1,4 +1,5 @@
 package fishmod.features.item
+import fishmod.compat.signUpdatePacket
 import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
@@ -17,7 +18,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.entity.SignBlockEntity
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -278,7 +279,7 @@ class AuctionPriceScreen(
         val value = FishDiag.guard("AuctionPriceScreen.3", "parsing auction price '${priceField.value}' on confirm failed") { parsePrice(priceField.value) }?.toString() ?: ""
         try {
             Minecraft.getInstance().connection?.send(
-                ServerboundSignUpdatePacket(sign.blockPos, true, value, originalLines[1], originalLines[2], originalLines[3])
+                signUpdatePacket(sign, listOf(value, originalLines[1], originalLines[2], originalLines[3]))
             )
         } catch (e: Exception) {
             FishDiag.fail("AuctionPriceScreen.4", "sending auction price sign update failed value='$value' lines=${originalLines.size}", e)
@@ -289,7 +290,7 @@ class AuctionPriceScreen(
     private fun cancel() {
         try {
             Minecraft.getInstance().connection?.send(
-                ServerboundSignUpdatePacket(sign.blockPos, true, originalLines[0], originalLines[1], originalLines[2], originalLines[3])
+                signUpdatePacket(sign, originalLines.take(4))
             )
         } catch (e: Exception) {
             FishDiag.fail("AuctionPriceScreen.5", "sending auction cancel sign update failed lines=${originalLines.size}", e)

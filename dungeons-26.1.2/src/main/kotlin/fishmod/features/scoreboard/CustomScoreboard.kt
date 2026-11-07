@@ -2,6 +2,7 @@ package fishmod.features.scoreboard
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.MayorApi
+import fishmod.utils.SidebarCache
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
@@ -12,10 +13,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.FormattedText
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
-import net.minecraft.world.scores.DisplaySlot
-import net.minecraft.world.scores.Objective
-import net.minecraft.world.scores.PlayerScoreEntry
-import net.minecraft.world.scores.PlayerTeam
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Optional
@@ -48,6 +45,7 @@ object CustomScoreboard {
     private class Raw(val c: Component, val s: String)
 
     private var builtAt = 0L
+    private var builtVersion = -1
     private var title: Component = BLANK
     private var lines: List<Component> = emptyList()
     private var footer: Component? = null
@@ -70,18 +68,19 @@ object CustomScoreboard {
     private fun renderInner(ctx: GuiGraphicsExtractor, screenW: Int) {
         if (fishmod.features.FishHudEditor.isOpen()) return
         val mc = Minecraft.getInstance()
-        val level = mc.level ?: return
-        val obj: Objective = level.scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return
+        if (mc.level == null) return
+        val sbTitle = SidebarCache.title ?: return
         val tr = mc.font
 
         val now = System.currentTimeMillis()
-        if (now - builtAt >= CACHE_TTL_MS) {
+        if (now - builtAt >= CACHE_TTL_MS || builtVersion != SidebarCache.version) {
             builtAt = now
-            build(mc, obj)
+            builtVersion = SidebarCache.version
+            build(mc, sbTitle)
             var w = if (FishSettings.sbSectionTitle) tr.width(title) else 0
             for (l in lines) w = max(w, tr.width(l))
             footer?.let { w = max(w, tr.width(it)) }
-            width = w + 9
+            width = w + 3
         }
         if (lines.isEmpty() && footer == null) return
 
@@ -118,23 +117,22 @@ object CustomScoreboard {
         footer?.let { ctx.text(tr, it, x1 + 1, if (lines.isEmpty()) y else y + LINE_H, 0xFFFFFFFF.toInt(), true) }
     }
 
-    private fun readScoreboard(mc: Minecraft, obj: Objective): List<Raw> {
-        val sb = mc.level?.scoreboard ?: return emptyList()
-        return sb.listPlayerScores(obj)
-            .filter { !it.isHidden }
-            .sortedWith(compareByDescending<PlayerScoreEntry> { it.value() }.thenBy { it.owner() })
+    private fun readScoreboard(): List<Raw> {
+        return SidebarCache.entries
+            .filter { !it.hidden }
+            .sortedWith(compareByDescending<SidebarCache.Entry> { it.score }.thenBy { it.owner })
             .take(20)
             .map { e ->
-                val team = sb.getPlayersTeam(e.owner())
+                val team = e.team
                 // Owner is Hypixel's hidden filler; the text is the team prefix + suffix
-                val c = if (team != null) Component.empty().append(team.playerPrefix).append(team.playerSuffix) else e.ownerName()
+                val c = if (team != null) Component.empty().append(team.playerPrefix).append(team.playerSuffix) else (e.display ?: Component.literal(e.owner))
                 Raw(c, clean(c.string))
             }
     }
 
-    private fun build(mc: Minecraft, obj: Objective) {
-        title = obj.displayName
-        val raw = readScoreboard(mc, obj)
+    private fun build(mc: Minecraft, sbTitle: Component) {
+        title = sbTitle
+        val raw = readScoreboard()
         val used = BooleanArray(raw.size)
         fun take(pred: (Raw) -> Boolean): Raw? {
             val i = raw.indices.firstOrNull { !used[it] && pred(raw[it]) } ?: return null

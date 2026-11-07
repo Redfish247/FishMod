@@ -99,6 +99,7 @@ object M7Relics {
     }
 
     private val relicStands = ArrayList<ArmorStand>()
+    private var idleTick = 0
 
     // One entity pass per tick: spawn detection, then placed checks on the "Relic" stands.
     private fun checkRelics() {
@@ -107,11 +108,16 @@ object M7Relics {
         val wantSpawn = !spawned && !(spawnEndMs == 0L && p5StartMs != 0L)
         val wantAll = Floor7Settings.relicTimesEnabled && p5StartMs != 0L && placed.size < Relic.entries.size
         if (!wantSpawn && myRelic == null && !wantAll) return
+        // Before Necron's phase nothing is timed yet: scan 4x a second.
+        val early = myRelic == null && !wantAll && spawnEndMs == 0L && BossPhase.getPhase() < 8
+        if (early && ++idleTick % 5 != 0) return
         var spawnSeen = false
         relicStands.clear()
         for (e in level.entitiesForRendering()) {
             if (e !is ArmorStand) continue
-            val head = e.getItemBySlot(EquipmentSlot.HEAD).hoverName.string
+            val stack = e.getItemBySlot(EquipmentSlot.HEAD)
+            if (stack.isEmpty) continue
+            val head = stack.hoverName.string
             if (head.contains("Corrupted")) spawnSeen = true
             if (head.contains("Relic")) relicStands += e
         }

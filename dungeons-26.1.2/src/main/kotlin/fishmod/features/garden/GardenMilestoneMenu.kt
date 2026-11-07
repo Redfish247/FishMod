@@ -12,36 +12,36 @@ import fishmod.features.garden.GardenMilestoneSettings as S
 object GardenMilestoneMenu {
 
     fun addTo(col: Column) {
-        val mh = Feature("Crop Milestone HUD", S::gardenMilestoneHud)
-        mh.sub.add(ToggleSetting("ETA", "Time to the next milestone from recent progress", S::gardenMilestoneEta))
-        mh.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenMilestoneColor))
+        val mh = Feature("Crop Milestone HUD", S::class.java, "gardenMilestoneHud")
+        mh.sub.add(ToggleSetting("ETA", "Time to the next milestone from recent progress", S::class.java, "gardenMilestoneEta"))
+        mh.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::class.java, "gardenMilestoneColor"))
         mh.sub.add(ButtonSetting("Copy Milestone Data", "Copies known crop tiers to the clipboard", "Copy") { GardenMilestones.copy() })
         col.features.add(mh)
 
-        val mu = Feature("Mooshroom Cow Perk HUD", S::gardenMushroom)
+        val mu = Feature("Mooshroom Cow Perk HUD", S::class.java, "gardenMushroom")
         mu.sub.add(SubcategoryHeader("Mushroom milestone progress from the perk while farming other crops; open /cropmilestones once to sync"))
-        mu.sub.add(ToggleSetting("ETA", "Time to the next mushroom milestone at your current break rate", S::gardenMushroomEta))
-        mu.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenMushroomColor))
+        mu.sub.add(ToggleSetting("ETA", "Time to the next mushroom milestone at your current break rate", S::class.java, "gardenMushroomEta"))
+        mu.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::class.java, "gardenMushroomColor"))
         col.features.add(mu)
 
-        val icons = Feature("Garden Menu Numbers", S::gardenIconNumbers)
-        icons.sub.add(ColorPickerSetting("Number Colour", "", S::gardenIconNumberColor))
+        val icons = Feature("Garden Menu Numbers", S::class.java, "gardenIconNumbers")
+        icons.sub.add(ColorPickerSetting("Number Colour", "", S::class.java, "gardenIconNumberColor"))
         col.features.add(icons)
 
-        col.features.add(Feature("Milestone Tooltip Totals", S::gardenMilestoneTooltip))
+        col.features.add(Feature("Milestone Tooltip Totals", S::class.java, "gardenMilestoneTooltip"))
 
-        val gl = Feature("Garden Level Overflow", S::gardenLevelHud)
-        gl.sub.add(ToggleSetting("Chat Message", "Message when you reach a new overflow level", S::gardenLevelChat))
-        gl.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenLevelColor))
+        val gl = Feature("Garden Level Overflow", S::class.java, "gardenLevelHud")
+        gl.sub.add(ToggleSetting("Chat Message", "Message when you reach a new overflow level", S::class.java, "gardenLevelChat"))
+        gl.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::class.java, "gardenLevelColor"))
         col.features.add(gl)
 
-        val hoe = Feature("Hoe Level Overflow", S::gardenHoeHud)
-        hoe.sub.add(ToggleSetting("Mute Hoe Sounds", "Silences hoe tilling sounds while holding a hoe", S::gardenHoeMute))
-        hoe.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenHoeColor))
+        val hoe = Feature("Hoe Level Overflow", S::class.java, "gardenHoeHud")
+        hoe.sub.add(ToggleSetting("Mute Hoe Sounds", "Silences hoe tilling sounds while holding a hoe", S::class.java, "gardenHoeMute"))
+        hoe.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::class.java, "gardenHoeColor"))
         col.features.add(hoe)
 
-        val lb = Feature("Log Book Stats", S::gardenLogBookHud)
-        lb.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenLogBookColor))
+        val lb = Feature("Log Book Stats", S::class.java, "gardenLogBookHud")
+        lb.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::class.java, "gardenLogBookColor"))
         col.features.add(lb)
 
     }

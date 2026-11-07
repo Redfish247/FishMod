@@ -79,8 +79,12 @@ object TacTimer {
         }
         val pre = if (FishSettings.tacTimerPrefix) "§5Tac: " else ""
         val suf = if (FishSettings.tacTimerSuffix) "s" else ""
-        return "$pre$color${"%.1f".format(left)}$suf"
+        if (left != lastLeft) { lastLeft = left; lastLeftText = "%.1f".format(left) }
+        return "$pre$color$lastLeftText$suf"
     }
+
+    private var lastLeft = Double.NaN
+    private var lastLeftText = ""
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {

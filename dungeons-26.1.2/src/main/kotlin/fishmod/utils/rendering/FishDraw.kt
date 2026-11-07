@@ -1,4 +1,5 @@
 package fishmod.utils.rendering
+import fishmod.compat.rotate
 import fishmod.compat.cam
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder
@@ -474,7 +475,7 @@ object FishDraw {
 
         matrices.pushPose()
         matrices.translate(x, y, z)
-        matrices.mulPose(context.levelState().cameraRenderState.orientation)
+        matrices.rotate(context.levelState().cameraRenderState.orientation)
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
 
         WorldText.draw(matrices, text, -0x1, true)
@@ -486,7 +487,7 @@ object FishDraw {
     fun renderSeeThroughText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, pxSize: Float, argb: Int, shadow: Boolean) {
         matrices.pushPose()
         matrices.translate(pos.x, pos.y, pos.z)
-        matrices.mulPose(context.levelState().cameraRenderState.orientation)
+        matrices.rotate(context.levelState().cameraRenderState.orientation)
         matrices.scale(pxSize, -pxSize, pxSize)
         WorldText.draw(matrices, text, argb, shadow)
         matrices.popPose()
@@ -497,7 +498,7 @@ object FishDraw {
     fun renderBoardText(matrices: PoseStack, text: Component, base: Vec3, yaw: Float, lx: Double, ly: Double, scale: Float) {
         matrices.pushPose()
         matrices.translate(base.x, base.y, base.z)
-        matrices.mulPose(org.joml.Quaternionf().rotateY(yaw))
+        matrices.rotate(org.joml.Quaternionf().rotateY(yaw))
         matrices.translate(lx, ly, 0.0)
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
         WorldText.draw(matrices, text, -0x1, true)

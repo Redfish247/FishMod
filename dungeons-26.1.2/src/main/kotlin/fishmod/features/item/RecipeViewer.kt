@@ -24,7 +24,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.ItemLore
 import net.minecraft.world.item.component.ResolvableProfile
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import kotlin.math.ceil
 
 object RecipeViewer {
@@ -68,7 +68,7 @@ object RecipeViewer {
         if (recipesFor(id).isEmpty() && NeuRepo.get(id) == null) return
 
         val now = System.currentTimeMillis()
-        val shift = InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_RIGHT_SHIFT)
+        val shift = fishmod.compat.GLFW.keyDown(mc.window, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(mc.window, GLFW.GLFW_KEY_RIGHT_SHIFT)
         if (!shift || id != holdId || slot !== holdSlot || now - lastSeen > 200) { holdId = id; holdSlot = slot; holdStart = now; fired = false }
         lastSeen = now
         if (!shift) {

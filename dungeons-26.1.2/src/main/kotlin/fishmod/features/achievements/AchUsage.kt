@@ -95,4 +95,12 @@ object AchUsage {
         AchStore.max("fm.featuresPct", AchStore.data.mastersOn.size * 100L / masters.size)
         if (on.any { it == "Render Optimizer" || it == "Performance HUD" }) AchStore.max("fm.perfOn", 1)
     }
+
+    // The Perfect Setup: activities with at least one feature toggled on
+    private val ACTIVITIES = listOf("Diana", "Dungeon", "Slayer", "Kuudra", "Mining")
+    @JvmStatic
+    fun onActivityScan(cols: List<Pair<String, List<fishmod.features.FishModScreen.Feature>>>) {
+        val on = ACTIVITIES.count { act -> cols.any { (name, fs) -> name.contains(act, true) && fs.any { it.get?.invoke() == true } } }
+        AchStore.max("fm.activities", on.toLong())
+    }
 }

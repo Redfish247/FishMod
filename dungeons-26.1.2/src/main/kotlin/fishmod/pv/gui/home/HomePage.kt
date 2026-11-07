@@ -577,7 +577,7 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 		fun leftShiftDown(): Boolean {
 			val mc = Minecraft.getInstance() ?: return false
 			val window = mc.window ?: return false
-			return InputConstants.isKeyDown(window, InputConstants.KEY_LSHIFT)
+			return fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_LSHIFT)
 		}
 	}
 }

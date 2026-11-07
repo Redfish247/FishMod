@@ -1,5 +1,7 @@
 package fishmod.features.diana
 
+import fishmod.compat.swingingNow
+import fishmod.compat.speed
 import fishmod.utils.FishUtil
 import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
@@ -74,8 +76,8 @@ object BurrowDetector {
         samePitchCount = if (pitch != lastDingPitch || now - lastDingMs > 20_000) 1 else samePitchCount + 1
         val fresh = samePitchCount <= 2
         lastDingPitch = pitch; lastDingMs = now; lastDigMs = now
-        DIG_LOG.info("dig ding pitch=$pitch n=$samePitchCount spade=${Diana.active()} swing=${Diana.player()?.swinging}")
-        if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swinging == true) playDug()
+        DIG_LOG.info("dig ding pitch=$pitch n=$samePitchCount spade=${Diana.active()} swing=${Diana.player()?.swingingNow}")
+        if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swingingNow == true) playDug()
         return DianaSettings.dianaMuteHypixelDug
     }
 
@@ -108,7 +110,7 @@ object BurrowDetector {
 
     private fun onParticle(p: ClientboundLevelParticlesPacket) {
         val type = p.particle.type
-        val speed = p.maxSpeed.toDouble()
+        val speed = p.speed.toDouble()
         val pos = BlockPos(floor(p.x).toInt(), floor(p.y).toInt() - 1, floor(p.z).toInt())
         val kind = when {
             type === ParticleTypes.ENCHANTED_HIT && p.count == 4 && near(speed, 0.01) && offsets(p, 0.5, 0.1, 0.5) -> BurrowType.START

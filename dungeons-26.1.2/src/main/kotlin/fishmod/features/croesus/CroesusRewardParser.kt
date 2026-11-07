@@ -36,6 +36,25 @@ object CroesusRewardParser {
 
     private fun strip(s: String): String = fishmod.utils.TextStrip.plain(s)
 
+    private val LEGACY_RGB = listOf(
+        0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
+        0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
+    )
+
+    // Component text with legacy colour codes, so pet rarity survives (Component.string drops colour).
+    @JvmStatic
+    fun coded(c: net.minecraft.network.chat.Component): String {
+        val sb = StringBuilder()
+        c.visit({ style, text ->
+            val rgb = style.color?.value
+            val code = if (rgb == null) -1 else LEGACY_RGB.indexOf(rgb)
+            if (code >= 0 && text.isNotEmpty()) sb.append('§').append("0123456789abcdef"[code])
+            sb.append(text)
+            java.util.Optional.empty<Unit>()
+        }, net.minecraft.network.chat.Style.EMPTY)
+        return sb.toString()
+    }
+
     private fun tryParseBook(line: String): Array<String>? {
         val m = BOOK_PATTERN.matcher(line)
         if (!m.find()) return null

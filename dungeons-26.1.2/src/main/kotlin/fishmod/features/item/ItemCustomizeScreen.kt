@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
-import org.lwjgl.glfw.GLFW
+import fishmod.compat.GLFW
 import kotlin.math.max
 import kotlin.math.min
 

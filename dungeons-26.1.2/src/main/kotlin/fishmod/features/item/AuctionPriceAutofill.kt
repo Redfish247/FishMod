@@ -1,4 +1,5 @@
 package fishmod.features.item
+import fishmod.compat.frontLine
 import fishmod.compat.showScreen
 import fishmod.compat.curScreen
 
@@ -47,7 +48,7 @@ object AuctionPriceAutofill {
         if (screen !is AbstractSignEditScreen) return
         val item = pendingItem ?: return
         val sign = FishDiag.notNull((screen as AbstractSignEditScreenAccessor).`fishmod$getSign`(), "AuctionPriceAutofill.2") { "sign edit screen has no sign entity" } ?: return
-        val lines = Array(4) { i -> sign.frontText.getMessage(i, false).string }
+        val lines = Array(4) { i -> sign.frontLine(i) }
         if (lines[1] != "^^^^^^^^^^^^^^^" || lines[2] != "Your auction" || lines[3] != "starting bid") return
 
         val value = ItemValue.estimate(item)
