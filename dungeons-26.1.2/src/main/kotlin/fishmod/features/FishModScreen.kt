@@ -3644,6 +3644,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
+            disc(ctx, slx + fillW.coerceIn(3, slw - 3), sly + SLIDER_H / 2, 4, 0xFFFFFFFF.toInt())
             val v = format?.invoke(getter()) ?: getter().toString()
             st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
         }
@@ -3672,6 +3673,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
+            disc(ctx, slx + fillW.coerceIn(3, slw - 3), sly + SLIDER_H / 2, 4, 0xFFFFFFFF.toInt())
             val v = String.format("%.1f", getter())
             st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
         }
@@ -3780,26 +3782,63 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 textField = tf
             }
         }
-        override fun getHeight(): Int = if (hint != null) 35 else 26
+        private var wrapW = 0
+        // line start offsets for the current text, wrapped at the field width
+        private fun wrapStarts(text: String): List<Int> {
+            val starts = arrayListOf(0)
+            val maxW = wrapW - 6f
+            if (maxW <= 10f) return starts
+            var start = 0
+            while (start < text.length) {
+                var end = start + 1
+                while (end <= text.length && UiRecorder.textWidth(text.substring(start, end), INPUT_TEXT_SIZE) <= maxW) end++
+                end--
+                if (end >= text.length) break
+                if (end <= start) end = start + 1
+                val sp = text.lastIndexOf(' ', end - 1)
+                if (sp > start) end = sp + 1
+                starts.add(end); start = end
+            }
+            return starts
+        }
+        private fun extraH(): Int = (wrapStarts(textField?.value ?: getter()).size - 1) * WRAP_LINE_H
+        override fun getHeight(): Int = (if (hint != null) 35 else 26) + extraH()
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             initField(tr)
             st(ctx, tr, name, leftX + 2, sy + 1, TEXT_COLOR)
             val ix = leftX + 2
             val iy = sy + 11
             val fieldW = rightX - leftX - 4
+            wrapW = fieldW
             val tf = textField!!
             if (!tf.isFocused) {
                 if (tf.value != getter()) tf.value = getter()
                 tf.cursorPosition = 0; tf.setHighlightPos(0)
             }
-            nvgTextField(tf, ix, iy, fieldW, INPUT_H)
-            hint?.let { st(ctx, tr, it, leftX + 2, sy + 27, SUBTEXT_COLOR) }
+            val text = tf.value
+            val starts = wrapStarts(text)
+            val h = INPUT_H + (starts.size - 1) * WRAP_LINE_H
+            UiRecorder.roundedRectRing(ix.toFloat(), iy.toFloat(), fieldW.toFloat(), h.toFloat(), 3f, 1f, SUBROW_BG, if (tf.isFocused) ACCENT else TRACK_OFF)
+            val ty0 = iy + (INPUT_H - INPUT_TEXT_SIZE) / 2f
+            val cursor = Math.min(tf.cursorPosition, text.length)
+            for (i in starts.indices) {
+                val s = starts[i]
+                val e = if (i + 1 < starts.size) starts[i + 1] else text.length
+                val ly = ty0 + i * WRAP_LINE_H
+                UiRecorder.text(text.substring(s, e), ix + 3f, ly, INPUT_TEXT_SIZE, TEXT_COLOR)
+                val last = i == starts.size - 1
+                if (tf.isFocused && cursor >= s && (cursor < e || last) && (System.currentTimeMillis() / 500) % 2 == 0L) {
+                    val cx = ix + 3f + UiRecorder.textWidth(text.substring(s, cursor), INPUT_TEXT_SIZE)
+                    UiRecorder.fillRect(cx, ly - 1.5f, 1f, INPUT_TEXT_SIZE + 3f, TEXT_COLOR)
+                }
+            }
+            hint?.let { st(ctx, tr, it, leftX + 2, sy + 27 + (starts.size - 1) * WRAP_LINE_H, SUBTEXT_COLOR) }
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
             val ix = leftX + 2
             val iy = sy + 11
             val fieldW = rightX - leftX - 4
-            if (mx >= ix && mx <= ix + fieldW && my >= iy && my <= iy + INPUT_H) {
+            if (mx >= ix && mx <= ix + fieldW && my >= iy && my <= iy + INPUT_H + extraH()) {
                 val tf = textField
                 if (tf != null) {
                     tf.setFocused(true)
@@ -4487,6 +4526,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private const val NVG_BASE_TEXT_SIZE = 9.5f
         private const val INPUT_TEXT_SIZE = 7f
+        private const val WRAP_LINE_H = 9
 
         private const val SUBCAT_TEXT_SIZE = NVG_BASE_TEXT_SIZE * 1.15f
 
