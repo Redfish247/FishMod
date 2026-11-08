@@ -91,7 +91,10 @@ object CatacombsOverflowOverlay {
 
     private fun draw(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
         if (stack == null || stack.isEmpty) return
-        val name = HypixelApi.STRIP_COLOR.matcher(stack.hoverName.string).replaceAll("")
+        if (selfCataXp <= HypixelApi.XP_FOR_50 && selfClassXp.values.none { it > HypixelApi.XP_FOR_50 } && !debugDumpLines) return
+        val raw = stack.hoverName.string
+        if (raw.length > 40) return
+        val name = HypixelApi.STRIP_COLOR.matcher(raw).replaceAll("")
             .replace("✦", "").replace(TRAILING_PUNCT_RE, "").trim()
 
         val isCata = name.equals("Catacombs", ignoreCase = true)

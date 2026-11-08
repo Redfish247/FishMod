@@ -20,6 +20,7 @@ public abstract class ItemModelBehaviorMixin {
 
     @Inject(method = "getUseAnimation", at = @At("HEAD"), cancellable = true)
     private void fishmod$useModelItemUseAction(CallbackInfoReturnable<ItemUseAnimation> cir) {
+        if (!fishmod.features.item.ItemCustomizationStore.hasAny()) return;
         ItemStack self = (ItemStack) (Object) this;
         try {
             Identifier modelId = self.get(DataComponents.ITEM_MODEL);
