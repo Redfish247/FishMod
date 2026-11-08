@@ -19,7 +19,6 @@ object ItemsDb {
     private const val ITEMS_URL = "https://api.hypixel.net/v2/resources/skyblock/items"
     private const val REFRESH_MS = 12L * 60 * 60 * 1000L
     private const val RETRY_MS = 5L * 60 * 1000L
-    private val COLOR = Regex("§.")
     @Volatile private var retryAfter = 0L
 
     private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
@@ -158,7 +157,7 @@ object ItemsDb {
                 val id = o.get("id").asString
                 next[id] = o
                 if (o.has("name") && o.get("name").isJsonPrimitive) {
-                    val name = o.get("name").asString.replace(COLOR, "").trim()
+                    val name = TextStrip.plain(o.get("name").asString).trim()
                     if (name.isNotEmpty()) nextNames[name] = id
                 }
                 if (o.has("npc_sell_price")) {

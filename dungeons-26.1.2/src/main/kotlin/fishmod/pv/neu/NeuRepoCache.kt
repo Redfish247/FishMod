@@ -7,6 +7,8 @@
  */
 package fishmod.pv.neu
 
+import fishmod.utils.TextStrip
+
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.pv.ProfileViewer
@@ -312,7 +314,6 @@ object NeuRepoCache {
 	@Volatile
 	private var displayNameIndexSize = -1
 
-	private val FORMATTING = Regex("§.")
 
 	/**
 	 * Item id whose NEU display name (formatting stripped) matches exactly, ignoring case.
@@ -331,7 +332,7 @@ object NeuRepoCache {
 			for ((id, item) in ITEMS) {
 				val display = item.get("displayname")
 				if (display == null || !display.isJsonPrimitive) continue
-				val key = display.asString.replace(FORMATTING, "").trim().lowercase(Locale.ROOT)
+				val key = TextStrip.plain(display.asString).trim().lowercase(Locale.ROOT)
 				if (key.isNotEmpty()) index.getOrPut(key) { ArrayList() }.add(id)
 			}
 			displayNameIndex = index.mapValues { (_, ids) -> ids.sorted() }

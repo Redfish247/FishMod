@@ -7,6 +7,8 @@
  */
 package fishmod.pv.gui.collections.page
 
+import fishmod.utils.TextStrip
+
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import fishmod.pv.data.MinionCosts
@@ -48,7 +50,6 @@ internal object CollectionRewards {
 	private val BOOK = Regex("^Enchanted Book \\((.+) ([IVXL]+)\\)$")
 	private val POTION = Regex("^(.+) Potion$")
 	private val STAT = Regex("^\\+[\\d,.]+%?\\S*\\s+(.+)$")
-	private val FORMAT_CODE = Regex("§.")
 	private const val FORGE = " Dwarven Forge"
 	private val CELLS = arrayOf("A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3")
 	private val RESOLVED = ConcurrentHashMap<String, Reward>()
@@ -154,7 +155,7 @@ internal object CollectionRewards {
 			for (item in items) {
 				val itemName = item.get("name") as? JsonPrimitive ?: continue
 				val itemId = item.get("id") as? JsonPrimitive ?: continue
-				val key = itemName.asString.replace(FORMAT_CODE, "").trim().lowercase(Locale.ROOT)
+				val key = TextStrip.plain(itemName.asString).trim().lowercase(Locale.ROOT)
 				index.merge(key, itemId.asString) { _, _ -> "" }
 			}
 			hypixelNames = index

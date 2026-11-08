@@ -7,6 +7,8 @@
  */
 package fishmod.pv.gui.inventories
 
+import fishmod.utils.TextStrip
+
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.compat.CI
 import fishmod.pv.data.FormatUtil
@@ -551,7 +553,7 @@ class InventoryPage {
 		val breakdown = ItemWorth.breakdown(worth)
 		val displayName = slot.displayName
 		val title = if (!displayName.isNullOrBlank()) {
-			displayName.replace(FORMAT_CODE, "").trim()
+			TextStrip.plain(displayName).trim()
 		} else {
 			SkyBlockItemFactory.plainDisplayName(id)
 		}
@@ -1641,7 +1643,6 @@ class InventoryPage {
 		private const val FLIP_MS = 480
 		private const val POWERS_ROW = 12
 		private const val MISSING_ROW = 18
-		private val FORMAT_CODE = Regex("§.")
 		private val GEM_TIERS = arrayOf("ROUGH", "FLAWED", "FINE", "FLAWLESS", "PERFECT")
 		private val GEM_TIER_LABELS = arrayOf("Rough", "Flawed", "Fine", "Flawless", "Perfect")
 
@@ -1819,7 +1820,7 @@ class InventoryPage {
 			if (value.isNullOrEmpty()) {
 				return ""
 			}
-			return value.replace(FORMAT_CODE, "").lowercase(Locale.ROOT)
+			return TextStrip.plain(value).lowercase(Locale.ROOT)
 		}
 
 		private fun trimToWidth(font: Font, value: String?, maxW: Int): String {
