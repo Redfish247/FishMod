@@ -73,7 +73,8 @@ object HotspotFinder {
         val now = System.currentTimeMillis()
         val fresh = trail.size == 0 || now - trail.lastMs > HotspotMatch.NEW_TRAIL_GAP_MS
         if (fresh) {
-            commitTrail() debugCount = 0; if (W.hotspotDebug) debugRadarUse() }
+            commitTrail(); debugCount = 0; if (W.hotspotDebug) debugRadarUse()
+        }
         if (W.hotspotDebug && debugCount++ < DEBUG_MAX_PER_TRAIL) {
             FishMsg.send("§7[Hotspot] flame #${debugCount} count=$count speed=$speed at ${"%.1f".format(x)} ${"%.1f".format(y)} ${"%.1f".format(z)}")
         }
