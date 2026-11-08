@@ -13,12 +13,17 @@ object FishingTrackerLines {
     private fun title(t: String, total: Boolean) =
         "§b§l$t §7(${if (total) "Total" else "Session"})" + (if (FishingTrackerStore.paused) " §c[paused]" else "")
 
+    // Session mode rates use the session clock; total mode keeps the bucket's active time
+    private fun rateMs(b: FishingBucket, total: Boolean, sessionMs: Long) = if (total) b.activeMs else sessionMs
+    private fun timeLine(total: Boolean, sessionMs: Long) = "§7Session time §f${FishingTrackerMath.clock(sessionMs)}"
+
     private fun rarityColor(name: String): String = SeaCreatures.byName(name)?.let { "§" + it.rarity.code } ?: "§f"
 
     @JvmStatic
-    fun seaCreatures(b: FishingBucket, total: Boolean, cap: Int): List<String> {
+    fun seaCreatures(b: FishingBucket, total: Boolean, cap: Int, sessionMs: Long = 0L): List<String> {
         val out = ArrayList<String>()
         out += title("Sea Creatures", total)
+        if (!total) out += timeLine(total, sessionMs)
         val sorted = b.scCounts.entries.sortedByDescending { it.value }
         for ((i, e) in sorted.withIndex()) {
             if (i >= cap) { out += "§7| §8${sorted.size - cap} more"; break }
@@ -29,9 +34,10 @@ object FishingTrackerLines {
     }
 
     @JvmStatic
-    fun profit(b: FishingBucket, total: Boolean, cap: Int, costPerCatch: Long): List<String> {
+    fun profit(b: FishingBucket, total: Boolean, cap: Int, costPerCatch: Long, sessionMs: Long = 0L): List<String> {
         val out = ArrayList<String>()
         out += title("Fishing Profit", total)
+        if (!total) out += timeLine(total, sessionMs)
         val sorted = b.drops.entries.sortedByDescending { b.dropCoins[it.key] ?: 0.0 }
         for ((i, e) in sorted.withIndex()) {
             if (i >= cap) { out += "§7| §8${sorted.size - cap} more"; break }
@@ -44,17 +50,18 @@ object FishingTrackerLines {
         out += "§7Drops §6${FishingTrackerMath.short(gross)}"
         if (costPerCatch > 0) out += "§7Costs §c-${FishingTrackerMath.short(costs)}"
         out += "§7Net §6${FishingTrackerMath.short(net)}"
-        val ph = FishingTrackerMath.perHour(net, b.activeMs)
+        val ph = FishingTrackerMath.perHour(net, rateMs(b, total, sessionMs))
         out += "§7Coins/hr §6" + (if (ph == 0.0) "-" else FishingTrackerMath.short(ph))
         return out
     }
 
     @JvmStatic
-    fun efficiency(b: FishingBucket, total: Boolean): List<String> {
-        fun rate(n: Long): String { val r = FishingTrackerMath.perHour(n.toDouble(), b.activeMs); return if (r == 0.0) "-" else "%.1f".format(r) }
+    fun efficiency(b: FishingBucket, total: Boolean, sessionMs: Long = 0L): List<String> {
+        val ms = rateMs(b, total, sessionMs)
+        fun rate(n: Long): String { val r = FishingTrackerMath.perHour(n.toDouble(), ms); return if (r == 0.0) "-" else "%.1f".format(r) }
         return listOf(
             title("Fishing Efficiency", total),
-            "§7Active §f${FishingTrackerMath.clock(b.activeMs)}",
+            (if (total) "§7Active §f" else "§7Session time §f") + FishingTrackerMath.clock(ms),
             "§7SC/hr §f${rate(b.catches)}",
             "§7Catches/hr §f${rate(b.events)}",
         )
@@ -81,7 +88,7 @@ object FishingTrackerLines {
 
     // One data-driven block per matching area def
     @JvmStatic
-    fun areas(total: Boolean, loc: SkyblockLocation, now: Long, treasure: Boolean, dice: Boolean, cap: Int): List<String> {
+    fun areas(total: Boolean, loc: SkyblockLocation, now: Long, treasure: Boolean, dice: Boolean, cap: Int, sessionMs: Long = 0L): List<String> {
         val out = ArrayList<String>()
         for (a in FishingTrackerAreas.ALL) {
             if (a.id == FishingTrackerAreas.TREASURE && !treasure) continue
@@ -90,6 +97,7 @@ object FishingTrackerLines {
             val b = FishingTrackerStore.bucket("area:" + a.id, total)
             if (a.recentOnly && now - b.lastLineAt > 600_000L) continue
             out += title(a.title, total)
+            if (!total) out += timeLine(total, sessionMs)
             var rows = 0
             for (e in b.scCounts.entries.sortedByDescending { it.value }) { if (rows++ >= cap) break; out += "§7| ${rarityColor(e.key)}${e.key} §f${e.value} §8${FishingTrackerMath.pct(e.value, b.catches)}" }
             for (e in b.drops.entries.sortedByDescending { it.value }) { if (rows++ >= cap) break; out += "§7| §d${e.key} §f${e.value}" }
@@ -120,7 +128,7 @@ object FishingTrackerHud {
         FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, visible)
         val hud = Hud(id, lines, visible, gx, gy, gs)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
-            if (!FishHudEditor.isOpen() && hud.on()) draw(ctx, hud)
+            if (!FishHudEditor.isOpen() && hud.on() && FishingTrackerStore.shouldDraw(Fishing.active(), System.currentTimeMillis())) draw(ctx, hud)
         }
     }
 
@@ -142,15 +150,15 @@ object FishingTrackerHud {
     fun init() {
         reg("Fishing Sea Creatures", "fishing_sc", 150, 80, { S.fishingScHudX }, { S.fishingScHudX = it }, { S.fishingScHudY }, { S.fishingScHudY = it },
             { S.fishingScHudScale }, { S.fishingScHudScale = it }, { S.fishingScHud }) {
-            FishingTrackerLines.seaCreatures(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total(), cap())
+            FishingTrackerLines.seaCreatures(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total(), cap(), FishingTrackerStore.sessionElapsed(System.currentTimeMillis()))
         }
         reg("Fishing Profit", "fishing_profit", 150, 70, { S.fishingProfitHudX }, { S.fishingProfitHudX = it }, { S.fishingProfitHudY }, { S.fishingProfitHudY = it },
             { S.fishingProfitHudScale }, { S.fishingProfitHudScale = it }, { S.fishingProfitHud }) {
-            FishingTrackerLines.profit(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total(), cap(), S.fishingCostPerCatch.toLong())
+            FishingTrackerLines.profit(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total(), cap(), S.fishingCostPerCatch.toLong(), FishingTrackerStore.sessionElapsed(System.currentTimeMillis()))
         }
         reg("Fishing Efficiency", "fishing_eff", 120, 40, { S.fishingEffHudX }, { S.fishingEffHudX = it }, { S.fishingEffHudY }, { S.fishingEffHudY = it },
             { S.fishingEffHudScale }, { S.fishingEffHudScale = it }, { S.fishingEffHud }) {
-            FishingTrackerLines.efficiency(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total())
+            FishingTrackerLines.efficiency(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total(), FishingTrackerStore.sessionElapsed(System.currentTimeMillis()))
         }
         reg("Barn Fishing Timer", "fishing_barn", 140, 20, { S.fishingBarnHudX }, { S.fishingBarnHudX = it }, { S.fishingBarnHudY }, { S.fishingBarnHudY = it },
             { S.fishingBarnHudScale }, { S.fishingBarnHudScale = it }, { S.fishingBarnHud }) {
@@ -162,7 +170,7 @@ object FishingTrackerHud {
         }
         reg("Fishing Area Tracker", "fishing_area", 150, 60, { S.fishingAreaHudX }, { S.fishingAreaHudX = it }, { S.fishingAreaHudY }, { S.fishingAreaHudY = it },
             { S.fishingAreaHudScale }, { S.fishingAreaHudScale = it }, { S.fishingAreaHud }) {
-            FishingTrackerLines.areas(total(), Fishing.location(), System.currentTimeMillis(), S.fishingAreaTreasure, S.fishingAreaDice, cap())
+            FishingTrackerLines.areas(total(), Fishing.location(), System.currentTimeMillis(), S.fishingAreaTreasure, S.fishingAreaDice, cap(), FishingTrackerStore.sessionElapsed(System.currentTimeMillis()))
         }
     }
 }

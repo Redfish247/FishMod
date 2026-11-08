@@ -31,6 +31,8 @@ object FishingTrackers {
 
     @JvmStatic lateinit var pauseKey: KeyMapping; private set
     private var ticks = 0
+    private var castTicks = 0
+    private const val CAST_POLL_TICKS = 5
 
     @JvmStatic
     fun init() {
@@ -59,6 +61,11 @@ object FishingTrackers {
                 val p = !FishingTrackerStore.paused
                 FishingTrackerStore.setPaused(p)
                 FishMsg.send(if (p) "§b[Fishing] §fTrackers paused" else "§b[Fishing] §fTrackers resumed")
+            }
+            if (++castTicks >= CAST_POLL_TICKS) {
+                castTicks = 0
+                // passive: only reads whether our own hook exists
+                if (on() && net.minecraft.client.Minecraft.getInstance().player?.fishing != null) FishingTrackerStore.noteCast(System.currentTimeMillis())
             }
             if (++ticks >= SAVE_EVERY_TICKS) { ticks = 0; if (FishingTrackerStore.dirty) save() }
         }
