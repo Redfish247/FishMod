@@ -2,7 +2,32 @@ package fishmod.features.fishing
 
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 
-// Phase 4 (world/items) owns this file; already registered in FishConfig.
+// Phase 4 (world/items) owns this file; already registered in FishConfig. Everything ships OFF.
 object FishingWorldSettings {
     @ConfigValue @JvmField var fishingWorld: Boolean = false
+
+    // Hook timer + bite indicator
+    @ConfigValue @JvmField var hookTimer: Boolean = false
+    @ConfigValue @JvmField var hookTimerHideStand: Boolean = true
+    @ConfigValue @JvmField var hookTimerScale: Double = 1.5
+    @ConfigValue @JvmField var hookBiteText: String = "§c§l!!!"
+
+    // Rare sea creatures
+    @ConfigValue @JvmField var rareHighlight: Boolean = false
+    @ConfigValue @JvmField var rareHighlightColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var rareHp: Boolean = false
+    @ConfigValue @JvmField var rareImmunity: Boolean = false
+
+    // Hiding
+    @ConfigValue @JvmField var hideOtherHooks: Boolean = false
+    @ConfigValue @JvmField var hidePlayersNearBobber: Boolean = false
+    @ConfigValue @JvmField var hidePlayersNearBobberRadius: Double = 8.0
+
+    // Item overlays
+    @ConfigValue @JvmField var fishingItems: Boolean = false
+    @ConfigValue @JvmField var trashBooks: Boolean = false
+    @ConfigValue @JvmField var trashBooksList: String = ""
+    @ConfigValue @JvmField var trashBooksColor: Int = 0x90FF0000.toInt()
+    @ConfigValue @JvmField var rodParts: Boolean = false
+    @ConfigValue @JvmField var thunderBottle: Boolean = false
 }

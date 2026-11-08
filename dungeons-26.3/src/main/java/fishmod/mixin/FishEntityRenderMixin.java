@@ -70,6 +70,11 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 if (outline != EntityRenderState.NO_OUTLINE) state.outlineColor = outline;
             }
 
+            if (fishmod.features.fishing.FishingWorld.anyOn) {
+                int fishGlow = fishmod.features.fishing.RareMobHighlight.glowColor(entity);
+                if (fishGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = fishGlow;
+            }
+
             int dianaGlow = fishmod.features.diana.RareMobs.glowColor(entity);
             if (dianaGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dianaGlow;
 
@@ -130,6 +135,10 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                                      CallbackInfoReturnable<Boolean> cir) {
         if (fishmod.utils.debug.FishDebug.skipCull) return;
         try {
+            if (fishmod.features.fishing.FishingWorld.anyOn && fishmod.features.fishing.HideHooks.shouldHide(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
             if (fishmod.features.rift.RiftMobs.INSTANCE.shouldHideSlime(entity)) {
                 cir.setReturnValue(false);
                 return;
