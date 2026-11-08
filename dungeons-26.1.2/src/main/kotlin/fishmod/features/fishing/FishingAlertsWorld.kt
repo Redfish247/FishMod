@@ -74,7 +74,7 @@ object FishingAlertsWorld {
                 while (seenHotspots.size > 2) seenHotspots.removeFirst()
                 val perk = perkBelow(nh, stands)
                 if (S.alertHotspotFound) {
-                    FishingAlerts.notify("§6§lHotspot found", "§f$perk", "You found $perk Hotspot.")
+                    FishingAlerts.notify(FishingTitles.HOTSPOT, "§6§lHotspot found", "§f$perk", "You found $perk Hotspot.")
                 }
                 FishingShare.offerHotspot(perk, null)
             }
@@ -106,7 +106,7 @@ object FishingAlertsWorld {
             goneAt = 0L
             val p = trackedPos
             if (p != null && p.distanceTo(pos) <= 30.0 && stands.none { it.id == trackedId }) {
-                FishingAlerts.notify("§c§lHotspot is gone", "", "$trackedPerk Hotspot is gone, time to find another one!")
+                FishingAlerts.notify(FishingTitles.HOTSPOT, "§c§lHotspot is gone", "", "$trackedPerk Hotspot is gone, time to find another one!")
             }
             trackedId = -1; trackedPos = null
             return
@@ -153,7 +153,7 @@ object FishingAlertsWorld {
     }
 
     private fun expiring(name: String) =
-        FishingAlerts.notify("§e§l$name expires soon", "", "Your $name expires soon.")
+        FishingAlerts.notify(FishingTitles.DEPLOYABLE, "§e§l$name expires soon", "", "Your $name expires soon.")
 
     private fun scanBait(player: net.minecraft.client.player.LocalPlayer) {
         // Needs a rod in the water recently (Feesh: hook submerged within 5 min); approximated by a live hook
@@ -170,12 +170,12 @@ object FishingAlertsWorld {
         val prev = lastBait
         lastBait = r; lastBaitName = name
         if (prev == -1) return
-        if (name != prevName) { FishingAlerts.notify("§b§lBait changed", "§f$name", "Bait changed to $name."); baitWarned = false; return }
+        if (name != prevName) { FishingAlerts.notify(FishingTitles.BAIT, "§b§lBait changed", "§f$name", "Bait changed to $name."); baitWarned = false; return }
         // +1 is a Hypixel refund, more than +1 means bait was added
         if (r > prev) { baitWarned = false; return }
         if (r <= S.alertBaitLow && !baitWarned) {
             baitWarned = true
-            FishingAlerts.notify("§c§lOut of bait soon", "§f$r $name", "Out of bait soon ($r left).")
+            FishingAlerts.notify(FishingTitles.BAIT, "§c§lOut of bait soon", "§f$r $name", "Out of bait soon ($r left).")
         }
     }
 }
