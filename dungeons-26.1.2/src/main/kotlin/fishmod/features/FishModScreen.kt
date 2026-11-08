@@ -3898,8 +3898,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             cacheKey?.let { if (it == key) return cached }
             val q = query.trim().lowercase().replace(' ', '_')
             val out = if (q.isEmpty()) {
-                (listOf(cur).filter { it.isNotBlank() && ':' in it } +
-                    fishmod.utils.sound.SoundManager.shortlist).distinct().take(10)
+                emptyList()
             } else {
                 fishmod.utils.sound.SoundManager.allSoundIds.asSequence()
                     .filter { it.contains(q) }
