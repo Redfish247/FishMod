@@ -96,8 +96,8 @@ object FishingAlerts {
         val a = Feature("Fishing Alerts", S::class.java, "fishingAlerts")
         a.sub.add(ToggleSetting("Sea Creature", "Title and sound when you catch one", S::class.java, "alertSeaCreature"))
         a.sub.add(ToggleSetting("Rare Creatures Only", "Skip common catches", S::class.java, "alertScRareOnly").gatedBy { S.alertSeaCreature })
-        a.sub.add(SoundSearchSetting("Creature Sound", "Type to search every game sound", { S.alertScSound }, { v -> S.alertScSound = v }, { S.alertScVolume }))
-        a.sub.add(SliderIntSetting("Creature Volume %", "", S::class.java, "alertScVolume", 0, 500, 5))
+        a.sub.add(SoundSearchSetting("Creature Sound", "Type to search every game sound", { S.alertScSound }, { v -> S.alertScSound = v }, { S.alertScVolume }).gatedBy { S.alertSeaCreature })
+        a.sub.add(SliderIntSetting("Creature Volume %", "", S::class.java, "alertScVolume", 0, 500, 5).gatedBy { S.alertSeaCreature })
         a.sub.add(ToggleSetting("Rare Drop", "Title with the item and its price", S::class.java, "alertRareDrop"))
         a.sub.add(InputIntSetting("Min Drop Price", "Only alert for drops worth at least this many coins (0 = all)", S::class.java, "alertDropMinPrice").gatedBy { S.alertRareDrop })
         a.sub.add(ToggleSetting("Hotspot Found", "Title when you get close to a hotspot", S::class.java, "alertHotspotFound"))
@@ -108,9 +108,9 @@ object FishingAlerts {
         a.sub.add(SliderIntSetting("Expiry Seconds", "Alert when this many seconds remain", S::class.java, "alertDeployableSecs", 5, 300, 5).gatedBy { S.alertDeployable })
         a.sub.add(ToggleSetting("Bait", "Alert when bait changes or runs low", S::class.java, "alertBait"))
         a.sub.add(SliderIntSetting("Low Bait Count", "", S::class.java, "alertBaitLow", 1, 64).gatedBy { S.alertBait })
-        a.sub.add(SoundSearchSetting("Alert Sound", "Sound for every alert except creatures", { S.alertSound }, { v -> S.alertSound = v }, { S.alertSoundVolume }))
-        a.sub.add(SliderIntSetting("Alert Volume %", "", S::class.java, "alertSoundVolume", 0, 500, 5))
-        a.sub.add(SliderIntSetting("Title Time (ms)", "", S::class.java, "alertTitleMs", 500, 10000, 100))
+        a.sub.add(SoundSearchSetting("Alert Sound", "Sound for every alert except creatures", { S.alertSound }, { v -> S.alertSound = v }, { S.alertSoundVolume }).gatedBy { (S.alertRareDrop || S.alertHotspotFound || S.alertHotspotGone || S.alertWormholeGone || S.alertNewTrophy || S.alertDeployable || S.alertBait) })
+        a.sub.add(SliderIntSetting("Alert Volume %", "", S::class.java, "alertSoundVolume", 0, 500, 5).gatedBy { (S.alertRareDrop || S.alertHotspotFound || S.alertHotspotGone || S.alertWormholeGone || S.alertNewTrophy || S.alertDeployable || S.alertBait) })
+        a.sub.add(SliderIntSetting("Title Time (ms)", "", S::class.java, "alertTitleMs", 500, 10000, 100).gatedBy { (S.alertSeaCreature || (S.alertRareDrop || S.alertHotspotFound || S.alertHotspotGone || S.alertWormholeGone || S.alertNewTrophy || S.alertDeployable || S.alertBait)) })
         col.features.add(a)
 
         val share = Feature("Fishing Share", S::class.java, "shareEnabled")
@@ -121,7 +121,7 @@ object FishingAlerts {
         share.sub.add(ToggleSetting("Hotspot Buttons", "Show clickable share buttons when a hotspot is found (never auto-sends)", S::class.java, "shareHotspot"))
         share.sub.add(SubcategoryHeader("Share These Creatures"))
         for (sc in FishingShare.bigMobs) {
-            share.sub.add(ToggleSetting(sc.name, "", { FishingShare.isChecked(sc.name) }, { v -> FishingShare.setChecked(sc.name, v) }))
+            share.sub.add(ToggleSetting(sc.name, "", { FishingShare.isChecked(sc.name) }, { v -> FishingShare.setChecked(sc.name, v) }).gatedBy { S.shareParty || S.shareWorldBossAll })
         }
         col.features.add(share)
 
