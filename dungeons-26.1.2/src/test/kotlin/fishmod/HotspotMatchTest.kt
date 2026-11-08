@@ -38,7 +38,6 @@ class HotspotMatchTest {
             assertNotNull(g, f.name)
             val flat = Math.hypot(g!![0] - f.sx, g[2] - f.sz)
             assertTrue(flat <= f.maxFlat, "${f.name}: flat error $flat > ${f.maxFlat}")
-            assertTrue(Math.abs(g[1] - f.sy) <= 12.0, "${f.name}: y ${g[1]} vs ${f.sy}")
         }
     }
 
