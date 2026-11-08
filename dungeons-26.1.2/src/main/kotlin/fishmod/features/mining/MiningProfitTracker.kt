@@ -54,6 +54,8 @@ object MiningProfitTracker {
     private val BAR = Regex("""^▬{20,}$""")
     private val ITEM = Regex("""^\s{2,}[☠✦+]?\s*(.+?)(?:\s+x([\d,]+))?\s*$""")
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
+    // Sack items from other skills (fishing, farming...) must not count as Mined
+    private val MINING_SACKS = arrayOf("Mining", "Enchanted Mining", "Gemstone", "Crystal Hollows", "Dwarven")
     private val SKIP = setOf("REWARDS", "LOOT", "CHEST LOCKPICKED", "LOOT CHEST COLLECTED")
 
     private var lootCat: Cat? = null
@@ -207,6 +209,7 @@ object MiningProfitTracker {
             val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
             val item = m.groupValues[3].trim()
             if (item.endsWith("Powder")) continue
+            if (!ProfitTrackerKit.inSacks(idOf(item), *MINING_SACKS)) continue
             val rest = consumePending(item, n, now)
             if (rest > 0) {
                 add(Cat.MINING, item, rest)

@@ -36,6 +36,15 @@ object ProfitTrackerKit {
         "$value	§7| ${nameColor ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}" +
             (if (r.split.isEmpty() || !showSources) "" else " §8(" + r.split.entries.joinToString(" ") { "${it.key.color}${it.key.short} §f${"%,d".format(it.value)}" } + "§8)")
 
+    // True if the item id is stocked by one of the named NEU sacks; allows all when the NEU data isn't loaded
+    fun inSacks(id: String?, vararg sacks: String): Boolean {
+        id ?: return false
+        val defs = fishmod.pv.neu.NeuRepoCache.sackDefinitions()
+        if (defs.isEmpty()) return true
+        val want = id.replace(':', '-')
+        return sacks.any { s -> defs[s]?.any { it.replace(':', '-') == want } == true }
+    }
+
     fun perHour(v: Double, timeMs: Long) = if (timeMs < 60_000) 0.0 else v * 3_600_000.0 / timeMs
 
     // HUD lines rebuilt on a data change, else at most once a second (playtime, settings)
