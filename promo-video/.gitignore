@@ -1,0 +1,9 @@
+*.mp4
+*.wav
+*.png
+_build/
+vo/
+clips/
+anims/
+sheets/
+stills/
