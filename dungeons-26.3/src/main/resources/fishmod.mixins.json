@@ -58,7 +58,6 @@
     "LavaFogEnvironmentMixin",
     "NoFogMixin",
     "WaterColorMixin",
-    "ItemModelBehaviorMixin",
     "PlayerEntityRendererScaleMixin",
     "FishScreenMixin",
     "FishInventoryMixin",
