@@ -71,7 +71,8 @@ FishMod builds on these open-source projects. Thanks to their authors.
 | Project | Used for | License |
 | --- | --- | --- |
 | [BetterPV](https://github.com/Vyriv/BetterPV) | Base of the in-game Profile Viewer | MPL-2.0 ([copy](dungeons-26.1.2/LICENSE_betterpv)) |
-| blade-addons (BladeMasterGabe) | Several features and the practical-config library | CC0 ([copy](dungeons-26.1.2/LICENSE_blade-addons)) |
+| [blade-addons](https://github.com/BladeMasterGabe/blade-addons) | Several features | CC0 ([copy](dungeons-26.1.2/LICENSE_blade-addons)) |
+| [practical-config](https://github.com/BladeMasterGabe/practical-config) | Config library (bundled, repackaged) | CC0 |
 | [Odin](https://github.com/odtheking/Odin) | Reference for some dungeon solvers and utilities | see project |
 | [SkyHanni](https://github.com/hannibal002/SkyHanni) | Reference for some Rift, garden and mining helpers | see project |
 | [NotEnoughUpdates repo](https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO) | Item data | see project |
