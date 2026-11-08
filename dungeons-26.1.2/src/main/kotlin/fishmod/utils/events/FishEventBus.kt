@@ -11,6 +11,8 @@ class FishEventBus<T> {
         listeners.add(listener)
     }
 
+    fun size(): Int = listeners.size
+
     fun isEmpty(): Boolean = listeners.isEmpty()
 
     fun invoke(action: Predicate<T>): Boolean {
