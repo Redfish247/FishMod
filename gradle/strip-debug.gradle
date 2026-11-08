@@ -1,4 +1,4 @@
-// Drops LocalVariableTable from the shipped jar (keeps line numbers for crash traces).
+// Drops LocalVariableTable, SourceDebugExtension and kotlin.Metadata (except on FishModAddonApi); keeps line numbers.
 buildscript {
 	repositories { mavenCentral() }
 	dependencies { classpath 'org.ow2.asm:asm:9.8' }
@@ -16,7 +16,15 @@ import java.util.zip.ZipOutputStream
 def stripClass = { byte[] bytes ->
 	def cr = new ClassReader(bytes)
 	def cw = new ClassWriter(0)
+	def keepMeta = cr.className.endsWith('/FishModAddonApi')
 	cr.accept(new ClassVisitor(Opcodes.ASM9, cw) {
+		@Override
+		void visitSource(String source, String debug) { super.visitSource(source, null) }
+		@Override
+		org.objectweb.asm.AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+			if (!keepMeta && desc == 'Lkotlin/Metadata;') return null
+			return super.visitAnnotation(desc, visible)
+		}
 		@Override
 		MethodVisitor visitMethod(int access, String name, String desc, String sig, String[] exc) {
 			def mv = super.visitMethod(access, name, desc, sig, exc)
