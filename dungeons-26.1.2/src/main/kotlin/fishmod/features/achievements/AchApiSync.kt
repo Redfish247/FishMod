@@ -67,7 +67,9 @@ object AchApiSync {
         }
         if (pid != null) {
             HypixelApi.fetchJson("/skyblock/museum?profile=$pid") { root ->
-                val items = obj(fishmod.pv.api.ProfileMuseumLookup.findMuseumMember(root, pid, uuid), "items")?.entrySet()?.count { (_, v) -> v.isJsonObject && v.asJsonObject.get("borrowing")?.asBoolean != true } ?: return@fetchJson
+                val museumMember = fishmod.pv.api.ProfileMuseumLookup.findMuseumMember(root, pid, uuid) ?: return@fetchJson
+                // armor sets are one entry holding several pieces, so count decoded stacks
+                val items = fishmod.pv.networth.InventoryDecoder.parseMuseum(museumMember).size
                 land { put("museum.items", items.toDouble()) }
             }
             HypixelApi.fetchJson("/skyblock/garden?profile=$pid") { root ->
@@ -259,7 +261,8 @@ object AchApiSync {
         }
 
         put("purse", num(m, "currencies.coin_purse"))
-        put("choc.prestige", num(m, "events.easter.chocolate_level"))
+        // API chocolate_level is the prestige count minus one (1 = Prestige I... first tier is level 0)
+        if (obj(m, "events.easter")?.has("chocolate_level") == true) put("choc.prestige", num(m, "events.easter.chocolate_level") + 1)
         put("choc.rabbits", obj(m, "events.easter.rabbits")?.keySet()?.count { it != "collected_eggs" && it != "collected_locations" }?.toDouble() ?: 0.0)
 
         var gold = 0; var diamond = 0

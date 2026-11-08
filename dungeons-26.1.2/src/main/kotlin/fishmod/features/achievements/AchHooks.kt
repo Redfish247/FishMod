@@ -149,6 +149,7 @@ object AchHooks {
             AchBus.post(AchEvent.Drop(item, n, v, m.groupValues[1], SkyblockLocation.getCurrentLocation().label))
             return
         }
+        SECRETS_LINE.find(s)?.let { m -> m.groupValues[1].replace(",", "").toIntOrNull()?.let { n -> runSecrets = maxOf(runSecrets, n); pendingEnd = pendingEnd?.let { it.copy(secrets = maxOf(it.secrets, n)) } } }
         TEAM_SCORE.find(s)?.let { flushRunEnd(it.groupValues[1].toInt()); return }
         when {
             s.startsWith("PUZZLE SOLVED!") && SkyblockLocation.inDungeon() -> {
@@ -178,7 +179,8 @@ object AchHooks {
     }
 
     private var pendingEnd: AchEvent.RunEnded? = null
-    private val TEAM_SCORE = Regex("^Team Score: (\\d+)")
+    private val SECRETS_LINE = Regex("^Secrets Found: ([\\d,]+)$")
+    private val TEAM_SCORE =Regex("^Team Score: (\\d+)")
 
     private fun flushRunEnd(chatScore: Int) {
         val e = pendingEnd ?: return
@@ -215,9 +217,9 @@ object AchHooks {
             val a = fishmod.features.rift.Rift.area().trim()
             if (a.isNotEmpty() && fishmod.features.rift.Rift.knownOtherArea() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
         }
+        // tab secret count can drop to 0 at run end, keep the run's peak (even if the start line was missed)
+        if (SkyblockLocation.inDungeon()) runSecrets = maxOf(runSecrets, DungeonScore.secretsFound)
         if (SkyblockLocation.inDungeon() && runStartMs > 0) {
-            // tab secret count can drop to 0 at run end, keep the run's peak
-            runSecrets = maxOf(runSecrets, DungeonScore.secretsFound)
             if (!bloodSeen && DungeonState.bloodOpened) {
                 bloodSeen = true
                 AchBus.post(AchEvent.BloodOpened((System.currentTimeMillis() - runStartMs) / 1000.0))

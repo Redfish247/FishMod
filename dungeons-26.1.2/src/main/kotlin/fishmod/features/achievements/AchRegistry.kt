@@ -338,7 +338,7 @@ object AchRegistry {
         a("pet_score_pro", "Pets", "Pet Score Pro", "Reach 200 pet score", "Hard", 20, "pets.score", 200L, "", false)
         a("dragon_tamer", "Pets", "Dragon Tamer", "Level a Golden Dragon to 200", "Insane", 40, "pets.gdrag200", 1L, "", false)
         a("curator", "Museum & Collections", "Curator", "Donate 100 museum items", "Easy", 10, "museum.items", 100L, "", false)
-        a("museum_master", "Museum & Collections", "Museum Master", "Donate every museum item", "Impossible", 50, "museum.items", 1100L, "", false)
+        a("museum_master", "Museum & Collections", "Museum Master", "Donate every museum item", "Impossible", 50, "museum.items", 637L, "", false)
         a("collector", "Museum & Collections", "Collector", "Max 25 collections", "Medium", 15, "coll.maxed", 25L, "", false)
         a("collection_completionist", "Museum & Collections", "Collection Completionist", "Max every collection", "Insane", 40, "coll.maxedAll", 1L, "", false)
         a("bestiary_novice", "Museum & Collections", "Bestiary Novice", "Bestiary milestone 10", "Medium", 10, "bestiary.milestone", 10L, "", false)
