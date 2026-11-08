@@ -151,6 +151,12 @@ object HotspotFinder {
 
     private fun sq(v: Double) = v * v
 
+    private fun debugRadarUse() {
+        val p = Minecraft.getInstance().player ?: return
+        val held = p.mainHandItem
+        FishMsg.send("§7[Hotspot] new flame trail, main hand '${held.hoverName.string}' id=${ItemTools.getId(held)}")
+    }
+
     private fun onTick() {
         if (!on()) { if (registry.list.isNotEmpty() || hasGuess) reset(); return }
         val now = System.currentTimeMillis()
