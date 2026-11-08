@@ -73,7 +73,7 @@ object ArrowsDevice {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                     is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
-                    is ClientboundSetEntityDataPacket -> onEntityData(packet)
+                    is ClientboundSetEntityDataPacket -> if (FishSettings.arrowsDeviceEnabled) onEntityData(packet)
                 }
             } catch (e: Exception) { FishDiag.fail("ArrowsDevice.2", "arrows device packet handler threw on ${packet.javaClass.simpleName}", e) }
             false

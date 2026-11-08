@@ -76,6 +76,7 @@ object BloodSolver {
         }
 
         FishEvents.packet.register { packet ->
+            if (!Floor7Settings.bloodSolverEnabled) return@register false
             try {
             when (packet) {
                 is ClientboundSetEquipmentPacket -> {
