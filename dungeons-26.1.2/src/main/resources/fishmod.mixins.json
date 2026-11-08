@@ -75,7 +75,6 @@
     "ClientClockManagerMixin",
     "PlayerListHudMixin",
     "GuiRenderStateBoundsMixin",
-    "PlayerNameLabelMixin",
     "PrestigeTabNameMixin",
     "NoRecipeBookScreenMixin",
     "NoRecipeBookMixin",
