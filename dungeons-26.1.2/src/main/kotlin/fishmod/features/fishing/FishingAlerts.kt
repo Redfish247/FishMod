@@ -52,6 +52,7 @@ object FishingAlerts {
         if (S.alertWormholeGone && FishingAlertText.isWormholeGone(plain)) {
             if (Fishing.inArea(fishmod.utils.SkyblockLocation.LOTUS_ATOLL) || Fishing.inArea(fishmod.utils.SkyblockLocation.CRIMSON_ISLE))
                 notify(FishingTitles.WORMHOLE, "§c§lWormhole is gone", "", null)
+            WormholeFinder.onGone()
             return
         }
         if (S.alertNewTrophy) {

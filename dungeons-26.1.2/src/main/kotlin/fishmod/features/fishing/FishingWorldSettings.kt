@@ -23,6 +23,12 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var hidePlayersNearBobber: Boolean = false
     @ConfigValue @JvmField var hidePlayersNearBobberRadius: Double = 8.0
 
+    // Wormhole finder (Froggles arrows -> waypoint); own toggle, off by default
+    @ConfigValue @JvmField var wormholeFinder: Boolean = false
+    @ConfigValue @JvmField var wormholeDeparture: Boolean = true
+    @ConfigValue @JvmField var wormholeDebug: Boolean = false
+    @ConfigValue @JvmField var wormholeColor: Int = 0xFFFF55FF.toInt()
+
     // Item overlays
     @ConfigValue @JvmField var fishingItems: Boolean = false
     @ConfigValue @JvmField var trashBooks: Boolean = false
