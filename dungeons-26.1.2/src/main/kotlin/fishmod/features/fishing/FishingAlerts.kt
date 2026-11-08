@@ -118,7 +118,7 @@ object FishingAlerts {
         share.sub.add(ToggleSetting("World Boss To All Chat", "Also send world bosses with coords to all chat", S::class.java, "shareWorldBossAll"))
         share.sub.add(ToggleSetting("Rare Drops", "Share drops worth at least the price below", S::class.java, "shareDrops"))
         share.sub.add(InputIntSetting("Drop Price", "Coins", S::class.java, "shareDropMinPrice").gatedBy { S.shareDrops })
-        share.sub.add(ToggleSetting("Hotspot Buttons", "Show clickable share buttons when a hotspot is found (never auto-sends)", S::class.java, "shareHotspot"))
+        share.sub.add(ToggleSetting("Share Hotspot", "Adds clickable [PARTY] and [ALL] buttons to the hotspot message; each click sends one chat line, never automatic", S::class.java, "shareHotspot"))
         share.sub.add(SubcategoryHeader("Share These Creatures"))
         for (sc in FishingShare.bigMobs) {
             share.sub.add(ToggleSetting(sc.name, "", { FishingShare.isChecked(sc.name) }, { v -> FishingShare.setChecked(sc.name, v) }).gatedBy { S.shareParty || S.shareWorldBossAll })

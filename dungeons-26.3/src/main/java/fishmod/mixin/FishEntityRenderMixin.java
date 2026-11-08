@@ -42,20 +42,12 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
         if (fishmod.utils.debug.FishDebug.skipExtract) return;
         try {
-            if (state.nameTag != null && fishmod.utils.debug.FishDebug.INSTANCE.getHoloTrace()) {
-                fishmod.utils.debug.FishDebug.INSTANCE.holoTraceMsg(entity.getType().toShortString(), state.nameTag.getString());
-            }
             if (DungeonSettings.hideBlazeTags && state.nameTag != null && SkyblockLocation.inDungeon()
                     && !(entity instanceof net.minecraft.world.entity.player.Player)) {
                 String nameTagText = state.nameTag.getString();
                 if (nameTagText.contains("Blaze")) {
                     state.nameTag = null;
                 }
-            }
-            // Gate before getPosition: it allocates a Vec3 per named armor stand per frame.
-            if (VisualSettings.nametagsOnTop && entity instanceof net.minecraft.world.entity.decoration.ArmorStand && state.nameTag != null
-                    && fishmod.features.HologramText.take(entity.getPosition(tickProgress), state.nameTagAttachment, state.nameTag)) {
-                state.nameTag = null;
             }
             if (entity instanceof RemotePlayer player && DungeonSettings.roleNameTags && SkyblockLocation.inDungeon()) {
                 if (DungeonRole.isTeammate(player)) {
