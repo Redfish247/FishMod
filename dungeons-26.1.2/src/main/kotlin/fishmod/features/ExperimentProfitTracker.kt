@@ -124,9 +124,20 @@ object ExperimentProfitTracker {
         return (v * when (suffix) { "k" -> 1e3; "M" -> 1e6; "B" -> 1e9; else -> 1.0 }).toLong()
     }
 
+    // Pets drop as "[Lvl 1] Guardian": price the LVL_1 auction key from the rarity colour
+    private fun petPrice(name: String): Double {
+        val tier = when (colorOf(name)) {
+            "§f" -> "COMMON"; "§a" -> "UNCOMMON"; "§9" -> "RARE"; "§5" -> "EPIC"; "§6" -> "LEGENDARY"; "§d" -> "MYTHIC"; else -> return 0.0
+        }
+        val type = name.uppercase().replace(' ', '_').replace("'", "")
+        val p = CroesusPrices.price("LVL_1_${tier}_$type")
+        return if (p.isNaN()) 0.0 else p
+    }
+
     // Books come through as "Protection VII" / "Ultimate Wise V"
     private fun priceOf(name: String): Double {
         ItemsDb.idFor(name)?.let { return CroesusPrices.price(it) }
+        petPrice(name).let { if (it > 0) return it }
         val m = ROMAN.find(name) ?: return 0.0
         val lvl = fishmod.utils.data.Roman.toInt(m.groupValues[2])
         val base = m.groupValues[1].uppercase().replace(' ', '_').replace("'", "")
