@@ -37,6 +37,14 @@ object HotspotFinder {
     private var gx = 0.0
     private var gy = 0.0
     private var gz = 0.0
+    // Finished trails (one per radar use), used to triangulate; the live trail is projected on its own
+    private val shots = ArrayList<HotspotMatch.Line>()
+    private var committed = true
+    private var dirty = false
+    private var trailEx = 0.0
+    private var trailEy = 0.0
+    private var trailEz = 0.0
+    private val probePos = net.minecraft.core.BlockPos.MutableBlockPos()
     private var guessAt = 0L
     private var guessLabel: Component? = null
     private var guessShown = -1
@@ -56,7 +64,7 @@ object HotspotFinder {
     }
 
     private fun reset() {
-        registry.clear(); trail.clear(); hasGuess = false; guessLabel = null; guessShown = -1; debugCount = 0
+        registry.clear(); trail.clear(); shots.clear(); committed = true; dirty = false; hasGuess = false; guessLabel = null; guessShown = -1; debugCount = 0
     }
 
     private fun on() = W.hotspotFinder && Fishing.enabled()
@@ -64,15 +72,52 @@ object HotspotFinder {
     private fun onFlame(x: Double, y: Double, z: Double, count: Int, speed: Float) {
         val now = System.currentTimeMillis()
         val fresh = trail.size == 0 || now - trail.lastMs > HotspotMatch.NEW_TRAIL_GAP_MS
-        if (fresh) { debugCount = 0; if (W.hotspotDebug) debugRadarUse() }
+        if (fresh) {
+            commitTrail() debugCount = 0; if (W.hotspotDebug) debugRadarUse() }
         if (W.hotspotDebug && debugCount++ < DEBUG_MAX_PER_TRAIL) {
             FishMsg.send("§7[Hotspot] flame #${debugCount} count=$count speed=$speed at ${"%.1f".format(x)} ${"%.1f".format(y)} ${"%.1f".format(z)}")
         }
         // SkyHanni filters the trail to count 1 / speed 0; same assumption here (UNVERIFIED)
         if (count != 1 || speed != 0f) return
-        if (!trail.add(x, y, z, now) || !trail.hasGuess()) return
-        gx = trail.endX(); gy = trail.endY(); gz = trail.endZ()
-        hasGuess = true; guessAt = now; guessShown = -1
+        if (!trail.add(x, y, z, now)) return
+        committed = false; dirty = true; guessAt = now
+    }
+
+    // Keep a finished trail's heading as a shot for triangulation (called when the next trail starts or this one settles)
+    private fun commitTrail() {
+        if (committed) return
+        committed = true
+        if (!trail.hasGuess()) return
+        val l = trail.fit() ?: return
+        shots.add(l)
+        while (shots.size > HotspotMatch.MAX_SHOTS) shots.removeAt(0)
+    }
+
+    private val lines = ArrayList<HotspotMatch.Line>()
+
+    // Project the live trail; with earlier shots from other spots, triangulate. Runs at most once per tick, only after new points.
+    private fun recompute(level: net.minecraft.world.level.Level, player: net.minecraft.world.entity.player.Player, now: Long) {
+        dirty = false
+        val cur = if (trail.hasGuess()) trail.fit() else null
+        lines.clear(); lines.addAll(shots)
+        if (cur != null && !committed) lines.add(cur)
+        if (lines.isEmpty()) return
+        val last = cur ?: lines[lines.size - 1]
+        val probe = HotspotMatch.FluidProbe { x, y, z ->
+            probePos.set(Math.floor(x).toInt(), Math.floor(y).toInt(), Math.floor(z).toInt())
+            level.hasChunkAt(probePos) && !level.getFluidState(probePos).isEmpty
+        }
+        val single = HotspotMatch.project(last, probe, player.y - 1.0)
+        val tri = HotspotMatch.triangulate(lines)
+        val est = if (tri != null) HotspotMatch.Estimate(tri.x, single.y.takeIf { single.kind == HotspotMatch.Kind.SURFACE } ?: tri.y, tri.z, tri.kind) else single
+        gx = est.x; gy = est.y; gz = est.z
+        trailEx = last.ox; trailEy = last.oy; trailEz = last.oz
+        hasGuess = true; guessShown = -1
+        if (W.hotspotDebug) {
+            FishMsg.send("§7[Hotspot] trail ${trail.size} pts, end ${last.ox.toInt()} ${last.oy.toInt()} ${last.oz.toInt()} dir=${"%.2f".format(last.dx)},${"%.2f".format(last.dz)} slope=${"%.2f".format(last.slope)} " +
+                "shots=${shots.size} single=${single.kind} ${single.x.toInt()} ${single.y.toInt()} ${single.z.toInt()}" +
+                (if (tri != null) " tri=${tri.x.toInt()} ${tri.z.toInt()}" else "") + " -> ${gx.toInt()} ${gy.toInt()} ${gz.toInt()} (${HotspotMatch.distance(player.x, player.y, player.z, gx, gy, gz)}m)")
+        }
     }
 
     private fun debugRadarUse() {
@@ -84,11 +129,15 @@ object HotspotFinder {
     private fun onTick() {
         if (!on()) { if (registry.list.isNotEmpty() || hasGuess) reset(); return }
         val now = System.currentTimeMillis()
-        if (hasGuess && now - guessAt > GUESS_LIFE_MS) hasGuess = false
-        if (++tick % SCAN_TICKS != 0) return
+        if (hasGuess && now - guessAt > GUESS_LIFE_MS) { hasGuess = false; shots.clear() }
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
         val player = mc.player ?: return
+        if (!committed && trail.settled(now)) commitTrail()
+        if (dirty) {
+            try { recompute(level, player, now) } catch (t: Throwable) { dirty = false; FishDiag.fail("HotspotFinder.3", "radar projection failed", t) }
+        }
+        if (++tick % SCAN_TICKS != 0) return
         try {
             var stands: ArrayList<ArmorStand>? = null
             for (e in level.entitiesForRendering()) {
@@ -112,9 +161,9 @@ object HotspotFinder {
                 player.x, player.z, NEAR_FLAT_DROP, now, MAX_AGE_MS)
             if (hasGuess) {
                 val l = registry.list
-                for (i in l.indices) if (HotspotMatch.covered(gx, gz, l[i].x, l[i].z, GUESS_COVERED_RADIUS)) { hasGuess = false; break }
+                for (i in l.indices) if (HotspotMatch.covered(gx, gz, l[i].x, l[i].z, GUESS_COVERED_RADIUS)) { hasGuess = false; shots.clear(); break }
                 val dx = gx - player.x; val dz = gz - player.z
-                if (hasGuess && trail.settled(now) && dx * dx + dz * dz < GUESS_REACHED * GUESS_REACHED) hasGuess = false
+                if (hasGuess && trail.settled(now) && dx * dx + dz * dz < GUESS_REACHED * GUESS_REACHED) { hasGuess = false; shots.clear() }
             }
         } catch (t: Throwable) {
             FishDiag.fail("HotspotFinder.1", "hotspot scan failed", t)
@@ -147,6 +196,7 @@ object HotspotFinder {
                     guessLabel = Component.literal("§d§lRadar guess §7~${d}m")
                 }
                 FishDraw.gizmoBox(AABB(gx - 0.5, gy - 0.5, gz - 0.5, gx + 0.5, gy + 1.5, gz + 0.5), (W.hotspotColor and 0x00FFFFFF) or 0x33000000, color, true)
+                FishDraw.gizmoLine(Vec3(trailEx, trailEy, trailEz), Vec3(gx, gy, gz), color, 3f, true)
                 FishDraw.gizmoText(guessLabel!!, Vec3(gx, gy + 2.2, gz), 1.5f, -0x1, true)
             }
         }

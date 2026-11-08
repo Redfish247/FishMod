@@ -61,4 +61,58 @@ class HotspotMatchTest {
         assertFalse(HotspotMatch.covered(0.0, 0.0, 3.0, 4.1, 5.0))
         assertEquals(5, HotspotMatch.distance(0.0, 0.0, 0.0, 3.0, 0.0, 4.0))
     }
+
+    private fun trailAlong(dx: Double, dz: Double, dy: Double, n: Int): HotspotMatch.Trail {
+        val t = HotspotMatch.Trail()
+        for (i in 0 until n) t.add(i * dx, 70.0 + i * dy, i * dz, 1000L + i)
+        return t
+    }
+
+    @Test fun fitGivesHeadingAndSlope() {
+        val l = trailAlong(1.0, 0.0, -0.5, 10).fit()!!
+        assertEquals(1.0, l.dx, 1e-9); assertEquals(0.0, l.dz, 1e-9); assertEquals(-0.5, l.slope, 1e-9)
+        assertEquals(9.0, l.ox, 1e-9)
+    }
+
+    @Test fun fitNullWhenNotMovingSideways() {
+        assertNull(trailAlong(0.0, 0.0, 1.0, 6).fit())
+    }
+
+    @Test fun projectHitsFluidSurface() {
+        val l = HotspotMatch.Line(0.0, 80.0, 0.0, 1.0, 0.0, -0.5)
+        // water up to y=60 -> ray at y=80-0.5*i meets it near i=40
+        val e = HotspotMatch.project(l, { _, y, _ -> y < 61.0 }, 0.0)
+        assertEquals(HotspotMatch.Kind.SURFACE, e.kind)
+        assertEquals(40.0, e.x, 2.1)
+    }
+
+    @Test fun projectFallsBackWithoutFluid() {
+        val l = HotspotMatch.Line(5.0, 70.0, 5.0, 0.0, 1.0, 0.0)
+        val e = HotspotMatch.project(l, { _, _, _ -> false }, 64.0)
+        assertEquals(HotspotMatch.Kind.FALLBACK, e.kind)
+        assertEquals(5.0 + HotspotMatch.FALLBACK_RANGE, e.z, 1e-9)
+        assertEquals(64.0, e.y, 1e-9)
+        assertEquals(HotspotMatch.Kind.FALLBACK, HotspotMatch.project(l, null, 64.0).kind)
+    }
+
+    @Test fun triangulateTwoRays() {
+        // hotspot at (100, 100): one ray from the origin heading diagonally, one from (100, 0) heading +z
+        val s = Math.sqrt(0.5)
+        val a = HotspotMatch.Line(0.0, 70.0, 0.0, s, s, 0.0)
+        val b = HotspotMatch.Line(100.0, 72.0, 0.0, 0.0, 1.0, 0.0)
+        val e = HotspotMatch.triangulate(listOf(a, b))!!
+        assertEquals(100.0, e.x, 1e-6); assertEquals(100.0, e.z, 1e-6); assertEquals(71.0, e.y, 1e-9)
+        assertEquals(HotspotMatch.Kind.TRIANGULATED, e.kind)
+    }
+
+    @Test fun triangulateRejectsParallelBehindAndInconsistent() {
+        val p1 = HotspotMatch.Line(0.0, 70.0, 0.0, 1.0, 0.0, 0.0)
+        val p2 = HotspotMatch.Line(0.0, 70.0, 20.0, 1.0, 0.0, 0.0)
+        assertNull(HotspotMatch.triangulate(listOf(p1, p2)))
+        assertNull(HotspotMatch.triangulate(listOf(p1)))
+        // crossing point is behind the second origin
+        val a = HotspotMatch.Line(0.0, 70.0, 0.0, 0.0, 1.0, 0.0)
+        val b = HotspotMatch.Line(50.0, 70.0, 50.0, 1.0, 0.0, 0.0)
+        assertNull(HotspotMatch.triangulate(listOf(a, b)))
+    }
 }
