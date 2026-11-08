@@ -53,7 +53,7 @@ object BadgeRenderer {
         val out: MutableComponent = Component.empty()
         if (leadingSpace) out.append(Component.literal(" "))
         for (d in defs) {
-            out.append(Component.literal(d.symbol).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(d.colorRgb))))
+            out.append(d.component())
         }
         return out
     }

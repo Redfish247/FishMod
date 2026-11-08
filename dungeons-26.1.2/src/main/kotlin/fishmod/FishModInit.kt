@@ -494,6 +494,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.78", "fishmod.features.dungeon.f7.StormOverAlert.init() failed") { fishmod.features.dungeon.f7.StormOverAlert.init() }
         FishDiag.guard("FishModInit.79", "fishmod.features.dungeon.f7.VenoStackCount.init() failed") { fishmod.features.dungeon.f7.VenoStackCount.init() }
         FishDiag.guard("FishModInit.80", "fishmod.features.PerformanceHud.init() failed") { fishmod.features.PerformanceHud.init() }
+        FishDiag.guard("FishModInit.80s", "fishmod.features.SpotifyHud.init() failed") { fishmod.features.SpotifyHud.init() }
         FishDiag.guard("FishModInit.81", "fishmod.features.dungeon.InvincibilityTracker.init() failed") { fishmod.features.dungeon.InvincibilityTracker.init() }
         FishDiag.guard("FishModInit.82", "fishmod.features.dungeon.SecretClicked.init() failed") { fishmod.features.dungeon.SecretClicked.init() }
         FishDiag.guard("FishModInit.83", "fishmod.features.dungeon.RouteRecorder.init() failed") { fishmod.features.dungeon.RouteRecorder.init() }
