@@ -60,6 +60,7 @@ object VenoStackCount {
         FishSettings.venoStackEnabled && holdingVeno && SkyblockLocation.inDungeon() && BossPhase.inP2() && !BossPhase.stormDead()
 
     private fun onTick() {
+        if (!FishSettings.venoStackEnabled) { if (holdingVeno || beams.isNotEmpty() || stacks != 0 || stormBox != null) { holdingVeno = false; reset() }; return }
         tick++
         beams.removeAll { tick - it.lastTick > 2 }
         if (beams.size > 500) FishDiag.fail("VenoStackCount.5", "beam list grew to ${beams.size}")

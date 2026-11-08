@@ -44,6 +44,7 @@ object RiftDreadfarm {
         ClientTickEvents.END_CLIENT_TICK.register {
             tickCap()
             if (tick++ % 5 == 0) {
+                if (!Rift.inRift() || !(S.riftBerberis || S.riftAgaricus)) { hasWand = false; berbs.clear(); return@register }
                 hasWand = Rift.heldId() == "FARMING_WAND" ||
                     Minecraft.getInstance().player?.mainHandItem?.hoverName?.string?.contains("Farming Wand", true) == true
                 val now = System.currentTimeMillis(); berbs.removeIf { now - it.last > 500L }

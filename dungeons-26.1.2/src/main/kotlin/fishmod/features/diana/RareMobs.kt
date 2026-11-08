@@ -155,17 +155,18 @@ object RareMobs {
         }
         tick++
         flushPending()
+        if (tick % 5 != 0) return
 
         val eye = player.position()
         val lines = ArrayList<Pair<Double, Component>>()
         val rareStands = ArrayList<Vec3>()
         val alive = HashSet<Int>()
-        val newGlow = if (tick % 4 == 0) HashMap<Int, Int>() else null
+        val newGlow = HashMap<Int, Int>()
         var shurikenDist = Double.MAX_VALUE
 
         for (e in level.entitiesForRendering()) {
             if (e === player) continue
-            if (newGlow != null && DianaSettings.dianaRareMobs && DianaSettings.dianaHighlightRareMobs && e is LivingEntity && e !is ArmorStand
+            if (DianaSettings.dianaRareMobs && DianaSettings.dianaHighlightRareMobs && e is LivingEntity && e !is ArmorStand
                 && !(e is Player && e.uuid.version() == 4) && e.isAlive && !e.isInvisible) {
                 val r = RareMob.fromName(e.name.string)
                 if (r != null && player.hasLineOfSight(e)) newGlow[e.id] = r.glowColor or 0xFF000000.toInt()
@@ -199,7 +200,7 @@ object RareMobs {
         defeated.retainAll(alive)
         hpLines = lines.sortedBy { it.first }.take(6).map { it.second }
         noShuriken = shurikenDist != Double.MAX_VALUE
-        if (newGlow != null) { glow.clear(); glow.putAll(newGlow) }
+        glow.clear(); glow.putAll(newGlow)
         if (DianaSettings.dianaRareMobs) pruneStale(eye, rareStands)
     }
 
