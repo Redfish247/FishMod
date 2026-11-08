@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -33,7 +34,7 @@ object CritTracker {
     @JvmStatic
     fun init() {
         load()
-        FishEvents.chat.register { text -> onMessage(text.string) }
+        FishEvents.chat.register { text -> onMessage(text.chatRaw) }
     }
 
     private fun onMessage(s: String?): Boolean {

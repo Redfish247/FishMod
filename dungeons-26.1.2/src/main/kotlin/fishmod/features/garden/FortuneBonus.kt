@@ -1,5 +1,6 @@
 package fishmod.features.garden
 
+import fishmod.utils.events.chatRaw
 import fishmod.features.mining.Mining
 import fishmod.utils.FishMsg
 import fishmod.utils.events.FishEvents
@@ -33,7 +34,7 @@ object FortuneBonus {
         // Server announcements ("+N Farming Fortune ..."); throttled so the tab change doesn't double up (guess at wording)
         FishEvents.chat.register { t ->
             if (S.gardenFortuneMsg && Garden.inGarden()) {
-                val s = Garden.strip(t.string).trim()
+                val s = Garden.strip(t.chatRaw).trim()
                 val now = System.currentTimeMillis()
                 if (!s.startsWith("[") && now - lastChatMs > 3000 && s.contains("bonus", true)) {
                     CHAT.find(s)?.let { lastChatMs = now; send("+" + it.groupValues[1]) }

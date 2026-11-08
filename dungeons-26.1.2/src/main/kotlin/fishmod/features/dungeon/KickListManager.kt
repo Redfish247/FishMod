@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.FishConstants
 import fishmod.utils.FishMsg
 import fishmod.utils.FishUtil
@@ -35,7 +36,7 @@ object KickListManager {
         FishEvents.worldChange.register { lastKick.clear(); pending.clear(); false }
         FishEvents.chat.register { text ->
             if (FishSettings.pcKickListEnabled && FishSettings.pcKickList.isNotBlank()) {
-                val stripped = FishConstants.STRIP_COLOR_REGEX.replace(text.string, "")
+                val stripped = text.chatPlain
                 val m = PF_JOIN.matcher(stripped).takeIf { it.find() }
                     ?: JOIN.matcher(stripped).takeIf { it.find() }
                 m?.let { mm -> FishDiag.guard("KickListManager.2", "kick list join handling failed") { onJoin(mm.group(1)) } }

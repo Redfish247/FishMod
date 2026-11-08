@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f7.terminal
+import fishmod.utils.events.chatPlain
 import fishmod.compat.curScreen
 import fishmod.utils.TextStrip
 
@@ -11,6 +12,7 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.rendering.DrawHooks
 import fishmod.utils.sound.SoundManager
@@ -96,7 +98,7 @@ object TerminalSolver {
 
     @JvmStatic
     fun init() {
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundOpenScreenPacket::class.java, net.minecraft.network.protocol.game.ClientboundContainerClosePacket::class.java) { packet ->
             when (packet) {
                 is ClientboundOpenScreenPacket -> onOpen(packet)
                 is net.minecraft.network.protocol.game.ClientboundContainerClosePacket -> if (!simActive) onScreenClosed()
@@ -108,7 +110,7 @@ object TerminalSolver {
 
         FishEvents.chat.register { text ->
             try {
-                val m = ACTIVATED.matcher(TextStrip.plain(text.string))
+                val m = ACTIVATED.matcher(text.chatPlain)
                 if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) {
                     if (FishSettings.terminalSolverSound) SoundManager.ping("termSolved", 0)
                     onOwnTerminalDone()

@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatPlain
 import com.mojang.blaze3d.vertex.PoseStack
 import fishmod.utils.TextStrip
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -7,6 +8,7 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import fishmod.utils.sound.SoundManager
@@ -54,7 +56,7 @@ object SecretClicked {
             InteractionResult.PASS
         })
 
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundTakeItemEntityPacket::class.java, ClientboundSoundPacket::class.java) { packet ->
             try {
                 when (packet) {
                     is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
@@ -69,7 +71,7 @@ object SecretClicked {
         })
 
         FishEvents.chat.register { text ->
-            if (TextStrip.plain(text.string).trim() == "That chest is locked!") {
+            if (text.chatPlain.trim() == "That chest is locked!") {
                 clicked.lastOrNull()?.locked = true
             }
             false

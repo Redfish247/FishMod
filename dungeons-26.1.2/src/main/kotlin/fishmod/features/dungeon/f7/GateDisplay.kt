@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatRaw
 import com.mojang.blaze3d.vertex.PoseStack
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
@@ -61,7 +62,7 @@ object GateDisplay {
         }
         FishEvents.chat.register { message ->
             if (Floor7Settings.gateDisplayEnabled && SkyblockLocation.inDungeon() && BossPhase.inTerminals()
-                && message.string == GATE_MESSAGE
+                && message.chatRaw == GATE_MESSAGE
             ) {
                 if (fishmod.utils.debug.FishDebug.termInfo) {
                     val p = net.minecraft.client.Minecraft.getInstance().player?.position()

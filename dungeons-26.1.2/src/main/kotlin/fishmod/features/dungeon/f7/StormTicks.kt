@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatRaw
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.features.CritTracker
 import fishmod.utils.FishConstants
@@ -62,8 +63,8 @@ object StormTicks {
         )
         FishEvents.chat.register { text ->
             if (!SkyblockLocation.inDungeon() || !BossPhase.inP2()) return@register false
-            if (deathTime == 0.0 && text.string.startsWith("⚠ Storm is enraged") && !PATTERN.matcher(text.string).find()) FishDiag.fail("StormTicks.2", "storm enraged line format changed: '${text.string}'")
-            if (deathTime == 0.0 && PATTERN.matcher(text.string).find()) {
+            if (deathTime == 0.0 && text.chatRaw.startsWith("⚠ Storm is enraged") && !PATTERN.matcher(text.chatRaw).find()) FishDiag.fail("StormTicks.2", "storm enraged line format changed: '${text.chatRaw}'")
+            if (deathTime == 0.0 && PATTERN.matcher(text.chatRaw).find()) {
                 FishDiag.check(timer.tick > 0, "StormTicks.3") { "storm died but P2 tick timer never counted" }
                 deathTime = timer.tick * FishConstants.TICK_DURATION
                 deathStartDisplayTime = System.currentTimeMillis()

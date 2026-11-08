@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.utils.events.chatPlain
 import fishmod.compat.curScreen
 import fishmod.compat.showScreen
 
@@ -179,7 +180,7 @@ object DianaTracker {
         }
         FishEvents.chat.register { text ->
             if (!Diana.inHub()) return@register false
-            val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
+            val s = text.chatPlain.trim()
             if (DianaSettings.dianaTracker && s.startsWith("[Sacks]")) onSacks(text)
             if (DianaSettings.dianaTracker) onChat(s) else hideOnly(s)
         }

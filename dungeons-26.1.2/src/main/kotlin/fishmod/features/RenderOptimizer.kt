@@ -4,6 +4,7 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.VisualSettings
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -35,8 +36,8 @@ object RenderOptimizer {
                 (packet.particle.type === ParticleTypes.EXPLOSION || packet.particle.type === ParticleTypes.EXPLOSION_EMITTER)
         }
 
-        FishEvents.packet.register { packet ->
-            if (!VisualSettings.renderOptimizer) return@register false
+        registerPacket(ClientboundSetEntityDataPacket::class.java, ClientboundSetEquipmentPacket::class.java, gate = { VisualSettings.renderOptimizer }) { packet ->
+            if (!VisualSettings.renderOptimizer) return@registerPacket false
             val mc = Minecraft.getInstance()
             try {
             when (packet) {

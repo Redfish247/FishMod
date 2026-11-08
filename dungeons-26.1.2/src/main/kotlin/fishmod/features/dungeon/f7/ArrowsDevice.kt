@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatPlain
 import fishmod.compat.CB
 import fishmod.compat.CI
 
@@ -10,6 +11,7 @@ import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -68,13 +70,18 @@ object ArrowsDevice {
 
     @JvmStatic
     fun init() {
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java) { packet ->
             try {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                     is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
-                    is ClientboundSetEntityDataPacket -> if (FishSettings.arrowsDeviceEnabled) onEntityData(packet)
                 }
+            } catch (e: Exception) { FishDiag.fail("ArrowsDevice.2", "arrows device packet handler threw on ${packet.javaClass.simpleName}", e) }
+            false
+        }
+        registerPacket(ClientboundSetEntityDataPacket::class.java, gate = { FishSettings.arrowsDeviceEnabled }) { packet ->
+            try {
+                if (packet is ClientboundSetEntityDataPacket) onEntityData(packet)
             } catch (e: Exception) { FishDiag.fail("ArrowsDevice.2", "arrows device packet handler threw on ${packet.javaClass.simpleName}", e) }
             false
         }
@@ -85,7 +92,7 @@ object ArrowsDevice {
 
         FishEvents.chat.register { text ->
             if (!FishSettings.arrowsDeviceEnabled || !inP3() || !isPlayerInRoom || isDeviceComplete) return@register false
-            val plain = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
+            val plain = text.chatPlain
             val name = deviceCompleteRegex.find(plain)?.groupValues?.get(1)
             if (name == null && plain.contains(" completed a device! (")) FishDiag.fail("ArrowsDevice.3", "device-complete line didn't match: '$plain'")
             if (name == Minecraft.getInstance().player?.gameProfile?.name) onComplete("Chat")

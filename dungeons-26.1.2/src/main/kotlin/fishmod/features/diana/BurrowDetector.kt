@@ -1,5 +1,6 @@
 package fishmod.features.diana
 
+import fishmod.utils.events.chatPlain
 import fishmod.compat.swingingNow
 import fishmod.compat.speed
 import fishmod.utils.FishUtil
@@ -36,7 +37,7 @@ object BurrowDetector {
         FishEvents.sound.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
         FishEvents.chat.register { text ->
             if (Diana.inHub()) {
-                val s = fishmod.utils.TextStrip.plain(text.string)
+                val s = text.chatPlain
                 dugSound(s)
                 if (DianaSettings.dianaGuessing) onChat(s)
             }

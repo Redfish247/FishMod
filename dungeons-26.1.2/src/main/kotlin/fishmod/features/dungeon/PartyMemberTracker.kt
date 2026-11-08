@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.FishConstants
 import fishmod.utils.events.FishEvents
 import java.util.LinkedHashMap
@@ -26,7 +27,7 @@ object PartyMemberTracker {
     @JvmStatic
     fun init() {
         FishEvents.chat.register { text ->
-            try { onChat(text.string) } catch (e: Exception) { FishDiag.fail("PartyMemberTracker.1", "party member chat parse threw", e) }
+            try { onChat(text.chatRaw) } catch (e: Exception) { FishDiag.fail("PartyMemberTracker.1", "party member chat parse threw", e) }
             false
         }
     }

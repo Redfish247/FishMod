@@ -1,4 +1,5 @@
 package fishmod.features.extras
+import fishmod.utils.events.chatPlain
 import fishmod.compat.cam
 
 import com.google.gson.GsonBuilder
@@ -29,7 +30,7 @@ object FairySouls {
     fun init() {
         load()
         FishEvents.chat.register { text ->
-            if (S.fairySoulWaypoints) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, ""))
+            if (S.fairySoulWaypoints) onChat(text.chatPlain)
             false
         }
         RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.fairySoulWaypoints && SkyblockLocation.inSkyblock()) render(ctx, ps, vc) }

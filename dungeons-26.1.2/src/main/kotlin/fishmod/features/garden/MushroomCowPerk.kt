@@ -6,6 +6,7 @@ import fishmod.features.item.RarityTier
 import fishmod.utils.config.FishConfig
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -45,7 +46,7 @@ object MushroomCowPerk {
 
     fun init() {
         if (S.gardenMushroomTotal >= 0) total = S.gardenMushroomTotal.toDouble()
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, gate = { S.gardenMushroom }) { packet ->
             if (packet is ClientboundBlockUpdatePacket && S.gardenMushroom) try { onBlock(packet) } catch (e: Exception) { FishDiag.fail("MushroomCowPerk.1", "mushroom perk block handler threw", e) }
             false
         }

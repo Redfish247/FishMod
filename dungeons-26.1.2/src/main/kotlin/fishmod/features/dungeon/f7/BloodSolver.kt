@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatRaw
 import fishmod.compat.movedTo
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -12,6 +13,7 @@ import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.data.EntityTools
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
@@ -66,7 +68,7 @@ object BloodSolver {
         }
 
         FishEvents.chat.register { message ->
-            when (message.string) {
+            when (message.chatRaw) {
                 OPEN_MESSAGE -> if (bloodOpenTick < 0 && SkyblockLocation.inDungeon()) bloodOpenTick = dungeonTick
                 WATCHER_MESSAGE -> if (Floor7Settings.bloodSolverEnabled && SkyblockLocation.inDungeon()) {
                     try { onWatcherSpawn() } catch (e: Exception) { FishDiag.fail("BloodSolver.3", "watcher spawn handler threw", e) }
@@ -75,8 +77,8 @@ object BloodSolver {
             false
         }
 
-        FishEvents.packet.register { packet ->
-            if (!Floor7Settings.bloodSolverEnabled) return@register false
+        registerPacket(ClientboundSetEquipmentPacket::class.java, ClientboundRemoveEntitiesPacket::class.java, ClientboundMoveEntityPacket::class.java, gate = { Floor7Settings.bloodSolverEnabled }) { packet ->
+            if (!Floor7Settings.bloodSolverEnabled) return@registerPacket false
             try {
             when (packet) {
                 is ClientboundSetEquipmentPacket -> {

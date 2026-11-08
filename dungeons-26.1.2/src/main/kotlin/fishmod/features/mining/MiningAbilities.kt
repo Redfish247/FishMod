@@ -1,5 +1,6 @@
 package fishmod.features.mining
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
@@ -32,7 +33,7 @@ object MiningAbilities {
 
     fun init() {
         FishEvents.chat.register { text ->
-            val s = Mining.strip(text.string).trim()
+            val s = Mining.strip(text.chatRaw).trim()
             READY.find(s)?.let { m ->
                 val ab = m.groupValues[1]
                 if ((S.miningAbilities && S.miningAbilityTitle) && ab in ABILITIES)

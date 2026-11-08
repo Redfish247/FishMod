@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.utils.events.chatRaw
 import fishmod.compat.hudHidden
 
 import fishmod.utils.SkyblockLocation
@@ -93,7 +94,7 @@ object Ragnarock {
         }
 
         FishEvents.chat.register { text ->
-            if (FishSettings.ragnarockEnabled && CANCELLED.matcher(text.string).find()) {
+            if (FishSettings.ragnarockEnabled && CANCELLED.matcher(text.chatRaw).find()) {
                 if (FishSettings.ragnarockCancelAlert) FishUtil.forceTitle(Component.literal("§cRagnarock Cancelled"), Component.empty())
                 ticksLeft = 0
             }

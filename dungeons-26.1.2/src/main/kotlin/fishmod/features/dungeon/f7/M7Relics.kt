@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f7
+import fishmod.utils.events.chatRaw
 import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
@@ -65,7 +66,7 @@ object M7Relics {
         )
 
         FishEvents.chat.register { text ->
-            val msg = COLOR.replace(text.string, "")
+            val msg = COLOR.replace(text.chatRaw, "")
             // Old or alpha Necron line; first one wins so a later line can't restart it.
             if (DialogueCompat.isNecronEnd(msg) && System.currentTimeMillis() - p5StartMs > RESTART_GUARD_MS) {
                 p5StartMs = System.currentTimeMillis()

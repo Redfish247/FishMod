@@ -1,4 +1,5 @@
 package fishmod.utils.dungeon
+import fishmod.utils.events.chatPlain
 import fishmod.compat.hud
 
 import fishmod.utils.FishConstants
@@ -21,7 +22,7 @@ object NecronDeath {
     @JvmStatic
     fun init() {
         FishEvents.chat.register { text ->
-            if (FishConstants.STRIP_COLOR_REGEX.replace(text.string, "").startsWith(ARGH)) started = true
+            if (text.chatPlain.startsWith(ARGH)) started = true
             false
         }
         FishEvents.worldChange.register { started = false; dead = false; lastTag = null; false }

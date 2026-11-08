@@ -7,6 +7,7 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDebug
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
@@ -69,7 +70,7 @@ object SimonSaysSolver {
             false
         }
 
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java) { packet ->
             try {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> queueBlock(packet.pos, packet.blockState)

@@ -1,5 +1,6 @@
 package fishmod.features.chat
 
+import fishmod.utils.events.chatPlain
 import fishmod.features.FishHudEditor
 import fishmod.utils.TextStrip
 import fishmod.utils.FishUtil
@@ -22,7 +23,7 @@ object ChatRuleHandler {
     fun init() {
         fishmod.utils.events.FishEvents.chat.register { message ->
             if (!ChatRuleStore.isMasterEnabled()) return@register false
-            val raw = TextStrip.plain(message.string)
+            val raw = message.chatPlain
             for (rule in ChatRuleStore.rules()) {
                 if (!rule.enabled || rule.filter.isBlank()) continue
                 try {

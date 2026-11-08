@@ -10,6 +10,7 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishUtil
 import fishmod.utils.TabListCache
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -52,7 +53,7 @@ object Mining {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> onTick(mc) }
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java) { packet ->
             if (inMiningIsland()) when (packet) {
                 is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                 is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, s -> onBlock(p, s) }

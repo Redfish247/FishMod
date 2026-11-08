@@ -1,4 +1,5 @@
 package fishmod.features.extras
+import fishmod.utils.events.chatPlain
 import fishmod.compat.cam
 
 import fishmod.utils.events.FishEvents
@@ -22,7 +23,7 @@ object PatcherWaypoints {
 
     fun init() {
         FishEvents.chat.register { text ->
-            if (S.patcherWaypoints) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, ""))
+            if (S.patcherWaypoints) onChat(text.chatPlain)
             false
         }
         FishEvents.worldChange.register { list.clear(); false }

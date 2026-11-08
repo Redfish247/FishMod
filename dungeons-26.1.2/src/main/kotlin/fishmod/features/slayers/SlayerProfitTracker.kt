@@ -1,5 +1,6 @@
 package fishmod.features.slayers
 
+import fishmod.utils.events.chatPlain
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
@@ -96,7 +97,7 @@ object SlayerProfitTracker {
         FishEvents.chat.register { text ->
             if (enabled()) {
                 try {
-                    onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim())
+                    onChat(text.chatPlain.trim())
                 } catch (e: Exception) {
                     FishDiag.fail("SlayerProfitTracker.4", "slayer profit chat handler failed", e)
                 }

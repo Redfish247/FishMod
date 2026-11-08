@@ -1,5 +1,6 @@
 package fishmod.utils.dungeon
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishUtil
 import fishmod.utils.config.FishConfig
@@ -25,7 +26,7 @@ object PracticeMode {
         // The sim announces each boss end in chat; follow it so no manual /fmpractice is needed mid-run.
         FishEvents.chat.register { text ->
             if (active) {
-                val s = text.string
+                val s = text.chatRaw
                 if (s.startsWith("Goldor killed in") || s.startsWith("Goldor finished in")) phaseOverride = 8
                 else if (s.startsWith("Necron finished in") || s.startsWith("Necron killed in")) phaseOverride = 9
             }

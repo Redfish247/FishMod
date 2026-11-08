@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.dungeon.BossPhase
@@ -17,7 +18,7 @@ object P3TitleFilter {
     @JvmStatic
     fun init() {
         FishEvents.chat.register { msg ->
-            when (msg.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()) {
+            when (msg.chatPlain.trim()) {
                 "[BOSS] Goldor: Who dares trespass into my domain?" -> inP3 = true
                 "[BOSS] Necron: You went further than any human before, congratulations." -> inP3 = false
             }

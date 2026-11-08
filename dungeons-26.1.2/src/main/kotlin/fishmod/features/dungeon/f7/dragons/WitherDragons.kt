@@ -8,6 +8,7 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.EntityTools
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents
@@ -59,7 +60,7 @@ object WitherDragons {
             false
         }
 
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundLevelParticlesPacket::class.java, ClientboundAddEntityPacket::class.java, ClientboundSetEntityDataPacket::class.java, ClientboundSetEquipmentPacket::class.java, ClientboundSoundPacket::class.java, ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { FishSettings.witherDragonsEnabled }) { packet ->
             if (on()) try {
                 when (packet) {
                     is ClientboundLevelParticlesPacket -> DragonCheck.handleSpawnPacket(packet, tick)

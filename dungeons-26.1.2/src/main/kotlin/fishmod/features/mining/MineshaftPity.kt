@@ -1,5 +1,6 @@
 package fishmod.features.mining
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.events.FishEvents
 import fishmod.features.mining.MiningSettings as S
@@ -23,7 +24,7 @@ object MineshaftPity {
             S.miningPityBlocks++
         }
         FishEvents.chat.register { text ->
-            if (S.miningPity && Mining.strip(text.string).contains("You found a Glacite Mineshaft portal!")) reset()
+            if (S.miningPity && Mining.strip(text.chatRaw).contains("You found a Glacite Mineshaft portal!")) reset()
             false
         }
         FishEvents.locationChange.register { loc ->

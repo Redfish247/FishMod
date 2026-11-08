@@ -1,4 +1,5 @@
 package fishmod.features.slayers
+import fishmod.utils.events.chatPlain
 import fishmod.compat.hudHidden
 
 import fishmod.utils.FishConstants
@@ -73,7 +74,7 @@ object SlayerBossPhases {
         FishEvents.chat.register { text ->
             if (enabled()) {
                 try {
-                    onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim())
+                    onChat(text.chatPlain.trim())
                 } catch (e: Exception) {
                     FishDiag.fail("SlayerBossPhases.2", "boss phase chat handler failed", e)
                 }

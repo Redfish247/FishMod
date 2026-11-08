@@ -4,6 +4,7 @@ import fishmod.compat.CB
 import fishmod.compat.CI
 
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.minecraft.core.BlockPos
@@ -44,7 +45,7 @@ object RiftSnake {
     }
 
     fun init() {
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { S.riftSnake }) { packet ->
             if (S.riftSnake && Rift.inArea("Living Cave", "Living Stillness")) when (packet) {
                 is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                 is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, st -> onBlock(p, st) }

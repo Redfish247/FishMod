@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.utils.events.chatPlain
 import fishmod.compat.hudHidden
 import fishmod.utils.TextStrip
 
@@ -29,7 +30,7 @@ object QuizHud {
             { FishSettings.quizHudScale }, { v -> FishSettings.quizHudScale = v }
         )
         FishEvents.chat.register { text ->
-            val s = TextStrip.plain(text.string)
+            val s = text.chatPlain
             when {
                 s.contains("I am Oruo the Omniscient. I have lived many lives.") -> { stage = 1; ticksLeft = 220 }
                 s.contains("2 questions left... Then you will have proven your worth to me!") -> {

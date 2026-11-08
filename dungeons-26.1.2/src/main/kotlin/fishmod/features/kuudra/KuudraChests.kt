@@ -1,4 +1,5 @@
 package fishmod.features.kuudra
+import fishmod.utils.events.chatRaw
 import fishmod.compat.curScreen
 
 import fishmod.features.croesus.CroesusPrices
@@ -32,7 +33,7 @@ object KuudraChests {
 
     fun init() {
         FishEvents.chat.register { c ->
-            if (S.kuudraChestsMaster && S.kuudraProfit && Mining.strip(c.string).contains("PAID CHEST REWARDS")) FishDiag.guard("KuudraChests.2", "paid rewards failed") { onPaidRewards() }
+            if (S.kuudraChestsMaster && S.kuudraProfit && Mining.strip(c.chatRaw).contains("PAID CHEST REWARDS")) FishDiag.guard("KuudraChests.2", "paid rewards failed") { onPaidRewards() }
             false
         }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, scr, _, _ ->

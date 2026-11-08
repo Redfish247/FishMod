@@ -1,4 +1,5 @@
 package fishmod
+import fishmod.utils.events.chatRaw
 import fishmod.compat.showScreen
 
 import com.mojang.brigadier.arguments.DoubleArgumentType
@@ -1431,8 +1432,8 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.150", "fishmod.features.dungeon.map.DoorHighlight.init() failed") { fishmod.features.dungeon.map.DoorHighlight.init() }
         fishmod.utils.events.FishEvents.chat.register { message ->
             try {
-                fishmod.features.dungeon.map.DungeonState.onChatMessage(message.string)
-                fishmod.features.dungeon.map.DungeonScore.onChatMessage(message.string)
+                fishmod.features.dungeon.map.DungeonState.onChatMessage(message.chatRaw)
+                fishmod.features.dungeon.map.DungeonScore.onChatMessage(message.chatRaw)
             } catch (t: Throwable) {
                 FishDiag.fail("FishModInit.152", "dungeon map chat handler failed", t)
             }

@@ -1,5 +1,6 @@
 package fishmod.features.extras
 
+import fishmod.utils.events.chatPlain
 import fishmod.features.FishHudEditor
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishUtil
@@ -42,7 +43,7 @@ object ArrowHud {
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("ArrowHud.1", "arrow hud render failed", t) }
         }
         FishEvents.chat.register { text ->
-            if (S.arrowHud || S.quiverWarning) onChat(text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim())
+            if (S.arrowHud || S.quiverWarning) onChat(text.chatPlain.trim())
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register { if ((S.arrowHud || S.quiverWarning) && ++tickN % 10 == 0) scan() }

@@ -15,6 +15,7 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemTools
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
@@ -148,8 +149,8 @@ object RouteRecorder {
             InteractionResult.PASS
         })
 
-        FishEvents.packet.register { packet ->
-            if (!FishSettings.routeRecorderEnabled || !SkyblockLocation.inDungeon()) return@register false
+        registerPacket(ClientboundTakeItemEntityPacket::class.java, ClientboundPlayerPositionPacket::class.java, ClientboundSoundPacket::class.java, gate = { FishSettings.routeRecorderEnabled }) { packet ->
+            if (!FishSettings.routeRecorderEnabled || !SkyblockLocation.inDungeon()) return@registerPacket false
             try {
                 when (packet) {
                     is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)

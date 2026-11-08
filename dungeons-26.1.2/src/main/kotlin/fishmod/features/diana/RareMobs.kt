@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.utils.events.chatRaw
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
@@ -119,7 +120,7 @@ object RareMobs {
         }
 
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
-        FishEvents.chat.register { text -> onChat(text.string); false }
+        FishEvents.chat.register { text -> onChat(text.chatRaw); false }
         FishEvents.worldChange.register { reset(); false }
     }
 

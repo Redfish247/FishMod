@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatRaw
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.SkyblockLocation
@@ -44,7 +45,7 @@ object TerminalTracker {
             false
         }
         FishEvents.chat.register { msg ->
-            if (BossPhase.inTerminals() && msg.string == "The gate has been destroyed!") st.gateDestroyed(System.currentTimeMillis())
+            if (BossPhase.inTerminals() && msg.chatRaw == "The gate has been destroyed!") st.gateDestroyed(System.currentTimeMillis())
             false
         }
     }

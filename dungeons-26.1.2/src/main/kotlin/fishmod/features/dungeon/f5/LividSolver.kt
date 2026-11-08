@@ -7,6 +7,7 @@ import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
@@ -47,8 +48,8 @@ object LividSolver {
 
     @JvmStatic
     fun init() {
-        FishEvents.packet.register { packet ->
-            if (!active()) return@register false
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, ClientboundSetEntityDataPacket::class.java, gate = { FishSettings.lividSolverEnabled }) { packet ->
+            if (!active()) return@registerPacket false
             try {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)

@@ -1,5 +1,6 @@
 package fishmod.features.slayers
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.FishConstants
 import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
@@ -17,7 +18,7 @@ object SlayerAlerts {
         FishEvents.worldChange.register { reset(); false }
         FishEvents.chat.register { text ->
             if (FishSettings.slayerAnyEnabled()) {
-                val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
+                val s = text.chatPlain.trim()
                 RNG_METER.find(s)?.let {
                     FishDiag.guard("SlayerAlerts.2", "RNG meter line handling failed: '$s'") { SlayerStatsTracker.onRng(it.groupValues[1].trim()) }
                 }

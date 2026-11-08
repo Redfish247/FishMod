@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
@@ -20,7 +21,7 @@ object ArchitectDraft {
     fun init() {
         FishEvents.chat.register { text ->
             if (!FishSettings.architectDraftRefill || !SkyblockLocation.inDungeon()) return@register false
-            val s = TextStrip.plain(text.string).trim()
+            val s = text.chatPlain.trim()
             val self = Minecraft.getInstance().player?.gameProfile?.name ?: return@register false
             val m1 = PUZZLE_FAIL.matcher(s)
             val m2 = ORUO_WRONG.matcher(s)

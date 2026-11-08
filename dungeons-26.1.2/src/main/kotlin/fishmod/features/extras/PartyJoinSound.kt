@@ -1,5 +1,6 @@
 package fishmod.features.extras
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.FishUtil
 import fishmod.utils.events.FishEvents
 import net.minecraft.network.chat.Component
@@ -14,7 +15,7 @@ object PartyJoinSound {
     fun init() {
         FishEvents.chat.register { text ->
             if (S.partyJoinSound) {
-                val s = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
+                val s = text.chatPlain.trim()
                 JOIN.find(s)?.let { onJoin(it.groupValues[1]) }
             }
             false

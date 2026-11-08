@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.utils.events.chatRaw
 import fishmod.compat.speed
 import fishmod.compat.mainTarget
 import fishmod.compat.showScreen
@@ -24,7 +25,7 @@ object DianaTest {
             false
         }
         FishEvents.chat.register { text ->
-            val s = text.string
+            val s = text.chatRaw
             if (!s.startsWith("[fmtest]")) return@register false
             when {
                 s == "[fmtest] spade" -> SpadeGuess.onSpadeUse()

@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatRaw
 import fishmod.features.FishHudEditor
 import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
@@ -76,7 +77,7 @@ object SimonSaysTracker {
 
         fishmod.utils.events.FishEvents.chat.register { message ->
             if (!FishSettings.simonSaysEnabled) return@register false
-            try { onChat(message.string) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.1", "SS tracker chat handler threw (round=$round)", e) }
+            try { onChat(message.chatRaw) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.1", "SS tracker chat handler threw (round=$round)", e) }
             false
         }
 

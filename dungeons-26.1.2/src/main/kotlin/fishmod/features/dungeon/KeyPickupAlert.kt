@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.TextStrip
 import fishmod.utils.FishUtil
@@ -26,7 +27,7 @@ object KeyPickupAlert {
     fun init() {
         FishEvents.chat.register { text ->
             if (!DungeonSettings.keyPickupAlert || fishmod.compat.BladeCompat.active || !SkyblockLocation.inDungeon()) return@register false
-            val s = TextStrip.plain(text.string).trim()
+            val s = text.chatPlain.trim()
             try {
                 when {
                     s == "A Wither Key was picked up!" || WITHER.matcher(s).matches() ->

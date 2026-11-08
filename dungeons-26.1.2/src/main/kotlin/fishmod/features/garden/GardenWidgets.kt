@@ -1,5 +1,6 @@
 package fishmod.features.garden
 
+import fishmod.utils.events.chatRaw
 import fishmod.features.mining.Mining
 import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -24,7 +25,7 @@ object GardenWidgets {
             composterWarned = idle
         }
         FishEvents.chat.register { t ->
-            val s = if (S.gardenRareCrop) Garden.strip(t.string).trim() else ""
+            val s = if (S.gardenRareCrop) Garden.strip(t.chatRaw).trim() else ""
             if (S.gardenRareCrop && RARE_CROP.containsMatchIn(s)) {
                 S.gardenRareCropCount++
                 if (S.gardenRareCropTitle) {

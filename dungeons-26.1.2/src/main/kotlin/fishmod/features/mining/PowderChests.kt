@@ -1,6 +1,8 @@
 package fishmod.features.mining
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
@@ -21,14 +23,14 @@ object PowderChests {
     private val chests = ConcurrentHashMap<BlockPos, Long>()
 
     fun init() {
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, gate = { S.miningChests }) { packet ->
             if (packet is ClientboundBlockUpdatePacket && S.miningChests && Mining.inHollows()) onBlock(packet.pos, packet.blockState)
             false
         }
         FishEvents.worldChange.register { chests.clear(); false }
         // Lockpicked chests linger until Hypixel clears the block
         FishEvents.chat.register { text ->
-            if (chests.isNotEmpty() && text.string.contains("CHEST LOCKPICKED")) {
+            if (chests.isNotEmpty() && text.chatRaw.contains("CHEST LOCKPICKED")) {
                 val pp = Minecraft.getInstance().player?.position()
                 if (pp != null) chests.keys.minByOrNull { Vec3.atCenterOf(it).distanceToSqr(pp) }?.let { chests.remove(it) }
             }

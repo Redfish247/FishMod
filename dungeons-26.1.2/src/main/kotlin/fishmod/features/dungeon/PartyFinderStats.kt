@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.FishMsg
 import fishmod.utils.TextStrip
 import fishmod.utils.HypixelApi
@@ -23,7 +24,7 @@ object PartyFinderStats {
         FishEvents.chat.register { text ->
             if (!FishSettings.pfStatsEnabled) return@register false
             try {
-                val plain = TextStrip.plain(text.string)
+                val plain = text.chatPlain
                 val m = PF_JOIN.matcher(plain)
                 if (m.find()) lookup(m.group(1), joinLine = true)
                 else if (plain.startsWith("Party Finder > ") && plain.contains("joined the dungeon group")) FishDiag.fail("PartyFinderStats.1", "PF join line didn't match: '$plain'")

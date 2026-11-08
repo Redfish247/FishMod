@@ -1,4 +1,5 @@
 package fishmod.features.mining
+import fishmod.utils.events.chatRaw
 import fishmod.compat.curScreen
 
 import fishmod.utils.events.FishEvents
@@ -25,7 +26,7 @@ object Commissions {
     fun init() {
         // e.g. "AQUAMARINE GEMSTONE COLLECTOR Commission Complete! Visit the King..."
         FishEvents.chat.register { text ->
-            if ((S.miningCommissions && S.miningCommTitle)) COMPLETE.find(Mining.strip(text.string).trim())?.let { m ->
+            if ((S.miningCommissions && S.miningCommTitle)) COMPLETE.find(Mining.strip(text.chatRaw).trim())?.let { m ->
                 val name = m.groupValues[1].lowercase().split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
                 Mining.title(S.miningCommTitleText, "§e$name", 2000, true)
             }

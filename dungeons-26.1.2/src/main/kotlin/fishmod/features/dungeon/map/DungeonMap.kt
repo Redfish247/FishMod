@@ -5,6 +5,7 @@ import fishmod.mixin.accessors.MapItemSavedDataAccessor
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.debug.FishDebug
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket
 import net.minecraft.world.level.saveddata.maps.MapId
@@ -50,7 +51,7 @@ object DungeonMap {
 
     @JvmStatic
     fun init() {
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundMapItemDataPacket::class.java) { packet ->
             if (packet is ClientboundMapItemDataPacket) {
                 val mc = Minecraft.getInstance()
                 mc.execute {

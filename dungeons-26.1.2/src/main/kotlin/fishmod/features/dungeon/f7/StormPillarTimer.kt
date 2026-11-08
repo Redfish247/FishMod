@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatRaw
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
@@ -24,7 +25,7 @@ object StormPillarTimer {
     fun init() {
         FishEvents.chat.register { text ->
             val wanted = Floor7Settings.stormCrushAlert || Floor7Settings.pillarBlastTimer
-            if (wanted && SkyblockLocation.inDungeon() && BossPhase.inP2() && text.string in HIT_LINES) {
+            if (wanted && SkyblockLocation.inDungeon() && BossPhase.inP2() && text.chatRaw in HIT_LINES) {
                 ticksLeft = BLAST_TICKS
                 FishDiag.guard("StormPillarTimer.1", "storm crush sound failed") { TickScheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f) }
             }

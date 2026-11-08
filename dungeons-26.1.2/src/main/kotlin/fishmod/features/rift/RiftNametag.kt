@@ -1,5 +1,6 @@
 package fishmod.features.rift
 
+import fishmod.utils.events.chatRaw
 import com.google.gson.JsonObject
 import fishmod.utils.HypixelApi
 import fishmod.utils.events.FishEvents
@@ -22,7 +23,7 @@ object RiftNametag {
 
     fun init() {
         FishEvents.chat.register { text ->
-            if (Rift.inRift()) PUNCHED.find(Rift.strip(text.string).trim())?.let { punched.add(it.groupValues[1].lowercase()) }
+            if (Rift.inRift()) PUNCHED.find(Rift.strip(text.chatRaw).trim())?.let { punched.add(it.groupValues[1].lowercase()) }
             false
         }
         FishEvents.locationChange.register { loc -> if (loc != SkyblockLocation.THE_RIFT) punched.clear(); false }

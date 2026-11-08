@@ -1,5 +1,6 @@
 package fishmod.features.garden
 
+import fishmod.utils.events.chatRaw
 import fishmod.features.mining.Mining
 import fishmod.utils.TabListCache
 import fishmod.utils.events.FishEvents
@@ -19,7 +20,7 @@ object CropFever {
 
     fun init() {
         FishEvents.chat.register { t ->
-            if (S.gardenFever && Garden.inGarden() && Garden.strip(t.string).contains("Crop Fever", true)) lastSeenMs = System.currentTimeMillis()
+            if (S.gardenFever && Garden.inGarden() && Garden.strip(t.chatRaw).contains("Crop Fever", true)) lastSeenMs = System.currentTimeMillis()
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->

@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatPlain
 import fishmod.features.dungeon.map.DungeonScore
 import fishmod.utils.TextStrip
 import fishmod.features.dungeon.map.DungeonState
@@ -7,6 +8,7 @@ import fishmod.utils.ChatQueue
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket
 import net.minecraft.world.entity.monster.zombie.Zombie
@@ -28,7 +30,7 @@ object MimicAnnounce {
 
         FishEvents.chat.register { text ->
             if (FishSettings.mimicAnnounceEnabled) {
-                val s = TextStrip.plain(text.string).trim()
+                val s = text.chatPlain.trim()
                 if (PRINCE.matches(s)) princeKilled(false)
                 else if (BAT.matches(s)) batKilled(false)
                 else if (s.startsWith("A Prince falls") || s.startsWith("A Bat has been slain")) FishDiag.fail("MimicAnnounce.1", "bonus score line unparsed: '$s'")
@@ -41,7 +43,7 @@ object MimicAnnounce {
             false
         }
 
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundEntityEventPacket::class.java, gate = { FishSettings.mimicAnnounceEnabled }) { packet ->
             if (FishSettings.mimicAnnounceEnabled && !mimicSent && packet is ClientboundEntityEventPacket
                 && packet.eventId.toInt() == 3 && isFloor67() && inClear()
             ) {

@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.utils.events.chatRaw
 import fishmod.compat.curScreen
 
 import fishmod.features.mining.Mining
@@ -38,7 +39,7 @@ object Visitors {
     private var tick = 0
 
     fun init() {
-        FishEvents.chat.register { text -> Garden.inGarden() && onChat(Garden.strip(text.string).trim()) }
+        FishEvents.chat.register { text -> Garden.inGarden() && onChat(Garden.strip(text.chatRaw).trim()) }
         FishEvents.worldChange.register { shopping.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || tick++ % 10 != 0) return@register

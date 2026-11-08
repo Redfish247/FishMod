@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.utils.events.chatPlain
 import fishmod.compat.curScreen
 import fishmod.utils.TextStrip
 import fishmod.compat.hudHidden
@@ -62,7 +63,7 @@ object InvincibilityTracker {
 
         FishEvents.chat.register { text ->
             if (DungeonSettings.invincibilityTimerHud) {
-                val s = TextStrip.plain(text.string).replace(WS, " ").trim()
+                val s = text.chatPlain.replace(WS, " ").trim()
                 val hit = Type.entries.firstOrNull { it.regex.matches(s) }
                 if (hit == null && !s.contains(" > ") && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
                 hit?.let { t ->

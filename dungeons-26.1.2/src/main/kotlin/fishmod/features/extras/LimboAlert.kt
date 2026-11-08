@@ -1,5 +1,6 @@
 package fishmod.features.extras
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.FishUtil
 import fishmod.utils.events.FishEvents
 import net.minecraft.network.chat.Component
@@ -12,7 +13,7 @@ object LimboAlert {
     fun init() {
         FishEvents.chat.register { text ->
             if (S.limboAlert) {
-                val s = text.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
+                val s = text.chatPlain.trim()
                 if (s.startsWith("You were spawned in Limbo") || s.startsWith("You are AFK. Move around to return from AFK")
                     || s == "You are currently in Limbo") fire()
             }

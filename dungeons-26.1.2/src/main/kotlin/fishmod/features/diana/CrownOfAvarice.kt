@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.utils.events.chatPlain
 import fishmod.compat.curScreen
 import fishmod.compat.hudHidden
 
@@ -69,7 +70,7 @@ object CrownOfAvarice {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 10 == 0) onTick(it) }
         FishEvents.chat.register { text ->
-            val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
+            val s = text.chatPlain.trim()
             val now = System.currentTimeMillis()
             if (NOT_CROWN.containsMatchIn(s)) lastNonCrownMs = now
             else if (Diana.inHub() && DUG_COINS.containsMatchIn(s)) lastDugCoinsMs = now

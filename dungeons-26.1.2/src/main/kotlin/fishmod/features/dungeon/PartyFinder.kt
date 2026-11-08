@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.utils.events.chatPlain
 import fishmod.compat.curScreen
 import fishmod.utils.TextStrip
 
@@ -59,7 +60,7 @@ object PartyFinder {
         FishEvents.chat.register { text ->
             if (FishSettings.pfAutoKick) {
                 try {
-                    val plain = TextStrip.plain(text.string)
+                    val plain = text.chatPlain
                     val m = PF_JOIN.matcher(plain)
                     if (m.find()) tryAutoKick(m.group(1), m.group(2))
                     else if (plain.startsWith("Party Finder > ") && plain.contains("joined the dungeon group")) FishDiag.fail("PartyFinder.1", "PF join line didn't match: '$plain'")

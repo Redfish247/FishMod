@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.puzzles.odin.BeamsSolver
@@ -16,6 +17,7 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
@@ -73,7 +75,7 @@ object PuzzleSolvers {
             false
         }
 
-        FishEvents.packet.register { packet ->
+        registerPacket(ClientboundPlayerPositionPacket::class.java, gate = { FishSettings.tpMazeSolver }) { packet ->
             if (enabled && isInPuzzle && FishSettings.tpMazeSolver && packet is ClientboundPlayerPositionPacket) {
                 val from = Minecraft.getInstance().player?.position()
                 Minecraft.getInstance().execute { FishDiag.guard("PuzzleSolvers.14", "tp maze teleport handling failed") { TPMazeSolver.tpPacket(packet, from) } }
@@ -94,7 +96,7 @@ object PuzzleSolvers {
 
         FishEvents.chat.register { text ->
             if (!enabled || !SkyblockLocation.inDungeon()) return@register false
-            val msg = TextStrip.plain(text.string)
+            val msg = text.chatPlain
             if (FishSettings.weirdosSolver) weirdosRegex.find(msg)?.let {
                 FishDiag.guard("PuzzleSolvers.18", "weirdos NPC message handling failed '$msg'") { WeirdosSolver.onNPCMessage(it.groupValues[1], it.groupValues[2]) }
             }

@@ -1,5 +1,6 @@
 package fishmod.features.rift
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.FishUtil
 import fishmod.utils.data.EntityTools
 import fishmod.utils.events.FishEvents
@@ -52,7 +53,7 @@ object RiftMobs {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
-        FishEvents.chat.register { t -> if (S.riftBacte && Rift.inRift()) onBacteChat(Rift.strip(t.string).trim()); false }
+        FishEvents.chat.register { t -> if (S.riftBacte && Rift.inRift()) onBacteChat(Rift.strip(t.chatRaw).trim()); false }
         FishEvents.worldChange.register { bacteUntil = 0L; marks = emptyList(); fleespook = null; bacte = emptyList(); bacteSlimes = emptyList(); still.clear(); bacteId = -1; false }
         RenderHooks.GIZMO.register { _ -> render() }
     }

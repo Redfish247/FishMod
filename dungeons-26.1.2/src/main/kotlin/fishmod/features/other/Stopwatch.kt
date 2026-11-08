@@ -1,5 +1,6 @@
 package fishmod.features.other
 
+import fishmod.utils.events.chatPlain
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.compat.hudHidden
 import fishmod.features.dungeon.f7.terminal.TerminalType
@@ -110,7 +111,7 @@ object Stopwatch {
         fishmod.features.FishHudEditor.register(NAME, hud)
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("Stopwatch.1", "stopwatch tick") { tick(mc) } }
-        FishEvents.chat.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(fishmod.utils.TextStrip.plain(msg.string)) }; false }
+        FishEvents.chat.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(msg.chatPlain) }; false }
         FishEvents.terminalStep.register { name, _, objective, _, _ ->
             when (objective) {
                 "terminal" -> {

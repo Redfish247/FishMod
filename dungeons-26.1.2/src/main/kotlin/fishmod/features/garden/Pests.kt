@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.utils.events.chatRaw
 import fishmod.compat.speed
 import fishmod.compat.curScreen
 
@@ -52,7 +53,7 @@ object Pests {
     }
 
     fun init() {
-        FishEvents.chat.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.string).trim()); false }
+        FishEvents.chat.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.chatRaw).trim()); false }
         FishEvents.worldChange.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
         FishEvents.particle.register { p ->
             if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.speed == 0f && Garden.inGarden() && holdingVacuum()) {

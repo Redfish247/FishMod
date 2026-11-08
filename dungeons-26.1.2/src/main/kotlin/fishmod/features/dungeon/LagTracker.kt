@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
@@ -57,7 +58,7 @@ object LagTracker {
     @JvmStatic
     fun init() {
         FishEvents.chat.register { message ->
-            val s = message.string
+            val s = message.chatRaw
 
             if (!active && !ended && s.contains(RUN_START_FRAGMENT)) {
                 start()

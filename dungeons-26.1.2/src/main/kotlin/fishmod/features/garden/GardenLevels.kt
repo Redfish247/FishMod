@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.utils.events.chatRaw
 import fishmod.compat.curScreen
 
 import fishmod.utils.FishUtil
@@ -83,7 +84,7 @@ object GardenLevels {
             if (tick % 5 == 0) scanMenu()
         }
         FishEvents.chat.register { t ->
-            val m = if (Garden.inGarden() && S.gardenLevelXp > 0) GXP.find(Garden.strip(t.string)) else null
+            val m = if (Garden.inGarden() && S.gardenLevelXp > 0) GXP.find(Garden.strip(t.chatRaw)) else null
             if (m != null) {
                 S.gardenLevelXp += m.groupValues[1].replace(",", "").toLongOrNull() ?: 0
                 checkLevelUp()

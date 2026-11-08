@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.utils.events.chatPlain
 import fishmod.compat.hudHidden
 import fishmod.utils.TextStrip
 
@@ -36,7 +37,7 @@ object PartyWarpTimer {
         FishEvents.chat.register { text ->
             if (!DungeonSettings.partyWarpTimer || fishmod.compat.BladeCompat.active) return@register false
             try {
-                val s = TextStrip.plain(text.string)
+                val s = text.chatPlain
                 if (ENTERED.matcher(s).find()) {
                     if (remainingMs() <= 0L) armedAt = System.currentTimeMillis()
                 } else if (FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {

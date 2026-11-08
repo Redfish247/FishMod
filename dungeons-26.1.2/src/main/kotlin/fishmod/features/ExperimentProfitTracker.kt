@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.utils.events.chatPlain
 import fishmod.compat.Fmt
 import fishmod.compat.curScreen
 import fishmod.compat.hudHidden
@@ -64,7 +65,7 @@ object ExperimentProfitTracker {
         }
         FishEvents.chat.register { text ->
             if (FishSettings.expProfitEnabled) FishDiag.guard("ExperimentProfitTracker.1", "experiment chat parse failed") {
-                onChat(text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim(), text)
+                onChat(text.chatPlain.trim(), text)
             }
             false
         }

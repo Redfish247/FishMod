@@ -1,5 +1,6 @@
 package fishmod.features.kuudra
 
+import fishmod.utils.events.chatRaw
 import fishmod.features.mining.Mining
 import fishmod.utils.ChatQueue
 import fishmod.utils.FishMsg
@@ -77,7 +78,7 @@ object Kuudra {
 
     @JvmStatic
     fun init() {
-        FishEvents.chat.register { c -> inKuudra() && (FishDiag.guard("Kuudra.1", "kuudra chat failed") { onChat(Mining.strip(c.string)) } ?: false) }
+        FishEvents.chat.register { c -> inKuudra() && (FishDiag.guard("Kuudra.1", "kuudra chat failed") { onChat(Mining.strip(c.chatRaw)) } ?: false) }
         FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !inKuudra() || tick++ % 10 != 0) return@register

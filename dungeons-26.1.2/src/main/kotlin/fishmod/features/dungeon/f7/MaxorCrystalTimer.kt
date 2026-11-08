@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatRaw
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.FishUtil
@@ -36,7 +37,7 @@ object MaxorCrystalTimer {
     fun init() {
         FishEvents.chat.register { text ->
             if (!Floor7Settings.crystalSpawnHud || !inMaxor()) return@register false
-            val line = text.string
+            val line = text.chatRaw
             when {
                 line in LASERED -> respawnIn = RESPAWN_TICKS
                 line.endsWith(PICKUP_SUFFIX) -> {

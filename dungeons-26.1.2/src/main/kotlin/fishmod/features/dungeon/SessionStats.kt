@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.utils.events.chatPlain
 import fishmod.compat.curScreen
 
 import fishmod.features.FishHudEditor
@@ -183,7 +184,7 @@ object SessionStats {
 
         FishEvents.chat.register { message ->
             if (!FishSettings.sessionStatsEnabled) return@register false
-            val s = message.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
+            val s = message.chatPlain
             if (s.startsWith("☠ ") && !DEATH_PAT.matcher(s).find() && (s.contains(" killed") || s.contains(" died"))) FishDiag.fail("SessionStats.3", "death line not matched: '$s'")
 
             if (s == MORT_START) {

@@ -1,5 +1,6 @@
 package fishmod.features.rift
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.FishUtil
 import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
@@ -37,7 +38,7 @@ object RiftParkour {
         FishEvents.worldChange.register { COURSES.forEach { it.idx = -1 }; false }
         FishEvents.chat.register { text ->
             if (!Rift.inRift()) return@register false
-            val m = Rift.strip(text.string)
+            val m = Rift.strip(text.chatRaw)
             if (m.contains("THE LAVA OOFED YOU BACK TO THE START")) COURSES.forEach { it.idx = -1 }
             if (S.riftKillZone && Rift.inRift() && m.contains("Get back in the arena or you will DIE"))
                 FishUtil.forceTitle(Component.literal("§c§lGet back in the arena!"), Component.empty(), 1000)

@@ -1,5 +1,7 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatPlain
+import fishmod.utils.events.chatRaw
 import fishmod.compat.BladeCompat
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.TextStrip
@@ -39,8 +41,8 @@ object DungeonRequeue {
     @JvmStatic
     fun init() {
         FishEvents.chat.register { text ->
-            val s = TextStrip.plain(text.string)
-            onChatLine(text.string)
+            val s = text.chatPlain
+            onChatLine(text.chatRaw)
             when {
                 s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; lastFloor = -1; lastMaster = false }
                 BREAKUP.matcher(s).find() -> partyChanged = true

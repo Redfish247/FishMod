@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.utils.events.chatRaw
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.data.TextTools
@@ -31,7 +32,7 @@ object SectionCountHud {
     fun init() {
         FishEvents.chat.register { msg ->
             if (Floor7Settings.sectionShowPrevious && BossPhase.inTerminals()) {
-                GATE_LINES[msg.string]?.let { last = it }
+                GATE_LINES[msg.chatRaw]?.let { last = it }
             }
             false
         }

@@ -1,5 +1,6 @@
 package fishmod.features.slayers
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
@@ -153,7 +154,7 @@ object SlayerManager {
 
         FishEvents.chat.register { text ->
             if (!FishSettings.slayerAnyEnabled()) return@register false
-            val s = text.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()
+            val s = text.chatPlain.trim()
             val now = System.currentTimeMillis()
             try { when {
                 QUEST_STARTED.matcher(s).find() -> {

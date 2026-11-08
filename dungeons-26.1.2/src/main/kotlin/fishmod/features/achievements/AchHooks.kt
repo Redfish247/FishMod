@@ -1,4 +1,5 @@
 package fishmod.features.achievements
+import fishmod.utils.events.chatPlain
 import fishmod.compat.curScreen
 
 import fishmod.features.croesus.CroesusPrices
@@ -43,7 +44,7 @@ object AchHooks {
     fun init() {
         FishEvents.chat.register { c ->
             if (!AchSettings.achEnabled) return@register false
-            FishDiag.guard("AchHooks.1", "achievement chat parse") { onChat(c.string.replace(FishConstants.STRIP_COLOR_REGEX, "").trim()) }
+            FishDiag.guard("AchHooks.1", "achievement chat parse") { onChat(c.chatPlain.trim()) }
             false
         }
         FishEvents.runEnd.register {

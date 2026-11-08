@@ -1,5 +1,6 @@
 package fishmod.features.kuudra
 
+import fishmod.utils.events.chatRaw
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.mining.Mining
@@ -72,7 +73,7 @@ object KuudraExtras {
     }
 
     fun init() {
-        FishEvents.chat.register { c -> if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.1", "kuudra extras chat failed") { onChat(Mining.strip(c.string)) }; false }
+        FishEvents.chat.register { c -> if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.1", "kuudra extras chat failed") { onChat(Mining.strip(c.chatRaw)) }; false }
         FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !Kuudra.inKuudra()) return@register

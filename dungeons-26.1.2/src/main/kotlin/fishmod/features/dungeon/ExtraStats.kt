@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.events.chatPlain
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.TextStrip
 import fishmod.utils.FishUtil
@@ -67,7 +68,7 @@ object ExtraStats {
 
         FishEvents.chat.register { text ->
             if (!FishSettings.extraStatsEnabled || !SkyblockLocation.inDungeon()) return@register false
-            val s = TextStrip.plain(text.string)
+            val s = text.chatPlain
 
             if (HEADER.containsMatchIn(s)) {
                 if (!requested) { requested = true; FishUtil.executeCommand("showextrastats") }
