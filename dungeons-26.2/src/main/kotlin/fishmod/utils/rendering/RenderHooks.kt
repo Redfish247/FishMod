@@ -24,6 +24,16 @@ object RenderHooks {
 
     @Volatile private var registered = false
 
+    // Recorders are reused across frames; each pass restarts the pool and replay finishes before the next frame's collect
+    private val recPool = ArrayList<RecordingConsumer>()
+    private var recUsed = 0
+    private fun newRec(): RecordingConsumer {
+        val r = if (recUsed < recPool.size) recPool[recUsed] else RecordingConsumer().also { recPool.add(it) }
+        recUsed++
+        r.clear()
+        return r
+    }
+
     @JvmStatic
     fun init() {
         if (registered) return
@@ -35,6 +45,7 @@ object RenderHooks {
 
     private fun gizmos(ctx: LevelRenderContext) {
         if (Minecraft.getInstance().level == null) return
+        recUsed = 0
         try {
             FishDraw.clearDeferredFills()
             GIZMO.invoke { it.emit(ctx) }
@@ -47,10 +58,10 @@ object RenderHooks {
     // Vanilla gizmos are drawn after terrain and translucent targets, so highlights can't be covered by water, glass or leaves.
     private fun gizmoOverlays(ctx: LevelRenderContext) {
         val ps = PoseStack()
-        val fills = RecordingConsumer()
+        val fills = newRec()
         NO_DEPTH_FILLED.invoke { it.render(ctx, ps, fills) }
         quads(fills, true)
-        val lines = RecordingConsumer()
+        val lines = newRec()
         FishDraw.quadsToFillLayer = true
         try {
             NO_DEPTH_LINE.invoke { it.render(ctx, ps, lines) }
@@ -63,12 +74,12 @@ object RenderHooks {
             i += 2
         }
         if (FishDraw.hasRedirectedQuads()) {
-            val rq = RecordingConsumer()
+            val rq = newRec()
             FishDraw.flushRedirectedQuads(rq)
             quads(rq, true)
         }
         if (FishDraw.hasDeferredFills()) {
-            val rec = RecordingConsumer()
+            val rec = newRec()
             FishDraw.flushDeferredFills(ps, rec)
             quads(rec, false)
         }
@@ -98,11 +109,12 @@ object RenderHooks {
         val mc = Minecraft.getInstance()
         if (mc.level == null) return
         val collector = ctx.submitNodeCollector()
+        recUsed = 0
         WorldText.collector = collector
         try {
             if (VisualSettings.gizmoOverlays) return
             if (FishDraw.hasDeferredFills()) {
-                val rec = RecordingConsumer()
+                val rec = newRec()
                 FishDraw.flushDeferredFills(cameraStack(), rec)
                 submit(collector, FishRenderLayers.FILL, rec)
             }
@@ -114,7 +126,7 @@ object RenderHooks {
                 FishDraw.quadsToFillLayer = false
             }
             if (FishDraw.hasRedirectedQuads()) {
-                val rec = RecordingConsumer()
+                val rec = newRec()
                 FishDraw.flushRedirectedQuads(rec)
                 submit(collector, FishRenderLayers.FILL_ND, rec)
             }
@@ -133,7 +145,7 @@ object RenderHooks {
 
     private fun drawLayer(ctx: LevelRenderContext, collector: SubmitNodeCollector, layer: RenderType, handler: SimpleHandler<RenderHook>) {
         if (handler.size() == 0) return
-        val rec = RecordingConsumer()
+        val rec = newRec()
         val ps = cameraStack()
         handler.invoke { it.render(ctx, ps, rec) }
         submit(collector, layer, rec)

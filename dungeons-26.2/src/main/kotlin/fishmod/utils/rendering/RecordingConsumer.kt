@@ -10,6 +10,8 @@ class RecordingConsumer : VertexConsumer {
     var count = 0
         private set
 
+    fun clear() { count = 0 }
+
     override fun addVertex(x: Float, y: Float, z: Float): VertexConsumer {
         if (count == col.size) { xyz = xyz.copyOf(xyz.size * 2); col = col.copyOf(col.size * 2); wid = wid.copyOf(wid.size * 2) }
         xyz[count * 3] = x; xyz[count * 3 + 1] = y; xyz[count * 3 + 2] = z
