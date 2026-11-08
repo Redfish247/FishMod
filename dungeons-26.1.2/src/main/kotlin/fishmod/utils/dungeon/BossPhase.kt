@@ -93,9 +93,7 @@ object BossPhase {
     @JvmStatic
     fun checkNecronBar() {
         if (!awaitingNecronDeath()) { sawNecronBar = false; return }
-        val bars = (net.minecraft.client.Minecraft.getInstance().hud.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars ?: return
-        val bar = bars.values.firstOrNull { it.name.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim() == "Necron" }
-        val pct = (bar as? fishmod.mixin.accessors.LerpingBossEventAccessor)?.targetPercent
+        val pct = NecronSnapshot.bar(net.minecraft.client.Minecraft.getInstance())
         if (pct != null && pct > 0f) { sawNecronBar = true; return }
         if (sawNecronBar) { sawNecronBar = false; fireP5Start("necron bar empty") }
     }

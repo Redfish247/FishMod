@@ -132,7 +132,6 @@ object NecronDropPredict {
         val p = mc.player ?: return
         val pos = Vec3(p.x, p.y, p.z)
         phaseTicks++
-        if (phaseTicks <= 200) FishDebug.LOGGER.info("[NecronDropTrace] t=%d pos=%.2f,%.2f,%.2f ground=%s".format(phaseTicks, pos.x, pos.y, pos.z, p.onGround()))
         if (locked) {
             dragTicks++
             val before = prev

@@ -1,14 +1,12 @@
 package fishmod.utils.dungeon
 import fishmod.compat.hud
 
-import fishmod.mixin.accessors.BossBarHudAccessor
 import fishmod.utils.FishConstants
 import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
-import net.minecraft.world.entity.decoration.ArmorStand
 
 // Necron death like NoammAddons: boss bar hits 0 after "ARGH!"; backup = "?" in his nametag
 object NecronDeath {
@@ -34,20 +32,14 @@ object NecronDeath {
     }
 
     private fun check(mc: Minecraft) {
-        val bars = (mc.hud.bossOverlay as BossBarHudAccessor).bossBars.values
-        if (bars.any { it.name.string.contains("Necron") && it.progress <= 0f }) return fire("boss bar 0")
-
-        val level = mc.level ?: return
-        for (e in level.entitiesForRendering()) {
-            if (e !is ArmorStand || !e.hasCustomName()) continue
-            val tag = FishConstants.STRIP_COLOR_REGEX.replace(e.customName?.string ?: continue, "")
-            if (!tag.contains("Necron")) continue
-            if (tag != lastTag) {
-                lastTag = tag
-                FishDebug.LOGGER.info("[NecronDeath] tag '$tag' cps=${tag.codePoints().toArray().joinToString(",") { Integer.toHexString(it) }}")
-            }
-            if (tag.contains('?') || tag.contains('�') || tag.contains('□')) return fire("nametag ?")
+        val pct = NecronSnapshot.bar(mc)
+        if (pct != null && pct <= 0f) return fire("boss bar 0")
+        val tag = NecronSnapshot.nametag(mc) ?: return
+        if (tag != lastTag) {
+            lastTag = tag
+            FishDebug.LOGGER.info("[NecronDeath] tag '$tag' cps=${tag.codePoints().toArray().joinToString(",") { Integer.toHexString(it) }}")
         }
+        if (tag.contains('?') || tag.contains('�') || tag.contains('□')) return fire("nametag ?")
     }
 
     private fun fire(reason: String) {

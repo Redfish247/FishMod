@@ -14,7 +14,6 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.dungeon.DialogueCompat
 import fishmod.utils.dungeon.NecronDeath
-import fishmod.utils.dungeon.NecronTrace
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
@@ -90,7 +89,7 @@ object M7Relics {
         }
         FishEvents.worldChange.register { spawnEndMs = 0L; p5StartMs = 0L; spawned = false; myRelic = null; pickers.clear(); placed.clear(); relicStands.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
-            try { NecronTrace.tick(); BossPhase.checkNecronBar(); checkRelics() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
+            try { BossPhase.checkNecronBar(); checkRelics() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }
 
         RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
