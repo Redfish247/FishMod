@@ -31,3 +31,16 @@ FishModNew/
 /tools/fmtest.ps1
 /tools/run262.sh
 /tools/smoke-test.ps1
+
+# Notes, audits, changelogs, drafts: local only (no markdown in the repo)
+*.md
+/*.txt
+!/LICENSE_inter-OFL.txt
+/*.sql
+/audit-work/
+/builds/
+/promo-video/
+/tools/bestiary-tracker/
+/tools/gen-color-compat.py
+*/config/
+*/logs/
