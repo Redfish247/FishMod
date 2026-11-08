@@ -272,12 +272,6 @@ object PvDraw {
 	}
 
 	@JvmStatic
-	@Suppress("UNUSED_PARAMETER")
-	fun layeredPanel(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, pad: Int) {
-		innerPanel(g, x, y, w, h)
-	}
-
-	@JvmStatic
 	fun text(g: GuiGraphicsExtractor, font: Font, value: String?, x: Int, y: Int, color: Int) {
 		g.text(font, value, x, y, color, false)
 	}
@@ -459,10 +453,6 @@ object PvDraw {
 		return ExtrasSettings.pvMaxedColor
 	}
 
-	/** Hue wheel colour; blends toward cosmetics purple so it still nods to the name gradient. */
-	@JvmStatic
-	fun chromaRgb(hue: Float): Int = rainbowArgb(hue)
-
 	@JvmStatic
 	fun chromaText(text: String?, bold: Boolean, start: Int = 0, periodMs: Long = 2800L, step: Float = 0.07f): Component {
 		if (text.isNullOrEmpty()) {
@@ -570,22 +560,5 @@ object PvDraw {
 			val vw = font.width(right)
 			g.text(font, styled(right, COLOR_MUTED, false), x + maxOf(0, w - vw), y, COLOR_WHITE, false)
 		}
-	}
-
-	/** Right-align `value` after `label` within `w` using space padding. */
-	@JvmStatic
-	@JvmOverloads
-	fun paddedLabelValue(
-		font: Font, label: String?, value: String?, w: Int, labelColor: Int = COLOR_TEXT, labelBold: Boolean = false
-	): Component {
-		val right = value ?: ""
-		val leftComp = styled(label ?: "", labelColor, labelBold)
-		val gap = w - font.width(leftComp) - font.width(right)
-		val spaceW = maxOf(1, font.width(" "))
-		val spaces = maxOf(1, gap / spaceW)
-		return Component.empty()
-			.append(leftComp)
-			.append(Component.literal(" ".repeat(spaces)))
-			.append(styled(right, COLOR_MUTED, false))
 	}
 }

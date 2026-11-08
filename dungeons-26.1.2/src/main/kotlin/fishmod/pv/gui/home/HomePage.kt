@@ -161,21 +161,6 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 
 	fun playerName(): String = snapshot?.playerName ?: ""
 
-	fun applyNetworth(
-		normal: NetworthBreakdown?,
-		nonCosmetic: NetworthBreakdown?,
-		unsoulbound: NetworthBreakdown?,
-		unsoulboundNonCosmetic: NetworthBreakdown?
-	) {
-		normal?.let { networthNormal = it }
-		nonCosmetic?.let { networthNonCosmetic = it }
-		unsoulbound?.let { networthUnsoulbound = it }
-		unsoulboundNonCosmetic?.let { networthUnsoulboundNonCosmetic = it }
-		// NW label is cached by total only; a failed load keeps total 0 and would stay "...".
-		leftColumn.clearCaches()
-		invalidateLayoutCache()
-	}
-
 	fun clickWeight(mouseX: Double, mouseY: Double): Boolean {
 		if (leftColumn.showingStatsFace()) {
 			return false
@@ -197,8 +182,6 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 	fun slayerKeyPressed(key: Int): Boolean = slayerOverlay.keyPressed(key)
 
 	fun slayerCharTyped(ch: Char): Boolean = slayerOverlay.charTyped(ch)
-
-	fun slayerOverlayOpen(): Boolean = slayerOverlay.isOpen()
 
 	fun renderSlayerOverlay(g: GuiGraphicsExtractor, font: Font, screenW: Int, screenH: Int, mouseX: Int, mouseY: Int) {
 		slayerOverlay.render(g, font, screenW, screenH, mouseX, mouseY)
@@ -258,8 +241,6 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 	fun forceCloseSbLevelOverlay() {
 		sbXpOverlay.forceClose()
 	}
-
-	fun sbXpExpandPhase(): SbXpExpandPhase = sbXpOverlay.phase()
 
 	fun hitName(mouseX: Double, mouseY: Double): Boolean = leftColumn.hitName(mouseX, mouseY)
 

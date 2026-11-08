@@ -62,17 +62,6 @@ class AuctionSnapshot private constructor(
 		fun onProfile(viewedProfileId: String?): Boolean =
 			profileKnown() && viewedProfileId != null && profileId == viewedProfileId.replace("-", "").lowercase(Locale.ROOT)
 
-		fun withTier(newTier: String?): Listing {
-			val t = newTier ?: ""
-			if (t == tier) {
-				return this
-			}
-			return copy(tier = t)
-		}
-
-		fun withEnrichment(name: String?, tier: String?, slot: InventorySnapshot.Slot?, details: List<String>?): Listing =
-			withEnrichment(name, tier, slot, details, profileId)
-
 		fun withEnrichment(
 			name: String?,
 			tier: String?,
@@ -219,76 +208,9 @@ class AuctionSnapshot private constructor(
 	fun withHistoryLoading(loading: Boolean): AuctionSnapshot =
 		if (loading == historyLoading) this else rebuild(historyLoading = loading)
 
-	/** Keeps this snapshot's active listings and stats, takes sold/bought from {@code other}. */
-	fun withHistoryFrom(other: AuctionSnapshot): AuctionSnapshot = rebuild(
-		sold = other.sold, bought = other.bought, soldPage = other.soldPage, boughtPage = other.boughtPage,
-		soldHasMore = other.soldHasMore, boughtHasMore = other.boughtHasMore, historyLoading = other.historyLoading
-	)
-
 	fun totalCoins(bucket: Bucket?): Long = forBucket(bucket).sumOf { it.price() }
 
 	fun withStats(stats: Stats?): AuctionSnapshot = rebuild(stats = stats)
-
-	fun withMoreSold(extra: List<Listing>?, page: Int, hasMore: Boolean): AuctionSnapshot =
-		rebuild(sold = mergeById(sold, extra), soldPage = page, soldHasMore = hasMore)
-
-	fun withMoreBought(extra: List<Listing>?, page: Int, hasMore: Boolean): AuctionSnapshot =
-		rebuild(bought = mergeById(bought, extra), boughtPage = page, boughtHasMore = hasMore)
-
-	/**
-	 * Patch rarity on listings keyed by auction id (Cofl summaries omit {@code tier}).
-	 * @param overwrite when true, replace an existing (e.g. wrong NEU) tier with Cofl's.
-	 */
-	@JvmOverloads
-	fun withTiers(tiersByAuctionId: Map<String, String?>?, overwrite: Boolean = false): AuctionSnapshot {
-		if (tiersByAuctionId.isNullOrEmpty()) {
-			return this
-		}
-		val normalized = LinkedHashMap<String, String>()
-		for ((key, value) in tiersByAuctionId) {
-			if (key.isNullOrBlank()) {
-				continue
-			}
-			val tier = SkyBlockItemFactory.normalizeTier(value)
-			if (tier.isBlank()) {
-				continue
-			}
-			normalized[normalizeId(key)] = tier
-		}
-		if (normalized.isEmpty()) {
-			return this
-		}
-		val nextActive = applyTiers(active, normalized, overwrite)
-		val nextSold = applyTiers(sold, normalized, overwrite)
-		val nextBought = applyTiers(bought, normalized, overwrite)
-		if (nextActive === active && nextSold === sold && nextBought === bought) {
-			return this
-		}
-		return rebuild(active = nextActive, sold = nextSold, bought = nextBought)
-	}
-
-	fun withEnrichments(byAuctionId: Map<String, Listing?>?): AuctionSnapshot {
-		if (byAuctionId.isNullOrEmpty()) {
-			return this
-		}
-		val normalized = LinkedHashMap<String, Listing>()
-		for ((key, value) in byAuctionId) {
-			if (key.isNullOrBlank() || value == null) {
-				continue
-			}
-			normalized[normalizeId(key)] = value
-		}
-		if (normalized.isEmpty()) {
-			return this
-		}
-		val nextActive = applyEnrichments(active, normalized)
-		val nextSold = applyEnrichments(sold, normalized)
-		val nextBought = applyEnrichments(bought, normalized)
-		if (nextActive === active && nextSold === sold && nextBought === bought) {
-			return this
-		}
-		return rebuild(active = nextActive, sold = nextSold, bought = nextBought)
-	}
 
 	companion object {
 		private val RARITY_ORDER = arrayOf(
@@ -310,46 +232,6 @@ class AuctionSnapshot private constructor(
 			java.util.List.copyOf(detailLines ?: listOf()),
 			profileId?.let { normalizeId(it) } ?: ""
 		)
-
-		private fun applyTiers(listings: List<Listing>, tiersByAuctionId: Map<String, String>, overwrite: Boolean): List<Listing> {
-			if (listings.isEmpty()) {
-				return listings
-			}
-			var changed = false
-			val out = ArrayList<Listing>(listings.size)
-			for (listing in listings) {
-				val id = normalizeId(listing.auctionId)
-				val tier = if (id.isEmpty()) null else tiersByAuctionId[id]
-				val missing = listing.tier.isBlank()
-				val differs = !tier.isNullOrBlank() && !tier.equals(listing.tier, ignoreCase = true)
-				if (!tier.isNullOrBlank() && (missing || (overwrite && differs))) {
-					out.add(listing.withTier(tier))
-					changed = true
-				} else {
-					out.add(listing)
-				}
-			}
-			return if (changed) out else listings
-		}
-
-		private fun applyEnrichments(listings: List<Listing>, byAuctionId: Map<String, Listing>): List<Listing> {
-			if (listings.isEmpty()) {
-				return listings
-			}
-			var changed = false
-			val out = ArrayList<Listing>(listings.size)
-			for (listing in listings) {
-				val id = normalizeId(listing.auctionId)
-				val enriched = if (id.isEmpty()) null else byAuctionId[id]
-				if (enriched != null) {
-					out.add(enriched)
-					changed = true
-				} else {
-					out.add(listing)
-				}
-			}
-			return if (changed) out else listings
-		}
 
 		@JvmStatic
 		@JvmOverloads
@@ -621,17 +503,6 @@ class AuctionSnapshot private constructor(
 				listOf(),
 				""
 			)
-		}
-
-		private fun mergeById(existing: List<Listing>, extra: List<Listing>?): List<Listing> {
-			val map = LinkedHashMap<String, Listing>()
-			for (listing in existing) {
-				map[key(listing)] = listing
-			}
-			for (listing in extra.orEmpty()) {
-				map.putIfAbsent(key(listing), listing)
-			}
-			return ArrayList(map.values)
 		}
 
 		private fun key(listing: Listing): String {
