@@ -428,12 +428,6 @@ object HypixelApiClient {
     }
 
     @JvmStatic
-    fun skyblockAuction(uuid: UUID?): CompletableFuture<Optional<JsonObject>> {
-        val id = undashed(uuid)
-        return CompletableFuture.supplyAsync({ fetchVyrivApi("$WORKER_BASE/hypixel/skyblock/auction/$id", "skyblock/auction") }, EXECUTOR)
-    }
-
-    @JvmStatic
     fun skyblockGarden(profileId: String?): CompletableFuture<Optional<JsonObject>> {
         if (profileId.isNullOrBlank()) return CompletableFuture.completedFuture(Optional.empty())
         val id = profileId.trim().replace("-", "").lowercase(Locale.ROOT)

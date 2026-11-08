@@ -270,9 +270,6 @@ object FarmingProfitTracker {
 
     private fun perHour(v: Double, t: Tracker) = ProfitTrackerKit.perHour(v, t.timeMs)
 
-    // Session items ("CAT|Item" -> count) and active time, for the other garden HUDs
-    fun sessionItems(): Map<String, Long> = HashMap(data.session.items)
-    fun sessionTimeMs(): Long = data.session.timeMs
     fun addFeverTime(ms: Long) { data.session.feverMs += ms; data.total.feverMs += ms; changed() }
 
     fun resetSession(msg: Boolean = true) { data.session = Tracker(); changed(); if (msg) FishMsg.send("§aFarming profit session reset.") }
