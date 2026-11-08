@@ -81,6 +81,7 @@ object RenderOptimizer {
         if (!VisualSettings.renderOptimizer || !(VisualSettings.roRemoveDamageIndicator || VisualSettings.roFormatDamageIndicator)) return name
         if (e !is ArmorStand || !SkyblockLocation.inSkyblock()) return name
         val raw = name.string
+        if (raw.length > 40) return name
         val m = DAMAGE.matchEntire(raw.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()) ?: return name
         if (VisualSettings.roRemoveDamageIndicator) return null
         formatted[e.id]?.let { (k, c) -> if (k == raw) return c }

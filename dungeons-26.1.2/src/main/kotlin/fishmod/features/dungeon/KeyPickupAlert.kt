@@ -41,6 +41,7 @@ object KeyPickupAlert {
             }
             false
         }
+        FishEvents.worldChange.register { keys.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
             try { scanKeys() } catch (e: Exception) { FishDiag.fail("KeyPickupAlert.3", "key scan threw", e) }
         }
@@ -52,9 +53,12 @@ object KeyPickupAlert {
     private val keys = ArrayList<Pair<ArmorStand, Boolean>>()
 
     // Dropped keys are armor stands named "Wither Key" / "Blood Key" (Odin KeyHighlight).
+    private var scanTick = 0
+
     private fun scanKeys() {
+        if (!FishSettings.keyHighlight || !SkyblockLocation.inDungeon()) { keys.clear(); return }
+        if (++scanTick % 5 != 0) return
         keys.clear()
-        if (!FishSettings.keyHighlight || !SkyblockLocation.inDungeon()) return
         val level = Minecraft.getInstance().level ?: return
         for (e in level.entitiesForRendering()) {
             if (e !is ArmorStand || !e.hasCustomName()) continue

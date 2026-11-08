@@ -151,12 +151,13 @@ object RemoteNicks {
         if (text == null) return text
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled || styledByName.isEmpty()) return text
         var s = text.string
+        if (s.length < 3) return text
         if (s.trimStart().startsWith("[NPC]")) return text
         var out = text
         val own = if (NickState.isActive()) NickState.realName() else null
         // Look up the line's name-like tokens instead of scanning every known nick
         val hits = LinkedHashSet<String>()
-        val m = IGN_PAT.matcher(COLOR_CODE.matcher(s).replaceAll(""))
+        val m = IGN_PAT.matcher(if (s.indexOf('§') >= 0) COLOR_CODE.matcher(s).replaceAll("") else s)
         while (m.find()) { val n = m.group(1); if (styledByName.containsKey(n)) hits += n }
         if (hits.isEmpty()) return text
         for (k in hits) {

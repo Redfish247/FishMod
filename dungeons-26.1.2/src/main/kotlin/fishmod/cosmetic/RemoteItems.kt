@@ -49,11 +49,17 @@ object RemoteItems {
     @JvmStatic
     fun clearAll() {
         byPlayer.clear()
+        synCache.clear()
+        uuidKeyCache.clear()
         ItemCustomizationStore.clearRemote()
         lastUploaded = null
     }
 
-    private fun vanillaId(st: ItemStack): String = BuiltInRegistries.ITEM.getKey(st.item).toString()
+    private val idCache = HashMap<net.minecraft.world.item.Item, String>()
+    private val synCache = HashMap<String, HashMap<String, String>>()
+    private val uuidKeyCache = HashMap<java.util.UUID, String>()
+
+    private fun vanillaId(st: ItemStack): String = idCache.getOrPut(st.item) { BuiltInRegistries.ITEM.getKey(st.item).toString() }
 
     private fun buildOwnPayload(mc: Minecraft): String {
         val p = mc.player ?: return "[]"
@@ -129,13 +135,14 @@ object RemoteItems {
         val me = mc.player ?: return
         for (p in level.players()) {
             if (p === me) continue
-            val customs = byPlayer[p.uuid.toString().replace("-", "")] ?: continue
+            val key = uuidKeyCache.getOrPut(p.uuid) { p.uuid.toString().replace("-", "") }
+            val customs = byPlayer[key] ?: continue
             for (slot in SLOTS) {
                 val st = p.getItemBySlot(slot)
                 if (st.isEmpty) continue
                 val v = vanillaId(st)
                 if (!customs.containsKey(v)) continue
-                val syn = synthetic(p.uuid.toString().replace("-", ""), v)
+                val syn = synCache.getOrPut(key) { HashMap() }.getOrPut(v) { synthetic(key, v) }
                 if (ItemTools.getUuid(st) == syn) continue
                 val tag = st.get(DataComponents.CUSTOM_DATA)?.copyTag() ?: net.minecraft.nbt.CompoundTag()
                 tag.putString("uuid", syn)
