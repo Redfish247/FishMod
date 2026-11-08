@@ -430,7 +430,7 @@ object PetHud {
         if (petLevel >= maxLvl || petMaxed) {
             text.append(" §a§lMAXED")
         } else if (xpCurrent >= 0 && xpNext > 0) {
-            text.append(String.format(" §7(%.1f%%)", xpPct))
+            text.append(" §7(" + fishmod.utils.Fmt.f1(xpPct.toDouble()) + "%)")
         }
         return text.toString()
     }
@@ -465,7 +465,7 @@ object PetHud {
             if (pendingXp > 0) text.append(" §a+").append(formatXp(pendingXp))
             if (xpCurrent >= 0 && xpNext > 0) {
                 text.append(" §7(").append(formatXp(xpCurrent)).append("/").append(formatXp(xpNext))
-                        .append(" ").append(String.format("%.1f%%", xpPct)).append(")")
+                        .append(" ").append(fishmod.utils.Fmt.f1(xpPct.toDouble()) + "%").append(")")
             }
         }
 
@@ -488,8 +488,8 @@ object PetHud {
     }
 
     private fun formatXp(v: Double): String {
-        if (v >= 1_000_000) return String.format("%.1fM", v / 1_000_000)
-        if (v >= 1_000) return String.format("%.1fk", v / 1_000)
-        return String.format("%.0f", v)
+        if (v >= 1_000_000) return fishmod.utils.Fmt.f1(v / 1_000_000) + "M"
+        if (v >= 1_000) return fishmod.utils.Fmt.f1(v / 1_000) + "k"
+        return fishmod.utils.Fmt.f0(v)
     }
 }

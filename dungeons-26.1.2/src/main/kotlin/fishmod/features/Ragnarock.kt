@@ -111,7 +111,7 @@ object Ragnarock {
         if (mc.player == null || mc.hudHidden) return
         val secs = ticksLeft / 20.0
         val color = if (secs > 5) "§a" else if (secs > 2) "§e" else "§c"
-        val txt = "§5Rag: $color${"%.1f".format(secs)}s"
+        val txt = "§5Rag: $color${fishmod.utils.Fmt.f1(secs)}s"
         val sc = FishSettings.ragnarockTimerScale.toFloat()
         ctx.pose().pushMatrix()
         try {

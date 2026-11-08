@@ -62,7 +62,7 @@ object KuudraHuds {
         MiningHuds.reg("Kuudra Fresh Timers", "kuudra_fresh", 90, 30,
             { S.kuudraFreshHudX }, { S.kuudraFreshHudX = it }, { S.kuudraFreshHudY }, { S.kuudraFreshHudY = it },
             { S.kuudraFreshHudScale }, { S.kuudraFreshHudScale = it }, { (S.kuudraBuildMaster && S.kuudraFreshHud) && Kuudra.inKuudra() && Kuudra.phase == 2 }, { (S.kuudraBuildMaster && S.kuudraFreshHud) }) {
-            activeFresh().map { (n, left) -> "§6$n§f: ${"%.1f".format(left / 1000.0)}s" }
+            activeFresh().map { (n, left) -> "§6$n§f: ${fishmod.utils.Fmt.f1(left / 1000.0)}s" }
         }
         MiningHuds.reg("Kuudra Health", "kuudra_hp", 100, 10,
             { S.kuudraHpHudX }, { S.kuudraHpHudX = it }, { S.kuudraHpHudY }, { S.kuudraHpHudY = it },
@@ -114,8 +114,8 @@ object KuudraHuds {
         val c = when { hp > 99000 -> "§a"; hp > 75000 -> "§2"; hp > 50000 -> "§e"; hp > 25000 -> "§6"; hp > 10000 -> "§c"; else -> "§4" }
         val k = hp / 1000.0
         // T5 kill phase: real HP x9600 = shown HP (25k -> 240M)
-        return if (Kuudra.phase == 4 && S.kuudraHpScaled && hp <= 25000f && Kuudra.tier !in 1..4) "$c${"%.1f".format(hp * 9600.0 / 1_000_000.0)}M§7/§a240M§c❤"
-        else "$c${"%.1f".format(k)}K§7/§a100K§c❤"
+        return if (Kuudra.phase == 4 && S.kuudraHpScaled && hp <= 25000f && Kuudra.tier !in 1..4) "$c${fishmod.utils.Fmt.f1(hp * 9600.0 / 1_000_000.0)}M§7/§a240M§c❤"
+        else "$c${fishmod.utils.Fmt.f1(k)}K§7/§a100K§c❤"
     }
 
     private fun colorPct(b: Int) = when { b >= 75 -> "§a$b"; b >= 50 -> "§e$b"; b >= 25 -> "§6$b"; else -> "§c$b" }

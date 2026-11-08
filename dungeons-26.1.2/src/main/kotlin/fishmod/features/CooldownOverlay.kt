@@ -345,7 +345,7 @@ object CooldownOverlay {
 
         if (FishSettings.cooldownShowText) {
             val secs = remaining / 1000.0
-            val text = if (secs >= 10) ceil(secs).toInt().toString() else String.format("%.1f", secs)
+            val text = if (secs >= 10) ceil(secs).toInt().toString() else fishmod.utils.Fmt.f1(secs)
             val mc = Minecraft.getInstance()
             val tx = x + 16 - mc.font.width(text)
             val ty = y + 8 - mc.font.lineHeight / 2 + 1
