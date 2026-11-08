@@ -8,47 +8,68 @@ object HotspotMatch {
     // Silence before the next flame particle starts a fresh trail
     const val NEW_TRAIL_GAP_MS = 1500L
     // A trail needs this many points before it yields a guess
-    const val MIN_POINTS = 4
+    const val MIN_POINTS = 6
     // No new particle for this long = trail finished
     const val SETTLED_MS = 600L
     const val MAX_POINTS = 256
     // Points used for the end-of-trail heading
     const val FIT_WINDOW = 8
-    // Projection march: 1 block steps out to this range
-    const val MAX_RANGE = 160
-    // Horizontal distance used when the ray never meets fluid
-    const val FALLBACK_RANGE = 40.0
-    // Rays (flat) further than this from the triangulated point mean the shots point at different hotspots
+    // UNVERIFIED, one real sample (1.7.46 log): trail 32 blocks long, stand 12.5 past its end (ratio 0.39); a second, cut-off
+    // trail 20 long had the stand 35 past (ratio 1.7). Heading was accurate in both; range is the unknown, hence a band.
+    const val RANGE_RATIO = 0.4
+    const val BAND_MIN_RATIO = 0.25
+    const val BAND_MAX_RATIO = 1.8
+    // Trail this close to the player (flat blocks) means the hotspot is right there: no projection
+    const val NEAR_END_BLOCKS = 20.0
+    // Column scan depth when looking for the fluid surface under a projected point
+    const val SURFACE_SCAN = 120
+    // Rays must cross at more than ~20 degrees, ends of shots at least this far apart, crossing within this of every shot end
+    const val MIN_SHOT_SEP = 10.0
+    const val MAX_CROSS_RANGE = 120.0
+    const val MIN_ANGLE_SIN_SQ = 0.117
     const val MAX_RESIDUAL = 15.0
     const val MAX_SHOTS = 4
 
-    // Trail end point, horizontal unit heading (dx, dz) and vertical change per horizontal block
+    // Trail end point, horizontal unit heading (dx, dz), vertical change per horizontal block, and flat start->end length
     class Line(@JvmField val ox: Double, @JvmField val oy: Double, @JvmField val oz: Double,
-               @JvmField val dx: Double, @JvmField val dz: Double, @JvmField val slope: Double)
+               @JvmField val dx: Double, @JvmField val dz: Double, @JvmField val slope: Double, @JvmField val len: Double = 0.0)
 
-    class Estimate(@JvmField val x: Double, @JvmField val y: Double, @JvmField val z: Double, @JvmField val kind: Kind)
+    // Central point plus the near/far ends of the range band along the heading (flat coordinates)
+    class Estimate(@JvmField val x: Double, @JvmField val y: Double, @JvmField val z: Double, @JvmField val kind: Kind,
+                   @JvmField val nearX: Double = x, @JvmField val nearZ: Double = z, @JvmField val farX: Double = x, @JvmField val farZ: Double = z)
     enum class Kind { SURFACE, FALLBACK, TRIANGULATED }
 
     fun interface FluidProbe { fun isFluid(x: Double, y: Double, z: Double): Boolean }
 
-    // Walk the heading forward from the trail end; the first fluid block met is the estimate (hotspots sit on water/lava).
-    // No hit (or no probe): FALLBACK_RANGE ahead at fallbackY. ASSUMES a straight line; the real trail curves down faster.
-    fun project(l: Line, probe: FluidProbe?, fallbackY: Double): Estimate {
-        if (probe != null) {
-            for (i in 1..MAX_RANGE) {
-                val x = l.ox + l.dx * i; val z = l.oz + l.dz * i; val y = l.oy + l.slope * i
-                if (probe.isFluid(x, y, z)) return Estimate(x, Math.floor(y) + 0.9, z, Kind.SURFACE)
-                if (probe.isFluid(x, y - 1.0, z)) return Estimate(x, Math.floor(y - 1.0) + 0.9, z, Kind.SURFACE)
-            }
-        }
-        return Estimate(l.ox + l.dx * FALLBACK_RANGE, fallbackY, l.oz + l.dz * FALLBACK_RANGE, Kind.FALLBACK)
+    // Top of the first fluid block found scanning down from startY, or null (unloaded chunk, no fluid)
+    fun surfaceY(probe: FluidProbe?, x: Double, startY: Double, z: Double): Double? {
+        if (probe == null) return null
+        val top = Math.floor(startY)
+        for (i in 0..SURFACE_SCAN) if (probe.isFluid(x, top - i, z)) return top - i + 0.9
+        return null
     }
 
-    // Least-squares crossing of the shots' flat rays (horizontal x/z only). Null when parallel, behind any origin,
-    // or inconsistent (a ray more than MAX_RESIDUAL off, e.g. shots aimed at two different hotspots). Y is the mean end Y.
+    // Straight ahead from the trail end by RANGE_RATIO x trail length (band: BAND_MIN..BAND_MAX ratio). Y is the fluid
+    // surface under that point, else fallbackY. ASSUMES the hotspot lies on the trail's end heading and that range scales with trail length.
+    fun project(l: Line, probe: FluidProbe?, fallbackY: Double): Estimate {
+        val c = l.len * RANGE_RATIO
+        val x = l.ox + l.dx * c; val z = l.oz + l.dz * c
+        val sy = surfaceY(probe, x, l.oy + 3.0, z)
+        return Estimate(x, sy ?: fallbackY, z, if (sy != null) Kind.SURFACE else Kind.FALLBACK,
+            l.ox + l.dx * l.len * BAND_MIN_RATIO, l.oz + l.dz * l.len * BAND_MIN_RATIO,
+            l.ox + l.dx * l.len * BAND_MAX_RATIO, l.oz + l.dz * l.len * BAND_MAX_RATIO)
+    }
+
+    // Least-squares crossing of the shots' flat rays (x/z). Null when: fewer than 2, ends closer than MIN_SHOT_SEP,
+    // rays within ~20 degrees of parallel, crossing behind any end or further than MAX_CROSS_RANGE from any end, or any ray more
+    // than MAX_RESIDUAL off (shots at different hotspots). Y is the mean end Y.
     fun triangulate(lines: List<Line>): Estimate? {
         val n = lines.size
         if (n < 2) return null
+        for (i in 0 until n) for (j in i + 1 until n) {
+            val dx = lines[i].ox - lines[j].ox; val dz = lines[i].oz - lines[j].oz
+            if (dx * dx + dz * dz < MIN_SHOT_SEP * MIN_SHOT_SEP) return null
+        }
         var a = 0.0; var b = 0.0; var d = 0.0; var rx = 0.0; var rz = 0.0
         for (i in 0 until n) {
             val l = lines[i]
@@ -58,14 +79,15 @@ object HotspotMatch {
             rx += nx * c; rz += nz * c
         }
         val det = a * d - b * b
-        // det is n^2 sin^2(angle)/4-ish: under ~0.03 the rays are within ~10 degrees of parallel
-        if (det < 0.03 * n * n / 4.0) return null
+        // n=2: det = sin^2(angle between rays)
+        if (det < MIN_ANGLE_SIN_SQ * n * n / 4.0) return null
         val px = (d * rx - b * rz) / det
         val pz = (a * rz - b * rx) / det
         var ySum = 0.0
         for (i in 0 until n) {
             val l = lines[i]
-            if ((px - l.ox) * l.dx + (pz - l.oz) * l.dz <= 0.0) return null
+            val ahead = (px - l.ox) * l.dx + (pz - l.oz) * l.dz
+            if (ahead <= 0.0 || ahead > MAX_CROSS_RANGE) return null
             val res = (px - l.ox) * -l.dz + (pz - l.oz) * l.dx
             if (Math.abs(res) > MAX_RESIDUAL) return null
             ySum += l.oy
@@ -118,7 +140,8 @@ object HotspotMatch {
             val sx = six / sii; val sy = siy / sii; val sz = siz / sii
             val h = Math.sqrt(sx * sx + sz * sz)
             if (h < 1e-6) return null
-            return Line(xs[size - 1], ys[size - 1], zs[size - 1], sx / h, sz / h, sy / h)
+            val fx = xs[size - 1] - xs[0]; val fz = zs[size - 1] - zs[0]
+            return Line(xs[size - 1], ys[size - 1], zs[size - 1], sx / h, sz / h, sy / h, Math.sqrt(fx * fx + fz * fz))
         }
         fun settled(nowMs: Long) = size > 0 && nowMs - lastMs > SETTLED_MS
         fun endX() = xs[size - 1]

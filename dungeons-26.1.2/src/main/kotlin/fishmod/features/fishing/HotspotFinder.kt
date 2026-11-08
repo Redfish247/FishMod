@@ -44,6 +44,16 @@ object HotspotFinder {
     private var trailEx = 0.0
     private var trailEy = 0.0
     private var trailEz = 0.0
+    private var bandNX = 0.0
+    private var bandNZ = 0.0
+    private var bandFX = 0.0
+    private var bandFZ = 0.0
+    private var lastStandY = Double.NaN
+    // Last projected trail, kept to calibrate the range ratio when the real stand shows up (debug log only)
+    private var lastLen = 0.0
+    private var lastEndX = 0.0
+    private var lastEndZ = 0.0
+    private var lastTrailAt = 0L
     private val probePos = net.minecraft.core.BlockPos.MutableBlockPos()
     private var guessAt = 0L
     private var guessLabel: Component? = null
@@ -100,32 +110,46 @@ object HotspotFinder {
     private fun recompute(level: net.minecraft.world.level.Level, player: net.minecraft.world.entity.player.Player, now: Long) {
         dirty = false
         val cur = if (trail.hasGuess()) trail.fit() else null
-        lines.clear(); lines.addAll(shots)
+        lines.clear()
+        for (i in shots.indices) {
+            val sh = shots[i]
+            // A shot from (almost) the same spot as the live trail adds nothing and would give a bogus crossing
+            if (cur != null && !committed && sq(sh.ox - cur.ox) + sq(sh.oz - cur.oz) < sq(HotspotMatch.MIN_SHOT_SEP)) continue
+            lines.add(sh)
+        }
         if (cur != null && !committed) lines.add(cur)
         if (lines.isEmpty()) return
         val last = cur ?: lines[lines.size - 1]
+        // Hotspot is right here (or trail too short to trust): nothing to project
+        if (sq(last.ox - player.x) + sq(last.oz - player.z) < sq(HotspotMatch.NEAR_END_BLOCKS)) { hasGuess = false; return }
         val probe = HotspotMatch.FluidProbe { x, y, z ->
             probePos.set(Math.floor(x).toInt(), Math.floor(y).toInt(), Math.floor(z).toInt())
             level.hasChunkAt(probePos) && !level.getFluidState(probePos).isEmpty
         }
-        val single = HotspotMatch.project(last, probe, player.y - 1.0)
+        // Fallback Y when no fluid is under the projected point: your hook's height, else the last hotspot stand, else your feet
+        val hook = player.fishing
+        val fbY = if (hook != null) hook.y else if (!lastStandY.isNaN()) lastStandY else player.y - 1.0
+        val single = HotspotMatch.project(last, probe, fbY)
+        var est = single
         val tri = HotspotMatch.triangulate(lines)
-        val est = if (tri != null) HotspotMatch.Estimate(tri.x, single.y.takeIf { single.kind == HotspotMatch.Kind.SURFACE } ?: tri.y, tri.z, tri.kind) else single
+        // Never let a triangulation far from the player replace the single-trail guess
+        if (tri != null && sq(tri.x - player.x) + sq(tri.z - player.z) <= sq(HotspotMatch.MAX_CROSS_RANGE)) {
+            val ty = HotspotMatch.surfaceY(probe, tri.x, last.oy + 3.0, tri.z) ?: fbY
+            est = HotspotMatch.Estimate(tri.x, ty, tri.z, HotspotMatch.Kind.TRIANGULATED)
+        }
         gx = est.x; gy = est.y; gz = est.z
+        bandNX = est.nearX; bandNZ = est.nearZ; bandFX = est.farX; bandFZ = est.farZ
         trailEx = last.ox; trailEy = last.oy; trailEz = last.oz
+        lastLen = last.len; lastEndX = last.ox; lastEndZ = last.oz; lastTrailAt = now
         hasGuess = true; guessShown = -1
         if (W.hotspotDebug) {
-            FishMsg.send("§7[Hotspot] trail ${trail.size} pts, end ${last.ox.toInt()} ${last.oy.toInt()} ${last.oz.toInt()} dir=${"%.2f".format(last.dx)},${"%.2f".format(last.dz)} slope=${"%.2f".format(last.slope)} " +
+            FishMsg.send("§7[Hotspot] trail ${trail.size} pts len=${"%.1f".format(last.len)} end ${last.ox.toInt()} ${last.oy.toInt()} ${last.oz.toInt()} dir=${"%.2f".format(last.dx)},${"%.2f".format(last.dz)} slope=${"%.2f".format(last.slope)} " +
                 "shots=${shots.size} single=${single.kind} ${single.x.toInt()} ${single.y.toInt()} ${single.z.toInt()}" +
                 (if (tri != null) " tri=${tri.x.toInt()} ${tri.z.toInt()}" else "") + " -> ${gx.toInt()} ${gy.toInt()} ${gz.toInt()} (${HotspotMatch.distance(player.x, player.y, player.z, gx, gy, gz)}m)")
         }
     }
 
-    private fun debugRadarUse() {
-        val p = Minecraft.getInstance().player ?: return
-        val held = p.mainHandItem
-        FishMsg.send("§7[Hotspot] new flame trail, main hand '${held.hoverName.string}' id=${ItemTools.getId(held)}")
-    }
+    private fun sq(v: Double) = v * v
 
     private fun onTick() {
         if (!on()) { if (registry.list.isNotEmpty() || hasGuess) reset(); return }
@@ -153,6 +177,12 @@ object HotspotFinder {
                     }
                     val perk = FishingAlertsWorld.perkBelow(e, stands)
                     registry.see(e.id, e.x, e.y, e.z, perk, now)
+                    lastStandY = e.y
+                    if (W.hotspotDebug && lastLen > 0.0 && now - lastTrailAt < 60_000L) {
+                        val past = Math.sqrt(sq(e.x - lastEndX) + sq(e.z - lastEndZ))
+                        FishMsg.send("§7[Hotspot] calibration: trail len=${"%.1f".format(lastLen)} stand ${"%.1f".format(past)} past its end, ratio=${"%.2f".format(past / lastLen)}")
+                        lastLen = 0.0
+                    }
                     if (W.hotspotDebug) FishMsg.send("§7[Hotspot] stand #${e.id} '$name' perk '$perk' at ${e.x.toInt()} ${e.y.toInt()} ${e.z.toInt()} yaw=${"%.0f".format(e.yRot)}")
                 } else {
                     registry.see(e.id, e.x, e.y, e.z, "", now)
@@ -194,12 +224,19 @@ object HotspotFinder {
                 val d = HotspotMatch.distance(p.x, p.y, p.z, gx, gy, gz)
                 if (guessShown != d || guessLabel == null) {
                     guessShown = d
-                    guessLabel = Component.literal("§d§lRadar guess §7~${d}m")
+                    guessLabel = Component.literal("§d§l~Hotspot §7~${d}m §8(${bandRange(p)})")
                 }
                 FishDraw.gizmoBox(AABB(gx - 0.5, gy - 0.5, gz - 0.5, gx + 0.5, gy + 1.5, gz + 0.5), (W.hotspotColor and 0x00FFFFFF) or 0x33000000, color, true)
-                FishDraw.gizmoLine(Vec3(trailEx, trailEy, trailEz), Vec3(gx, gy, gz), color, 3f, true)
+                FishDraw.gizmoLine(Vec3(trailEx, trailEy, trailEz), Vec3(bandNX, gy, bandNZ), color, 2f, true)
+                if (bandFX != bandNX || bandFZ != bandNZ) FishDraw.gizmoLine(Vec3(bandNX, gy, bandNZ), Vec3(bandFX, gy, bandFZ), color, 8f, true)
                 FishDraw.gizmoText(guessLabel!!, Vec3(gx, gy + 2.2, gz), 1.5f, -0x1, true)
             }
         }
+    }
+
+    private fun bandRange(p: net.minecraft.world.entity.player.Player): String {
+        val n = Math.sqrt(sq(bandNX - p.x) + sq(bandNZ - p.z)).toInt()
+        val f = Math.sqrt(sq(bandFX - p.x) + sq(bandFZ - p.z)).toInt()
+        return if (n == f) "" else "${minOf(n, f)}-${maxOf(n, f)}m"
     }
 }
