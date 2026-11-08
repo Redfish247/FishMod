@@ -19,6 +19,7 @@ object FishingWorld {
     @JvmStatic
     fun init() {
         HookTimer.init()
+        WormholeFinder.init()
         RareMobHighlight.init()
         FishingItemOverlays.init()
         ClientTickEvents.END_CLIENT_TICK.register { refresh() }
@@ -46,6 +47,12 @@ object FishingWorld {
         world.sub.add(SliderDoubleSetting("Hide Radius", "Blocks around your hook", W::class.java, "hidePlayersNearBobberRadius", 2.0, 30.0).gatedBy { W.hidePlayersNearBobber })
         col.features.add(world)
 
+        val wh = Feature("Wormhole Finder", W::class.java, "wormholeFinder")
+        wh.sub.add(ToggleSetting("Departure Alert", "Title when the wormhole closes (uses the Wormhole alert position in the HUD editor)", W::class.java, "wormholeDeparture"))
+        wh.sub.add(ColorPickerSetting("Waypoint Color", "", W::class.java, "wormholeColor"))
+        wh.sub.add(ToggleSetting("Debug Raw Arrows", "Print each nearby text display (text, position, heading) to chat", W::class.java, "wormholeDebug"))
+        col.features.add(wh)
+
         val items = Feature("Fishing Items", W::class.java, "fishingItems")
         items.sub.add(ToggleSetting("Trash Book Highlight", "Highlight enchanted books from the list below", W::class.java, "trashBooks"))
         items.sub.add(InputSetting("Trash Books", "Comma separated book names, e.g. Corruption I,Corruption 1", W::class.java, "trashBooksList").gatedBy { W.trashBooks })
@@ -57,6 +64,7 @@ object FishingWorld {
 
     fun describe(name: String): String? = when (name) {
         "Fishing World" -> "Hook timer, rare creature highlight/HP and hiding hooks (all off by default)"
+        "Wormhole Finder" -> "Wear Froggles on Lotus Atoll or Crimson Isle: marks the wormhole the arrows point at (off by default, untested)"
         "Fishing Items" -> "Item overlays: trash books, rod parts, bottle charge (all off by default)"
         else -> null
     }
