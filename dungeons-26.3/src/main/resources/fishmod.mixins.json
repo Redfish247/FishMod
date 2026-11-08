@@ -34,7 +34,6 @@
     "FishCopyChatMixin",
     "CosmeticChatMixin",
     "CosmeticEntityNameMixin",
-    "CosmeticGuiTextMixin",
     "WorldTextShadowMixin",
     "FirstPersonItemsMixin",
     "SignRendererShadowMixin",
