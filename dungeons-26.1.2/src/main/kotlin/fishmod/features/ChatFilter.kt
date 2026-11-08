@@ -143,6 +143,10 @@ object ChatFilter {
     // Abiphone call: hides "✆ Name ✆" and returns the first RING line with the caller folded in.
     @JvmStatic
     fun rewrite(text: Component?): Component? {
+        if (text != null && fishmod.features.fishing.FishingAlertSettings.compactDoubleHook) {
+            val c = fishmod.features.fishing.FishingAlerts.compact(TextStrip.plain(text.string).trim())
+            if (c != null) return c
+        }
         if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || !FishSettings.cfSpamAbiphone || text == null) return null
         val s = TextStrip.plain(text.string).trim()
         val name = caller
@@ -206,6 +210,10 @@ object ChatFilter {
         if (FishSettings.cfNoammSpam && SPAM_LIST.any { it.matcher(s).matches() }) return "Skyblock/Dungeon Spam"
         if (FishSettings.cfCommonSpam && COMMON_SPAM.any { (p, on) -> on() && p.matcher(s).matches() }) return "Common Hypixel Spam"
         if (FishSettings.cfCustom && customHides(s)) return "Custom Messages"
+        if (FishSettings.cfTrophyFish && fishmod.features.fishing.FishingAlertText.isTrophyLine(s)) {
+            val t = fishmod.features.fishing.FishingAlertText.trophy(s)
+            if (t != null && FishSettings.trophyRarityHidden(t.rarity)) return "Fishing Trophy Catches"
+        }
         return null
     }
 }
