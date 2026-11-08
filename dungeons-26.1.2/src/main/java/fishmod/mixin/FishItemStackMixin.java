@@ -5,9 +5,15 @@ import fishmod.features.item.ItemCustomizationStore;
 import fishmod.features.item.RarityTier;
 import fishmod.features.item.RarityTierCache;
 import fishmod.utils.data.ItemTools;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUseAnimation;
+import net.minecraft.world.item.Items;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,6 +33,26 @@ public class FishItemStackMixin implements RarityTierCache, ItemCustomDataHolder
             if (name != null) cir.setReturnValue(name.setStyle(cir.getReturnValue().getStyle()));
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishItemStackMixin.1", "custom item name lookup failed", t);
+        }
+    }
+
+    @Unique
+    private static final java.util.Map<Item, ItemUseAnimation> fishmod$useAnimations = new java.util.IdentityHashMap<>();
+
+    @Inject(method = "getUseAnimation", at = @At("HEAD"), cancellable = true)
+    private void fishmod$useModelItemUseAction(CallbackInfoReturnable<ItemUseAnimation> cir) {
+        if (!ItemCustomizationStore.hasAny()) return;
+        ItemStack self = (ItemStack) (Object) this;
+        try {
+            Identifier modelId = self.get(DataComponents.ITEM_MODEL);
+            if (modelId == null) return;
+
+            Item modelItem = BuiltInRegistries.ITEM.getValue(modelId);
+            if (modelItem == null || modelItem == Items.AIR || modelItem == self.getItem()) return;
+
+            cir.setReturnValue(fishmod$useAnimations.computeIfAbsent(modelItem, item -> item.getDefaultInstance().getUseAnimation()));
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FishItemStackMixin.2", "model use-animation lookup failed item=" + self.getItem(), t);
         }
     }
 
