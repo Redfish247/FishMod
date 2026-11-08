@@ -52,6 +52,8 @@ object DungeonPlayers {
         for (info in ordered) teams[info] = teamName(info)
         ordered.sortWith(playerInfoOrder(teams))
 
+        val byName = HashMap<String, net.minecraft.world.entity.player.Player>()
+        mc.level?.players()?.let { for (e in it) byName.putIfAbsent(e.name.string, e) }
         for (info in ordered) {
             val disp = info.tabListDisplayName ?: continue
             val line = TextStrip.plainAmp(disp.string)
@@ -68,16 +70,7 @@ object DungeonPlayers {
                 p.dead = clazz == "DEAD"
                 if (clazz != "DEAD") p.clazz = clazz
 
-                p.entity = null
-                val level = mc.level
-                if (level != null) {
-                    for (e in level.players()) {
-                        if (e.name.string == name) {
-                            p.entity = e
-                            break
-                        }
-                    }
-                }
+                p.entity = byName[name]
 
                 p.skin = (p.entity as? AbstractClientPlayer)?.skin ?: info.skin
             }
