@@ -5,6 +5,17 @@ from PIL import Image, ImageDraw, ImageEnhance
 from make_trailer import W, H, FPS, bg, put, rrect, ease, eout, hexc, icon, font, BIG, MID, SML, TINY, TITLE
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "anims")
+import numpy as np
+BG_DIR = os.path.join(OUT, "bg")
+_flat_bg = bg
+def bg(t, accent):  # Blender voxel loop (ping-pong), tinted with the accent; falls back to the flat starfield
+    n = int(t * FPS) % 358; n = n if n < 180 else 357 - n
+    p = os.path.join(BG_DIR, f"bg_{n + 1:04d}.png")
+    if not os.path.exists(p): return _flat_bg(t, accent)
+    a = np.asarray(Image.open(p).convert("RGB"), np.float32) / 255
+    tint = 0.45 + np.array(accent, np.float32) / 255 * 0.9
+    out = np.clip(a * tint * 1.6 + np.array(accent, np.float32) / 255 * 0.04, 0, 0.62)
+    return Image.fromarray((out * 255).astype("uint8")).convert("RGBA")
 MONO = font("consola.ttf", 18)
 CYAN, PINK, GOLD, GREEN, PURPLE = (0, 200, 255), hexc("#ff4d6d"), hexc("#ffd166"), hexc("#7bd957"), hexc("#b388ff")
 
