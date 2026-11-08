@@ -256,6 +256,11 @@ object FishSettings {
     @ConfigValue @JvmField var cfSpamLaunchPad: Boolean = true
     @ConfigValue @JvmField var cfSpamLootShare: Boolean = true
     @ConfigValue @JvmField var cfSpamMisc: Boolean = true
+    @ConfigValue @JvmField var cfTrophyFish: Boolean = false
+    @ConfigValue @JvmField var cfTrophyBronze: Boolean = true
+    @ConfigValue @JvmField var cfTrophySilver: Boolean = true
+    @ConfigValue @JvmField var cfTrophyGold: Boolean = false
+    @ConfigValue @JvmField var cfTrophyDiamond: Boolean = false
     @ConfigValue @JvmField var cfCollapseBlank: Boolean = false
     @ConfigValue @JvmField var cfCustom: Boolean = false
     @ConfigValue @JvmField var cfCustomPatterns: String = ""
@@ -1096,6 +1101,13 @@ object FishSettings {
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
 
     @JvmStatic
+    fun trophyRarityHidden(r: fishmod.features.fishing.FishingAlertText.TrophyRarity): Boolean = when (r) {
+        fishmod.features.fishing.FishingAlertText.TrophyRarity.BRONZE -> cfTrophyBronze
+        fishmod.features.fishing.FishingAlertText.TrophyRarity.SILVER -> cfTrophySilver
+        fishmod.features.fishing.FishingAlertText.TrophyRarity.GOLD -> cfTrophyGold
+        fishmod.features.fishing.FishingAlertText.TrophyRarity.DIAMOND -> cfTrophyDiamond
+    }
+
     fun slayerAnyEnabled(): Boolean =
         slayerSpawnAlertEnabled || slayerCocoonAlertEnabled || slayerSpawnHudEnabled ||
             slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled || slayerRngTitleEnabled
