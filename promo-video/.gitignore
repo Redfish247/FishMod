@@ -7,3 +7,6 @@ clips/
 anims/
 sheets/
 stills/
+voice-venv/
+voice/
+build_report.json
