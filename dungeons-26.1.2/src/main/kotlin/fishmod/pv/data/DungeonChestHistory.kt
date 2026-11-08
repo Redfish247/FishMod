@@ -45,7 +45,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 	companion object {
 		const val EXPIRY_MS = 72L * 60L * 60L * 1000L
 
-		private val FORMAT_CODE = Regex("§.")
 
 		// Ultimate enchants whose in-game name keeps the "Ultimate" word (NEU ULTIMATE_WISE / ULTIMATE_JERRY lore).
 		private val NAMED_ULTIMATES = setOf("wise", "jerry")
@@ -215,7 +214,7 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			}
 			val suffix = " " + roman(level)
 			for (line in def.getAsJsonArray("lore")) {
-				val text = FORMAT_CODE.replace(str(line), "").trim()
+				val text = TextStrip.plain(str(line)).trim()
 				if (text.endsWith(suffix)) {
 					return text
 				}
@@ -282,7 +281,7 @@ data class DungeonChestHistory(val runs: List<Run>) {
 				return ""
 			}
 			val lore = def.getAsJsonArray("lore")
-			val last = FORMAT_CODE.replace(str(lore.get(lore.size() - 1)), "").trim().uppercase(Locale.ROOT)
+			val last = TextStrip.plain(str(lore.get(lore.size() - 1))).trim().uppercase(Locale.ROOT)
 			var rarity = ""
 			for (r in RARITIES) {
 				val spaced = r.replace('_', ' ')
@@ -306,14 +305,14 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			val itemId = itemIdFor(id)
 			val def = hypixel.apply(itemId)
 			if (def != null && def.has("name") && def.get("name").isJsonPrimitive) {
-				val name = FORMAT_CODE.replace(def.get("name").asString, "").trim()
+				val name = TextStrip.plain(def.get("name").asString).trim()
 				if (name.isNotBlank()) {
 					return name
 				}
 			}
 			val neuDef = neu.apply(itemId)
 			if (neuDef != null && neuDef.has("displayname") && neuDef.get("displayname").isJsonPrimitive) {
-				val name = FORMAT_CODE.replace(neuDef.get("displayname").asString, "").trim()
+				val name = TextStrip.plain(neuDef.get("displayname").asString).trim()
 				if (name.isNotBlank()) {
 					return name
 				}

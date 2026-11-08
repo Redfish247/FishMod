@@ -1,5 +1,7 @@
 package fishmod.cosmetic
 
+import fishmod.utils.TextStrip
+
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -22,7 +24,6 @@ object RemoteNicks {
     private const val MAX_IN_FLIGHT = 8
     private val IGN_PAT: Pattern = Pattern.compile("\\b([A-Za-z0-9_]{3,16})\\b")
     // Nametags carry legacy codes ("§bName"), which would glue the code letter onto the name
-    private val COLOR_CODE: Pattern = Pattern.compile("§.")
 
     @JvmStatic
     fun init() {
@@ -83,7 +84,7 @@ object RemoteNicks {
         if (text == null || text.isEmpty()) return
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return
         if (text.trimStart().startsWith("[NPC]")) return
-        val m = IGN_PAT.matcher(COLOR_CODE.matcher(text).replaceAll(""))
+        val m = IGN_PAT.matcher(TextStrip.plain(text))
         val now = System.currentTimeMillis()
         if (negativeCache.size > 1024) negativeCache.values.removeIf { it <= now }
         var triggered = 0
@@ -157,7 +158,7 @@ object RemoteNicks {
         val own = if (NickState.isActive()) NickState.realName() else null
         // Look up the line's name-like tokens instead of scanning every known nick
         val hits = LinkedHashSet<String>()
-        val m = IGN_PAT.matcher(if (s.indexOf('§') >= 0) COLOR_CODE.matcher(s).replaceAll("") else s)
+        val m = IGN_PAT.matcher(if (s.indexOf('§') >= 0) TextStrip.plain(s) else s)
         while (m.find()) { val n = m.group(1); if (styledByName.containsKey(n)) hits += n }
         if (hits.isEmpty()) return text
         for (k in hits) {

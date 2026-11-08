@@ -1,5 +1,7 @@
 package fishmod.features.scoreboard
 
+import fishmod.utils.TextStrip
+
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.MayorApi
 import fishmod.utils.SidebarCache
@@ -256,7 +258,6 @@ object CustomScoreboard {
     }
 
     // Hypixel pads each line with hidden emoji to keep them unique
-    private val LEGACY_CODE = Regex("§.")
     private val TAB_GEMS = Regex("""^Gems:\s*([\d,.]+[kKmMbB]?)""")
     private val TAB_SOULFLOW = Regex("""^Soulflow:\s*([\d,.]+[kKmMbB]?)""")
 
@@ -266,7 +267,7 @@ object CustomScoreboard {
         return null
     }
 
-    private fun clean(s: String): String = s.replace(LEGACY_CODE, "").filter {
+    private fun clean(s: String): String = TextStrip.plain(s).filter {
         !Character.isSurrogate(it) && Character.getType(it).toByte() != Character.FORMAT && Character.getType(it).toByte() != Character.PRIVATE_USE
     }.trim()
 

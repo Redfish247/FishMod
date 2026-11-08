@@ -7,6 +7,8 @@
  */
 package fishmod.pv.data
 
+import fishmod.utils.TextStrip
+
 import com.google.gson.JsonObject
 import fishmod.pv.neu.NeuRepoCache
 import fishmod.pv.networth.InventoryDecoder
@@ -105,7 +107,6 @@ object KuudraGearChecks {
 	private const val MAX_CANDY = 10
 	private val DUPLEX = arrayOf("ultimate_reiterate", "ultimate_duplex")
 	private val API_OFF = Check.of("Inventory API", "Off", CheckState.UNKNOWN)
-	private val FORMAT_CODE = Regex("§.")
 	private val ULTIMATE_MAX: Map<String, Int> = mapOf(
 		"ultimate_reiterate" to 5, "ultimate_duplex" to 5, "ultimate_rend" to 5,
 		"ultimate_chimera" to 5, "ultimate_swarm" to 5, "ultimate_wise" to 5,
@@ -659,7 +660,7 @@ object KuudraGearChecks {
 	private fun rarityRank(stack: InventoryDecoder.Stack): Int {
 		val lore = stack.lore
 		for (i in lore.indices.reversed()) {
-			val line = FORMAT_CODE.replace(lore[i], "").trim().uppercase(Locale.ROOT)
+			val line = TextStrip.plain(lore[i]).trim().uppercase(Locale.ROOT)
 			if (line.isEmpty()) {
 				continue
 			}
@@ -740,7 +741,7 @@ object KuudraGearChecks {
 		}
 		val lore = stack.lore
 		for (i in lore.indices.reversed()) {
-			val line = FORMAT_CODE.replace(lore[i], "").trim()
+			val line = TextStrip.plain(lore[i]).trim()
 			if (line.isEmpty()) {
 				continue
 			}
@@ -760,7 +761,7 @@ object KuudraGearChecks {
 		}
 		val neu = NeuRepoCache.get(id)
 		if (neu != null && neu.has("displayname") && neu.get("displayname").isJsonPrimitive) {
-			return FORMAT_CODE.replace(neu.get("displayname").asString, "")
+			return TextStrip.plain(neu.get("displayname").asString)
 		}
 		return pretty(id)
 	}

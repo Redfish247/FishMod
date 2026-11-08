@@ -7,6 +7,8 @@
  */
 package fishmod.pv.data
 
+import fishmod.utils.TextStrip
+
 import fishmod.pv.data.FarmingFortuneEstimate.Garden
 import fishmod.pv.data.FarmingFortuneEstimate.Kind
 import fishmod.pv.data.FarmingFortuneEstimate.Line
@@ -55,7 +57,6 @@ object FarmingFortuneSummary {
 		"Galaxy Fish shard" to "ultimate_dna",
 		"Firefly and Lunar Moth shards" to "solar_power"
 	)
-	private val FORMAT_CODE = Regex("§.")
 
 	/** Permanent bonuses in fixed category order, skipping empty categories. Totals add up to {@code permanentTotal}. */
 	@JvmStatic
@@ -125,7 +126,7 @@ object FarmingFortuneSummary {
 	/** Display name without the reforge or "Mk." so the page can show it in one short line. */
 	@JvmStatic
 	fun shortToolName(stack: InventoryDecoder.Stack): String {
-		val raw = stack.displayName?.let { FORMAT_CODE.replace(it, "").trim() } ?: ""
+		val raw = stack.displayName?.let { TextStrip.plain(it).trim() } ?: ""
 		var name = raw.ifEmpty { stack.id }
 		val reforge = NbtAttrs.string(stack.extraAttributes, "modifier")
 		if (!reforge.isNullOrBlank()) {

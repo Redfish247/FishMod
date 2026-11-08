@@ -7,6 +7,8 @@
  */
 package fishmod.pv.data
 
+import fishmod.utils.TextStrip
+
 import java.util.Locale
 import java.util.function.Function
 import java.util.regex.Pattern
@@ -19,7 +21,6 @@ import java.util.regex.Pattern
 object AbiphoneCosts {
 	private val COINS: Pattern = Pattern.compile("^([0-9][0-9.,]*) coins$", Pattern.CASE_INSENSITIVE)
 	private val ITEM: Pattern = Pattern.compile("^([0-9]+)x (.+)$", Pattern.CASE_INSENSITIVE)
-	private val FORMAT_CODE = Regex("§.")
 	private val TRAILING_PAREN = Regex("\\s*\\(.*\\)\\s*$")
 
 	/** coins is null when the requirement can't be priced. */
@@ -83,7 +84,7 @@ object AbiphoneCosts {
 		if (raw == null) {
 			return ""
 		}
-		var line = FORMAT_CODE.replace(raw, "").trim()
+		var line = TextStrip.plain(raw).trim()
 		if (line.startsWith("-")) {
 			line = line.substring(1).trim()
 		}
