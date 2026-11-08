@@ -126,8 +126,22 @@ object CustomScoreboard {
                 val team = e.team
                 // Owner is Hypixel's hidden filler; the text is the team prefix + suffix
                 val c = if (team != null) Component.empty().append(team.playerPrefix).append(team.playerSuffix) else (e.display ?: Component.literal(e.owner))
-                Raw(c, clean(c.string))
+                Raw(trimEnd(c), clean(c.string))
             }
+    }
+
+    // Hypixel pads lines with trailing spaces, which widened the box
+    private fun trimEnd(c: Component): Component {
+        val segs = ArrayList<Pair<Style, String>>()
+        c.visit(FormattedText.StyledContentConsumer<Unit> { st, t -> segs.add(st to t); Optional.empty() }, Style.EMPTY)
+        while (segs.isNotEmpty()) {
+            val (st, t) = segs.last()
+            val tt = t.trimEnd { it.isWhitespace() || Character.getType(it).toByte() == Character.FORMAT }
+            if (tt.isEmpty()) segs.removeAt(segs.size - 1) else { segs[segs.size - 1] = st to tt; break }
+        }
+        val out = Component.empty()
+        for ((st, t) in segs) out.append(Component.literal(t).setStyle(st))
+        return out
     }
 
     private fun build(mc: Minecraft, sbTitle: Component) {
