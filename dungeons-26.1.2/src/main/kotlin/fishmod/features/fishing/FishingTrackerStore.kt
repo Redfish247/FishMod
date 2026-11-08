@@ -90,7 +90,9 @@ object FishingTrackerStore {
     @JvmStatic fun noteCast(now: Long) { lastCastAt = now }
     @JvmStatic fun castRecent(now: Long): Boolean = lastCastAt != 0L && now - lastCastAt <= CAST_WINDOW_MS
     // Draw gate: fishing island (Fishing.active()) and a recent cast
-    @JvmStatic fun shouldDraw(active: Boolean, now: Long): Boolean = active && castRecent(now)
+    // either=false: both must hold (default); either=true: one is enough
+    @JvmStatic @JvmOverloads fun shouldDraw(active: Boolean, now: Long, either: Boolean = false): Boolean =
+        if (either) active || castRecent(now) else active && castRecent(now)
     // Bumped on every change; HUD line caches rebuild on it
     @JvmField @Volatile var version = 0
     @JvmField @Volatile var dirty = false

@@ -115,6 +115,9 @@ object FishingTrackers {
             S.fishingTrackerMode = if (S.fishingTrackerMode == "Total") "Session" else "Total"
             FishingTrackerStore.version++
         }))
+        f.sub.add(ButtonSetting("Show When", "Both = on a fishing island and rod cast in the last 60 s; Either = one of them", { S.fishingShowWhen }, Runnable {
+            S.fishingShowWhen = if (S.fishingShowWhen == "Either") "Both" else "Either"
+        }))
         f.sub.add(SliderIntSetting("Max Rows", "Rows per tracker list", S::class.java, "fishingTrackerLines", 1, 30).gatedBy { S.fishingScHud || S.fishingProfitHud || S.fishingAreaHud })
         f.sub.add(ToggleSetting("Sea Creature Tracker", "Counts per creature with percent, double hooks and cocoons", S::class.java, "fishingScHud"))
         f.sub.add(ToggleSetting("Profit Tracker", "Rare drop value, costs, net and coins per hour", S::class.java, "fishingProfitHud"))
