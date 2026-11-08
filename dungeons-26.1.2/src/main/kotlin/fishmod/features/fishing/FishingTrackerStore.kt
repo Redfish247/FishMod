@@ -150,6 +150,17 @@ object FishingTrackerStore {
         bump()
     }
 
+    // Fishing-sack gain (n items, total price) into the main bucket
+    @JvmStatic
+    fun onSackItem(name: String, n: Long, coins: Double) {
+        if (paused || n <= 0) return
+        both(MAIN) { b ->
+            b.drops.merge(name, n, Long::plus)
+            b.dropCoins.merge(name, coins, Double::plus)
+        }
+        bump()
+    }
+
     // Chat line of an area def with a line parser (treasure, dice); true when counted
     @JvmStatic
     fun onLine(areaId: String, line: AreaLine, now: Long) {

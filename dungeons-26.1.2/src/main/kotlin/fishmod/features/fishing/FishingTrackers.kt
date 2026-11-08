@@ -46,11 +46,17 @@ object FishingTrackers {
             if (on()) FishingTrackerStore.onCatch(e.creature, e.count, e.cocoon, e.location, e.atMs)
         })
         FishingEvents.rareDrop.register(RareDropHook { d ->
-            if (on()) FishingTrackerStore.onDrop(d.itemName, d.price)
+            if (on()) {
+                FishingTrackerStore.onDrop(d.itemName, d.price)
+                pendingDrops.getOrPut(sackKey(d.itemName)) { ArrayList() } += longArrayOf(1L, System.currentTimeMillis())
+            }
         })
         FishEvents.chat.register { c ->
             // setting first, then cheap contains tests inside the parsers, regex last
-            if (on()) FishDiag.guard("FishingTrackers.1", "fishing tracker chat parse failed") { onChat(c.chatPlain) }
+            if (on()) FishDiag.guard("FishingTrackers.1", "fishing tracker chat parse failed") {
+                val plain = c.chatPlain
+                if (plain.startsWith("[Sacks]")) onSacks(c) else onChat(plain)
+            }
             false
         }
         FishEvents.worldChange.register(WorldHook { if (on()) FishingTrackerStore.onWorldChange(); false })
@@ -73,6 +79,37 @@ object FishingTrackers {
     }
 
     private fun on() = S.fishingTrackers && Fishing.enabled()
+
+    private val FISHING_SACKS = arrayOf("Fishing", "Enchanted Fishing", "Lava Fishing", "Bait", "Bronze Trophy Fishing", "Silver Trophy Fishing")
+    private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
+    private val WS = Regex("""\s+""")
+    private const val PENDING_MS = 180_000L
+    // Rare drops already counted from their own chat line; the [Sacks] summary must not count them again
+    private val pendingDrops = HashMap<String, MutableList<LongArray>>()
+    private fun sackKey(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase().replace(WS, " ")
+
+    private fun onSacks(c: net.minecraft.network.chat.Component) {
+        val hovers = LinkedHashSet<String>()
+        fun walk(x: net.minecraft.network.chat.Component) {
+            (x.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "") }
+            x.siblings.forEach(::walk)
+        }
+        walk(c)
+        val now = System.currentTimeMillis()
+        for (m in SACK_LINE.findAll(hovers.joinToString("\n"))) {
+            if (m.groupValues[1] != "+") continue
+            var n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
+            val item = m.groupValues[3].trim()
+            val id = fishmod.utils.networth.ItemsDb.idFor(item) ?: fishmod.utils.networth.ItemsDb.idFor(item.trimStart { !it.isLetterOrDigit() })
+            if (!fishmod.features.ProfitTrackerKit.inSacks(id, *FISHING_SACKS)) continue
+            pendingDrops[sackKey(item)]?.let { q ->
+                q.removeAll { now - it[1] > PENDING_MS }
+                val it = q.iterator()
+                while (n > 0 && it.hasNext()) { val e = it.next(); val take = minOf(n, e[0]); n -= take; e[0] -= take; if (e[0] <= 0) it.remove() }
+            }
+            if (n > 0) FishingTrackerStore.onSackItem(item, n, n * fishmod.pv.price.ItemPricer.price(id!!))
+        }
+    }
 
     private fun onChat(p: String) {
         if (p.isEmpty()) return
