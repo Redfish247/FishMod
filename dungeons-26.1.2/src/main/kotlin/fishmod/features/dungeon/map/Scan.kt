@@ -28,6 +28,7 @@ object Scan {
 
     // unknown core hashes already reported this run
     private val missedCores = HashSet<Int>()
+    private val loggedMissingCores = HashSet<Int>()
     // last unknown hash per cell; only a hash seen twice in a row is reported (chunks still loading)
     private val pendingCores = IntArray(36)
 
@@ -261,7 +262,8 @@ object Scan {
                     val stable = pendingCores[idx] == coreHash
                     pendingCores[idx] = coreHash
                     if (!stable || !missedCores.add(coreHash)) continue
-                    FishDiag.fail("Scan.5", "no room data for core hash=$coreHash cell=($x,$z) height=$height roomsLoaded=${RoomData.isLoaded()}")
+                    // unknown core: log once per game session, plain log (not a bug report)
+                    if (loggedMissingCores.add(coreHash)) fishmod.utils.debug.FishDebug.LOGGER.warn("[Scan] no room data for core hash={} cell=({},{}) height={} roomsLoaded={}", coreHash, x, z, height, RoomData.isLoaded())
                     continue
                 }
 

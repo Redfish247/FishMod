@@ -71,8 +71,8 @@ object SessionStats {
     private fun autoResume() {
         val now = System.currentTimeMillis()
         if (paused && autoPaused) {
-            FishDiag.check(pauseStartedMs <= now, "SessionStats.1") { "auto-resume: pause start ${pauseStartedMs - now}ms in the future" }
-            if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += (now - pauseStartedMs)
+            // clock stepped back: clamp instead of logging
+            if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += maxOf(0L, now - pauseStartedMs)
             pauseStartedMs = 0
             paused = false
             autoPaused = false
@@ -424,8 +424,7 @@ object SessionStats {
                 autoPaused = false
                 pauseStartedMs = now
             } else {
-                FishDiag.check(pauseStartedMs <= now, "SessionStats.10") { "manual resume: pause start ${pauseStartedMs - now}ms in the future" }
-                if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += (now - pauseStartedMs)
+                if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += maxOf(0L, now - pauseStartedMs)
                 pauseStartedMs = 0
                 paused = false
                 autoPaused = false

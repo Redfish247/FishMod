@@ -254,7 +254,7 @@ public class HypixelApi {
                 // Corrupt (e.g. NUL-filled after a crash), blank or non-object file: drop it and rebuild.
                 if (parsed == null || !parsed.isJsonObject()) { Files.deleteIfExists(file); parsed = new JsonObject(); }
                 JsonObject root = parsed.getAsJsonObject();
-                JsonObject entries = root.has("entries") ? root.getAsJsonObject("entries") : new JsonObject();
+                JsonObject entries = root.has("entries") && root.get("entries").isJsonObject() ? root.getAsJsonObject("entries") : new JsonObject();
                 long now = System.currentTimeMillis();
                 for (Map.Entry<String, JsonElement> e : entries.entrySet()) {
                     try {
@@ -265,7 +265,7 @@ public class HypixelApi {
                         if (uuid == null || uuid.isEmpty()) continue;
                         uuidByName.put(e.getKey(), uuid);
                         uuidCachedAt.put(e.getKey(), ts);
-                    } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.1", "ensureUuidCacheLoaded failed", ignored);}
+                    } catch (Exception ignored) { /* skip one bad cache entry */ }
                 }
             }
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.2", "ensureUuidCacheLoaded failed", ignored);}
@@ -2182,6 +2182,8 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
             HttpRequest req = proxyGet("/badge-defs", 10);
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                 java.util.List<fishmod.cosmetic.badge.BadgeDef> out = new java.util.ArrayList<>();
+                // Proxy outage (non-2xx): keep last good defs, no report.
+                if (r.statusCode() < 200 || r.statusCode() >= 300) { cb.accept(out); return; }
                 try {
                     JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
                     if (root.has("success") && root.get("success").getAsBoolean() && root.has("badges")) {
