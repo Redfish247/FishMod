@@ -1,5 +1,6 @@
 package fishmod.utils.dungeon
 
+import fishmod.compat.hud
 import fishmod.mixin.accessors.BossBarHudAccessor
 import fishmod.mixin.accessors.LerpingBossEventAccessor
 import fishmod.utils.FishConstants
