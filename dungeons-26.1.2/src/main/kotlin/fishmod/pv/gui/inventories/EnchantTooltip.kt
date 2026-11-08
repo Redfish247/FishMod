@@ -77,13 +77,13 @@ object EnchantTooltip {
 			if (ExtrasSettings.enchantColors) {
 				val s = ExtrasSettings
 				out.append(when {
-					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true, out.string.length) // ultimates always use their own colour
-					level >= max -> tier(label, s.enchantMaxColor, s.enchantMaxChroma, s.enchantBold, out.string.length)
-					level == max - 1 -> tier(label, s.enchantHighColor, s.enchantHighChroma, s.enchantBold, out.string.length)
-					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false, out.string.length)
+					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true, out.string.length + row * ROW_SHIFT) // ultimates always use their own colour
+					level >= max -> tier(label, s.enchantMaxColor, s.enchantMaxChroma, s.enchantBold, out.string.length + row * ROW_SHIFT)
+					level == max - 1 -> tier(label, s.enchantHighColor, s.enchantHighChroma, s.enchantBold, out.string.length + row * ROW_SHIFT)
+					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false, out.string.length + row * ROW_SHIFT)
 				})
 			} else if (level >= max) {
-				out.append(PvDraw.chromaText(label, true, out.string.length, CHROMA_MS, WAVE_STEP))
+				out.append(PvDraw.chromaText(label, true, out.string.length + row * ROW_SHIFT, CHROMA_MS, WAVE_STEP))
 			} else if (level == max - 1) {
 				out.append(PvDraw.styled(label, T6_GOLD, true))
 			} else if (ultimate) {
@@ -104,6 +104,7 @@ object EnchantTooltip {
 	}
 
 	private const val CHROMA_MS = 6000L
+	private const val ROW_SHIFT = 6 // per-line phase so the wave lines up across rows
 	private const val WAVE_STEP = -0.07f // negative so the wave travels left-to-right
 
 	private fun tier(label: String, argb: Int, chroma: Boolean, bold: Boolean, start: Int): Component =
