@@ -34,6 +34,7 @@ FishModNew/
 
 # Notes, audits, changelogs, drafts: local only (no markdown in the repo)
 *.md
+!/README.md
 /*.txt
 !/LICENSE_inter-OFL.txt
 /*.sql
