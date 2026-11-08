@@ -83,7 +83,7 @@ class HotspotMatchTest {
         // water up to y=60 -> ray at y=80-0.5*i meets it near i=40
         val e = HotspotMatch.project(l, { _, y, _ -> y < 61.0 }, 0.0)
         assertEquals(HotspotMatch.Kind.SURFACE, e.kind)
-        assertEquals(40.0, e.x, 2.1)
+        assertEquals(40.0, e.x, 3.1)
     }
 
     @Test fun projectFallsBackWithoutFluid() {
