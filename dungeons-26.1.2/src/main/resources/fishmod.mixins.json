@@ -33,7 +33,6 @@
     "ChatSearchMixin",
     "FishCopyChatMixin",
     "CosmeticChatMixin",
-    "CosmeticEntityNameMixin",
     "WorldTextShadowMixin",
     "SignRendererShadowMixin",
     "SubmitTextShadowMixin",
