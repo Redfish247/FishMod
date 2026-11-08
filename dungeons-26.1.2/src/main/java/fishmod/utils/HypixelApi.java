@@ -1125,10 +1125,6 @@ public class HypixelApi {
 
     public interface NetworthCallback { void onData(double networth, String profileName); }
 
-    private static final Map<String, Double> NW_PRICES = new ConcurrentHashMap<>();
-    private static final Object NW_PRICES_LOCK = new Object();
-    private static volatile long nwPricesAt = 0;
-    private static volatile long nwPricesFailAt = 0;
 
     private static final String[] NW_STORAGES = {
         "inv_contents","inv_armor","ender_chest_contents","equipment_contents",
@@ -1276,34 +1272,11 @@ public class HypixelApi {
     }
 
     private static Map<String, Double> nwPrices() {
-        long now = System.currentTimeMillis();
-        if (now - nwPricesAt < 10 * 60 * 1000L && !NW_PRICES.isEmpty()) return NW_PRICES;
-        if (now - nwPricesFailAt < 60 * 1000L) return NW_PRICES;
-        Map<String, Double> fetched = null;
-        try {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://raw.githubusercontent.com/SkyHelperBot/Prices/main/pricesV2.json"))
-                    .timeout(Duration.ofSeconds(20)).GET().build();
-            HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
-            if (r.statusCode() == 200) {
-                JsonObject o = JsonParser.parseString(r.body()).getAsJsonObject();
-                fetched = new HashMap<>();
-                for (Map.Entry<String, JsonElement> e : o.entrySet()) {
-                    try { fetched.put(e.getKey(), e.getValue().getAsDouble()); } catch (Exception ignored) {}
-                }
-            }
-        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.43", "nwPrices failed", e); fishmod.utils.debug.FishDebug.LOGGER.warn("[Networth] prices fetch: {}", e.getMessage()); }
-        if (fetched == null || fetched.isEmpty()) {
-            nwPricesFailAt = System.currentTimeMillis();
-            return NW_PRICES;
+        long deadline = System.currentTimeMillis() + 10_000L;
+        while (!fishmod.pv.price.SkyHelperPriceCache.isReady() && System.currentTimeMillis() < deadline) {
+            try { Thread.sleep(100L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
         }
-        synchronized (NW_PRICES_LOCK) {
-            NW_PRICES.clear();
-            NW_PRICES.putAll(fetched);
-            nwPricesAt = System.currentTimeMillis();
-            nwPricesFailAt = 0;
-        }
-        return NW_PRICES;
+        return fishmod.pv.price.SkyHelperPriceCache.snapshot();
     }
 
     private static double price(Map<String, Double> p, String key) {

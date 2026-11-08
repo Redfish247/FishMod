@@ -47,6 +47,9 @@ object SkyHelperPriceCache {
 	fun isReady(): Boolean { start(); return ready && prices.isNotEmpty() }
 
 	@JvmStatic
+	fun snapshot(): Map<String, Double> { start(); return prices }
+
+	@JvmStatic
 	fun get(itemId: String?): Double? {
 		start()
 		if (itemId.isNullOrBlank()) return null
