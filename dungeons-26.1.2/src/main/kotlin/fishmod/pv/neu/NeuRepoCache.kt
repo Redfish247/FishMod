@@ -285,6 +285,21 @@ object NeuRepoCache {
 		return if (Files.isRegularFile(path)) path else null
 	}
 
+	/** All indexed item ids (upper-case). */
+	@JvmStatic
+	fun ids(): Set<String> = ITEMS.keys
+
+	/** constants/fairy_souls.json from the extracted repo, or null until it exists. */
+	@JvmStatic
+	fun fairySoulsJson(): JsonObject? {
+		val path = constantsPath("fairy_souls.json") ?: return null
+		return try {
+			Files.newBufferedReader(path, StandardCharsets.UTF_8).use { JsonParser.parseReader(it).asJsonObject }
+		} catch (_: Exception) {
+			null
+		}
+	}
+
 	@JvmStatic
 	fun get(internalName: String?): JsonObject? {
 		if (internalName.isNullOrBlank()) return null
