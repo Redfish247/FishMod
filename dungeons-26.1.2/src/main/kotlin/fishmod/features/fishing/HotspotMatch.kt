@@ -12,32 +12,14 @@ object HotspotMatch {
     // No new particle for this long = trail finished
     const val SETTLED_MS = 600L
     const val MAX_POINTS = 256
-    // Points used for the end-of-trail heading
-    const val FIT_WINDOW = 8
-    // UNVERIFIED, one real sample (1.7.46 log): trail 32 blocks long, stand 12.5 past its end (ratio 0.39); a second, cut-off
-    // trail 20 long had the stand 35 past (ratio 1.7). Heading was accurate in both; range is the unknown, hence a band.
-    const val RANGE_RATIO = 0.4
-    const val BAND_MIN_RATIO = 0.25
-    const val BAND_MAX_RATIO = 1.8
-    // Trail this close to the player (flat blocks) means the hotspot is right there: no projection
-    const val NEAR_END_BLOCKS = 20.0
-    // Column scan depth when looking for the fluid surface under a projected point
-    const val SURFACE_SCAN = 120
-    // Rays must cross at more than ~20 degrees, ends of shots at least this far apart, crossing within this of every shot end
-    const val MIN_SHOT_SEP = 10.0
-    const val MAX_CROSS_RANGE = 120.0
-    const val MIN_ANGLE_SIN_SQ = 0.117
-    const val MAX_RESIDUAL = 15.0
-    const val MAX_SHOTS = 4
-
-    // Trail end point, horizontal unit heading (dx, dz), vertical change per horizontal block, and flat start->end length
-    class Line(@JvmField val ox: Double, @JvmField val oy: Double, @JvmField val oz: Double,
-               @JvmField val dx: Double, @JvmField val dz: Double, @JvmField val slope: Double, @JvmField val len: Double = 0.0)
-
-    // Central point plus the near/far ends of the range band along the heading (flat coordinates)
-    class Estimate(@JvmField val x: Double, @JvmField val y: Double, @JvmField val z: Double, @JvmField val kind: Kind,
-                   @JvmField val nearX: Double = x, @JvmField val nearZ: Double = z, @JvmField val farX: Double = x, @JvmField val farZ: Double = z)
-    enum class Kind { SURFACE, FALLBACK, TRIANGULATED }
+    // Column scan depth when looking for the fluid surface under the solved point
+    const val SURFACE_SCAN = 40
+    // A trail point this close to an earlier one is a repeat Hypixel sends (SkyHanni: 0.01 blocks)
+    const val REPEAT_TOL = 0.01
+    // A guess further than this from the trail end is a wild extrapolation (calibration: real stands were within ~60)
+    const val MAX_GUESS_DIST = 150.0
+    // Radar re-use inside this many ms of the last flame particle is cancelled (SkyHanni does the same, 0.2 s)
+    const val REUSE_GUARD_MS = 200L
 
     fun interface FluidProbe { fun isFluid(x: Double, y: Double, z: Double): Boolean }
 
@@ -49,53 +31,15 @@ object HotspotMatch {
         return null
     }
 
-    // Straight ahead from the trail end by RANGE_RATIO x trail length (band: BAND_MIN..BAND_MAX ratio). Y is the fluid
-    // surface under that point, else fallbackY. ASSUMES the hotspot lies on the trail's end heading and that range scales with trail length.
-    fun project(l: Line, probe: FluidProbe?, fallbackY: Double): Estimate {
-        val c = l.len * RANGE_RATIO
-        val x = l.ox + l.dx * c; val z = l.oz + l.dz * c
-        val sy = surfaceY(probe, x, l.oy + 3.0, z)
-        return Estimate(x, sy ?: fallbackY, z, if (sy != null) Kind.SURFACE else Kind.FALLBACK,
-            l.ox + l.dx * l.len * BAND_MIN_RATIO, l.oz + l.dz * l.len * BAND_MIN_RATIO,
-            l.ox + l.dx * l.len * BAND_MAX_RATIO, l.oz + l.dz * l.len * BAND_MAX_RATIO)
+    // Sanity check for a solved guess: finite, inside the world's height range, and not absurdly far from the trail end.
+    fun sane(gx: Double, gy: Double, gz: Double, ex: Double, ez: Double, minY: Double, maxY: Double): Boolean {
+        if (gx.isNaN() || gy.isNaN() || gz.isNaN() || gx.isInfinite() || gy.isInfinite() || gz.isInfinite()) return false
+        if (gy < minY || gy > maxY) return false
+        val dx = gx - ex; val dz = gz - ez
+        return dx * dx + dz * dz <= MAX_GUESS_DIST * MAX_GUESS_DIST
     }
 
-    // Least-squares crossing of the shots' flat rays (x/z). Null when: fewer than 2, ends closer than MIN_SHOT_SEP,
-    // rays within ~20 degrees of parallel, crossing behind any end or further than MAX_CROSS_RANGE from any end, or any ray more
-    // than MAX_RESIDUAL off (shots at different hotspots). Y is the mean end Y.
-    fun triangulate(lines: List<Line>): Estimate? {
-        val n = lines.size
-        if (n < 2) return null
-        for (i in 0 until n) for (j in i + 1 until n) {
-            val dx = lines[i].ox - lines[j].ox; val dz = lines[i].oz - lines[j].oz
-            if (dx * dx + dz * dz < MIN_SHOT_SEP * MIN_SHOT_SEP) return null
-        }
-        var a = 0.0; var b = 0.0; var d = 0.0; var rx = 0.0; var rz = 0.0
-        for (i in 0 until n) {
-            val l = lines[i]
-            val nx = -l.dz; val nz = l.dx
-            a += nx * nx; b += nx * nz; d += nz * nz
-            val c = nx * l.ox + nz * l.oz
-            rx += nx * c; rz += nz * c
-        }
-        val det = a * d - b * b
-        // n=2: det = sin^2(angle between rays)
-        if (det < MIN_ANGLE_SIN_SQ * n * n / 4.0) return null
-        val px = (d * rx - b * rz) / det
-        val pz = (a * rz - b * rx) / det
-        var ySum = 0.0
-        for (i in 0 until n) {
-            val l = lines[i]
-            val ahead = (px - l.ox) * l.dx + (pz - l.oz) * l.dz
-            if (ahead <= 0.0 || ahead > MAX_CROSS_RANGE) return null
-            val res = (px - l.ox) * -l.dz + (pz - l.oz) * l.dx
-            if (Math.abs(res) > MAX_RESIDUAL) return null
-            ySum += l.oy
-        }
-        return Estimate(px, ySum / n, pz, Kind.TRIANGULATED)
-    }
-
-    // Particle trail from one radar use; the last point is taken as the hotspot (the trail walks toward it).
+    // Particle trail from one radar use (Bezier from the player toward the hotspot); solve() extrapolates it to the hotspot.
     class Trail {
         private val xs = DoubleArray(MAX_POINTS)
         private val ys = DoubleArray(MAX_POINTS)
@@ -105,12 +49,17 @@ object HotspotMatch {
 
         fun clear() { size = 0 }
 
-        // Returns true when the point was kept (also true when it started a fresh trail).
+        // Returns true when the point was kept. A long silence starts a fresh trail; jumps and repeats are dropped.
         fun add(x: Double, y: Double, z: Double, nowMs: Long): Boolean {
             if (size > 0 && nowMs - lastMs > NEW_TRAIL_GAP_MS) size = 0
             if (size > 0) {
                 val dx = x - xs[size - 1]; val dy = y - ys[size - 1]; val dz = z - zs[size - 1]
                 if (dx * dx + dy * dy + dz * dz > MAX_STEP * MAX_STEP) return false
+            }
+            // Repeats come back to back or interleaved A,B,A,B: check every point
+            for (i in 0 until size) {
+                val dx = x - xs[i]; val dy = y - ys[i]; val dz = z - zs[i]
+                if (dx * dx + dy * dy + dz * dz < REPEAT_TOL * REPEAT_TOL) return false
             }
             if (size >= MAX_POINTS) return false
             xs[size] = x; ys[size] = y; zs[size] = z; size++
@@ -119,34 +68,16 @@ object HotspotMatch {
         }
 
         fun hasGuess() = size >= MIN_POINTS
+        fun settled(nowMs: Long) = size > 0 && nowMs - lastMs > SETTLED_MS
         fun x(i: Int) = xs[i]
         fun y(i: Int) = ys[i]
         fun z(i: Int) = zs[i]
-
-        // Heading at the trail end: least-squares slope over the last FIT_WINDOW points. Null when too short or not moving sideways.
-        fun fit(): Line? {
-            if (size < 2) return null
-            val n = if (size < FIT_WINDOW) size else FIT_WINDOW
-            val from = size - n
-            var mi = 0.0; var mx = 0.0; var my = 0.0; var mz = 0.0
-            for (k in 0 until n) { mi += k; mx += xs[from + k]; my += ys[from + k]; mz += zs[from + k] }
-            mi /= n; mx /= n; my /= n; mz /= n
-            var sii = 0.0; var six = 0.0; var siy = 0.0; var siz = 0.0
-            for (k in 0 until n) {
-                val di = k - mi
-                sii += di * di; six += di * (xs[from + k] - mx); siy += di * (ys[from + k] - my); siz += di * (zs[from + k] - mz)
-            }
-            if (sii < 1e-9) return null
-            val sx = six / sii; val sy = siy / sii; val sz = siz / sii
-            val h = Math.sqrt(sx * sx + sz * sz)
-            if (h < 1e-6) return null
-            val fx = xs[size - 1] - xs[0]; val fz = zs[size - 1] - zs[0]
-            return Line(xs[size - 1], ys[size - 1], zs[size - 1], sx / h, sz / h, sy / h, Math.sqrt(fx * fx + fz * fz))
-        }
-        fun settled(nowMs: Long) = size > 0 && nowMs - lastMs > SETTLED_MS
         fun endX() = xs[size - 1]
         fun endY() = ys[size - 1]
         fun endZ() = zs[size - 1]
+
+        // Solved hotspot {x, y, z}, or null with fewer than MIN_POINTS points
+        fun solve(): DoubleArray? = if (size < MIN_POINTS) null else fishmod.utils.TrailBezier.solve(xs, ys, zs, size)
     }
 
     // A remembered hotspot (armor stand) or radar guess
