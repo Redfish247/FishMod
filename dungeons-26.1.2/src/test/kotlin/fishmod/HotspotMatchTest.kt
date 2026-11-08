@@ -11,11 +11,11 @@ import org.junit.jupiter.api.Test
 class HotspotMatchTest {
     @Test fun trailNeedsMinPointsAndEndsAtLast() {
         val t = HotspotMatch.Trail()
-        for (i in 0 until 3) t.add(i * 1.0, 64.0, 0.0, 1000L + i)
+        for (i in 0 until 5) t.add(i * 1.0, 64.0, 0.0, 1000L + i)
         assertFalse(t.hasGuess())
-        t.add(3.0, 64.0, 0.0, 1004L)
+        t.add(5.0, 64.0, 0.0, 1005L)
         assertTrue(t.hasGuess())
-        assertEquals(3.0, t.endX(), 1e-9)
+        assertEquals(5.0, t.endX(), 1e-9)
     }
 
     @Test fun bigJumpIgnoredAndGapStartsFreshTrail() {
@@ -78,30 +78,44 @@ class HotspotMatchTest {
         assertNull(trailAlong(0.0, 0.0, 1.0, 6).fit())
     }
 
-    @Test fun projectHitsFluidSurface() {
-        val l = HotspotMatch.Line(0.0, 80.0, 0.0, 1.0, 0.0, -0.5)
-        // water up to y=60 -> ray at y=80-0.5*i meets it near i=40
-        val e = HotspotMatch.project(l, { _, y, _ -> y < 61.0 }, 0.0)
+    // Real 1.7.46 trail: 16 flame points, stand then appeared at -455 114 -435
+    private val realTrail = arrayOf(
+        doubleArrayOf(-411.5, 118.0, -438.2), doubleArrayOf(-412.2, 118.3, -438.0), doubleArrayOf(-413.2, 118.6, -437.9), doubleArrayOf(-414.6, 118.7, -437.7),
+        doubleArrayOf(-416.2, 118.8, -437.5), doubleArrayOf(-418.1, 118.8, -437.4), doubleArrayOf(-420.3, 118.8, -437.2), doubleArrayOf(-422.6, 118.7, -437.1),
+        doubleArrayOf(-425.0, 118.6, -436.9), doubleArrayOf(-427.6, 118.4, -436.8), doubleArrayOf(-430.2, 118.1, -436.6), doubleArrayOf(-432.9, 117.9, -436.5),
+        doubleArrayOf(-435.6, 117.6, -436.3), doubleArrayOf(-438.2, 117.2, -436.2), doubleArrayOf(-440.8, 116.9, -436.1), doubleArrayOf(-443.3, 116.5, -436.0))
+
+    @Test fun realLogTrailProjectsNearStand() {
+        val t = HotspotMatch.Trail()
+        realTrail.forEachIndexed { i, p -> assertTrue(t.add(p[0], p[1], p[2], 1000L + i * 50)) }
+        val l = t.fit()!!
+        assertEquals(-1.0, l.dx, 0.02)
+        // water surface at y=113 around there
+        val e = HotspotMatch.project(l, { _, y, _ -> y < 114.0 }, 0.0)
+        assertEquals(-455.0, e.x, 8.0)
+        assertEquals(-435.0, e.z, 3.0)
         assertEquals(HotspotMatch.Kind.SURFACE, e.kind)
-        assertEquals(40.0, e.x, 3.1)
+        assertEquals(113.9, e.y, 0.01)
+        // the real stand lies inside the band
+        assertTrue(e.farX < -455.0 && e.nearX > -455.0)
     }
 
     @Test fun projectFallsBackWithoutFluid() {
-        val l = HotspotMatch.Line(5.0, 70.0, 5.0, 0.0, 1.0, 0.0)
+        val l = HotspotMatch.Line(5.0, 70.0, 5.0, 0.0, 1.0, 0.0, 30.0)
         val e = HotspotMatch.project(l, { _, _, _ -> false }, 64.0)
         assertEquals(HotspotMatch.Kind.FALLBACK, e.kind)
-        assertEquals(5.0 + HotspotMatch.FALLBACK_RANGE, e.z, 1e-9)
+        assertEquals(5.0 + 30.0 * HotspotMatch.RANGE_RATIO, e.z, 1e-9)
         assertEquals(64.0, e.y, 1e-9)
         assertEquals(HotspotMatch.Kind.FALLBACK, HotspotMatch.project(l, null, 64.0).kind)
     }
 
     @Test fun triangulateTwoRays() {
-        // hotspot at (100, 100): one ray from the origin heading diagonally, one from (100, 0) heading +z
+        // hotspot at (80, 80): one ray from the origin heading diagonally, one from (80, 0) heading +z
         val s = Math.sqrt(0.5)
         val a = HotspotMatch.Line(0.0, 70.0, 0.0, s, s, 0.0)
-        val b = HotspotMatch.Line(100.0, 72.0, 0.0, 0.0, 1.0, 0.0)
+        val b = HotspotMatch.Line(80.0, 72.0, 0.0, 0.0, 1.0, 0.0)
         val e = HotspotMatch.triangulate(listOf(a, b))!!
-        assertEquals(100.0, e.x, 1e-6); assertEquals(100.0, e.z, 1e-6); assertEquals(71.0, e.y, 1e-9)
+        assertEquals(80.0, e.x, 1e-6); assertEquals(80.0, e.z, 1e-6); assertEquals(71.0, e.y, 1e-9)
         assertEquals(HotspotMatch.Kind.TRIANGULATED, e.kind)
     }
 
@@ -114,5 +128,29 @@ class HotspotMatchTest {
         val a = HotspotMatch.Line(0.0, 70.0, 0.0, 0.0, 1.0, 0.0)
         val b = HotspotMatch.Line(50.0, 70.0, 50.0, 1.0, 0.0, 0.0)
         assertNull(HotspotMatch.triangulate(listOf(a, b)))
+    }
+
+    @Test fun triangulateRejectsSameSpotAndShallowAngle() {
+        // same position, slightly different headings (the real log's bogus case): crossing was 300 m out
+        val a = HotspotMatch.Line(-443.0, 116.0, -436.0, -1.0, 0.0, 0.0)
+        val b = HotspotMatch.Line(-440.0, 116.0, -436.0, -0.99, -0.14, 0.0)
+        assertNull(HotspotMatch.triangulate(listOf(a, b)))
+        // far apart but ~5 degrees between rays
+        val c = HotspotMatch.Line(0.0, 70.0, 0.0, 1.0, 0.0, 0.0)
+        val d = HotspotMatch.Line(0.0, 70.0, 40.0, 0.996, -0.087, 0.0)
+        assertNull(HotspotMatch.triangulate(listOf(c, d)))
+    }
+
+    @Test fun triangulateRejectsFarCrossing() {
+        // 30 degrees apart, crossing ~ 300 blocks out
+        val a = HotspotMatch.Line(0.0, 70.0, 0.0, 1.0, 0.0, 0.0)
+        val b = HotspotMatch.Line(0.0, 70.0, 150.0, 0.866, -0.5, 0.0)
+        assertNull(HotspotMatch.triangulate(listOf(a, b)))
+    }
+
+    @Test fun surfaceYScansDown() {
+        assertEquals(63.9, HotspotMatch.surfaceY({ _, y, _ -> y <= 63.0 }, 0.0, 70.5, 0.0)!!, 1e-9)
+        assertNull(HotspotMatch.surfaceY({ _, _, _ -> false }, 0.0, 70.0, 0.0))
+        assertNull(HotspotMatch.surfaceY(null, 0.0, 70.0, 0.0))
     }
 }
