@@ -154,6 +154,10 @@ class FishingTrackerTest {
         assertTrue(st.shouldDraw(true, 1_000_000 + 60_000))
         assertFalse(st.shouldDraw(true, 1_000_000 + 60_001))
         assertFalse(st.shouldDraw(false, 1_000_000))
+        // Either mode: island or recent cast is enough
+        assertTrue(st.shouldDraw(true, 5_000_000, true))
+        assertTrue(st.shouldDraw(false, 1_000_000, true))
+        assertFalse(st.shouldDraw(false, 5_000_000, true))
     }
 
     @Test fun sessionClockPausesAndResets() {

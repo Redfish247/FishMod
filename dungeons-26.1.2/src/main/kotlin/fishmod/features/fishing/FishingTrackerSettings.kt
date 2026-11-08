@@ -14,6 +14,9 @@ object FishingTrackerSettings {
     // Barn timer turns red after this many seconds
     @ConfigValue @JvmField var fishingBarnSeconds: Int = 300
 
+    // HUD visibility: "Both" = fishing island AND cast in last 60 s, "Either" = one is enough
+    @ConfigValue @JvmField var fishingShowWhen: String = "Both"
+
     @ConfigValue @JvmField var fishingScHud: Boolean = false
     @ConfigValue @JvmField var fishingScHudX: Int = 5
     @ConfigValue @JvmField var fishingScHudY: Int = 60

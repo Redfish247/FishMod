@@ -128,7 +128,7 @@ object FishingTrackerHud {
         FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, visible)
         val hud = Hud(id, lines, visible, gx, gy, gs)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
-            if (!FishHudEditor.isOpen() && hud.on() && FishingTrackerStore.shouldDraw(Fishing.active(), System.currentTimeMillis())) draw(ctx, hud)
+            if (!FishHudEditor.isOpen() && hud.on() && FishingTrackerStore.shouldDraw(Fishing.active(), System.currentTimeMillis(), S.fishingShowWhen == "Either")) draw(ctx, hud)
         }
     }
 
