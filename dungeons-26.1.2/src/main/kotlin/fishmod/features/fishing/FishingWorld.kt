@@ -1,12 +1,63 @@
 package fishmod.features.fishing
 
+import fishmod.features.FishModScreen.ColorPickerSetting
 import fishmod.features.FishModScreen.Column
+import fishmod.features.FishModScreen.Feature
+import fishmod.features.FishModScreen.InputSetting
+import fishmod.features.FishModScreen.SliderDoubleSetting
+import fishmod.features.FishModScreen.ToggleSetting
+import fishmod.features.fishing.FishingWorldSettings as W
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
-// Phase 4 (world/items) owns this file. init() runs from Fishing.init(), addMenu()/describe() from FishingMenu.
+// World + items. init() runs from Fishing.init(), addMenu()/describe() from FishingMenu.
 object FishingWorld {
-    @JvmStatic fun init() {}
+    // Cached once per tick so the entity render mixin does one static boolean read per entity.
+    @JvmField @Volatile var anyOn = false
+    @JvmField @Volatile var anyHookTimer = false
+    @JvmField @Volatile var anyRare = false
 
-    fun addMenu(col: Column) {}
+    @JvmStatic
+    fun init() {
+        HookTimer.init()
+        RareMobHighlight.init()
+        FishingItemOverlays.init()
+        ClientTickEvents.END_CLIENT_TICK.register { refresh() }
+    }
 
-    fun describe(name: String): String? = null
+    private fun refresh() {
+        val on = FishingSettings.fishing && W.fishingWorld
+        anyHookTimer = on && W.hookTimer
+        anyRare = on && (W.rareHighlight || W.rareHp || W.rareImmunity)
+        anyOn = on && (W.hookTimer || W.rareHighlight || W.hideOtherHooks || W.hidePlayersNearBobber)
+    }
+
+    fun addMenu(col: Column) {
+        val world = Feature("Fishing World", W::class.java, "fishingWorld")
+        world.sub.add(ToggleSetting("Hook Timer", "Show the bite countdown and bite indicator at your hook", W::class.java, "hookTimer"))
+        world.sub.add(ToggleSetting("Hide Hook Timer Stand", "Hide Hypixel's own timer text", W::class.java, "hookTimerHideStand"))
+        world.sub.add(SliderDoubleSetting("Hook Timer Scale", "", W::class.java, "hookTimerScale", 0.5, 4.0))
+        world.sub.add(InputSetting("Bite Text", "Shown when a fish bites", W::class.java, "hookBiteText"))
+        world.sub.add(ToggleSetting("Highlight Rare Creatures", "Glow rare sea creatures", W::class.java, "rareHighlight"))
+        world.sub.add(ColorPickerSetting("Highlight Color", "", W::class.java, "rareHighlightColor"))
+        world.sub.add(ToggleSetting("Rare Creature HP", "Show HP above rare sea creatures", W::class.java, "rareHp"))
+        world.sub.add(ToggleSetting("Spawn Immunity Timer", "Show the 5 s spawn immunity countdown", W::class.java, "rareImmunity"))
+        world.sub.add(ToggleSetting("Hide Other Hooks", "Do not render other players' fishing hooks", W::class.java, "hideOtherHooks"))
+        world.sub.add(ToggleSetting("Hide Players Near Bobber", "Do not render players close to your hook", W::class.java, "hidePlayersNearBobber"))
+        world.sub.add(SliderDoubleSetting("Hide Radius", "Blocks around your hook", W::class.java, "hidePlayersNearBobberRadius", 2.0, 30.0))
+        col.features.add(world)
+
+        val items = Feature("Fishing Items", W::class.java, "fishingItems")
+        items.sub.add(ToggleSetting("Trash Book Highlight", "Highlight enchanted books from the list below", W::class.java, "trashBooks"))
+        items.sub.add(InputSetting("Trash Books", "Comma separated book names, e.g. Corruption I,Corruption 1", W::class.java, "trashBooksList"))
+        items.sub.add(ColorPickerSetting("Trash Book Color", "", W::class.java, "trashBooksColor"))
+        items.sub.add(ToggleSetting("Rod Part Abbreviations", "Show hook/line/sinker initials on fishing rods", W::class.java, "rodParts"))
+        items.sub.add(ToggleSetting("Thunder Bottle Charge", "Show charge % on Thunder, Storm and Hurricane bottles", W::class.java, "thunderBottle"))
+        col.features.add(items)
+    }
+
+    fun describe(name: String): String? = when (name) {
+        "Fishing World" -> "Hook timer, rare creature highlight/HP and hiding hooks (all off by default)"
+        "Fishing Items" -> "Item overlays: trash books, rod parts, bottle charge (all off by default)"
+        else -> null
+    }
 }
