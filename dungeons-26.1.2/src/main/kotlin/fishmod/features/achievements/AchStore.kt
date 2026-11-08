@@ -79,11 +79,12 @@ object AchStore {
                 return d
             }
             if (Files.exists(LEGACY)) return claimLegacy(uuid)
-        } catch (e: com.google.gson.JsonParseException) {
-            // corrupted file: keep a backup and start fresh instead of failing every load
+        } catch (e: Exception) {
+            // corrupt or garbage file (bad JSON, wrong shape, bad encoding): keep a backup and start fresh
             val bad = if (Files.exists(file)) file else LEGACY
             runCatching { Files.move(bad, bad.resolveSibling("${bad.fileName}.corrupt"), StandardCopyOption.REPLACE_EXISTING) }
-        } catch (e: Exception) { FishDiag.fail("AchStore.1", "achievements load failed", e) }
+            if (e !is com.google.gson.JsonParseException && e !is IllegalStateException) FishDiag.fail("AchStore.1", "achievements load failed", e)
+        }
         return fresh(uuid)
     }
 
