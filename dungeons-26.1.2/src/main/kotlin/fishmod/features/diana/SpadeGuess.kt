@@ -5,12 +5,8 @@ import fishmod.utils.events.FishEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.world.phys.Vec3
-import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.floor
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 // Fits a cubic to the spade's lava trail and extrapolates where the trail lands
@@ -84,50 +80,8 @@ object SpadeGuess {
     fun guess(): Vec3? {
         // 4 points extrapolate wildly; wait for a steadier fit
         if (points.size < 6) return null
-        val cx = fit(points.map { it.x }) ?: return null
-        val cy = fit(points.map { it.y }) ?: return null
-        val cz = fit(points.map { it.z }) ?: return null
-        val dx = cx[1]; val dy = cy[1]; val dz = cz[1]
-        val len = sqrt(dx * dx + dy * dy + dz * dz)
-        if (len < 1e-9) return null
-        val pitch0 = -atan2(dy, sqrt(dx * dx + dz * dz))
-        // Solve the launch pitch whose trail tangent at t=0 matches the observed one
-        var lo = -PI / 2; var hi = PI / 2; var pitch = 0.0
-        repeat(100) {
-            pitch = (lo + hi) / 2
-            val r = atan2(sin(pitch) - 0.75, cos(pitch))
-            if (r < pitch0) lo = pitch else hi = pitch
-        }
-        val controlDist = sqrt(24 * sin(pitch - PI) + 25)
-        val t = 3 * controlDist / len
-        return Vec3(eval(cx, t), eval(cy, t), eval(cz, t))
-    }
-
-    private fun eval(c: DoubleArray, t: Double) = c[0] + c[1] * t + c[2] * t * t + c[3] * t * t * t
-
-    // Least-squares cubic over sample index; coefficients low-to-high
-    private fun fit(ys: List<Double>): DoubleArray? {
-        val n = 4
-        val a = Array(n) { DoubleArray(n + 1) }
-        for ((i, y) in ys.withIndex()) {
-            val t = i.toDouble()
-            val pw = DoubleArray(2 * n) { 1.0 }
-            for (k in 1 until 2 * n) pw[k] = pw[k - 1] * t
-            for (r in 0 until n) {
-                for (c in 0 until n) a[r][c] += pw[r + c]
-                a[r][n] += pw[r] * y
-            }
-        }
-        for (col in 0 until n) {
-            var piv = col
-            for (r in col + 1 until n) if (abs(a[r][col]) > abs(a[piv][col])) piv = r
-            if (abs(a[piv][col]) < 1e-12) return null
-            val tmp = a[col]; a[col] = a[piv]; a[piv] = tmp
-            for (r in 0 until n) if (r != col) {
-                val f = a[r][col] / a[col][col]
-                for (c in col..n) a[r][c] -= f * a[col][c]
-            }
-        }
-        return DoubleArray(n) { a[it][n] / a[it][it] }
+        val n = points.size
+        val r = fishmod.utils.TrailBezier.solve(DoubleArray(n) { points[it].x }, DoubleArray(n) { points[it].y }, DoubleArray(n) { points[it].z }, n) ?: return null
+        return Vec3(r[0], r[1], r[2])
     }
 }
