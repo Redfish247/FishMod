@@ -9,7 +9,6 @@ import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.fishing.FishingAlertSettings as S
 import fishmod.utils.FishMsg
-import fishmod.utils.FishUtil
 import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import fishmod.utils.sound.SoundManager
@@ -19,6 +18,7 @@ import net.minecraft.network.chat.Component
 object FishingAlerts {
     @JvmStatic fun init() {
         FishingAlertsWorld.init()
+        FishingTitles.init()
         FishingEvents.seaCreature.register { e -> onCatch(e); false }
         FishingEvents.rareDrop.register { d -> onDrop(d); false }
         FishEvents.chat.register { c ->
@@ -32,7 +32,7 @@ object FishingAlerts {
         if (!Fishing.active()) return
         if (S.fishingAlerts && S.alertSeaCreature && (e.creature.rare || !S.alertScRareOnly)) {
             val sc = e.creature
-            title("§${sc.rarity.code}§l${sc.name.uppercase()}!", if (e.count > 1) "§7x${e.count}" else "")
+            title(FishingTitles.CREATURE, "§${sc.rarity.code}§l${sc.name.uppercase()}!", if (e.count > 1) "§7x${e.count}" else "")
             sound(S.alertScSound, S.alertScVolume)
         }
         FishingShare.onCatch(e)
@@ -42,7 +42,7 @@ object FishingAlerts {
         if (!Fishing.active()) return
         if (S.fishingAlerts && S.alertRareDrop && d.price >= S.alertDropMinPrice) {
             val price = if (d.price > 0) " §7(§6${FishingAlertText.fmtCoins(d.price)}§7)" else ""
-            title("§6§lRARE DROP!", "§f${d.itemName}$price")
+            title(FishingTitles.DROP, "§6§lRARE DROP!", "§f${d.itemName}$price")
             sound(S.alertSound, S.alertSoundVolume)
         }
         FishingShare.onDrop(d)
@@ -51,24 +51,24 @@ object FishingAlerts {
     private fun onChat(plain: String) {
         if (S.alertWormholeGone && FishingAlertText.isWormholeGone(plain)) {
             if (Fishing.inArea(fishmod.utils.SkyblockLocation.LOTUS_ATOLL) || Fishing.inArea(fishmod.utils.SkyblockLocation.CRIMSON_ISLE))
-                notify("§c§lWormhole is gone", "", null)
+                notify(FishingTitles.WORMHOLE, "§c§lWormhole is gone", "", null)
             return
         }
         if (S.alertNewTrophy) {
             val d = FishingAlertText.newDiscovery(plain, Fishing.location() == fishmod.utils.SkyblockLocation.CRIMSON_ISLE) ?: return
-            notify("§b§lNEW DISCOVERY", "§f$d", null)
+            notify(FishingTitles.TROPHY, "§b§lNEW DISCOVERY", "§f$d", null)
         }
     }
 
     // Title + sound + optional local chat line for the non-creature alerts
-    fun notify(main: String, sub: String, chat: String?) {
-        title(main, sub)
+    fun notify(slot: FishingTitles.Slot, main: String, sub: String, chat: String?) {
+        title(slot, main, sub)
         sound(S.alertSound, S.alertSoundVolume)
         if (chat != null) FishMsg.send("§7$chat")
     }
 
-    private fun title(main: String, sub: String) =
-        FishUtil.forceTitle(Component.literal(main), Component.literal(sub), S.alertTitleMs.coerceIn(500, 10_000))
+    private fun title(slot: FishingTitles.Slot, main: String, sub: String) =
+        FishingTitles.show(slot, main, sub, S.alertTitleMs.coerceIn(500, 10_000))
 
     private fun sound(name: String, volPct: Int) {
         // MC caps one sound at 100%, so stack copies to go louder (as Diana does)
