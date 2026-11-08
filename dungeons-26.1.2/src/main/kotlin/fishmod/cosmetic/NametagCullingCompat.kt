@@ -22,8 +22,9 @@ object NametagCullingCompat {
             org.slf4j.LoggerFactory.getLogger("fishmod").info("EntityCulling nametag compat off: {}", t.toString())
             return
         }
+        var n = 0
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (FishDebug.skipEcCompat) return@register
+            if (FishDebug.skipEcCompat || ++n % 2 != 0) return@register
             val self = mc.player ?: return@register
             val level = mc.level ?: return@register
             for (p in level.players()) {

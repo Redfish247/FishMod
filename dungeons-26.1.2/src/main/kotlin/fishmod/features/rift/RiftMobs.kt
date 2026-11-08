@@ -40,6 +40,7 @@ object RiftMobs {
     @Volatile private var bacteUntil = 0L
     @Volatile private var bacteStart = 0L
     @Volatile var bacteDebug: List<String> = emptyList(); private set
+    @Volatile var bacteDebugOn = false
 
     private class Mark(val e: Entity, val text: String)
     @Volatile private var marks: List<Mark> = emptyList()
@@ -94,14 +95,14 @@ object RiftMobs {
             if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) { boss = true; if (stand) tagStand = e }
             val slime = e is fishmod.compat.SlimeT
             val medium = slime && (e as fishmod.compat.SlimeT).size in S.riftBacteSizeMin..S.riftBacteSizeMax
-            if (slime) { val sz = (e as fishmod.compat.SlimeT).size; val v = e.deltaMovement
-                sizes.add("#$sz dist=${Math.round(Math.sqrt(e.distanceToSqr(me)))} y=${Math.round(e.y)} spd=${"%.2f".format(Math.sqrt(v.x * v.x + v.z * v.z))}") }
-            else if (tent || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
+            if (slime) { if (bacteDebugOn) { val sz = (e as fishmod.compat.SlimeT).size; val v = e.deltaMovement
+                sizes.add("#$sz dist=${Math.round(Math.sqrt(e.distanceToSqr(me)))} y=${Math.round(e.y)} spd=${"%.2f".format(Math.sqrt(v.x * v.x + v.z * v.z))}") } }
+            else if (bacteDebugOn && (tent || BACTE_TAG.containsMatchIn(n))) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
             if (medium) sl.add(e)
             else if (tent) te.add(if (stand) Rift.mobUnder(e) ?: e else e)
             else if (slime && stillFor(e) >= 750L) te.add(e)
         }
-        bacteDebug = (cand + sizes.sortedBy { it.substringAfter("#").substringBefore(" ").toInt() }).take(30)
+        if (bacteDebugOn) bacteDebug = (cand + sizes.sortedBy { it.substringAfter("#").substringBefore(" ").toInt() }).take(30)
         // the boss is also stationary: drop whatever slime sits under its health tag
         tagStand?.let { st -> Rift.mobUnder(st)?.let { b -> te.removeAll { it.id == b.id } } }
         val on = boss || windowOpen

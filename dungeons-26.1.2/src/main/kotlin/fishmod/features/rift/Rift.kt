@@ -83,7 +83,8 @@ object Rift {
         say("§7nearby (${names.size}): " + names.joinToString(" | "))
         say("§7" + RiftSnake.debug())
         say("§7" + RiftHay.debug())
-        say("§7bacte cand: " + RiftMobs.bacteDebug.joinToString(" | ").ifEmpty { "none" })
+        RiftMobs.bacteDebugOn = true
+        say("§7bacte cand (collects from now; rerun if none): " + RiftMobs.bacteDebug.joinToString(" | ").ifEmpty { "none" })
         say("§7crux matched: " + RiftMobs.lastCruxNames.joinToString(" | ").ifEmpty { "none" })
     }
 

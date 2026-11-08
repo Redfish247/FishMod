@@ -72,9 +72,12 @@ object Mining {
         Corpses.init()
     }
 
+    private var sidebarVersion = -1
+
     private fun onTick(mc: Minecraft) {
         if (mc.player == null) return
-        if (tick++ % 20 == 0) {
+        if (tick++ % 20 == 0 && fishmod.utils.SidebarCache.version != sidebarVersion) {
+            sidebarVersion = fishmod.utils.SidebarCache.version
             sidebar = sidebarLines(mc)
             area = sidebar.firstOrNull { it.startsWith("⏣") || it.startsWith("ф") }?.drop(1)?.trim() ?: ""
         }
@@ -127,19 +130,39 @@ object Mining {
     }
 
     // Tab lines after a widget header (e.g. "Commissions:"), until the next blank/header line
-    fun tabWidget(header: String): List<String> {
-        val out = ArrayList<String>()
-        var inside = false
-        for (e in TabListCache.entries) {
-            val s = e.stripped
-            if (!inside) { if (s.trim().startsWith(header)) inside = true; continue }
-            if (s.isBlank() || (!s.startsWith(" ") && s.trim().endsWith(":"))) break
-            out += s.trim()
+    private val widgetCache = HashMap<String, List<String>>()
+    private val lineCache = HashMap<String, String?>()
+    private var tabVersion = -1
+
+    private fun syncTabCache() {
+        if (tabVersion != TabListCache.version) {
+            tabVersion = TabListCache.version
+            widgetCache.clear(); lineCache.clear()
         }
-        return out
     }
 
-    fun tabLine(prefix: String): String? = TabListCache.entries.firstOrNull { it.stripped.trim().startsWith(prefix) }?.stripped?.trim()
+    fun tabWidget(header: String): List<String> {
+        syncTabCache()
+        return widgetCache.getOrPut(header) {
+            val out = ArrayList<String>()
+            var inside = false
+            for (e in TabListCache.entries) {
+                val s = e.stripped
+                if (!inside) { if (s.trim().startsWith(header)) inside = true; continue }
+                if (s.isBlank() || (!s.startsWith(" ") && s.trim().endsWith(":"))) break
+                out += s.trim()
+            }
+            out
+        }
+    }
+
+    fun tabLine(prefix: String): String? {
+        syncTabCache()
+        if (lineCache.containsKey(prefix)) return lineCache[prefix]
+        val r = TabListCache.entries.firstOrNull { it.stripped.trim().startsWith(prefix) }?.stripped?.trim()
+        lineCache[prefix] = r
+        return r
+    }
 
     fun strip(s: String) = s.replace(FishConstants.STRIP_COLOR_REGEX, "")
 
