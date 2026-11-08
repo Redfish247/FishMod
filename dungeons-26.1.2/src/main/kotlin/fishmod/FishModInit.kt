@@ -520,6 +520,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.MiningBoxes", "MiningBoxes.init() failed") { fishmod.features.mining.MiningBoxes.init() }
         FishDiag.guard("FishModInit.102", "fishmod.features.slayers.SlayerManager.init() failed") { fishmod.features.slayers.SlayerManager.init() }
         FishDiag.guard("FishModInit.156", "fishmod.features.diana.Diana.init() failed") { fishmod.features.diana.Diana.init() }
+        FishDiag.guard("FishModInit.Fishing", "fishmod.features.fishing.Fishing.init() failed") { fishmod.features.fishing.Fishing.init() }
         FishDiag.guard("FishModInit.158", "TrackerResetButton.init() failed") { fishmod.features.other.TrackerResetButton.init() }
         FishDiag.guard("FishModInit.157", "fishmod.features.mining.Mining.init() failed") { fishmod.features.mining.Mining.init() }
         FishDiag.guard("FishModInit.157k", "fishmod.features.kuudra.Kuudra.init() failed") { fishmod.features.kuudra.Kuudra.init() }

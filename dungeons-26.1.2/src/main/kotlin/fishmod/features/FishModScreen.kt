@@ -2197,6 +2197,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(hud)
         columns.add(slayer)
         columns.add(fishmod.features.diana.DianaMenu.column())
+        columns.add(fishmod.features.fishing.FishingMenu.column())
         columns.add(fishmod.features.mining.MiningMenu.column())
         columns.add(fishmod.features.kuudra.KuudraMenu.column())
         columns.add(fishmod.features.rift.RiftMenu.column())
@@ -4485,6 +4486,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "HUD & Overlays" to "On-screen elements",
             "Visuals & Rendering" to "ESP, boxes & effects",
             "Diana" to "Mythological event tools",
+            "Fishing" to "Sea creatures, drops and fishing helpers",
             "Slayer" to "Slayer boss helpers",
             "Cheats" to "Risky automation",
             "Mining" to "Mining & powder tools",
@@ -4592,6 +4594,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private fun descFor(name: String): String {
             fishmod.features.diana.DianaMenu.describe(name)?.let { return it }
+            fishmod.features.fishing.FishingMenu.describe(name)?.let { return it }
             fishmod.features.mining.MiningMenu.describe(name)?.let { return it }
             fishmod.features.kuudra.KuudraMenu.describe(name)?.let { return it }
             fishmod.features.rift.RiftMenu.describe(name)?.let { return it }
