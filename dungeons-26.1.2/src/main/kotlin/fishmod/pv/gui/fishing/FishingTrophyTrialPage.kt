@@ -53,11 +53,12 @@ class FishingTrophyTrialPage {
 		PvDraw.textRight(g, font, FormatUtil.commas(data.trophyFishTotal) + " caught", innerX + innerW, top, PvDraw.COLOR_ACCENT)
 		top += font.lineHeight + 4
 
-		val blocks = if (innerW >= 330) 2 else 1
-		val perBlock = (rows.size + blocks - 1) / blocks
-		val blockW = (innerW - BLOCK_GAP * (blocks - 1)) / blocks
 		val headerH = font.lineHeight + 3
 		val avail = y + h - PAD - top - headerH
+		// Two columns when one can't fit every row, else the last frog (Puddle Jumper) was clipped
+		val blocks = if (innerW >= 330 || (innerW >= 240 && avail < rows.size * ROW_H_MIN)) 2 else 1
+		val perBlock = (rows.size + blocks - 1) / blocks
+		val blockW = (innerW - BLOCK_GAP * (blocks - 1)) / blocks
 		val rowH = maxOf(ROW_H_MIN, minOf(ROW_H_MAX, avail / maxOf(1, perBlock)))
 
 		g.enableScissor(x + 1, y + 1, x + w - 1, y + h - 1)
@@ -131,7 +132,7 @@ class FishingTrophyTrialPage {
 		private const val ICON = 12
 		private const val BLOCK_GAP = 10
 		private const val ROW_H_MAX = 14
-		private const val ROW_H_MIN = 10
+		private const val ROW_H_MIN = 9
 		private const val COUNT_W = 26
 		private val TIERS = arrayOf(
 			TrophyFishData.Tier.BRONZE,
