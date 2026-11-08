@@ -8,7 +8,7 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 // Turns raw chat into the party-chat and leap hooks.
 object EventDispatch {
 
-    private const val PARTY_PREFIX = "§9Party §8>"
+    private const val PARTY_PREFIX = "Party >"
     private val LEAP_LINE = Regex("^You have teleported to .*!$")
     // "[MVP+] Name" -> "Name"
     private val RANK_TAG = Regex("^\\[[^\\]]*] ")
@@ -16,7 +16,7 @@ object EventDispatch {
     @JvmStatic
     fun init() {
         ClientReceiveMessageEvents.GAME.register { message, _ ->
-            val raw = message.string
+            val raw = message.chatPlain
             FishDiag.guard("EventDispatch.1", "party chat parse") { if (raw.startsWith(PARTY_PREFIX)) firePartyChat(raw) }
             FishDiag.guard("EventDispatch.2", "leap message dispatch") {
                 if (SkyblockLocation.inDungeon() && LEAP_LINE.containsMatchIn(raw)) FishEvents.leap.invoke { it.onLeap(message) }
