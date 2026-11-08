@@ -36,7 +36,7 @@ FishModNew/
 *.md
 !/README.md
 /*.txt
-!/LICENSE_inter-OFL.txt
+
 /*.sql
 /audit-work/
 /builds/

@@ -64,8 +64,21 @@ Jars land in `dungeons-<version>/build/libs/`.
 
 Use the [roadmap page](https://fishmod.dev/incoming-features) or the [Discord](https://discord.gg/3mSuQUB8kk). Please include your mod version, Minecraft version and the crash log.
 
+## Credits
+
+FishMod builds on these open-source projects. Thanks to their authors.
+
+| Project | Used for | License |
+| --- | --- | --- |
+| [BetterPV](https://github.com/Vyriv/BetterPV) | Base of the in-game Profile Viewer | MPL-2.0 ([copy](dungeons-26.1.2/LICENSE_betterpv)) |
+| blade-addons (BladeMasterGabe) | Several features and the practical-config library | CC0 ([copy](dungeons-26.1.2/LICENSE_blade-addons)) |
+| [Odin](https://github.com/odtheking/Odin) | Reference for some dungeon solvers and utilities | see project |
+| [SkyHanni](https://github.com/hannibal002/SkyHanni) | Reference for some Rift, garden and mining helpers | see project |
+| [NotEnoughUpdates repo](https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO) | Item data | see project |
+| [Inter](https://github.com/rsms/inter) | UI font | OFL-1.1 ([copy](dungeons-26.1.2/LICENSE_inter-OFL.txt)) |
+
 ## License
 
-[CC0 1.0](LICENSE). Bundled third-party code keeps its own license (see `dungeons-26.1.2/LICENSE_*`).
+[CC0 1.0](LICENSE). Code taken from the projects above keeps its original license.
 
 *Use at your own risk under Hypixel's rules.*
