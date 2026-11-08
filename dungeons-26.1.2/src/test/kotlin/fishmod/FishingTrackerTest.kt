@@ -145,4 +145,39 @@ class FishingTrackerTest {
         val back = com.google.gson.Gson().fromJson(json, FishingTotals::class.java)
         assertEquals(1L, back.buckets[FishingTrackerStore.MAIN]!!.catches)
     }
+
+    @Test fun castGate() {
+        val st = FishingTrackerStore
+        st.lastCastAt = 0L
+        assertFalse(st.shouldDraw(true, 1_000_000))
+        st.noteCast(1_000_000)
+        assertTrue(st.shouldDraw(true, 1_000_000 + 60_000))
+        assertFalse(st.shouldDraw(true, 1_000_000 + 60_001))
+        assertFalse(st.shouldDraw(false, 1_000_000))
+    }
+
+    @Test fun sessionClockPausesAndResets() {
+        val st = FishingTrackerStore
+        st.resetSession(1000)
+        assertEquals(5000L, st.sessionElapsed(6000))
+        st.setPaused(true, 6000)
+        assertEquals(5000L, st.sessionElapsed(60_000))
+        st.setPaused(false, 70_000)
+        assertEquals(8000L, st.sessionElapsed(73_000))
+        st.resetSession(80_000)
+        assertEquals(0L, st.sessionElapsed(80_000))
+    }
+
+    @Test fun sessionRatesUseSessionClock() {
+        FishingTrackerStore.onCatch(sc("Squid"), 1, false, SkyblockLocation.HUB, 1000)
+        val b = FishingTrackerStore.session(FishingTrackerStore.MAIN)
+        val sess = FishingTrackerLines.efficiency(b, false, 3_600_000)
+        assertTrue(sess.any { it.contains("Session time §f1:00:00") })
+        assertTrue(sess.any { it.contains("SC/hr §f1.0") })
+        // total mode ignores the session clock (activeMs is 0 here)
+        val tot = FishingTrackerLines.efficiency(FishingTrackerStore.total(FishingTrackerStore.MAIN), true, 3_600_000)
+        assertTrue(tot.any { it.contains("SC/hr §f-") })
+        assertTrue(FishingTrackerLines.seaCreatures(b, false, 5, 65_000).any { it.contains("Session time §f1:05") })
+        assertFalse(FishingTrackerLines.seaCreatures(b, true, 5, 65_000).any { it.contains("Session time") })
+    }
 }

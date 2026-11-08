@@ -78,6 +78,19 @@ object FishingTrackerStore {
     @JvmField val festival = FestivalState()
 
     @JvmField @Volatile var paused = false
+
+    // Session clock: accumulated while running, paused with the pause key, cleared by resetSession
+    private var sessionAcc = 0L
+    private var sessionResumeAt = System.currentTimeMillis()
+    @JvmStatic fun sessionElapsed(now: Long): Long = sessionAcc + (if (paused) 0L else (now - sessionResumeAt).coerceAtLeast(0L))
+
+    // HUDs draw only while the player's own hook existed within the last 60 s
+    const val CAST_WINDOW_MS = 60_000L
+    @JvmField @Volatile var lastCastAt = 0L
+    @JvmStatic fun noteCast(now: Long) { lastCastAt = now }
+    @JvmStatic fun castRecent(now: Long): Boolean = lastCastAt != 0L && now - lastCastAt <= CAST_WINDOW_MS
+    // Draw gate: fishing island (Fishing.active()) and a recent cast
+    @JvmStatic fun shouldDraw(active: Boolean, now: Long): Boolean = active && castRecent(now)
     // Bumped on every change; HUD line caches rebuild on it
     @JvmField @Volatile var version = 0
     @JvmField @Volatile var dirty = false
@@ -152,13 +165,15 @@ object FishingTrackerStore {
     @JvmStatic fun onWorldChange() { barn.reset(); festival.reset(); for (b in session.values) b.lastAt = 0L; for (b in totals.buckets.values) b.lastAt = 0L; bump() }
 
     // Pausing breaks the active-time gap so idle time is not counted
-    @JvmStatic fun setPaused(p: Boolean) {
+    @JvmStatic fun setPaused(p: Boolean, now: Long = System.currentTimeMillis()) {
+        if (p == paused) return
+        if (p) sessionAcc += (now - sessionResumeAt).coerceAtLeast(0L) else sessionResumeAt = now
         paused = p
         for (b in session.values) b.lastAt = 0L
         for (b in totals.buckets.values) b.lastAt = 0L
         bump()
     }
 
-    @JvmStatic fun resetSession() { session.clear(); barn.reset(); festival.reset(); bump() }
+    @JvmStatic fun resetSession(now: Long = System.currentTimeMillis()) { sessionAcc = 0L; sessionResumeAt = now; session.clear(); barn.reset(); festival.reset(); bump() }
     @JvmStatic fun resetTotal() { totals = FishingTotals(); bump() }
 }
