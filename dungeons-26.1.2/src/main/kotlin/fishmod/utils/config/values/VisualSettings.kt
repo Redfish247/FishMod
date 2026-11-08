@@ -43,7 +43,6 @@ object VisualSettings {
 
     @ConfigValue @JvmField var hideMobFire: Boolean = false
 
-    @ConfigValue @JvmField var nametagsOnTop: Boolean = true
 
     @ConfigValue @JvmField var lateWorldText: Boolean = true
 

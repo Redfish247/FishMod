@@ -12,7 +12,7 @@ object FishHudLayer {
     @JvmField var inTab = false
 
     // Layers drawn in-world or under the crosshair; never hidden by tab
-    private val TAB_EXEMPT = setOf("custom_crosshair", "hologram_text", "dungeon_waypoints_overlay", "cooldown_overlay_hotbar")
+    private val TAB_EXEMPT = setOf("custom_crosshair","dungeon_waypoints_overlay", "cooldown_overlay_hotbar")
 
     private class Box { var x0 = Int.MAX_VALUE; var y0 = Int.MAX_VALUE; var x1 = Int.MIN_VALUE; var y1 = Int.MIN_VALUE
         fun reset() { x0 = Int.MAX_VALUE; y0 = Int.MAX_VALUE; x1 = Int.MIN_VALUE; y1 = Int.MIN_VALUE }

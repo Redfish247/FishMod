@@ -37,17 +37,6 @@ object FishDebug {
     @JvmField
     var renderPositions = false
 
-    var holoTrace = false
-    private var holoTraceAt = 0L
-
-    // Prints each nametag text containing "Hunters" at most every 3 s
-    fun holoTraceMsg(type: String, text: String) {
-        val now = System.currentTimeMillis()
-        if (!text.contains("Hunters") || now - holoTraceAt < 3000) return
-        holoTraceAt = now
-        FishUtil.addChatMessage(Component.literal("holo trace: $type '$text'"))
-    }
-
     @JvmField
     var sendNotiDebug = false
 
@@ -221,12 +210,6 @@ object FishDebug {
                 .then(ClientCommands.literal("gizmos").executes { _ ->
                     fishmod.utils.config.values.VisualSettings.gizmoOverlays = !fishmod.utils.config.values.VisualSettings.gizmoOverlays
                     FishUtil.addChatMessage(Component.literal("Highlights via gizmos (26.2): ").append(FishUtil.getStatusText(fishmod.utils.config.values.VisualSettings.gizmoOverlays)))
-                    FishConstants.SUCCESS
-                })
-
-                .then(ClientCommands.literal("holotrace").executes { _ ->
-                    holoTrace = !holoTrace
-                    FishUtil.addChatMessage(Component.literal("Holo trace: ").append(FishUtil.getStatusText(holoTrace)))
                     FishConstants.SUCCESS
                 })
 
