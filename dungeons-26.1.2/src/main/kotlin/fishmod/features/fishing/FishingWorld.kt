@@ -20,6 +20,7 @@ object FishingWorld {
     fun init() {
         HookTimer.init()
         WormholeFinder.init()
+        HotspotFinder.init()
         RareMobHighlight.init()
         FishingItemOverlays.init()
         ClientTickEvents.END_CLIENT_TICK.register { refresh() }
@@ -53,6 +54,12 @@ object FishingWorld {
         wh.sub.add(ToggleSetting("Debug Raw Arrows", "Print each nearby text display (text, position, heading) to chat", W::class.java, "wormholeDebug"))
         col.features.add(wh)
 
+        val hs = Feature("Hotspot Finder", W::class.java, "hotspotFinder")
+        hs.sub.add(ToggleSetting("Radar Guess", "Mark where the Hotspot Radar's flame trail ends", W::class.java, "hotspotRadar"))
+        hs.sub.add(ColorPickerSetting("Waypoint Color", "", W::class.java, "hotspotColor"))
+        hs.sub.add(ToggleSetting("Debug Raw Signals", "Print hotspot stands and radar flame particles to chat", W::class.java, "hotspotDebug"))
+        col.features.add(hs)
+
         val items = Feature("Fishing Items", W::class.java, "fishingItems")
         items.sub.add(ToggleSetting("Trash Book Highlight", "Highlight enchanted books from the list below", W::class.java, "trashBooks"))
         items.sub.add(InputSetting("Trash Books", "Comma separated book names, e.g. Corruption I,Corruption 1", W::class.java, "trashBooksList").gatedBy { W.trashBooks })
@@ -65,6 +72,7 @@ object FishingWorld {
     fun describe(name: String): String? = when (name) {
         "Fishing World" -> "Hook timer, rare creature highlight/HP and hiding hooks (all off by default)"
         "Wormhole Finder" -> "Wear Froggles on Lotus Atoll or Crimson Isle: marks the wormhole the arrows point at (off by default, untested)"
+        "Hotspot Finder" -> "Waypoint and distance to every loaded fishing hotspot, remembered until it despawns, plus a Hotspot Radar guess (off by default, untested)"
         "Fishing Items" -> "Item overlays: trash books, rod parts, bottle charge (all off by default)"
         else -> null
     }

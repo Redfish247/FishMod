@@ -29,6 +29,12 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var wormholeDebug: Boolean = false
     @ConfigValue @JvmField var wormholeColor: Int = 0xFFFF55FF.toInt()
 
+    // Hotspot finder (waypoints to loaded hotspot stands + Hotspot Radar flame-trail guess); own toggle, off by default
+    @ConfigValue @JvmField var hotspotFinder: Boolean = false
+    @ConfigValue @JvmField var hotspotRadar: Boolean = true
+    @ConfigValue @JvmField var hotspotDebug: Boolean = false
+    @ConfigValue @JvmField var hotspotColor: Int = 0xFFFFAA00.toInt()
+
     // Item overlays
     @ConfigValue @JvmField var fishingItems: Boolean = false
     @ConfigValue @JvmField var trashBooks: Boolean = false

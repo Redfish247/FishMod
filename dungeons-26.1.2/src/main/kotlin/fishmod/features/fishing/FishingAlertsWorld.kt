@@ -85,7 +85,7 @@ object FishingAlertsWorld {
     }
 
     // Perk is the stand directly under the HOTSPOT stand
-    private fun perkBelow(hot: ArmorStand, stands: List<ArmorStand>): String {
+    internal fun perkBelow(hot: ArmorStand, stands: List<ArmorStand>): String {
         var best: ArmorStand? = null
         var bestD = Double.MAX_VALUE
         for (s in stands) {
