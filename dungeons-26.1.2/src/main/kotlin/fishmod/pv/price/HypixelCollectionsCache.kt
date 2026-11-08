@@ -79,8 +79,11 @@ object HypixelCollectionsCache {
 	@Volatile
 	private var itemsById: Map<String, Item> = emptyMap()
 
+	private val STARTED = java.util.concurrent.atomic.AtomicBoolean(false)
+
 	@JvmStatic
 	fun start() {
+		if (!STARTED.compareAndSet(false, true)) return
 		requestRefresh()
 		EXECUTOR.scheduleAtFixedRate(::refreshSafely, REFRESH_HOURS, REFRESH_HOURS, TimeUnit.HOURS)
 	}
@@ -98,13 +101,14 @@ object HypixelCollectionsCache {
 	}
 
 	@JvmStatic
-	fun isReady(): Boolean = categories.isNotEmpty()
+	fun isReady(): Boolean { start(); return categories.isNotEmpty() }
 
 	@JvmStatic
-	fun categories(): List<Category> = categories
+	fun categories(): List<Category> { start(); return categories }
 
 	@JvmStatic
 	fun item(id: String?): Item? {
+		start()
 		if (id.isNullOrBlank()) return null
 		itemsById[id]?.let { return it }
 		val upper = id.uppercase(Locale.ROOT)

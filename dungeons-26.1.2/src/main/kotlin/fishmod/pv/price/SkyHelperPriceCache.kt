@@ -34,17 +34,21 @@ object SkyHelperPriceCache {
 	@Volatile
 	private var ready = false
 
+	private val STARTED = java.util.concurrent.atomic.AtomicBoolean(false)
+
 	@JvmStatic
 	fun start() {
+		if (!STARTED.compareAndSet(false, true)) return
 		EXECUTOR.execute(::refreshSafely)
 		EXECUTOR.scheduleAtFixedRate(::refreshSafely, REFRESH_MINUTES, REFRESH_MINUTES, TimeUnit.MINUTES)
 	}
 
 	@JvmStatic
-	fun isReady(): Boolean = ready && prices.isNotEmpty()
+	fun isReady(): Boolean { start(); return ready && prices.isNotEmpty() }
 
 	@JvmStatic
 	fun get(itemId: String?): Double? {
+		start()
 		if (itemId.isNullOrBlank()) return null
 		return prices[itemId.uppercase(Locale.ROOT)]
 	}

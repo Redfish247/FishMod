@@ -14,7 +14,6 @@ object ItemPricer {
 	fun start() {
 		AthenPriceCache.start()
 		SkyHelperPriceCache.start()
-		HypixelItemsCache.start()
 		HypixelCollectionsCache.start()
 	}
 

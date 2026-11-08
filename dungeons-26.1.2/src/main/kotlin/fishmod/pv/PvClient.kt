@@ -50,7 +50,7 @@ object PvClient {
 	fun init() {
 		if (!INITIALIZED.compareAndSet(false, true)) return
 		PvConfig.load()
-		ItemPricer.start()
+		fishmod.pv.price.HypixelItemsCache.start()
 		NeuRepoCache.start()
 		SkyBlockPackCache.start()
 
