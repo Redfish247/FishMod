@@ -31,6 +31,7 @@ import java.util.List;
 public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState> {
 
     @org.spongepowered.asm.mixin.Unique
+    private static final float[] IDENTITY_SCALE = {1.0f, 1.0f, 1.0f};
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
@@ -50,7 +51,8 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             }
 
             if (entity instanceof Player sized) {
-                float[] sc = fishmod.cosmetic.PlayerSize.scaleFor(sized);
+                float[] sc = (FishSettings.playerSizeEnabled || FishSettings.forceOthersSizeEnabled || FishSettings.playerSizeShared)
+                        ? fishmod.cosmetic.PlayerSize.scaleFor(sized) : IDENTITY_SCALE;
                 ((fishmod.cosmetic.ScaleHolder) state).fishmod$setScale(sc[0], sc[1], sc[2]);
                 if (sc[1] != 1.0f && state.nameTagAttachment != null) {
                     state.nameTagAttachment = state.nameTagAttachment.add(0, sized.getBbHeight() * (sc[1] - 1.0), 0);

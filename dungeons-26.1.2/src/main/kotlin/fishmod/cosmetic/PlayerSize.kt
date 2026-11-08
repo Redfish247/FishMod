@@ -15,6 +15,7 @@ object PlayerSize {
     const val MAX = 5.0f
 
     private val IDENTITY = floatArrayOf(1.0f, 1.0f, 1.0f)
+    private val KEYS = java.util.concurrent.ConcurrentHashMap<UUID, String>()
 
     @JvmStatic
     fun init() {
@@ -35,8 +36,9 @@ object PlayerSize {
             return floatArrayOf(f, f, f)
         }
         if (!FishSettings.playerSizeShared) return IDENTITY
-        val s = RemoteScales.get(p.getUUID().toString().replace("-", ""))
-        return s ?: IDENTITY
+        val id = p.getUUID()
+        val key = KEYS.getOrPut(id) { id.toString().replace("-", "") }
+        return RemoteScales.get(key) ?: IDENTITY
     }
 
     @JvmStatic
