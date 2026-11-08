@@ -142,7 +142,8 @@ object LootIcons {
         val stack = ItemStack(item)
         if (item == Items.PLAYER_HEAD) {
             // some heads (e.g. SKELETON_TALISMAN) have no skin in the db; keep the plain head
-            val skin = o.getAsJsonObject("skin")?.get("value")?.asString ?: return stack
+            val sk = o.get("skin")
+            val skin = (if (sk != null && sk.isJsonObject) sk.asJsonObject.get("value") else sk)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() } ?: return stack
             val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", skin))
             val profile = com.mojang.authlib.GameProfile(java.util.UUID.nameUUIDFromBytes(id.toByteArray()), "fmloot", com.mojang.authlib.properties.PropertyMap(props))
             stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile))
