@@ -276,6 +276,7 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		socialsMenu.close()
 		searchHistory.close()
 		ProfileFetcher.removeNetworthListener(networthListener)
+		fishmod.pv.data.MuseumCache.clearAll()
 		super.removed()
 	}
 
