@@ -3,6 +3,7 @@ package fishmod.utils.networth
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import java.net.URI
