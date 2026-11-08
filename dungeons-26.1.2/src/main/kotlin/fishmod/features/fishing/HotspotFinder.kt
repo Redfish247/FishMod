@@ -27,6 +27,7 @@ object HotspotFinder {
     private const val NEAR_FLAT_DROP = 48.0
     private const val MAX_AGE_MS = 10 * 60_000L
     private const val NO_WAYPOINT_NEAR = 12
+    private const val FAR_DRAW = 64.0
     private const val GUESS_LIFE_MS = 90_000L
     private const val GUESS_COVERED_RADIUS = 20.0
     private const val GUESS_REACHED = 10.0
@@ -175,6 +176,14 @@ object HotspotFinder {
 
     private fun sq(v: Double) = v * v
 
+    // Far markers are drawn at most FAR_DRAW blocks out along the same direction (distance in the label stays real).
+    private fun capped(p: net.minecraft.world.entity.player.Player, x: Double, y: Double, z: Double, d: Int): DoubleArray {
+        if (d <= FAR_DRAW) return doubleArrayOf(x, y, z)
+        val ex = p.x; val ey = p.eyeY; val ez = p.z
+        val f = FAR_DRAW / Math.sqrt(sq(x - ex) + sq(y - ey) + sq(z - ez))
+        return doubleArrayOf(ex + (x - ex) * f, ey + (y - ey) * f, ez + (z - ez) * f)
+    }
+
     private fun render() {
         if (!on()) return
         val l = registry.list
@@ -191,8 +200,9 @@ object HotspotFinder {
                     k.shownDist = d
                     k.label = Component.literal("§6§lHotspot §f${k.perk} §7${d}m")
                 }
-                FishDraw.gizmoBox(AABB(k.x - 0.5, k.y - 1.0, k.z - 0.5, k.x + 0.5, k.y + 1.0, k.z + 0.5), fill, color, true)
-                FishDraw.gizmoText(k.label as Component, Vec3(k.x, k.y + 1.6, k.z), 1.5f, -0x1, true)
+                val c = capped(p, k.x, k.y, k.z, d)
+                FishDraw.gizmoBox(AABB(c[0] - 0.5, c[1] - 1.0, c[2] - 0.5, c[0] + 0.5, c[1] + 1.0, c[2] + 0.5), fill, color, true)
+                FishDraw.gizmoText(k.label as Component, Vec3(c[0], c[1] + 1.6, c[2]), 1.5f, -0x1, true)
             }
             if (hasGuess) {
                 val d = HotspotMatch.distance(p.x, p.y, p.z, gx, gy, gz)
@@ -200,9 +210,9 @@ object HotspotFinder {
                     guessShown = d
                     guessLabel = Component.literal("§d§lRadar guess §7${d}m")
                 }
-                FishDraw.gizmoBox(AABB(gx - 0.5, gy - 0.5, gz - 0.5, gx + 0.5, gy + 1.5, gz + 0.5), (W.hotspotColor and 0x00FFFFFF) or 0x33000000, color, true)
-                FishDraw.gizmoLine(Vec3(trail.endX(), trail.endY(), trail.endZ()), Vec3(gx, gy, gz), color, 3f, true)
-                FishDraw.gizmoText(guessLabel!!, Vec3(gx, gy + 2.2, gz), 1.5f, -0x1, true)
+                val c = capped(p, gx, gy, gz, d)
+                FishDraw.gizmoBox(AABB(c[0] - 0.5, c[1] - 0.5, c[2] - 0.5, c[0] + 0.5, c[1] + 1.5, c[2] + 0.5), (W.hotspotColor and 0x00FFFFFF) or 0x33000000, color, true)
+                FishDraw.gizmoText(guessLabel!!, Vec3(c[0], c[1] + 2.2, c[2]), 1.5f, -0x1, true)
             }
         }
     }
