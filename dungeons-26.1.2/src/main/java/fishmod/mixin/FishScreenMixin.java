@@ -4,7 +4,7 @@ import fishmod.features.dungeon.SessionStats;
 import fishmod.features.other.InvSearchBar;
 import fishmod.features.other.WardrobeHotkeys;
 import fishmod.utils.config.values.FishSettings;
-import fishmod.utils.debug.MixinGuard;
+import fishmod.utils.debug.FishDiag;
 import fishmod.utils.rendering.DrawHooks;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -31,27 +31,43 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$drawOverlays(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
-        MixinGuard.run("FishScreenMixin.9", "hovered slot tracking failed", () -> {
+        // Direct calls with setting gates: no per-frame capturing lambdas
+        try {
             Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
             fishmod.features.ScrollableTooltip.trackHoveredSlot(hs != null && !hs.getItem().isEmpty() ? hs.index : -1);
-        });
-        // Setting checks up front skip the per-frame lambda when a feature is off
-        if (FishSettings.inventorySearchEnabled) MixinGuard.run("FishScreenMixin.1", "InvSearchBar.render failed", () -> InvSearchBar.render(context, mouseX, mouseY, deltaTicks));
-        MixinGuard.run("FishScreenMixin.2", "LeapMenu.render failed", () -> fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, self));
-        MixinGuard.run("FishScreenMixin.3", "PartyFinderPanel.render failed", () -> fishmod.features.dungeon.PartyFinderPanel.render(context, mouseX, mouseY, self));
-        MixinGuard.run("FishScreenMixin.4", "StorageOverlay.render failed", () -> fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, self));
-        MixinGuard.run("FishScreenMixin.5", "CroesusProfit.render failed", () -> fishmod.features.croesus.CroesusProfit.render(context, self));
-        if (FishSettings.anitaProfitEnabled) MixinGuard.run("FishScreenMixin.20", "AnitaShop.render failed", () -> fishmod.features.item.AnitaShop.render(context, self));
-        if (FishSettings.containerValueEnabled) MixinGuard.run("FishScreenMixin.6", "ContainerValue.render failed", () -> fishmod.features.item.ContainerValue.render(context, self));
-        MixinGuard.run("FishScreenMixin.16", "Visitors.renderShopping failed", () -> fishmod.features.garden.Visitors.renderShopping(context, self));
-        if (FishSettings.auctionPriceAutofillEnabled) MixinGuard.run("FishScreenMixin.7", "AuctionPriceAutofill.trackScreen failed", () -> fishmod.features.item.AuctionPriceAutofill.trackScreen(self));
-        MixinGuard.run("FishScreenMixin.8", "TermCustomGui.render failed", () -> {
-            if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(self)) {
-                fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
-            }
-        });
+        } catch (Throwable t) { FishDiag.fail("FishScreenMixin.9", "hovered slot tracking failed", t); }
+        if (FishSettings.inventorySearchEnabled) {
+            try { InvSearchBar.render(context, mouseX, mouseY, deltaTicks); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.1", "InvSearchBar.render failed", t); }
+        }
+        if (FishSettings.leapMenuEnabled) {
+            try { fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.2", "LeapMenu.render failed", t); }
+        }
+        try { fishmod.features.dungeon.PartyFinderPanel.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.3", "PartyFinderPanel.render failed", t); }
+        if (FishSettings.storageOverlayEnabled) {
+            try { fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.4", "StorageOverlay.render failed", t); }
+        }
+        if (FishSettings.croesusProfitEnabled || FishSettings.croesusHighlightEnabled) {
+            try { fishmod.features.croesus.CroesusProfit.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.5", "CroesusProfit.render failed", t); }
+        }
+        if (FishSettings.anitaProfitEnabled) {
+            try { fishmod.features.item.AnitaShop.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.20", "AnitaShop.render failed", t); }
+        }
+        if (FishSettings.containerValueEnabled) {
+            try { fishmod.features.item.ContainerValue.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.6", "ContainerValue.render failed", t); }
+        }
+        try { fishmod.features.garden.Visitors.renderShopping(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.16", "Visitors.renderShopping failed", t); }
+        if (FishSettings.auctionPriceAutofillEnabled) {
+            try { fishmod.features.item.AuctionPriceAutofill.trackScreen(self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.7", "AuctionPriceAutofill.trackScreen failed", t); }
+        }
+        if (FishSettings.terminalRenderMode == 1) {
+            try {
+                if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(self)) {
+                    fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
+                }
+            } catch (Throwable t) { FishDiag.fail("FishScreenMixin.8", "TermCustomGui.render failed", t); }
+        }
         if (self instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) {
-            MixinGuard.run("FishScreenMixin.10", "term sim overlay failed", () -> ts.overlay(context));
+            try { ts.overlay(context); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.10", "term sim overlay failed", t); }
         }
     }
 
