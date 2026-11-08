@@ -1,0 +1,13 @@
+FishModDungeons
+Third-party notices
+
+Feesh (https://github.com/Sleepy-Panda/Feesh)
+Copyright Sleepy-Panda, licensed under the Apache License 2.0
+(https://www.apache.org/licenses/LICENSE-2.0).
+
+The fishing features under dungeons-26.1.2/src/main/kotlin/fishmod/features/fishing
+adapt Hypixel SkyBlock chat strings, regular expressions, constants and logic from
+Feesh. The strings and logic were adapted and modified: ported to Kotlin for this
+mod's own settings, event, HUD, price and chat systems, with additions, removals
+and changed matching (for example colour-stripped chat lines instead of
+formatted text). Feesh itself is not bundled.
