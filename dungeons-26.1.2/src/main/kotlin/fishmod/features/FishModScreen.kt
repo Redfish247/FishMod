@@ -4675,12 +4675,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return ""
         }
 
-        private fun makeButtonInput(name: String, key: String): InputSetting {
-            val s = InputSetting(name, "", key)
-            s.hint = "command without /"
-            return s
-        }
-
         fun drawTogglePill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, on: Boolean, knobProgress: Float, hover: Boolean) {
             val track = if (on) (if (hover) ACCENT_HOVER else ACCENT) else TRACK_OFF
             val ring = if (on) (if (hover) ACCENT_HOVER else ACCENT) else (if (hover) 0xFF565C68.toInt() else 0xFF464C56.toInt())
