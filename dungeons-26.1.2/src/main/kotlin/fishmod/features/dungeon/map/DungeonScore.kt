@@ -78,7 +78,7 @@ object DungeonScore {
 
     @JvmStatic
     fun reset() {
-        parsedTabVersion = -1
+        parsedTabVersion = TabListCache.version // skip the previous run's stale tab so old score can't re-fire messages
         secretsFound = 0
         secretsPercent = 0.0f
         crypts = 0
