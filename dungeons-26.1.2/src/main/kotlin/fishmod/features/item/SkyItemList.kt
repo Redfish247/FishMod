@@ -179,7 +179,8 @@ object SkyItemList {
             val rc = if (FishSettings.skyItemListRarityBg) rar[shown[i]] else 0
             if (rc != 0) rarityBox(ctx, cx, cy, cx + CELL - 1, cy + CELL - 1, argb(rc, FishSettings.skyItemListRarityOpacity))
             if (i == hoverIdx) { ctx.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, argb(FishSettings.skyItemListAccentColor, 35)); hover = i }
-            ctx.item(RecipeViewer.stackFor(ids[shown[i]]), cx + 2, cy + 2)
+            fishmod.features.ItemRarityHotbar.suppress = true
+            try { ctx.item(RecipeViewer.stackFor(ids[shown[i]]), cx + 2, cy + 2) } finally { fishmod.features.ItemRarityHotbar.suppress = false }
             if (favs.contains(ids[shown[i]])) ctx.fill(cx + CELL - 6, cy + 1, cx + CELL - 2, cy + 5, 0xFFFFD83A.toInt())
         }
         val ms = maxScroll()

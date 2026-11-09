@@ -36,9 +36,12 @@ object ItemRarityHotbar {
         DrawHooks.INVENTORY_SLOT_BEFORE.register(::drawRarity)
     }
 
+    // Item List panel draws its own tint, so the global one is skipped for its icons
+    @JvmField var suppress = false
+
     @JvmStatic
     fun drawRarity(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
-        if (!VisualSettings.rarityBackground || fishmod.compat.BladeCompat.active || stack == null || stack.isEmpty) return
+        if (suppress || !VisualSettings.rarityBackground || fishmod.compat.BladeCompat.active || stack == null || stack.isEmpty) return
 
         val holder = stack as? RarityTierCache
         if (holder == null) {
