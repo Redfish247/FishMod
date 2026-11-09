@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.features.extras.SpotifyHud
 import fishmod.compat.curScreen
 import fishmod.compat.showScreen
 
