@@ -63,9 +63,11 @@ object SpotifyHud {
     private fun pump() {
         try {
             val script = SpotifyHud::class.java.getResourceAsStream("/assets/fishmod/spotify_smtc.ps1")!!.use { String(it.readBytes(), Charsets.UTF_8) }
-            val enc = Base64.getEncoder().encodeToString(script.toByteArray(Charsets.UTF_16LE))
+            // -EncodedCommand rejects extra args (prints help), so run from a temp file
+            val sf = File(System.getProperty("java.io.tmpdir"), "fishmod_spotify_smtc.ps1")
+            sf.writeText(script, Charsets.UTF_8)
             val p = ProcessBuilder("powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
-                "-EncodedCommand", enc, artFile.absolutePath).start()
+                "-ExecutionPolicy", "Bypass", "-File", sf.absolutePath, artFile.absolutePath).start()
             proc = p
             p.errorStream.close()
             BufferedReader(InputStreamReader(p.inputStream, Charsets.UTF_8)).use { r ->
