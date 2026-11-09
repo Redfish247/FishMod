@@ -1,5 +1,7 @@
 Find and fix every bug you can in this project. Work on it until there's nothing left you can fix, without stopping to ask me unless something is truly destructive. (Unattended run: never wait for an answer; skip anything that needs a decision and list it in the report.)
 
+EXPLICIT AUTHORIZATION FROM ELI (overrides CLAUDE.md and memory rules for THIS run only): you MAY and MUST run `.\gradlew build` (use `:dungeons-26.1.2:build :dungeons-26.2:build`), copy the jar to the Modrinth folder below, write and commit CHANGELOG.txt and BUGFIX_REPORT.md (use `git add -f`, *.md is gitignored; CHANGELOG.txt too if ignored), update the roadmap board (Testing only), and run the open-changelog script. These are the whole point of this run; do not skip them. Do NOT launch Minecraft, do NOT touch the tester board, do NOT edit the vault.
+
 Setup:
 - Stay on main. Do NOT create any branches. All commits go directly to main.
 - Before changing anything, run `git status` and commit any uncommitted changes first so the bugfix work starts clean.
