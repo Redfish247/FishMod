@@ -34,6 +34,19 @@ object SkyItemList {
     private var query = ""
     private var focused = false
     private var scroll = 0
+    private var favOnly = false
+
+    private val favFile get() = net.fabricmc.loader.api.FabricLoader.getInstance().configDir.resolve("FishMod").resolve("item-list-favorites.txt")
+    private val favs: MutableSet<String> = java.util.LinkedHashSet<String>().also { s ->
+        runCatching { java.nio.file.Files.readAllLines(favFile).filter { it.isNotBlank() }.forEach(s::add) }
+    }
+
+    private fun saveFavs() {
+        runCatching {
+            java.nio.file.Files.createDirectories(favFile.parent)
+            java.nio.file.Files.write(favFile, favs.toList())
+        }.onFailure { FishDiag.fail("SkyItemList.2", "favorites save failed", it) }
+    }
 
     // layout, rewritten by layout() (ints only, no allocation)
     private var px = 0; private var py = 0; private var pw = 0; private var ph = 0
@@ -71,7 +84,8 @@ object SkyItemList {
     private fun refilter() {
         val q = query.trim().lowercase()
         var n = 0
-        for (i in hay.indices) if (q.isEmpty() || hay[i].contains(q)) shown[n++] = i
+        for (i in hay.indices) if (favs.contains(ids[i]) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
+        if (!favOnly) for (i in hay.indices) if (!favs.contains(ids[i]) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
         shownCount = n
         scroll = 0
     }
@@ -86,9 +100,9 @@ object SkyItemList {
         cols = minOf(FishSettings.skyItemListColumns, avail)
         if (cols < 2) return false
         pw = PAD * 2 + cols * CELL
-        px = sw - 4 - pw
-        py = 6
-        ph = (sh - 12).coerceAtMost(300)
+        px = sw - pw
+        py = 0
+        ph = sh
         rowsVis = ((ph - HEAD_H - FOOT_H) / CELL).coerceAtLeast(1)
         return true
     }
@@ -135,6 +149,7 @@ object SkyItemList {
             val cy = py + HEAD_H + (k / cols) * CELL
             if (i == hoverIdx) { ctx.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, argb(FishSettings.skyItemListAccentColor, 35)); hover = i }
             ctx.item(RecipeViewer.stackFor(ids[shown[i]]), cx + 2, cy + 2)
+            if (favs.contains(ids[shown[i]])) ctx.fill(cx + CELL - 6, cy + 1, cx + CELL - 2, cy + 5, 0xFFFFD83A.toInt())
         }
         val ms = maxScroll()
         if (ms > 0) {
@@ -143,7 +158,10 @@ object SkyItemList {
             val barY = py + HEAD_H + (trackH - barH) * scroll / ms
             ctx.fill(px + pw - 4, barY, px + pw - 2, barY + barH, accent)
         }
-        ctx.text(font, "$shownCount items", px + PAD, py + ph - FOOT_H + 2, 0xFF6B7480.toInt(), false)
+        val foot = if (hover >= 0) "L: recipe  R: favorite" else "$shownCount items"
+        ctx.text(font, foot, px + PAD, py + ph - FOOT_H + 2, 0xFF6B7480.toInt(), false)
+        val favLabel = if (favOnly) "[Favs: on]" else "[Favs: off]"
+        ctx.text(font, favLabel, px + pw - PAD - font.width(favLabel), py + ph - FOOT_H + 2, if (favOnly) 0xFFFFD83A.toInt() else 0xFF9AA4B0.toInt(), false)
         if (hover >= 0) ctx.setTooltipForNextFrame(font, RecipeViewer.stackFor(ids[shown[hover]]), mx, my)
     }
 
@@ -159,12 +177,16 @@ object SkyItemList {
             return true
         }
         focused = false
-        if (GLFW.btn(click) == 0 && built) {
-            val c = cellAt(x, y)
-            if (c >= 0) {
-                val id = ids[shown[c]]
-                if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
-            }
+        if (!built) return true
+        if (y >= py + ph - FOOT_H && x >= px + pw / 2) {
+            favOnly = !favOnly; refilter(); return true
+        }
+        val c = cellAt(x, y)
+        if (c < 0) return true
+        val id = ids[shown[c]]
+        when (GLFW.btn(click)) {
+            0 -> if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
+            1 -> { if (!favs.remove(id)) favs.add(id); saveFavs(); val keep = scroll; refilter(); scroll = keep }
         }
         return true
     }
