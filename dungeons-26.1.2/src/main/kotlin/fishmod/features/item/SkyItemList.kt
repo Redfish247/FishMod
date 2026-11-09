@@ -139,6 +139,14 @@ object SkyItemList {
         return if (idx < shownCount) idx else -1
     }
 
+    // Corner-chopped fills give a rounded look without textures
+    private fun rarityBox(ctx: GuiGraphicsExtractor, x0: Int, y0: Int, x1: Int, y1: Int, c: Int) {
+        if (!FishSettings.skyItemListRarityRound) { ctx.fill(x0, y0, x1, y1, c); return }
+        ctx.fill(x0 + 2, y0, x1 - 2, y1, c)
+        ctx.fill(x0 + 1, y0 + 1, x1 - 1, y1 - 1, c)
+        ctx.fill(x0, y0 + 2, x1, y1 - 2, c)
+    }
+
     private fun argb(rgb: Int, alphaPct: Int) = ((alphaPct.coerceIn(0, 100) * 255 / 100) shl 24) or (rgb and 0xFFFFFF)
 
     private fun render(ctx: GuiGraphicsExtractor, mx: Int, my: Int, screen: AbstractContainerScreen<*>) {
@@ -169,7 +177,7 @@ object SkyItemList {
             val cx = px + PAD + (k % cols) * CELL
             val cy = py + HEAD_H + (k / cols) * CELL
             val rc = if (FishSettings.skyItemListRarityBg) rar[shown[i]] else 0
-            if (rc != 0) ctx.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, (rc and 0xFFFFFF) or 0x66000000)
+            if (rc != 0) rarityBox(ctx, cx, cy, cx + CELL - 1, cy + CELL - 1, argb(rc, FishSettings.skyItemListRarityOpacity))
             if (i == hoverIdx) { ctx.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, argb(FishSettings.skyItemListAccentColor, 35)); hover = i }
             ctx.item(RecipeViewer.stackFor(ids[shown[i]]), cx + 2, cy + 2)
             if (favs.contains(ids[shown[i]])) ctx.fill(cx + CELL - 6, cy + 1, cx + CELL - 2, cy + 5, 0xFFFFD83A.toInt())

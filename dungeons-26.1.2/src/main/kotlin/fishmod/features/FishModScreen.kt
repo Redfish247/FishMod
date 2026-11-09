@@ -1562,6 +1562,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Enabled", "", "skyItemList"))
             f.sub.add(SliderIntSetting("Columns", "", "skyItemListColumns", 2, 20))
             f.sub.add(ToggleSetting("Rarity Background", "Tint each item slot by its rarity", "skyItemListRarityBg"))
+            f.sub.add(SliderIntSetting("Rarity Opacity %", "", "skyItemListRarityOpacity", 5, 100))
+            f.sub.add(ToggleSetting("Rounded Rarity Background", "Round the corners of the rarity tint", "skyItemListRarityRound"))
             f.sub.add(SliderIntSetting("Background Opacity %", "0% invisible - 100% solid", "skyItemListOpacity", 0, 100))
             f.sub.add(ColorPickerSetting("Background Color", "", "skyItemListBgColor"))
             f.sub.add(ColorPickerSetting("Accent Color", "", "skyItemListAccentColor"))
