@@ -1,3 +1,23 @@
+FishMod Changelog - 2026-11-09 (bugfix run 2)
+==================================
+Fixed:
+- Garden: the pest plot box no longer stays on a plot after all its pests are gone (it was remembered from chat for up to 6 minutes).
+- Seymour armor (Velvet Top Hat, Cashmere Jacket, Satin Trousers, Oxford Shoes) is no longer tagged EXOTIC, since its colors are random.
+- Profile Viewer: a rejected resource listener can no longer stop /pv from finishing loading.
+- Croesus loot: reward lines like "Shadow Assassin Boots" resolve to the right item even when the item name table is only partly loaded.
+- Croesus loot: sign rewards now get an icon.
+- Sounds: hand-typed sound names such as "Ping" or "Note Pling" now resolve instead of silently falling back.
+- Connection resets and OS-localized network errors (e.g. Portuguese Windows) are no longer sent as bug reports.
+Reported bugs fixed (from fishmod.dev):
+- #501 invalid sound id 'Ping', #516 SIGN loot icon, #491 Croesus reward line, #494 PV init failure, #502 pest plot box, #510 Seymour pieces
+- Network/diagnostic noise: #495 #496 #497 #504 #505 #506 #507 #508 #470
+- Already fixed in earlier builds: #503 Lotus Atoll, #511 #512 #514 #515 Spotify HUD
+Known issues (not fixed yet):
+- Dragons: spawn particles/dragons at unexpected spots (#492 #493 #522), PlayersLeaped (#523), Simon Says 6 lanterns (#524), unknown room data (#485 #509). Need Hypixel data.
+- #490 PV highlight shows Chameleon shard as red/costing though it can't be siphoned.
+- #513 inventory button outline, #520 leaderboard custom names, #521 Item List keybinds, #499 profit trackers mixing islands, #459 stuck players in Rift (needs a decision or repro).
+- #498 live cosmetics socket reconnects after silence (informational).
+
 FishMod Changelog - 2026-11-09
 ==================================
 Fixed:
