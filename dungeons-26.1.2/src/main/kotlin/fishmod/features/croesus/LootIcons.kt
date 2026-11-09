@@ -119,7 +119,7 @@ object LootIcons {
         "ACACIA_DOOR_ITEM" to "acacia_door", "DARK_OAK_DOOR_ITEM" to "dark_oak_door", "FLOWER_POT_ITEM" to "flower_pot",
         "CAULDRON_ITEM" to "cauldron", "BREWING_STAND_ITEM" to "brewing_stand", "BED" to "red_bed",
         "BANNER" to "white_banner", "SEEDS" to "wheat_seeds", "MUSHROOM_SOUP" to "mushroom_stew",
-        "GRASS" to "grass_block", "QUARTZ" to "quartz", "QUARTZ_ORE" to "nether_quartz_ore",
+        "SIGN" to "oak_sign", "GRASS" to "grass_block", "QUARTZ" to "quartz", "QUARTZ_ORE" to "nether_quartz_ore",
     )
 
     @JvmStatic

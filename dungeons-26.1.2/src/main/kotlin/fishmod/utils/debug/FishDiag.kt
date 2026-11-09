@@ -175,7 +175,12 @@ object FishDiag {
                 c is java.nio.channels.ClosedChannelException || c is javax.net.ssl.SSLException ||
                 c is java.net.SocketException || c is java.io.EOFException) return true
             if (c is java.io.IOException && (c.message?.contains("closed", ignoreCase = true) == true ||
-                    c.message?.contains("too many concurrent streams", ignoreCase = true) == true)) return true
+                    c.message?.contains("too many concurrent streams", ignoreCase = true) == true ||
+                    c.message?.contains("reset by peer", ignoreCase = true) == true ||
+                    c.message?.contains("not processed by peer", ignoreCase = true) == true ||
+                    c.message?.contains("broken pipe", ignoreCase = true) == true ||
+                    // OS-localized socket errors (e.g. Portuguese WinSock text) only show in the stack frames
+                    c.stackTrace.any { it.className.startsWith("sun.nio.ch.Socket") || it.className.startsWith("jdk.internal.net.http.") })) return true
             c = c.cause
         }
         return false

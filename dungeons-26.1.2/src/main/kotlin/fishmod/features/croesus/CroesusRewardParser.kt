@@ -108,6 +108,10 @@ object CroesusRewardParser {
         val base = id?.removePrefix("STARRED_")
         if (base != null && base != id && ItemsDb.get(base) != null) return arrayOf(base, "1")
 
+        // name map missed it (db partly loaded): the Hypixel id is usually the upper-snake name
+        val guess = clean.uppercase().replace(Regex("[^A-Z0-9 ]"), "").trim().replace(Regex("\\s+"), "_")
+        if (guess.isNotEmpty() && ItemsDb.get(guess) != null) return arrayOf(guess, "1")
+
         return arrayOf("false", "Could not find item ID for line \"$clean\"")
     }
 

@@ -12,6 +12,8 @@ object ExoticTooltip {
     private val CRYSTAL = hexes("1F0030 46085E 54146E 5D1C78 63237D 6A2C82 7E4196 8E51A6 9C64B3 A875BD B88BC9 C6A3D4 D9C1E3 E5D1ED EFE1F5 FCF3FF")
     private val FAIRY = hexes("330066 4C0099 660033 660066 6600CC 7F00FF 99004C 990099 9933FF B266FF CC0066 CC00CC CC99FF E5CCFF FF007F FF00FF FF3399 FF33FF FF66B2 FF66FF FF99CC FF99FF FFCCE5 FFCCFF")
 
+    private val SEYMOUR = setOf("VELVET_TOP_HAT", "CASHMERE_JACKET", "SATIN_TROUSERS", "OXFORD_SHOES")
+
     private fun hexes(s: String) = s.split(' ').map { it.toInt(16) }.toSet()
 
     @JvmStatic
@@ -23,6 +25,7 @@ object ExoticTooltip {
                 val tag = stack.fishmodCustomDataTag() ?: return@ItemTooltipCallback
                 if (tag.contains("dye_item")) return@ItemTooltipCallback
                 val id = tag.getString("id").orElse("")
+                if (id in SEYMOUR) return@ItemTooltipCallback // Seymour pieces drop with random colours by design
                 NeuItems.ensureLoaded()
                 val base = NeuItems.armorColor(id) ?: return@ItemTooltipCallback
                 if (base == rgb) return@ItemTooltipCallback
