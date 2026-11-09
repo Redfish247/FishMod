@@ -229,7 +229,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ),
             "HUD & Overlays" to listOf(
                 "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
-                "Spotify", "Stopwatch", "Achievement Popup", "Arrow HUD",
+                "Spotify", "Spotify Lyrics", "Stopwatch", "Achievement Popup", "Arrow HUD",
             ),
             "Party & Social" to listOf("Party Finder List"),
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries", "Slayer RNG Meter"),
@@ -657,6 +657,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun baseW(e: HudEntry): Int {
         if (e.name() == "Spotify") return SpotifyHud.previewSize()[0]
+        if (e.name() == "Spotify Lyrics") return SpotifyLyricsHud.previewSize()[0]
         val s = sample(e) ?: return e.w()
         s.width?.let { return it }
         val r = s.right
@@ -667,6 +668,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun baseH(e: HudEntry): Int {
         if (e.name() == "Spotify") return SpotifyHud.previewSize()[1]
+        if (e.name() == "Spotify Lyrics") return SpotifyLyricsHud.previewSize()[1]
         val s = sample(e) ?: return e.h()
         return (s.lines.size - 1) * s.lineH + 9
     }
@@ -810,6 +812,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             drawMapExample(ctx, e.w(), e.h())
         } else if (e.name() == "Spotify") {
             SpotifyHud.drawPreview(ctx)
+        } else if (e.name() == "Spotify Lyrics") {
+            SpotifyLyricsHud.drawPreview(ctx)
         } else if (s != null) {
             val bw = baseW(e)
             if (s.bg != 0) ctx.fill(0, 0, bw, baseH(e), s.bg)

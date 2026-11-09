@@ -1437,6 +1437,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Spotify Lyrics", "spotifyLyricsEnabled")
+            f.sub.add(SubcategoryHeader("Windows only, reads the Spotify desktop window title (no login). Move it in the HUD editor"))
+            f.sub.add(ToggleSetting("Show Icon", "Animated bars before the title", "spotifyLyricsIcon"))
+            f.sub.add(ToggleSetting("Lyrics", "Current lyric line under the pill (artist and song are sent to lrclib.net)", "spotifyLyricsLyrics"))
+            f.sub.add(ToggleSetting("Connected Lyrics", "Lyric line inside the same box as the title (off = separate pill)", "spotifyLyricsConnected").gatedBy { FishSettings.spotifyLyricsLyrics })
+            f.sub.add(SliderIntSetting("Max Characters", "Longer text scrolls in a loop", "spotifyLyricsMaxChars", 8, 80, 1))
+            f.sub.add(SliderIntSetting("Lyric Offset (ms)", "Shift lyrics earlier (negative) or later", "spotifyLyricsLyricOffset", -5000, 5000, 100).gatedBy { FishSettings.spotifyLyricsLyrics })
+            f.sub.add(ToggleSetting("Show Paused", "Show Paused instead of hiding when nothing plays", "spotifyLyricsShowPaused"))
+            f.sub.add(ToggleSetting("Background", "", "spotifyLyricsBackground"))
+            f.sub.add(ColorPickerSetting("Text Color", "", "spotifyLyricsTextColor"))
+            f.sub.add(ColorPickerSetting("Background Color", "Alpha sets the opacity", "spotifyLyricsBgColor").gatedBy { FishSettings.spotifyLyricsBackground })
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Pet HUD", "petHudEnabled")
             f.sub.add(ToggleSetting("Show Level", "", "petHudShowLevel"))
             f.sub.add(ToggleSetting("Show Icon", "Pet head instead of its name (learned when you open /pets)", "petHudIcon"))
