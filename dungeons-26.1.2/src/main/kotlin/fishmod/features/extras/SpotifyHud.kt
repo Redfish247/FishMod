@@ -82,10 +82,12 @@ object SpotifyHud {
         val f = line.trim().split(' ')
         if (f.size < 7) { latest.set(null); return }
         val dec = Base64.getDecoder()
-        fun s(i: Int) = String(dec.decode(f[i]), Charsets.UTF_8)
+        // Stray non-protocol helper output is skipped, not fatal
+        val title: String; val artist: String; val album: String
+        try { title = String(dec.decode(f[0]), Charsets.UTF_8); artist = String(dec.decode(f[1]), Charsets.UTF_8); album = String(dec.decode(f[2]), Charsets.UTF_8) } catch (_: IllegalArgumentException) { return }
         val gen = f[6].toIntOrNull() ?: 0
-        if (gen != artGenSeen) { artGenSeen = gen; loadArt() }
-        latest.set(Track(s(0), s(1), s(2), f[3].toLongOrNull() ?: 0, f[4].toLongOrNull() ?: 0, f[5] == "1", System.currentTimeMillis()))
+        if (gen != artGenSeen) { artGenSeen = gen; if (gen > 0 && artFile.exists()) loadArt() }
+        latest.set(Track(title, artist, album, f[3].toLongOrNull() ?: 0, f[4].toLongOrNull() ?: 0, f[5] == "1", System.currentTimeMillis()))
     }
 
     // Decode and downscale off-thread; the render thread only uploads the finished image once per track
