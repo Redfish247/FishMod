@@ -252,6 +252,13 @@ object SkyItemList {
         return true
     }
 
+    // Screen closed: a stuck drag or focused search box would swallow input on the next container screen
+    @JvmStatic
+    fun onClosed() {
+        sbDrag = false
+        focused = false
+    }
+
     @JvmStatic
     fun onRelease(): Boolean {
         if (!sbDrag) return false

@@ -274,6 +274,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     private void fishmod$storageClosed(CallbackInfo ci) {
         try {
             fishmod.features.storage.StorageOverlay.onClosed();
+            fishmod.features.item.SkyItemList.onClosed();
             fishmod.features.ScrollableTooltip.resetScroll();
             fishmod.features.dungeon.f7.terminal.TerminalSolver.onScreenClosed();
             fishmod.features.SlotBinds.onClose();
