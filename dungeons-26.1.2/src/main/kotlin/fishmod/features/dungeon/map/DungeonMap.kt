@@ -51,6 +51,7 @@ object DungeonMap {
 
     @JvmStatic
     fun init() {
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { retryPending() }
         registerPacket(ClientboundMapItemDataPacket::class.java) { packet ->
             if (packet is ClientboundMapItemDataPacket) {
                 val mc = Minecraft.getInstance()
@@ -82,15 +83,28 @@ object DungeonMap {
         DungeonScore.reset()
     }
 
+    // Map packet that arrived before the tab list said "dungeon"; retried each tick (Hypixel only resends on change)
+    private var pendingPacket: ClientboundMapItemDataPacket? = null
+    private var pendingSince = 0L
+
+    private fun retryPending() {
+        val p = pendingPacket ?: return
+        if (System.currentTimeMillis() - pendingSince > 30_000L) { pendingPacket = null; return }
+        if (Minecraft.getInstance().level == null || !DungeonState.isInDungeon()) return
+        pendingPacket = null
+        try { rescanMapItem(p) } catch (t: Throwable) { FishDiag.fail("DungeonMap.3", "pending map rescan failed", t) }
+    }
+
     private fun rescanMapItem(packet: ClientboundMapItemDataPacket) {
-        if (!DungeonState.isInDungeon() || !anyFeatureEnabled()) return
+        if (!anyFeatureEnabled()) return
+        if (!DungeonState.isInDungeon()) { pendingPacket = packet; pendingSince = System.currentTimeMillis(); return }
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
 
         if (mapId == null) mapId = packet.mapId()
         if (mapId != packet.mapId()) return
 
-        val state = level.getMapData(packet.mapId()) ?: return
+        val state = level.getMapData(packet.mapId()) ?: run { pendingPacket = packet; pendingSince = System.currentTimeMillis(); return }
         val colors = state.colors ?: return
         if (colors.isEmpty()) return
 
