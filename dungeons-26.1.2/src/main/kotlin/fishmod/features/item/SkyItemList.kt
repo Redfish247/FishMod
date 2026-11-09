@@ -185,7 +185,11 @@ object SkyItemList {
         ctx.text(font, foot, px + PAD, py + ph - FOOT_H + 2, 0xFF6B7480.toInt(), false)
         val favLabel = if (favOnly) "[Favs: on]" else "[Favs: off]"
         ctx.text(font, favLabel, px + pw - PAD - font.width(favLabel), py + ph - FOOT_H + 2, if (favOnly) 0xFFFFD83A.toInt() else 0xFF9AA4B0.toInt(), false)
-        if (hover >= 0) ctx.setTooltipForNextFrame(font, RecipeViewer.stackFor(ids[shown[hover]]), mx, my)
+        // afterExtract runs after the screen's deferred pass, so flush the tooltip ourselves
+        if (hover >= 0) {
+            ctx.setTooltipForNextFrame(font, RecipeViewer.stackFor(ids[shown[hover]]), mx, my)
+            ctx.extractDeferredElements(mx, my, 0f)
+        }
     }
 
     @JvmStatic

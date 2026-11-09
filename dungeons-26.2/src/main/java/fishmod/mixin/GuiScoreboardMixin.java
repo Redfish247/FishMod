@@ -17,6 +17,7 @@ public class GuiScoreboardMixin {
 
     @Inject(method = "extractScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void fishmod$customScoreboard(GuiGraphicsExtractor context, DeltaTracker tickCounter, CallbackInfo ci) {
+        if (fishmod.features.item.SkyItemList.panelActive()) { ci.cancel(); return; }
         if (!FishSettings.customScoreboardEnabled) return;
         if (FishSettings.customScoreboardHideInDungeon && SkyblockLocation.inDungeon()) return;
         fishmod.utils.debug.MixinGuard.run("GuiScoreboardMixin.1", "custom scoreboard render failed",
