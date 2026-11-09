@@ -82,6 +82,9 @@ object SkyItemList {
 
     private fun on() = FishSettings.skyItemList
 
+    // Hidden over the storage/ender chest overlay
+    private fun hiddenFor(screen: AbstractContainerScreen<*>) = fishmod.features.storage.StorageOverlay.isActive(screen)
+
     @JvmStatic fun panelActive() = on() && System.currentTimeMillis() - fishmod.utils.rendering.FishHudLayer.panelSeenMs() < 150
 
     private fun ensureBuilt(): Boolean {
@@ -150,7 +153,7 @@ object SkyItemList {
     private fun argb(rgb: Int, alphaPct: Int) = ((alphaPct.coerceIn(0, 100) * 255 / 100) shl 24) or (rgb and 0xFFFFFF)
 
     private fun render(ctx: GuiGraphicsExtractor, mx: Int, my: Int, screen: AbstractContainerScreen<*>) {
-        if (!on() || !layout(screen)) return
+        if (!on() || hiddenFor(screen) || !layout(screen)) return
         fishmod.utils.rendering.FishHudLayer.setPanel(px, py, px + pw, py + ph)
         val font = Minecraft.getInstance().font
         val bg = argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListOpacity)
@@ -203,7 +206,7 @@ object SkyItemList {
 
     @JvmStatic
     fun onClick(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
-        if (!on() || !layout(screen)) return false
+        if (!on() || hiddenFor(screen) || !layout(screen)) return false
         val x = click.x(); val y = click.y()
         if (!inPanel(x, y)) { focused = false; return false }
         val sx = px + PAD; val sy = py + 6
@@ -229,7 +232,7 @@ object SkyItemList {
 
     @JvmStatic
     fun onScroll(mx: Double, my: Double, v: Double, screen: AbstractContainerScreen<*>): Boolean {
-        if (!on() || !built || !layout(screen) || !inPanel(mx, my)) return false
+        if (!on() || hiddenFor(screen) || !built || !layout(screen) || !inPanel(mx, my)) return false
         scroll = (scroll + if (v > 0) -1 else 1).coerceIn(0, maxScroll())
         return true
     }
