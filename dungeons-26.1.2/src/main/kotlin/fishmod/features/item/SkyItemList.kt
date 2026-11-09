@@ -83,7 +83,7 @@ object SkyItemList {
     private fun on() = FishSettings.skyItemList
 
     // Hidden over the storage/ender chest overlay
-    private fun hiddenFor(screen: AbstractContainerScreen<*>) = fishmod.features.storage.StorageOverlay.isActive(screen)
+    private fun hiddenFor(screen: AbstractContainerScreen<*>) = fishmod.features.storage.StorageOverlay.isActive(screen) || fishmod.features.dungeon.LeapMenu.isActive(screen)
 
     @JvmStatic fun panelActive() = on() && System.currentTimeMillis() - fishmod.utils.rendering.FishHudLayer.panelSeenMs() < 150
 
