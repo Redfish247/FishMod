@@ -96,7 +96,16 @@ object RecipeViewer {
     fun recipesFor(id: String): List<Recipe> {
         if (!NeuRepo.isLoaded()) return emptyList()
         val idx = index ?: buildIndex().also { index = it }
-        return idx[id] ?: emptyList()
+        idx[id]?.let { return it }
+        // NEU lists pet recipes on one tier only; show them for every rarity of that pet
+        val semi = id.indexOf(';')
+        if (semi <= 0 || id.substring(semi + 1).toIntOrNull() == null) return emptyList()
+        val base = id.substring(0, semi)
+        for (t in 0..6) {
+            val rs = idx["$base;$t"] ?: continue
+            return rs.map { it.copy(output = it.output.copy(id = id)) }
+        }
+        return emptyList()
     }
 
     private fun buildIndex(): Map<String, List<Recipe>> {
