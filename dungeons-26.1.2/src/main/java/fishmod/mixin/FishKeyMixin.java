@@ -19,6 +19,7 @@ public class FishKeyMixin {
     private void fishmod$charToSearch(long window, CharacterEvent input, CallbackInfo ci, @Local Screen screen) {
         try {
             if (screen instanceof AbstractContainerScreen<?> container) {
+                if (fishmod.features.item.SkyItemList.charTyped(input)) return;
                 if (fishmod.features.storage.StorageOverlay.charTyped(input, container)) return;
                 if (FishSettings.inventorySearchEnabled) InvSearchBar.charTyped(input);
             }

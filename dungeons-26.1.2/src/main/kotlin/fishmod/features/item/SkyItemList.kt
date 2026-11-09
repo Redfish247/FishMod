@@ -1,0 +1,198 @@
+package fishmod.features.item
+
+import fishmod.compat.GLFW
+import fishmod.compat.showScreen
+import fishmod.mixin.accessors.HandledScreenAccessor
+import fishmod.utils.TextStrip
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.data.NeuRepo
+import fishmod.utils.debug.FishDiag
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.input.CharacterEvent
+import net.minecraft.client.input.KeyEvent
+import net.minecraft.client.input.MouseButtonEvent
+
+// JEI-style side panel of NEU Skyblock items; cached icons, only visible rows drawn, filter only on query change.
+object SkyItemList {
+
+    private const val CELL = 20
+    private const val PAD = 6
+    private const val HEAD_H = 26
+    private const val FOOT_H = 12
+    private const val GAP = 8
+    private const val SEARCH_H = 14
+
+    private var ids: Array<String> = emptyArray()
+    private var hay: Array<String> = emptyArray()
+    private var shown: IntArray = IntArray(0)
+    private var shownCount = 0
+    private var built = false
+
+    private var query = ""
+    private var focused = false
+    private var scroll = 0
+
+    // layout, rewritten by layout() (ints only, no allocation)
+    private var px = 0; private var py = 0; private var pw = 0; private var ph = 0
+    private var cols = 1; private var rowsVis = 1
+
+    @JvmStatic
+    fun init() {
+        ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
+            if (screen !is AbstractContainerScreen<*>) return@AfterInit
+            ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
+                try { render(ctx, mx, my, screen) } catch (t: Throwable) { FishDiag.fail("SkyItemList.1", "item list render failed", t) }
+            })
+        })
+    }
+
+    private fun on() = FishSettings.skyItemList
+
+    private fun ensureBuilt(): Boolean {
+        if (built) return true
+        NeuRepo.ensureLoaded()
+        if (!NeuRepo.isLoaded()) return false
+        val all = NeuRepo.ids().toTypedArray()
+        val names = Array(all.size) { i ->
+            TextStrip.plain(NeuRepo.get(all[i])?.get("displayname")?.asString ?: all[i]).lowercase()
+        }
+        val order = all.indices.sortedWith(compareBy({ names[it] }, { all[it] }))
+        ids = Array(all.size) { all[order[it]] }
+        hay = Array(all.size) { names[order[it]] + " " + all[order[it]].lowercase() }
+        shown = IntArray(all.size)
+        built = true
+        refilter()
+        return true
+    }
+
+    private fun refilter() {
+        val q = query.trim().lowercase()
+        var n = 0
+        for (i in hay.indices) if (q.isEmpty() || hay[i].contains(q)) shown[n++] = i
+        shownCount = n
+        scroll = 0
+    }
+
+    private fun layout(screen: AbstractContainerScreen<*>): Boolean {
+        val mc = Minecraft.getInstance()
+        val sw = mc.window.guiScaledWidth
+        val sh = mc.window.guiScaledHeight
+        val acc = screen as HandledScreenAccessor
+        val x = acc.bgX + acc.bgWidth + GAP
+        val avail = (sw - 4 - x - PAD * 2) / CELL
+        cols = minOf(FishSettings.skyItemListColumns, avail)
+        if (cols < 2) return false
+        pw = PAD * 2 + cols * CELL
+        px = x
+        py = 6
+        ph = (sh - 12).coerceAtMost(300)
+        rowsVis = ((ph - HEAD_H - FOOT_H) / CELL).coerceAtLeast(1)
+        return true
+    }
+
+    private fun maxScroll(): Int = ((shownCount + cols - 1) / cols - rowsVis).coerceAtLeast(0)
+
+    private fun inPanel(mx: Double, my: Double) = mx >= px && mx < px + pw && my >= py && my < py + ph
+
+    private fun cellAt(mx: Double, my: Double): Int {
+        val gx = (mx - px - PAD).toInt()
+        val gy = (my - py - HEAD_H).toInt()
+        if (gx < 0 || gy < 0 || gx >= cols * CELL || gy >= rowsVis * CELL) return -1
+        val idx = (scroll + gy / CELL) * cols + gx / CELL
+        return if (idx < shownCount) idx else -1
+    }
+
+    private fun argb(rgb: Int, alphaPct: Int) = ((alphaPct.coerceIn(0, 100) * 255 / 100) shl 24) or (rgb and 0xFFFFFF)
+
+    private fun render(ctx: GuiGraphicsExtractor, mx: Int, my: Int, screen: AbstractContainerScreen<*>) {
+        if (!on() || !layout(screen)) return
+        val font = Minecraft.getInstance().font
+        val bg = argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListOpacity)
+        val accent = FishSettings.skyItemListAccentColor or 0xFF000000.toInt()
+        ctx.fill(px, py, px + pw, py + ph, bg)
+        ctx.fill(px, py, px + pw, py + 1, accent)
+        val sx = px + PAD; val sy = py + 6; val sw = pw - PAD * 2
+        ctx.fill(sx, sy, sx + sw, sy + SEARCH_H, 0x80000000.toInt())
+        if (focused) ctx.fill(sx, sy + SEARCH_H - 1, sx + sw, sy + SEARCH_H, accent)
+        if (!built && !ensureBuilt()) {
+            ctx.text(font, "Loading items...", sx + 3, sy + 3, 0xFF9AA4B0.toInt(), false)
+            return
+        }
+        if (query.isEmpty() && !focused) ctx.text(font, "Search items...", sx + 3, sy + 3, 0xFF6B7480.toInt(), false)
+        else ctx.text(font, font.plainSubstrByWidth(query + if (focused) "_" else "", sw - 6, true), sx + 3, sy + 3, 0xFFFFFFFF.toInt(), false)
+
+        scroll = scroll.coerceIn(0, maxScroll())
+        var hover = -1
+        val first = scroll * cols
+        val last = minOf(shownCount, first + rowsVis * cols)
+        val hoverIdx = cellAt(mx.toDouble(), my.toDouble())
+        for (i in first until last) {
+            val k = i - first
+            val cx = px + PAD + (k % cols) * CELL
+            val cy = py + HEAD_H + (k / cols) * CELL
+            if (i == hoverIdx) { ctx.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, argb(FishSettings.skyItemListAccentColor, 35)); hover = i }
+            ctx.item(RecipeViewer.stackFor(ids[shown[i]]), cx + 2, cy + 2)
+        }
+        val ms = maxScroll()
+        if (ms > 0) {
+            val trackH = rowsVis * CELL
+            val barH = (trackH * rowsVis / (rowsVis + ms)).coerceAtLeast(10)
+            val barY = py + HEAD_H + (trackH - barH) * scroll / ms
+            ctx.fill(px + pw - 4, barY, px + pw - 2, barY + barH, accent)
+        }
+        ctx.text(font, "$shownCount items", px + PAD, py + ph - FOOT_H + 2, 0xFF6B7480.toInt(), false)
+        if (hover >= 0) ctx.setTooltipForNextFrame(font, RecipeViewer.stackFor(ids[shown[hover]]), mx, my)
+    }
+
+    @JvmStatic
+    fun onClick(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on() || !layout(screen)) return false
+        val x = click.x(); val y = click.y()
+        if (!inPanel(x, y)) { focused = false; return false }
+        val sx = px + PAD; val sy = py + 6
+        if (x >= sx && x < sx + pw - PAD * 2 && y >= sy && y < sy + SEARCH_H) {
+            focused = true
+            if (GLFW.btn(click) == 1 && query.isNotEmpty()) { query = ""; if (built) refilter() }
+            return true
+        }
+        focused = false
+        if (GLFW.btn(click) == 0 && built) {
+            val c = cellAt(x, y)
+            if (c >= 0) {
+                val id = ids[shown[c]]
+                if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
+            }
+        }
+        return true
+    }
+
+    @JvmStatic
+    fun onScroll(mx: Double, my: Double, v: Double, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on() || !built || !layout(screen) || !inPanel(mx, my)) return false
+        scroll = (scroll + if (v > 0) -1 else 1).coerceIn(0, maxScroll())
+        return true
+    }
+
+    @JvmStatic
+    fun keyPressed(input: KeyEvent): Boolean {
+        if (!on() || !focused) return false
+        when (input.key()) {
+            GLFW.GLFW_KEY_ESCAPE -> { focused = false; return true }
+            GLFW.GLFW_KEY_BACKSPACE -> if (query.isNotEmpty()) { query = query.dropLast(1); if (built) refilter() }
+        }
+        return true
+    }
+
+    @JvmStatic
+    fun charTyped(input: CharacterEvent): Boolean {
+        if (!on() || !focused) return false
+        val cp = input.codepoint()
+        if (Character.isISOControl(cp) || query.length >= 40) return true
+        query += String(Character.toChars(cp))
+        if (built) refilter()
+        return true
+    }
+}
