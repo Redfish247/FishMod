@@ -53,6 +53,8 @@ object FishHudLayer {
         panelSeenMs = System.currentTimeMillis()
     }
 
+    @JvmStatic fun panelSeenMs() = panelSeenMs
+
     private fun panelOpen() = System.currentTimeMillis() - panelSeenMs < 150
 
     private fun wrap(id: Identifier, el: HudElement): HudElement {
