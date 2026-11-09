@@ -123,6 +123,7 @@ object SkyItemList {
 
     private fun render(ctx: GuiGraphicsExtractor, mx: Int, my: Int, screen: AbstractContainerScreen<*>) {
         if (!on() || !layout(screen)) return
+        fishmod.utils.rendering.FishHudLayer.setPanel(px, py, px + pw, py + ph)
         val font = Minecraft.getInstance().font
         val bg = argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListOpacity)
         val accent = FishSettings.skyItemListAccentColor or 0xFF000000.toInt()

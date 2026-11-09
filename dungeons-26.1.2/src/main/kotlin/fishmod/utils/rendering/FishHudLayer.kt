@@ -44,12 +44,24 @@ object FishHudLayer {
 
     private fun tabOpen() = System.currentTimeMillis() - tabSeenMs < 150
 
+    private val panelBox = Box()
+    private var panelSeenMs = 0L
+
+    /** Screen-side panel (item list) reports its rect each frame; HUDs under it are skipped. */
+    @JvmStatic fun setPanel(x0: Int, y0: Int, x1: Int, y1: Int) {
+        panelBox.x0 = x0; panelBox.y0 = y0; panelBox.x1 = x1; panelBox.y1 = y1
+        panelSeenMs = System.currentTimeMillis()
+    }
+
+    private fun panelOpen() = System.currentTimeMillis() - panelSeenMs < 150
+
     private fun wrap(id: Identifier, el: HudElement): HudElement {
         val exempt = id.path in TAB_EXEMPT
         val box = Box()
         val frame = Box()
         return HudElement { ctx, tick ->
             if (!exempt && FishSettings.hideHudsUnderTab && tabOpen() && box.hits(tabBox)) return@HudElement
+            if (!exempt && panelOpen() && box.hits(panelBox)) return@HudElement
             val prev = inModHud
             val prevBox = cur
             inModHud = true
