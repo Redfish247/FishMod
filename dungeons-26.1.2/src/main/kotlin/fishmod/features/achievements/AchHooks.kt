@@ -158,9 +158,9 @@ object AchHooks {
                     val t = fishmod.features.dungeon.puzzles.odin.WaterSolver.secondsSinceOpen()
                     if (t in 0.0..5.0) AchStore.inc("puzzle.waterSub5")
                 }
-                AchBus.post(AchEvent.PuzzleDone(false))
+                if (s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) AchBus.post(AchEvent.PuzzleDone(false)) // own puzzles only
             }
-            s.startsWith("PUZZLE FAIL!") && SkyblockLocation.inDungeon() -> AchBus.post(AchEvent.PuzzleDone(true))
+            s.startsWith("PUZZLE FAIL!") && SkyblockLocation.inDungeon() -> if (s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) AchBus.post(AchEvent.PuzzleDone(true))
             s.startsWith("☠ You ") -> AchBus.post(AchEvent.OwnDeath(s))
             s.startsWith("OFFER ACCEPTED with") -> AchBus.post(AchEvent.VisitorAccepted)
             s.contains("Commission Complete", ignoreCase = true) -> AchBus.post(AchEvent.CommissionDone)
