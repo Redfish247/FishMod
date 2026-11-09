@@ -79,7 +79,8 @@ object Pests {
             if (!S.gardenPestFinder || !Garden.inGarden()) return@register
             val now = System.currentTimeMillis()
             remembered.entries.removeIf { now - it.value > 6 * 60_000L }
-            val plots = if (tabPlots.isNotEmpty()) tabPlots.toSet() else remembered.keys
+            // tab list is authoritative; the chat memory only applies while the sidebar still shows live pests
+            val plots = if (tabPlots.isNotEmpty()) tabPlots.toSet() else if (alive > 0) remembered.keys else emptySet()
             val start = Mining.lineStart()
             val g = guess
             if (g != null) {
@@ -108,7 +109,7 @@ object Pests {
             { S.gardenPestHud && Garden.inGarden() }, { S.gardenPestHud }) {
             val out = arrayListOf("${Garden.legacy(S.gardenPestHudColor)}§lPests §f$alive")
             if (cooldown.isNotEmpty()) out += "§7Cooldown: " + (if (cooldown.contains("READY", true)) "§a" else "§e") + cooldown
-            val plots = if (tabPlots.isNotEmpty()) tabPlots else remembered.keys.toList()
+            val plots = if (tabPlots.isNotEmpty()) tabPlots else if (alive > 0) remembered.keys.toList() else emptyList()
             if (plots.isNotEmpty()) out += "§7Plots: §f" + plots.joinToString(", ") { labelOf(it) }
             if (spray.isNotEmpty()) out += "§7Spray: " + (if (spray.startsWith("None")) "§c" else "§a") + spray
             if (bonus.isNotEmpty()) out += "§7Bonus: §6$bonus"

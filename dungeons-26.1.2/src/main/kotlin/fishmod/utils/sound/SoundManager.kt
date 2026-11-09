@@ -61,7 +61,10 @@ object SoundManager {
     fun preset(name: String?): SoundEvent {
         if (name.isNullOrBlank()) return SoundEvents.NOTE_BLOCK_PLING.value()
         PRESETS[name]?.let { return resolve(it) }
-        val id = FishDiag.notNull(Identifier.tryParse(if (':' in name) name else "minecraft:$name"), "SoundManager.2") { "invalid sound id '$name'" }
+        PRESETS.entries.firstOrNull { it.key.equals(name.trim(), ignoreCase = true) }?.let { return resolve(it.value) }
+        // ids are lowercase; hand-typed names like "Ping" or "Note Pling" must not hit the invalid-id path
+        val norm = name.trim().lowercase().replace(' ', '_')
+        val id = FishDiag.notNull(Identifier.tryParse(if (':' in norm) norm else "minecraft:$norm"), "SoundManager.2") { "invalid sound id '$name'" }
         val fromRegistry: SoundEvent? =
             id?.let { BuiltInRegistries.SOUND_EVENT.getOptional(it).orElse(null) }
         if (id != null && fromRegistry == null) FishDiag.fail("SoundManager.3", "sound '$id' not in registry, using pling")

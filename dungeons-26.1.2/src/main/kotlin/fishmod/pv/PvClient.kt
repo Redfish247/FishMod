@@ -66,7 +66,8 @@ object PvClient {
 			dispatcher.register(buildPvCommand(ClientCommands.literal("pv")))
 		}
 
-		ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
+		// a rejected listener (duplicate id, late registration) must not abort the rest of PV init
+		runCatching { ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
 			object : SimpleSynchronousResourceReloadListener {
 				override fun getFabricId(): Identifier = Identifier.fromNamespaceAndPath("fishmod", "pv_icon_probe_cache")
 
@@ -74,7 +75,7 @@ object PvClient {
 					SkyBlockIconRenderer.invalidateProbeCache()
 				}
 			}
-		)
+		) }
 
 		PlayerInteractPvOpener.register()
 		HypixelProfileSpyButton.register()
