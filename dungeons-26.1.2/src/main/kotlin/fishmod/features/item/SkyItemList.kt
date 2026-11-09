@@ -86,7 +86,7 @@ object SkyItemList {
         cols = minOf(FishSettings.skyItemListColumns, avail)
         if (cols < 2) return false
         pw = PAD * 2 + cols * CELL
-        px = x
+        px = sw - 4 - pw
         py = 6
         ph = (sh - 12).coerceAtMost(300)
         rowsVis = ((ph - HEAD_H - FOOT_H) / CELL).coerceAtLeast(1)
