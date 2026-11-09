@@ -2740,6 +2740,26 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         c.sub()?.let { sst(ctx, this.font, ellipsize(it, titleClip, 0.8f), x0 + 10, hy + HEADER_STRIP_H + 19, SUBTEXT_COLOR, 0.8f) }
     }
 
+    private var sbCol: Column? = null
+    private var sbGrab = 0
+
+    private fun sbBar(c: Column): IntArray? {
+        val top = cyTop()
+        val vp = Math.min(columnContentHeight(c), cyBot() - top)
+        val ms = maxScrollFor(c, vp)
+        if (ms <= 0) return null
+        val barH = Math.max(20, (vp.toLong() * vp / columnContentHeight(c)).toInt())
+        val barY = top + ((vp - barH).toLong() * c.scroll / ms).toInt()
+        return intArrayOf(top, vp, ms, barH, barY)
+    }
+
+    private fun sbSet(c: Column, my: Int) {
+        val b = sbBar(c) ?: return
+        val room = b[1] - b[3]
+        if (room <= 0) return
+        c.scroll = Mth.clamp(((my - sbGrab - b[0]).toLong() * b[2] / room).toInt(), 0, b[2])
+    }
+
     private fun renderColumnScrollbar(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, top: Int, bot: Int) {
         val vp = bot - top
         val ms = maxScrollFor(c, vp)
@@ -3201,6 +3221,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
         }
 
+        if (btn == 0 && my >= cyTop() && my <= cyBot()) {
+            val cols = visibleColumns()
+            val colW = columnWidth()
+            for (ci in cols.indices) {
+                val x1 = columnX0(ci) + colW
+                if (mx < x1 - 7 || mx > x1) continue
+                val b = sbBar(cols[ci]) ?: continue
+                if (my > b[0] + b[1]) continue
+                sbCol = cols[ci]
+                sbGrab = if (my >= b[4] && my <= b[4] + b[3]) my - b[4] else b[3] / 2
+                sbSet(cols[ci], my)
+                return true
+            }
+        }
+
         if (my >= cyTop() && my <= cyBot()) {
             val cols = visibleColumns()
             val colW = columnWidth()
@@ -3295,6 +3330,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
+        val sb = sbCol
+        if (sb != null) { sbSet(sb, vx(click.y())); return true }
         val slider = activeSlider
         if (slider != null) { slider.onDrag(vx(click.x()), activeSliderX, activeSliderW); return true }
         if (!dragMoved && (dragColumn != null || !stackIdle())) {
@@ -3324,6 +3361,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun releaseInner(click: MouseButtonEvent): Boolean {
         activeSlider = null
+        if (sbCol != null) { sbCol = null; return true }
 
         val sc = stackDragCol
         val sf = stackDragFolder
