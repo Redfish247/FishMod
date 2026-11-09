@@ -59,6 +59,16 @@ object ExtrasMenu {
         wp.sub.add(ButtonSetting("Clear Waypoints", "", "Clear") { PatcherWaypoints.clear() })
         col.features.add(wp)
 
+        val sp = Feature("Spotify HUD", S::class.java, "spotifyHud")
+        sp.sub.add(ToggleSetting("Album Art", "", S::class.java, "spotifyHudArt"))
+        sp.sub.add(ToggleSetting("Show Album", "Album name after the artist", S::class.java, "spotifyHudAlbum"))
+        sp.sub.add(ToggleSetting("Progress Bar", "", S::class.java, "spotifyHudProgress"))
+        sp.sub.add(SliderIntSetting("Background Opacity", "0 hides the panel", S::class.java, "spotifyHudBgOpacity", 0, 100, 5))
+        sp.sub.add(ColorPickerSetting("Title Color", "", S::class.java, "spotifyHudTitleColor"))
+        sp.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "spotifyHudTextColor"))
+        sp.sub.add(ColorPickerSetting("Bar Color", "", S::class.java, "spotifyHudBarColor"))
+        col.features.add(sp)
+
         val fs = Feature("Fairy Soul Waypoints", S::class.java, "fairySoulWaypoints")
         fs.sub.add(ColorPickerSetting("Color", "", S::class.java, "fairySoulColor"))
         fs.sub.add(ToggleSetting("Beacon Beam", "", S::class.java, "fairySoulBeam"))
@@ -80,6 +90,7 @@ object ExtrasMenu {
 
     fun describe(name: String): String? = when (name) {
         "Arrow HUD" -> "Selected arrow + quiver count, low/out warnings"
+        "Spotify HUD" -> "Now playing from the Spotify desktop app (Windows only, no login): title, artist, art, progress"
         "Quiver Warning" -> "Title + sound when the quiver runs low, without the Arrow HUD"
         "Calendar Real Times" -> "Real date + time next to every countdown in the /calendar menu"
         "Status Bars" -> "Defense + health/mana bars above the hotbar (replaces vanilla hearts); move in the HUD editor"
