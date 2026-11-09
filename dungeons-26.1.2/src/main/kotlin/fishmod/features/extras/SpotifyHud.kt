@@ -130,17 +130,30 @@ object SpotifyHud {
         if (mc.player == null) return
         val t = latest.get() ?: return
         if (artImage != null) uploadArt(mc)
+        draw(ctx, mc, t, artTex != null)
+    }
+
+    @JvmStatic fun previewSize() = intArrayOf(W, ART)
+
+    // HUD editor example
+    @JvmStatic fun drawPreview(ctx: GuiGraphicsExtractor) {
+        draw(ctx, Minecraft.getInstance(), Track("Song Title", "Artist", "Album", 83000, 200000, true, System.currentTimeMillis()), false, true)
+    }
+
+    private fun draw(ctx: GuiGraphicsExtractor, mc: Minecraft, t: Track, hasArt: Boolean, preview: Boolean = false) {
         val shown = t.posMs + if (t.playing) System.currentTimeMillis() - t.at else 0L
         val pos = if (t.durMs > 0) shown.coerceIn(0, t.durMs) else shown
-        val art = S.spotifyHudArt && artTex != null
+        val art = S.spotifyHudArt && hasArt
         val tx = if (art) ART + 5 else 4
         val maxW = W - tx - 3
-        val sc = S.spotifyHudScale.toFloat()
         val bg = (S.spotifyHudBgOpacity.coerceIn(0, 100) * 255 / 100) shl 24
         ctx.pose().pushMatrix()
         try {
-            ctx.pose().translate(S.spotifyHudX.toFloat(), S.spotifyHudY.toFloat())
-            ctx.pose().scale(sc, sc)
+            if (!preview) {
+                val sc = S.spotifyHudScale.toFloat()
+                ctx.pose().translate(S.spotifyHudX.toFloat(), S.spotifyHudY.toFloat())
+                ctx.pose().scale(sc, sc)
+            }
             if (bg != 0) ctx.fill(0, 0, W, ART, bg)
             if (art) ctx.blit(RenderPipelines.GUI_TEXTURED, artId, 0, 0, 0f, 0f, ART, ART, ART, ART, -1)
             ctx.text(mc.font, clip(mc, t.title, maxW), tx, 4, S.spotifyHudTitleColor, true)
