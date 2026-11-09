@@ -220,6 +220,11 @@ object SkyItemList {
         if (y >= py + ph - FOOT_H && x >= px + pw / 2) {
             favOnly = !favOnly; refilter(); return true
         }
+        if (GLFW.btn(click) == 0 && maxScroll() > 0 && x >= px + pw - 8 && y >= py + HEAD_H && y < py + HEAD_H + rowsVis * CELL) {
+            sbDrag = true
+            sbSet(y)
+            return true
+        }
         val c = cellAt(x, y)
         if (c < 0) return true
         val id = ids[shown[c]]
@@ -227,6 +232,30 @@ object SkyItemList {
             0 -> if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
             1 -> { if (!favs.remove(id)) favs.add(id); saveFavs(); val keep = scroll; refilter(); scroll = keep }
         }
+        return true
+    }
+
+    private var sbDrag = false
+
+    private fun sbSet(y: Double) {
+        val ms = maxScroll()
+        val trackH = rowsVis * CELL
+        val barH = (trackH * rowsVis / (rowsVis + ms)).coerceAtLeast(10)
+        val room = (trackH - barH).coerceAtLeast(1)
+        scroll = Math.round((y - py - HEAD_H - barH / 2.0) * ms / room).toInt().coerceIn(0, ms)
+    }
+
+    @JvmStatic
+    fun onDrag(y: Double): Boolean {
+        if (!sbDrag) return false
+        sbSet(y)
+        return true
+    }
+
+    @JvmStatic
+    fun onRelease(): Boolean {
+        if (!sbDrag) return false
+        sbDrag = false
         return true
     }
 

@@ -250,6 +250,10 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
 
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageRelease(MouseButtonEvent click, CallbackInfoReturnable<Boolean> cir) {
+        if (fishmod.features.item.SkyItemList.onRelease()) {
+            cir.setReturnValue(true);
+            return;
+        }
         if (fishmod.features.storage.StorageOverlay.mouseReleased((AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
         }
@@ -257,6 +261,10 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
 
     @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageDrag(MouseButtonEvent click, double dx, double dy, CallbackInfoReturnable<Boolean> cir) {
+        if (fishmod.features.item.SkyItemList.onDrag(click.y())) {
+            cir.setReturnValue(true);
+            return;
+        }
         if (fishmod.features.storage.StorageOverlay.mouseDragged(click.x(), click.y(), (AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
         }
