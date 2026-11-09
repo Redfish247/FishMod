@@ -241,11 +241,14 @@ object InvShortcutButtons {
         val w = b.width()
         val hov = b.inBounds(mx.toDouble(), my.toDouble())
         ctx.fill(b.x, b.y, b.x + w, b.y + b.size, b.color)
-        val ring = if (hov) BORDER_HOVER else BORDER
-        ctx.fill(b.x, b.y, b.x + w, b.y + 1, ring)
-        ctx.fill(b.x, b.y + b.size - 1, b.x + w, b.y + b.size, ring)
-        ctx.fill(b.x, b.y, b.x + 1, b.y + b.size, ring)
-        ctx.fill(b.x + w - 1, b.y, b.x + w, b.y + b.size, ring)
+        // No idle outline (reported as weird); only a hover ring so the button still reads as clickable
+        if (hov || editMode) {
+            val ring = if (hov) BORDER_HOVER else BORDER
+            ctx.fill(b.x, b.y, b.x + w, b.y + 1, ring)
+            ctx.fill(b.x, b.y + b.size - 1, b.x + w, b.y + b.size, ring)
+            ctx.fill(b.x, b.y, b.x + 1, b.y + b.size, ring)
+            ctx.fill(b.x + w - 1, b.y, b.x + w, b.y + b.size, ring)
+        }
         val font = Minecraft.getInstance().font
         val st = b.stack()
         if (!st.isEmpty) {
