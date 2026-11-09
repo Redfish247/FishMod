@@ -1,0 +1,13 @@
+FishMod Changelog - 2026-11-09
+==================================
+Fixed:
+- Spotify HUD no longer spams your PC with background PowerShell windows/processes when Spotify isn't running or PowerShell is blocked. It now waits before retrying.
+- Switching the Spotify HUD off and on quickly no longer breaks it.
+- Item List: closing a screen while the search box was focused no longer leaves it "stuck", so E and your hotkeys work normally in the next chest or inventory.
+- Item List: closing a screen while dragging the scrollbar no longer makes the next drag act weird.
+Reported bugs fixed (from fishmod.dev):
+- None this run (the site's bug list could not be read automatically).
+Known issues (not fixed yet):
+- Pet icons in the recipe viewer may show placeholder info if opened before pet data finishes loading.
+- Two Minecraft instances at once can mix up Spotify album art.
+- Rare "Network Protocol Error" kick when joining Hypixel on 26.2 (cause still unknown).
