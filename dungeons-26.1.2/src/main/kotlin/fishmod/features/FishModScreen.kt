@@ -1557,6 +1557,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Item List", "skyItemList")
+            f.sub.add(SubcategoryHeader("JEI-style Skyblock item panel beside inventories. Click an item for its recipe"))
+            f.sub.add(ToggleSetting("Enabled", "", "skyItemList"))
+            f.sub.add(SliderIntSetting("Columns", "", "skyItemListColumns", 2, 8))
+            f.sub.add(SliderIntSetting("Background Opacity %", "0% invisible - 100% solid", "skyItemListOpacity", 0, 100))
+            f.sub.add(ColorPickerSetting("Background Color", "", "skyItemListBgColor"))
+            f.sub.add(ColorPickerSetting("Accent Color", "", "skyItemListAccentColor"))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Auto BIN Price", "auctionPriceAutofillEnabled")
             f.sub.add(SubcategoryHeader("Prefills the AH \"Create Auction\" price field with item value minus a discount"))
             f.sub.add(SliderIntSetting("Discount %", "", "auctionAutofillPercent", 0, 50))

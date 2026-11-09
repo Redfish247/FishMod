@@ -551,6 +551,11 @@ object FishSettings {
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var recipeViewer: Boolean = false
     @ConfigValue @JvmField var recipeViewerHoldTime: Int = 1200
+    @ConfigValue @JvmField var skyItemList: Boolean = false
+    @ConfigValue @JvmField var skyItemListColumns: Int = 5
+    @ConfigValue @JvmField var skyItemListOpacity: Int = 85
+    @ConfigValue @JvmField var skyItemListBgColor: Int = 0xFF12151B.toInt()
+    @ConfigValue @JvmField var skyItemListAccentColor: Int = 0xFF24B6B0.toInt()
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
 
     @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false

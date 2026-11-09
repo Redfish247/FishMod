@@ -139,6 +139,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void fishmod$screenKey(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         try {
+            if (fishmod.features.item.SkyItemList.keyPressed(input)) { cir.setReturnValue(true); return; }
             if (fishmod.features.storage.StorageOverlay.searchKeyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (InvSearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
             if (fishmod.features.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
@@ -155,6 +156,11 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     private void fishmod$screenClick(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         try {
             double cx = click.x(), cy = click.y();
+
+            if (fishmod.features.item.SkyItemList.onClick(click, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
 
             if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
                 int idx = fishmod.features.dungeon.f7.terminal.TermCustomGui.slotAt((int) cx, (int) cy);
@@ -212,6 +218,10 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageScroll(double mx, double my, double hz, double vt, CallbackInfoReturnable<Boolean> cir) {
         try {
+            if (fishmod.features.item.SkyItemList.onScroll(mx, my, vt, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
             if (fishmod.features.storage.StorageOverlay.mouseScrolled(vt, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
