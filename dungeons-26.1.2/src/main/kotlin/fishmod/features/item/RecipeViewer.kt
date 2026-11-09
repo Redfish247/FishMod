@@ -192,7 +192,7 @@ object RecipeViewer {
         if (nbt.contains("ench:[")) stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
         val plain = Style.EMPTY.withItalic(false)
         stack.set(DataComponents.CUSTOM_NAME, Component.literal(displayName(id)).withStyle(plain))
-        stack.set(DataComponents.LORE, ItemLore(lore(id).map { Component.literal(it).withStyle(plain) }))
+        stack.set(DataComponents.LORE, ItemLore((lore(id).ifEmpty { listOf("§8$id") }).map { Component.literal(it).withStyle(plain) }))
         return stack
     }
 

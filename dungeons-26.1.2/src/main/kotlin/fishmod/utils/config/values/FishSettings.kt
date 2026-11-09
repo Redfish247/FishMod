@@ -555,6 +555,7 @@ object FishSettings {
     @ConfigValue @JvmField var skyItemListColumns: Int = 5
     @ConfigValue @JvmField var skyItemListOpacity: Int = 85
     @ConfigValue @JvmField var skyItemListBgColor: Int = 0xFF12151B.toInt()
+    @ConfigValue @JvmField var skyItemListRarityBg: Boolean = true
     @ConfigValue @JvmField var skyItemListAccentColor: Int = 0xFF24B6B0.toInt()
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
 

@@ -27,7 +27,25 @@ object SkyItemList {
 
     private var ids: Array<String> = emptyArray()
     private var hay: Array<String> = emptyArray()
+    private var rar: IntArray = IntArray(0)
     private var shown: IntArray = IntArray(0)
+
+    private val RARITY_RE = Regex("(VERY SPECIAL|UNCOMMON|COMMON|RARE|EPIC|LEGENDARY|MYTHIC|DIVINE|SPECIAL|ULTIMATE|SUPREME)")
+    private fun rarityRgb(name: String) = when (name) {
+        "COMMON" -> 0xFFFFFF; "UNCOMMON" -> 0x55FF55; "RARE" -> 0x5555FF; "EPIC" -> 0xAA00AA
+        "LEGENDARY" -> 0xFFAA00; "MYTHIC" -> 0xFF55FF; "DIVINE" -> 0x55FFFF
+        "ULTIMATE", "SUPREME" -> 0xAA0000; else -> 0xFF5555
+    }
+
+    // Rarity is the keyword in the last NEU lore lines; 0 = unknown
+    private fun rarityOf(id: String): Int {
+        val lore = NeuRepo.get(id)?.getAsJsonArray("lore") ?: return 0
+        for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
+            val m = RARITY_RE.find(TextStrip.plain(lore[k].asString).trim().uppercase()) ?: continue
+            return 0xFF000000.toInt() or rarityRgb(m.value)
+        }
+        return 0
+    }
     private var shownCount = 0
     private var built = false
 
@@ -64,6 +82,8 @@ object SkyItemList {
 
     private fun on() = FishSettings.skyItemList
 
+    @JvmStatic fun panelActive() = on() && System.currentTimeMillis() - fishmod.utils.rendering.FishHudLayer.panelSeenMs() < 150
+
     private fun ensureBuilt(): Boolean {
         if (built) return true
         NeuRepo.ensureLoaded()
@@ -75,6 +95,7 @@ object SkyItemList {
         val order = all.indices.sortedWith(compareBy({ names[it] }, { all[it] }))
         ids = Array(all.size) { all[order[it]] }
         hay = Array(all.size) { names[order[it]] + " " + all[order[it]].lowercase() }
+        rar = IntArray(all.size) { rarityOf(ids[it]) }
         shown = IntArray(all.size)
         built = true
         refilter()
@@ -95,8 +116,7 @@ object SkyItemList {
         val sw = mc.window.guiScaledWidth
         val sh = mc.window.guiScaledHeight
         val acc = screen as HandledScreenAccessor
-        val x = acc.bgX + acc.bgWidth + GAP
-        val avail = (sw - 4 - x - PAD * 2) / CELL
+        val avail = (sw * 3 / 5 - PAD * 2) / CELL
         cols = minOf(FishSettings.skyItemListColumns, avail)
         if (cols < 2) return false
         pw = PAD * 2 + cols * CELL
@@ -148,6 +168,8 @@ object SkyItemList {
             val k = i - first
             val cx = px + PAD + (k % cols) * CELL
             val cy = py + HEAD_H + (k / cols) * CELL
+            val rc = if (FishSettings.skyItemListRarityBg) rar[shown[i]] else 0
+            if (rc != 0) ctx.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, (rc and 0xFFFFFF) or 0x66000000)
             if (i == hoverIdx) { ctx.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, argb(FishSettings.skyItemListAccentColor, 35)); hover = i }
             ctx.item(RecipeViewer.stackFor(ids[shown[i]]), cx + 2, cy + 2)
             if (favs.contains(ids[shown[i]])) ctx.fill(cx + CELL - 6, cy + 1, cx + CELL - 2, cy + 5, 0xFFFFD83A.toInt())
