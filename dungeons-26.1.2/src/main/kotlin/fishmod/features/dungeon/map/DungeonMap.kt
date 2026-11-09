@@ -70,6 +70,7 @@ object DungeonMap {
 
     @JvmStatic
     fun reset() {
+        pendingPacket = null
         mapId = null
         mapCenter = null
         startCoords = null
@@ -89,7 +90,7 @@ object DungeonMap {
 
     private fun retryPending() {
         val p = pendingPacket ?: return
-        if (System.currentTimeMillis() - pendingSince > 30_000L) { pendingPacket = null; return }
+        if (System.currentTimeMillis() - pendingSince > 8_000L) { pendingPacket = null; return }
         if (Minecraft.getInstance().level == null || !DungeonState.isInDungeon()) return
         pendingPacket = null
         try { rescanMapItem(p) } catch (t: Throwable) { FishDiag.fail("DungeonMap.3", "pending map rescan failed", t) }
