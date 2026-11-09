@@ -46,6 +46,9 @@ object HotspotFinder {
     private var dirty = false
     private var debugCount = 0
     private var tick = 0
+    // The guess only exists while a radar is in the inventory and was right-clicked within the last minute
+    private const val RADAR_USE_WINDOW_MS = 60_000L
+    private var lastRadarUseMs = 0L
     // Last solved trail, kept to log the error when the real stand shows up (debug only)
     private var calibGuess = false
     private var calibX = 0.0
@@ -66,6 +69,7 @@ object HotspotFinder {
         UseItemCallback.EVENT.register(UseItemCallback { player, level, hand ->
             if (!level.isClientSide || !W.hotspotFinder || !W.hotspotRadar || !Fishing.enabled()) return@UseItemCallback InteractionResult.PASS
             if (ItemTools.getId(player.getItemInHand(hand)) != RADAR_ID) return@UseItemCallback InteractionResult.PASS
+            lastRadarUseMs = System.currentTimeMillis()
             // Using the radar again while its trail is still being drawn restarts it; SkyHanni cancels that click, so do we
             if (trail.size > 0 && System.currentTimeMillis() - trail.lastMs < HotspotMatch.REUSE_GUARD_MS) return@UseItemCallback InteractionResult.FAIL
             trail.clear(); hasGuess = false; dirty = false
@@ -80,8 +84,17 @@ object HotspotFinder {
 
     private fun on() = W.hotspotFinder && Fishing.enabled()
 
+    private fun radarRecentlyUsed(now: Long) = now - lastRadarUseMs <= RADAR_USE_WINDOW_MS
+
+    private fun hasRadarInInventory(p: net.minecraft.world.entity.player.Player): Boolean {
+        for (i in 0 until p.inventory.containerSize) if (ItemTools.getId(p.inventory.getItem(i)) == RADAR_ID) return true
+        return false
+    }
+
     private fun onFlame(x: Double, y: Double, z: Double, count: Int, speed: Float) {
         val now = System.currentTimeMillis()
+        // Flames from other players' radars or other sources must not make a guess
+        if (!radarRecentlyUsed(now)) return
         val fresh = trail.size == 0 || now - trail.lastMs > HotspotMatch.NEW_TRAIL_GAP_MS
         if (fresh) { debugCount = 0; if (W.hotspotDebug) debugRadarUse() }
         if (W.hotspotDebug && debugCount++ < DEBUG_MAX_PER_TRAIL) {
@@ -131,6 +144,7 @@ object HotspotFinder {
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
         val player = mc.player ?: return
+        if (hasGuess && (!radarRecentlyUsed(now) || !hasRadarInInventory(player))) { hasGuess = false; dirty = false }
         if (dirty) {
             try { solve(level, now) } catch (t: Throwable) { dirty = false; FishDiag.fail("HotspotFinder.3", "radar solve failed", t) }
         }
