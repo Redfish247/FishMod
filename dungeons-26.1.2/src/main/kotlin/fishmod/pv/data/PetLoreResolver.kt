@@ -49,6 +49,21 @@ object PetLoreResolver {
         return out
     }
 
+    /** Lore of a NEU pet id like `BAT;4` filled in at max level (100, or 200 for curve pets); null if not a pet id. */
+    @JvmStatic
+    fun maxLevelLore(neuId: String): Pair<String, List<String>>? {
+        val semi = neuId.indexOf(';')
+        if (semi <= 0) return null
+        val type = neuId.substring(0, semi)
+        val tier = PET_TIERS.getOrNull(neuId.substring(semi + 1).toIntOrNull() ?: return null) ?: return null
+        val tierObj = petnums().getAsJsonObject(type)?.getAsJsonObject(tier)
+        val level = if (tierObj != null && tierObj.has("stats_levelling_curve")) 200 else 100
+        val repl = loreReplacements(type, tier, level)
+        val lore = neuLore(neuId).map { apply(it, repl, level) }
+        val name = NeuRepoCache.get(neuId)?.get("displayname")?.asString?.let { apply(it, repl, level) } ?: return null
+        return name to lore
+    }
+
     @JvmStatic
     fun displayNameFor(pet: PetSnapshot.Entry?): String {
         if (pet == null) return ""
