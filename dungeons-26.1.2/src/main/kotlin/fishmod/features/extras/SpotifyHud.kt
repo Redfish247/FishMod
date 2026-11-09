@@ -31,6 +31,8 @@ object SpotifyHud {
     private var artTex: DynamicTexture? = null
     private var proc: Process? = null
     @Volatile private var running = false
+    @Volatile private var pumpGen = 0
+    @Volatile private var lastStartMs = 0L
     private val artFile = File(System.getProperty("java.io.tmpdir"), "fishmod_spotify_art.bin")
     private const val ART = 40
     private const val W = 150
@@ -48,19 +50,25 @@ object SpotifyHud {
     // Started lazily from the draw call, so a disabled HUD costs nothing
     private fun ensureRunning() {
         if (running || !isWin) return
+        // Backoff: a helper that dies at once must not respawn powershell every frame
+        val now = System.currentTimeMillis()
+        if (now - lastStartMs < 10_000) return
+        lastStartMs = now
         running = true
         artGenSeen = -1
-        Thread({ pump() }, "FishMod-Spotify").also { it.isDaemon = true }.start()
+        val my = ++pumpGen
+        Thread({ pump(my) }, "FishMod-Spotify").also { it.isDaemon = true }.start()
     }
 
     private fun stop() {
+        pumpGen++
         running = false
         proc?.destroyForcibly()
         proc = null
         latest.set(null)
     }
 
-    private fun pump() {
+    private fun pump(my: Int) {
         try {
             val script = SpotifyHud::class.java.getResourceAsStream("/assets/fishmod/spotify_smtc.ps1")!!.use { String(it.readBytes(), Charsets.UTF_8) }
             // -EncodedCommand rejects extra args (prints help), so run from a temp file
@@ -71,12 +79,13 @@ object SpotifyHud {
             proc = p
             p.errorStream.close()
             BufferedReader(InputStreamReader(p.inputStream, Charsets.UTF_8)).use { r ->
-                while (running) parse(r.readLine() ?: break)
+                while (running && pumpGen == my) parse(r.readLine() ?: break)
             }
         } catch (t: Throwable) {
-            FishDiag.fail("SpotifyHud.2", "spotify helper failed", t)
+            if (pumpGen == my) FishDiag.fail("SpotifyHud.2", "spotify helper failed", t)
         } finally {
-            proc?.destroyForcibly(); proc = null; running = false; latest.set(null)
+            // A newer pump (stop then re-enable) owns the shared state now
+            if (pumpGen == my) { proc?.destroyForcibly(); proc = null; running = false; latest.set(null) }
         }
     }
 
