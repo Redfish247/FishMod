@@ -596,7 +596,7 @@ object DungeonWaypoints {
         var pz = aim.z + offsetZ
         offsetX = 0.0; offsetY = 0.0; offsetZ = 0.0
 
-        val halfX: Double; val halfY: Double; val halfZ: Double
+        var halfX: Double; val halfY: Double; var halfZ: Double
         if (pixelMode) {
             val (hx, hy, hz) = pixelHalfExtents(aimResult.face)
             halfX = hx; halfY = hy; halfZ = hz
@@ -616,11 +616,9 @@ object DungeonWaypoints {
         if (isRoomKey(key)) {
             val a = DungeonRoomAnchor.current()
             if (a != null) {
-                val local = DungeonRoomAnchor.toLocal(
-                    a, BlockPos(Math.floor(px).toInt(), Math.floor(py).toInt(), Math.floor(pz).toInt())
-                )
-                val fracY = py - Math.floor(py)
-                px = local.x + 0.5; py = local.y + fracY; pz = local.z + 0.5
+                val local = DungeonRoomAnchor.pointToLocal(a, px, py, pz)
+                px = local[0]; pz = local[2]
+                if (DungeonRoomAnchor.swapsAxes(a)) { val t = halfX; halfX = halfZ; halfZ = t }
             } else {
                 FishDiag.fail("DungeonWaypoints.7", "room key $key but no room anchor, waypoint stored in world coords")
             }
@@ -677,15 +675,15 @@ object DungeonWaypoints {
         for (w in DungeonWaypointStore.get(key)) {
             if (!FishDiag.check(w.x.isFinite() && w.y.isFinite() && w.z.isFinite(), "DungeonWaypoints.9") { "non-finite stored waypoint in $key: ${w.x},${w.y},${w.z}" }) continue
             val c = if (anchor != null) {
-                val wb = DungeonRoomAnchor.toWorld(
-                    anchor, BlockPos(Math.floor(w.x).toInt(), Math.floor(w.y).toInt(), Math.floor(w.z).toInt())
-                )
-                val fracY = w.y - Math.floor(w.y)
-                Vec3(wb.x + 0.5, wb.y + fracY, wb.z + 0.5)
+                val p = DungeonRoomAnchor.pointToWorld(anchor, w.x, w.y, w.z)
+                Vec3(p[0], p[1], p[2])
             } else Vec3(w.x, w.y, w.z)
+            val swap = anchor != null && DungeonRoomAnchor.swapsAxes(anchor)
+            val hx = if (swap) w.halfZ else w.halfX
+            val hz = if (swap) w.halfX else w.halfZ
             val box = AABB(
-                c.x - w.halfX, c.y - w.halfY, c.z - w.halfZ,
-                c.x + w.halfX, c.y + w.halfY, c.z + w.halfZ
+                c.x - hx, c.y - w.halfY, c.z - hz,
+                c.x + hx, c.y + w.halfY, c.z + hz
             )
             result.add(LiveWaypoint(box, w.color, w.filled, w.throughWalls, w.title, w.routeId, w.routeOrder, w.message))
         }

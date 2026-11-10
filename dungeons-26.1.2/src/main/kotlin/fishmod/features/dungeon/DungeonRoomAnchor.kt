@@ -31,6 +31,34 @@ object DungeonRoomAnchor {
         return BlockPos(r.x + a.clay.x, r.y, r.z + a.clay.z)
     }
 
+    // Sub-block point: block via the lattice formula, offset from the block centre rotated the same way
+    @JvmStatic
+    fun pointToLocal(a: Anchor, x: Double, y: Double, z: Double): DoubleArray {
+        val bx = Math.floor(x); val bz = Math.floor(z)
+        val b = toLocal(a, BlockPos(bx.toInt(), Math.floor(y).toInt(), bz.toInt()))
+        val (ox, oz) = rotateOffset(x - bx - 0.5, z - bz - 0.5, a.rotation, toWorld = false)
+        return doubleArrayOf(b.x + 0.5 + ox, y, b.z + 0.5 + oz)
+    }
+
+    @JvmStatic
+    fun pointToWorld(a: Anchor, x: Double, y: Double, z: Double): DoubleArray {
+        val bx = Math.floor(x); val bz = Math.floor(z)
+        val b = toWorld(a, BlockPos(bx.toInt(), Math.floor(y).toInt(), bz.toInt()))
+        val (ox, oz) = rotateOffset(x - bx - 0.5, z - bz - 0.5, a.rotation, toWorld = true)
+        return doubleArrayOf(b.x + 0.5 + ox, y, b.z + 0.5 + oz)
+    }
+
+    /** True when the room is turned 90/270 degrees, so box X/Z extents swap between frames. */
+    @JvmStatic
+    fun swapsAxes(a: Anchor): Boolean = a.rotation == Room.Rotation.WEST || a.rotation == Room.Rotation.EAST
+
+    private fun rotateOffset(x: Double, z: Double, rot: Room.Rotation, toWorld: Boolean): Pair<Double, Double> = when (rot) {
+        Room.Rotation.NORTH -> Pair(-x, -z)
+        Room.Rotation.WEST -> if (toWorld) Pair(-z, x) else Pair(z, -x)
+        Room.Rotation.EAST -> if (toWorld) Pair(z, -x) else Pair(-z, x)
+        else -> Pair(x, z)
+    }
+
     private fun rotateAroundNorth(x: Int, y: Int, z: Int, rot: Room.Rotation): BlockPos = when (rot) {
         Room.Rotation.NORTH -> BlockPos(-x, y, -z)
         Room.Rotation.SOUTH -> BlockPos(x, y, z)
