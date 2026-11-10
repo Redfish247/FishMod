@@ -158,7 +158,13 @@ object FishEstTotal {
         val splits = BossPhase.exampleSplits()
         if (splits.isEmpty()) return null
         val client = Minecraft.getInstance()
-        return HudExample(BossPhase.SPLIT_LENGTH, FishConstants.TEXT_HEIGHT + 9) { ctx -> renderAt(ctx, client, splits, 0, 0) }
+        // in game it draws at the Splits scale; the locked editor entry has none of its own
+        val s = BossPhase.runSplitsBox.scale
+        return HudExample(Math.ceil(BossPhase.SPLIT_LENGTH * s.toDouble()).toInt(), Math.ceil((FishConstants.TEXT_HEIGHT + 9) * s.toDouble()).toInt()) { ctx ->
+            val pose = ctx.pose()
+            pose.pushMatrix()
+            try { pose.scale(s, s); renderAt(ctx, client, splits, 0, 0) } finally { pose.popMatrix() }
+        }
     }
 
     private fun renderAt(context: GuiGraphicsExtractor, client: Minecraft, splits: List<RunSplit>, x: Int, y: Int) {
