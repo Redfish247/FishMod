@@ -28,7 +28,8 @@ object SoulflowHud {
             { FishSettings.soulflowHudX }, { v -> FishSettings.soulflowHudX = v },
             { FishSettings.soulflowHudY }, { v -> FishSettings.soulflowHudY = v },
             145, 14,
-            { FishSettings.soulflowHudScale }, { v -> FishSettings.soulflowHudScale = v }
+            { FishSettings.soulflowHudScale }, { v -> FishSettings.soulflowHudScale = v },
+            { FishSettings.soulflowHudEnabled }
         )
         HudPreview.register("Soulflow") { HudPreview.text(listOf(label(12345))) }
 
