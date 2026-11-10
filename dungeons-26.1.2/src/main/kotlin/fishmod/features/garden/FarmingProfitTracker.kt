@@ -183,6 +183,7 @@ object FarmingProfitTracker {
             val n = num(m.groupValues[2]); if (n <= 0) continue
             val item = m.groupValues[3].trim()
             if (!ProfitTrackerKit.inSacks(idOf(item), "Agronomy", "Enchanted Agronomy", "Garden", "Flower", "Mutations")) continue
+            if (ProfitTrackerKit.isFishingLeak(idOf(item), now, 0L)) continue
             val rest = consumePending(item, n, now)
             if (rest > 0) add(Cat.CROPS, item, rest)
         }
