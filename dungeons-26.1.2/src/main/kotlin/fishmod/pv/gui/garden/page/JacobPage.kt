@@ -181,21 +181,14 @@ class JacobPage {
 		} else {
 			jacobExtrasFace
 		}
-		var scaleX = 1F
-		var scaleY = 1F
+		var slideDx = 0f
 		if (animating) {
-			scaleY = maxOf(0.04F, abs(cos(angle.toDouble()).toFloat()))
-			scaleX = 1F - (1F - scaleY) * 0.06F
+			slideDx = PvDraw.slideOffset(eased, w)
 		}
-
-		val cxFlip = x + w / 2F
-		val cyFlip = y + h / 2F
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 		if (hovered && !animating) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -207,6 +200,7 @@ class JacobPage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawJacobContestsFace(snap: GardenSnapshot, ui: GardenUi, g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, h: Int) {

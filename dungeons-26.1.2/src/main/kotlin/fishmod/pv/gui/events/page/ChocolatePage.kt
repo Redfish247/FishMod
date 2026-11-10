@@ -305,21 +305,14 @@ class ChocolatePage {
 		} else {
 			rabbitsFace
 		}
-		var scaleX = 1f
-		var scaleY = 1f
+		var slideDx = 0f
 		if (animating) {
-			scaleY = maxOf(0.04f, abs(cos(angle.toDouble()).toFloat()))
-			scaleX = 1f - (1f - scaleY) * 0.06f
+			slideDx = PvDraw.slideOffset(eased, w)
 		}
-
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 		if (hovered && !animating) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -330,6 +323,7 @@ class ChocolatePage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawEmployeesFace(

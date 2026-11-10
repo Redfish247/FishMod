@@ -165,21 +165,14 @@ class MiningOverviewPage {
 		}
 		val angle = (if (animating) easeInOutCubic(flipProgress) else 0f) * Math.PI.toFloat()
 		val showEssence = if (animating && cos(angle) < 0.0) crystalsFlipTarget else crystalsEssenceFace
-		var scaleX = 1f
-		var scaleY = 1f
+		var slideDx = 0f
 		if (animating) {
-			scaleY = maxOf(0.04f, abs(cos(angle)))
-			scaleX = 1f - (1f - scaleY) * 0.06f
+			slideDx = PvDraw.slideOffset(angle / Math.PI.toFloat(), w)
 		}
-
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 		if (hovered && !animating) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -192,6 +185,7 @@ class MiningOverviewPage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawCrystalsFace(

@@ -266,6 +266,14 @@ object PvDraw {
 		glassSurface(g, x, y, w, h, 8, GLASS_TOP, GLASS_BOTTOM, C_TR or C_BR or C_BL)
 	}
 
+	/**
+	 * Horizontal offset for the card slide: the old face slides out to the left over the first half,
+	 * then the new face slides in from the right over the second half. [eased] is 0..1.
+	 */
+	@JvmStatic
+	fun slideOffset(eased: Float, w: Int): Float =
+		if (eased < 0.5f) -w * (eased * 2f) else w * (1f - (eased - 0.5f) * 2f)
+
 	@JvmStatic
 	fun innerPanel(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
 		glassSurface(g, x, y, w, h, 5, GLASS_INNER_TOP, GLASS_INNER_BOTTOM, C_ALL)

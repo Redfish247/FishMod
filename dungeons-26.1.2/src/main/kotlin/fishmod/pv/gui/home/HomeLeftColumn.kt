@@ -223,19 +223,17 @@ class HomeLeftColumn {
 		}
 		var scaleX = 1F
 		var scaleY = 1F
+		var slideDx = 0F
 		if (animating) {
-			scaleY = maxOf(0.04F, abs(cos(angle.toDouble()).toFloat()))
-			scaleX = 1F - (1F - scaleY) * 0.06F
+			slideDx = PvDraw.slideOffset(eased, w)
 		}
 
 		val cxFlip = x + w / 2F
 		val cyFlip = y + h / 2F
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0F)
 
 		var modelBox: IntArray? = null
 		if (showStats) {
@@ -245,15 +243,18 @@ class HomeLeftColumn {
 			statusHitW = 0
 			drawStatsFace(g, font, x, y, w, h, playerStats, zones)
 		} else if (snapshot != null) {
-			modelBox = drawProfileFace(
+			// Entity rendering ignores the pose and scissor, so the model only draws once the slide is done.
+			val faceBox = drawProfileFace(
 				g, font, x, y, w, h, layout, mouseX, mouseY,
 				snapshot, playerStatus, playerRank, activeNw, senither, lily, weightSystem, loadError, zones
 			)
+			if (!animating) modelBox = faceBox
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 
-		// Entity rendering ignores the GUI pose matrix - apply the same flip in screen space after pop.
+		// Entity rendering ignores the GUI pose matrix - drawn in screen space after pop.
 		val uuid = snapshot?.playerUuid
 		if (modelBox != null && uuid != null) {
 			playerModel.draw(
