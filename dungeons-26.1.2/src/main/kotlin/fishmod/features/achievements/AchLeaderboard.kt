@@ -173,6 +173,7 @@ object AchLeaderboard {
     private fun lines(secretList: Boolean): List<String> {
         val list = (if (secretList) secrets else points).take(10)
         val out = ArrayList<String>()
+        for (e in list) fishmod.cosmetic.RemoteNicks.ensureKnown(e.name)
         for ((i, e) in list.withIndex()) out.add("${medal(i + 1)}#${i + 1} §f${e.name} §e${value(e, secretList)}")
         meLine(secretList)?.let { out.add("§8..."); out.add(it) }
         return out
@@ -209,7 +210,7 @@ object AchLeaderboard {
             var y = 0.8 + (rows + 2) * lh
             FishDraw.renderBoardText(m, Component.literal(title), base, yaw, 0.0, y, (sc * 1.1).toFloat())
             y -= lh * 1.4
-            for (l in ls) { FishDraw.renderBoardText(m, Component.literal(l), base, yaw, 0.0, y, sc.toFloat()); y -= lh }
+            for (l in ls) { FishDraw.renderBoardText(m, fishmod.cosmetic.RemoteNicks.applyResolvedOnly(Component.literal(l)) ?: Component.literal(l), base, yaw, 0.0, y, sc.toFloat()); y -= lh }
             FishDraw.renderBoardText(m, Component.literal(status), base, yaw, 0.0, 0.8, (sc * 0.9).toFloat())
         }
     }
