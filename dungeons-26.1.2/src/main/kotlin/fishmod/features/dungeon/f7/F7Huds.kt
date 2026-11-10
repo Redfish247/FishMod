@@ -145,7 +145,28 @@ object F7Huds {
     // Editor examples: each HUD's real render, fed example data while HudPreview.active
     private fun examples() {
         fun ex(name: String, c: HUDComponent, r: HUDComponent.RenderSupplier) = HudPreview.register(name) { HudPreview.component(c, r) }
+        // left-aligned label HUDs: the box is the text itself, like in game
+        fun exText(name: String, c: HUDComponent, r: HUDComponent.RenderSupplier, sample: String) = HudPreview.register(name) {
+            HudPreview.component(c, r, HudPreview.textWidth(listOf(sample)), HudPreview.TEXT_H)
+        }
         ex("Boss Tick Clock", tickTimer, BossTickTimer::render)
+        ex("Crystal Respawn", crystalRespawnBox, MaxorCrystalTimer::render)
+        ex("Crystal Not Placed", crystalReminder, MaxorCrystalTimer::renderNotification)
+        ex("Storm Kill Time", stormKillBox, StormTicks::renderDeathTime)
+        ex("Py Tick Timer", pyTimer, StormTicks::renderPyTimer)
+        ex("LB Release Timer", lbReleaseTimer, StormTicks::renderLbReleaseTimer)
+        ex("Necron LB Timer", necronLbTimer, NecronLbTimer::render)
+        exText("Necron Drag Timer", necronDragTimer, NecronDropPredict::render, "Dragged: 3.45")
+        ex("Necron Drop Lava/Platform", necronDropLanding, NecronDropPredict::renderLanding)
+        ex("Storm Crush Banner", stormCrush, StormPillarTimer::render)
+        ex("Pillar Blast Timer", pillarExplosion, StormPillarTimer::renderTimer)
+        ex("Terminals Open In", termOpenBox, TermOpenTimer::render)
+        ex("Section Count", sectionProgress, SectionCountHud::render)
+        ex("Device Done", deviceNotifier, DeviceDoneAlert::render)
+        ex("Melody Callout", melodyWarning, MelodyAlert::render)
+        ex("Section Cleared", sectionCompletion, SectionDoneHud::render)
+        exText("P3 Section", currentSection, GoldorSectionHud::render, "P3:  2/4")
+        exText("Players Leaped", playersLeaped, PlayersLeaped::render, "Leaped (HEE2): 2/4")
     }
 
     @JvmStatic

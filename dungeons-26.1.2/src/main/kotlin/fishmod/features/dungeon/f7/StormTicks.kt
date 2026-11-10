@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.utils.events.chatRaw
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.features.CritTracker
 import fishmod.utils.FishConstants
@@ -104,7 +105,7 @@ object StormTicks {
 
     @JvmStatic
     fun renderDeathTime(component: HUDComponent, context: GuiGraphicsExtractor) {
-        FishDiag.guard("StormTicks.6", "storm death time render threw") { FishDraw.drawTimer(component, context, deathTime, FishConstants.DARK_PURPLE) }
+        FishDiag.guard("StormTicks.6", "storm death time render threw") { FishDraw.drawTimer(component, context, if (HudPreview.active) 38.45 else deathTime, FishConstants.DARK_PURPLE) }
     }
 
     private fun pingTicks(): Int = ceil(max(0, Floor7Settings.lbReleaseTimerPingMs) / 50.0).toInt()
@@ -120,7 +121,7 @@ object StormTicks {
 
     @JvmStatic
     fun renderPyTimer(component: HUDComponent, context: GuiGraphicsExtractor) {
-        FishDiag.guard("StormTicks.7", "py timer render threw") { FishDraw.drawTimer(component, context, (pyEndTick() - timer.tick) * FishConstants.TICK_DURATION, Floor7Settings.pyTimerColor) }
+        FishDiag.guard("StormTicks.7", "py timer render threw") { FishDraw.drawTimer(component, context, (if (HudPreview.active) 47 else pyEndTick() - timer.tick) * FishConstants.TICK_DURATION, Floor7Settings.pyTimerColor) }
     }
 
     private fun lbEndTick(): Int {
@@ -141,7 +142,7 @@ object StormTicks {
 
     @JvmStatic
     fun renderLbReleaseTimer(component: HUDComponent, context: GuiGraphicsExtractor) {
-        val remaining = (lbEndTick() - timer.tick) * FishConstants.TICK_DURATION
+        val remaining = (if (HudPreview.active) 47 else lbEndTick() - timer.tick) * FishConstants.TICK_DURATION
         FishDiag.check(remaining >= 0, "StormTicks.8") { "LB release timer negative: $remaining" }
         FishDiag.guard("StormTicks.9", "LB release timer render threw") { FishDraw.drawTimer(component, context, remaining, Floor7Settings.lbReleaseTimerColor) }
     }

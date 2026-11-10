@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
@@ -38,7 +39,7 @@ object TermOpenTimer {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        val left = (COUNTDOWN_TICKS - ticksSinceStorm) * FishConstants.TICK_DURATION
+        val left = (if (HudPreview.active) 41 else COUNTDOWN_TICKS - ticksSinceStorm) * FishConstants.TICK_DURATION
         FishDiag.guard("TermOpenTimer.2", "terminal open hud threw") {
             FishDraw.drawCenteredText(context, component, Component.literal(FishConstants.DECIMAL_FORMAT.format(left)), FishConstants.YELLOW)
         }

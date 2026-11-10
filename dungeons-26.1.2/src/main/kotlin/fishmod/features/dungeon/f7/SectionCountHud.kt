@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.utils.events.chatRaw
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.data.TextTools
@@ -53,7 +54,7 @@ object SectionCountHud {
         FishEvents.locationChange.register { done = 0; total = DEFAULT_TOTAL; false }
     }
 
-    private fun countColor(): String {
+    private fun countColor(done: Int, total: Int): String {
         val left = total - done
         return when {
             left <= 0 -> "§6§l"
@@ -64,7 +65,11 @@ object SectionCountHud {
     }
 
     private fun label(): Component {
-        val count = if (Floor7Settings.sectionProgressColored) "§f(${countColor()}$done§f/§a$total§f)" else "§a(§c$done§a/$total)"
+        val preview = HudPreview.active
+        val done = if (preview) 3 else done
+        val total = if (preview) DEFAULT_TOTAL else total
+        val last = if (preview) "Terminal" else last
+        val count = if (Floor7Settings.sectionProgressColored) "§f(${countColor(done, total)}$done§f/§a$total§f)" else "§a(§c$done§a/$total)"
         val prefix = if (Floor7Settings.sectionShowPrevious) (LAST_COLORS[last] ?: "") + last + " " else ""
         return Component.literal(prefix + count)
     }

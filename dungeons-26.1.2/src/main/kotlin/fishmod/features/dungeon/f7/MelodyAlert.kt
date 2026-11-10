@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
@@ -60,12 +61,15 @@ object MelodyAlert {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        val who = current ?: return
+        val preview = HudPreview.active
+        val who = if (preview) null else current ?: return
+        val percent = if (preview) 50 else bestPercent
         // 25/50/75 callouts mean 4 lanes, 33/67 mean 3
-        val lanes = if (bestPercent % 25 == 0) 4 else 3
-        val lane = minOf(Math.round(bestPercent * lanes / 100.0).toInt(), lanes - 1)
-        val color = if (DungeonSettings.roleColors) DungeonRole.getColor(who.name) else FishConstants.DARK_PURPLE
-        val label = DungeonRole.getClass(who.name)?.name ?: who.name
+        val lanes = if (percent % 25 == 0) 4 else 3
+        val lane = minOf(Math.round(percent * lanes / 100.0).toInt(), lanes - 1)
+        val role = if (preview) DungeonRole.HEALER else DungeonRole.getClass(who?.name)
+        val color = if (DungeonSettings.roleColors) (if (preview) role!!.color else DungeonRole.getColor(who!!.name)) else FishConstants.DARK_PURPLE
+        val label = role?.name ?: who!!.name
         val text = Component.literal(label).setStyle(Style.EMPTY.withColor(color).withBold(true))
             .append(Component.literal(" §7» §dMelody §f$lane§7/§f$lanes"))
         FishDiag.guard("MelodyAlert.2", "melody hud threw") { FishDraw.drawCenteredText(context, component, text) }
