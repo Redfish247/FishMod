@@ -164,7 +164,8 @@ object GambleCommand {
                 entries.forEachIndexed { i, e ->
                     val line = net.minecraft.network.chat.Component.literal("§7${i + 1}. ")
                     if (i == 0) line.append(CrownBadge.icon()).append(net.minecraft.network.chat.Component.literal(" "))
-                    line.append(net.minecraft.network.chat.Component.literal("§f${e.name} §e%,d".format(e.balance)))
+                    line.append(net.minecraft.network.chat.Component.literal("§f").append(fishmod.cosmetic.RemoteNicks.styledFor(e.name) ?: net.minecraft.network.chat.Component.literal(e.name)))
+                    line.append(net.minecraft.network.chat.Component.literal(" §e%,d".format(e.balance)))
                     FishMsg.send(line)
                 }
             }

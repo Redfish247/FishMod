@@ -103,6 +103,30 @@ object RemoteNicks {
         }
     }
 
+    /** Shared lookup for any list that shows player names: queues a lazy fetch if the nick is unknown. */
+    @JvmStatic
+    fun ensureKnown(name: String?) {
+        if (name.isNullOrEmpty() || !fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return
+        if (styledByName.containsKey(name) || !hasLetter(name) || name.length !in 3..16) return
+        val neg = negativeCache[name]
+        if (neg != null && neg > System.currentTimeMillis()) return
+        if (inFlight.size >= MAX_IN_FLIGHT || !inFlight.add(name)) return
+        lookupAndCache(name)
+    }
+
+    /** Styled nick for a name if already loaded (own name excluded), else null; queues a fetch when missing. */
+    @JvmStatic
+    fun styledFor(name: String): Component? {
+        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return null
+        ensureKnown(name)
+        if (NickState.isActive() && name == NickState.realName()) return null
+        return styledByName[name]
+    }
+
+    /** Plain-text display name for string-only UIs: the nick without colours, or the real name. */
+    @JvmStatic
+    fun plainFor(name: String): String = styledFor(name)?.string?.takeIf { it.isNotBlank() } ?: name
+
     private fun hasLetter(s: String): Boolean {
         for (i in s.indices) if (Character.isLetter(s[i])) return true
         return false
