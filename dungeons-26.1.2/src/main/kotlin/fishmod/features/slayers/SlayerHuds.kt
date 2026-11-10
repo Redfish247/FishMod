@@ -3,6 +3,8 @@ import fishmod.compat.curScreen
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
@@ -62,6 +64,32 @@ object SlayerHuds {
             { FishSettings.slayerProfitHudScale }, { v -> FishSettings.slayerProfitHudScale = v },
             { FishSettings.slayerProfitEnabled },
         )
+        registerExamples()
+    }
+
+    private val EX_TYPE get() = SlayerType.values()[0]
+    private const val EX_TIER = 4
+
+    private fun registerExamples() {
+        HudPreview.register(SPAWN_HUD) {
+            blockExample(spawnLines(EX_TYPE, EX_TIER, SlayerManager.State.GRINDING, SlayerManager.SpawnProgress(null, 1250.0, 2000.0, "")))
+        }
+        HudPreview.register(STATS_HUD) { blockExample(statsLines(EX_TYPE, EX_TIER, 1_250_000.0, 4321, 87.0, true)) }
+        HudPreview.register(TIMER_HUD) { blockExample(timerLines(TimerData(false, 0.0, true, 23.45, true, 18.9, true, 41.2, true, 12.3))) }
+        HudPreview.register(RNG_HUD) {
+            val f = Minecraft.getInstance().font
+            HudExample(f.width(RNG_LABEL) + f.width("§e$EX_RNG"), FishConstants.TEXT_HEIGHT) { ctx -> drawRng(ctx, EX_RNG) }
+        }
+        HudPreview.register(PROFIT_HUD) {
+            val rows = SlayerProfitTracker.exampleDisplay(EX_TYPE, EX_TIER)
+            HudExample(profitWidth(rows), profitHeight(rows)) { ctx -> drawProfit(ctx, rows) }
+        }
+    }
+
+    private fun blockExample(lines: List<String>): HudExample {
+        val f = Minecraft.getInstance().font
+        val lh = FishConstants.TEXT_HEIGHT + 2
+        return HudExample(lines.maxOfOrNull { f.width(it) } ?: 0, HudPreview.textHeight(lines.size, lh)) { ctx -> drawLines(ctx, lines) }
     }
 
     @JvmStatic
@@ -80,11 +108,17 @@ object SlayerHuds {
         if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea()) return
         val type = FishDiag.notNull(SlayerManager.type, "SlayerHuds.5") { "active slayer with null type in spawn HUD" } ?: return
 
+        val lines = spawnLines(type, SlayerManager.tier, SlayerManager.state, SlayerManager.progress)
+        if (lines.isEmpty()) return
+        drawBlock(ctx, FishSettings.slayerSpawnHudX, FishSettings.slayerSpawnHudY,
+            FishSettings.slayerSpawnHudScale, lines)
+    }
+
+    private fun spawnLines(type: SlayerType, tier: Int, state: SlayerManager.State, p: SlayerManager.SpawnProgress?): List<String> {
         val lines = ArrayList<String>(3)
-        lines.add("§5§l${type.displayName} ${roman(SlayerManager.tier)}")
-        when (SlayerManager.state) {
+        lines.add("§5§l${type.displayName} ${roman(tier)}")
+        when (state) {
             SlayerManager.State.GRINDING -> {
-                val p = SlayerManager.progress
                 when {
                     p == null -> lines.add("§7Spawn: §f…")
                     p.current != null && p.max != null ->
@@ -97,10 +131,9 @@ object SlayerHuds {
             SlayerManager.State.BOSS_SPAWNED -> lines.add("§c§l☠ BOSS SPAWNED")
             SlayerManager.State.COCOONED -> lines.add("§d§lCOCOONED")
             SlayerManager.State.BOSS_SLAIN -> lines.add("§a§lBOSS SLAIN")
-            SlayerManager.State.NONE -> return
+            SlayerManager.State.NONE -> return emptyList()
         }
-        drawBlock(ctx, FishSettings.slayerSpawnHudX, FishSettings.slayerSpawnHudY,
-            FishSettings.slayerSpawnHudScale, lines)
+        return lines
     }
 
     @JvmStatic
@@ -118,19 +151,26 @@ object SlayerHuds {
         if (mc.player == null || mc.hudHidden) return
         if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea() || !SlayerStatsTracker.hasData()) return
 
-        val lines = ArrayList<String>(7)
         val type = SlayerManager.type ?: return
-        lines.add("§5§l${type.displayName} ${roman(SlayerManager.tier)}")
-        if (FishSettings.slayerStatsShowXp)
-            lines.add("§7XP: §f${SlayerStatsTracker.short(SlayerStatsTracker.xpGained.toDouble())}" +
-                SlayerStatsTracker.rank().let { if (it > 0) " §8(§e#${fishmod.utils.Fmt.grouped(it.toLong())} §8on leaderboard)" else "" })
-        if (FishSettings.slayerStatsShowKills)
-            lines.add("§7Kills: §f${fmt(SlayerStatsTracker.kills.toDouble())}")
-        if (lines.size == 1) return
-        if (!SlayerStatsTracker.fromApi()) lines.add("§8(session, API not loaded)")
+        val lines = statsLines(type, SlayerManager.tier, SlayerStatsTracker.xpGained.toDouble(), SlayerStatsTracker.rank(),
+            SlayerStatsTracker.kills.toDouble(), SlayerStatsTracker.fromApi())
+        if (lines.isEmpty()) return
 
         drawBlock(ctx, FishSettings.slayerStatsHudX, FishSettings.slayerStatsHudY,
             FishSettings.slayerStatsHudScale, lines)
+    }
+
+    private fun statsLines(type: SlayerType, tier: Int, xp: Double, rank: Int, kills: Double, fromApi: Boolean): List<String> {
+        val lines = ArrayList<String>(7)
+        lines.add("§5§l${type.displayName} ${roman(tier)}")
+        if (FishSettings.slayerStatsShowXp)
+            lines.add("§7XP: §f${SlayerStatsTracker.short(xp)}" +
+                rank.let { if (it > 0) " §8(§e#${fishmod.utils.Fmt.grouped(it.toLong())} §8on leaderboard)" else "" })
+        if (FishSettings.slayerStatsShowKills)
+            lines.add("§7Kills: §f${fmt(kills)}")
+        if (lines.size == 1) return emptyList()
+        if (!fromApi) lines.add("§8(session, API not loaded)")
+        return lines
     }
 
     @JvmStatic
@@ -144,17 +184,24 @@ object SlayerHuds {
             val x = FishSettings.slayerRngHudX
             val y = FishSettings.slayerRngHudY
             val sc = FishSettings.slayerRngHudScale.toFloat()
-            val label = "RNG Meter: "
-            val col = FishSettings.slayerRngTitleColor or 0xFF000000.toInt()
             ctx.pose().pushMatrix()
             ctx.pose().translate(x.toFloat(), y.toFloat())
             ctx.pose().scale(sc, sc)
-            ctx.text(mc.font, label, 0, 0, col, true)
-            ctx.text(mc.font, "§e$text", mc.font.width(label), 0, 0xFFFFFFFF.toInt(), true)
+            drawRng(ctx, text)
             ctx.pose().popMatrix()
         } catch (e: Exception) {
             FishDiag.fail("SlayerHuds.10", "slayer RNG HUD render failed (type=${SlayerManager.type})", e)
         }
+    }
+
+    private const val RNG_LABEL = "RNG Meter: "
+    private const val EX_RNG = "5,000 Stored XP"
+
+    private fun drawRng(ctx: GuiGraphicsExtractor, text: String) {
+        val f = Minecraft.getInstance().font
+        val col = FishSettings.slayerRngTitleColor or 0xFF000000.toInt()
+        ctx.text(f, RNG_LABEL, 0, 0, col, true)
+        ctx.text(f, "§e$text", f.width(RNG_LABEL), 0, 0xFFFFFFFF.toInt(), true)
     }
 
     private var profitFrameMs = 0L
@@ -203,12 +250,8 @@ object SlayerHuds {
 
         val interactive = mc.curScreen is net.minecraft.client.gui.screens.ChatScreen
         val rows = SlayerProfitTracker.display(type, tier, interactive)
-        val f = mc.font
         val lh = FishConstants.TEXT_HEIGHT + 2
-        // value column right-aligned, item text after it (Mining/Diana style)
-        val colX = rows.maxOfOrNull { if (it.value.isEmpty()) 0 else f.width(it.value) + 6 } ?: 0
-        var panelW = 0
-        for (r in rows) panelW = Math.max(panelW, (if (r.value.isEmpty()) 0 else colX) + f.width(r.label))
+        val panelW = profitWidth(rows)
 
         val x = FishSettings.slayerProfitHudX
         val y = FishSettings.slayerProfitHudY
@@ -217,12 +260,7 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        for (i in rows.indices) {
-            val r = rows[i]
-            if (r.value.isEmpty()) { ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true); continue }
-            ctx.text(f, r.value, colX - 6 - f.width(r.value), lh * i, 0xFFFFFFFF.toInt(), true)
-            ctx.text(f, r.label, colX, lh * i, 0xFFFFFFFF.toInt(), true)
-        }
+        drawProfit(ctx, rows)
         ctx.pose().popMatrix()
 
         profitFrameMs = System.currentTimeMillis()
@@ -235,6 +273,34 @@ object SlayerHuds {
             profitRowTag.add(rows[i].tag)
         }
         return rows.isNotEmpty()
+    }
+
+    // value column right-aligned, item text after it (Mining/Diana style)
+    private fun profitColX(rows: List<SlayerProfitTracker.DisplayRow>): Int {
+        val f = Minecraft.getInstance().font
+        return rows.maxOfOrNull { if (it.value.isEmpty()) 0 else f.width(it.value) + 6 } ?: 0
+    }
+
+    private fun profitWidth(rows: List<SlayerProfitTracker.DisplayRow>): Int {
+        val f = Minecraft.getInstance().font
+        val colX = profitColX(rows)
+        var panelW = 0
+        for (r in rows) panelW = Math.max(panelW, (if (r.value.isEmpty()) 0 else colX) + f.width(r.label))
+        return panelW
+    }
+
+    private fun profitHeight(rows: List<SlayerProfitTracker.DisplayRow>) = HudPreview.textHeight(rows.size, FishConstants.TEXT_HEIGHT + 2)
+
+    private fun drawProfit(ctx: GuiGraphicsExtractor, rows: List<SlayerProfitTracker.DisplayRow>) {
+        val f = Minecraft.getInstance().font
+        val lh = FishConstants.TEXT_HEIGHT + 2
+        val colX = profitColX(rows)
+        for (i in rows.indices) {
+            val r = rows[i]
+            if (r.value.isEmpty()) { ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true); continue }
+            ctx.text(f, r.value, colX - 6 - f.width(r.value), lh * i, 0xFFFFFFFF.toInt(), true)
+            ctx.text(f, r.label, colX, lh * i, 0xFFFFFFFF.toInt(), true)
+        }
     }
 
     @JvmStatic
@@ -286,44 +352,56 @@ object SlayerHuds {
         if (mc.player == null || mc.hudHidden) return
         if (!SlayerManager.hasActiveQuest() || !SlayerManager.inCorrectArea()) return
 
-        val lines = ArrayList<String>(4)
-        if (SlayerTimer.running()) {
-            if (FishSettings.slayerTimerShowCurrent)
-                lines.add("§6Boss: §f${fishmod.utils.Fmt.f2(SlayerTimer.elapsedSeconds())}s")
-        } else if (SlayerTimer.hasResult()) {
-            lines.add("§6Boss: §f${fishmod.utils.Fmt.f2(SlayerTimer.lastResultSeconds())}s")
-            val type = SlayerManager.type
-            if (FishSettings.slayerTimerShowPb && type != null) {
-                val pb = SlayerPersonalBests.get(type, SlayerManager.tier)
-                lines.add("§7PB: §f" + if (pb > 0) fishmod.utils.Fmt.f2(pb) + "s" else "—")
-            }
-            if (FishSettings.slayerTimerShowNewPb && SlayerTimer.lastWasPb())
-                lines.add("§a§lNEW PB!")
-        }
-        if (FishSettings.slayerTimerShowCycle) {
-            if (SlayerTimer.lastCycleSeconds() >= 0.0)
-                lines.add("§7Cycle: §f${fishmod.utils.Fmt.f1(SlayerTimer.lastCycleSeconds())}s")
-            val since = SlayerTimer.cycleElapsedSeconds()
-            if (SlayerTimer.hasCycle() && since in 0.0..1800.0)
-                lines.add("§7Since kill: §f${fishmod.utils.Fmt.f1(since)}s")
-        }
+        val type = SlayerManager.type
+        val pb = if (type != null) SlayerPersonalBests.get(type, SlayerManager.tier) else 0.0
+        val lines = timerLines(TimerData(
+            SlayerTimer.running(), SlayerTimer.elapsedSeconds(), SlayerTimer.hasResult(), SlayerTimer.lastResultSeconds(),
+            type != null, pb, SlayerTimer.lastWasPb(), SlayerTimer.lastCycleSeconds(), SlayerTimer.hasCycle(), SlayerTimer.cycleElapsedSeconds()))
         if (lines.isEmpty()) return
 
         drawBlock(ctx, FishSettings.slayerTimerHudX, FishSettings.slayerTimerHudY,
             FishSettings.slayerTimerHudScale, lines)
     }
 
+    private class TimerData(
+        val running: Boolean, val elapsed: Double, val hasResult: Boolean, val lastResult: Double,
+        val hasType: Boolean, val pb: Double, val wasPb: Boolean, val lastCycle: Double, val hasCycle: Boolean, val since: Double,
+    )
+
+    private fun timerLines(d: TimerData): List<String> {
+        val lines = ArrayList<String>(4)
+        if (d.running) {
+            if (FishSettings.slayerTimerShowCurrent)
+                lines.add("§6Boss: §f${fishmod.utils.Fmt.f2(d.elapsed)}s")
+        } else if (d.hasResult) {
+            lines.add("§6Boss: §f${fishmod.utils.Fmt.f2(d.lastResult)}s")
+            if (FishSettings.slayerTimerShowPb && d.hasType) {
+                lines.add("§7PB: §f" + if (d.pb > 0) fishmod.utils.Fmt.f2(d.pb) + "s" else "—")
+            }
+            if (FishSettings.slayerTimerShowNewPb && d.wasPb)
+                lines.add("§a§lNEW PB!")
+        }
+        if (FishSettings.slayerTimerShowCycle) {
+            if (d.lastCycle >= 0.0)
+                lines.add("§7Cycle: §f${fishmod.utils.Fmt.f1(d.lastCycle)}s")
+            if (d.hasCycle && d.since in 0.0..1800.0)
+                lines.add("§7Since kill: §f${fishmod.utils.Fmt.f1(d.since)}s")
+        }
+        return lines
+    }
+
+    private fun drawLines(ctx: GuiGraphicsExtractor, lines: List<String>) =
+        HudPreview.drawText(ctx, lines, FishConstants.TEXT_HEIGHT + 2)
+
     private fun drawBlock(
         ctx: GuiGraphicsExtractor, x: Int, y: Int, scale: Double,
         lines: List<String>,
     ) {
-        val mc = Minecraft.getInstance()
-        val lh = FishConstants.TEXT_HEIGHT + 2
         val sc = scale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        for (i in lines.indices) ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
+        drawLines(ctx, lines)
         ctx.pose().popMatrix()
     }
 
