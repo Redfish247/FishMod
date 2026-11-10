@@ -20,6 +20,7 @@ object GardenTitles {
         Garden.hud("Garden Titles", "garden_titles", 160, 24,
             { S.gardenTitleX }, { S.gardenTitleX = it }, { S.gardenTitleY }, { S.gardenTitleY = it },
             { S.gardenTitleScale }, { S.gardenTitleScale = it },
-            { System.currentTimeMillis() < until }) { lines }
+            { System.currentTimeMillis() < until },
+            example = { listOf(Garden.legacy(S.gardenVisitorFullColor) + "Visitor Queue Full!") }) { lines }
     }
 }

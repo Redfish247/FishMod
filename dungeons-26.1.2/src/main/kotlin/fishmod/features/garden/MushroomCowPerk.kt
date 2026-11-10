@@ -60,7 +60,8 @@ object MushroomCowPerk {
         Garden.hud("Mooshroom Cow Perk", "garden_mushroom", 150, 36,
             { S.gardenMushroomHudX }, { S.gardenMushroomHudX = it }, { S.gardenMushroomHudY }, { S.gardenMushroomHudY = it },
             { S.gardenMushroomHudScale }, { S.gardenMushroomHudScale = it },
-            { S.gardenMushroom && Garden.inGarden() && petActive() }, { S.gardenMushroom }) { hudLines() }
+            { S.gardenMushroom && Garden.inGarden() && petActive() }, { S.gardenMushroom },
+            example = { hudLines(123_456.0, 2.5) }) { hudLines() }
     }
 
     private fun onBlock(p: ClientboundBlockUpdatePacket) {
@@ -91,6 +92,12 @@ object MushroomCowPerk {
     }
 
     private fun hudLines(): List<String> {
+        val perSec = if (breaks.size >= 5) breaks.size / 60.0 * PetHud.activePetLevel().coerceIn(0, 100) / 100.0 else 0.0
+        return hudLines(total, perSec)
+    }
+
+    // total < 0 = not synced yet; perSec <= 0 hides the ETA; shared with the HUD editor example
+    private fun hudLines(total: Double, perSec: Double): List<String> {
         val c = Garden.legacy(S.gardenMushroomColor)
         if (total < 0) return listOf("$c§lMooshroom Cow Perk", "§cOpen §e/cropmilestones §cto sync")
         var rest = total.toLong()
@@ -103,10 +110,7 @@ object MushroomCowPerk {
             "§7Mushroom Milestone §f$tier",
             "§e${"%,d".format(rest)}§8/§e${"%,d".format(step)} §8(${"%.1f".format(rest * 100.0 / step)}%)"
         )
-        if (S.gardenMushroomEta && breaks.size >= 5) {
-            val perSec = breaks.size / 60.0 * PetHud.activePetLevel().coerceIn(0, 100) / 100.0
-            if (perSec > 0) out += "§7ETA: §b" + eta(((step - rest) / perSec).toLong())
-        }
+        if (S.gardenMushroomEta && perSec > 0) out += "§7ETA: §b" + eta(((step - rest) / perSec).toLong())
         return out
     }
 

@@ -77,6 +77,7 @@ object FarmingProfitTracker {
         FishHudEditor.register("Farming Profit", { S.gardenProfitHudX }, { S.gardenProfitHudX = it },
             { S.gardenProfitHudY }, { S.gardenProfitHudY = it }, 180, 120, { S.gardenProfitHudScale }, { S.gardenProfitHudScale = it },
             { S.gardenProfit })
+        MiningHuds.registerExample("Farming Profit", ::exampleLines)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_profit")) { ctx, _ ->
             val mc = Minecraft.getInstance()
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
@@ -228,17 +229,19 @@ object FarmingProfitTracker {
 
     fun lines(): List<String> = cache.get(version, ::buildLines)
 
-    private fun buildLines(): List<String> {
-        val t = tracker()
+    private fun buildLines(): List<String> = buildLines(tracker(), ::priceOf, true, S.gardenRareCropCount)
+
+    // live = the in-game HUD (keeps the inventory scroll); false = the HUD editor example over example data
+    private fun buildLines(t: Tracker, price: (String) -> Double, live: Boolean, rareCount: Int): List<String> {
         val only = Cat.of(S.gardenProfitCategory)
         val rows = ProfitTrackerKit.sort(ProfitTrackerKit.mergeSources(t.items.mapNotNull { (k, n) ->
             val cat = runCatching { Cat.valueOf(k.substringBefore('|')) }.getOrNull() ?: return@mapNotNull null
             if (only != null && cat != only) return@mapNotNull null
             val name = k.substringAfter('|')
-            Row(cat, name, n, priceOf(name) * n)
+            Row(cat, name, n, price(name) * n)
         }), S.gardenProfitSort)
         val max = S.gardenProfitLines.coerceIn(5, 25)
-        scroll = scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0))
+        val scroll = if (live) this.scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0)).also { this.scroll = it } else 0
         val out = ArrayList<String>()
         out += "${Garden.legacy(S.gardenProfitColor)}§lFarming Profit §7(${S.gardenProfitCategory}, ${S.gardenProfitMode})"
         if (scroll > 0) out += "§8  ▲ $scroll more"
@@ -263,8 +266,18 @@ object FarmingProfitTracker {
         out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
         if (t.feverMs > 0) out += "${Garden.legacy(S.gardenFeverColor)}Crop Fever §f${fishmod.features.diana.DianaTracker.fmtTime(t.feverMs)}"
         out += "§eProfit §6${Garden.short(profit)} §7(${Garden.short(ph)}/h)"
-        out += "${Garden.legacy(S.gardenRareCropColor)}Rare Crops §f${"%,d".format(S.gardenRareCropCount)}"
+        out += "${Garden.legacy(S.gardenRareCropColor)}Rare Crops §f${"%,d".format(rareCount)}"
         return out
+    }
+
+    private val EXAMPLE_PRICES = mapOf("Enchanted Potato" to 280.0, "Compost" to 3500.0, "Pesterminator" to 120000.0)
+
+    private fun exampleLines(): List<String> {
+        val t = Tracker()
+        for ((k, n) in listOf("CROPS|Enchanted Potato" to 960L, "PESTS|Compost" to 14L, "RARE|Pesterminator" to 1L)) t.items[k] = n
+        t.counts["Pests Killed"] = 17; t.counts["Visitors"] = 22; t.counts["Copper"] = 4_800; t.counts["Garden XP"] = 9_100
+        t.timeMs = 3_725_000L
+        return buildLines(t, { EXAMPLE_PRICES[it] ?: 0.0 }, false, 7)
     }
 
     private val COUNT_COLOR = mapOf("Pests Killed" to "§c", "Visitors" to "§a", "Copper" to "§6", "Garden XP" to "§2", "Rare Crops" to "§d")

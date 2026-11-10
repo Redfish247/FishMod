@@ -22,10 +22,11 @@ object GardenMisc {
         Garden.hud("Log Book", "garden_logbook", 150, 50,
             { S.gardenLogBookHudX }, { S.gardenLogBookHudX = it }, { S.gardenLogBookHudY }, { S.gardenLogBookHudY = it },
             { S.gardenLogBookHudScale }, { S.gardenLogBookHudScale = it },
-            { S.gardenLogBookHud && Garden.inGarden() && logBook.isNotEmpty() }, { S.gardenLogBookHud }) {
-            listOf(Garden.legacy(S.gardenLogBookColor) + "§lLog Book") + logBook.map { "§7${it.key}: §f${it.value}" }
-        }
+            { S.gardenLogBookHud && Garden.inGarden() && logBook.isNotEmpty() }, { S.gardenLogBookHud },
+            example = { logLines(mapOf("Visitors Served" to "142", "Unique Visitors" to "38/90")) }) { logLines(logBook) }
     }
+
+    private fun logLines(rows: Map<String, String>) = listOf(Garden.legacy(S.gardenLogBookColor) + "§lLog Book") + rows.map { "§7${it.key}: §f${it.value}" }
 
     // Caches "Name: x/y" stat lines from the Logbook menu's info item
     private fun scanLogBook() {
