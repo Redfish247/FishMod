@@ -113,8 +113,8 @@ object Blessings {
     private fun registerPreview() {
         HudPreview.register(NAME) {
             val levels = mapOf(Type.POWER to 14, Type.LIFE to 12, Type.WISDOM to 9, Type.STONE to 11, Type.TIME to 5)
-            var rows = Type.entries.filter { it.enabled() }.map { it to levels.getValue(it) }
-            if (rows.isEmpty()) rows = listOf(Type.POWER to levels.getValue(Type.POWER))
+            val rows = Type.entries.filter { it.enabled() }.map { it to levels.getValue(it) }
+            if (rows.isEmpty()) return@register null
             val font = Minecraft.getInstance().font
             HudExample(rows.maxOf { font.width(label(it.first, it.second)) }, HudPreview.textHeight(rows.size, LINE_H)) { drawRows(it, rows) }
         }

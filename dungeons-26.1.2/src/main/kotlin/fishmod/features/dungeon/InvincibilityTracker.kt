@@ -170,13 +170,13 @@ object InvincibilityTracker {
         }
     }
 
-    private fun visible(t: Type): Boolean {
+    private fun visible(t: Type, active: Int = t.active, cooldown: Int = t.cooldown): Boolean {
         if (!t.show()) return false
         return when (FishSettings.invincShowWhen) {
             "Always" -> true
-            "Active" -> t.active > 0
-            "Cooldown" -> t.cooldown > 0
-            else -> t.active > 0 || t.cooldown > 0
+            "Active" -> active > 0
+            "Cooldown" -> cooldown > 0
+            else -> active > 0 || cooldown > 0
         }
     }
 
@@ -228,13 +228,22 @@ object InvincibilityTracker {
         }
     }
 
-    // Example data: obviously fake states for each enabled type (all three when none is enabled)
+    // Example data: states the "Show When" mode would show, filtered by the live visible() check
+    private fun exampleState(t: Type): Pair<Int, Int> {
+        val mode = FishSettings.invincShowWhen
+        return when (t) {
+            Type.SPIRIT -> if (mode == "Active") 20 to 600 else 0 to 300
+            Type.BONZO -> when (mode) { "Always" -> 0 to 0; "Active" -> 50 to 3600; else -> 0 to 2400 }
+            Type.PHOENIX -> if (mode == "Cooldown") 0 to 900 else 40 to 1200
+        }
+    }
+
     private fun registerPreview() {
         HudPreview.register(NAME) {
             val font = Minecraft.getInstance().font
-            val states = mapOf(Type.SPIRIT to (0 to 300), Type.BONZO to (0 to 0), Type.PHOENIX to (40 to 1200))
-            val types = Type.entries.filter { it.show() }.ifEmpty { Type.entries.toList() }
-            val rows = types.map { Row(it, states.getValue(it).first, states.getValue(it).second, "§e") }
+            val rows = Type.entries.map { it to exampleState(it) }.filter { (t, s) -> visible(t, s.first, s.second) }
+                .map { (t, s) -> Row(t, s.first, s.second, "§e") }
+            if (rows.isEmpty()) return@register null
             var w = 0
             var y = 0
             var h = 0

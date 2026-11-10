@@ -46,7 +46,8 @@ object VenoStackCount {
         )
         HudPreview.register(NAME) {
             val font = Minecraft.getInstance().font
-            HudExample(HudPreview.textWidth(listOf("3.4s", "20/$MAX_STACKS")), HudPreview.textHeight(2)) { ctx -> drawStacks(ctx, font, "3.4s", 20) }
+            val t = timeText(3400L)
+            HudExample(HudPreview.textWidth(listOf(t, "20/$MAX_STACKS")), HudPreview.textHeight(2)) { ctx -> drawStacks(ctx, font, t, 20) }
         }
         FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
@@ -127,9 +128,11 @@ object VenoStackCount {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.venoStackHudX.toFloat(), FishSettings.venoStackHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        drawStacks(ctx, mc.font, fishmod.utils.Fmt.f1(left / 1000.0) + "s", stacks)
+        drawStacks(ctx, mc.font, timeText(left), stacks)
         ctx.pose().popMatrix()
     }
+
+    private fun timeText(leftMs: Long) = fishmod.utils.Fmt.f1(leftMs / 1000.0) + "s"
 
     private fun drawStacks(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, timeText: String, stacks: Int) {
         ctx.text(font, timeText, 0, 0, 0xFFFFFF55.toInt(), true)
