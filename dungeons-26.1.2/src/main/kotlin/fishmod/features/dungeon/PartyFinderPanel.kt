@@ -152,8 +152,7 @@ object PartyFinderPanel {
             if (all.isNotEmpty()) {
                 val px = FishSettings.pfListX.coerceIn(2, (mc.window.guiScaledWidth - PANEL_W - 2).coerceAtLeast(2))
                 val py = FishSettings.pfListY.coerceIn(2, (mc.window.guiScaledHeight - 30).coerceAtLeast(2))
-                ctx.text(font, "§e§lParty Finder §7(§c0§8/${all.size}§7) §6⚑", px, py + 2, -1, true)
-                ctx.text(font, "§8no parties match — $summary", px, py + HEADER_H, -1, true)
+                drawNoMatch(ctx, font, px, py, all.size, summary)
             }
             return
         }
@@ -171,9 +170,7 @@ object PartyFinderPanel {
         val panelX = FishSettings.pfListX.coerceIn(2, (sw - PANEL_W - 2).coerceAtLeast(2))
         val panelY = FishSettings.pfListY.coerceIn(2, (mc.window.guiScaledHeight - panelH - 2).coerceAtLeast(2))
 
-        val tag = if (maxScroll > 0) "  §8${scroll + 1}-${scroll + visible} / ${parties.size}" else ""
-        val count = if (all.size != parties.size) "§7(§f${parties.size}§8/${all.size}§7) §6⚑ §8$summary" else "§7(§f${parties.size}§7)"
-        drawHeader(ctx, font, panelX, panelY, "§e§lParty Finder $count$tag")
+        drawHeader(ctx, font, panelX, panelY, headerText(parties.size, all.size, scroll, visible, maxScroll, summary))
 
         val hoveredMenuIdx = acc.`fishmod$getHoveredSlot`()?.index ?: -1
         val rects = ArrayList<IntArray>(visible)
@@ -200,6 +197,17 @@ object PartyFinderPanel {
             ctx.fill(sx - 1, sy, sx, sy + 16, 0xFF4CC2FF.toInt())
             ctx.fill(sx + 16, sy, sx + 17, sy + 16, 0xFF4CC2FF.toInt())
         }
+    }
+
+    private fun headerText(shown: Int, total: Int, scroll: Int, visible: Int, maxScroll: Int, summary: String): String {
+        val tag = if (maxScroll > 0) "  §8${scroll + 1}-${scroll + visible} / $shown" else ""
+        val count = if (total != shown) "§7(§f$shown§8/$total§7) §6⚑ §8$summary" else "§7(§f$shown§7)"
+        return "§e§lParty Finder $count$tag"
+    }
+
+    private fun drawNoMatch(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, px: Int, py: Int, total: Int, summary: String) {
+        ctx.text(font, "§e§lParty Finder §7(§c0§8/$total§7) §6⚑", px, py + 2, -1, true)
+        ctx.text(font, "§8no parties match — $summary", px, py + HEADER_H, -1, true)
     }
 
     private fun drawHeader(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, panelX: Int, panelY: Int, text: String) {
@@ -235,20 +243,27 @@ object PartyFinderPanel {
         ctx.text(font, clip(font, line2, PANEL_W - 14), panelX + 10, ry + 12, -1, true)
     }
 
-    // Example data: fake leaders and notes, no PB lookups
+    // Example data: fake leaders and notes, no PB lookups; the player's filters apply like in game
     private fun registerPreview() {
         fishmod.features.HudPreview.register("Party Finder List") {
-            val ex = listOf(
+            val all = listOf(
                 Party(0, "ExampleLeader", 3, 5, 7, true, setOf("Archer", "Healer", "Mage"), listOf("ExampleA", "ExampleB"), "s+ runs, no leechers", 40),
                 Party(1, "ExampleTwo", 2, 5, 7, false, setOf("Tank", "Mage"), listOf("ExampleC"), "chill run", 35),
                 Party(2, "ExampleThree", 4, 5, 6, false, setOf("Berserk", "Healer", "Mage", "Tank"), listOf("ExampleD"), null, 30),
                 Party(3, "ExampleFour", 5, 5, 4, false, CLASSES.toSet(), emptyList(), null, 0),
             )
-            val visible = minOf(FishSettings.pfListMaxRows.coerceIn(3, 10), ex.size)
+            val ex = all.filter(::passesFilter)
             val font = Minecraft.getInstance().font
+            val summary = filterSummary()
+            if (ex.isEmpty()) {
+                val w = maxOf(font.width("§e§lParty Finder §7(§c0§8/${all.size}§7) §6⚑"), font.width("§8no parties match — $summary"))
+                return@register fishmod.features.HudExample(w, HEADER_H + fishmod.features.HudPreview.TEXT_H) { ctx -> drawNoMatch(ctx, font, 0, 0, all.size, summary) }
+            }
+            val visible = minOf(FishSettings.pfListMaxRows.coerceIn(3, 10), ex.size)
+            val header = headerText(ex.size, all.size, 0, visible, ex.size - visible, summary)
             fishmod.features.HudExample(PANEL_W, HEADER_H + visible * ROW_H + PAD) { ctx ->
-                drawHeader(ctx, font, 0, 0, "§e§lParty Finder §7(§f${ex.size}§7)")
-                for (i in 0 until visible) drawRow(ctx, font, 0, HEADER_H + i * ROW_H, i, ex[i], false) { "§7wPB §fExample §7§f5:48" }
+                drawHeader(ctx, font, 0, 0, header)
+                for (i in 0 until visible) drawRow(ctx, font, 0, HEADER_H + i * ROW_H, i, ex[i], false) { wpbText("Example", 348, false) }
             }
         }
     }
@@ -268,8 +283,12 @@ object PartyFinderPanel {
             if (sec > worstSec) { worstSec = sec; worstName = n }
         }
         if (worstName == null) return if (pending) "§8wPB …" else "§8wPB —"
-        val t = if (worstSec == Int.MAX_VALUE) "§cno S+" else "§f${worstSec / 60}:${(worstSec % 60).toString().padStart(2, '0')}"
-        return "§7wPB §f$worstName §7$t${if (pending) " §8…" else ""}"
+        return wpbText(worstName, worstSec, pending)
+    }
+
+    private fun wpbText(name: String, sec: Int, pending: Boolean): String {
+        val t = if (sec == Int.MAX_VALUE) "§cno S+" else "§f${sec / 60}:${(sec % 60).toString().padStart(2, '0')}"
+        return "§7wPB §f$name §7$t${if (pending) " §8…" else ""}"
     }
 
     private var cachedAll: List<Party> = emptyList()
