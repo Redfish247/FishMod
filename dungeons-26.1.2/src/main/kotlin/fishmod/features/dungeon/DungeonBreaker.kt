@@ -38,7 +38,9 @@ object DungeonBreaker {
             { FishSettings.dungeonBreakerHudX }, { v -> FishSettings.dungeonBreakerHudX = v },
             { FishSettings.dungeonBreakerHudY }, { v -> FishSettings.dungeonBreakerHudY = v },
             80, 10,
-            { FishSettings.dungeonBreakerHudScale }, { v -> FishSettings.dungeonBreakerHudScale = v }
+            { FishSettings.dungeonBreakerHudScale }, { v -> FishSettings.dungeonBreakerHudScale = v },
+            java.util.function.BooleanSupplier { FishSettings.dungeonBreakerEnabled && FishSettings.dungeonBreakerHudEnabled },
+            java.util.function.BooleanSupplier { FishSettings.dungeonBreakerEnabled && FishSettings.dungeonBreakerHudEnabled }
         )
 
         AttackBlockCallback.EVENT.register(AttackBlockCallback { player, level, hand, pos, _ ->

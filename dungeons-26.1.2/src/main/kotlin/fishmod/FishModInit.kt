@@ -1458,7 +1458,7 @@ class FishModInit : ClientModInitializer {
             FishHudEditor.SCORE_TITLE_W, 9,
             { fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale.toDouble() },
             { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale = v.toFloat() },
-            { fishmod.utils.config.values.DungeonMapSettings.mapScoreMessages }
+            { fishmod.utils.config.values.DungeonMapSettings.mapScoreMessages && (fishmod.utils.config.values.DungeonMapSettings.mapScore270Title || fishmod.utils.config.values.DungeonMapSettings.mapScore300Title) }
         )
 
         fishmod.features.scoreboard.CustomScoreboard.registerPreview()

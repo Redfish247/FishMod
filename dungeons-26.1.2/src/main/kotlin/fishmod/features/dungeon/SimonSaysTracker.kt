@@ -142,7 +142,8 @@ object SimonSaysTracker {
             { FishSettings.simonSaysHudY }, { v -> FishSettings.simonSaysHudY = v },
             110, 14,
             { FishSettings.simonSaysHudScale }, { v -> FishSettings.simonSaysHudScale = v },
-            { FishSettings.simonSaysHudEnabled }
+            java.util.function.BooleanSupplier { FishSettings.simonSaysEnabled && FishSettings.simonSaysHudEnabled },
+            java.util.function.BooleanSupplier { FishSettings.simonSaysEnabled && FishSettings.simonSaysHudEnabled }
         )
     }
 
