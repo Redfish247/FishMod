@@ -37,9 +37,9 @@ object MapInfoHud {
     }
 
     private fun render(g: GuiGraphicsExtractor, mc: Minecraft, edit: Boolean) {
-        val info = info(edit && Scan.rooms.isEmpty())
-        val l1 = line1(info)
-        val l2 = line2(info)
+        val data = info(edit && Scan.rooms.isEmpty())
+        val l1 = line1(data)
+        val l2 = line2(data)
         if (l1.isEmpty() && l2.isEmpty()) return
 
         val s = DungeonMapSettings.mapInfoScale.coerceIn(0.5f, 20.0f)
