@@ -382,15 +382,29 @@ object SlayerProfitTracker {
         }
     }
 
-    private fun buildDisplay(type: SlayerType, tier: Int, interactive: Boolean): List<DisplayRow> {
+    private val EX_ROWS = listOf(
+        Row("Foul Flesh", 214, 5_350_000.0, true, id = "FOUL_FLESH"),
+        Row("Revenant Flesh", 96, 1_200_000.0, true, id = "REVENANT_FLESH"),
+        Row("Mob Kill Coins", 140, 640_000.0, true, true),
+        Row("Scythe Blade", 1, 0.0, false),
+    )
+
+    // Example data through the real row builder, never cached, for the HUD editor preview
+    fun exampleDisplay(type: SlayerType, tier: Int): List<DisplayRow> = buildDisplay(type, tier, false, true)
+
+    private fun buildDisplay(type: SlayerType, tier: Int, interactive: Boolean, example: Boolean = false): List<DisplayRow> {
         val k = key(type, tier)
         val out = ArrayList<DisplayRow>(24)
-        val allRows = rows(type, tier)
+        val allRows = if (example) EX_ROWS else rows(type, tier)
+        val exBosses = 38L
+        val exCost = 1_900_000.0
+        val exMs = 5_400_000L
+        fun isHid(name: String) = !example && isHiddenKey(k, name)
 
         val cat = "${type.displayName} $tier"
         out.add(
-            if (resetArmed()) DisplayRow("§c§lClick again to reset ${modeLabel()}!", "", "title")
-            else DisplayRow("§e§l$cat Profit §7(${modeLabel()})" + (if (isPaused()) " §8(idle)" else ""), "", "title")
+            if (!example && resetArmed()) DisplayRow("§c§lClick again to reset ${modeLabel()}!", "", "title")
+            else DisplayRow("§e§l$cat Profit §7(${modeLabel()})" + (if (!example && isPaused()) " §8(idle)" else ""), "", "title")
         )
 
         val cap = FishSettings.slayerProfitLines.coerceIn(3, 30)
@@ -401,7 +415,7 @@ object SlayerProfitTracker {
         var collapsedValue = 0.0
         var collapsedCount = 0
         for (r in allRows) {
-            val hiddenRow = isHiddenKey(k, r.name)
+            val hiddenRow = isHid(r.name)
             if (hiddenRow && !revealHidden) continue
             if (!hiddenRow && (visibleShown >= cap || (minVal > 0 && r.value < minVal && !r.coins))) {
                 collapsedValue += r.value
@@ -426,12 +440,14 @@ object SlayerProfitTracker {
             out.add(DisplayRow("§7| §8$collapsedCount more $noun", "§6${sh(collapsedValue)}", "collapsed"))
         }
 
-        out.add(DisplayRow("§7Bosses §f${sep(bosses(type, tier).toLong())}", "", "bosses"))
-        out.add(DisplayRow("§7Spawn Costs §c-${sh(spawnCost(type, tier).toDouble())}", "", "cost"))
-        out.add(DisplayRow("§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(activeMs(type, tier))}", "", "time"))
+        val ms = if (example) exMs else activeMs(type, tier)
+        val cost = if (example) exCost else spawnCost(type, tier).toDouble()
+        out.add(DisplayRow("§7Bosses §f${sep(if (example) exBosses else bosses(type, tier).toLong())}", "", "bosses"))
+        out.add(DisplayRow("§7Spawn Costs §c-${sh(cost)}", "", "cost"))
+        out.add(DisplayRow("§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(ms)}", "", "time"))
 
-        val p = profit(type, tier, allRows)
-        val pph = profitPerHour(type, tier, p)
+        val p = if (example) allRows.sumOf { it.value } - cost else profit(type, tier, allRows)
+        val pph = if (example) p * 3_600_000.0 / ms else profitPerHour(type, tier, p)
         val pc = if (p < 0) "§c" else "§6"
         val rc = if (pph < 0) "§c" else "§7"
         out.add(DisplayRow("§eProfit $pc${sh(p)} §7($rc${sh(pph)}§7/h)", "", "profit"))
