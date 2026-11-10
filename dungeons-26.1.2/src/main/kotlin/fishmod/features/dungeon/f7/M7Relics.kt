@@ -5,6 +5,7 @@ import fishmod.compat.hudHidden
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
 import fishmod.features.dungeon.PbMessages
 import fishmod.utils.ChatQueue
 import fishmod.utils.FishConstants
@@ -64,6 +65,7 @@ object M7Relics {
             60, 12,
             { FishSettings.relicTimerScale }, { v -> FishSettings.relicTimerScale = v }
         )
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(1850))) }
 
         FishEvents.chat.register { text ->
             val msg = COLOR.replace(text.chatRaw, "")
@@ -180,6 +182,8 @@ object M7Relics {
         FishDraw.renderThickOutline(matrices, vc, box, FishDraw.toFloats(relic.argb), 0.02)
     }
 
+    private fun label(leftMs: Long) = "§dRelic §f" + Fmt.f2(leftMs / 1000.0) + "s"
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!Floor7Settings.relicStartHud) return
@@ -192,7 +196,7 @@ object M7Relics {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.relicTimerHudX.toFloat(), FishSettings.relicTimerHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, "§dRelic §f" + Fmt.f2(left / 1000.0) + "s", 0, 0, -1, true)
+        ctx.text(mc.font, label(left), 0, 0, -1, true)
         ctx.pose().popMatrix()
     }
 }

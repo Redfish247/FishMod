@@ -1,5 +1,7 @@
 package fishmod.features.dungeon
 
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.FishConstants
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
@@ -76,15 +78,23 @@ object FishPuzzleDisplay {
     @JvmStatic
     fun display(): Boolean = FishSettings.showPuzzles && !bossReached && puzzles.isNotEmpty()
 
+    private val EXAMPLE = listOf("Puzzles: (3)", "Creeper Beams: [✔]", "Ice Path: [✦]", "???: [✦]")
+
+    // HUD editor example: the real render over example tab lines; box is the text, like in game
+    @JvmStatic
+    fun example(): HudExample =
+        HudPreview.component(puzzleHud, ::render, HudPreview.textWidth(EXAMPLE), HudPreview.textHeight(EXAMPLE.size, FishConstants.TEXT_HEIGHT))
+
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         val client = Minecraft.getInstance()
         val x = component.scaledX
         val y = component.scaledY
 
+        val list = if (HudPreview.active) EXAMPLE else puzzles
         try {
-        for (i in puzzles.indices) {
-            val puzzle = puzzles[i]
+        for (i in list.indices) {
+            val puzzle = list[i]
             val color = when {
                 puzzle.startsWith("Puzzles:") -> 0xFFFFFFFF.toInt()
                 puzzle.contains("✔") -> FishConstants.GREEN

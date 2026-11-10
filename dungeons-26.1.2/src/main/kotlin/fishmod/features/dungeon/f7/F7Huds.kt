@@ -157,6 +157,7 @@ object F7Huds {
         HudPreview.register("Goldor Splits") {
             HudPreview.component(GoldorSection.goldorSplitsBox, GoldorSection::render, GoldorSection.SPLIT_LENGTH, HudPreview.textHeight(4, FishConstants.TEXT_HEIGHT))
         }
+        HudPreview.register("Puzzles") { fishmod.features.dungeon.FishPuzzleDisplay.example() }
         HudPreview.register("Run Splits") { BossPhase.runSplitsExample() }
         HudPreview.register("Est. Total (follows Splits)") { FishEstTotal.example() }
         ex("Crystal Respawn", crystalRespawnBox, MaxorCrystalTimer::render)

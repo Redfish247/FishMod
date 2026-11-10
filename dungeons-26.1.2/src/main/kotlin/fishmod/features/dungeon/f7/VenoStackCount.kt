@@ -2,6 +2,8 @@ package fishmod.features.dungeon.f7
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.features.item.fishmodCustomDataTag
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
@@ -42,6 +44,10 @@ object VenoStackCount {
             40, 20,
             { FishSettings.venoStackScale }, { v -> FishSettings.venoStackScale = v }
         )
+        HudPreview.register(NAME) {
+            val font = Minecraft.getInstance().font
+            HudExample(HudPreview.textWidth(listOf("3.4s", "20/$MAX_STACKS")), HudPreview.textHeight(2)) { ctx -> drawStacks(ctx, font, "3.4s", 20) }
+        }
         FishEvents.worldChange.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register {
             try { onTick() } catch (e: Exception) { FishDiag.fail("VenoStackCount.1", "veno stack tick threw (beams=${beams.size})", e) }
@@ -121,8 +127,12 @@ object VenoStackCount {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.venoStackHudX.toFloat(), FishSettings.venoStackHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, fishmod.utils.Fmt.f1(left / 1000.0) + "s", 0, 0, 0xFFFFFF55.toInt(), true)
-        ctx.text(mc.font, "$stacks/$MAX_STACKS", 0, 10, if (stacks >= MAX_STACKS) 0xFFFF5555.toInt() else 0xFFFFFFFF.toInt(), true)
+        drawStacks(ctx, mc.font, fishmod.utils.Fmt.f1(left / 1000.0) + "s", stacks)
         ctx.pose().popMatrix()
+    }
+
+    private fun drawStacks(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, timeText: String, stacks: Int) {
+        ctx.text(font, timeText, 0, 0, 0xFFFFFF55.toInt(), true)
+        ctx.text(font, "$stacks/$MAX_STACKS", 0, 10, if (stacks >= MAX_STACKS) 0xFFFF5555.toInt() else 0xFFFFFFFF.toInt(), true)
     }
 }
