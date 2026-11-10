@@ -646,6 +646,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
 
     private fun perfSample(): Sample {
+        // Real current values; fall back to the preset sample below
+        val live = try { PerformanceHud.liveLines() } catch (_: Throwable) { emptyList() }
+        if (live.isNotEmpty()) return if (FishSettings.perfHudHorizontal) Sample(listOf(live.joinToString("  "))) else Sample(live)
         val ls = listOfNotNull(
             "§7FPS: §a144".takeIf { FishSettings.perfHudFps },
             "§7TPS: §a19.9".takeIf { FishSettings.perfHudTps },
