@@ -268,7 +268,7 @@ object Stopwatch {
         var y = component.scaledY
         val rowH = font.lineHeight + 1
         val ex = HudPreview.active
-        val shownSplits = if (ex) EX_SPLITS else splits
+        val shownSplits = if (ex) exSplits() else splits
         val best = if (ex) EX_BEST_S else bestSeconds
         val hist = if (ex) EX_HISTORY else history
         val isRunning = !ex && running
@@ -291,12 +291,15 @@ object Stopwatch {
     private val EX_SPLITS = listOf(31_200_000_000L, 41_140_000_000L)
     private val EX_HISTORY = listOf(70_010_000_000L, 68_900_000_000L, 66_500_000_000L)
 
+    // Example splits only when splits can happen (split trigger or key set)
+    private fun exSplits(): List<Long> = if (splitTrigger != Trigger.NONE || splitKey?.isUnbound == false) EX_SPLITS else emptyList()
+
     // Same rows as render() on example data, so the drag box matches the in-game size
     private fun exampleSize(): Pair<Int, Int> {
         val font = Minecraft.getInstance().font
         var w = font.width(prefix) + font.width(fmt(EX_NS))
         var rows = 1
-        EX_SPLITS.forEachIndexed { i, s -> w = maxOf(w, 4 + font.width("Split ${i + 1}: ${fmt(s)}")); rows++ }
+        exSplits().forEachIndexed { i, s -> w = maxOf(w, 4 + font.width("Split ${i + 1}: ${fmt(s)}")); rows++ }
         if (showBest) { w = maxOf(w, 4 + font.width("Best: ${fmt((EX_BEST_S * 1e9).toLong())}")); rows++ }
         for (h in EX_HISTORY.take(historyCount.coerceIn(0, 10))) { w = maxOf(w, 4 + font.width(fmt(h))); rows++ }
         return w to ((rows - 1) * (font.lineHeight + 1) + font.lineHeight)

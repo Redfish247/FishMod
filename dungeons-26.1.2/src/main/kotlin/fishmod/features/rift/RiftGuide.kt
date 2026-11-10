@@ -55,7 +55,7 @@ object RiftGuide {
     // Example data: one fake guide page with fake task names, built like rebuild()
     private fun registerPreview() {
         fishmod.features.HudPreview.register(NAME) {
-            val shown = listOf("#§e§lExample Page", "Example task one", "Example task two", "Example task three")
+            val shown = rows.ifEmpty { listOf("#§e§lExample Page", "Example task one", "Example task two", "Example task three") }
                 .take(S.riftGuideMaxLines.coerceAtLeast(1))
             val font = Minecraft.getInstance().font
             val w = shown.maxOf { font.width(if (it.startsWith("#")) it.substring(1) else "• $it") }
