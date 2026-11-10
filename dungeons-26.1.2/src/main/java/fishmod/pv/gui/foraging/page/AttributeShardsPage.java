@@ -46,6 +46,8 @@ import net.minecraft.world.item.Items;
 /** Attribute Shards subtab with dual-scroll grid + cost list. */
 public final class AttributeShardsPage {
 	private final List<HoverZone> zones = new ArrayList<>();
+	private record ClickZone(int x, int y, int w, int h, ForagingSnapshot.AttributeShardRow row) {}
+	private final List<ClickZone> clickZones = new ArrayList<>();
 	private final Map<String, AttributeShardTooltip.Info> shardInfo = new HashMap<>();
 
 	private int attrGridScroll;
@@ -81,7 +83,25 @@ public final class AttributeShardsPage {
 			this.attrGridScroll = 0;
 			return true;
 		}
+		for (ClickZone z : this.clickZones) {
+			if (ForagingUi.hit(mx, my, z.x(), z.y(), z.w(), z.h())) {
+				copyAndOpenBazaar(z.row());
+				return true;
+			}
+		}
 		return false;
+	}
+
+	// Copies the shards still needed and opens /bz for the shard.
+	private static void copyAndOpenBazaar(ForagingSnapshot.AttributeShardRow row) {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+		int need = Math.max(0, row.shardsForMax() - row.shardsOwned());
+		if (need > 0) {
+			mc.keyboardHandler.setClipboard(Integer.toString(need));
+		}
+		if (mc.player != null && row.name() != null && !row.name().isEmpty()) {
+			mc.player.connection.sendCommand("bz " + row.name());
+		}
 	}
 
 	private List<ForagingSnapshot.AttributeShardRow> gridOrder(List<ForagingSnapshot.AttributeShardRow> rows) {
@@ -126,6 +146,7 @@ public final class AttributeShardsPage {
 		int x, int y, int w, int h, int mx, int my
 	) {
 		this.zones.clear();
+		this.clickZones.clear();
 		int rightW = Math.max(210, w * 42 / 100);
 		int leftW = w - rightW - GAP;
 		PvDraw.innerPanel(g, x, y, leftW, h);
@@ -291,6 +312,15 @@ public final class AttributeShardsPage {
 			yy += rowH;
 		}
 		g.disableScissor();
+	}
+
+	// Click area clipped to its scroll viewport so hidden rows can't be hit.
+	private void addClick(int x, int y, int w, int h, int cx, int cy, int cw, int ch, ForagingSnapshot.AttributeShardRow row) {
+		int x0 = Math.max(x, cx), y0 = Math.max(y, cy);
+		int x1 = Math.min(x + w, cx + cw), y1 = Math.min(y + h, cy + ch);
+		if (x1 > x0 && y1 > y0) {
+			this.clickZones.add(new ClickZone(x0, y0, x1 - x0, y1 - y0, row));
+		}
 	}
 
 	private static ItemStack attributeIcon(ForagingSnapshot.AttributeShardRow row) {
