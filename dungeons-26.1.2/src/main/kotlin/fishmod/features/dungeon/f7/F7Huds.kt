@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.compat.BladeCompat
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.config.values.Floor7Settings
@@ -141,8 +142,15 @@ object F7Huds {
         { false }, PlayersLeaped::render, { Floor7Settings.playersLeapedEnabled }
     )
 
+    // Editor examples: each HUD's real render, fed example data while HudPreview.active
+    private fun examples() {
+        fun ex(name: String, c: HUDComponent, r: HUDComponent.RenderSupplier) = HudPreview.register(name) { HudPreview.component(c, r) }
+        ex("Boss Tick Clock", tickTimer, BossTickTimer::render)
+    }
+
     @JvmStatic
     fun init() {
+        examples()
         StormTicks.init()
         NecronLbTimer.init()
         NecronDropPredict.init()

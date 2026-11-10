@@ -30,6 +30,7 @@ object SoulflowHud {
             145, 14,
             { FishSettings.soulflowHudScale }, { v -> FishSettings.soulflowHudScale = v }
         )
+        HudPreview.register("Soulflow") { HudPreview.text(listOf(label(12345))) }
 
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             if (!FishSettings.soulflowHudEnabled) return@register
@@ -80,6 +81,12 @@ object SoulflowHud {
         }
     }
 
+    private fun label(soulflow: Int): String {
+        val warn = FishSettings.soulflowWarningThreshold > 0 && soulflow < FishSettings.soulflowWarningThreshold
+        return if (warn) "§3Soulflow: " + fishmod.utils.Fmt.grouped(soulflow.toLong()) + " ⚠"
+        else "§3Soulflow: §f" + fishmod.utils.Fmt.grouped(soulflow.toLong())
+    }
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tickCounter: DeltaTracker) {
         if (!FishSettings.soulflowHudEnabled) return
@@ -88,20 +95,12 @@ object SoulflowHud {
         if (!SkyblockLocation.inSkyblock()) return
         if (soulflow < 0) return
 
-        val warn = FishSettings.soulflowWarningThreshold > 0 && soulflow < FishSettings.soulflowWarningThreshold
-
-        val label = if (warn) {
-            "§3Soulflow: " + fishmod.utils.Fmt.grouped(soulflow.toLong()) + " ⚠"
-        } else {
-            "§3Soulflow: §f" + fishmod.utils.Fmt.grouped(soulflow.toLong())
-        }
-
         val sc = FishSettings.soulflowHudScale.toFloat()
         ctx.pose().pushMatrix()
         try {
             ctx.pose().translate(FishSettings.soulflowHudX.toFloat(), FishSettings.soulflowHudY.toFloat())
             ctx.pose().scale(sc, sc)
-            ctx.text(mc.font, label, 0, 0, -1, true)
+            HudPreview.drawText(ctx, listOf(label(soulflow)))
         } catch (e: Exception) {
             FishDiag.fail("SoulflowHud.3", "soulflow hud render failed", e)
         } finally {

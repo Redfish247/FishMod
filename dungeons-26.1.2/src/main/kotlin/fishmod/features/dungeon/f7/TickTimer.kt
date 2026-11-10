@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.events.FishEvents
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -48,6 +49,7 @@ object BossTickTimer {
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         try {
             when {
+                HudPreview.active -> MaxorTicks.render(component, context)
                 MaxorTicks.display() -> MaxorTicks.render(component, context)
                 StormTicks.display() -> StormTicks.render(component, context)
                 GoldorTicks.display() -> GoldorTicks.render(component, context)

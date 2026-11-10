@@ -81,6 +81,7 @@ object SpotifyLyricsHud {
             120, 12,
             { FishSettings.spotifyLyricsScale }, { v -> FishSettings.spotifyLyricsScale = v },
             { true }, { FishSettings.spotifyLyricsEnabled })
+        HudPreview.register(NAME) { val s = previewSize(); HudExample(s[0], s[1]) { drawPreview(it) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "spotify_lyrics_hud")) { ctx, _ -> draw(ctx) }
         Runtime.getRuntime().addShutdownHook(Thread { stop() })
     }
