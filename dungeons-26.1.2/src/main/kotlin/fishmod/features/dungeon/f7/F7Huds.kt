@@ -5,6 +5,9 @@ import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.config.values.Floor7Settings
+import fishmod.features.dungeon.FishEstTotal
+import fishmod.utils.FishConstants
+import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.dungeon.GoldorSection
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -150,6 +153,12 @@ object F7Huds {
             HudPreview.component(c, r, HudPreview.textWidth(listOf(sample)), HudPreview.TEXT_H)
         }
         ex("Boss Tick Clock", tickTimer, BossTickTimer::render)
+        HudPreview.register("Terminal Tracker") { TerminalTracker.example() }
+        HudPreview.register("Goldor Splits") {
+            HudPreview.component(GoldorSection.goldorSplitsBox, GoldorSection::render, GoldorSection.SPLIT_LENGTH, HudPreview.textHeight(4, FishConstants.TEXT_HEIGHT))
+        }
+        HudPreview.register("Run Splits") { BossPhase.runSplitsExample() }
+        HudPreview.register("Est. Total (follows Splits)") { FishEstTotal.example() }
         ex("Crystal Respawn", crystalRespawnBox, MaxorCrystalTimer::render)
         ex("Crystal Not Placed", crystalReminder, MaxorCrystalTimer::renderNotification)
         ex("Storm Kill Time", stormKillBox, StormTicks::renderDeathTime)

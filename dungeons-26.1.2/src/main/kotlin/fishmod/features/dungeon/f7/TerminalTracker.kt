@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.utils.events.chatRaw
+import fishmod.features.HudExample
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.SkyblockLocation
@@ -171,6 +172,31 @@ object TerminalTracker {
     private fun renderInner(component: HUDComponent, context: GuiGraphicsExtractor) {
         val font = Minecraft.getInstance().font ?: return
         val cur = st.current(GoldorSection.getSection()).coerceIn(1, MAX_SECTION)
+        drawLines(context, font, buildLines(st, cur), component.scaledX, component.scaledY)
+    }
+
+    // Editor example: a mid-run state (section 2) through the same line builder and draw
+    @JvmStatic
+    fun example(): HudExample {
+        val font = Minecraft.getInstance().font
+        val ex = TerminalTrackerState()
+        ex.sectionChanged(1, 0)
+        ex.list(1).forEachIndexed { i, sl -> sl.player = "Player${i % 4 + 1}"; sl.doneAt = 1500L + i * 900 }
+        ex.gates[1] = 4000L
+        ex.sectionChanged(2, 9000)
+        ex.list(2).take(3).forEachIndexed { i, sl -> sl.player = "Player${i + 1}"; sl.doneAt = 9000L + 2100 + i * 1300 }
+        ex.gates[2] = 14000L
+        val lines = buildLines(ex, 2)
+        val w = lines.maxOf { ln ->
+            var r = ln.indent + font.width(ln.text)
+            if (ln.player.isNotEmpty()) r += 4 + font.width(ln.player)
+            if (ln.time.isNotEmpty()) r += 4 + font.width(ln.time)
+            r
+        }
+        return HudExample(w, (lines.size - 1) * (font.lineHeight + 1) + font.lineHeight) { ctx -> drawLines(ctx, font, lines, 0, 0) }
+    }
+
+    private fun buildLines(st: TerminalTrackerState, cur: Int): List<Line> {
         val lines = ArrayList<Line>()
         for (s in (if (showAllSections) (1..cur).toList() else listOf(cur))) {
             val list = st.list(s)
@@ -184,9 +210,11 @@ object TerminalTracker {
                 lines.add(if (g != null) Line("Gate", doneColor, 4, "", secs(start, g)) else Line("Gate", pendingColor, 4))
             }
         }
+        return lines
+    }
+
+    private fun drawLines(context: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, lines: List<Line>, x: Int, y0: Int) {
         val rowH = font.lineHeight + 1
-        val x = component.scaledX
-        val y0 = component.scaledY
         lines.forEachIndexed { i, ln ->
             val y = y0 + i * rowH
             var cx = x + ln.indent

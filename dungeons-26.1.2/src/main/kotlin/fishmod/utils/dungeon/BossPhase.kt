@@ -411,19 +411,7 @@ object BossPhase {
         val textRenderer: Font = Minecraft.getInstance().font
         val splits = currentSplits
         if (splits != null) {
-            var splitCount = splits.size
-            if (!runSplitsTotal) splitCount--
-            var height = 0
-            for (i in 0 until splitCount) {
-                val split = splits[i]
-                if (runSplitsReachedOnly && !(split.started() || split.ended())) continue
-                split.drawSplit(ctx, textRenderer, x, y + FishConstants.TEXT_HEIGHT * height, SPLIT_LENGTH)
-                height++
-            }
-            if (height > 0) {
-                ctx.fill(x, y + FishConstants.TEXT_HEIGHT * height + 3,
-                    x + SPLIT_LENGTH, y + FishConstants.TEXT_HEIGHT * height + 4, 0x44FFFFFF.toInt())
-            }
+            drawRows(ctx, textRenderer, splits, x, y)
         } else {
             for (i in 0 until DUMMY_SIZE) {
                 DUMMY_SPLIT.drawSplit(ctx, textRenderer, x, y + FishConstants.TEXT_HEIGHT * i, SPLIT_LENGTH)
@@ -431,9 +419,26 @@ object BossPhase {
         }
     }
 
+    private fun drawRows(ctx: net.minecraft.client.gui.GuiGraphicsExtractor, textRenderer: Font, splits: List<RunSplit>, x: Int, y: Int) {
+        var splitCount = splits.size
+        if (!runSplitsTotal) splitCount--
+        var height = 0
+        for (i in 0 until splitCount) {
+            val split = splits[i]
+            if (runSplitsReachedOnly && !(split.started() || split.ended())) continue
+            split.drawSplit(ctx, textRenderer, x, y + FishConstants.TEXT_HEIGHT * height, SPLIT_LENGTH)
+            height++
+        }
+        if (height > 0) {
+            ctx.fill(x, y + FishConstants.TEXT_HEIGHT * height + 3,
+                x + SPLIT_LENGTH, y + FishConstants.TEXT_HEIGHT * height + 4, 0x44FFFFFF.toInt())
+        }
+    }
+
     @JvmStatic
-    fun getVisibleRowCount(): Int {
-        val splits = currentSplits ?: return 0
+    fun getVisibleRowCount(): Int = visibleRows(currentSplits ?: return 0)
+
+    private fun visibleRows(splits: List<RunSplit>): Int {
         var splitCount = splits.size
         if (!runSplitsTotal) splitCount--
         if (!runSplitsReachedOnly) return splitCount
@@ -443,6 +448,33 @@ object BossPhase {
             if (s.started() || s.ended()) visible++
         }
         return visible
+    }
+
+    // HUD editor example: an M7 run frozen mid-Terminals, from the real split definitions
+    private val EXAMPLE_SPLITS: List<RunSplit> by lazy {
+        val tpl = FLOOR_SPLITS["M7"] ?: return@lazy emptyList()
+        val reached = tpl.indexOfFirst { it.name == "Terminals" }
+        tpl.mapIndexed { i, t ->
+            RunSplit(t.name, "", "", t.defaultNameColor(), t.avg).also { s ->
+                val secs = if (t.avg > 0) t.avg * 0.96 else 20.0
+                if (i < reached || (reached < 0 && i < 3)) s.setExample(secs, false, if (i == 1) RunSplit.PB_COLOR else 0)
+                else if (i == reached) s.setExample(secs * 0.4, true)
+            }
+        }
+    }
+
+    @JvmStatic
+    fun exampleSplits(): List<RunSplit> = EXAMPLE_SPLITS
+
+    /** Rows the editor's Run Splits example shows (Est. Total sits below them). */
+    @JvmStatic
+    fun previewRowCount(): Int = visibleRows(EXAMPLE_SPLITS).coerceAtLeast(0)
+
+    @JvmStatic
+    fun runSplitsExample(): fishmod.features.HudExample {
+        val font = Minecraft.getInstance().font
+        val rows = previewRowCount()
+        return fishmod.features.HudExample(SPLIT_LENGTH, if (rows > 0) FishConstants.TEXT_HEIGHT * rows + 4 else 0) { ctx -> drawRows(ctx, font, EXAMPLE_SPLITS, 0, 0) }
     }
 
 }
