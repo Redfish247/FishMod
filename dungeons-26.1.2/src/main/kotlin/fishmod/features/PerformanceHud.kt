@@ -35,8 +35,8 @@ object PerformanceHud {
             { FishSettings.clockHudScale }, { v -> FishSettings.clockHudScale = v }
         )
         // Example values (fps 144, tps 19.9, ping 42) through the real line builder
-        HudPreview.register(NAME) { HudPreview.text(block(lines(144, 19.9, 42)).ifEmpty { listOf("§7FPS: §a144") }, LINE_H) }
-        HudPreview.register(CLOCK_NAME) { HudPreview.text(listOf(clockText())) }
+        HudPreview.register(NAME) { block(lines(144, 19.9, 42)).takeIf { it.isNotEmpty() }?.let { HudPreview.text(it, LINE_H) } }
+        HudPreview.register(CLOCK_NAME) { if (clockDetached()) HudPreview.text(listOf(clockText())) else null }
     }
 
     private fun lines(mc: Minecraft): List<String> = lines(mc.fps, PartyCommandHandler.currentTps(), ping(mc))
@@ -60,6 +60,8 @@ object PerformanceHud {
         if (FishSettings.perfHudClock && !FishSettings.perfHudClockDetached) out.add(clockText())
         return out
     }
+
+    private fun clockDetached() = FishSettings.perfHudClock && FishSettings.perfHudClockDetached
 
     // Text block as drawn in game: vertical lines or one joined line
     private fun block(ls: List<String>): List<String> = if (FishSettings.perfHudHorizontal && ls.isNotEmpty()) listOf(ls.joinToString("  ")) else ls
@@ -96,7 +98,7 @@ object PerformanceHud {
     private fun renderInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        if (FishSettings.perfHudClock && FishSettings.perfHudClockDetached) {
+        if (clockDetached()) {
             val sc = FishSettings.clockHudScale.toFloat()
             ctx.pose().pushMatrix()
             ctx.pose().translate(FishSettings.clockHudX.toFloat(), FishSettings.clockHudY.toFloat())
