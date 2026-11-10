@@ -40,8 +40,23 @@ object FishingTitles {
     val BAIT = Slot("Fishing Bait Alert", "fishing_t_bait", 200, 34, 170, { S.tBaitX }, { S.tBaitX = it }, { S.tBaitY }, { S.tBaitY = it }, { S.tBaitScale }, { S.tBaitScale = it })
     private val ALL = listOf(CREATURE, DROP, HOTSPOT, WORMHOLE, TROPHY, DEPLOYABLE, BAIT)
 
+    // Example main/sub text per slot, in the same format the real alert builds
+    private fun example(s: Slot): Pair<String, String> = when (s) {
+        CREATURE -> (SeaCreatures.byName("Water Hydra") ?: SeaCreatures.ALL.first()).let { "§${it.rarity.code}§l${it.name.uppercase()}!" to "§7x2" }
+        DROP -> "§6§lRARE DROP!" to "§fExample Item §7(§62.5M§7)"
+        HOTSPOT -> "§6§lHotspot found" to "§fExample perk"
+        WORMHOLE -> "§c§lWormhole is gone" to ""
+        TROPHY -> "§b§lNEW DISCOVERY" to "§fExample discovery"
+        DEPLOYABLE -> "§e§lExample expires soon" to ""
+        else -> "§b§lBait changed" to "§fExample Bait"
+    }
+
     fun init() {
         for (s in ALL) {
+            fishmod.features.HudPreview.register(s.name) {
+                val (m, sub) = example(s)
+                fishmod.features.HudExample(s.w, s.h) { ctx -> render(ctx, s, m, sub, 0xFFFFFFFF.toInt()) }
+            }
             FishHudEditor.register(s.name, { s.x() }, { v -> s.sx(v) }, { s.y() }, { v -> s.sy(v) }, s.w, s.h,
                 { s.gs() }, { v -> s.ss(v) }, { Fishing.enabled() && S.fishingAlerts })
             fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", s.id)) { ctx, _ ->
@@ -60,26 +75,32 @@ object FishingTitles {
     private fun draw(ctx: GuiGraphicsExtractor, s: Slot, alpha: Float) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden || s.main.isEmpty()) return
-        val font = mc.font
         val color = ((alpha * 255).toInt().coerceIn(0, 255) shl 24) or 0xFFFFFF
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(s.x().toFloat(), s.y().toFloat())
         val sc = s.gs().toFloat()
         pose.scale(sc, sc)
+        render(ctx, s, s.main, s.sub, color)
+        pose.popMatrix()
+    }
+
+    // The title block at the origin (shared by the in-game draw and the HUD editor example)
+    private fun render(ctx: GuiGraphicsExtractor, s: Slot, main: String, sub: String, color: Int) {
+        val font = Minecraft.getInstance().font
+        val pose = ctx.pose()
         val cx = s.w / 2f
         pose.pushMatrix()
         pose.translate(cx, 0f)
         pose.scale(2f, 2f)
-        ctx.text(font, s.main, -font.width(s.main) / 2, 0, color, true)
+        ctx.text(font, main, -font.width(main) / 2, 0, color, true)
         pose.popMatrix()
-        if (s.sub.isNotEmpty()) {
+        if (sub.isNotEmpty()) {
             pose.pushMatrix()
             pose.translate(cx, font.lineHeight * 2f + 2f)
             pose.scale(1.2f, 1.2f)
-            ctx.text(font, s.sub, -font.width(s.sub) / 2, 0, color, true)
+            ctx.text(font, sub, -font.width(sub) / 2, 0, color, true)
             pose.popMatrix()
         }
-        pose.popMatrix()
     }
 }
