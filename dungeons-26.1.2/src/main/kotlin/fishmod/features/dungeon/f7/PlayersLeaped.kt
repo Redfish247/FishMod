@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.Floor7Settings
@@ -66,6 +67,10 @@ object PlayersLeaped {
     }
 
     private fun renderInner(component: HUDComponent, context: GuiGraphicsExtractor) {
+        if (HudPreview.active) {
+            FishDraw.drawPrefixedText(component, context, "Leaped (HEE2)", "§e2/4")
+            return
+        }
         val zone = activeZone() ?: return
         val n = leapedCount(zone)
         FishDiag.check(n <= 4, "PlayersLeaped.3") { "leaped count $n > 4 in ${zone.label}" }

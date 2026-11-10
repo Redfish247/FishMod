@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.compat.blocksMotionCompat
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
@@ -189,7 +190,7 @@ object NecronDropPredict {
     @JvmStatic
     fun renderLanding(component: HUDComponent, context: GuiGraphicsExtractor) {
         FishDiag.guard("NecronDropPredict.5", "necron landing popup render threw") {
-            val text = when (overLava()) { true -> "§c§lAbove Lava!"; false -> "§a§lAbove Platform"; null -> "§7Landing: ?" }
+            val text = when (if (HudPreview.active) true else overLava()) { true -> "§c§lAbove Lava!"; false -> "§a§lAbove Platform"; null -> "§7Landing: ?" }
             FishDraw.drawCenteredText(context, component, Component.literal(text))
         }
     }
@@ -200,7 +201,7 @@ object NecronDropPredict {
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         FishDiag.guard("NecronDropPredict.2", "necron drag timer render threw") {
-            FishDraw.drawPrefixedText(component, context, "Dragged", FishConstants.DECIMAL_FORMAT.format(dragTicks * FishConstants.TICK_DURATION))
+            FishDraw.drawPrefixedText(component, context, "Dragged", FishConstants.DECIMAL_FORMAT.format((if (HudPreview.active) 69 else dragTicks) * FishConstants.TICK_DURATION))
         }
     }
 }

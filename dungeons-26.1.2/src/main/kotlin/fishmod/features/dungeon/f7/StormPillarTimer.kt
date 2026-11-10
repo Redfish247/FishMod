@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.utils.events.chatRaw
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
@@ -39,8 +40,9 @@ object StormPillarTimer {
 
     @JvmStatic
     fun renderTimer(component: HUDComponent, context: GuiGraphicsExtractor) {
-        val color = if (ticksLeft >= 6) FishConstants.RED else FishConstants.GREEN
-        FishDiag.guard("StormPillarTimer.2", "pillar blast hud threw") { FishDraw.drawTimer(component, context, ticksLeft, color) }
+        val left = if (HudPreview.active) 17 else ticksLeft
+        val color = if (left >= 6) FishConstants.RED else FishConstants.GREEN
+        FishDiag.guard("StormPillarTimer.2", "pillar blast hud threw") { FishDraw.drawTimer(component, context, left, color) }
     }
 
     @JvmStatic

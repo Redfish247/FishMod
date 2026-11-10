@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.utils.events.chatRaw
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.FishUtil
@@ -68,7 +69,7 @@ object MaxorCrystalTimer {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        FishDiag.guard("MaxorCrystalTimer.2", "crystal respawn hud threw") { FishDraw.drawTimer(component, context, respawnIn, FishConstants.LIGHT_PURPLE) }
+        FishDiag.guard("MaxorCrystalTimer.2", "crystal respawn hud threw") { FishDraw.drawTimer(component, context, if (HudPreview.active) 24 else respawnIn, FishConstants.LIGHT_PURPLE) }
     }
 
     @JvmStatic

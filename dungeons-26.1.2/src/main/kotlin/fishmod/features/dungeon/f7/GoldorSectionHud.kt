@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.debug.FishDiag
@@ -29,6 +30,6 @@ object GoldorSectionHud {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        FishDiag.guard("GoldorSectionHud.2", "goldor section hud threw") { FishDraw.drawPrefixedText(component, context, "P3", " ${cleared + 1}/$SECTIONS") }
+        FishDiag.guard("GoldorSectionHud.2", "goldor section hud threw") { FishDraw.drawPrefixedText(component, context, "P3", " ${(if (HudPreview.active) 2 else cleared + 1)}/$SECTIONS") }
     }
 }

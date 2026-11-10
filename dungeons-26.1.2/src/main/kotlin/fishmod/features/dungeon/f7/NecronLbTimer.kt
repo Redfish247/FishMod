@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
@@ -47,6 +48,6 @@ object NecronLbTimer {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        FishDiag.guard("NecronLbTimer.2", "necron LB timer render threw") { FishDraw.drawTimer(component, context, (endTick() - timer.tick) * FishConstants.TICK_DURATION, Floor7Settings.necronLbColor) }
+        FishDiag.guard("NecronLbTimer.2", "necron LB timer render threw") { FishDraw.drawTimer(component, context, (if (HudPreview.active) 64 else endTick() - timer.tick) * FishConstants.TICK_DURATION, Floor7Settings.necronLbColor) }
     }
 }
