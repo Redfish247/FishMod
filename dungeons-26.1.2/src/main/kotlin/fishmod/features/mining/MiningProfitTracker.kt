@@ -63,6 +63,7 @@ object MiningProfitTracker {
     private var lastCat: Cat? = null
     private var lastLootMs = 0L
     private var lastActivityMs = 0L
+    private var lastBreakMs = 0L
     private var lastTickMs = 0L
     private var scroll = 0
 
@@ -75,7 +76,7 @@ object MiningProfitTracker {
             if (S.miningProfit && Mining.inMiningIsland()) onChat(text)
             false
         }
-        Mining.breakListeners += Mining.BreakListener { _, _, _ -> lastActivityMs = System.currentTimeMillis() }
+        Mining.breakListeners += Mining.BreakListener { _, _, _ -> lastActivityMs = System.currentTimeMillis(); lastBreakMs = lastActivityMs }
 
         FishHudEditor.register("Mining Profit", { S.miningProfitHudX }, { S.miningProfitHudX = it },
             { S.miningProfitHudY }, { S.miningProfitHudY = it }, 180, 120, { S.miningProfitHudScale }, { S.miningProfitHudScale = it },
@@ -210,6 +211,7 @@ object MiningProfitTracker {
             val item = m.groupValues[3].trim()
             if (item.endsWith("Powder")) continue
             if (!ProfitTrackerKit.inSacks(idOf(item), *MINING_SACKS)) continue
+            if (ProfitTrackerKit.isFishingLeak(idOf(item), now, lastBreakMs)) continue
             val rest = consumePending(item, n, now)
             if (rest > 0) {
                 add(Cat.MINING, item, rest)

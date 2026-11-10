@@ -45,6 +45,16 @@ object ProfitTrackerKit {
         return sacks.any { s -> defs[s]?.any { it.replace(':', '-') == want } == true }
     }
 
+    private val FISHING_SACKS = arrayOf("Fishing", "Enchanted Fishing", "Lava Fishing", "Bait", "Bronze Trophy Fishing", "Silver Trophy Fishing")
+
+    // Fishing loot on a non-fishing island: item stocked by a fishing sack while a rod was cast recently and ownActivityMs (last own-activity time) is stale
+    fun isFishingLeak(id: String?, now: Long, ownActivityMs: Long): Boolean {
+        if (!fishmod.features.fishing.FishingTrackerStore.castRecent(now)) return false
+        if (now - ownActivityMs < 5_000L) return false
+        val defs = fishmod.pv.neu.NeuRepoCache.sackDefinitions()
+        return defs.isEmpty() || inSacks(id, *FISHING_SACKS)
+    }
+
     fun perHour(v: Double, timeMs: Long) = if (timeMs < 60_000) 0.0 else v * 3_600_000.0 / timeMs
 
     // HUD lines rebuilt on a data change, else at most once a second (playtime, settings)
