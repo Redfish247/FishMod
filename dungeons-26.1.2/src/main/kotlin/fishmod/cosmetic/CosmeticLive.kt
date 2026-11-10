@@ -79,9 +79,13 @@ object CosmeticLive {
                 ws = null
                 try { socket.abort() } catch (_: Exception) {}
                 failed()
+                // a dead socket is not a failed connect: retry soon, not after the grown backoff
+                backoff = MIN_BACKOFF_MS
+                retryAt = now + 1_000L
                 return
             }
-            if (now - lastPing >= PING_MS) { lastPing = now; socket.sendText("ping", true) }
+            // shared send path: a ping racing a chat send must not throw into the tick guard
+            if (now - lastPing >= PING_MS) { lastPing = now; sendText("ping") }
             return
         }
         if (connecting || now < retryAt) return
