@@ -40,15 +40,29 @@ object FishingTitles {
     val BAIT = Slot("Fishing Bait Alert", "fishing_t_bait", 200, 34, 170, { S.tBaitX }, { S.tBaitX = it }, { S.tBaitY }, { S.tBaitY = it }, { S.tBaitScale }, { S.tBaitScale = it })
     private val ALL = listOf(CREATURE, DROP, HOTSPOT, WORMHOLE, TROPHY, DEPLOYABLE, BAIT)
 
-    // Example main/sub text per slot, in the same format the real alert builds
+    // Example main/sub text per slot, built like the real alert would be with the current settings
     private fun example(s: Slot): Pair<String, String> = when (s) {
-        CREATURE -> (SeaCreatures.byName("Water Hydra") ?: SeaCreatures.ALL.first()).let { "§${it.rarity.code}§l${it.name.uppercase()}!" to "§7x2" }
-        DROP -> "§6§lRARE DROP!" to "§fExample Item §7(§62.5M§7)"
-        HOTSPOT -> "§6§lHotspot found" to "§fExample perk"
-        WORMHOLE -> "§c§lWormhole is gone" to ""
+        CREATURE -> FishingAlerts.creatureTitle(SeaCreatures.ALL.firstOrNull { it.name == "Water Hydra" && (it.rare || !S.alertScRareOnly) }
+            ?: SeaCreatures.ALL.firstOrNull { it.rare } ?: SeaCreatures.ALL.first(), 2)
+        DROP -> FishingAlerts.dropTitle("Example Item", maxOf(2_500_000.0, S.alertDropMinPrice.toDouble()))
+        HOTSPOT -> if (S.alertHotspotFound || !S.alertHotspotGone) "§6§lHotspot found" to "§fExample perk" else "§c§lHotspot is gone" to ""
+        WORMHOLE -> (if (S.fishingAlerts && S.alertWormholeGone) "§c§lWormhole is gone" else "§c§lWormhole closed!") to ""
         TROPHY -> "§b§lNEW DISCOVERY" to "§fExample discovery"
         DEPLOYABLE -> "§e§lExample expires soon" to ""
         else -> "§b§lBait changed" to "§fExample Bait"
+    }
+
+    // The slot's own alert toggle, so the editor only lists alerts that can fire
+    private fun slotOn(s: Slot): Boolean = when (s) {
+        WORMHOLE -> S.fishingAlerts && S.alertWormholeGone || FishingWorldSettings.wormholeFinder && FishingWorldSettings.wormholeDeparture
+        else -> S.fishingAlerts && when (s) {
+            CREATURE -> S.alertSeaCreature
+            DROP -> S.alertRareDrop
+            HOTSPOT -> S.alertHotspotFound || S.alertHotspotGone
+            TROPHY -> S.alertNewTrophy
+            DEPLOYABLE -> S.alertDeployable
+            else -> S.alertBait
+        }
     }
 
     fun init() {
@@ -58,7 +72,7 @@ object FishingTitles {
                 fishmod.features.HudExample(s.w, s.h) { ctx -> render(ctx, s, m, sub, 0xFFFFFFFF.toInt()) }
             }
             FishHudEditor.register(s.name, { s.x() }, { v -> s.sx(v) }, { s.y() }, { v -> s.sy(v) }, s.w, s.h,
-                { s.gs() }, { v -> s.ss(v) }, { Fishing.enabled() && S.fishingAlerts })
+                { s.gs() }, { v -> s.ss(v) }, { Fishing.enabled() && slotOn(s) })
             fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", s.id)) { ctx, _ ->
                 if (!FishHudEditor.isOpen()) {
                     val a = s.alpha(System.currentTimeMillis())
