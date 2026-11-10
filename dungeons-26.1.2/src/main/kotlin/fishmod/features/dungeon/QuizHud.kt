@@ -29,7 +29,8 @@ object QuizHud {
             { FishSettings.quizHudX }, { v -> FishSettings.quizHudX = v },
             { FishSettings.quizHudY }, { v -> FishSettings.quizHudY = v },
             90, 10,
-            { FishSettings.quizHudScale }, { v -> FishSettings.quizHudScale = v }
+            { FishSettings.quizHudScale }, { v -> FishSettings.quizHudScale = v },
+            { FishSettings.quizHudEnabled }
         )
         FishEvents.chat.register { text ->
             val s = text.chatPlain

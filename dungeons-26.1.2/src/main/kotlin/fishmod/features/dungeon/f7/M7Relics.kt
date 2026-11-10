@@ -63,7 +63,8 @@ object M7Relics {
             { FishSettings.relicTimerHudX }, { v -> FishSettings.relicTimerHudX = v },
             { FishSettings.relicTimerHudY }, { v -> FishSettings.relicTimerHudY = v },
             60, 12,
-            { FishSettings.relicTimerScale }, { v -> FishSettings.relicTimerScale = v }
+            { FishSettings.relicTimerScale }, { v -> FishSettings.relicTimerScale = v },
+            { Floor7Settings.relicStartHud }
         )
         HudPreview.register(NAME) { HudPreview.text(listOf(label(1850))) }
 

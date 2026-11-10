@@ -26,7 +26,7 @@ object FishPuzzleDisplay {
         0.0, 0.0, 150, 100, 1f, "FM Puzzles",
         { display() },
         { component, context -> render(component, context) },
-        { true }
+        { FishSettings.showPuzzles }
     )
 
     @JvmStatic

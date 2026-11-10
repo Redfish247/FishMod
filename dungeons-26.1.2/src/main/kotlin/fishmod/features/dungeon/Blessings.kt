@@ -50,7 +50,8 @@ object Blessings {
             { FishSettings.blessingHudX }, { v -> FishSettings.blessingHudX = v },
             { FishSettings.blessingHudY }, { v -> FishSettings.blessingHudY = v },
             70, 50,
-            { FishSettings.blessingScale }, { v -> FishSettings.blessingScale = v }
+            { FishSettings.blessingScale }, { v -> FishSettings.blessingScale = v },
+            { FishSettings.blessingDisplayEnabled }
         )
 
         FishEvents.serverTick.register { FishDiag.guard("Blessings.2", "blessing tab poll failed") { poll() }; false }
