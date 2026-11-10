@@ -72,7 +72,7 @@ object SpiritBear {
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        val body = body(kills, maxKills(), timer)
+        val body = bodyText(kills, maxKills(), timer)
         val sc = FishSettings.spiritBearScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.spiritBearHudX.toFloat(), FishSettings.spiritBearHudY.toFloat())
@@ -81,7 +81,7 @@ object SpiritBear {
         ctx.pose().popMatrix()
     }
 
-    private fun body(kills: Int, max: Int, timer: Int) = when {
+    private fun bodyText(kills: Int, max: Int, timer: Int) = when {
         timer < 0 -> "§f$kills/$max"
         timer > 0 -> "§e" + fishmod.utils.Fmt.f1(timer / 20.0) + "s"
         else -> "§aAlive!"
@@ -91,7 +91,7 @@ object SpiritBear {
 
     // Example data: 18 of the 25 floor-4 lanterns
     private fun registerPreview() {
-        HudPreview.register(NAME) { HudPreview.text(listOf(label(body(18, 25, -1)))) }
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(bodyText(18, 25, -1)))) }
     }
 
     private val F4 = hashSetOf(
