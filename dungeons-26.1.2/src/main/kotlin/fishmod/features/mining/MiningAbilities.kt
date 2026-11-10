@@ -77,14 +77,16 @@ object MiningAbilities {
             { S.miningSkyMallHudX }, { S.miningSkyMallHudX = it }, { S.miningSkyMallHudY }, { S.miningSkyMallHudY = it },
             { S.miningSkyMallHudScale }, { S.miningSkyMallHudScale = it },
             { (S.miningAbilities && S.miningSkyMall) && S.miningSkyMallPerk.isNotEmpty() && (Mining.inMiningIsland() || fishmod.features.FishHudEditor.isOpen()) }, { (S.miningAbilities && S.miningSkyMall) },
-            example = { listOf("§bSkyMall: §f${S.miningSkyMallPerk.ifEmpty { "Example perk text" }}") }) {
-            listOf("§bSkyMall: §f${S.miningSkyMallPerk}")
+            example = { skyMallLines(S.miningSkyMallPerk.ifEmpty { "Example perk text" }) }) {
+            skyMallLines(S.miningSkyMallPerk)
         }
     }
 
     private fun pickLines(blocks: Int, drops: Map<String, Int>, error: String): List<String> =
         if (error.isNotEmpty()) listOf("§b§lPickobulus", error)
         else listOf("§b§lPickobulus §7($blocks blocks)") + drops.entries.sortedByDescending { it.value }.map { "§7${it.key}: §f${it.value}" }
+
+    private fun skyMallLines(perk: String) = listOf("§bSkyMall: §f$perk")
 
     private fun maniacLines(active: Boolean, blocks: Int, secs: Long): List<String> =
         listOf("§c§lManiac Miner" + if (active) "" else " §7(ended)", "§7Blocks: §f$blocks §8(${secs}s)")
