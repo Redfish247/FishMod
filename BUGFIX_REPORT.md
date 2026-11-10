@@ -1,7 +1,7 @@
 ﻿# Bugfix report 2026-11-10
 
 Commit before start: 8093dfcc (Ship 1.7.69). Working tree was clean, nothing to pre-commit.
-Fix commits: 7169c070 (#530), 8e1524a7 (Spotify), then the 1.7.70 bump (c671a7af).
+Fix commits: dd989f2d (#530), 8e1524a7 (Spotify), then the 1.7.70 bump (c671a7af).
 Built `:dungeons-26.1.2:build :dungeons-26.2:build`: OK after every fix and at the end (only warnings: two unchecked casts in `Api2ParsersTest.kt`, test code). 26.3 not built (opt-in, not touched). Not tested in game.
 
 ## Fixed
