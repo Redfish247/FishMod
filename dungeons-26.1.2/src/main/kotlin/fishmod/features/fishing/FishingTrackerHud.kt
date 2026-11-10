@@ -96,6 +96,16 @@ object FishingTrackerLines {
             if (!a.inArea(loc)) continue
             val b = FishingTrackerStore.bucket("area:" + a.id, total)
             if (a.recentOnly && now - b.lastLineAt > 600_000L) continue
+            out += areaBlock(a, b, total, cap, sessionMs)
+        }
+        return out
+    }
+
+    // One area's block (shared by the in-game tracker and the HUD editor example)
+    @JvmStatic
+    fun areaBlock(a: AreaDef, b: FishingBucket, total: Boolean, cap: Int, sessionMs: Long): List<String> {
+        val out = ArrayList<String>()
+        run {
             out += title(a.title, total)
             if (!total) out += timeLine(total, sessionMs)
             var rows = 0
@@ -119,13 +129,38 @@ object FishingTrackerHud {
     private fun total() = S.fishingTrackerMode == "Total"
     private fun cap() = S.fishingTrackerLines.coerceIn(1, 30)
 
+    // Example data for the HUD editor previews (fed through the same FishingTrackerLines builders)
+    private const val EX_MS = 5_025_000L
+
+    private fun exBucket(): FishingBucket = FishingBucket().apply {
+        events = 112; catches = 120; doubles = 8; cocoons = 2; activeMs = EX_MS
+        scCounts["Sea Archer"] = 70; scCounts["Catfish"] = 38; scCounts["Water Hydra"] = 12
+        drops["Radioactive Vial"] = 1; dropCoins["Radioactive Vial"] = 2_500_000.0
+        drops["Enchanted Raw Salmon"] = 640; dropCoins["Enchanted Raw Salmon"] = 96_000.0
+        pity = 37
+    }
+
+    private fun exAreaLines(): List<String> {
+        val a = FishingTrackerAreas.ALL.first { it.pitySc != null }
+        val b = FishingBucket().apply { catches = 40; scCounts[SeaCreatures.ALL.first { c -> a.sc(c) }.name] = 40; drops[a.drops.firstOrNull() ?: "Example Drop"] = 2; pity = 14 }
+        return FishingTrackerLines.areaBlock(a, b, total(), cap(), EX_MS)
+    }
+
+    private fun exBarn() = BarnState().apply { startedAt = System.currentTimeMillis() - 95_000L; count = 14 }
+
+    private fun exFestival() = FestivalState().apply {
+        startedAt = System.currentTimeMillis() - 600_000L
+        sharks["Great White Shark"] = 1; sharks["Tiger Shark"] = 3; sharks["Blue Shark"] = 6; sharks["Nurse Shark"] = 9
+    }
+
     private fun reg(
         name: String, id: String, w: Int, h: Int,
         gx: () -> Int, sx: (Int) -> Unit, gy: () -> Int, sy: (Int) -> Unit, gs: () -> Double, ss: (Double) -> Unit,
-        on: () -> Boolean, lines: () -> List<String>,
+        on: () -> Boolean, example: () -> List<String>, lines: () -> List<String>,
     ) {
         val visible = { Fishing.enabled() && S.fishingTrackers && on() }
         FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, visible)
+        fishmod.features.mining.MiningHuds.registerExample(name, example)
         val hud = Hud(id, lines, visible, gx, gy, gs)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
             if (!FishHudEditor.isOpen() && hud.on() && FishingTrackerStore.shouldDraw(Fishing.active(), System.currentTimeMillis(), S.fishingShowWhen == "Either")) draw(ctx, hud)
@@ -149,27 +184,33 @@ object FishingTrackerHud {
 
     fun init() {
         reg("Fishing Sea Creatures", "fishing_sc", 150, 80, { S.fishingScHudX }, { S.fishingScHudX = it }, { S.fishingScHudY }, { S.fishingScHudY = it },
-            { S.fishingScHudScale }, { S.fishingScHudScale = it }, { S.fishingScHud }) {
+            { S.fishingScHudScale }, { S.fishingScHudScale = it }, { S.fishingScHud },
+            { FishingTrackerLines.seaCreatures(exBucket(), total(), cap(), EX_MS) }) {
             FishingTrackerLines.seaCreatures(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total(), cap(), FishingTrackerStore.sessionElapsed(System.currentTimeMillis()))
         }
         reg("Fishing Profit", "fishing_profit", 150, 70, { S.fishingProfitHudX }, { S.fishingProfitHudX = it }, { S.fishingProfitHudY }, { S.fishingProfitHudY = it },
-            { S.fishingProfitHudScale }, { S.fishingProfitHudScale = it }, { S.fishingProfitHud }) {
+            { S.fishingProfitHudScale }, { S.fishingProfitHudScale = it }, { S.fishingProfitHud },
+            { FishingTrackerLines.profit(exBucket(), total(), cap(), S.fishingCostPerCatch.toLong(), EX_MS) }) {
             FishingTrackerLines.profit(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total(), cap(), S.fishingCostPerCatch.toLong(), FishingTrackerStore.sessionElapsed(System.currentTimeMillis()))
         }
         reg("Fishing Efficiency", "fishing_eff", 120, 40, { S.fishingEffHudX }, { S.fishingEffHudX = it }, { S.fishingEffHudY }, { S.fishingEffHudY = it },
-            { S.fishingEffHudScale }, { S.fishingEffHudScale = it }, { S.fishingEffHud }) {
+            { S.fishingEffHudScale }, { S.fishingEffHudScale = it }, { S.fishingEffHud },
+            { FishingTrackerLines.efficiency(exBucket(), total(), EX_MS) }) {
             FishingTrackerLines.efficiency(FishingTrackerStore.bucket(FishingTrackerStore.MAIN, total()), total(), FishingTrackerStore.sessionElapsed(System.currentTimeMillis()))
         }
         reg("Barn Fishing Timer", "fishing_barn", 140, 20, { S.fishingBarnHudX }, { S.fishingBarnHudX = it }, { S.fishingBarnHudY }, { S.fishingBarnHudY = it },
-            { S.fishingBarnHudScale }, { S.fishingBarnHudScale = it }, { S.fishingBarnHud }) {
+            { S.fishingBarnHudScale }, { S.fishingBarnHudScale = it }, { S.fishingBarnHud },
+            { FishingTrackerLines.barn(exBarn(), System.currentTimeMillis(), S.fishingBarnSeconds) }) {
             FishingTrackerLines.barn(FishingTrackerStore.barn, System.currentTimeMillis(), S.fishingBarnSeconds)
         }
         reg("Fishing Festival", "fishing_festival", 170, 20, { S.fishingFestivalHudX }, { S.fishingFestivalHudX = it }, { S.fishingFestivalHudY }, { S.fishingFestivalHudY = it },
-            { S.fishingFestivalHudScale }, { S.fishingFestivalHudScale = it }, { S.fishingFestivalHud }) {
+            { S.fishingFestivalHudScale }, { S.fishingFestivalHudScale = it }, { S.fishingFestivalHud },
+            { FishingTrackerLines.festival(exFestival(), System.currentTimeMillis()) }) {
             FishingTrackerLines.festival(FishingTrackerStore.festival, System.currentTimeMillis())
         }
         reg("Fishing Area Tracker", "fishing_area", 150, 60, { S.fishingAreaHudX }, { S.fishingAreaHudX = it }, { S.fishingAreaHudY }, { S.fishingAreaHudY = it },
-            { S.fishingAreaHudScale }, { S.fishingAreaHudScale = it }, { S.fishingAreaHud }) {
+            { S.fishingAreaHudScale }, { S.fishingAreaHudScale = it }, { S.fishingAreaHud },
+            { exAreaLines() }) {
             FishingTrackerLines.areas(total(), Fishing.location(), System.currentTimeMillis(), S.fishingAreaTreasure, S.fishingAreaDice, cap(), FishingTrackerStore.sessionElapsed(System.currentTimeMillis()))
         }
     }
