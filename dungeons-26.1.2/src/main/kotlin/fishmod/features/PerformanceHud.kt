@@ -36,6 +36,10 @@ object PerformanceHud {
         )
     }
 
+    /** Real current HUD lines for the HUD editor preview. */
+    @JvmStatic
+    fun liveLines(): List<String> = lines(Minecraft.getInstance())
+
     private fun lines(mc: Minecraft): List<String> {
         val label = "§7"
         val out = ArrayList<String>(3)
