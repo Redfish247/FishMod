@@ -172,7 +172,7 @@ object DianaTrackerHud {
         gx: () -> Int, sx: (Int) -> Unit, gy: () -> Int, sy: (Int) -> Unit,
         gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, lines: (Src) -> List<Row>,
     ) {
-        FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on)
+        FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, { DianaSettings.dianaTracker && on() })
         val hud = Hud(gx, gy, gs, on) { lines(live()) }
         huds[id] = hud
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
