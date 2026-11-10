@@ -25,14 +25,16 @@ object PerformanceHud {
             { FishSettings.perfHudX }, { v -> FishSettings.perfHudX = v },
             { FishSettings.perfHudY }, { v -> FishSettings.perfHudY = v },
             110, 30,
-            { FishSettings.perfHudScale }, { v -> FishSettings.perfHudScale = v }
+            { FishSettings.perfHudScale }, { v -> FishSettings.perfHudScale = v },
+            { FishSettings.perfHudEnabled }
         )
         FishHudEditor.register(
             CLOCK_NAME,
             { FishSettings.clockHudX }, { v -> FishSettings.clockHudX = v },
             { FishSettings.clockHudY }, { v -> FishSettings.clockHudY = v },
             50, 10,
-            { FishSettings.clockHudScale }, { v -> FishSettings.clockHudScale = v }
+            { FishSettings.clockHudScale }, { v -> FishSettings.clockHudScale = v },
+            { FishSettings.perfHudEnabled && clockDetached() }
         )
         // Example values (fps 144, tps 19.9, ping 42) through the real line builder
         HudPreview.register(NAME) { block(lines(144, 19.9, 42)).takeIf { it.isNotEmpty() }?.let { HudPreview.text(it, LINE_H) } }

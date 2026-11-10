@@ -1483,7 +1483,8 @@ class FishModInit : ClientModInitializer {
             fishmod.features.dungeon.map.MapHud.baseWidth(net.minecraft.client.Minecraft.getInstance()),
             fishmod.features.dungeon.map.MapHud.baseHeight(net.minecraft.client.Minecraft.getInstance()),
             java.util.function.DoubleSupplier { fishmod.utils.config.values.DungeonMapSettings.mapScale.toDouble() },
-            java.util.function.DoubleConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapScale = v.toFloat() }
+            java.util.function.DoubleConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapScale = v.toFloat() },
+            java.util.function.BooleanSupplier { fishmod.utils.config.values.DungeonMapSettings.mapEnabled }
         )
         FishHudEditor.register(
             "Dungeon Map Info",

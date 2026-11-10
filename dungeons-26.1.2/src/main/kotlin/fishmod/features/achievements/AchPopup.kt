@@ -35,7 +35,7 @@ object AchPopup {
     fun init() {
         registerPreview()
         fishmod.features.FishHudEditor.register("Achievement Popup", { posX() }, { S.achPopupX = it }, { S.achPopupY }, { S.achPopupY = it }, W, H,
-            { S.achPopupScale }, { S.achPopupScale = it })
+            { S.achPopupScale }, { S.achPopupScale = it }, { S.achEnabled && S.achToast })
     }
 
     private fun posX(): Int {
