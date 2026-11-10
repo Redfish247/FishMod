@@ -50,6 +50,7 @@ object SkyItemList {
     private var built = false
 
     private var query = ""
+    private var selectAll = false
     private var focused = false
     private var scroll = 0
     private var favOnly = false
@@ -168,7 +169,11 @@ object SkyItemList {
             return
         }
         if (query.isEmpty() && !focused) ctx.text(font, "Search items...", sx + 3, sy + 3, 0xFF6B7480.toInt(), false)
-        else ctx.text(font, font.plainSubstrByWidth(query + if (focused) "_" else "", sw - 6, true), sx + 3, sy + 3, 0xFFFFFFFF.toInt(), false)
+        else {
+            val shown = font.plainSubstrByWidth(query + if (focused && !selectAll) "_" else "", sw - 6, true)
+            if (selectAll && focused) ctx.fill(sx + 2, sy + 2, sx + 4 + font.width(shown), sy + SEARCH_H - 2, 0x80336699.toInt())
+            ctx.text(font, shown, sx + 3, sy + 3, 0xFFFFFFFF.toInt(), false)
+        }
 
         scroll = scroll.coerceIn(0, maxScroll())
         var hover = -1
@@ -208,14 +213,14 @@ object SkyItemList {
     fun onClick(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
         if (!on() || hiddenFor(screen) || !layout(screen)) return false
         val x = click.x(); val y = click.y()
-        if (!inPanel(x, y)) { focused = false; return false }
+        if (!inPanel(x, y)) { focused = false; selectAll = false; return false }
         val sx = px + PAD; val sy = py + 6
         if (x >= sx && x < sx + pw - PAD * 2 && y >= sy && y < sy + SEARCH_H) {
-            focused = true
+            focused = true; selectAll = false
             if (GLFW.btn(click) == 1 && query.isNotEmpty()) { query = ""; if (built) refilter() }
             return true
         }
-        focused = false
+        focused = false; selectAll = false
         if (!built) return true
         if (y >= py + ph - FOOT_H && x >= px + pw / 2) {
             favOnly = !favOnly; refilter(); return true
@@ -282,17 +287,26 @@ object SkyItemList {
             when (input.key()) {
                 GLFW.GLFW_KEY_V -> {
                     val clip = kb.clipboard?.filter { !Character.isISOControl(it) }.orEmpty()
+                    if (selectAll) query = ""
+                    selectAll = false
                     query = (query + clip).take(40); if (built) refilter()
                 }
                 GLFW.GLFW_KEY_C -> kb.clipboard = query
-                GLFW.GLFW_KEY_X -> { kb.clipboard = query; query = ""; if (built) refilter() }
-                GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_BACKSPACE -> { query = ""; if (built) refilter() }
+                GLFW.GLFW_KEY_X -> { kb.clipboard = query; query = ""; selectAll = false; if (built) refilter() }
+                GLFW.GLFW_KEY_A -> selectAll = query.isNotEmpty()
+                GLFW.GLFW_KEY_BACKSPACE -> {
+                    query = if (selectAll) "" else query.trimEnd().substringBeforeLast(' ', "")
+                    selectAll = false; if (built) refilter()
+                }
             }
             return true
         }
         when (input.key()) {
-            GLFW.GLFW_KEY_ESCAPE -> { focused = false; return true }
-            GLFW.GLFW_KEY_BACKSPACE -> if (query.isNotEmpty()) { query = query.dropLast(1); if (built) refilter() }
+            GLFW.GLFW_KEY_ESCAPE -> { focused = false; selectAll = false; return true }
+            GLFW.GLFW_KEY_BACKSPACE -> {
+                if (selectAll) query = "" else if (query.isNotEmpty()) query = query.dropLast(1)
+                selectAll = false; if (built) refilter()
+            }
         }
         return true
     }
@@ -301,7 +315,9 @@ object SkyItemList {
     fun charTyped(input: CharacterEvent): Boolean {
         if (!on() || !focused) return false
         val cp = input.codepoint()
-        if (Character.isISOControl(cp) || query.length >= 40) return true
+        if (Character.isISOControl(cp)) return true
+        if (selectAll) { query = ""; selectAll = false }
+        if (query.length >= 40) return true
         query += String(Character.toChars(cp))
         if (built) refilter()
         return true
