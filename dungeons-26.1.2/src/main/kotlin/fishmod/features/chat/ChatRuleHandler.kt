@@ -49,7 +49,9 @@ object ChatRuleHandler {
             { ChatRuleStore.isMasterEnabled() }
         )
         HudPreview.register("Chat Alerts") {
-            HudExample(HUD_WIDTH, HudPreview.textHeight(1, 11)) { ctx -> drawAlerts(ctx, listOf("Example alert")) }
+            // Shows the user's own first title rule text when there is one
+            val t = ChatRuleStore.rules().firstOrNull { it.enabled && it.titleMessage.isNotBlank() }?.titleMessage ?: "Example alert"
+            HudExample(HUD_WIDTH, HudPreview.textHeight(1, 11)) { ctx -> drawAlerts(ctx, listOf(t)) }
         }
     }
 
