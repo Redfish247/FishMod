@@ -34,7 +34,8 @@ object PartyWarpTimer {
             { FishSettings.warpCooldownScale }, { v -> FishSettings.warpCooldownScale = v }
         )
         HudPreview.register(NAME) {
-            val l = label(8_400L)
+            // 70% of the player's cooldown left, so it never exceeds the setting
+            val l = label(FishSettings.warpCooldownSeconds.coerceIn(1, 120) * 700L)
             HudExample(Minecraft.getInstance().font.width(l), HudPreview.TEXT_H) { ctx -> ctx.text(Minecraft.getInstance().font, l, 0, 0, -1, true) }
         }
 
