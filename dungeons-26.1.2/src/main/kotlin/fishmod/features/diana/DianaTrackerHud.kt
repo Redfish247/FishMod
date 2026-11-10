@@ -66,6 +66,7 @@ object DianaTrackerHud {
     private fun live() = Src(DianaTracker::tracker, DianaTracker::priceOf, DianaTracker.paused(), DianaTracker::sinceCount, DianaTracker::highestMf)
 
     private fun exampleTracker(): DianaTracker.Tracker = DianaTracker.Tracker().also { t ->
+        t.year = DianaTracker.tracker("Event")?.year ?: 0
         t.timeMs = 18_000_000L
         for ((k, n) in listOf("SHIMMERING_WOOL" to 1L, "CHIMERA" to 2L, "CHIMERA_LS" to 1L, "MANTI_CORE" to 1L, "DAEDALUS_STICK" to 3L,
             "GRIFFIN_FEATHER" to 214L, "MINOS_RELIC" to 4L, "ENCHANTED_GOLD" to 36L, "COINS" to 48_500_000L, "TOTAL_BURROWS" to 1840L, "SHURIKENS_USED" to 120L)) t.items[k] = n
@@ -79,7 +80,8 @@ object DianaTrackerHud {
 
     private fun registerExample(name: String, lines: (Src) -> List<Row>) {
         HudPreview.register(name) {
-            val rows = lines(example())
+            // lines the player hid stay hidden, like in game
+            val rows = lines(example()).filter { !isHiddenRow(it) }
             val font = Minecraft.getInstance().font
             val w = rows.maxOfOrNull { it.width(font) } ?: 0
             HudExample(w, HudPreview.textHeight(rows.size, 10)) { ctx -> drawRows(ctx, rows, false, false) }
@@ -200,11 +202,13 @@ object DianaTrackerHud {
         pose.popMatrix()
     }
 
+    private fun isHiddenRow(r: Row) = r.id != null && !r.id.startsWith("cycle:") && DianaTracker.isHidden(r.id)
+
     private fun drawRows(ctx: GuiGraphicsExtractor, rows: List<Row>, editing: Boolean, useHidden: Boolean) {
         val mc = Minecraft.getInstance()
         var i = 0
         for (r in rows) {
-            val hidden = useHidden && r.id != null && !r.id.startsWith("cycle:") && DianaTracker.isHidden(r.id)
+            val hidden = useHidden && isHiddenRow(r)
             if (hidden && !editing) continue
             val font = mc.font
             if (editing && r.id?.startsWith("cycle:") == true) {

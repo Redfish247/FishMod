@@ -185,7 +185,7 @@ object RareMobs {
             alive.add(e.id)
             val dist = e.position().distanceTo(eye)
             if (kingHits != null) {
-                lines.add(dist to Component.literal("§6King Minos §7- §5${kingHits.groupValues[1]} Hits"))
+                lines.add(dist to kingHitsLine(kingHits.groupValues[1]))
                 continue
             }
             val hp = parseHp(plain) ?: continue
@@ -378,6 +378,8 @@ object RareMobs {
 
     private const val NO_SHURIKEN_TEXT = "§c§lNO SHURIKEN!"
 
+    private fun kingHitsLine(hits: String): Component = Component.literal("§6King Minos §7- §5$hits Hits")
+
     private fun drawHp(ctx: GuiGraphicsExtractor, lines: List<Component>) {
         val font = Minecraft.getInstance().font
         lines.forEachIndexed { i, c -> ctx.text(font, c, 0, i * 10, -1, true) }
@@ -387,7 +389,7 @@ object RareMobs {
 
     private fun registerExamples() {
         HudPreview.register(HP_HUD) {
-            val lines = listOf(Component.literal("§2Empyrean King Minos §a100M§f/§a100M§c❤ §b✯"), Component.literal("§6King Minos §7- §575 Hits"))
+            val lines = listOf(Component.literal("§2Empyrean King Minos §a100M§f/§a100M§c❤ §b✯"), kingHitsLine("75"))
             val font = Minecraft.getInstance().font
             HudExample(lines.maxOf { font.width(it) }, HudPreview.textHeight(lines.size, 10)) { ctx -> drawHp(ctx, lines) }
         }

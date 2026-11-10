@@ -47,11 +47,13 @@ object DianaWarp {
         val w = target?.let { finalWarp(it.center, me, fixed = rare != null) }
         target?.warpHint = w?.name
         if (DianaSettings.dianaWarpTitle && w != null && w.name != lastTitle) {
-            val col = if (rare != null) "§d" else "§b"
-            DianaTitles.warpTitle("${col}Warp §e${w.name.replaceFirstChar { it.uppercase() }}")
+            DianaTitles.warpTitle(titleText(w.name, rare != null))
         } else if (w == null && lastTitle != null) DianaTitles.fadeWarpTitle()
         lastTitle = w?.name
     }
+
+    // Warp title text (also the HUD editor example)
+    fun titleText(warpName: String, rareMob: Boolean) = "${if (rareMob) "§d" else "§b"}Warp §e${warpName.replaceFirstChar { it.uppercase() }}"
 
     internal fun warp(rareMob: Boolean) {
         if (!Diana.active()) return

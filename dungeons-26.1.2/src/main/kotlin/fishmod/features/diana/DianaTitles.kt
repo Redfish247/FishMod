@@ -55,10 +55,10 @@ object DianaTitles {
     fun init() {
         val (rareMain, rareSub) = RareMobs.alertText(RareMob.INQ, "ExamplePlayer")
         registerExample(rare, rareMain, rareSub)
-        registerExample(warp, "§bWarp §eCastle", "")
+        registerExample(warp, DianaWarp.titleText("castle", false), "")
         for (s in listOf(rare, warp)) {
             FishHudEditor.register(s.name, { s.x() }, { v -> s.sx(v) }, { s.y() }, { v -> s.sy(v) }, s.w, s.h,
-                { s.gs() }, { v -> s.ss(v) }, { true })
+                { s.gs() }, { v -> s.ss(v) }, { if (s === warp) DianaSettings.dianaWarp && DianaSettings.dianaWarpTitle else DianaSettings.dianaRareMobs })
             fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", s.id)) { ctx, _ ->
                 if (!FishHudEditor.isOpen()) {
                     val a = s.alpha(System.currentTimeMillis())
