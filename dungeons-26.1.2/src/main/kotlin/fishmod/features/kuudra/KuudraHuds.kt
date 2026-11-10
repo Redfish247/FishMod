@@ -69,7 +69,8 @@ object KuudraHuds {
         MiningHuds.reg("Kuudra Health", "kuudra_hp", 100, 10,
             { S.kuudraHpHudX }, { S.kuudraHpHudX = it }, { S.kuudraHpHudY }, { S.kuudraHpHudY = it },
             { S.kuudraHpHudScale }, { S.kuudraHpHudScale = it }, { (S.kuudraBossMaster && S.kuudraHpHud) && Kuudra.inKuudra() && Kuudra.boss?.isAlive == true }, { (S.kuudraBossMaster && S.kuudraHpHud) },
-            example = { listOf(hpText(80_000f, 1)) }) {
+            // Scaled HP on: show the T5 kill-phase format it changes
+            example = { listOf(if (S.kuudraHpScaled) hpText(20_000f, 4) else hpText(80_000f, 1)) }) {
             listOf(hpText(Kuudra.boss?.health ?: 0f))
         }
         MiningHuds.reg("Kuudra Chest Counter", "kuudra_chests", 90, 10,
