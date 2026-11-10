@@ -126,8 +126,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
 
         @JvmStatic
-        fun registerLocked(name: String, getX: IntSupplier, getY: IntSupplier, w: Int, h: Int) {
-            addEntry(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true))
+        @JvmOverloads
+        fun registerLocked(name: String, getX: IntSupplier, getY: IntSupplier, w: Int, h: Int, enabled: BooleanSupplier? = null) {
+            addEntry(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true, null, null, null, enabled))
         }
 
         @JvmStatic
