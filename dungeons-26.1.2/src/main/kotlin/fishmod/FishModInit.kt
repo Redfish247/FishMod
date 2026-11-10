@@ -570,7 +570,8 @@ class FishModInit : ClientModInitializer {
                     BossPhase.runSplitsBox.scaledY + 20
                 }
             },
-            BossPhase.SPLIT_LENGTH, FishConstants.TEXT_HEIGHT + 4
+            BossPhase.SPLIT_LENGTH, FishConstants.TEXT_HEIGHT + 4,
+            java.util.function.BooleanSupplier { BossPhase.runSplitsEnabled }
         )
         FishHudEditor.register("Puzzles", FishPuzzleDisplay.puzzleHud)
 
