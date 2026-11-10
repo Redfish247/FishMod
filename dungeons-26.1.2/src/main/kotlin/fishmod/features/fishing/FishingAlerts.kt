@@ -31,8 +31,8 @@ object FishingAlerts {
     private fun onCatch(e: SeaCreatureCaught) {
         if (!Fishing.active()) return
         if (S.fishingAlerts && S.alertSeaCreature && (e.creature.rare || !S.alertScRareOnly)) {
-            val sc = e.creature
-            title(FishingTitles.CREATURE, "§${sc.rarity.code}§l${sc.name.uppercase()}!", if (e.count > 1) "§7x${e.count}" else "")
+            val (m, sub) = creatureTitle(e.creature, e.count)
+            title(FishingTitles.CREATURE, m, sub)
             sound(S.alertScSound, S.alertScVolume)
         }
         FishingShare.onCatch(e)
@@ -41,8 +41,8 @@ object FishingAlerts {
     private fun onDrop(d: RareDrop) {
         if (!Fishing.active()) return
         if (S.fishingAlerts && S.alertRareDrop && d.price >= S.alertDropMinPrice) {
-            val price = if (d.price > 0) " §7(§6${FishingAlertText.fmtCoins(d.price)}§7)" else ""
-            title(FishingTitles.DROP, "§6§lRARE DROP!", "§f${d.itemName}$price")
+            val (m, sub) = dropTitle(d.itemName, d.price)
+            title(FishingTitles.DROP, m, sub)
             sound(S.alertSound, S.alertSoundVolume)
         }
         FishingShare.onDrop(d)
@@ -60,6 +60,12 @@ object FishingAlerts {
             notify(FishingTitles.TROPHY, "§b§lNEW DISCOVERY", "§f$d", null)
         }
     }
+
+    // Title texts (also used by the HUD editor examples)
+    fun creatureTitle(sc: SeaCreature, count: Int) = "§${sc.rarity.code}§l${sc.name.uppercase()}!" to (if (count > 1) "§7x$count" else "")
+
+    fun dropTitle(item: String, price: Double) =
+        "§6§lRARE DROP!" to "§f$item" + (if (price > 0) " §7(§6${FishingAlertText.fmtCoins(price)}§7)" else "")
 
     // Title + sound + optional local chat line for the non-creature alerts
     fun notify(slot: FishingTitles.Slot, main: String, sub: String, chat: String?) {
