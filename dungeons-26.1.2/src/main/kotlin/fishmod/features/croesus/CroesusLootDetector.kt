@@ -21,6 +21,7 @@ object CroesusLootDetector {
 
     private var runGuiOpenPrev = false
     private var loggedThisVisit = false
+    private var currentFloor: String? = null
 
     @JvmStatic
     fun init() {
@@ -33,6 +34,7 @@ object CroesusLootDetector {
         val title = fishmod.utils.ScreenTitle.plain(screen)
 
         if (RUN_GUI_PATTERN.matcher(title).matches()) {
+            currentFloor = LootTrackerStore.floorFromTitle(title)
             ScreenEvents.afterExtract(screen).register { _, _, _, _, _ -> scanRunGuiPreviews() }
             return
         }
@@ -64,10 +66,10 @@ object CroesusLootDetector {
     private fun logPending(chestName: String) {
         val info = pendingChests.remove(chestName) ?: return
 
-        LootTrackerStore.addAll(info.items.map { Triple(it.displayName, it.id, it.qty) })
+        LootTrackerStore.addAll(info.items.map { Triple(it.displayName, it.id, it.qty) }, currentFloor)
         if (!loggedThisVisit) {
             loggedThisVisit = true
-            LootTrackerStore.setRuns(LootTrackerStore.runs() + 1)
+            LootTrackerStore.addRun(currentFloor)
         }
     }
 

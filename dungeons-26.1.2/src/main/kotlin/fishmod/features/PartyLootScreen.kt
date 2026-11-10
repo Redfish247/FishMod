@@ -56,6 +56,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     private var clearArmed = false
     private var clearArmedAt = 0L
     private var lootScroll = 0
+    private var floorSel: String? = null
     private var lootListX = 0
     private var lootListY = 0
     private var lootListW = 0
@@ -232,21 +233,68 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         namesScroll = 0
     }
 
-    private fun renderLoot(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
-        val runs = LootTrackerStore.runs()
+    private fun floorLabel(k: String?): String = when {
+        k == null -> "All"
+        k == "E" -> "Entrance"
+        else -> k
+    }
+
+    // side tabs: All plus every floor that has at least one run
+    private fun renderFloorTabs(x: Int, y: Int, h: Int, floors: List<String>) {
+        val keys = listOf<String?>(null) + floors
+        val tabH = 18
+        val gap = 2
+        for (i in keys.indices) {
+            val k = keys[i]
+            val ty = y + i * (tabH + gap)
+            if (ty + tabH > y + h) break
+            val on = k == floorSel
+            val hov = !on && over(x, ty, FLOOR_TAB_W, tabH)
+            if (on) UiRecorder.fillPillBar(x.toFloat(), ty.toFloat(), FLOOR_TAB_W.toFloat(), tabH.toFloat(), ACCENT)
+            else UiRecorder.roundedRectRing(x.toFloat(), ty.toFloat(), FLOOR_TAB_W.toFloat(), tabH.toFloat(), tabH / 2f, 1f, if (hov) RAISE else PANEL2, LINE2)
+            val label = floorLabel(k)
+            val fg = if (on) ACC_INK else if (hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR
+            val lx = x + (FLOOR_TAB_W - tw(label, S_SM)) / 2f
+            if (on) UiRecorder.textBold(label, lx, ty + (tabH - S_SM) / 2f, S_SM, fg)
+            else UiRecorder.text(label, lx, ty + (tabH - S_SM) / 2f, S_SM, fg)
+            hit(x, ty, FLOOR_TAB_W, tabH) { selectFloor(k) }
+        }
+    }
+
+    private fun selectFloor(k: String?) {
+        if (k == floorSel) return
+        commitEdit()
+        floorSel = k
+        lootRowsQuery = null
+        lootScroll = 0
+        clearArmed = false
+    }
+
+    private fun renderLoot(ctx: GuiGraphicsExtractor, bx: Int, y: Int, bw: Int, h: Int) {
+        val floors = LootTrackerStore.floorsWithRuns()
+        if (floorSel != null && floorSel !in floors) { floorSel = null; lootRowsQuery = null }
+        var x = bx
+        var w = bw
+        if (floors.isNotEmpty()) {
+            renderFloorTabs(bx, y, h, floors)
+            x = bx + FLOOR_TAB_W + 12
+            w = bw - FLOOR_TAB_W - 12
+        }
+        val floor = floorSel
+        val runs = LootTrackerStore.runs(floor)
         val q = searchField.value.trim().lowercase()
         val now = System.currentTimeMillis()
         if (q != lootRowsQuery || now - lootRowsAt >= 500L) {
             lootRowsQuery = q
             lootRowsAt = now
-            lootRowsAll = LootTrackerStore.rows().toList()
+            lootRowsAll = LootTrackerStore.rows(floor).toList()
             lootRowsSorted = (if (q.isEmpty()) lootRowsAll else lootRowsAll.filter { it.name.lowercase().contains(q) })
                 .sortedByDescending { rowValue(it) }
         }
         val allRows = lootRowsAll
         val rows = lootRowsSorted
 
-        UiRecorder.text("Auto-tracked from Croesus chests.", x.toFloat(), y.toFloat(), S_SM, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.text(if (floor == null) "Auto-tracked from Croesus chests." else "Floor ${floorLabel(floor)}: runs on this floor only.", x.toFloat(), y.toFloat(), S_SM, ScreenTheme.SUBTEXT_COLOR)
         val hint = "Click Runs or a count to edit it"
         UiRecorder.text(hint, (x + w - tw(hint, S_XS)).toFloat(), (y + 1).toFloat(), S_XS, DIM)
 
@@ -266,7 +314,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val runsHov = editKind != 1 && over(x, ty, tileW, tileH)
         tile(x, ty, tileW, tileH, "RUNS", if (editKind == 1) "" else runs.toString(), ScreenTheme.TEXT_COLOR, null, runsHov)
         if (editKind == 1) placeEditBox(x + 10, ty + 18, tileW - 20, 16)
-        else hit(x, ty, tileW, tileH) { openEdit(1, "", "", LootTrackerStore.runs(), x + 10, ty + 18, tileW - 20, 16) }
+        else hit(x, ty, tileW, tileH) { openEdit(1, "", "", runs, x + 10, ty + 18, tileW - 20, 16) }
         var tx = x + tileW + 8
         tile(tx, ty, tileW, tileH, "TOTAL VALUE", fmtCoins(total), GOLD, "$drops items", false)
         tx += tileW + 8
@@ -287,7 +335,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val info = "${rows.size} / ${allRows.size} drops shown"
         UiRecorder.text(info, (x + sw + 10).toFloat(), sy + (sh - S_XS) / 2f, S_XS, ScreenTheme.SUBTEXT_COLOR)
 
-        val clearLabel = if (clearArmed) "Click again to clear" else "Clear all"
+        val clearLabel = if (clearArmed) "Click again to clear" else if (floor == null) "Clear all" else "Clear ${floorLabel(floor)}"
         val cw = tw(clearLabel, S_SM) + 24
         val cx = x + w - cw
         val chov = over(cx, sy, cw, sh)
@@ -300,7 +348,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             UiRecorder.textBold(clearLabel, (cx + 12).toFloat(), sy + (sh - S_SM) / 2f, S_SM, ScreenTheme.DANGER)
         }
         hit(cx, sy, cw, sh) {
-            if (clearArmed) { cancelEdit(); LootTrackerStore.clear(); lootRowsQuery = null; clearArmed = false }
+            if (clearArmed) { cancelEdit(); LootTrackerStore.clear(floor); lootRowsQuery = null; clearArmed = false }
             else { clearArmed = true; clearArmedAt = System.currentTimeMillis() }
         }
 
@@ -409,8 +457,8 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val t = editBox.value.trim()
         try {
             val n = if (t.isEmpty()) 0 else t.toInt()
-            if (editKind == 1) LootTrackerStore.setRuns(n)
-            else if (editKind == 2) LootTrackerStore.setCount(editName, editId, n)
+            if (editKind == 1) LootTrackerStore.setRuns(floorSel, n)
+            else if (editKind == 2) LootTrackerStore.setCount(floorSel, editName, editId, n)
             lootRowsQuery = null
         } catch (e: NumberFormatException) {
             FishDiag.fail("PartyLootScreen.3", "digit-filtered edit box not numeric: '$t' kind=$editKind", e)
@@ -778,6 +826,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
 
         private const val FOOT_H = 32
         private const val DROP_H = 28
+        private const val FLOOR_TAB_W = 64
 
         private val MODES = arrayOf("off", "self", "whitelist", "blacklist", "everyone")
         private val NAME_RE = Regex("^\\w{3,16}$")
