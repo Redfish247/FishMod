@@ -235,202 +235,14 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title", "Crown of Avarice"),
             "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
             "Farming" to listOf(
-                "Visitor Timer", "Visitor Shopping List", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Pest Profit", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
+                "Visitor Timer", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
                 "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
-                "Log Book", "Sensitivity", "Anita Medal Profit", "Mooshroom Cow Perk",
+                "Log Book", "Sensitivity", "Mooshroom Cow Perk",
             ),
             "Fishing" to listOf("Fishing Sea Creatures", "Fishing Profit", "Fishing Efficiency", "Barn Fishing Timer", "Fishing Festival", "Fishing Area Tracker",
                 "Fishing Creature Alert", "Fishing Rare Drop Alert", "Fishing Hotspot Alert", "Fishing Wormhole Alert", "Fishing Trophy Alert", "Fishing Deployable Alert", "Fishing Bait Alert"),
             "Rift" to listOf("Rift Guide"),
             "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
-        )
-
-        private class Sample(
-            val lines: List<String>,
-            val center: Boolean = false,
-            val lineH: Int = 10,
-            val right: List<String>? = null,
-            val width: Int? = null,
-            val bg: Int = 0,
-        )
-
-        private fun s(vararg lines: String, lineH: Int = 10) = Sample(lines.toList(), lineH = lineH)
-        private fun c(vararg lines: String, lineH: Int = 10) = Sample(lines.toList(), center = true, lineH = lineH)
-        private fun cols(rows: List<Pair<String, String>>, width: Int? = null, lineH: Int = 10) =
-            Sample(rows.map { it.first }, lineH = lineH, right = rows.map { it.second }, width = width)
-
-        private val SAMPLES: Map<String, Sample> = mapOf(
-            "Boss Tick Clock" to c("§f12.35"),
-            "Crystal Respawn" to c("§d1.20"),
-            "Crystal Not Placed" to c("§d§lCRYSTAL NOT PLACED"),
-            "Storm Kill Time" to c("§538.45"),
-            "LB Release Timer" to c("§c2.35"),
-            "Storm Crush Banner" to c("§d§lSTORM CRUSHED"),
-            "Pillar Blast Timer" to c("§c0.85"),
-            "Terminals Open In" to c("§e3.45"),
-            "Section Count" to c("§a(§c3§a/7)"),
-            "P3 Section" to s("§5P3: §f 2/4"),
-            "Device Done" to c("§a§lDEVICE DONE"),
-            "Melody Callout" to c("§5§lHEALER §7» §dMelody §f2§7/§f4"),
-            "Section Cleared" to c("§a§lSECTION CLEARED"),
-            "Goldor Splits" to cols(listOf(
-                "§6S1 " to "§a12.34s§8 (§712.05s§8)",
-                "§6S2 " to "§a13.10s§8 (§712.80s§8)",
-                "§6S3 " to "§a11.92s§8 (§711.70s§8)",
-                "§6S4 " to "§a14.05s§8 (§713.85s§8)",
-            ), width = 120),
-            "Terminal Tracker" to Sample(
-                listOf("§fTerminals", "§fS2 (5/8)", " §bTerm #1 §fTechnoFish", " §bTerm #2 §fGoldorMain",
-                    " §dDev #1 §fSlowGuy", " §cLever #1 §fTechnoFish", " §cLever #2 §fHealerGuy", " §cMissing 3", " §cGate pending"),
-                lineH = 10,
-                bg = 0x66000000,
-            ),
-            "Run Splits" to cols(listOf(
-                "§4Blood Open " to "§a25.70s§8 (§725.10s§8)",
-                "§cBlood Clear " to "§a1m 7.02s§8 (§765.40s§8)",
-                "§dPortal " to "§a31.44s§8 (§730.90s§8)",
-                "§5Maxor " to "§a28.15s§8 (§727.60s§8)",
-                "§3Storm " to "§a52.80s§8 (§751.95s§8)",
-                "§eTerminals " to "§a46.21s§8 (§745.30s§8)",
-            ), width = 165),
-            "Est. Total (follows Splits)" to cols(listOf(
-                "§3Est. Total " to "§a6m 12.40s",
-                "§8Lag Lost " to "§c1.35s",
-            ), width = 165),
-            "Puzzles" to s("§fPuzzles: (3)", "§aCreeper Beams: [✔]", "§cIce Path: [✦]", "§9???: [✦]"),
-            "PB Pace" to s("§6§lPB Pace §7(M7)", "§fStorm §c+1.24s", "§7vs PB: §cbehind §c+3.87s", lineH = 11),
-            "Dungeon Map Info" to c(
-                "§fSecrets: §b34§7-§e41§7-§c52   §fScore: §e287",
-                "§fDeaths: §a0   §fM: §a✔   §fP: §c✖   §fCrypts: §e3",
-            ),
-            "Party Warp Timer" to s("§eWarp: §a23.4s"),
-            "Blessings" to s("§4Power: §a34", "§5Time: §a5"),
-            "Mask & Phoenix Timer" to s("§eBonzo §7●", "§7Spirit §7●", "§7Phoenix §7✔"),
-            "Dungeon Breaker" to s("§cCharges: §e17§7/§e20§c⸕"),
-            "Spirit Bear" to s("§cBear: §f18/25"),
-            "Rift Guide" to s("§d§lMirrorverse", "§f• Lava maze: follow the glass", "§f• Upside-down parkour", "§f• Turn on the red lever", "§f• Dance room: copy the moves"),
-            "Slayer RNG Meter" to s("§dRNG Meter: §eWarden Heart §8(§a62.4%§8)"),
-            "Achievement Popup" to Sample(listOf("§6§lAchievement Unlocked!", "§fFlawless Floor 7", "§7S+ on F7 without dying", "§e+25 points"), lineH = 12, bg = 0xC0101018.toInt()),
-            "Mooshroom Cow Perk" to s("§c§lMooshroom Cow Perk", "§7Mushroom Milestone §f24", "§e182,340§8/§e300,000 §8(60.8%)", "§7ETA: §b1h 12m"),
-            "Necron Drag Timer" to s("§bDragged: §f3.45"),
-            "Kuudra Backbone" to s("§6Backbone §c||||||||||||§7||||||||"),
-            "Session Stats" to s("§7Runs: §a14", "§7Deaths: §c3", "§7R/hr: §e9.2", "§7Time: §f1h 31m", lineH = 12),
-            "Simon Says" to s("§bSimon Says: §a3§7/4"),
-            "Party Finder List" to s(
-                "§e§lParty Finder §7(§f7§7)",
-                "§8· §fTechnoFish  §d§lM7 §8[§e4§7/5§8]  §7lv §f45  §8· §7wPB §fSlowGuy §f5:48",
-                "   §7need §cH  §8· §7s+ runs, no leechers",
-                "§8· §fGoldorMain  §b§lF7 §8[§e2§7/5§8]  §7lv §f38  §8· §7wPB §fTechnoFish §f6:02",
-                "   §7need §aT §9M  §8· §7chill run",
-            ),
-            "Relic Countdown" to s("§dRelic §f1.85s"),
-            "Wither Dragon Timer" to s("§53450ms"),
-            "Chat Alerts" to c("§e⚑ Wither Key Picked Up!", lineH = 11),
-            "Soulflow" to s("§3Soulflow: §f12,345"),
-            "Quiz Timer" to s("§dQuiz §7(§f2/3§7): §b8.4s"),
-            "Secret Overlay" to s("§7Secrets: §e5§7/§e9"),
-            "Performance" to s("§7FPS: §a144", "§7TPS: §a19.9", "§7Ping: §a42ms"),
-            "Storm Over Alert" to s("§dStorm Over!"),
-            "Veno Stack Count" to s("§e3.4s", "§f20/40"),
-            "Py Tick Timer" to c("§d12.35"),
-            "Necron LB Timer" to c("§c3.20"),
-            "Players Leaped" to s("§5Leaped (HEE2): §e2/4"),
-            "Dungeon Score Title" to c("§aOn pace for 300 §7(12m 34s)"),
-            "Custom Scoreboard" to Sample(
-                listOf("§e§lSKYBLOCK") + List(13) { "" },
-                center = true,
-                lineH = 9,
-                right = listOf(
-                    "", "§711/02/26  §8m117DM", "Winter 8th", "§712:00am", "§7⏣ §aYour Island",
-                    "", "Level: §b312", "Purse: §61,234,567", "Bits/Motes: §b1,024§7/§d850", "Gems: §a120", "",
-                    "§eMayor Diana §7(3d 4h)", " §7- §fPet XP Buff",
-                    "§ewww.hypixel.net",
-                ),
-                width = SCOREBOARD_W,
-                bg = 0x4C000000,
-            ),
-            "Tac Timer" to s("§5Tac: §a2.4"),
-            "Arrow HUD" to s("§fFlint Arrow §7x§f1,284"),
-            "Kuudra Splits" to s("§6§lKuudra Splits §7T5", "§bSupplies: §a38.2s §8(36.9s)", "§bBuild: §a41.5s §8(40.1s)", "§bEat: §a22.8s §8(21.5s)", "§bKill: §e18.3s", "§fTotal: §e2m 1.8s §8(1m 58s)"),
-            "Kuudra Supplies" to s("§6Supplies: §a4§7/6", "§eSupply 1 §73.2s", "§eSupply 2 §76.8s", "§eSupply 3 §79.1s", "§eSupply 4 §711.4s"),
-            "Kuudra Build" to s("§bBuild: §e64%", "§bBuilders: §a3", "§bFreshers: §a2"),
-            "Kuudra Fresh Timers" to s("§6TechnoFish§f: 7.4s", "§6GoldorMain§f: 4.1s"),
-            "Kuudra Health" to s("§c§l62.5M §7/ §a100M §c❤"),
-            "Kuudra Chest Counter" to s("§6Chests: §e57§7/60"),
-            "Kuudra Profit" to s("§6Kuudra Profit: §a48.2M", "§712 paid chests, §a4.0M§7/chest"),
-            "Kuudra Chest Value" to s("§6§lChest Value", "§fWither Shard §6§l+1.2M", "§9Hollow Wisp §6§l+310k", "§fTotal: §a1.5M"),
-            "Rag Timer" to s("§5Rag: §a8.5s"),
-            "Spring Boots" to s("§aCharge: §f67%"),
-            "Diana Mythos HP" to s("§2Empyrean King Minos §a100M§f/§a100M§c❤ §b✯", "§6King Minos §7- §575 Hits"),
-            "Diana No Shuriken" to s("§c§lNO SHURIKEN!"),
-            "Diana Rare Mob Alert" to c("§6§l<§b§lO§6§l> §d§lINQUISITOR! §6§l<§b§lO§6§l>", "§7Tester"),
-            "Diana Warp Title" to c("§bWarp §eCastle"),
-            "Mining Profit" to s("§e§lMining Profit §7(Combined, Session)", "§6  4.2M §7| §6Fine Jade Gemstone §f38",
-                "§6  1.8M §7| §5Umber Plate §f3", "§6420.5k §7| §9Rough Topaz Gemstone §f2,140", "§7Corpses §f12",
-                "§7Glacite Powder §b48,210", "§7Playtime §f1h 12m", "§eProfit §66.4M §7(5.3M/h)"),
-            "Commissions" to s("§9§lCommissions", "§fCorpse Looter§7: §c0%", "§fPeridot Gemstone Collector§7: §e78.5%",
-                "§fManiac Slayer§7: §aDONE"),
-            "Mineshaft Pity" to s("§3§lMineshaft Pity", "§3Counter: §e1,298§6/§e2000 §7(64.9%)", "§3Chance: §e1§6/§e702", "§3Blocks: §e341"),
-            "Pickobulus" to s("§b§lPickobulus §7(38 blocks)", "§7Glacite: §f24", "§7Umber: §f9", "§7Hard Stone: §f5"),
-            "Maniac Miner" to s("§c§lManiac Miner", "§7Blocks: §f212 §8(18s)"),
-            "SkyMall" to s("§bSkyMall: §f+100 ☘ Mining Fortune"),
-            "Visitor Timer" to s("§aVisitors: §f3  §7Next: §b2m 14s"),
-            "Visitor Shopping List" to s("§e§lShopping List", "§fEnchanted Hay Bale §8x2 §6340k", "§fBox of Seeds §8x1 §6610k", "§7Total: §6950k"),
-            "Visitor Stats" to s("§a§lVisitor Stats", "§7Accepted: §f124", "§7Copper: §c8,412", "§7Garden XP: §21,950", "§7Rare Rewards: §d3"),
-            "Pest Timer" to s("§c§lPests §f3", "§7Cooldown: §e1m 58s", "§7Plots: §f4, 12", "§7Spray: §aCompost (12m)"),
-            "Pest Profit" to s("§c§lPest Profit", "§61.2M §fBurrowing Spores §8x1", "§7Kills: §f42", "§eTotal: §61.9M"),
-            "Composter" to s("§2§lComposter", "§7Organic Matter: 120k", "§7Fuel: 30k", "§7Time Left: 2h 5m", "§7Stored Compost: 12"),
-            "Jacob's Contest" to s("§e§lJacob's Contest", "§f○ Wheat", "§fStarts In: 12m"),
-            "Rare Crops" to s("§6Rare Crops: §f7"),
-            "Farming Profit" to s("§6§lFarming Profit §7(All, Session)", "§6 2.4M §7| §fEnchanted Potato §8x640", "§6 820k §7| §fBountiful Drops §8x12",
-                "§6 310k §7| §fSeeds §8x4,200", "§7Time §f1h 05m", "§eProfit §63.5M §7(3.2M/h)"),
-            "Garden Titles" to c("§a§lNew Visitor: §fSpaceman"),
-            "Rare Drop Alert" to c("§6§lRARE DROP!", "§6Cropie §7(+120 Farming Fortune)"),
-            "Crop Milestone" to s("§6§lWheat §7- Tier §f32", "§7Next: §f33 §8(71.3%)", "§7Average tier: §f28.4", "§7ETA: §e4m 12s §8(2.1 lvl/h)"),
-            "Garden Level" to s("§a§lGarden Level §f20 §7(+5 overflow)", "§7XP: §f4,210§7/§f10,000 §8(42.1%)"),
-            "Hoe Level" to s("§e§lHoe Level §f14§7/§f10 §a(+4 overflow)"),
-            "Jeff Buy Order" to s("§e§lJeff Buy Order", "§8§mRarefinder", "§a▶ §f§lVermin Vaporizer §7(2/3)", "§7  Hypercharge", "§7  Cropshot", "§7  Overdrive"),
-            "Charmed Visitor" to s("§d§lCharmed Visitor", "§7Next: §f12m 30s", "§7Charm: §a+35%"),
-            "Greenhouse" to s("§a§lGreenhouse", "§7Harvestable: §a12", "§7Water: §c Low"),
-            "Stereo Harmony" to s("§d§lStereo Harmony", "§7Vinyl: §fPretty Fly", "§7Pest: §aFly §7Crop: §6Wheat"),
-            "Log Book" to s("§b§lLog Book", "§7Visited: §f128§7/§f165", "§7Accepted: §f1,204", "§7Rare: §d38§7/§d60"),
-            "Sensitivity" to s("§e§lSensitivity §f25%", "§7Lowered while farming"),
-            "Fossil Solver" to s("§6§lFossil Solver", "§eIdentified, §a4 §eplacements left", "§eCharges: §a12", "§eFossil: §aClaw"),
-            "Diana Loot Tracker" to s("§6§lDiana Loot §7(Event)", "§5Chimera§7: §f2", "§6Daedalus Stick§7: §f1", "§9Griffin Feather§7: §f14", "§6Coins§7: §f1.2m", "§aProfit§7: §f25.3m §7(4.1m/h)"),
-            "Diana Mob Tracker" to s("§6§lDiana Mobs §7(Event)", "§dMinos Inquisitor§7: §f6", "§5Minos Champion§7: §f21", "§7Total Mobs§7: §f140"),
-            "Fishing Sea Creatures" to s("§b§lSea Creatures §7(Session)", "§7| §6Water Hydra §f3 §85%", "§7| §5Sea Emperor §f7 §812%", "§7| §9Carrot King §f21 §835%", "§7| §aSea Walker §f29 §848%", "§7Total §f60 §7Double §f4 §7Cocoon §f2"),
-            "Fishing Profit" to s("§b§lFishing Profit §7(Session)", "§7| §fDeep Sea Orb x2 §61.4M", "§7| §fMagmafish x14 §6280K", "§7| §fSpiked Hook x3 §6190K", "§7Drops §61.9M", "§7Costs §c-300K", "§7Net §61.6M", "§7Coins/hr §65.2M"),
-            "Fishing Efficiency" to s("§b§lFishing Efficiency §7(Session)", "§7Active §f18:24", "§7SC/hr §f196.1", "§7Catches/hr §f412.0"),
-            "Barn Fishing Timer" to s("§b§lBarn Fishing", "§7Time §a02:41 §7Caught §f37"),
-            "Fishing Festival" to s("§b§lFishing Festival §7(12:30 left)", "§7Sharks: §f18 §7(§62 §55 §96 §a5§7)"),
-            "Fishing Area Tracker" to s("§b§lCrimson Isle §7(Session)", "§7| §6Thunder §f2 §84%", "§7| §5Lord Jawbus §f1 §82%", "§7| §fLava Flame §7x31", "§7Thunders since Bottle: §f48"),
-            "Fishing Creature Alert" to c("§5§lSEA EMPEROR!", "§7x2"),
-            "Fishing Rare Drop Alert" to c("§6§lRARE DROP!", "§fDeep Sea Orb §7(§61.4M§7)"),
-            "Fishing Hotspot Alert" to c("§6§lHotspot found", "§fDouble Hook Chance"),
-            "Fishing Wormhole Alert" to c("§c§lWormhole is gone"),
-            "Fishing Trophy Alert" to c("§b§lNEW DISCOVERY", "§fGolden Fish"),
-            "Fishing Deployable Alert" to c("§e§lTotem of Corruption expires soon"),
-            "Fishing Bait Alert" to c("§c§lOut of bait soon", "§f12 Whale Bait"),
-            "Diana Stats" to s("§6§lDiana Stats", "§eMobs since Inq§7: §f38", "§eInqs since Chimera§7: §f4"),
-            "Crown of Avarice" to s("§dCrown of Avarice", "§7Coins: §6250.0M§7/§61B", "§7Time: §f1h 12m", "§7Per Hour: §650.0M", "§7Time to Max: §b15h 0m"),
-            "Diana Magic Find" to s("§6§lDiana Magic Find", "§5Chimera§7: §b320%", "§6Stick§7: §b250%"),
-            "Pet" to s("§6Ender Dragon §a+1.2k §7(845.3k/1.9M 44.5%)"),
-            "Slayer Spawn" to s("§5§lRevenant Horror V", "§7Spawn: §f1,850 §7/ §f2,400 §8(77%)", lineH = 12),
-            "Experiment Profit" to s("§e§lExperiment Profit", "§61.2M §7| §fUltimate Wise I §f1", "§7Superpairs §f3 §8| §7Chrono §f3", "§7Enchanting XP §b450K §7(§b150K§7/exp)", "§eProfit §61.2M §7(§6400K§7/exp)", lineH = 12),
-            "Slayer Carries" to s("§5§lSLAYER CARRIES", "§eSteve §7Voidgloom Seraph IV§7: §f3§7/§f10", lineH = 12),
-            "Slayer Stats" to s("§5§lSLAYER STATS", "§7XP: §f12.5K", "§7Kills: §f84", "§7XP/hr: §e45.2K", "§7Kills/hr: §e31", lineH = 12),
-            "Slayer Boss Timer" to s("§6Boss: §f12.84s", "§7PB: §f9.51s", "§a§lNEW PB!", "§7Cycle: §f52.3s", "§7Since kill: §f18.4s", lineH = 12),
-            "Slayer Profit" to cols(listOf(
-                "§e§lRevenant Horror 5 Profit Tracker" to "",
-                "§71x §fShard of the Shredded" to "§61.2M",
-                "§73x §fFoul Flesh" to "§6186K",
-                "§71,284x §6Mob Kill Coins" to "§6356K",
-                "§7142x §fRevenant Flesh" to "§68.5K",
-                " §7Slayer Spawn Costs:" to "§c-2.1M",
-                "§7Bosses killed:" to "§e42",
-                "§eTotal Profit:" to "§64,812,300 coins",
-                "§eProfit/h:" to "§63.2M",
-            ), lineH = 12),
         )
 
         const val SCOREBOARD_W = 118
@@ -637,8 +449,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT)
     }
 
-    private fun sample(e: HudEntry): Sample? = SAMPLES[e.name()]
-
     // Examples are rebuilt at most every 200ms (hit-tests ask for sizes many times a frame)
     private class CachedExample(val at: Long, val ex: HudExample?)
     private val exampleCache = HashMap<String, CachedExample>()
@@ -652,21 +462,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return ex
     }
 
-    private fun baseW(e: HudEntry): Int {
-        example(e)?.let { return it.w }
-        val s = sample(e) ?: return e.w()
-        s.width?.let { return it }
-        val r = s.right
-        if (r != null) return s.lines.indices.maxOf { i -> this.font.width(s.lines[i]) + 6 + this.font.width(r.getOrElse(i) { "" }) }
-        val tw = s.lines.maxOf { this.font.width(it) }
-        return if (s.center) Math.max(e.w(), tw) else tw
-    }
+    private fun baseW(e: HudEntry): Int = example(e)?.w ?: e.w()
 
-    private fun baseH(e: HudEntry): Int {
-        example(e)?.let { return it.h }
-        val s = sample(e) ?: return e.h()
-        return (s.lines.size - 1) * s.lineH + 9
-    }
+    private fun baseH(e: HudEntry): Int = example(e)?.h ?: e.h()
 
     private fun sw(e: HudEntry) = Math.max(4, (baseW(e) * e.scale()).toInt())
     private fun sh(e: HudEntry) = Math.max(4, (baseH(e) * e.scale()).toInt())
@@ -796,7 +594,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     private fun drawExample(ctx: GuiGraphicsExtractor, e: HudEntry, x: Int, y: Int) {
-        val s = sample(e)
         val sc = e.scale().toFloat()
         val pose = ctx.pose()
         pose.pushMatrix()
@@ -806,41 +603,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val ex = example(e)
         if (ex != null) {
             HudPreview.draw(ex, ctx, e.name())
-        } else if (e.name() == "Dungeon Map") {
-            drawMapExample(ctx, e.w(), e.h())
-        } else if (s != null) {
-            val bw = baseW(e)
-            if (s.bg != 0) ctx.fill(0, 0, bw, baseH(e), s.bg)
-            s.lines.forEachIndexed { i, line ->
-                val lx = if (s.center) (bw - this.font.width(line)) / 2 else 0
-                ctx.text(this.font, line, lx, i * s.lineH, 0xFFFFFFFF.toInt(), true)
-                s.right?.getOrNull(i)?.let { r -> ctx.text(this.font, r, bw - this.font.width(r), i * s.lineH, 0xFFFFFFFF.toInt(), true) }
-            }
         } else {
             ctx.fill(0, 0, e.w(), e.h(), 0x40000000)
             ctx.centeredText(this.font, "§7" + e.name(), e.w() / 2, (e.h() - 8) / 2, 0xFFFFFFFF.toInt())
         }
         } finally {
             pose.popMatrix()
-        }
-    }
-
-    // Fake 6x6 dungeon layout: 0 empty, 1 normal, 2 puzzle, 3 trap, 4 blood, 5 entrance, 6 fairy, 7 mini
-    private val MAP_EXAMPLE = arrayOf(
-        intArrayOf(5, 1, 1, 0, 2, 1), intArrayOf(0, 1, 6, 1, 1, 0), intArrayOf(1, 1, 0, 7, 1, 1),
-        intArrayOf(2, 1, 1, 1, 0, 1), intArrayOf(1, 0, 3, 1, 1, 1), intArrayOf(1, 1, 1, 0, 1, 4),
-    )
-
-    private fun drawMapExample(ctx: GuiGraphicsExtractor, w: Int, h: Int) {
-        ctx.fill(0, 0, w, h, 0x80000000.toInt())
-        val cell = minOf(w, h) / 6
-        val room = cell * 4 / 5
-        val ox = (w - cell * 6) / 2 + (cell - room) / 2
-        val oy = (h - cell * 6) / 2 + (cell - room) / 2
-        val cols = intArrayOf(0, 0xFF6B3A1E.toInt(), 0xFF8A2BE2.toInt(), 0xFFD87F33.toInt(), 0xFFE02020.toInt(), 0xFF20A020.toInt(), 0xFFF070C0.toInt(), 0xFFE0C020.toInt())
-        for (r in 0 until 6) for (c in 0 until 6) {
-            val t = MAP_EXAMPLE[r][c]
-            if (t != 0) ctx.fill(ox + c * cell, oy + r * cell, ox + c * cell + room, oy + r * cell + room, cols[t])
         }
     }
 
