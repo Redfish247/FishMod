@@ -2,6 +2,7 @@ package fishmod.features.dungeon.f4
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.FishEvents
@@ -29,6 +30,7 @@ object SpiritBear {
 
     @JvmStatic
     fun init() {
+        registerPreview()
         FishHudEditor.register(
             NAME,
             { FishSettings.spiritBearHudX }, { v -> FishSettings.spiritBearHudX = v },
@@ -79,8 +81,15 @@ object SpiritBear {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.spiritBearHudX.toFloat(), FishSettings.spiritBearHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, "§cBear: $body", 0, 0, -1, true)
+        ctx.text(mc.font, label(body), 0, 0, -1, true)
         ctx.pose().popMatrix()
+    }
+
+    private fun label(body: String) = "§cBear: $body"
+
+    // Example data: 18 of the 25 floor-4 lanterns
+    private fun registerPreview() {
+        HudPreview.register(NAME) { HudPreview.text(listOf(label("§f18/25"))) }
     }
 
     private val F4 = hashSetOf(

@@ -41,6 +41,7 @@ object PartyFinderPanel {
 
     @JvmStatic
     fun init() {
+        registerPreview()
         fishmod.features.FishHudEditor.register(
             "Party Finder List",
             { FishSettings.pfListX }, { v -> FishSettings.pfListX = v },
@@ -172,8 +173,7 @@ object PartyFinderPanel {
 
         val tag = if (maxScroll > 0) "  §8${scroll + 1}-${scroll + visible} / ${parties.size}" else ""
         val count = if (all.size != parties.size) "§7(§f${parties.size}§8/${all.size}§7) §6⚑ §8$summary" else "§7(§f${parties.size}§7)"
-        ctx.text(font, "§e§lParty Finder $count$tag", panelX, panelY + 2, -1, true)
-        ctx.fill(panelX - PAD, panelY + HEADER_H - 4, panelX + PANEL_W + PAD, panelY + HEADER_H - 3, 0x50E0C060)
+        drawHeader(ctx, font, panelX, panelY, "§e§lParty Finder $count$tag")
 
         val hoveredMenuIdx = acc.`fishmod$getHoveredSlot`()?.index ?: -1
         val rects = ArrayList<IntArray>(visible)
@@ -187,31 +187,7 @@ object PartyFinderPanel {
             val hot = mouseIn || p.slot == hoveredMenuIdx
             if (hot) hoverParty = scroll + i
 
-            ctx.fill(panelX - PAD, ry - 1, panelX + PANEL_W + PAD, ry + ROW_H - 1,
-                if (hot) 0x484CC2FF else if (i % 2 == 1) 0x28000000 else 0x18000000)
-            if (hot) ctx.fill(panelX - PAD, ry - 1, panelX - PAD + 2, ry + ROW_H - 1, 0xFF4CC2FF.toInt())
-
-            val fillCol = when {
-                p.members >= p.maxMembers -> "§c"
-                p.members >= p.maxMembers - 1 -> "§e"
-                else -> "§a"
-            }
-            val fl = if (p.master) "§d§lM${p.floor}" else "§b§lF${p.floor}"
-
-            val line1 = buildString {
-                append(if (hot) "§e» " else "§8· ")
-                append("§f${p.leader}  $fl §8[$fillCol${p.members}§7/${p.maxMembers}§8]")
-                if (p.levelReq > 0) append("  §7lv §f${p.levelReq}")
-                if (FishSettings.pfListWorstPb) append("  §8· ").append(worstPb(p))
-            }
-            ctx.text(font, clip(font, line1, PANEL_W - 4), panelX, ry + 2, -1, true)
-
-            val missing = CLASSES.filter { it !in p.present }.joinToString(" ") { it.first().toString() }
-            val line2 = buildString {
-                append(if (missing.isEmpty()) "§a§ofull party" else "§7need §c$missing")
-                if (FishSettings.pfListNotes && !p.note.isNullOrBlank()) append("  §8· §7").append(strip(p.note))
-            }
-            ctx.text(font, clip(font, line2, PANEL_W - 14), panelX + 10, ry + 12, -1, true)
+            drawRow(ctx, font, panelX, ry, i, p, hot, ::worstPb)
         }
         rowRects = rects
 
@@ -223,6 +199,57 @@ object PartyFinderPanel {
             ctx.fill(sx - 1, sy + 16, sx + 17, sy + 17, 0xFF4CC2FF.toInt())
             ctx.fill(sx - 1, sy, sx, sy + 16, 0xFF4CC2FF.toInt())
             ctx.fill(sx + 16, sy, sx + 17, sy + 16, 0xFF4CC2FF.toInt())
+        }
+    }
+
+    private fun drawHeader(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, panelX: Int, panelY: Int, text: String) {
+        ctx.text(font, text, panelX, panelY + 2, -1, true)
+        ctx.fill(panelX - PAD, panelY + HEADER_H - 4, panelX + PANEL_W + PAD, panelY + HEADER_H - 3, 0x50E0C060)
+    }
+
+    private fun drawRow(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, panelX: Int, ry: Int, i: Int, p: Party, hot: Boolean, wpb: (Party) -> String) {
+        ctx.fill(panelX - PAD, ry - 1, panelX + PANEL_W + PAD, ry + ROW_H - 1,
+            if (hot) 0x484CC2FF else if (i % 2 == 1) 0x28000000 else 0x18000000)
+        if (hot) ctx.fill(panelX - PAD, ry - 1, panelX - PAD + 2, ry + ROW_H - 1, 0xFF4CC2FF.toInt())
+
+        val fillCol = when {
+            p.members >= p.maxMembers -> "§c"
+            p.members >= p.maxMembers - 1 -> "§e"
+            else -> "§a"
+        }
+        val fl = if (p.master) "§d§lM${p.floor}" else "§b§lF${p.floor}"
+
+        val line1 = buildString {
+            append(if (hot) "§e» " else "§8· ")
+            append("§f${p.leader}  $fl §8[$fillCol${p.members}§7/${p.maxMembers}§8]")
+            if (p.levelReq > 0) append("  §7lv §f${p.levelReq}")
+            if (FishSettings.pfListWorstPb) append("  §8· ").append(wpb(p))
+        }
+        ctx.text(font, clip(font, line1, PANEL_W - 4), panelX, ry + 2, -1, true)
+
+        val missing = CLASSES.filter { it !in p.present }.joinToString(" ") { it.first().toString() }
+        val line2 = buildString {
+            append(if (missing.isEmpty()) "§a§ofull party" else "§7need §c$missing")
+            if (FishSettings.pfListNotes && !p.note.isNullOrBlank()) append("  §8· §7").append(strip(p.note))
+        }
+        ctx.text(font, clip(font, line2, PANEL_W - 14), panelX + 10, ry + 12, -1, true)
+    }
+
+    // Example data: fake leaders and notes, no PB lookups
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register("Party Finder List") {
+            val ex = listOf(
+                Party(0, "ExampleLeader", 3, 5, 7, true, setOf("Archer", "Healer", "Mage"), listOf("ExampleA", "ExampleB"), "s+ runs, no leechers", 40),
+                Party(1, "ExampleTwo", 2, 5, 7, false, setOf("Tank", "Mage"), listOf("ExampleC"), "chill run", 35),
+                Party(2, "ExampleThree", 4, 5, 6, false, setOf("Berserk", "Healer", "Mage", "Tank"), listOf("ExampleD"), null, 30),
+                Party(3, "ExampleFour", 5, 5, 4, false, CLASSES.toSet(), emptyList(), null, 0),
+            )
+            val visible = minOf(FishSettings.pfListMaxRows.coerceIn(3, 10), ex.size)
+            val font = Minecraft.getInstance().font
+            fishmod.features.HudExample(PANEL_W, HEADER_H + visible * ROW_H + PAD) { ctx ->
+                drawHeader(ctx, font, 0, 0, "§e§lParty Finder §7(§f${ex.size}§7)")
+                for (i in 0 until visible) drawRow(ctx, font, 0, HEADER_H + i * ROW_H, i, ex[i], false) { "§7wPB §fExample §7§f5:48" }
+            }
         }
     }
 

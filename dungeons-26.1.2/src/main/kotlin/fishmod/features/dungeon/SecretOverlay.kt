@@ -2,6 +2,7 @@ package fishmod.features.dungeon
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.DeltaTracker
@@ -20,6 +21,7 @@ object SecretOverlay {
 
     @JvmStatic
     fun init() {
+        registerPreview()
         FishHudEditor.register(
             NAME,
             { FishSettings.secretOverlayX }, { v -> FishSettings.secretOverlayX = v },
@@ -42,12 +44,21 @@ object SecretOverlay {
         if (System.currentTimeMillis() - seenAt > STALE_MS || total <= 0) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        val c = when { found >= total -> "§a"; found > 0 -> "§e"; else -> "§c" }
         val sc = FishSettings.secretOverlayScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.secretOverlayX.toFloat(), FishSettings.secretOverlayY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, "§7Secrets: $c$found§7/$c$total", 0, 0, -1, true)
+        ctx.text(mc.font, label(found, total), 0, 0, -1, true)
         ctx.pose().popMatrix()
+    }
+
+    private fun label(found: Int, total: Int): String {
+        val c = when { found >= total -> "§a"; found > 0 -> "§e"; else -> "§c" }
+        return "§7Secrets: $c$found§7/$c$total"
+    }
+
+    // Example data: 5 of 8 secrets
+    private fun registerPreview() {
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(5, 8))) }
     }
 }

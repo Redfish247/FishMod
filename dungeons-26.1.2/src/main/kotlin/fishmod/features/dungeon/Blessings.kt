@@ -4,6 +4,8 @@ import fishmod.utils.TextStrip
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.mixin.accessors.PlayerTabOverlayAccessor
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
@@ -42,6 +44,7 @@ object Blessings {
 
     @JvmStatic
     fun init() {
+        registerPreview()
         FishHudEditor.register(
             NAME,
             { FishSettings.blessingHudX }, { v -> FishSettings.blessingHudX = v },
@@ -90,15 +93,30 @@ object Blessings {
         try {
             ctx.pose().translate(FishSettings.blessingHudX.toFloat(), FishSettings.blessingHudY.toFloat())
             ctx.pose().scale(sc, sc)
-            shown.forEachIndexed { i, t ->
-                val label = Component.literal("${t.display}: ").withColor(t.color() and 0xFFFFFF)
-                    .append(Component.literal(t.current.toString()).withColor(0x55FF55))
-                ctx.text(mc.font, label, 0, i * LINE_H, -1, true)
-            }
+            drawRows(ctx, shown.map { it to it.current })
         } catch (e: Exception) {
             FishDiag.fail("Blessings.3", "blessing hud render failed", e)
         } finally {
             ctx.pose().popMatrix()
+        }
+    }
+
+    private fun label(t: Type, level: Int): Component = Component.literal("${t.display}: ").withColor(t.color() and 0xFFFFFF)
+        .append(Component.literal(level.toString()).withColor(0x55FF55))
+
+    private fun drawRows(ctx: GuiGraphicsExtractor, rows: List<Pair<Type, Int>>) {
+        val font = Minecraft.getInstance().font
+        rows.forEachIndexed { i, (t, n) -> ctx.text(font, label(t, n), 0, i * LINE_H, -1, true) }
+    }
+
+    // Example data: obviously fake levels, only the blessings the player has enabled
+    private fun registerPreview() {
+        HudPreview.register(NAME) {
+            val levels = mapOf(Type.POWER to 14, Type.LIFE to 12, Type.WISDOM to 9, Type.STONE to 11, Type.TIME to 5)
+            var rows = Type.entries.filter { it.enabled() }.map { it to levels.getValue(it) }
+            if (rows.isEmpty()) rows = listOf(Type.POWER to levels.getValue(Type.POWER))
+            val font = Minecraft.getInstance().font
+            HudExample(rows.maxOf { font.width(label(it.first, it.second)) }, HudPreview.textHeight(rows.size, LINE_H)) { drawRows(it, rows) }
         }
     }
 }

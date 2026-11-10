@@ -4,6 +4,7 @@ import fishmod.compat.hudHidden
 import fishmod.utils.TextStrip
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.FishEvents
@@ -22,6 +23,7 @@ object QuizHud {
 
     @JvmStatic
     fun init() {
+        registerPreview()
         FishHudEditor.register(
             NAME,
             { FishSettings.quizHudX }, { v -> FishSettings.quizHudX = v },
@@ -66,7 +68,14 @@ object QuizHud {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.quizHudX.toFloat(), FishSettings.quizHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, "§dQuiz §7(§f$stage/3§7): §b" + fishmod.utils.Fmt.f1(ticksLeft / 20.0) + "s", 0, 0, -1, true)
+        ctx.text(mc.font, label(stage, ticksLeft), 0, 0, -1, true)
         ctx.pose().popMatrix()
+    }
+
+    private fun label(stage: Int, ticks: Int) = "§dQuiz §7(§f$stage/3§7): §b" + fishmod.utils.Fmt.f1(ticks / 20.0) + "s"
+
+    // Example data: question 2, 4.2s left
+    private fun registerPreview() {
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(2, 84))) }
     }
 }
