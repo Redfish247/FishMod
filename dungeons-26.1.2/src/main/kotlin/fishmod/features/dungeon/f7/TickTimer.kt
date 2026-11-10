@@ -2,6 +2,7 @@ package fishmod.features.dungeon.f7
 
 import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.events.FishEvents
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import fishmod.utils.debug.FishDiag
@@ -49,7 +50,12 @@ object BossTickTimer {
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         try {
             when {
-                HudPreview.active -> MaxorTicks.render(component, context)
+                // editor: the first phase clock the player has enabled
+                HudPreview.active -> when {
+                    Floor7Settings.maxorTicksHud -> MaxorTicks.render(component, context)
+                    Floor7Settings.stormTicksHud -> StormTicks.render(component, context)
+                    Floor7Settings.goldorTicksHud -> GoldorTicks.render(component, context)
+                }
                 MaxorTicks.display() -> MaxorTicks.render(component, context)
                 StormTicks.display() -> StormTicks.render(component, context)
                 GoldorTicks.display() -> GoldorTicks.render(component, context)

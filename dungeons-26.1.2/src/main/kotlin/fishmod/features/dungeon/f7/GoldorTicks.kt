@@ -32,7 +32,7 @@ object GoldorTicks {
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         FishDiag.check(counter.tick >= 0, "GoldorTicks.1") { "goldor tick counter negative: ${counter.tick}" }
-        val elapsed = counter.tick * FishConstants.TICK_DURATION
+        val elapsed = (if (fishmod.features.HudPreview.active) 1234 else counter.tick) * FishConstants.TICK_DURATION
         val intoCycle = elapsed % CYCLE_SECONDS
         val shown = when {
             !Floor7Settings.goldorUseDeathTicks -> elapsed
