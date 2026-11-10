@@ -3,6 +3,8 @@ import fishmod.utils.events.chatRaw
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.ChatQueue
 import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
@@ -115,6 +117,7 @@ object RareMobs {
             { DianaSettings.dianaShurikenHudScale }, { v -> DianaSettings.dianaShurikenHudScale = v },
             { DianaSettings.dianaNoShuriken },
         )
+        registerExamples()
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "diana_mythos_hp")) { ctx, _ ->
             if (!FishHudEditor.isOpen()) renderHud(ctx)
         }
@@ -318,9 +321,14 @@ object RareMobs {
         val now = System.currentTimeMillis()
         if (!force && now - (lastNotify[rare] ?: 0L) < 3000) return
         lastNotify[rare] = now
-        title("§6§l<§b§l§kO§6§l> ${rare.code}§l${rare.short.uppercase()}! §6§l<§b§l§kO§6§l>", if (from.isEmpty()) "" else "§7$from")
+        val (t, sub) = alertText(rare, from)
+        title(t, sub)
         playSound()
     }
+
+    // Main + subtitle of the rare mob alert title (also the HUD editor example)
+    fun alertText(rare: RareMob, from: String): Pair<String, String> =
+        "§6§l<§b§l§kO§6§l> ${rare.code}§l${rare.short.uppercase()}! §6§l<§b§l§kO§6§l>" to (if (from.isEmpty()) "" else "§7$from")
 
     private fun playSound() {
         // MC caps one sound at 100%, so stack copies to go louder
@@ -354,7 +362,7 @@ object RareMobs {
                 ctx.pose().pushMatrix()
                 ctx.pose().translate(DianaSettings.dianaHpHudX.toFloat(), DianaSettings.dianaHpHudY.toFloat())
                 ctx.pose().scale(sc, sc)
-                lines.forEachIndexed { i, c -> ctx.text(font, c, 0, i * 10, -1, true) }
+                drawHp(ctx, lines)
                 ctx.pose().popMatrix()
             }
         }
@@ -363,8 +371,28 @@ object RareMobs {
             ctx.pose().pushMatrix()
             ctx.pose().translate(DianaSettings.dianaShurikenHudX.toFloat(), DianaSettings.dianaShurikenHudY.toFloat())
             ctx.pose().scale(sc, sc)
-            ctx.text(font, "§c§lNO SHURIKEN!", 0, 0, -1, true)
+            drawShuriken(ctx)
             ctx.pose().popMatrix()
+        }
+    }
+
+    private const val NO_SHURIKEN_TEXT = "§c§lNO SHURIKEN!"
+
+    private fun drawHp(ctx: GuiGraphicsExtractor, lines: List<Component>) {
+        val font = Minecraft.getInstance().font
+        lines.forEachIndexed { i, c -> ctx.text(font, c, 0, i * 10, -1, true) }
+    }
+
+    private fun drawShuriken(ctx: GuiGraphicsExtractor) = ctx.text(Minecraft.getInstance().font, NO_SHURIKEN_TEXT, 0, 0, -1, true)
+
+    private fun registerExamples() {
+        HudPreview.register(HP_HUD) {
+            val lines = listOf(Component.literal("§2Empyrean King Minos §a100M§f/§a100M§c❤ §b✯"), Component.literal("§6King Minos §7- §575 Hits"))
+            val font = Minecraft.getInstance().font
+            HudExample(lines.maxOf { font.width(it) }, HudPreview.textHeight(lines.size, 10)) { ctx -> drawHp(ctx, lines) }
+        }
+        HudPreview.register(SHURIKEN_HUD) {
+            HudExample(Minecraft.getInstance().font.width(NO_SHURIKEN_TEXT), HudPreview.TEXT_H) { ctx -> drawShuriken(ctx) }
         }
     }
 }
