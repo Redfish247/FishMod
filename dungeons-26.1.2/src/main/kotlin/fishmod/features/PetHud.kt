@@ -107,7 +107,7 @@ object PetHud {
                 { FishSettings.petHudX }, { v -> FishSettings.petHudX = v },
                 { FishSettings.petHudY }, { v -> FishSettings.petHudY = v },
                 120, 10,
-                { FishSettings.petHudScale }, { v -> FishSettings.petHudScale = v })
+                { FishSettings.petHudScale }, { v -> FishSettings.petHudScale = v }, { FishSettings.petHudEnabled })
         registerExample()
 
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
@@ -489,9 +489,10 @@ object PetHud {
 
     private fun drawHud(ctx: GuiGraphicsExtractor, icon: ItemStack?, text: String) {
         val font = Minecraft.getInstance().font
+        // Icon top is the HUD origin so the editor box covers it; text centred beside it
         if (icon != null) {
-            ctx.item(icon, 0, -4)
-            ctx.text(font, text.trimStart(), 18, 0, -1, true)
+            ctx.item(icon, 0, 0)
+            ctx.text(font, text.trimStart(), 18, 4, -1, true)
         } else {
             ctx.text(font, text, 0, 0, -1, true)
         }
@@ -503,7 +504,7 @@ object PetHud {
             val icon = if (FishSettings.petHudIcon) PetIcons.icon(name) else null
             val text = hudText(name, 87, RarityTier.LEGENDARY, icon != null, false, 1250.0, 1_200_000.0, 3_400_000.0, 35.3f)
             val shown = if (icon != null) text.trimStart() else text
-            HudExample((if (icon != null) 18 else 0) + Minecraft.getInstance().font.width(shown), 10) { ctx -> drawHud(ctx, icon, text) }
+            HudExample((if (icon != null) 18 else 0) + Minecraft.getInstance().font.width(shown), if (icon != null) 16 else HudPreview.TEXT_H) { ctx -> drawHud(ctx, icon, text) }
         }
     }
 
