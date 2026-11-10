@@ -134,18 +134,38 @@ object DungeonPlayers {
     fun render(g: GuiGraphicsExtractor, renderNames: Boolean) {
         if (!DungeonMapSettings.mapPlayerHeadsEnabled) return
         val mc = Minecraft.getInstance()
-        val matrices = g.pose()
         val list = ArrayList(teammates)
 
         for (p in list) p.tickAnimation()
 
-        val ownLast = DungeonMapSettings.mapPlayerHeadDrawOwnLast
-        if (ownLast) {
-            for (p in list) if (!isSelf(mc, p)) safeRenderHead(g, matrices, mc, p, renderNames)
-            for (p in list) if (isSelf(mc, p)) safeRenderHead(g, matrices, mc, p, renderNames)
+        drawHeads(g, mc, list, renderNames) { isSelf(mc, it) }
+    }
+
+    private fun drawHeads(g: GuiGraphicsExtractor, mc: Minecraft, list: List<DungeonPlayer>, renderNames: Boolean, self: (DungeonPlayer) -> Boolean) {
+        val matrices = g.pose()
+        if (DungeonMapSettings.mapPlayerHeadDrawOwnLast) {
+            for (p in list) if (!self(p)) safeRenderHead(g, matrices, mc, p, renderNames, false)
+            for (p in list) if (self(p)) safeRenderHead(g, matrices, mc, p, renderNames, true)
         } else {
-            for (p in list) safeRenderHead(g, matrices, mc, p, renderNames)
+            for (p in list) safeRenderHead(g, matrices, mc, p, renderNames, self(p))
         }
+    }
+
+    // Editor example: you + three teammates on the example map's rooms, drawn by the real head code
+    @JvmStatic
+    fun renderExample(g: GuiGraphicsExtractor) {
+        if (!DungeonMapSettings.mapPlayerHeadsEnabled) return
+        val mc = Minecraft.getInstance()
+        val skin = mc.player?.skin
+        // room cell -> world centre -> map pixel, same formula as the live markers
+        fun at(name: String, cls: String, cx: Int, cz: Int, yaw: Float) = DungeonPlayer(name).also {
+            it.clazz = cls
+            it.skin = skin
+            it.setMapTarget((cx * 32 - 185 + 201) / 1.6f, (cz * 32 - 185 + 201) / 1.6f, yaw)
+        }
+        val you = at(mc.player?.gameProfile?.name ?: "You", "Mage", 1, 3, 0f)
+        val list = listOf(at("ExampleA", "Archer", 4, 2, 90f), at("ExampleB", "Healer", 2, 0, 180f), at("ExampleC", "Tank", 5, 4, 270f), you)
+        drawHeads(g, mc, list, false) { it === you }
     }
 
     @Volatile private var lastRenderHeadDiag = 0L
@@ -157,9 +177,9 @@ object DungeonPlayers {
         }
     }
 
-    private fun safeRenderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {
+    private fun safeRenderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean, self: Boolean) {
         try {
-            renderHead(g, matrices, mc, player, renderNames)
+            renderHead(g, matrices, mc, player, renderNames, self)
         } catch (t: Throwable) {
             diagRenderHead(t)
             FishDiag.fail("DungeonPlayers.2", "map head render failed for ${player.name} class=${player.clazz}", t)
@@ -187,7 +207,7 @@ object DungeonPlayers {
             if (player.clazz.uppercase() in KNOWN_CLASS_NAMES) FishDiag.fail("DungeonPlayers.3", "unknown dungeon class '${player.clazz}' for ${player.name}", it)
         }.getOrNull() ?: DungeonRole.getClass(player.name)
 
-    private fun renderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {
+    private fun renderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean, self: Boolean) {
         if (player.isDead()) return
         val pos = player.mapRenderPosition()
         matrices.pushMatrix()
@@ -204,7 +224,6 @@ object DungeonPlayers {
             }
 
             matrices.rotate(Math.toRadians(180.0 + player.mapRenderYaw().toDouble()).toFloat())
-            val self = isSelf(mc, player)
             val bg = if (self) DungeonMapSettings.mapPlayerHeadOwnBackground else DungeonMapSettings.mapPlayerHeadBackground
             val bgAlpha = (bg ushr 24) and 255
             val uglyPointer = DungeonMapSettings.mapPlayerUglyPointer

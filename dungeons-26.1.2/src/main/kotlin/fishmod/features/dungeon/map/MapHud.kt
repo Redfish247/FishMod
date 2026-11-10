@@ -156,7 +156,9 @@ object MapHud {
             }
             pose.popMatrix()
 
-            if (example == null && !DungeonState.isInBoss()) {
+            if (example != null) {
+                DungeonPlayers.renderExample(g)
+            } else if (!DungeonState.isInBoss()) {
                 DungeonPlayers.render(g, DungeonPlayers.shouldRenderNames(mc))
             }
         }
