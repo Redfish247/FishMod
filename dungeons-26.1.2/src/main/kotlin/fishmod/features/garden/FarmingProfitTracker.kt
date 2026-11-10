@@ -277,6 +277,8 @@ object FarmingProfitTracker {
         for ((k, n) in listOf("CROPS|Enchanted Potato" to 960L, "PESTS|Compost" to 14L, "RARE|Pesterminator" to 1L)) t.items[k] = n
         t.counts["Pests Killed"] = 17; t.counts["Visitors"] = 22; t.counts["Copper"] = 4_800; t.counts["Garden XP"] = 9_100
         t.timeMs = 3_725_000L
+        // Crop Fever time is only tracked with that feature on
+        if (S.gardenFever) t.feverMs = 540_000L
         return buildLines(t, { EXAMPLE_PRICES[it] ?: 0.0 }, false, 7)
     }
 
