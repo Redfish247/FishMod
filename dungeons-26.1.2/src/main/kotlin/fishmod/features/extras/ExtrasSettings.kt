@@ -20,19 +20,6 @@ object ExtrasSettings {
     @ConfigValue @JvmField var calendarRealTimes: Boolean = false
     @ConfigValue @JvmField var calendarTimeColor: Int = 0xFF55FFFF.toInt()
 
-    // Spotify HUD
-    @ConfigValue @JvmField var spotifyHud: Boolean = false
-    @ConfigValue @JvmField var spotifyHudArt: Boolean = true
-    @ConfigValue @JvmField var spotifyHudAlbum: Boolean = false
-    @ConfigValue @JvmField var spotifyHudProgress: Boolean = true
-    @ConfigValue @JvmField var spotifyHudX: Int = 10
-    @ConfigValue @JvmField var spotifyHudY: Int = 120
-    @ConfigValue @JvmField var spotifyHudScale: Double = 1.0
-    @ConfigValue @JvmField var spotifyHudBgOpacity: Int = 50
-    @ConfigValue @JvmField var spotifyHudTitleColor: Int = 0xFFFFFFFF.toInt()
-    @ConfigValue @JvmField var spotifyHudTextColor: Int = 0xFFBBBBBB.toInt()
-    @ConfigValue @JvmField var spotifyHudBarColor: Int = 0xFF1DB954.toInt()
-
     // Limbo alert
     @ConfigValue @JvmField var limboAlert: Boolean = false
     @ConfigValue @JvmField var limboTitle: String = "§cIN LIMBO"

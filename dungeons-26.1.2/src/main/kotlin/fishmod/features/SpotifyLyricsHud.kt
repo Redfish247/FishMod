@@ -20,7 +20,7 @@ import kotlin.math.sqrt
 
 // Now-playing pill from the local Spotify desktop window title; no account, Windows only. Lyrics come from lrclib.net
 object SpotifyLyricsHud {
-    private const val NAME = "Spotify Lyrics"
+    private const val NAME = "Spotify"
     private const val PAD_X = 6
     private const val PAD_Y = 3
     private const val H = 9 + PAD_Y * 2
