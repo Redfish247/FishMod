@@ -1487,10 +1487,10 @@ class FishModInit : ClientModInitializer {
         )
         FishHudEditor.register(
             "Dungeon Map Info",
-            java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapInfoX.toInt() },
-            java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoX = v.toFloat() },
-            java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapInfoY.toInt() },
-            java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoY = v.toFloat() },
+            java.util.function.IntSupplier { fishmod.features.dungeon.map.MapInfoHud.editorX() },
+            java.util.function.IntConsumer { v -> fishmod.features.dungeon.map.MapInfoHud.setEditorX(v) },
+            java.util.function.IntSupplier { fishmod.features.dungeon.map.MapInfoHud.editorY() },
+            java.util.function.IntConsumer { v -> fishmod.features.dungeon.map.MapInfoHud.setEditorY(v) },
             160, 40,
             java.util.function.DoubleSupplier { fishmod.utils.config.values.DungeonMapSettings.mapInfoScale.toDouble() },
             java.util.function.DoubleConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoScale = v.toFloat() },

@@ -89,6 +89,47 @@ object MapInfoHud {
         }
     }
 
+    // Example block width at scale 1 (same measure as the example)
+    private fun exampleW(): Int {
+        val font = Minecraft.getInstance().font
+        return maxOf(font.width(line1(EXAMPLE)), font.width(line2(EXAMPLE)))
+    }
+
+    private fun scale() = DungeonMapSettings.mapInfoScale.coerceIn(0.5f, 20.0f)
+
+    // Editor box left/top: under the map when tied (centred on its anchor), else mapInfoX/Y
+    @JvmStatic
+    fun editorX(): Int =
+        if (DungeonMapSettings.mapInfoMapTied) Math.round(MapHud.tiedAnchor()[0] - exampleW() * scale() / 2f)
+        else DungeonMapSettings.mapInfoX.toInt()
+
+    @JvmStatic
+    fun editorY(): Int =
+        if (DungeonMapSettings.mapInfoMapTied) Math.round(MapHud.tiedAnchor()[1]) else DungeonMapSettings.mapInfoY.toInt()
+
+    // Dragging a tied block unties it (keeps where it was), like the scoreboard's Position -> Custom
+    private fun untie() {
+        if (!DungeonMapSettings.mapInfoMapTied) return
+        val x = editorX(); val y = editorY()
+        DungeonMapSettings.mapInfoMapTied = false
+        DungeonMapSettings.mapInfoX = x.toFloat()
+        DungeonMapSettings.mapInfoY = y.toFloat()
+    }
+
+    @JvmStatic
+    fun setEditorX(v: Int) {
+        if (v == editorX()) return
+        untie()
+        DungeonMapSettings.mapInfoX = v.toFloat()
+    }
+
+    @JvmStatic
+    fun setEditorY(v: Int) {
+        if (v == editorY()) return
+        untie()
+        DungeonMapSettings.mapInfoY = v.toFloat()
+    }
+
     private fun noWords(): Boolean = DungeonMapSettings.mapInfoNoWords
 
     private fun join(vararg parts: String): String {
