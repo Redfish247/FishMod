@@ -235,7 +235,8 @@ object MiningHuds {
         return lines.maxOfOrNull { if ('	' in it) colX + font.width(it.substringAfter('	')) else font.width(it) } ?: 0
     }
 
-    fun exampleOf(lines: List<String>) = fishmod.features.HudExample(linesWidth(lines), fishmod.features.HudPreview.textHeight(lines.size)) { ctx -> drawLines(ctx, lines) }
+    // No lines = nothing drawn in game, so no example either
+    fun exampleOf(lines: List<String>) = if (lines.isEmpty()) null else fishmod.features.HudExample(linesWidth(lines), fishmod.features.HudPreview.textHeight(lines.size)) { ctx -> drawLines(ctx, lines) }
 
     // HUD editor example: the real line drawing fed with example lines
     fun registerExample(name: String, lines: () -> List<String>) = fishmod.features.HudPreview.register(name) { exampleOf(lines()) }

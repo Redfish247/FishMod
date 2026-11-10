@@ -102,7 +102,7 @@ object FossilSolver {
         FishHudEditor.register("Fossil Solver", { S.miningFossilHudX }, { S.miningFossilHudX = it },
             { S.miningFossilHudY }, { S.miningFossilHudY = it }, 150, 60, { S.miningFossilHudScale }, { S.miningFossilHudScale = it },
             { S.miningFossilSolver })
-        MiningHuds.registerExample("Fossil Solver") { panel("§ePossible placements: §a24", 18, "", FOSSILS.take(2).map { it.name }) }
+        MiningHuds.registerExample("Fossil Solver") { panel(placementsText(24), 18, "", FOSSILS.take(2).map { it.name }) }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, scr, _, _ ->
             if (scr !is AbstractContainerScreen<*>) return@AfterInit
             ScreenEvents.afterExtract(scr).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
@@ -183,7 +183,9 @@ object FossilSolver {
         status = when {
             sure.isNotEmpty() && sure.size == counts.size -> "§aFossil located, dig the green slots."
             fossilName.isNotEmpty() -> "§eIdentified, §a$remaining §eplacements left"
-            else -> "§ePossible placements: §a$remaining"
+            else -> placementsText(remaining)
         }
     }
+
+    private fun placementsText(n: Int) = "§ePossible placements: §a$n"
 }

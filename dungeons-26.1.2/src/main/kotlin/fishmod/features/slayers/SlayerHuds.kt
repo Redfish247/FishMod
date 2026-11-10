@@ -87,7 +87,8 @@ object SlayerHuds {
         }
     }
 
-    private fun blockExample(lines: List<String>): HudExample {
+    private fun blockExample(lines: List<String>): HudExample? {
+        if (lines.isEmpty()) return null
         val f = Minecraft.getInstance().font
         val lh = FishConstants.TEXT_HEIGHT + 2
         return HudExample(lines.maxOfOrNull { f.width(it) } ?: 0, HudPreview.textHeight(lines.size, lh)) { ctx -> drawLines(ctx, lines) }
