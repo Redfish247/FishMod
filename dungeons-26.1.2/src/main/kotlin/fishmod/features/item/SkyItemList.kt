@@ -276,6 +276,20 @@ object SkyItemList {
     @JvmStatic
     fun keyPressed(input: KeyEvent): Boolean {
         if (!on() || !focused) return false
+        val ctrl = input.modifiers() and (GLFW.GLFW_MOD_CONTROL or GLFW.GLFW_MOD_SUPER) != 0
+        if (ctrl) {
+            val kb = Minecraft.getInstance().keyboardHandler
+            when (input.key()) {
+                GLFW.GLFW_KEY_V -> {
+                    val clip = kb.clipboard?.filter { !Character.isISOControl(it) }.orEmpty()
+                    query = (query + clip).take(40); if (built) refilter()
+                }
+                GLFW.GLFW_KEY_C -> kb.clipboard = query
+                GLFW.GLFW_KEY_X -> { kb.clipboard = query; query = ""; if (built) refilter() }
+                GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_BACKSPACE -> { query = ""; if (built) refilter() }
+            }
+            return true
+        }
         when (input.key()) {
             GLFW.GLFW_KEY_ESCAPE -> { focused = false; return true }
             GLFW.GLFW_KEY_BACKSPACE -> if (query.isNotEmpty()) { query = query.dropLast(1); if (built) refilter() }
