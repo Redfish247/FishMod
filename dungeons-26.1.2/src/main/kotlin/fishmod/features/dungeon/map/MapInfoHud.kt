@@ -76,6 +76,18 @@ object MapInfoHud {
         }
     }
 
+    // Example: the real pieces with example values, laid out like the non-tied block (origin = left edge)
+    fun registerPreview() {
+        fishmod.features.HudPreview.register("Dungeon Map Info") {
+            val font = Minecraft.getInstance().font
+            val l1 = line1(true)
+            val l2 = line2(true)
+            val w = maxOf(font.width(l1), font.width(l2))
+            val h = if (l1.isNotEmpty() && l2.isNotEmpty()) font.lineHeight * 2 + 1 else font.lineHeight
+            fishmod.features.HudExample(w, h) { drawLines(it, Minecraft.getInstance(), l1, l2, w / 2, font.lineHeight) }
+        }
+    }
+
     private fun noWords(): Boolean = DungeonMapSettings.mapInfoNoWords
 
     private fun join(vararg parts: String): String {
@@ -98,7 +110,7 @@ object MapInfoHud {
         if (!DungeonMapSettings.mapInfoShowSecrets) return ""
         val s: String
         if (example) {
-            s = "§b0§7-§e0§7-§c0"
+            s = "§b34§7-§e41§7-§c52"
         } else {
             val needed = DungeonScore.calculateMinimumSecrets(false, false)
             val tail = if (DungeonMapSettings.mapInfoShowLeft)
@@ -114,7 +126,7 @@ object MapInfoHud {
         if (!DungeonMapSettings.mapInfoShowScore) return ""
         val s: String
         if (example) {
-            s = "§c123"
+            s = "§e287"
         } else {
             val sc = DungeonScore.score
             val color = if (sc < 270) "§c" else if (sc < 300) "§e" else "§a"
@@ -149,7 +161,7 @@ object MapInfoHud {
 
     private fun cryptsPiece(example: Boolean): String {
         if (!DungeonMapSettings.mapInfoShowCrypts) return ""
-        if (example) return if (noWords()) "§c0§7/§a5" else "§fCrypts: §c0"
+        if (example) return if (noWords()) "§e3§7/§a5" else "§fCrypts: §e3"
         val cr = minOf(DungeonScore.crypts, 5)
         if (DungeonMapSettings.mapInfoHideCompleted && cr >= 5) return ""
         val cc = if (cr >= 5) "§a" else if (cr >= 3) "§e" else "§c"

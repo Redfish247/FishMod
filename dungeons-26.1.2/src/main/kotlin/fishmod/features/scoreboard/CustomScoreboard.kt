@@ -46,12 +46,14 @@ object CustomScoreboard {
 
     private class Raw(val c: Component, val s: String)
 
+    private class Built(val title: Component, val lines: List<Component>, val footer: Component?, val width: Int) {
+        val top: Int get() = if (FishSettings.sbSectionTitle) TITLE_H else 2
+        val totalH: Int get() = top + (lines.size + (if (footer != null) (if (lines.isEmpty()) 1 else 2) else 0)) * LINE_H + 2
+    }
+
     private var builtAt = 0L
     private var builtVersion = -1
-    private var title: Component = BLANK
-    private var lines: List<Component> = emptyList()
-    private var footer: Component? = null
-    private var width = 0
+    private var cur = Built(BLANK, emptyList(), null, 0)
 
     private fun bgColor(): Int {
         val pct = max(0, min(100, FishSettings.customScoreboardOpacity))
@@ -63,7 +65,70 @@ object CustomScoreboard {
         try {
             renderInner(ctx, screenW)
         } catch (e: Exception) {
-            FishDiag.fail("CustomScoreboard.1", "custom scoreboard render failed (${lines.size} cached lines)", e)
+            FishDiag.fail("CustomScoreboard.1", "custom scoreboard render failed (${cur.lines.size} cached lines)", e)
+        }
+    }
+
+    private fun measure(tr: net.minecraft.client.gui.Font, b: Built): Int {
+        var w = if (FishSettings.sbSectionTitle) tr.width(b.title) else 0
+        for (l in b.lines) w = max(w, tr.width(l))
+        b.footer?.let { w = max(w, tr.width(it)) }
+        return w + 3
+    }
+
+    // Box drawing shared by the in-game sidebar and the HUD editor example; x1 = left of the text column
+    private fun drawBoard(ctx: GuiGraphicsExtractor, tr: net.minecraft.client.gui.Font, b: Built, x1: Int, y0: Int, gs: Int) {
+        val x2 = x1 + b.width
+        val totalH = b.totalH
+        // Draw the background at real pixels so rounded corners stay smooth at any GUI scale
+        ctx.pose().pushMatrix()
+        ctx.pose().scale(1f / gs, 1f / gs)
+        fishmod.features.ScreenTheme.roundedRect(ctx, (x1 - 2) * gs, y0 * gs, (b.width + 4) * gs, totalH * gs, FishSettings.customScoreboardRadius * gs, bgColor())
+        ctx.pose().popMatrix()
+        if (FishSettings.sbSectionTitle) ctx.centeredText(tr, b.title, (x1 + x2) / 2, y0 + 1, 0xFFFFFFFF.toInt())
+        var y = y0 + b.top
+        for (l in b.lines) {
+            if (l !== BLANK) ctx.text(tr, l, x1 + 1, y, 0xFFFFFFFF.toInt(), true)
+            y += LINE_H
+        }
+        b.footer?.let { ctx.text(tr, it, x1 + 1, if (b.lines.isEmpty()) y else y + LINE_H, 0xFFFFFFFF.toInt(), true) }
+    }
+
+    private fun exampleRaw(): List<Raw> = listOf(
+        "§711/09/26  §8m12A" to "11/09/26  m12A",
+        "§fWinter 9th" to "Winter 9th",
+        "§712:00am" to "12:00am",
+        "§7⏣ §aYour Island" to "⏣ Your Island",
+        "§fPurse: §61,234,567" to "Purse: 1,234,567",
+        "§fBits: §b1,024" to "Bits: 1,024",
+        "§fGems: §a120" to "Gems: 120",
+        "§ewww.hypixel.net" to "www.hypixel.net",
+    ).map { Raw(Component.literal(it.first), it.second) }
+
+    private var pvAt = 0L
+    private var pv: Built? = null
+
+    // Example data fed through the real build(): header, world and money lines in Hypixel's own formats
+    private fun preview(): Built {
+        val now = System.currentTimeMillis()
+        pv?.let { if (now - pvAt < 200L) return it }
+        val mc = Minecraft.getInstance()
+        val b0 = build(mc, Component.literal("§e§lSKYBLOCK"), exampleRaw())
+        val b = Built(b0.title, b0.lines, b0.footer, measure(mc.font, b0))
+        pv = b
+        pvAt = now
+        return b
+    }
+
+    @JvmStatic
+    fun previewBoxW(): Int = preview().width + 4
+
+    fun registerPreview() {
+        fishmod.features.HudPreview.register("Custom Scoreboard") {
+            val mc = Minecraft.getInstance()
+            val b = preview()
+            val gs = mc.window.guiScale.toInt().coerceAtLeast(1)
+            fishmod.features.HudExample(b.width + 4, b.totalH) { drawBoard(it, mc.font, b, 2, 0, gs) }
         }
     }
 
@@ -78,16 +143,14 @@ object CustomScoreboard {
         if (now - builtAt >= CACHE_TTL_MS || builtVersion != SidebarCache.version) {
             builtAt = now
             builtVersion = SidebarCache.version
-            build(mc, sbTitle)
-            var w = if (FishSettings.sbSectionTitle) tr.width(title) else 0
-            for (l in lines) w = max(w, tr.width(l))
-            footer?.let { w = max(w, tr.width(it)) }
-            width = w + 3
+            val b0 = build(mc, sbTitle, readScoreboard())
+            cur = Built(b0.title, b0.lines, b0.footer, measure(tr, b0))
         }
-        if (lines.isEmpty() && footer == null) return
+        val b = cur
+        val width = b.width
+        if (b.lines.isEmpty() && b.footer == null) return
 
-        val top = if (FishSettings.sbSectionTitle) TITLE_H else 2
-        val totalH = top + (lines.size + (if (footer != null) (if (lines.isEmpty()) 1 else 2) else 0)) * LINE_H + 2
+        val totalH = b.totalH
         val screenH = mc.window.guiScaledHeight
         val anchor = FishSettings.customScoreboardAnchor
         val x2 = when {
@@ -104,19 +167,8 @@ object CustomScoreboard {
             else -> FishSettings.customScoreboardHudY
         }
 
-        // Draw the background at real pixels so rounded corners stay smooth at any GUI scale
         val gs = mc.window.guiScale.toInt().coerceAtLeast(1)
-        ctx.pose().pushMatrix()
-        ctx.pose().scale(1f / gs, 1f / gs)
-        fishmod.features.ScreenTheme.roundedRect(ctx, (x1 - 2) * gs, y0 * gs, (width + 4) * gs, totalH * gs, FishSettings.customScoreboardRadius * gs, bgColor())
-        ctx.pose().popMatrix()
-        if (FishSettings.sbSectionTitle) ctx.centeredText(tr, title, (x1 + x2) / 2, y0 + 1, 0xFFFFFFFF.toInt())
-        var y = y0 + top
-        for (l in lines) {
-            if (l !== BLANK) ctx.text(tr, l, x1 + 1, y, 0xFFFFFFFF.toInt(), true)
-            y += LINE_H
-        }
-        footer?.let { ctx.text(tr, it, x1 + 1, if (lines.isEmpty()) y else y + LINE_H, 0xFFFFFFFF.toInt(), true) }
+        drawBoard(ctx, tr, b, x1, y0, gs)
     }
 
     private fun readScoreboard(): List<Raw> {
@@ -146,9 +198,7 @@ object CustomScoreboard {
         return out
     }
 
-    private fun build(mc: Minecraft, sbTitle: Component) {
-        title = sbTitle
-        val raw = readScoreboard()
+    private fun build(mc: Minecraft, sbTitle: Component, raw: List<Raw>): Built {
         val used = BooleanArray(raw.size)
         fun take(pred: (Raw) -> Boolean): Raw? {
             val i = raw.indices.firstOrNull { !used[it] && pred(raw[it]) } ?: return null
@@ -161,7 +211,7 @@ object CustomScoreboard {
 
         // Hypixel's last line is the server footer
         val hyFooter = raw.indices.lastOrNull { !used[it] && raw[it].s.contains("hypixel", true) }?.let { used[it] = true; raw[it].c }
-        footer = if (!FishSettings.sbSectionFooter) null
+        val footer: Component? = if (!FishSettings.sbSectionFooter) null
             else FishSettings.sbFooterText.takeIf { it.isNotBlank() }?.let { Component.literal(it.replace('&', '§')) } ?: hyFooter
 
         val top = ArrayList<Component>()
@@ -254,7 +304,7 @@ object CustomScoreboard {
             if (out.isNotEmpty()) out.add(BLANK)
             out.addAll(g)
         }
-        lines = out
+        return Built(sbTitle, out, footer, 0)
     }
 
     // Hypixel pads each line with hidden emoji to keep them unique

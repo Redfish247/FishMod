@@ -37,6 +37,7 @@ object ArrowHud {
     private var tickN = 0
 
     fun init() {
+        registerPreview()
         FishHudEditor.register("Arrow HUD", { S.arrowHudX }, { S.arrowHudX = it }, { S.arrowHudY }, { S.arrowHudY = it }, 110, 10,
             { S.arrowHudScale }, { S.arrowHudScale = it })
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "arrow_hud")) { ctx, _ ->
@@ -128,20 +129,34 @@ object ArrowHud {
         if (S.arrowHudOnlyBow && !holdingBow()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
+        val sc = S.arrowHudScale.toFloat()
+        ctx.pose().pushMatrix()
+        try {
+            ctx.pose().translate(S.arrowHudX.toFloat(), S.arrowHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, label(type, count, rarityRgb, extra), 0, 0, -1, true)
+        } finally {
+            ctx.pose().popMatrix()
+        }
+    }
+
+    private fun label(type: String, count: Long, rarityRgb: Int, extra: Long): Component {
         val n = when {
             count < 0 -> "§7?"
             count == 0L -> "§c0"
             count <= S.arrowLowThreshold -> "§e" + fishmod.utils.Fmt.grouped(count)
             else -> "§f" + fishmod.utils.Fmt.grouped(count)
         }
-        val sc = S.arrowHudScale.toFloat()
-        ctx.pose().pushMatrix()
-        try {
-            ctx.pose().translate(S.arrowHudX.toFloat(), S.arrowHudY.toFloat())
-            ctx.pose().scale(sc, sc)
-            ctx.text(mc.font, Component.literal(type).withColor(if (S.arrowHudRarity && rarityRgb != 0) rarityRgb else S.arrowHudColor and 0xFFFFFF).append(Component.literal(" §7x$n")).append(Component.literal(if (S.arrowHudExtra && extra > 0) " §8(+${fishmod.utils.Fmt.grouped(extra)} extra)" else "")), 0, 0, -1, true)
-        } finally {
-            ctx.pose().popMatrix()
+        return Component.literal(type).withColor(if (S.arrowHudRarity && rarityRgb != 0) rarityRgb else S.arrowHudColor and 0xFFFFFF).append(Component.literal(" §7x$n")).append(Component.literal(if (S.arrowHudExtra && extra > 0) " §8(+${fishmod.utils.Fmt.grouped(extra)} extra)" else ""))
+    }
+
+    // Example data: a common arrow stack with extra loose arrows
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register("Arrow HUD") {
+            val c = label("Flint Arrow", 1284, 0xFFFFFF, 256)
+            fishmod.features.HudExample(Minecraft.getInstance().font.width(c), fishmod.features.HudPreview.TEXT_H) {
+                it.text(Minecraft.getInstance().font, c, 0, 0, -1, true)
+            }
         }
     }
 }
