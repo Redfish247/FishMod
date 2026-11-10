@@ -61,24 +61,33 @@ object MiningAbilities {
         MiningHuds.reg("Pickobulus", "mining_pickobulus", 140, 60,
             { S.miningPickobulusHudX }, { S.miningPickobulusHudX = it }, { S.miningPickobulusHudY }, { S.miningPickobulusHudY = it },
             { S.miningPickobulusHudScale }, { S.miningPickobulusHudScale = it },
-            { (S.miningAbilities && S.miningPickobulus) && S.miningPickobulusHud && (pickBlocks.isNotEmpty() || pickError.isNotEmpty()) }, { (S.miningAbilities && S.miningPickobulus) && S.miningPickobulusHud }) {
-            if (pickError.isNotEmpty()) listOf("§b§lPickobulus", pickError)
-            else listOf("§b§lPickobulus §7(${pickBlocks.size} blocks)") + pickDrops.entries.sortedByDescending { it.value }.map { "§7${it.key}: §f${it.value}" }
+            { (S.miningAbilities && S.miningPickobulus) && S.miningPickobulusHud && (pickBlocks.isNotEmpty() || pickError.isNotEmpty()) }, { (S.miningAbilities && S.miningPickobulus) && S.miningPickobulusHud },
+            example = { pickLines(37, mapOf("Mithril" to 24, "Titanium" to 6, "Stone" to 7), "") }) {
+            pickLines(pickBlocks.size, pickDrops, pickError)
         }
         MiningHuds.reg("Maniac Miner", "mining_maniac", 120, 30,
             { S.miningManiacHudX }, { S.miningManiacHudX = it }, { S.miningManiacHudY }, { S.miningManiacHudY = it },
             { S.miningManiacHudScale }, { S.miningManiacHudScale = it },
-            { (S.miningAbilities && S.miningManiac) && maniacStart > 0 && (maniacActive() || System.currentTimeMillis() - maniacEnd < 10_000) }, { (S.miningAbilities && S.miningManiac) }) {
-            val secs = ((if (maniacActive()) System.currentTimeMillis() else maniacEnd) - maniacStart) / 1000
-            listOf("§c§lManiac Miner" + if (maniacActive()) "" else " §7(ended)", "§7Blocks: §f$maniacBlocks §8(${secs}s)")
+            { (S.miningAbilities && S.miningManiac) && maniacStart > 0 && (maniacActive() || System.currentTimeMillis() - maniacEnd < 10_000) }, { (S.miningAbilities && S.miningManiac) },
+            example = { maniacLines(true, 64, 12) }) {
+            val active = maniacActive()
+            maniacLines(active, maniacBlocks, ((if (active) System.currentTimeMillis() else maniacEnd) - maniacStart) / 1000)
         }
         MiningHuds.reg("SkyMall", "mining_skymall", 160, 12,
             { S.miningSkyMallHudX }, { S.miningSkyMallHudX = it }, { S.miningSkyMallHudY }, { S.miningSkyMallHudY = it },
             { S.miningSkyMallHudScale }, { S.miningSkyMallHudScale = it },
-            { (S.miningAbilities && S.miningSkyMall) && S.miningSkyMallPerk.isNotEmpty() && (Mining.inMiningIsland() || fishmod.features.FishHudEditor.isOpen()) }, { (S.miningAbilities && S.miningSkyMall) }) {
+            { (S.miningAbilities && S.miningSkyMall) && S.miningSkyMallPerk.isNotEmpty() && (Mining.inMiningIsland() || fishmod.features.FishHudEditor.isOpen()) }, { (S.miningAbilities && S.miningSkyMall) },
+            example = { listOf("§bSkyMall: §f${S.miningSkyMallPerk.ifEmpty { "Example perk text" }}") }) {
             listOf("§bSkyMall: §f${S.miningSkyMallPerk}")
         }
     }
+
+    private fun pickLines(blocks: Int, drops: Map<String, Int>, error: String): List<String> =
+        if (error.isNotEmpty()) listOf("§b§lPickobulus", error)
+        else listOf("§b§lPickobulus §7($blocks blocks)") + drops.entries.sortedByDescending { it.value }.map { "§7${it.key}: §f${it.value}" }
+
+    private fun maniacLines(active: Boolean, blocks: Int, secs: Long): List<String> =
+        listOf("§c§lManiac Miner" + if (active) "" else " §7(ended)", "§7Blocks: §f$blocks §8(${secs}s)")
 
     // No expiry message seen: Maniac Miner lasts at most ~30s
     private fun maniacActive(): Boolean {

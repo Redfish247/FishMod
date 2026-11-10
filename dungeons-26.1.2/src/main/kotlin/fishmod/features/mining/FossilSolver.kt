@@ -102,6 +102,7 @@ object FossilSolver {
         FishHudEditor.register("Fossil Solver", { S.miningFossilHudX }, { S.miningFossilHudX = it },
             { S.miningFossilHudY }, { S.miningFossilHudY = it }, 150, 60, { S.miningFossilHudScale }, { S.miningFossilHudScale = it },
             { S.miningFossilSolver })
+        MiningHuds.registerExample("Fossil Solver") { panel("§ePossible placements: §a24", 18, "", FOSSILS.take(2).map { it.name }) }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, scr, _, _ ->
             if (scr !is AbstractContainerScreen<*>) return@AfterInit
             ScreenEvents.afterExtract(scr).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
@@ -114,7 +115,9 @@ object FossilSolver {
     private fun reset() { sig = 0; bestSlot = -1; status = ""; types = emptyList(); maxCharges = 0; charges = 0
         possible = emptyMap(); sure = emptySet(); fossilName = "" }
 
-    private fun panel(): List<String> {
+    private fun panel(): List<String> = panel(status, charges, fossilName, types)
+
+    private fun panel(status: String, charges: Int, fossilName: String, types: List<String>): List<String> {
         val out = arrayListOf("§6§lFossil Solver", status, "§eCharges: §a$charges")
         if (fossilName.isNotEmpty()) out += "§eFossil: §a$fossilName"
         else if (types.isNotEmpty()) out += "§eTypes: §7" + types.joinToString(", ")
