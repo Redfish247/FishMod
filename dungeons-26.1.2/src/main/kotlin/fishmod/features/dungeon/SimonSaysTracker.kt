@@ -345,17 +345,7 @@ object SimonSaysTracker {
         val dc = deviceCenter
         if (dc != null && player.blockPosition().distSqr(dc) <= 12) return
 
-        val (text, color) = when {
-            showReset -> FishSettings.ssProgressResetText to FishSettings.ssProgressResetColor
-            round >= SS_ROUNDS -> {
-                if (!FishSettings.ssProgressShowCompleted) return
-                FishSettings.ssProgressCompletedText to FishSettings.ssProgressCompletedColor
-            }
-            else -> {
-                if (!FishSettings.ssProgressShowProgress) return
-                FishSettings.ssProgressProgressText.replace("(n)", round.toString()) to FishSettings.ssProgressProgressColor
-            }
-        }
+        val (text, color) = textFor(round, showReset) ?: return
         val sc = FishSettings.simonSaysHudScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.simonSaysHudX.toFloat(), FishSettings.simonSaysHudY.toFloat())
@@ -364,17 +354,29 @@ object SimonSaysTracker {
         ctx.pose().popMatrix()
     }
 
+    // Text + colour for a state, null when that state's line is toggled off
+    private fun textFor(round: Int, showReset: Boolean): Pair<String, Int>? = when {
+        showReset -> FishSettings.ssProgressResetText to FishSettings.ssProgressResetColor
+        round >= SS_ROUNDS ->
+            if (!FishSettings.ssProgressShowCompleted) null
+            else FishSettings.ssProgressCompletedText to FishSettings.ssProgressCompletedColor
+        else ->
+            if (!FishSettings.ssProgressShowProgress) null
+            else FishSettings.ssProgressProgressText.replace("(n)", round.toString()) to FishSettings.ssProgressProgressColor
+    }
+
     private fun labelOf(text: String, color: Int): Component = Component.literal(text).withColor(color and 0xFFFFFF)
 
     private fun drawLabel(ctx: GuiGraphicsExtractor, text: String, color: Int) =
         ctx.text(Minecraft.getInstance().font, labelOf(text, color), 0, 0, -1, true)
 
-    // Example data: round 3 progress text
+    // Example data: round 3, else the first state whose line is enabled
     private fun registerPreview() {
         fishmod.features.HudPreview.register("Simon Says") {
-            val text = FishSettings.ssProgressProgressText.replace("(n)", "3")
-            fishmod.features.HudExample(Minecraft.getInstance().font.width(labelOf(text, 0)), fishmod.features.HudPreview.TEXT_H) {
-                drawLabel(it, text, FishSettings.ssProgressProgressColor)
+            val (text, color) = textFor(3, false) ?: textFor(SS_ROUNDS, false)
+                ?: (if (FishSettings.ssProgressShowReset) textFor(0, true) else null) ?: return@register null
+            fishmod.features.HudExample(Minecraft.getInstance().font.width(labelOf(text, color)), fishmod.features.HudPreview.TEXT_H) {
+                drawLabel(it, text, color)
             }
         }
     }

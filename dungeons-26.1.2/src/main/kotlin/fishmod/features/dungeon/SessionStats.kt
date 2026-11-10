@@ -327,7 +327,7 @@ object SessionStats {
 
     private fun registerPreview() {
         fishmod.features.HudPreview.register("Session Stats") {
-            fishmod.features.HudPreview.text(linesFor(14, 3, 9.2, "1h 31m", false).toList(), FishConstants.TEXT_HEIGHT + 2)
+            fishmod.features.HudPreview.text(linesFor(14, 3, 9.2, formatTime(91 * 60_000L), false).toList(), FishConstants.TEXT_HEIGHT + 2)
         }
     }
 
