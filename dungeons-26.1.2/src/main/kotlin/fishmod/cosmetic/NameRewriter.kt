@@ -1,6 +1,7 @@
 package fishmod.cosmetic
 
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import java.util.Optional
@@ -38,17 +39,25 @@ object NameRewriter {
                     && full.regionMatches(blockStart, cosmetic, 0, cosmetic.length)
                 ) {
                     appendRange(out, segs, charPos, blockStart)
-                    out.append(replacement.copy())
+                    out.append(withRealNameHover(replacement, realName))
                     charPos = blockStart + cosmetic.length
                     continue
                 }
             }
             appendRange(out, segs, charPos, idx)
-            out.append(replacement.copy())
+            out.append(withRealNameHover(replacement, realName))
             charPos = idx + realName.length
         }
         appendRange(out, segs, charPos, full.length)
         return out
+    }
+
+    // Hovering a swapped name shows the real one (root style; children keep their own colours).
+    private fun withRealNameHover(replacement: Component, realName: String): MutableComponent {
+        val hover = HoverEvent.ShowText(Component.literal("§7Real name: §f$realName"))
+        val root = Component.empty().withStyle { it.withHoverEvent(hover) }
+        root.append(replacement.copy())
+        return root
     }
 
     // Drops the first `count` visible chars, keeping § codes and styles so the rest stays coloured
