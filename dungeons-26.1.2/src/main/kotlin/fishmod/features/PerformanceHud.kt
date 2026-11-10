@@ -34,33 +34,35 @@ object PerformanceHud {
             50, 10,
             { FishSettings.clockHudScale }, { v -> FishSettings.clockHudScale = v }
         )
+        // Example values (fps 144, tps 19.9, ping 42) through the real line builder
+        HudPreview.register(NAME) { HudPreview.text(block(lines(144, 19.9, 42)).ifEmpty { listOf("§7FPS: §a144") }, LINE_H) }
+        HudPreview.register(CLOCK_NAME) { HudPreview.text(listOf(clockText())) }
     }
 
-    /** Real current HUD lines for the HUD editor preview. */
-    @JvmStatic
-    fun liveLines(): List<String> = lines(Minecraft.getInstance())
+    private fun lines(mc: Minecraft): List<String> = lines(mc.fps, PartyCommandHandler.currentTps(), ping(mc))
 
-    private fun lines(mc: Minecraft): List<String> {
+    // Shared by the in-game HUD (live values) and the HUD editor example (fixed values)
+    private fun lines(fps: Int, tps: Double, ping: Int): List<String> {
         val label = "§7"
         val out = ArrayList<String>(3)
         if (FishSettings.perfHudFps) {
-            val fps = mc.fps
             val c = when { fps < 30 -> "§c"; fps < 60 -> "§e"; else -> "§a" }
             out.add("${label}FPS: $c$fps")
         }
         if (FishSettings.perfHudTps) {
-            val tps = PartyCommandHandler.currentTps()
             val v = if (tps < 0) "§c—" else (when { tps < 15 -> "§c"; tps < 19.5 -> "§e"; else -> "§a" }) + fishmod.utils.Fmt.f1(tps)
             out.add("${label}TPS: $v")
         }
         if (FishSettings.perfHudPing) {
-            val ping = ping(mc)
             val v = if (ping < 0) "§c—" else (when { ping > 200 -> "§c"; ping > 100 -> "§e"; else -> "§a" }) + "${ping}ms"
             out.add("${label}Ping: $v")
         }
         if (FishSettings.perfHudClock && !FishSettings.perfHudClockDetached) out.add(clockText())
         return out
     }
+
+    // Text block as drawn in game: vertical lines or one joined line
+    private fun block(ls: List<String>): List<String> = if (FishSettings.perfHudHorizontal && ls.isNotEmpty()) listOf(ls.joinToString("  ")) else ls
 
     private val FMT_12 = DateTimeFormatter.ofPattern("h:mm:ss a", Locale.US)
     private val FMT_12_NS = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
@@ -109,11 +111,7 @@ object PerformanceHud {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.perfHudX.toFloat(), FishSettings.perfHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        if (FishSettings.perfHudHorizontal) {
-            ctx.text(mc.font, ls.joinToString("  "), 0, 0, -1, true)
-        } else {
-            ls.forEachIndexed { i, s -> ctx.text(mc.font, s, 0, i * LINE_H, -1, true) }
-        }
+        HudPreview.drawText(ctx, block(ls), LINE_H)
         ctx.pose().popMatrix()
     }
 }

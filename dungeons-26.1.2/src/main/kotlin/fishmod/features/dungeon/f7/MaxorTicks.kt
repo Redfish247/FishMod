@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.features.HudPreview
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.Floor7Settings
@@ -24,5 +25,7 @@ object MaxorTicks {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) =
-        FishDiag.guard("MaxorTicks.1", "maxor tick hud threw") { FishDraw.drawTimer(component, context, counter.tick, WHITE) }
+        FishDiag.guard("MaxorTicks.1", "maxor tick hud threw") { FishDraw.drawTimer(component, context, if (HudPreview.active) EXAMPLE_TICKS else counter.tick, WHITE) }
+
+    private const val EXAMPLE_TICKS = 247
 }

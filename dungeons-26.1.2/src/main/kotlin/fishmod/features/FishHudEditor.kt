@@ -637,28 +637,23 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT)
     }
 
-    private fun sample(e: HudEntry): Sample? =
-        when (e.name()) {
-            "Performance" -> perfSample()
-            PerformanceHud.CLOCK_NAME -> Sample(listOf(PerformanceHud.clockText()))
-            else -> SAMPLES[e.name()]
-        }
+    private fun sample(e: HudEntry): Sample? = SAMPLES[e.name()]
 
-    private fun perfSample(): Sample {
-        // Real current values; fall back to the preset sample below
-        val live = try { PerformanceHud.liveLines() } catch (_: Throwable) { emptyList() }
-        if (live.isNotEmpty()) return if (FishSettings.perfHudHorizontal) Sample(listOf(live.joinToString("  "))) else Sample(live)
-        val ls = listOfNotNull(
-            "§7FPS: §a144".takeIf { FishSettings.perfHudFps },
-            "§7TPS: §a19.9".takeIf { FishSettings.perfHudTps },
-            "§7Ping: §a42ms".takeIf { FishSettings.perfHudPing },
-            PerformanceHud.clockText().takeIf { FishSettings.perfHudClock && !FishSettings.perfHudClockDetached },
-        ).ifEmpty { listOf("§7FPS: §a144") }
-        return if (FishSettings.perfHudHorizontal) Sample(listOf(ls.joinToString("  "))) else Sample(ls)
+    // Examples are rebuilt at most every 200ms (hit-tests ask for sizes many times a frame)
+    private class CachedExample(val at: Long, val ex: HudExample?)
+    private val exampleCache = HashMap<String, CachedExample>()
+
+    private fun example(e: HudEntry): HudExample? {
+        if (!HudPreview.has(e.name())) return null
+        val now = System.currentTimeMillis()
+        exampleCache[e.name()]?.let { if (now - it.at < 200L) return it.ex }
+        val ex = HudPreview.example(e.name())
+        exampleCache[e.name()] = CachedExample(now, ex)
+        return ex
     }
 
     private fun baseW(e: HudEntry): Int {
-        if (e.name() == "Spotify") return SpotifyLyricsHud.previewSize()[0]
+        example(e)?.let { return it.w }
         val s = sample(e) ?: return e.w()
         s.width?.let { return it }
         val r = s.right
@@ -668,7 +663,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     private fun baseH(e: HudEntry): Int {
-        if (e.name() == "Spotify") return SpotifyLyricsHud.previewSize()[1]
+        example(e)?.let { return it.h }
         val s = sample(e) ?: return e.h()
         return (s.lines.size - 1) * s.lineH + 9
     }
@@ -808,10 +803,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         try {
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(sc, sc)
-        if (e.name() == "Dungeon Map") {
+        val ex = example(e)
+        if (ex != null) {
+            HudPreview.draw(ex, ctx, e.name())
+        } else if (e.name() == "Dungeon Map") {
             drawMapExample(ctx, e.w(), e.h())
-        } else if (e.name() == "Spotify") {
-            SpotifyLyricsHud.drawPreview(ctx)
         } else if (s != null) {
             val bw = baseW(e)
             if (s.bg != 0) ctx.fill(0, 0, bw, baseH(e), s.bg)
