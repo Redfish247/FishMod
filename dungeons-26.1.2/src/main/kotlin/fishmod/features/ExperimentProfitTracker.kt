@@ -57,6 +57,7 @@ object ExperimentProfitTracker {
             { FishSettings.expProfitHudScale }, { v -> FishSettings.expProfitHudScale = v },
             { FishSettings.expProfitEnabled },
         )
+        registerExample()
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             val s = mc.curScreen ?: return@register
             if (FishSettings.expProfitEnabled && TABLE_SCREEN.containsMatchIn(fishmod.utils.ScreenTitle.plain(s))) {
@@ -175,15 +176,24 @@ object ExperimentProfitTracker {
         if (FishSettings.expProfitOnlyIsland && fishmod.utils.SkyblockLocation.getCurrentLocation() != fishmod.utils.SkyblockLocation.PRIVATE_ISLAND) return
         if (data.experiments == 0 && data.drops.isEmpty() && data.xp == 0L) return
 
-        // Same layout as the Slayer/Mining trackers: right-aligned value column, "| item count" after it
-        val rows = ArrayList<Pair<String, String>>()
-        rows.add("§e§lExperiment Profit" to "")
         val now = System.currentTimeMillis()
         if (itemsDirty || now - itemsAt > 1000L) {
             itemsCache = data.drops.filterKeys { !NOT_ITEM.containsMatchIn(it) }.map { (name, n) -> Triple(name, n, priceOf(name) * n) }.sortedByDescending { it.third }
             itemsDirty = false; itemsAt = now
         }
-        val items = itemsCache
+        val rows = buildRows(itemsCache, data.byType, data.xp, ::colorOf)
+        val sc = FishSettings.expProfitHudScale.toFloat()
+        ctx.pose().pushMatrix()
+        ctx.pose().translate(FishSettings.expProfitHudX.toFloat(), FishSettings.expProfitHudY.toFloat())
+        ctx.pose().scale(sc, sc)
+        drawRows(ctx, rows)
+        ctx.pose().popMatrix()
+    }
+
+    // Same layout as the Slayer/Mining trackers: right-aligned value column, "| item count" after it
+    private fun buildRows(items: List<Triple<String, Long, Double>>, byType: Map<String, Int>, xp: Long, colorOf: (String) -> String): List<Pair<String, String>> {
+        val rows = ArrayList<Pair<String, String>>()
+        rows.add("§e§lExperiment Profit" to "")
         var total = 0.0
         val cap = FishSettings.expProfitLines.coerceIn(1, 30)
         var hiddenN = 0; var hiddenV = 0.0
@@ -195,25 +205,44 @@ object ExperimentProfitTracker {
         if (hiddenN > 0) rows.add("§7| §8$hiddenN more ${if (hiddenN == 1) "item" else "items"}" to "§6${short(hiddenV)}")
 
         // Chronomatron/Ultrasequencer are add-ons: shown, but per-experiment rates use Superpairs only
-        val sp = data.byType["Superpairs"] ?: 0
-        val addons = data.byType.filterKeys { it != "Superpairs" }.entries.joinToString(" ") { "§7${it.key.take(6)} §f${it.value}" }
+        val sp = byType["Superpairs"] ?: 0
+        val addons = byType.filterKeys { it != "Superpairs" }.entries.joinToString(" ") { "§7${it.key.take(6)} §f${it.value}" }
         rows.add("§7Superpairs §f$sp" + (if (addons.isNotEmpty()) " §8| $addons" else "") to "")
-        rows.add("§7Enchanting XP §b${short(data.xp.toDouble())}" + (if (sp > 0) " §7(§b${short(data.xp.toDouble() / sp)}§7/exp)" else "") to "")
+        rows.add("§7Enchanting XP §b${short(xp.toDouble())}" + (if (sp > 0) " §7(§b${short(xp.toDouble() / sp)}§7/exp)" else "") to "")
         rows.add("§eProfit §6${short(total)}" + (if (sp > 0) " §7(§6${short(total / sp)}§7/exp)" else "") to "")
+        return rows
+    }
 
-        val f = mc.font
+    private fun colX(rows: List<Pair<String, String>>): Int {
+        val f = Minecraft.getInstance().font
+        return rows.maxOfOrNull { if (it.second.isEmpty()) 0 else f.width(it.second) + 6 } ?: 0
+    }
+
+    private fun drawRows(ctx: GuiGraphicsExtractor, rows: List<Pair<String, String>>) {
+        val f = Minecraft.getInstance().font
         val lh = FishConstants.TEXT_HEIGHT + 2
-        val colX = rows.maxOfOrNull { if (it.second.isEmpty()) 0 else f.width(it.second) + 6 } ?: 0
-        val sc = FishSettings.expProfitHudScale.toFloat()
-        ctx.pose().pushMatrix()
-        ctx.pose().translate(FishSettings.expProfitHudX.toFloat(), FishSettings.expProfitHudY.toFloat())
-        ctx.pose().scale(sc, sc)
+        val colX = colX(rows)
         for ((i, r) in rows.withIndex()) {
             if (r.second.isEmpty()) { ctx.text(f, r.first, 0, lh * i, 0xFFFFFFFF.toInt(), true); continue }
             ctx.text(f, r.second, colX - 6 - f.width(r.second), lh * i, 0xFFFFFFFF.toInt(), true)
             ctx.text(f, r.first, colX, lh * i, 0xFFFFFFFF.toInt(), true)
         }
-        ctx.pose().popMatrix()
+    }
+
+    private fun registerExample() {
+        HudPreview.register(HUD) {
+            val items = listOf(
+                Triple("Titanic Experience Bottle", 3L, 2_400_000.0),
+                Triple("Protection VII", 2L, 1_100_000.0),
+                Triple("Enchanted Book", 8L, 640_000.0),
+            )
+            val colors = mapOf("Titanic Experience Bottle" to "§6", "Protection VII" to "§9", "Enchanted Book" to "§a")
+            val rows = buildRows(items, mapOf("Superpairs" to 6, "Chronomatron" to 2), 540_000L) { colors[it] ?: "§f" }
+            val f = Minecraft.getInstance().font
+            val colX = colX(rows)
+            val w = rows.maxOf { (if (it.second.isEmpty()) 0 else colX) + f.width(it.first) }
+            HudExample(w, HudPreview.textHeight(rows.size, FishConstants.TEXT_HEIGHT + 2)) { ctx -> drawRows(ctx, rows) }
+        }
     }
 
     private fun short(v: Double): String = fishmod.features.slayers.SlayerStatsTracker.short(v)

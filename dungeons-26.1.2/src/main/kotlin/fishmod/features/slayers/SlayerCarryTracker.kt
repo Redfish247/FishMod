@@ -4,6 +4,7 @@ import fishmod.compat.hudHidden
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
 import fishmod.utils.FishConstants
 import fishmod.utils.FishUtil
 import fishmod.utils.TickScheduler
@@ -52,6 +53,7 @@ object SlayerCarryTracker {
             { FishSettings.slayerCarryHudScale }, { v -> FishSettings.slayerCarryHudScale = v },
             { FishSettings.slayerCarryHudEnabled },
         )
+        registerExample()
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("SlayerCarryTracker.1", "carry tracker tick failed") { tick(mc) } }
         fishmod.utils.events.FishEvents.locationChange.register { loc -> onLocation(loc); false }
     }
@@ -186,20 +188,31 @@ object SlayerCarryTracker {
         if (!FishSettings.slayerCarryHudEnabled || carries.isEmpty()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        val lines = ArrayList<String>(carries.size + 1)
-        lines.add("§5§lSLAYER CARRIES")
-        for (c in carries.values) {
-            val col = if (c.total > 0 && c.done >= c.total) "§a" else "§f"
-            val boss = if (c.boss.isNotEmpty()) " §7${c.boss}" else ""
-            lines.add("§e${c.ign}$boss§7: $col${c.done}§7/§f${if (c.total > 0) c.total else "∞"}")
-        }
-        val lh = FishConstants.TEXT_HEIGHT + 2
+        val lines = carryLines(carries.values)
         val sc = FishSettings.slayerCarryHudScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.slayerCarryHudX.toFloat(), FishSettings.slayerCarryHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        for (i in lines.indices) ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
+        HudPreview.drawText(ctx, lines, FishConstants.TEXT_HEIGHT + 2)
         ctx.pose().popMatrix()
+    }
+
+    private fun carryLines(list: Collection<Carry>): List<String> {
+        val lines = ArrayList<String>(list.size + 1)
+        lines.add("§5§lSLAYER CARRIES")
+        for (c in list) {
+            val col = if (c.total > 0 && c.done >= c.total) "§a" else "§f"
+            val boss = if (c.boss.isNotEmpty()) " §7${c.boss}" else ""
+            lines.add("§e${c.ign}$boss§7: $col${c.done}§7/§f${if (c.total > 0) c.total else "∞"}")
+        }
+        return lines
+    }
+
+    private fun registerExample() {
+        HudPreview.register(HUD) {
+            val boss = SlayerType.entries[0].bossLabel + " IV"
+            HudPreview.text(carryLines(listOf(Carry("ExampleOne", 3, 10, boss), Carry("ExampleTwo", 5, 5, boss))), FishConstants.TEXT_HEIGHT + 2)
+        }
     }
 
     // ── storage ──
