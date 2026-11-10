@@ -57,7 +57,15 @@ object CosmeticLive {
     }
 
     private fun wanted(): Boolean =
-        FishSettings.remoteNicksEnabled || FishSettings.remoteItemsEnabled || FishSettings.playerSizeShared || FishSettings.badgesEnabled
+        FishSettings.remoteNicksEnabled || FishSettings.remoteItemsEnabled || FishSettings.playerSizeShared || FishSettings.badgesEnabled ||
+            FishSettings.fishChatEnabled
+
+    /** Send a text frame on the live socket; false when not connected or a previous send is still in flight. */
+    @Synchronized
+    fun sendText(text: String): Boolean {
+        val s = ws ?: return false
+        return try { s.sendText(text, true); true } catch (_: Exception) { false }
+    }
 
     private fun tick(mc: Minecraft) {
         val player = mc.player
@@ -121,6 +129,7 @@ object CosmeticLive {
         val root = JsonParser.parseString(text).asJsonObject
         val type = root.get("t")?.asString
         if (type == "msg") { dashboardMessage(root); return }
+        if (type == "chat") { FishChat.receive(root); return }
         val full = type == "snap"
         if (full) { nicks.clear(); items.clear(); scales.clear(); badges.clear(); cleared.clear() }
         mergeStrings(root, "nicks", nicks)
