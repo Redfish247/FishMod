@@ -53,6 +53,7 @@ object FishSettings {
     @ConfigValue @JvmField var updateNotice: Boolean = false
     @ConfigValue @JvmField var updateNoticeStyle: String = "Chat Message"
     @ConfigValue @JvmField var dashboardMessagesEnabled: Boolean = true
+    @ConfigValue @JvmField var fishChatEnabled: Boolean = true
     @ConfigValue @JvmField var boardReports: Boolean = true
     @ConfigValue @JvmField var boardAutoSend: Boolean = true
     @ConfigValue @JvmField var boardAutoPerHour: Int = 5
