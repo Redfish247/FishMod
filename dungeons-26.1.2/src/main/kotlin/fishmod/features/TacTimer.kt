@@ -36,6 +36,7 @@ object TacTimer {
             70, 12,
             { FishSettings.tacTimerScale }, { v -> FishSettings.tacTimerScale = v }
         )
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(45))) }
 
         FishEvents.sound.register { event, _, pitch ->
             if (!FishSettings.tacTimerEnabled || !SkyblockLocation.inSkyblock()) return@register false

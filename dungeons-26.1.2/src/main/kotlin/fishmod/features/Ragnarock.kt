@@ -68,6 +68,7 @@ object Ragnarock {
             { FishSettings.ragnarockTimerScale }, { v -> FishSettings.ragnarockTimerScale = v },
             { FishSettings.ragnarockEnabled && FishSettings.ragnarockTimer },
         )
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(BUFF_TICKS - 40))) }
 
         FishEvents.sound.register { event, _, pitch ->
             if (FishSettings.ragnarockEnabled
@@ -105,14 +106,18 @@ object Ragnarock {
         FishEvents.worldChange.register { ticksLeft = 0; false }
     }
 
+    private fun label(ticks: Int): String {
+        val secs = ticks / 20.0
+        val color = if (secs > 5) "§a" else if (secs > 2) "§e" else "§c"
+        return "§5Rag: $color${fishmod.utils.Fmt.f1(secs)}s"
+    }
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.ragnarockEnabled || !FishSettings.ragnarockTimer || ticksLeft <= 0) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        val secs = ticksLeft / 20.0
-        val color = if (secs > 5) "§a" else if (secs > 2) "§e" else "§c"
-        val txt = "§5Rag: $color${fishmod.utils.Fmt.f1(secs)}s"
+        val txt = label(ticksLeft)
         val sc = FishSettings.ragnarockTimerScale.toFloat()
         ctx.pose().pushMatrix()
         try {
