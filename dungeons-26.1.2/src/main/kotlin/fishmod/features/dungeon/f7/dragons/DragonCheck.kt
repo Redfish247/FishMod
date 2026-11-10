@@ -42,7 +42,8 @@ object DragonCheck {
                 anyNew = true
             }
         }
-        if (!anyNew && WitherDragon.real.none { p.x in it.xRange && p.z in it.zRange }) FishDiag.fail("DragonCheck.1", "dragon spawn particle at unknown spot ${p.x},${p.z}")
+        // Extra spawn-animation bursts land inside a dragon's pit box but off its spawn spot; only report spots in no pit at all.
+        if (!anyNew && WitherDragon.real.none { (p.x in it.xRange && p.z in it.zRange) || (p.x in it.box.minX..it.box.maxX && p.z in it.box.minZ..it.box.maxZ) }) FishDiag.fail("DragonCheck.1", "dragon spawn particle at unknown spot ${p.x},${p.z}")
         if (spawning.isNotEmpty()) {
             WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
             WitherDragons.spawnRank = spawning.sortedBy { it.timeToSpawn } // first to spawn = #1, ties keep priority order
@@ -73,7 +74,10 @@ object DragonCheck {
         }
         WitherDragon.real.firstOrNull { it.state == WitherDragonState.ALIVE && it.entity == null && it.entityId == p.id }
             ?.let { it.entityId = p.id }
-            ?: FishDiag.fail("DragonCheck.2", "ender dragon ${p.id} spawned at $v with no spawning dragon matching (states=${WitherDragon.real.map { it.state }})")
+            ?: if (WitherDragon.real.all { it.state == WitherDragonState.DEAD }) {
+                // Nothing spawning or alive: stray/re-tracked dragon entity, not a tracking fault.
+                if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: no dragon expected at $v") else Unit
+            } else FishDiag.fail("DragonCheck.2", "ender dragon ${p.id} spawned at $v with no spawning dragon matching (states=${WitherDragon.real.map { it.state }})")
     }
 
     fun dragonUpdate(p: ClientboundSetEntityDataPacket, tick: Long) {
