@@ -1464,17 +1464,10 @@ class FishModInit : ClientModInitializer {
         fishmod.features.scoreboard.CustomScoreboard.registerPreview()
         FishHudEditor.register(
             "Custom Scoreboard",
-            {
-                val sw = net.minecraft.client.Minecraft.getInstance().window.guiScaledWidth
-                val right = if (fishmod.utils.config.values.FishSettings.customScoreboardHudX < 0) sw - 3 else Math.min(fishmod.utils.config.values.FishSettings.customScoreboardHudX, sw - 3)
-                right + 2 - fishmod.features.scoreboard.CustomScoreboard.previewBoxW()
-            },
-            { v ->
-                val sw = net.minecraft.client.Minecraft.getInstance().window.guiScaledWidth
-                val right = v + fishmod.features.scoreboard.CustomScoreboard.previewBoxW() - 2
-                fishmod.utils.config.values.FishSettings.customScoreboardHudX = if (right >= sw - 5) -1 else right
-            },
-            { fishmod.utils.config.values.FishSettings.customScoreboardHudY }, { v -> fishmod.utils.config.values.FishSettings.customScoreboardHudY = v },
+            { fishmod.features.scoreboard.CustomScoreboard.previewBoxX() },
+            { v -> fishmod.features.scoreboard.CustomScoreboard.setPreviewBoxX(v) },
+            { fishmod.features.scoreboard.CustomScoreboard.previewBoxY() },
+            { v -> fishmod.features.scoreboard.CustomScoreboard.setPreviewBoxY(v) },
             FishHudEditor.SCOREBOARD_W, 130,
             { fishmod.utils.config.values.FishSettings.customScoreboardEnabled }
         )

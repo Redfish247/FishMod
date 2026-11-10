@@ -102,8 +102,34 @@ object CustomScoreboard {
         "§fPurse: §61,234,567" to "Purse: 1,234,567",
         "§fBits: §b1,024" to "Bits: 1,024",
         "§fGems: §a120" to "Gems: 120",
+        "Bank: §650M" to "Bank: 50M",
+        "" to "",
+        "Slayer Quest" to "Slayer Quest",
+        "§4Revenant Horror IV" to "Revenant Horror IV",
+        "§7(§e1,234§7/§c2,400§7) Combat XP" to "(1,234/2,400) Combat XP",
+        "" to "",
+        "Objective" to "Objective",
+        "§eTalk to Elizabeth" to "Talk to Elizabeth",
         "§ewww.hypixel.net" to "www.hypixel.net",
     ).map { Raw(Component.literal(it.first), it.second) }
+
+    // Example tab/API data for the sections that don't come from the sidebar
+    private fun exLevel(): Component {
+        val style = if (FishSettings.prestigeColorsEnabled)
+            Style.EMPTY.withColor(TextColor.fromRgb(fishmod.cosmetic.prestige.PrestigeLevelColors.rgb(287)))
+            else Style.EMPTY.withColor(ChatFormatting.AQUA)
+        return Component.literal("Level: ").withStyle(ChatFormatting.WHITE).append(Component.literal("287").withStyle(style))
+    }
+    private fun exPowder(): List<Component> = listOf(
+        Component.literal("§fPowder"), Component.literal(" §7- §fMithril: §21,234,567"),
+        Component.literal(" §7- §fGemstone: §d2,345,678"), Component.literal(" §7- §fGlacite: §b345,678"),
+    )
+    private fun exMayor(): List<Component> = listOf(
+        Component.literal("§6Diana §7(3d 4h)"), Component.literal(" §8- §eMythological Ritual"), Component.literal(" §8- §ePet XP Buff"),
+    )
+    private fun exParty(): List<Component> = listOf(
+        Component.literal("§9Party §7(3)"), Component.literal(" §7- §bPlayerOne"), Component.literal(" §7- §aPlayerTwo"),
+    )
 
     private var pvAt = 0L
     private var pv: Built? = null
@@ -113,7 +139,7 @@ object CustomScoreboard {
         val now = System.currentTimeMillis()
         pv?.let { if (now - pvAt < 200L) return it }
         val mc = Minecraft.getInstance()
-        val b0 = build(mc, Component.literal("§e§lSKYBLOCK"), exampleRaw())
+        val b0 = build(mc, Component.literal("§e§lSKYBLOCK"), exampleRaw(), ex = true)
         val b = Built(b0.title, b0.lines, b0.footer, measure(mc.font, b0))
         pv = b
         pvAt = now
@@ -123,10 +149,60 @@ object CustomScoreboard {
     @JvmStatic
     fun previewBoxW(): Int = preview().width + 4
 
+    // Editor box left/top, placed like renderInner() incl. the anchor setting
+    @JvmStatic
+    fun previewBoxX(): Int {
+        val sw = Minecraft.getInstance().window.guiScaledWidth
+        val a = FishSettings.customScoreboardAnchor
+        val right = when {
+            a.endsWith("Left") -> preview().width + 3
+            a.endsWith("Right") || FishSettings.customScoreboardHudX < 0 -> sw - 3
+            else -> min(FishSettings.customScoreboardHudX, sw - 3)
+        }
+        return right + 2 - previewBoxW()
+    }
+
+    @JvmStatic
+    fun previewBoxY(): Int {
+        val sh = Minecraft.getInstance().window.guiScaledHeight
+        val a = FishSettings.customScoreboardAnchor
+        return when {
+            a.startsWith("Top") -> 3
+            a.startsWith("Middle") -> (sh - preview().totalH) / 2
+            a.startsWith("Bottom") -> sh - preview().totalH - 3
+            else -> FishSettings.customScoreboardHudY
+        }
+    }
+
+    // Dragging in the editor switches a preset anchor back to Custom so the move sticks
+    @JvmStatic
+    fun setPreviewBoxX(v: Int) {
+        if (v == previewBoxX()) return
+        if (FishSettings.customScoreboardAnchor != "Custom") { FishSettings.customScoreboardHudY = previewBoxY(); FishSettings.customScoreboardAnchor = "Custom" }
+        val sw = Minecraft.getInstance().window.guiScaledWidth
+        val right = v + previewBoxW() - 2
+        FishSettings.customScoreboardHudX = if (right >= sw - 5) -1 else right
+    }
+
+    @JvmStatic
+    fun setPreviewBoxY(v: Int) {
+        if (v == previewBoxY()) return
+        if (FishSettings.customScoreboardAnchor != "Custom") { setAnchorCustomKeepX() }
+        FishSettings.customScoreboardHudY = v
+    }
+
+    private fun setAnchorCustomKeepX() {
+        val sw = Minecraft.getInstance().window.guiScaledWidth
+        val right = previewBoxX() + previewBoxW() - 2
+        FishSettings.customScoreboardAnchor = "Custom"
+        FishSettings.customScoreboardHudX = if (right >= sw - 5) -1 else right
+    }
+
     fun registerPreview() {
         fishmod.features.HudPreview.register("Custom Scoreboard") {
             val mc = Minecraft.getInstance()
             val b = preview()
+            if (b.lines.isEmpty() && b.footer == null) return@register null
             val gs = mc.window.guiScale.toInt().coerceAtLeast(1)
             fishmod.features.HudExample(b.width + 4, b.totalH) { drawBoard(it, mc.font, b, 2, 0, gs) }
         }
@@ -198,7 +274,8 @@ object CustomScoreboard {
         return out
     }
 
-    private fun build(mc: Minecraft, sbTitle: Component, raw: List<Raw>): Built {
+    // ex = HUD editor example: tab/API-backed sections use example data instead of live state
+    private fun build(mc: Minecraft, sbTitle: Component, raw: List<Raw>, ex: Boolean = false): Built {
         val used = BooleanArray(raw.size)
         fun take(pred: (Raw) -> Boolean): Raw? {
             val i = raw.indices.firstOrNull { !used[it] && pred(raw[it]) } ?: return null
@@ -248,7 +325,7 @@ object CustomScoreboard {
         groups.add(world)
 
         val money = ArrayList<Component>()
-        if (FishSettings.sbSectionLevel) levelLine(mc)?.let { money.add(it) }
+        if (FishSettings.sbSectionLevel) (if (ex) exLevel() else levelLine(mc))?.let { money.add(it) }
         take { PURSE.containsMatchIn(it.s) }?.let { if (FishSettings.sbSectionPurse) money.add(kv(it.s, "§6")) }
         val bits = take { BITS.containsMatchIn(it.s) }
         val motes = take { MOTES.containsMatchIn(it.s) }
@@ -258,7 +335,7 @@ object CustomScoreboard {
             money.add(Component.literal("§fBits/Motes: §b${num(BITS.find(bits!!.s)!!.groupValues[1])}§7/§5${num(MOTES.find(motes!!.s)!!.groupValues[1])}"))
         } else if (showBits) money.add(kv(bits!!.s, "§b"))
         else if (showMotes) money.add(kv(motes!!.s, "§5"))
-        val gems = take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { bare(it.s) } ?: tabValue(TAB_GEMS)?.let { "Gems: $it" }
+        val gems = take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { bare(it.s) } ?: (if (ex) null else tabValue(TAB_GEMS))?.let { "Gems: $it" }
         if (gems != null && FishSettings.sbSectionGems) money.add(kv(gems, "§a"))
         var soulflowShown = false
         while (true) {
@@ -266,7 +343,7 @@ object CustomScoreboard {
             if (ScoreboardSection.classify(r.s) == ScoreboardSection.SOULFLOW) soulflowShown = true
             if (FishSettings.sbSectionOther) money.add(compact(r, ChatFormatting.WHITE))
         }
-        if (!soulflowShown && FishSettings.sbSectionOther) tabValue(TAB_SOULFLOW)?.let { money.add(kv("Soulflow: $it", "§3")) }
+        if (!soulflowShown && FishSettings.sbSectionOther) (if (ex) "12,345" else tabValue(TAB_SOULFLOW))?.let { money.add(kv("Soulflow: $it", "§3")) }
         groups.add(money)
 
         val slayerIdx = raw.indices.firstOrNull { !used[it] && raw[it].s.equals("Slayer Quest", true) }
@@ -294,9 +371,9 @@ object CustomScoreboard {
         }
         groups.add(area)
 
-        if (FishSettings.sbSectionPowder && SkyblockLocation.getCurrentLocation() in MINING) groups.add(powderLines())
-        if (FishSettings.sbSectionMayor) groups.add(mayorLines())
-        if (FishSettings.sbSectionParty) groups.add(partyLines())
+        if (FishSettings.sbSectionPowder && (ex || SkyblockLocation.getCurrentLocation() in MINING)) groups.add(if (ex) exPowder() else powderLines())
+        if (FishSettings.sbSectionMayor) groups.add(if (ex) exMayor() else mayorLines())
+        if (FishSettings.sbSectionParty) groups.add(if (ex) exParty() else partyLines())
 
         val out = ArrayList<Component>()
         for (g in groups) {
