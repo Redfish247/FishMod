@@ -196,9 +196,10 @@ object MiningHuds {
     fun reg(
         name: String, id: String, w: Int, h: Int,
         gx: () -> Int, sx: (Int) -> Unit, gy: () -> Int, sy: (Int) -> Unit,
-        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, enabled: (() -> Boolean)? = null, lines: () -> List<String>,
+        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, enabled: (() -> Boolean)? = null, example: (() -> List<String>)? = null, lines: () -> List<String>,
     ) {
         FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on, enabled?.let { e -> java.util.function.BooleanSupplier { e() } })
+        if (example != null) registerExample(name, example)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
             if (!FishHudEditor.isOpen() && on()) draw(ctx, lines(), gx(), gy(), gs())
         }
@@ -211,8 +212,14 @@ object MiningHuds {
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(scale.toFloat(), scale.toFloat())
+        drawLines(ctx, lines)
+        pose.popMatrix()
+    }
+
+    // The text block at the origin (shared by the in-game draw and the HUD editor example)
+    fun drawLines(ctx: GuiGraphicsExtractor, lines: List<String>) {
         // "value	item" lines: value right-aligned in its own column, item text after it (Diana style)
-        val font = mc.font
+        val font = Minecraft.getInstance().font
         val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
         for ((i, l) in lines.withIndex()) {
             if ('	' !in l) { ctx.text(font, l, 0, i * 10, -1, true); continue }
@@ -220,6 +227,16 @@ object MiningHuds {
             ctx.text(font, left, colX - 6 - font.width(left), i * 10, -1, true)
             ctx.text(font, l.substringAfter('	'), colX, i * 10, -1, true)
         }
-        pose.popMatrix()
     }
+
+    fun linesWidth(lines: List<String>): Int {
+        val font = Minecraft.getInstance().font
+        val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
+        return lines.maxOfOrNull { if ('	' in it) colX + font.width(it.substringAfter('	')) else font.width(it) } ?: 0
+    }
+
+    fun exampleOf(lines: List<String>) = fishmod.features.HudExample(linesWidth(lines), fishmod.features.HudPreview.textHeight(lines.size)) { ctx -> drawLines(ctx, lines) }
+
+    // HUD editor example: the real line drawing fed with example lines
+    fun registerExample(name: String, lines: () -> List<String>) = fishmod.features.HudPreview.register(name) { exampleOf(lines()) }
 }

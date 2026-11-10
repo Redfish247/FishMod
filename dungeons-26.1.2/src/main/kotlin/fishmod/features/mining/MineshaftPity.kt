@@ -34,7 +34,7 @@ object MineshaftPity {
         MiningHuds.reg("Mineshaft Pity", "mining_pity", 150, 40,
             { S.miningPityHudX }, { S.miningPityHudX = it }, { S.miningPityHudY }, { S.miningPityHudY = it },
             { S.miningPityHudScale }, { S.miningPityHudScale = it },
-            { S.miningPity && (Mining.inTunnels() || fishmod.features.FishHudEditor.isOpen()) }, { S.miningPity }, ::lines)
+            { S.miningPity && (Mining.inTunnels() || fishmod.features.FishHudEditor.isOpen()) }, { S.miningPity }, example = { lines(640, 312, null) }, lines = ::lines)
         halfPoints = S.miningPityPoints.toDouble()
     }
 
@@ -52,16 +52,21 @@ object MineshaftPity {
     }
 
     private fun lines(): List<String> {
+        if (inGrace()) return lines(0, 0, (S.miningPityGraceSec - (System.currentTimeMillis() - lastShaftMs) / 1000).coerceAtLeast(0))
+        return lines(points(), S.miningPityBlocks, null)
+    }
+
+    // waitSec != null = the post-portal grace line; shared with the HUD editor example
+    private fun lines(pts: Int, blocks: Int, waitSec: Long?): List<String> {
         val out = ArrayList<String>()
         out += "§3§lMineshaft Pity"
-        if (inGrace()) {
-            out += "§7Waiting §e${(S.miningPityGraceSec - (System.currentTimeMillis() - lastShaftMs) / 1000).coerceAtLeast(0)}s"
+        if (waitSec != null) {
+            out += "§7Waiting §e${waitSec}s"
             return out
         }
-        val pts = points()
         out += "§3Counter: §e$pts§6/§e$MAX §7(${"%.1f".format(pts * 100.0 / MAX)}%)"
         if (S.miningPityShowChance) out += "§3Chance: §e1§6/§e${MAX - pts}"
-        out += "§3Blocks: §e${S.miningPityBlocks}"
+        out += "§3Blocks: §e$blocks"
         if (S.miningPityBreakdown) {
             val left = MAX - pts
             for (pb in PityBlock.entries) out += "§7 ${pb.display}: §f${(left + pb.weight - 1) / pb.weight} §8left"

@@ -81,6 +81,7 @@ object MiningProfitTracker {
         FishHudEditor.register("Mining Profit", { S.miningProfitHudX }, { S.miningProfitHudX = it },
             { S.miningProfitHudY }, { S.miningProfitHudY = it }, 180, 120, { S.miningProfitHudScale }, { S.miningProfitHudScale = it },
             { S.miningProfit })
+        MiningHuds.registerExample("Mining Profit", ::exampleLines)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_profit")) { ctx, _ ->
             val mc = Minecraft.getInstance()
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
@@ -286,18 +287,20 @@ object MiningProfitTracker {
 
     fun lines(): List<String> = cache.get(version, ::buildLines)
 
-    private fun buildLines(): List<String> {
-        val t = tracker()
+    private fun buildLines(): List<String> = buildLines(tracker(), ::priceOf, true)
+
+    // live = the in-game HUD (keeps the inventory scroll); false = the HUD editor example over example data
+    private fun buildLines(t: Tracker, price: (String) -> Double, live: Boolean): List<String> {
         val only = Cat.of(S.miningProfitCategory)
         val rows = ProfitTrackerKit.sort(ProfitTrackerKit.mergeSources(t.items.mapNotNull { (k, n) ->
             val cat = runCatching { Cat.valueOf(k.substringBefore('|')) }.getOrNull() ?: return@mapNotNull null
             if (only != null && cat != only) return@mapNotNull null
             val name = k.substringAfter('|')
             if (name.endsWith("Powder")) return@mapNotNull null
-            Row(cat, name, n, priceOf(name) * n)
+            Row(cat, name, n, price(name) * n)
         }), S.miningProfitSort)
         val max = S.miningProfitLines.coerceIn(5, 25)
-        scroll = scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0))
+        val scroll = if (live) this.scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0)).also { this.scroll = it } else 0
         val out = ArrayList<String>()
         out += "§e§lMining Profit §7(${S.miningProfitCategory}, ${S.miningProfitMode})"
         if (scroll > 0) out += "§8  ▲ $scroll more"
@@ -335,6 +338,17 @@ object MiningProfitTracker {
     }
 
     private fun perHour(v: Double, t: Tracker) = ProfitTrackerKit.perHour(v, t.timeMs)
+
+    private val EXAMPLE_PRICES = mapOf("Enchanted Mithril" to 1500.0, "Refined Titanium" to 32000.0, "Flawless Ruby Gemstone" to 90000.0, "Umber Key" to -45000.0)
+
+    private fun exampleLines(): List<String> {
+        val t = Tracker()
+        for ((k, n) in listOf("MINING|Enchanted Mithril" to 640L, "MINING|Refined Titanium" to 12L, "NUCLEUS|Flawless Ruby Gemstone" to 3L,
+            "CORPSES|Umber Key" to -2L, "MINING|Mithril Powder" to 24_500L)) t.items[k] = n
+        t.counts["Corpses"] = 2; t.counts["Nucleus Runs"] = 3; t.counts["Excavations"] = 1; t.counts["Powder Chests"] = 5
+        t.timeMs = 3_725_000L
+        return buildLines(t, { EXAMPLE_PRICES[it] ?: 0.0 }, false)
+    }
 
     fun resetSession(msg: Boolean = true) { data.session = Tracker(); changed(); if (msg) FishMsg.send("§aMining profit session reset.") }
     fun resetTotal() { data.total = Tracker(); changed(); FishMsg.send("§aMining profit total reset.") }
