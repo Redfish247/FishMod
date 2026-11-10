@@ -66,8 +66,7 @@ object GardenMenus {
         X.gardenStereoActive = sel?.let { GardenExtras.name(it.item) } ?: ""
     }
 
-    private fun stereoLines(): List<String> {
-        val n = X.gardenStereoActive
+    private fun stereoLines(n: String = X.gardenStereoActive): List<String> {
         val pest = pestOf(n, emptyList())
         val crop = pest?.let { PEST_CROP[it] }
         val out = arrayListOf(Garden.legacy(X.gardenStereoColor) + "§lStereo Harmony", "§f$n")
@@ -78,7 +77,7 @@ object GardenMenus {
     // ---- Greenhouse ----
     private var greenhouse: List<String> = emptyList()
 
-    private fun greenhouseLines(): List<String> {
+    private fun greenhouseLines(greenhouse: List<String> = this.greenhouse): List<String> {
         val good = Garden.legacy(X.gardenGreenhouseGoodColor); val bad = Garden.legacy(X.gardenGreenhouseBadColor)
         val out = arrayListOf(good + "§lGreenhouse")
         for (l in greenhouse) {
@@ -183,10 +182,12 @@ object GardenMenus {
         Garden.hud("Stereo Harmony", "garden_stereo", 130, 30,
             { X.gardenStereoHudX }, { X.gardenStereoHudX = it }, { X.gardenStereoHudY }, { X.gardenStereoHudY = it },
             { X.gardenStereoHudScale }, { X.gardenStereoHudScale = it },
-            { X.gardenStereo && Garden.inGarden() && X.gardenStereoActive.isNotEmpty() }, { X.gardenStereo }) { stereoLines() }
+            { X.gardenStereo && Garden.inGarden() && X.gardenStereoActive.isNotEmpty() }, { X.gardenStereo },
+            example = { stereoLines("Pretty Fly") }) { stereoLines() }
         Garden.hud("Greenhouse", "garden_greenhouse", 130, 30,
             { X.gardenGreenhouseHudX }, { X.gardenGreenhouseHudX = it }, { X.gardenGreenhouseHudY }, { X.gardenGreenhouseHudY = it },
             { X.gardenGreenhouseHudScale }, { X.gardenGreenhouseHudScale = it },
-            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }, { X.gardenGreenhouse }) { greenhouseLines() }
+            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }, { X.gardenGreenhouse },
+            example = { greenhouseLines(listOf("Harvestable: 6", "Water: 82%")) }) { greenhouseLines() }
     }
 }

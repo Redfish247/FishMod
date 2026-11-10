@@ -9,6 +9,8 @@ object GardenPerks {
     private var charmed: List<String> = emptyList()
     private var tick = 0
 
+    private fun charmedLines(rows: List<String>) = listOf(Garden.legacy(X.gardenCharmedColor) + "§lCharmed Visitor") + rows.map { "§7$it" }
+
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || tick++ % 20 != 0) return@register
@@ -18,6 +20,7 @@ object GardenPerks {
         Garden.hud("Charmed Visitor", "garden_charmed", 130, 24,
             { X.gardenCharmedHudX }, { X.gardenCharmedHudX = it }, { X.gardenCharmedHudY }, { X.gardenCharmedHudY = it },
             { X.gardenCharmedHudScale }, { X.gardenCharmedHudScale = it },
-            { X.gardenCharmed && charmed.isNotEmpty() }, { X.gardenCharmed }) { listOf(Garden.legacy(X.gardenCharmedColor) + "§lCharmed Visitor") + charmed.map { "§7$it" } }
+            { X.gardenCharmed && charmed.isNotEmpty() }, { X.gardenCharmed },
+            example = { charmedLines(listOf("Example Visitor: 2m 10s")) }) { charmedLines(charmed) }
     }
 }

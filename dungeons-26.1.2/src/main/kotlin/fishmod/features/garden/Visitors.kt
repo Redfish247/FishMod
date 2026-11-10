@@ -58,15 +58,16 @@ object Visitors {
         Garden.hud("Visitor Timer", "garden_visitor_timer", 140, 20,
             { S.gardenVisitorTimerHudX }, { S.gardenVisitorTimerHudX = it }, { S.gardenVisitorTimerHudY }, { S.gardenVisitorTimerHudY = it },
             { S.gardenVisitorTimerHudScale }, { S.gardenVisitorTimerHudScale = it },
-            { S.gardenVisitorTimer && Garden.inGarden() && nextVisitor.isNotEmpty() }, { S.gardenVisitorTimer }) {
-            listOf("§aVisitors: §f$count  §7Next: " + (if (nextVisitor.contains("Full", true)) "§cQueue Full" else "§b$nextVisitor"))
+            { S.gardenVisitorTimer && Garden.inGarden() && nextVisitor.isNotEmpty() }, { S.gardenVisitorTimer },
+            example = { timerLines(3, "1m 30s") }) {
+            timerLines(count, nextVisitor)
         }
         Garden.hud("Visitor Stats", "garden_visitor_stats", 140, 50,
             { S.gardenVisitorStatsHudX }, { S.gardenVisitorStatsHudX = it }, { S.gardenVisitorStatsHudY }, { S.gardenVisitorStatsHudY = it },
             { S.gardenVisitorStatsHudScale }, { S.gardenVisitorStatsHudScale = it },
-            { S.gardenVisitorStats && Garden.inGarden() }, { S.gardenVisitorStats }) {
-            listOf(Garden.legacy(S.gardenVisitorStatsColor) + "§lVisitor Stats", "§7Accepted: §f${S.gardenStatAccepted}", "§7Copper: §c${"%,d".format(S.gardenStatCopper)}",
-                "§7Garden XP: §2${"%,d".format(S.gardenStatGardenXp)}", "§7Rare Rewards: §d${S.gardenStatRare}")
+            { S.gardenVisitorStats && Garden.inGarden() }, { S.gardenVisitorStats },
+            example = { statsLines(42, 8_650, 12_340, 3) }) {
+            statsLines(S.gardenStatAccepted, S.gardenStatCopper, S.gardenStatGardenXp, S.gardenStatRare)
         }
 
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> tooltip(stack, lines) })
@@ -76,6 +77,13 @@ object Visitors {
                 ctx.fill(x, y, x + 16, y + 16, Mining.alpha(S.gardenRareRewardColor, 60))
         }
     }
+
+    private fun timerLines(count: Int, next: String) =
+        listOf("§aVisitors: §f$count  §7Next: " + (if (next.contains("Full", true)) "§cQueue Full" else "§b$next"))
+
+    private fun statsLines(accepted: Int, copper: Int, xp: Int, rare: Int) =
+        listOf(Garden.legacy(S.gardenVisitorStatsColor) + "§lVisitor Stats", "§7Accepted: §f$accepted", "§7Copper: §c${"%,d".format(copper)}",
+            "§7Garden XP: §2${"%,d".format(xp)}", "§7Rare Rewards: §d$rare")
 
     private fun onChat(s: String): Boolean {
         ARRIVED.find(s)?.let { m ->

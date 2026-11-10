@@ -106,15 +106,21 @@ object Pests {
         Garden.hud("Pest Timer", "garden_pests", 150, 40,
             { S.gardenPestHudX }, { S.gardenPestHudX = it }, { S.gardenPestHudY }, { S.gardenPestHudY = it },
             { S.gardenPestHudScale }, { S.gardenPestHudScale = it },
-            { S.gardenPestHud && Garden.inGarden() }, { S.gardenPestHud }) {
-            val out = arrayListOf("${Garden.legacy(S.gardenPestHudColor)}§lPests §f$alive")
-            if (cooldown.isNotEmpty()) out += "§7Cooldown: " + (if (cooldown.contains("READY", true)) "§a" else "§e") + cooldown
+            { S.gardenPestHud && Garden.inGarden() }, { S.gardenPestHud },
+            example = { pestLines(3, "5m 30s", listOf("3", "7"), "Active 12m", "+20 Farming Fortune") }) {
             val plots = if (tabPlots.isNotEmpty()) tabPlots else if (alive > 0) remembered.keys.toList() else emptyList()
-            if (plots.isNotEmpty()) out += "§7Plots: §f" + plots.joinToString(", ") { labelOf(it) }
-            if (spray.isNotEmpty()) out += "§7Spray: " + (if (spray.startsWith("None")) "§c" else "§a") + spray
-            if (bonus.isNotEmpty()) out += "§7Bonus: §6$bonus"
-            out
+            pestLines(alive, cooldown, plots.map { labelOf(it) }, spray, bonus)
         }
+    }
+
+    // Shared by the in-game HUD and the HUD editor example
+    private fun pestLines(alive: Int, cooldown: String, plotLabels: List<String>, spray: String, bonus: String): List<String> {
+        val out = arrayListOf("${Garden.legacy(S.gardenPestHudColor)}§lPests §f$alive")
+        if (cooldown.isNotEmpty()) out += "§7Cooldown: " + (if (cooldown.contains("READY", true)) "§a" else "§e") + cooldown
+        if (plotLabels.isNotEmpty()) out += "§7Plots: §f" + plotLabels.joinToString(", ")
+        if (spray.isNotEmpty()) out += "§7Spray: " + (if (spray.startsWith("None")) "§c" else "§a") + spray
+        if (bonus.isNotEmpty()) out += "§7Bonus: §6$bonus"
+        return out
     }
 
     private fun onChat(s: String) {

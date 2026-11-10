@@ -36,6 +36,7 @@ object GardenAlerts {
         Garden.hud("Rare Drop Alert", "garden_alert", 160, 24,
             { S.gardenAlertX }, { S.gardenAlertX = it }, { S.gardenAlertY }, { S.gardenAlertY = it },
             { S.gardenAlertScale }, { S.gardenAlertScale = it },
-            { S.gardenAlert && System.currentTimeMillis() < until }, { S.gardenAlert }) { lines }
+            { S.gardenAlert && System.currentTimeMillis() < until }, { S.gardenAlert },
+            example = { listOf("§6§lRARE CROP!", "§6Example Rare Crop") }) { lines }
     }
 }
