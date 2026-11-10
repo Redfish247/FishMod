@@ -75,7 +75,8 @@ object SlayerHuds {
             blockExample(spawnLines(EX_TYPE, EX_TIER, SlayerManager.State.GRINDING, SlayerManager.SpawnProgress(null, 1250.0, 2000.0, "")))
         }
         HudPreview.register(STATS_HUD) { blockExample(statsLines(EX_TYPE, EX_TIER, 1_250_000.0, 4321, 87.0, true)) }
-        HudPreview.register(TIMER_HUD) { blockExample(timerLines(TimerData(false, 0.0, true, 23.45, true, 18.9, true, 41.2, true, 12.3))) }
+        // state after a new-PB kill; the Show toggles filter lines like in game
+        HudPreview.register(TIMER_HUD) { blockExample(timerLines(TimerData(false, 0.0, true, 23.45, true, 23.45, true, 41.2, true, 12.3))) }
         HudPreview.register(RNG_HUD) {
             val f = Minecraft.getInstance().font
             HudExample(f.width(RNG_LABEL) + f.width("§e$EX_RNG"), FishConstants.TEXT_HEIGHT) { ctx -> drawRng(ctx, EX_RNG) }

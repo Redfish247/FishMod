@@ -386,8 +386,11 @@ object SlayerProfitTracker {
         Row("Foul Flesh", 214, 5_350_000.0, true, id = "FOUL_FLESH"),
         Row("Revenant Flesh", 96, 1_200_000.0, true, id = "REVENANT_FLESH"),
         Row("Mob Kill Coins", 140, 640_000.0, true, true),
+        Row("Revenant Catalyst", 3, 45_000.0, true, id = "REVENANT_CATALYST"),
         Row("Scythe Blade", 1, 0.0, false),
     )
+    // example row treated as hidden, so "Show Hidden" previews like in game
+    private const val EX_HIDDEN = "Revenant Catalyst"
 
     // Example data through the real row builder, never cached, for the HUD editor preview
     fun exampleDisplay(type: SlayerType, tier: Int): List<DisplayRow> = buildDisplay(type, tier, false, true)
@@ -395,11 +398,11 @@ object SlayerProfitTracker {
     private fun buildDisplay(type: SlayerType, tier: Int, interactive: Boolean, example: Boolean = false): List<DisplayRow> {
         val k = key(type, tier)
         val out = ArrayList<DisplayRow>(24)
-        val allRows = if (example) EX_ROWS else rows(type, tier)
+        val allRows = if (example) EX_ROWS.filter { !it.coins || countKillCoins() } else rows(type, tier)
         val exBosses = 38L
         val exCost = 1_900_000.0
         val exMs = 5_400_000L
-        fun isHid(name: String) = !example && isHiddenKey(k, name)
+        fun isHid(name: String) = if (example) name == EX_HIDDEN else isHiddenKey(k, name)
 
         val cat = "${type.displayName} $tier"
         out.add(
@@ -446,7 +449,7 @@ object SlayerProfitTracker {
         out.add(DisplayRow("§7Spawn Costs §c-${sh(cost)}", "", "cost"))
         out.add(DisplayRow("§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(ms)}", "", "time"))
 
-        val p = if (example) allRows.sumOf { it.value } - cost else profit(type, tier, allRows)
+        val p = if (example) allRows.filter { !isHid(it.name) }.sumOf { it.value } - cost else profit(type, tier, allRows)
         val pph = if (example) p * 3_600_000.0 / ms else profitPerHour(type, tier, p)
         val pc = if (p < 0) "§c" else "§6"
         val rc = if (pph < 0) "§c" else "§7"
