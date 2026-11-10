@@ -33,6 +33,10 @@ object PartyWarpTimer {
             80, 12,
             { FishSettings.warpCooldownScale }, { v -> FishSettings.warpCooldownScale = v }
         )
+        HudPreview.register(NAME) {
+            val l = label(8_400L)
+            HudExample(Minecraft.getInstance().font.width(l), HudPreview.TEXT_H) { ctx -> ctx.text(Minecraft.getInstance().font, l, 0, 0, -1, true) }
+        }
 
         FishEvents.chat.register { text ->
             if (!DungeonSettings.partyWarpTimer || fishmod.compat.BladeCompat.active) return@register false
@@ -63,6 +67,10 @@ object PartyWarpTimer {
         return rem.coerceAtLeast(0)
     }
 
+    private fun label(rem: Long) = net.minecraft.network.chat.Component.literal("§eWarp: ")
+        .append(net.minecraft.network.chat.Component.literal(fishmod.utils.Fmt.f1(rem / 1000.0) + "s")
+            .withColor(FishSettings.warpCooldownColor and 0xFFFFFF))
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!DungeonSettings.partyWarpTimer || fishmod.compat.BladeCompat.active) return
@@ -71,9 +79,7 @@ object PartyWarpTimer {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
 
-        val label = net.minecraft.network.chat.Component.literal("§eWarp: ")
-            .append(net.minecraft.network.chat.Component.literal(fishmod.utils.Fmt.f1(rem / 1000.0) + "s")
-                .withColor(FishSettings.warpCooldownColor and 0xFFFFFF))
+        val label = label(rem)
         val sc = FishSettings.warpCooldownScale.toFloat()
         ctx.pose().pushMatrix()
         try {

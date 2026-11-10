@@ -3,6 +3,8 @@ package fishmod.features.other
 import fishmod.utils.events.chatPlain
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.compat.hudHidden
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.features.dungeon.f7.terminal.TerminalType
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.shaded.practicalconfig.hud.HUDComponent
@@ -109,6 +111,7 @@ object Stopwatch {
         splitKey = key("Stopwatch - Split")
         resetKey = key("Stopwatch - Reset")
         fishmod.features.FishHudEditor.register(NAME, hud)
+        HudPreview.register(NAME) { example() }
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("Stopwatch.1", "stopwatch tick") { tick(mc) } }
         FishEvents.chat.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(msg.chatPlain) }; false }
@@ -264,18 +267,45 @@ object Stopwatch {
         val x = component.scaledX
         var y = component.scaledY
         val rowH = font.lineHeight + 1
+        val ex = HudPreview.active
+        val shownSplits = if (ex) EX_SPLITS else splits
+        val best = if (ex) EX_BEST_S else bestSeconds
+        val hist = if (ex) EX_HISTORY else history
+        val isRunning = !ex && running
         ctx.text(font, prefix, x, y, prefixColor, true)
-        ctx.text(font, fmt(current()), x + font.width(prefix), y, if (running) runningColor else stoppedColor, true)
+        ctx.text(font, fmt(if (ex) EX_NS else current()), x + font.width(prefix), y, if (isRunning) runningColor else stoppedColor, true)
         y += rowH
-        splits.forEachIndexed { i, s ->
+        shownSplits.forEachIndexed { i, s ->
             ctx.text(font, "Split ${i + 1}: ${fmt(s)}", x + 4, y, historyColor, true); y += rowH
         }
-        if (showBest && bestSeconds > 0.0) {
-            ctx.text(font, "Best: ${fmt((bestSeconds * 1e9).toLong())}", x + 4, y, bestColor, true); y += rowH
+        if (showBest && best > 0.0) {
+            ctx.text(font, "Best: ${fmt((best * 1e9).toLong())}", x + 4, y, bestColor, true); y += rowH
         }
-        for (h in history.take(historyCount.coerceIn(0, 10))) {
+        for (h in hist.take(historyCount.coerceIn(0, 10))) {
             ctx.text(font, fmt(h), x + 4, y, historyColor, true); y += rowH
         }
+    }
+
+    private const val EX_NS = 72_340_000_000L
+    private const val EX_BEST_S = 65.12
+    private val EX_SPLITS = listOf(31_200_000_000L, 41_140_000_000L)
+    private val EX_HISTORY = listOf(70_010_000_000L, 68_900_000_000L, 66_500_000_000L)
+
+    // Same rows as render() on example data, so the drag box matches the in-game size
+    private fun exampleSize(): Pair<Int, Int> {
+        val font = Minecraft.getInstance().font
+        var w = font.width(prefix) + font.width(fmt(EX_NS))
+        var rows = 1
+        EX_SPLITS.forEachIndexed { i, s -> w = maxOf(w, 4 + font.width("Split ${i + 1}: ${fmt(s)}")); rows++ }
+        if (showBest) { w = maxOf(w, 4 + font.width("Best: ${fmt((EX_BEST_S * 1e9).toLong())}")); rows++ }
+        for (h in EX_HISTORY.take(historyCount.coerceIn(0, 10))) { w = maxOf(w, 4 + font.width(fmt(h))); rows++ }
+        return w to ((rows - 1) * (font.lineHeight + 1) + font.lineHeight)
+    }
+
+    @JvmStatic
+    fun example(): HudExample {
+        val (w, h) = exampleSize()
+        return HudPreview.component(hud, ::render, w, h)
     }
 
     @JvmStatic

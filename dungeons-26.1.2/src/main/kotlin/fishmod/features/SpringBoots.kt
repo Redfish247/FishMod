@@ -53,6 +53,7 @@ object SpringBoots {
             80, 12,
             { FishSettings.springBootsScale }, { v -> FishSettings.springBootsScale = v }
         )
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(HEIGHTS[20]))) }
 
         FishEvents.sound.register { event, _, pitch ->
             if (!FishSettings.springBootsEnabled || !SkyblockLocation.inSkyblock()) return@register false
@@ -93,14 +94,18 @@ object SpringBoots {
         }
     }
 
+    private fun label(height: Float): String {
+        val pct = height / HEIGHTS.last() * 100f
+        return if (FishSettings.springBootsShowBlocks) "§aSpring: §f${fishmod.utils.Fmt.f1(height.toDouble())}"
+        else "§aCharge: §f${fishmod.utils.Fmt.f0(pct.toDouble())}%"
+    }
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.springBootsEnabled || currentHeight <= 0f) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        val pct = currentHeight / HEIGHTS.last() * 100f
-        val label = if (FishSettings.springBootsShowBlocks) "§aSpring: §f${fishmod.utils.Fmt.f1(currentHeight.toDouble())}"
-        else "§aCharge: §f${fishmod.utils.Fmt.f0(pct.toDouble())}%"
+        val label = label(currentHeight)
         val sc = FishSettings.springBootsScale.toFloat()
         ctx.pose().pushMatrix()
         try {

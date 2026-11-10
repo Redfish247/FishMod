@@ -2,6 +2,8 @@ package fishmod.features.chat
 
 import fishmod.utils.events.chatPlain
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.TextStrip
 import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
@@ -46,6 +48,9 @@ object ChatRuleHandler {
             { ChatRuleStore.hudScale() }, { v -> ChatRuleStore.setHudScale(v) },
             { ChatRuleStore.isMasterEnabled() }
         )
+        HudPreview.register("Chat Alerts") {
+            HudExample(HUD_WIDTH, HudPreview.textHeight(1, 11)) { ctx -> drawAlerts(ctx, listOf("Example alert")) }
+        }
     }
 
     @JvmStatic
@@ -91,6 +96,16 @@ object ChatRuleHandler {
         }
     }
 
+    private const val HUD_WIDTH = 220
+
+    private fun drawAlerts(ctx: GuiGraphicsExtractor, texts: List<String>) {
+        val font = Minecraft.getInstance().font
+        for ((i, t) in texts.withIndex()) {
+            val line = "§e⚑ $t"
+            ctx.text(font, line, (HUD_WIDTH - font.width(line)) / 2, i * 11, -1, true)
+        }
+    }
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tc: DeltaTracker) {
         if (!ChatRuleStore.isMasterEnabled()) return
@@ -104,12 +119,7 @@ object ChatRuleHandler {
         try {
             ctx.pose().translate(ChatRuleStore.hudX().toFloat(), ChatRuleStore.hudY().toFloat())
             ctx.pose().scale(sc, sc)
-            val hudWidth = 220
-            for ((i, t) in activeTitles.withIndex()) {
-                val line = "§e⚑ ${t.text}"
-                val x = (hudWidth - mc.font.width(line)) / 2
-                ctx.text(mc.font, line, x, i * 11, -1, true)
-            }
+            drawAlerts(ctx, activeTitles.map { it.text })
         } catch (e: Exception) {
             FishDiag.fail("ChatRuleHandler.3", "chat notification hud render failed (${activeTitles.size} titles)", e)
         } finally {
