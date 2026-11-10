@@ -45,11 +45,17 @@ object FishingTitles {
         CREATURE -> FishingAlerts.creatureTitle(SeaCreatures.ALL.firstOrNull { it.name == "Water Hydra" && (it.rare || !S.alertScRareOnly) }
             ?: SeaCreatures.ALL.firstOrNull { it.rare } ?: SeaCreatures.ALL.first(), 2)
         DROP -> FishingAlerts.dropTitle("Example Item", maxOf(2_500_000.0, S.alertDropMinPrice.toDouble()))
-        HOTSPOT -> if (S.alertHotspotFound || !S.alertHotspotGone) "§6§lHotspot found" to "§fExample perk" else "§c§lHotspot is gone" to ""
-        WORMHOLE -> (if (S.fishingAlerts && S.alertWormholeGone) "§c§lWormhole is gone" else "§c§lWormhole closed!") to ""
-        TROPHY -> "§b§lNEW DISCOVERY" to "§fExample discovery"
-        DEPLOYABLE -> "§e§lExample expires soon" to ""
-        else -> "§b§lBait changed" to "§fExample Bait"
+        HOTSPOT -> FishingAlerts.hotspotTitle(if (S.alertHotspotFound || !S.alertHotspotGone) "Example perk" else null)
+        WORMHOLE -> FishingAlerts.wormholeTitle(S.fishingAlerts && S.alertWormholeGone)
+        TROPHY -> FishingAlerts.trophyTitle("Example discovery")
+        DEPLOYABLE -> FishingAlerts.deployableTitle("Totem of Corruption")
+        else -> FishingAlerts.baitTitle("Fish Bait", null)
+    }
+
+    // Drawn height: main at 2x, sub at 1.2x under it
+    private fun height(sub: String): Int {
+        val lh = Minecraft.getInstance().font.lineHeight
+        return Math.ceil(lh * 2.0 + if (sub.isEmpty()) 0.0 else 2.0 + lh * 1.2).toInt()
     }
 
     // The slot's own alert toggle, so the editor only lists alerts that can fire
@@ -69,7 +75,7 @@ object FishingTitles {
         for (s in ALL) {
             fishmod.features.HudPreview.register(s.name) {
                 val (m, sub) = example(s)
-                fishmod.features.HudExample(s.w, s.h) { ctx -> render(ctx, s, m, sub, 0xFFFFFFFF.toInt()) }
+                fishmod.features.HudExample(s.w, height(sub)) { ctx -> render(ctx, s, m, sub, 0xFFFFFFFF.toInt()) }
             }
             FishHudEditor.register(s.name, { s.x() }, { v -> s.sx(v) }, { s.y() }, { v -> s.sy(v) }, s.w, s.h,
                 { s.gs() }, { v -> s.ss(v) }, { Fishing.enabled() && slotOn(s) })

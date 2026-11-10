@@ -135,7 +135,7 @@ object WormholeFinder {
         val now = System.currentTimeMillis()
         if (now - lastAlert < 3000) return
         lastAlert = now
-        FishingAlerts.notify(FishingTitles.WORMHOLE, "§c§lWormhole closed!", "", null)
+        FishingAlerts.notify(FishingTitles.WORMHOLE, FishingAlerts.wormholeTitle(false), null)
         reset()
     }
 }

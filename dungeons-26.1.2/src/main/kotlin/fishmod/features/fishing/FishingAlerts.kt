@@ -51,13 +51,13 @@ object FishingAlerts {
     private fun onChat(plain: String) {
         if (S.alertWormholeGone && FishingAlertText.isWormholeGone(plain)) {
             if (Fishing.inArea(fishmod.utils.SkyblockLocation.LOTUS_ATOLL) || Fishing.inArea(fishmod.utils.SkyblockLocation.CRIMSON_ISLE))
-                notify(FishingTitles.WORMHOLE, "§c§lWormhole is gone", "", null)
+                notify(FishingTitles.WORMHOLE, wormholeTitle(true), null)
             WormholeFinder.onGone()
             return
         }
         if (S.alertNewTrophy) {
             val d = FishingAlertText.newDiscovery(plain, Fishing.location() == fishmod.utils.SkyblockLocation.CRIMSON_ISLE) ?: return
-            notify(FishingTitles.TROPHY, "§b§lNEW DISCOVERY", "§f$d", null)
+            notify(FishingTitles.TROPHY, trophyTitle(d), null)
         }
     }
 
@@ -66,6 +66,20 @@ object FishingAlerts {
 
     fun dropTitle(item: String, price: Double) =
         "§6§lRARE DROP!" to "§f$item" + (if (price > 0) " §7(§6${FishingAlertText.fmtCoins(price)}§7)" else "")
+
+    // perk null = the tracked hotspot is gone
+    fun hotspotTitle(perk: String?) = if (perk != null) "§6§lHotspot found" to "§f$perk" else "§c§lHotspot is gone" to ""
+
+    fun wormholeTitle(gone: Boolean) = (if (gone) "§c§lWormhole is gone" else "§c§lWormhole closed!") to ""
+
+    fun trophyTitle(discovery: String) = "§b§lNEW DISCOVERY" to "§f$discovery"
+
+    fun deployableTitle(name: String) = "§e§l$name expires soon" to ""
+
+    // left null = bait changed, else the low-bait warning
+    fun baitTitle(name: String, left: Int?) = if (left == null) "§b§lBait changed" to "§f$name" else "§c§lOut of bait soon" to "§f$left $name"
+
+    fun notify(slot: FishingTitles.Slot, t: Pair<String, String>, chat: String?) = notify(slot, t.first, t.second, chat)
 
     // Title + sound + optional local chat line for the non-creature alerts
     fun notify(slot: FishingTitles.Slot, main: String, sub: String, chat: String?) {
