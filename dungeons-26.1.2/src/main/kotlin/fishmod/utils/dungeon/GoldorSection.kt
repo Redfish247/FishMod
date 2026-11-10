@@ -216,11 +216,17 @@ object GoldorSection {
     fun shouldIncrement(latest: Int): Boolean =
         (gateBlownUp && latest == total) || (completed >= total && latest < completed)
 
+    // HUD editor example: S1-S3 done, S4 running
+    private val EXAMPLE_SPLITS: Array<RunSplit> by lazy {
+        val times = doubleArrayOf(12.34, 13.10, 11.92, 6.40)
+        Array(4) { i -> RunSplit("S${i + 1}", "", "", SPLIT_GOLD, 0.0).also { it.setExample(times[i], i == 3) } }
+    }
+
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         val font: Font = Minecraft.getInstance().font
         try {
-            splits.forEachIndexed { i, s -> s.drawSplit(context, font, component.scaledX, component.scaledY + FishConstants.TEXT_HEIGHT * i, SPLIT_LENGTH) }
+            (if (fishmod.features.HudPreview.active) EXAMPLE_SPLITS else splits).forEachIndexed { i, s -> s.drawSplit(context, font, component.scaledX, component.scaledY + FishConstants.TEXT_HEIGHT * i, SPLIT_LENGTH) }
         } catch (t: Throwable) {
             FishDiag.fail("GoldorSection.10", "render goldor splits HUD", t)
         }

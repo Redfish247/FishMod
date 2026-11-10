@@ -1,5 +1,7 @@
 package fishmod.features.dungeon
 
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.FishConstants
 import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
@@ -150,7 +152,17 @@ object FishEstTotal {
         finally { pose.popMatrix() }
     }
 
+    // HUD editor example: the real rows over the Splits example (M7 history/averages, example lag)
+    @JvmStatic
+    fun example(): HudExample? {
+        val splits = BossPhase.exampleSplits()
+        if (splits.isEmpty()) return null
+        val client = Minecraft.getInstance()
+        return HudExample(BossPhase.SPLIT_LENGTH, FishConstants.TEXT_HEIGHT + 9) { ctx -> renderAt(ctx, client, splits, 0, 0) }
+    }
+
     private fun renderAt(context: GuiGraphicsExtractor, client: Minecraft, splits: List<RunSplit>, x: Int, y: Int) {
+        val floor = if (HudPreview.active) "M7" else floor
         val splitCount = splits.size - 1
         FishDiag.check(splitCount >= 0, "FishEstTotal.12") { "empty split list for floor $floor" }
         var base = 0.0
@@ -184,7 +196,7 @@ object FishEstTotal {
     }
 
     private fun drawLagLine(context: GuiGraphicsExtractor, client: Minecraft, x: Int, y: Int) {
-        val lag = LagTracker.getCurrentLag()
+        val lag = if (HudPreview.active) 1.35 else LagTracker.getCurrentLag()
         val lagStr = FishConstants.DECIMAL_FORMAT.format(lag) + "s"
         if (lagStr != cachedLagStr) {
             cachedLagStr = lagStr
