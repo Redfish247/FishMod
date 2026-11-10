@@ -54,7 +54,9 @@ object SensitivityReducer {
         Garden.hud("Sensitivity", "garden_sens", 110, 12,
             { S.gardenSensX }, { S.gardenSensX = it }, { S.gardenSensY }, { S.gardenSensY = it },
             { S.gardenSensScale }, { S.gardenSensScale = it },
-            { S.gardenSens && S.gardenSensHud && reduced }, { S.gardenSens },
-            example = { listOf(Garden.legacy(S.gardenSensColor) + "Sensitivity §f${S.gardenSensPercent}%") }) { listOf(Garden.legacy(S.gardenSensColor) + "Sensitivity §f${S.gardenSensPercent}%") }
+            { S.gardenSens && S.gardenSensHud && reduced }, { S.gardenSens && S.gardenSensHud },
+            example = ::hudLines) { hudLines() }
     }
+
+    private fun hudLines() = listOf(Garden.legacy(S.gardenSensColor) + "Sensitivity §f${S.gardenSensPercent}%")
 }

@@ -24,12 +24,13 @@ object GardenTitles {
 
     private fun visitorFullOn() = S.gardenVisitorSixthWarn && S.gardenVisitorTimer
 
-    // First title the player has turned on
-    private fun example(): List<String> = listOf(when {
+    // First title the player has turned on, none when all are off
+    private fun example(): List<String> = listOfNotNull(when {
         visitorFullOn() -> visitorFull()
         S.gardenVisitorArrivalTitle -> visitorArrived("Example Visitor")
         S.gardenPestTitle -> pest("3")
-        else -> composterIdle()
+        S.gardenComposterWarn -> composterIdle()
+        else -> null
     })
 
     fun init() {
