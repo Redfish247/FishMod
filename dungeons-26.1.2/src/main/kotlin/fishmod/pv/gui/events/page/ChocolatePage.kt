@@ -308,8 +308,8 @@ class ChocolatePage {
 		var scaleX = 1f
 		var scaleY = 1f
 		if (animating) {
-			scaleX = maxOf(0.04f, abs(cos(angle.toDouble()).toFloat()))
-			scaleY = 1f - (1f - scaleX) * 0.06f
+			scaleY = maxOf(0.04f, abs(cos(angle.toDouble()).toFloat()))
+			scaleX = 1f - (1f - scaleY) * 0.06f
 		}
 
 		val cxFlip = x + w / 2f
