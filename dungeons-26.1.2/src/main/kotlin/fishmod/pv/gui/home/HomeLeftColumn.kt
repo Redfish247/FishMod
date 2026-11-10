@@ -224,8 +224,8 @@ class HomeLeftColumn {
 		var scaleX = 1F
 		var scaleY = 1F
 		if (animating) {
-			scaleX = maxOf(0.04F, abs(cos(angle.toDouble()).toFloat()))
-			scaleY = 1F - (1F - scaleX) * 0.06F
+			scaleY = maxOf(0.04F, abs(cos(angle.toDouble()).toFloat()))
+			scaleX = 1F - (1F - scaleY) * 0.06F
 		}
 
 		val cxFlip = x + w / 2F
