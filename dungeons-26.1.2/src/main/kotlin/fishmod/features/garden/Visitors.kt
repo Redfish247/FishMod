@@ -51,7 +51,7 @@ object Visitors {
             if (names.isNotEmpty() && names.size >= count && names.none { it.contains("more", true) }) shopping.keys.retainAll { k -> names.any { it.contains(k) } }
             else if (count == 0 && nextVisitor.isNotEmpty()) shopping.clear()
             val full = nextVisitor.contains("Full", true)
-            if (full && !fullWarned && S.gardenVisitorSixthWarn && S.gardenVisitorTimer) GardenTitles.show(Garden.legacy(S.gardenVisitorFullColor) + "Visitor Queue Full!", "", 2000, true)
+            if (full && !fullWarned && S.gardenVisitorSixthWarn && S.gardenVisitorTimer) GardenTitles.show(GardenTitles.visitorFull(),"", 2000, true)
             fullWarned = full
             scanMenu(mc)
         }
@@ -88,7 +88,7 @@ object Visitors {
     private fun onChat(s: String): Boolean {
         ARRIVED.find(s)?.let { m ->
             if (!Garden.inGarden()) return false
-            if (S.gardenVisitorArrivalTitle) GardenTitles.show(S.gardenVisitorArrivalText.replace("{name}", m.groupValues[1]), "", 1500, S.gardenVisitorArrivalSound)
+            if (S.gardenVisitorArrivalTitle) GardenTitles.show(GardenTitles.visitorArrived(m.groupValues[1]),"", 1500, S.gardenVisitorArrivalSound)
             return S.gardenVisitorHideArrival
         }
         ACCEPTED.find(s)?.let { m ->
