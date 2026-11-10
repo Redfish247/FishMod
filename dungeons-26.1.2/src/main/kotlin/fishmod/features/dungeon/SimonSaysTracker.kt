@@ -135,6 +135,7 @@ object SimonSaysTracker {
             if (!fishmod.features.FishHudEditor.isOpen()) try { renderHud(ctx, tc) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.4", "SS tracker HUD render threw", e) }
         }
 
+        registerPreview()
         FishHudEditor.register(
             "Simon Says",
             { FishSettings.simonSaysHudX }, { v -> FishSettings.simonSaysHudX = v },
@@ -355,14 +356,27 @@ object SimonSaysTracker {
                 FishSettings.ssProgressProgressText.replace("(n)", round.toString()) to FishSettings.ssProgressProgressColor
             }
         }
-        val label = Component.literal(text).withColor(color and 0xFFFFFF)
-
         val sc = FishSettings.simonSaysHudScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.simonSaysHudX.toFloat(), FishSettings.simonSaysHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, label, 0, 0, -1, true)
+        drawLabel(ctx, text, color)
         ctx.pose().popMatrix()
+    }
+
+    private fun labelOf(text: String, color: Int): Component = Component.literal(text).withColor(color and 0xFFFFFF)
+
+    private fun drawLabel(ctx: GuiGraphicsExtractor, text: String, color: Int) =
+        ctx.text(Minecraft.getInstance().font, labelOf(text, color), 0, 0, -1, true)
+
+    // Example data: round 3 progress text
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register("Simon Says") {
+            val text = FishSettings.ssProgressProgressText.replace("(n)", "3")
+            fishmod.features.HudExample(Minecraft.getInstance().font.width(labelOf(text, 0)), fishmod.features.HudPreview.TEXT_H) {
+                drawLabel(it, text, FishSettings.ssProgressProgressColor)
+            }
+        }
     }
 
     private fun log(line: String) {

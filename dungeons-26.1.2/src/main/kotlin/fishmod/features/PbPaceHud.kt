@@ -68,15 +68,22 @@ object PbPaceHud {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        var row = 0
-        ctx.text(mc.font, "§6§lPB Pace §7(" + (floor?.uppercase() ?: "") + ")", 0, row++ * lh, 0xFFFFFFFF.toInt(), true)
-        if (lastHasPb)
-            ctx.text(mc.font, "§f" + last.name + " " + signed(lastDelta), 0, row++ * lh, 0xFFFFFFFF.toInt(), true)
-        if (anyPb)
-            ctx.text(mc.font, "§7vs PB: " + (if (cumDelta <= 0) "§aahead " else "§cbehind ") + signed(cumDelta), 0, row++ * lh, 0xFFFFFFFF.toInt(), true)
-        else
-            ctx.text(mc.font, "§8building PB history…", 0, row++ * lh, 0xFFFFFFFF.toInt(), true)
+        HudPreview.drawText(ctx, lines(floor, if (lastHasPb) last.name else null, lastDelta, anyPb, cumDelta), lh)
         ctx.pose().popMatrix()
+    }
+
+    private fun lines(floor: String?, lastName: String?, lastDelta: Double, anyPb: Boolean, cumDelta: Double): List<String> {
+        val out = ArrayList<String>(3)
+        out.add("§6§lPB Pace §7(" + (floor?.uppercase() ?: "") + ")")
+        if (lastName != null) out.add("§f" + lastName + " " + signed(lastDelta))
+        if (anyPb) out.add("§7vs PB: " + (if (cumDelta <= 0) "§aahead " else "§cbehind ") + signed(cumDelta))
+        else out.add("§8building PB history…")
+        return out
+    }
+
+    // Example data: obviously fake floor/split/times
+    fun registerPreview() {
+        HudPreview.register("PB Pace") { HudPreview.text(lines("m7", "Storm", 1.24, true, 3.87), FishConstants.TEXT_HEIGHT + 1) }
     }
 
     private fun signed(d: Double): String {

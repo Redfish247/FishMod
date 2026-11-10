@@ -5,6 +5,8 @@ import fishmod.utils.TextStrip
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.features.PetHud
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.DungeonSettings
@@ -53,6 +55,7 @@ object InvincibilityTracker {
 
     @JvmStatic
     fun init() {
+        registerPreview()
         FishHudEditor.register(
             NAME,
             { FishSettings.invincHudX }, { v -> FishSettings.invincHudX = v },
@@ -189,12 +192,57 @@ object InvincibilityTracker {
 
     private fun labelColor(t: Type): String = if (equipped(t)) "§e" else "§7"
 
-    private fun stateColor(t: Type): String {
+    private fun stateColor(active: Int, cooldown: Int): String {
         if (!DungeonSettings.invincibilityStatusColor) return "§7"
         return when {
-            t.active > 0 -> "§6"
-            t.cooldown > 0 -> "§c"
+            active > 0 -> "§6"
+            cooldown > 0 -> "§c"
             else -> "§a"
+        }
+    }
+
+    private class Row(val t: Type, val active: Int, val cooldown: Int, val labelColor: String) {
+        val c = stateColor(active, cooldown)
+        val value = when {
+            active > 0 || cooldown > 0 ->
+                if (DungeonSettings.invincibilityHud)
+                    fishmod.utils.Fmt.f1((if (active > 0) active else cooldown) / 20.0) + "s"
+                else "●"
+            else -> "✔"
+        }
+        val ic = if (FishSettings.invincIcons) icon(t) else null
+    }
+
+    private fun drawRows(ctx: GuiGraphicsExtractor, rows: List<Row>) {
+        val font = Minecraft.getInstance().font
+        var y = 0
+        for (r in rows) {
+            if (r.ic != null) {
+                ctx.item(r.ic, 0, y)
+                ctx.text(font, "${r.c}${r.value}", 18, y + 4, -1, true)
+                y += ICON_LINE_H
+            } else {
+                ctx.text(font, "${r.labelColor}${r.t.label} ${r.c}${r.value}", 0, y, -1, true)
+                y += LINE_H
+            }
+        }
+    }
+
+    // Example data: obviously fake states for each enabled type (all three when none is enabled)
+    private fun registerPreview() {
+        HudPreview.register(NAME) {
+            val font = Minecraft.getInstance().font
+            val states = mapOf(Type.SPIRIT to (0 to 300), Type.BONZO to (0 to 0), Type.PHOENIX to (40 to 1200))
+            val types = Type.entries.filter { it.show() }.ifEmpty { Type.entries.toList() }
+            val rows = types.map { Row(it, states.getValue(it).first, states.getValue(it).second, "§e") }
+            var w = 0
+            var y = 0
+            var h = 0
+            for (r in rows) {
+                if (r.ic != null) { w = maxOf(w, 18 + font.width("${r.c}${r.value}")); h = y + 16; y += ICON_LINE_H }
+                else { w = maxOf(w, font.width("${r.labelColor}${r.t.label} ${r.c}${r.value}")); h = y + HudPreview.TEXT_H; y += LINE_H }
+            }
+            HudExample(w, h) { drawRows(it, rows) }
         }
     }
 
@@ -216,26 +264,7 @@ object InvincibilityTracker {
         try {
         ctx.pose().translate(FishSettings.invincHudX.toFloat(), FishSettings.invincHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        var y = 0
-        for (t in shown) {
-            val c = stateColor(t)
-            val value = when {
-                t.active > 0 || t.cooldown > 0 ->
-                    if (DungeonSettings.invincibilityHud)
-                        fishmod.utils.Fmt.f1((if (t.active > 0) t.active else t.cooldown) / 20.0) + "s"
-                    else "●"
-                else -> "✔"
-            }
-            val ic = if (FishSettings.invincIcons) icon(t) else null
-            if (ic != null) {
-                ctx.item(ic, 0, y)
-                ctx.text(mc.font, "$c$value", 18, y + 4, -1, true)
-                y += ICON_LINE_H
-            } else {
-                ctx.text(mc.font, "${labelColor(t)}${t.label} $c$value", 0, y, -1, true)
-                y += LINE_H
-            }
-        }
+        drawRows(ctx, shown.map { Row(it, it.active, it.cooldown, labelColor(it)) })
         } catch (e: Exception) {
             FishDiag.fail("InvincibilityTracker.7", "invincibility hud render failed", e)
         } finally {

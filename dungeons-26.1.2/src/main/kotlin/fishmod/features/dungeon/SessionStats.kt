@@ -105,6 +105,7 @@ object SessionStats {
     @JvmStatic
     fun init() {
         load()
+        registerPreview()
 
         FishHudEditor.register("Session Stats",
             { FishSettings.sessionStatsHudX }, { v -> FishSettings.sessionStatsHudX = v },
@@ -313,13 +314,21 @@ object SessionStats {
         val timeStr = if (sessionStartMs > 0)
             formatTime(Math.max(0, ref - sessionStartMs))
         else "—"
-        linesCache = arrayOf(
-            "§7Runs: §a" + runs + (if (paused) " §e§l(PAUSED)" else ""),
-            "§7Deaths: §c" + deaths,
-            "§7R/hr: §e" + (if (rhr == 0.0) "§8—" else String.format("%.1f", rhr)),
-            "§7Time: §f" + timeStr
-        )
+        linesCache = linesFor(runs, deaths, rhr, timeStr, paused)
         return linesCache
+    }
+
+    private fun linesFor(runs: Int, deaths: Int, rhr: Double, timeStr: String, paused: Boolean): Array<String> = arrayOf(
+        "§7Runs: §a" + runs + (if (paused) " §e§l(PAUSED)" else ""),
+        "§7Deaths: §c" + deaths,
+        "§7R/hr: §e" + (if (rhr == 0.0) "§8—" else String.format("%.1f", rhr)),
+        "§7Time: §f" + timeStr
+    )
+
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register("Session Stats") {
+            fishmod.features.HudPreview.text(linesFor(14, 3, 9.2, "1h 31m", false).toList(), FishConstants.TEXT_HEIGHT + 2)
+        }
     }
 
     @JvmStatic
