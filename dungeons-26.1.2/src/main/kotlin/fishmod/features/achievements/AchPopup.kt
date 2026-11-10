@@ -33,6 +33,7 @@ object AchPopup {
 
     @JvmStatic
     fun init() {
+        registerPreview()
         fishmod.features.FishHudEditor.register("Achievement Popup", { posX() }, { S.achPopupX = it }, { S.achPopupY }, { S.achPopupY = it }, W, H,
             { S.achPopupScale }, { S.achPopupScale = it })
     }
@@ -95,44 +96,72 @@ object AchPopup {
         return "$t..."
     }
 
+    // Recorder calls scaled by f: 1 in game (the paint scales), example scale / editor scale in the HUD editor
+    private object R {
+        @JvmField var f = 1f
+        fun fillRoundedRect(x: Float, y: Float, w: Float, h: Float, r: Float, c: Int) = UiRecorder.fillRoundedRect(x * f, y * f, w * f, h * f, r * f, c)
+        fun fillRect(x: Float, y: Float, w: Float, h: Float, c: Int) = UiRecorder.fillRect(x * f, y * f, w * f, h * f, c)
+        fun roundedRectRing(x: Float, y: Float, w: Float, h: Float, r: Float, sw: Float, fill: Int, ring: Int) =
+            UiRecorder.roundedRectRing(x * f, y * f, w * f, h * f, r * f, sw * f, fill, ring)
+        fun fillRoundedRectCorners(x: Float, y: Float, w: Float, h: Float, tl: Float, tr: Float, br: Float, bl: Float, c: Int) =
+            UiRecorder.fillRoundedRectCorners(x * f, y * f, w * f, h * f, tl * f, tr * f, br * f, bl * f, c)
+        fun disc(cx: Float, cy: Float, r: Float, c: Int) = UiRecorder.disc(cx * f, cy * f, r * f, c)
+        fun text(s: String, x: Float, y: Float, size: Float, c: Int) = UiRecorder.text(s, x * f, y * f, size * f, c)
+        fun textBold(s: String, x: Float, y: Float, size: Float, c: Int) = UiRecorder.textBold(s, x * f, y * f, size * f, c)
+    }
+
     private fun draw(c: Card, x: Float, y: Float, p: Float) {
         // Centered glow: stacked expanded rects fading outward on every side
         for (i in 14 downTo 1) {
             val e = i * 2.5f
-            UiRecorder.fillRoundedRect(x - e, y - e, W + 2 * e, H + 2 * e, 10f + e, a(((0x2A * (15 - i)) / 15 shl 24) or 0xFFC83D, p))
+            R.fillRoundedRect(x - e, y - e, W + 2 * e, H + 2 * e, 10f + e, a(((0x2A * (15 - i)) / 15 shl 24) or 0xFFC83D, p))
         }
-        UiRecorder.roundedRectRing(x, y, W.toFloat(), H.toFloat(), 10f, 1.2f, a(BG, p), a(GOLD, p * 0.8f))
-        UiRecorder.fillRect(x + 12f, y + 1f, W - 24f, 2f, a(TEAL, p))
+        R.roundedRectRing(x, y, W.toFloat(), H.toFloat(), 10f, 1.2f, a(BG, p), a(GOLD, p * 0.8f))
+        R.fillRect(x + 12f, y + 1f, W - 24f, 2f, a(TEAL, p))
 
         val cx = x + 29f
         val cy = y + H / 2f + 1f
-        UiRecorder.disc(cx, cy, 25f, a(0x18FFC83D, p))
-        UiRecorder.disc(cx, cy, 22f, a(0x24FFC83D, p))
-        UiRecorder.disc(cx, cy, 19f, a(0x40FFC83D, p))
-        UiRecorder.disc(cx, cy, 16f, a(0xFF1C2028.toInt(), p))
+        R.disc(cx, cy, 25f, a(0x18FFC83D, p))
+        R.disc(cx, cy, 22f, a(0x24FFC83D, p))
+        R.disc(cx, cy, 19f, a(0x40FFC83D, p))
+        R.disc(cx, cy, 16f, a(0xFF1C2028.toInt(), p))
         trophy(cx, cy, p)
 
         val tx = x + 56f
         val right = x + W - 10f
-        UiRecorder.textBold("ACHIEVEMENT UNLOCKED", tx, y + 9f, 5.5f, a(TEAL, p))
+        R.textBold("ACHIEVEMENT UNLOCKED", tx, y + 9f, 5.5f, a(TEAL, p))
         val pts = "+${c.pts} AP"
-        UiRecorder.textBold(pts, right - UiRecorder.textWidthBold(pts, 7.5f), y + 8f, 7.5f, a(GOLD, p))
-        UiRecorder.textBold(fit(c.title, 10f, right - tx, true), tx, y + 19f, 10f, a(TEXT, p))
-        UiRecorder.text(fit(c.desc, 6.5f, right - tx - 4f), tx, y + 33f, 6.5f, a(SUB, p))
+        R.textBold(pts, right - UiRecorder.textWidthBold(pts, 7.5f), y + 8f, 7.5f, a(GOLD, p))
+        R.textBold(fit(c.title, 10f, right - tx, true), tx, y + 19f, 10f, a(TEXT, p))
+        R.text(fit(c.desc, 6.5f, right - tx - 4f), tx, y + 33f, 6.5f, a(SUB, p))
         if (c.section.isNotEmpty()) {
             val s = c.section.uppercase()
-            UiRecorder.textBold(s, tx, y + 43f, 5.2f, a(0xFF5F6B78.toInt(), p))
+            R.textBold(s, tx, y + 43f, 5.2f, a(0xFF5F6B78.toInt(), p))
         }
     }
 
     private fun trophy(cx: Float, cy: Float, p: Float) {
         val g = a(GOLD, p)
-        UiRecorder.roundedRectRing(cx - 11f, cy - 8f, 6f, 7f, 3f, 1.3f, 0, g)
-        UiRecorder.roundedRectRing(cx + 5f, cy - 8f, 6f, 7f, 3f, 1.3f, 0, g)
-        UiRecorder.fillRoundedRectCorners(cx - 6.5f, cy - 10f, 13f, 12f, 1f, 1f, 6f, 6f, g)
-        UiRecorder.fillRect(cx - 1.5f, cy + 2f, 3f, 5f, g)
-        UiRecorder.fillRoundedRect(cx - 5.5f, cy + 7f, 11f, 3f, 1.5f, g)
-        UiRecorder.fillRoundedRect(cx - 4f, cy - 8f, 2f, 7f, 1f, a(0x80FFFFFF.toInt(), p))
+        R.roundedRectRing(cx - 11f, cy - 8f, 6f, 7f, 3f, 1.3f, 0, g)
+        R.roundedRectRing(cx + 5f, cy - 8f, 6f, 7f, 3f, 1.3f, 0, g)
+        R.fillRoundedRectCorners(cx - 6.5f, cy - 10f, 13f, 12f, 1f, 1f, 6f, 6f, g)
+        R.fillRect(cx - 1.5f, cy + 2f, 3f, 5f, g)
+        R.fillRoundedRect(cx - 5.5f, cy + 7f, 11f, 3f, 1.5f, g)
+        R.fillRoundedRect(cx - 4f, cy - 8f, 2f, 7f, 1f, a(0x80FFFFFF.toInt(), p))
+    }
+
+    // Example: the real card via the UI recorder, positioned from the editor's pose (painted by the editor at its own UI scale)
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register("Achievement Popup") {
+            val card = Card("Example Achievement", "Example unlock - nothing is saved", 25, "Fishing")
+            fishmod.features.HudExample(W, H) { ctx ->
+                val m = ctx.pose()
+                val sc = m.m00().coerceAtLeast(0.01f)
+                val k = fishmod.utils.rendering.UiScale.userScale().coerceAtLeast(0.01f)
+                R.f = sc / k
+                try { draw(card, m.m20() / sc, m.m21() / sc, 1f) } finally { R.f = 1f }
+            }
+        }
     }
 
     private fun note(id: String, vol: Float, pitch: Float, delay: Int) {

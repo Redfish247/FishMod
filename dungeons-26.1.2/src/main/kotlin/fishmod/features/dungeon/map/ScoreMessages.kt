@@ -111,6 +111,18 @@ object ScoreMessages {
         return raw.replace("<time>", "12m 34s").replace('&', '§')
     }
 
+    @JvmStatic
+    fun previewWidth(): Int = Minecraft.getInstance().font.width(previewText())
+
+    // Example: the 300-score title text with an example time, drawn from the box's left edge
+    fun registerPreview() {
+        fishmod.features.HudPreview.register("Dungeon Score Title") {
+            val text = previewText()
+            val font = Minecraft.getInstance().font
+            fishmod.features.HudExample(font.width(text), 9) { it.text(font, text, 0, 0, -1, true) }
+        }
+    }
+
     private fun renderAt(g: GuiGraphicsExtractor, mc: Minecraft, x: Float, y: Float, scale: Float, text: String, alpha: Float) {
         val argb = ((alpha * 255.0f).toInt() shl 24) or 0xFFFFFF
         g.pose().pushMatrix()

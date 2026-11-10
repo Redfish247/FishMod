@@ -1445,13 +1445,14 @@ class FishModInit : ClientModInitializer {
         }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> try { if (!FishHudEditor.isOpen()) fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.151", "dungeon_map_score_messages render failed", t) } }
 
+        fishmod.features.dungeon.map.ScoreMessages.registerPreview()
         FishHudEditor.register(
             "Dungeon Score Title",
             {
                 val mc = net.minecraft.client.Minecraft.getInstance()
-                Math.round(fishmod.features.dungeon.map.ScoreMessages.resolvedX(mc) - FishHudEditor.SCORE_TITLE_W / 2f * fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale)
+                Math.round(fishmod.features.dungeon.map.ScoreMessages.resolvedX(mc) - fishmod.features.dungeon.map.ScoreMessages.previewWidth() / 2f * fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale)
             },
-            { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleX = v + FishHudEditor.SCORE_TITLE_W / 2f * fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale },
+            { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleX = v + fishmod.features.dungeon.map.ScoreMessages.previewWidth() / 2f * fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale },
             { Math.round(fishmod.features.dungeon.map.ScoreMessages.resolvedY(net.minecraft.client.Minecraft.getInstance())) },
             { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleY = v.toFloat() },
             FishHudEditor.SCORE_TITLE_W, 9,
@@ -1460,16 +1461,17 @@ class FishModInit : ClientModInitializer {
             { fishmod.utils.config.values.DungeonMapSettings.mapScoreMessages }
         )
 
+        fishmod.features.scoreboard.CustomScoreboard.registerPreview()
         FishHudEditor.register(
             "Custom Scoreboard",
             {
                 val sw = net.minecraft.client.Minecraft.getInstance().window.guiScaledWidth
                 val right = if (fishmod.utils.config.values.FishSettings.customScoreboardHudX < 0) sw - 3 else Math.min(fishmod.utils.config.values.FishSettings.customScoreboardHudX, sw - 3)
-                right - FishHudEditor.SCOREBOARD_W
+                right + 2 - fishmod.features.scoreboard.CustomScoreboard.previewBoxW()
             },
             { v ->
                 val sw = net.minecraft.client.Minecraft.getInstance().window.guiScaledWidth
-                val right = v + FishHudEditor.SCOREBOARD_W
+                val right = v + fishmod.features.scoreboard.CustomScoreboard.previewBoxW() - 2
                 fishmod.utils.config.values.FishSettings.customScoreboardHudX = if (right >= sw - 5) -1 else right
             },
             { fishmod.utils.config.values.FishSettings.customScoreboardHudY }, { v -> fishmod.utils.config.values.FishSettings.customScoreboardHudY = v },
@@ -1477,6 +1479,8 @@ class FishModInit : ClientModInitializer {
             { fishmod.utils.config.values.FishSettings.customScoreboardEnabled }
         )
 
+        fishmod.features.dungeon.map.MapHud.registerPreview()
+        fishmod.features.dungeon.map.MapInfoHud.registerPreview()
         FishHudEditor.register(
             "Dungeon Map",
             java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapX.toInt() },
