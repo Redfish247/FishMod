@@ -92,7 +92,7 @@ object StormTicks {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        var num = timer.tick * FishConstants.TICK_DURATION
+        var num = (if (HudPreview.active) 560 else timer.tick) * FishConstants.TICK_DURATION
         if (Floor7Settings.stormTicksCountDown) num = CRUSH_TICK * FishConstants.TICK_DURATION - num
         FishDiag.guard("StormTicks.5", "storm tick timer render threw") { FishDraw.drawTimer(component, context, num, Floor7Settings.stormTicksColor) }
     }
