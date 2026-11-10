@@ -20,6 +20,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
 import net.minecraft.resources.Identifier
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -81,6 +82,7 @@ object CrownOfAvarice {
         FishHudEditor.register("Crown of Avarice", { DianaSettings.dianaCrownHudX }, { DianaSettings.dianaCrownHudX = it },
             { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,
             { DianaSettings.dianaCrownHudScale }, { DianaSettings.dianaCrownHudScale = it }, { DianaSettings.dianaCrownHud })
+        HudPreview.register("Crown of Avarice") { HudPreview.text(buildLines(250_000_000L, 4_320_000L, 50_000_000L, true), 10) }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ ->
             if (Minecraft.getInstance().curScreen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
         }
@@ -137,13 +139,17 @@ object CrownOfAvarice {
         val cur = total(crown) ?: itemCoins(crown)
         val session = sessions[uuidOf(crown) ?: "crown"]
         val rate = perHour(session)
-        val lines = ArrayList<String>()
-        lines += "§dCrown of Avarice"
-        lines += if (cur < CAP) "§7Coins: §6${coins(cur)}§7/§61B" else "§7Coins: §6${coins(cur)}"
         val now = System.currentTimeMillis()
         val running = session != null && crown === p.getItemBySlot(EquipmentSlot.HEAD) &&
             session.lastGainMs > 0 && now - session.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L
-        lines += "§7Time: §f${duration(session?.activeMs ?: 0L)}" + if (running) "" else " §c(Paused)"
+        return buildLines(cur, session?.activeMs ?: 0L, rate, running)
+    }
+
+    private fun buildLines(cur: Long, activeMs: Long, rate: Long, running: Boolean): List<String> {
+        val lines = ArrayList<String>()
+        lines += "§dCrown of Avarice"
+        lines += if (cur < CAP) "§7Coins: §6${coins(cur)}§7/§61B" else "§7Coins: §6${coins(cur)}"
+        lines += "§7Time: §f${duration(activeMs)}" + if (running) "" else " §c(Paused)"
         lines += "§7Per Hour: §6${if (rate > 0) short(rate) else "-"}"
         if (cur < CAP) lines += "§7Time to Max: §b${if (rate > 0) duration((CAP - cur) * 3_600_000L / rate) else "-"}"
         return lines
@@ -160,7 +166,7 @@ object CrownOfAvarice {
         pose.translate(DianaSettings.dianaCrownHudX.toFloat(), DianaSettings.dianaCrownHudY.toFloat())
         val sc = DianaSettings.dianaCrownHudScale.toFloat()
         pose.scale(sc, sc)
-        lines.forEachIndexed { i, l -> ctx.text(mc.font, l, 0, i * 10, -1, true) }
+        HudPreview.drawText(ctx, lines, 10)
         pose.popMatrix()
         return lines.size
     }

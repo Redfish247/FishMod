@@ -4,6 +4,8 @@ import fishmod.utils.TextStrip
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents
@@ -52,6 +54,37 @@ object DianaTrackerHud {
             if (tail == null) font.width(text) else tailX + font.width(tail)
     }
     private class Hud(val gx: () -> Int, val gy: () -> Int, val gs: () -> Double, val on: () -> Boolean, val make: () -> List<Row>)
+
+    // Where the row builders read their numbers: the live tracker, or fixed example data for the HUD editor
+    private class Src(
+        val tracker: (String) -> DianaTracker.Tracker?, val price: (String) -> Double, val paused: Boolean,
+        val since: (String) -> Int, val mf: (String) -> Int, val example: Boolean = false,
+    ) {
+        fun mode(setting: String) = if (example && setting == "Off") "Event" else setting
+        fun profit(t: DianaTracker.Tracker) = t.items.entries.sumOf { (k, n) -> if (k == "COINS") n.toDouble() else price(k) * n }
+    }
+    private fun live() = Src(DianaTracker::tracker, DianaTracker::priceOf, DianaTracker.paused(), DianaTracker::sinceCount, DianaTracker::highestMf)
+
+    private fun exampleTracker(): DianaTracker.Tracker = DianaTracker.Tracker().also { t ->
+        t.timeMs = 18_000_000L
+        for ((k, n) in listOf("SHIMMERING_WOOL" to 1L, "CHIMERA" to 2L, "CHIMERA_LS" to 1L, "MANTI_CORE" to 1L, "DAEDALUS_STICK" to 3L,
+            "GRIFFIN_FEATHER" to 214L, "MINOS_RELIC" to 4L, "ENCHANTED_GOLD" to 36L, "COINS" to 48_500_000L, "TOTAL_BURROWS" to 1840L, "SHURIKENS_USED" to 120L)) t.items[k] = n
+        for ((k, n) in listOf("TOTAL_MOBS" to 412L, "KING_MINOS" to 3L, "MANTICORE" to 8L, "MINOS_INQUISITOR" to 24L, "SPHINX" to 21L,
+            "MINOS_CHAMPION" to 58L, "MINOTAUR" to 96L, "HARPY" to 40L, "CRETAN_BULL" to 35L, "MINOS_INQUISITOR_LS" to 2L)) t.mobs[k] = n
+    }
+    private val EX_PRICES = mapOf("SHIMMERING_WOOL" to 25_000_000.0, "CHIMERA" to 190_000_000.0, "MANTI_CORE" to 12_000_000.0,
+        "DAEDALUS_STICK" to 1_500_000.0, "GRIFFIN_FEATHER" to 70_000.0, "MINOS_RELIC" to 950_000.0, "ENCHANTED_GOLD" to 60_000.0)
+    private fun example() = Src({ exampleTracker() }, { EX_PRICES[it.removeSuffix("_LS")] ?: 0.0 }, false,
+        { 5 + Math.abs(it.hashCode()) % 90 }, { 30 + Math.abs(it.hashCode()) % 200 }, true)
+
+    private fun registerExample(name: String, lines: (Src) -> List<Row>) {
+        HudPreview.register(name) {
+            val rows = lines(example())
+            val font = Minecraft.getInstance().font
+            val w = rows.maxOfOrNull { it.width(font) } ?: 0
+            HudExample(w, HudPreview.textHeight(rows.size, 10)) { ctx -> drawRows(ctx, rows, false, false) }
+        }
+    }
     private class Cache(var version: Int = -1, var at: Long = 0L, var rows: List<Row> = emptyList())
     private val caches = HashMap<String, Cache>()
     private val huds = LinkedHashMap<String, Hud>()
@@ -62,21 +95,25 @@ object DianaTrackerHud {
             { DianaSettings.dianaLootPosY }, { DianaSettings.dianaLootPosY = it },
             { DianaSettings.dianaLootPosScale }, { DianaSettings.dianaLootPosScale = it },
             { DianaSettings.dianaLootTracker != "Off" }, ::lootRows)
+        registerExample("Diana Loot Tracker", ::lootRows)
         reg("Diana Mob Tracker", "diana_mobs", 160, 150,
             { DianaSettings.dianaMobPosX }, { DianaSettings.dianaMobPosX = it },
             { DianaSettings.dianaMobPosY }, { DianaSettings.dianaMobPosY = it },
             { DianaSettings.dianaMobPosScale }, { DianaSettings.dianaMobPosScale = it },
             { DianaSettings.dianaMobTracker != "Off" }, ::mobRows)
+        registerExample("Diana Mob Tracker", ::mobRows)
         reg("Diana Stats", "diana_stats", 140, 135,
             { DianaSettings.dianaStatsPosX }, { DianaSettings.dianaStatsPosX = it },
             { DianaSettings.dianaStatsPosY }, { DianaSettings.dianaStatsPosY = it },
             { DianaSettings.dianaStatsPosScale }, { DianaSettings.dianaStatsPosScale = it },
             { DianaSettings.dianaStatsTracker }, ::statRows)
+        registerExample("Diana Stats", ::statRows)
         reg("Diana Magic Find", "diana_mf", 130, 80,
             { DianaSettings.dianaMfPosX }, { DianaSettings.dianaMfPosX = it },
             { DianaSettings.dianaMfPosY }, { DianaSettings.dianaMfPosY = it },
             { DianaSettings.dianaMfPosScale }, { DianaSettings.dianaMfPosScale = it },
             { DianaSettings.dianaMfTracker }, ::mfRows)
+        registerExample("Diana Magic Find", ::mfRows)
 
         // In the inventory every line shows; click one to hide/unhide it
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
@@ -131,10 +168,10 @@ object DianaTrackerHud {
     private fun reg(
         name: String, id: String, w: Int, h: Int,
         gx: () -> Int, sx: (Int) -> Unit, gy: () -> Int, sy: (Int) -> Unit,
-        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, lines: () -> List<Row>,
+        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, lines: (Src) -> List<Row>,
     ) {
         FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on)
-        val hud = Hud(gx, gy, gs, on, lines)
+        val hud = Hud(gx, gy, gs, on) { lines(live()) }
         huds[id] = hud
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
             if (!FishHudEditor.isOpen() && Minecraft.getInstance().curScreen !is InventoryScreen && !Minecraft.getInstance().options.keyPlayerList.isDown && shown() && on())
@@ -159,9 +196,15 @@ object DianaTrackerHud {
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(scale.toFloat(), scale.toFloat())
+        drawRows(ctx, rows, editing, true)
+        pose.popMatrix()
+    }
+
+    private fun drawRows(ctx: GuiGraphicsExtractor, rows: List<Row>, editing: Boolean, useHidden: Boolean) {
+        val mc = Minecraft.getInstance()
         var i = 0
         for (r in rows) {
-            val hidden = r.id != null && !r.id.startsWith("cycle:") && DianaTracker.isHidden(r.id)
+            val hidden = useHidden && r.id != null && !r.id.startsWith("cycle:") && DianaTracker.isHidden(r.id)
             if (hidden && !editing) continue
             val font = mc.font
             if (editing && r.id?.startsWith("cycle:") == true) {
@@ -177,15 +220,14 @@ object DianaTrackerHud {
             }
             i++
         }
-        pose.popMatrix()
     }
 
     private fun title(label: String, mode: String, t: DianaTracker.Tracker) =
         "§e§l$label §7(" + (if (mode == "Event" && t.year > 0) "Year ${t.year}" else mode) + ")"
 
-    private fun lootRows(): List<Row> {
-        val mode = DianaSettings.dianaLootTracker
-        val t = DianaTracker.tracker(mode) ?: return emptyList()
+    private fun lootRows(src: Src): List<Row> {
+        val mode = src.mode(DianaSettings.dianaLootTracker)
+        val t = src.tracker(mode) ?: return emptyList()
         val hide = DianaSettings.dianaHideUnobtained
         val font = Minecraft.getInstance().font
         val out = ArrayList<Row>()
@@ -196,7 +238,7 @@ object DianaTrackerHud {
         for ((k, label) in LOOT_ORDER) {
             val n = t.item(k); val ls = t.item(k + "_LS")
             if (hide && n + ls == 0L) continue
-            val coins = DianaTracker.priceOf(k) * (n + ls)
+            val coins = src.price(k) * (n + ls)
             val value = if (coins > 0) "§6${DianaTracker.short(coins)}" else ""
             val tail = "§7| $label §f$n" + pct(t, k, n, "") + (if (ls > 0) " §f+$ls LS" + pct(t, k, ls, "_LS") else "")
             items += ItemLine("loot:$k", value, tail)
@@ -206,11 +248,11 @@ object DianaTrackerHud {
         for (line in items) out += Row(line.id, line.value, line.tail, itemX)
 
         val burrows = t.item("TOTAL_BURROWS").toDouble()
-        val profit = DianaTracker.profit(t)
+        val profit = src.profit(t)
         out += Row("loot:COINS", "§6Coins §6${DianaTracker.short(t.item("COINS").toDouble())}")
         out += Row("loot:BURROWS", "§7Burrows §f${"%,d".format(burrows.toLong())} §7(${"%.1f".format(DianaTracker.perHour(burrows, t))}/h)")
         t.item("SHURIKENS_USED").takeIf { it > 0 }?.let { out += Row("loot:SHURIKENS", "§7Shurikens Used §f${"%,d".format(it)}") }
-        out += Row("loot:PLAYTIME", "§7Playtime §f${DianaTracker.fmtTime(t.timeMs)}" + if (DianaTracker.paused()) " §c[Paused]" else "")
+        out += Row("loot:PLAYTIME", "§7Playtime §f${DianaTracker.fmtTime(t.timeMs)}" + if (src.paused) " §c[Paused]" else "")
         out += Row("loot:PROFIT", "§eProfit §6${DianaTracker.short(profit)} §7(${DianaTracker.short(DianaTracker.perHour(profit, t))}/h)")
         return out
     }
@@ -225,9 +267,9 @@ object DianaTrackerHud {
         return if (kills > 0) " §7(${"%.2f".format(n * 100.0 / kills)}%)" else ""
     }
 
-    private fun mobRows(): List<Row> {
-        val mode = DianaSettings.dianaMobTracker
-        val t = DianaTracker.tracker(mode) ?: return emptyList()
+    private fun mobRows(src: Src): List<Row> {
+        val mode = src.mode(DianaSettings.dianaMobTracker)
+        val t = src.tracker(mode) ?: return emptyList()
         val tot = t.mob("TOTAL_MOBS")
         val out = ArrayList<Row>()
         out += Row("cycle:mobs", title("Diana Mobs", mode, t))
@@ -242,17 +284,17 @@ object DianaTrackerHud {
         return out
     }
 
-    private fun statRows(): List<Row> =
+    private fun statRows(src: Src): List<Row> =
         listOf(Row(null, "§e§lDiana Stats")) + STATS.map { s ->
-            val ls = if (s.ls) "§7, ${s.color}since §7[§bLS§7]: §b${"%,d".format(DianaTracker.sinceCount(s.key + "_LS"))}" else ""
-            Row("stat:${s.key}", "§7 - ${s.color}${s.label}: §b${"%,d".format(DianaTracker.sinceCount(s.key))}$ls")
+            val ls = if (s.ls) "§7, ${s.color}since §7[§bLS§7]: §b${"%,d".format(src.since(s.key + "_LS"))}" else ""
+            Row("stat:${s.key}", "§7 - ${s.color}${s.label}: §b${"%,d".format(src.since(s.key))}$ls")
         }
 
-    private fun mfRows(): List<Row> {
+    private fun mfRows(src: Src): List<Row> {
         val out = arrayListOf(Row(null, "§e§lHighest Magic Find"))
         for (d in DianaTracker.DROPS) {
             if (d.source == null) continue
-            val mf = DianaTracker.highestMf(d.key)
+            val mf = src.mf(d.key)
             if (DianaSettings.dianaHideUnobtained && mf == 0) continue
             out += Row("mf:${d.key}", "${d.color}${d.name}§7: §b$mf% ✯")
         }
