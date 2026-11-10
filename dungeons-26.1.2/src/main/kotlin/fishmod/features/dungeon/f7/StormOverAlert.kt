@@ -2,6 +2,8 @@ package fishmod.features.dungeon.f7
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.BossPhase
@@ -34,6 +36,10 @@ object StormOverAlert {
             HUD_W, HUD_H,
             { FishSettings.stormOverScale }, { v -> FishSettings.stormOverScale = v }
         )
+        HudPreview.register(NAME) {
+            val font = Minecraft.getInstance().font
+            HudExample(HUD_W, HUD_H) { ctx -> drawAlert(ctx, font, FishSettings.stormOverText.ifBlank { "Storm Over!" }) }
+        }
         FishEvents.worldChange.register { shownAt = 0L; ticksLeft = -1; false }
     }
 
@@ -80,8 +86,11 @@ object StormOverAlert {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.stormOverHudX.toFloat(), FishSettings.stormOverHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, text, (HUD_W - mc.font.width(text)) / 2, (HUD_H - mc.font.lineHeight) / 2 + 1,
-            FishSettings.stormOverColor or 0xFF000000.toInt(), true)
+        drawAlert(ctx, mc.font, text)
         ctx.pose().popMatrix()
     }
+
+    private fun drawAlert(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, text: String) =
+        ctx.text(font, text, (HUD_W - font.width(text)) / 2, (HUD_H - font.lineHeight) / 2 + 1,
+            FishSettings.stormOverColor or 0xFF000000.toInt(), true)
 }

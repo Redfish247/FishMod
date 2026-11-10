@@ -4,6 +4,8 @@ import fishmod.compat.hudHidden
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.EntityTools
 import fishmod.utils.dungeon.BossPhase
@@ -51,6 +53,7 @@ object WitherDragons {
             { FishSettings.witherDragonsHudScale }, { v -> FishSettings.witherDragonsHudScale = v },
             { FishSettings.witherDragonsEnabled && FishSettings.witherDragonsTimerHud },
         )
+        HudPreview.register("Wither Dragon Timer") { hudExample() }
 
         FishEvents.worldChange.register {
             priorityDragon = WitherDragon.NONE
@@ -193,7 +196,8 @@ object WitherDragons {
     private fun hudX(): Int {
         if (FishSettings.witherDragonsHudX >= 0) return FishSettings.witherDragonsHudX
         val mc = Minecraft.getInstance()
-        return ((mc.window.guiScaledWidth - 46 * FishSettings.witherDragonsHudScale) / 2.0).toInt().coerceAtLeast(0)
+        val w = exampleLines().maxOf { mc.font.width(it) }
+        return ((mc.window.guiScaledWidth - w * FishSettings.witherDragonsHudScale) / 2.0).toInt().coerceAtLeast(0)
     }
 
     @JvmStatic
@@ -209,15 +213,29 @@ object WitherDragons {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
         // One line per dragon, #1 on top.
-        val lines = list.map { "§${it.colorCode}${rankTag(it)}${it.name} §f${timerText(it.timeToSpawn)}" }
+        val lines = list.map { hudLine(rankTag(it), it, it.timeToSpawn) }
         val sc = FishSettings.witherDragonsHudScale.toFloat()
         val w = (lines.maxOf { mc.font.width(it) }) * sc
         val x = if (FishSettings.witherDragonsHudX < 0) (mc.window.guiScaledWidth - w) / 2f else FishSettings.witherDragonsHudX.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(x, FishSettings.witherDragonsHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        lines.forEachIndexed { i, line -> ctx.text(mc.font, line, 0, i * (mc.font.lineHeight + 1), -1, true) }
+        drawHudLines(ctx, mc.font, lines)
         ctx.pose().popMatrix()
+    }
+
+    private fun hudLine(tag: String, d: WitherDragon, ticks: Int) = "§${d.colorCode}$tag${d.name} §f${timerText(ticks)}"
+
+    private fun drawHudLines(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, lines: List<String>) =
+        lines.forEachIndexed { i, line -> ctx.text(font, line, 0, i * (font.lineHeight + 1), -1, true) }
+
+    // Editor example: two spawning dragons through the same line format and draw
+    private fun exampleLines() = listOf(hudLine("1. ", WitherDragon.RED, 62), hudLine("2. ", WitherDragon.BLUE, 84))
+
+    private fun hudExample(): HudExample {
+        val font = Minecraft.getInstance().font
+        val lines = exampleLines()
+        return HudExample(lines.maxOf { font.width(it) }, HudPreview.textHeight(lines.size, font.lineHeight + 1)) { ctx -> drawHudLines(ctx, font, lines) }
     }
 
     private fun rankIndex(d: WitherDragon): Int = spawnRank.indexOf(d).let { if (it < 0) Int.MAX_VALUE else it }
