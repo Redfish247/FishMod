@@ -1,3 +1,14 @@
+FishMod Changelog - 2026-11-10
+==================================
+Fixed:
+- Dungeon waypoints placed on blocks that aren't full cubes (slabs, buttons, levers, ladders, trapdoors and so on) now line up with the block in every room rotation. Before, they could sit off to the side or be stretched the wrong way when the same room was turned a different direction.
+- The Spotify HUD no longer starts several hidden PowerShell helpers at once when it turns on. The extra ones could keep running after you switched the HUD off or even after closing the game. It also no longer tries to start on Mac/Linux, where it can't work.
+Reported bugs fixed (from fishmod.dev):
+- #530 waypoints on non-full blocks break when the room is rotated
+- Fixed in earlier builds, now marked for testing: #499 profit trackers counting fishing loot, #498 cosmetics socket reconnect, #492 #493 #522 #528 #529 Wither dragon false reports, #490 PV Chameleon shard, #485 #509 unknown room reports, #520 leaderboards showing FishMod nicks, #521 Item List Ctrl keys, #523 PlayersLeaped report, #524 Simon Says 6 lanterns report
+Known issues (not fixed yet):
+- #459 players far from spawn (e.g. Rift Mountaintop) appear stuck or glitching. Needs a repro or a log; nothing in FishMod's entity code points at it yet.
+
 FishMod Changelog - 2026-11-09 (bugfix run 2)
 ==================================
 Fixed:
