@@ -108,6 +108,7 @@ object PetHud {
                 { FishSettings.petHudY }, { v -> FishSettings.petHudY = v },
                 120, 10,
                 { FishSettings.petHudScale }, { v -> FishSettings.petHudScale = v })
+        registerExample()
 
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (overlay || !FishSettings.petHudEnabled) return@register
@@ -451,39 +452,58 @@ object PetHud {
             pendingXp = 0.0
         }
 
-        val icon = if (FishSettings.petHudIcon) PetIcons.icon(petName) else null
-        val text = StringBuilder()
-        if (FishSettings.petHudShowLevel && petLevel >= 0) text.append("§7[Lvl ").append(petLevel).append("] ")
-        if (icon == null) text.append(nameColorCode()).append(petName)
-
-        val maxLvl = if ("Golden Dragon".equals(petName, ignoreCase = true)) 200 else 100
-        val maxed = petLevel >= maxLvl || petMaxed
-
-        if (maxed) {
-            text.append(" §a§lMAXED")
-        } else {
-            if (pendingXp > 0) text.append(" §a+").append(formatXp(pendingXp))
-            if (xpCurrent >= 0 && xpNext > 0) {
-                text.append(" §7(").append(formatXp(xpCurrent)).append("/").append(formatXp(xpNext))
-                        .append(" ").append(fishmod.utils.Fmt.f1(xpPct.toDouble()) + "%").append(")")
-            }
-        }
+        val name = petName ?: return
+        val icon = if (FishSettings.petHudIcon) PetIcons.icon(name) else null
+        val text = hudText(name, petLevel, petRarity, icon != null, petLevel >= (if ("Golden Dragon".equals(name, ignoreCase = true)) 200 else 100) || petMaxed,
+            pendingXp, xpCurrent, xpNext, xpPct)
 
         val sc = FishSettings.petHudScale.toFloat()
         ctx.pose().pushMatrix()
         try {
             ctx.pose().translate(FishSettings.petHudX.toFloat(), FishSettings.petHudY.toFloat())
             ctx.pose().scale(sc, sc)
-            if (icon != null) {
-                ctx.item(icon, 0, -4)
-                ctx.text(mc.font, text.toString().trimStart(), 18, 0, -1, true)
-            } else {
-                ctx.text(mc.font, text.toString(), 0, 0, -1, true)
-            }
+            drawHud(ctx, icon, text)
         } catch (e: Exception) {
             FishDiag.fail("PetHud.4", "pet hud render failed (pet=$petName)", e)
         } finally {
             ctx.pose().popMatrix()
+        }
+    }
+
+    private fun hudText(name: String, level: Int, rarity: RarityTier, hasIcon: Boolean, maxed: Boolean, pending: Double, cur: Double, next: Double, pct: Float): String {
+        val text = StringBuilder()
+        if (FishSettings.petHudShowLevel && level >= 0) text.append("§7[Lvl ").append(level).append("] ")
+        if (!hasIcon) text.append(if (FishSettings.petHudShowRarity && rarity != RarityTier.NONE) rarityCode(rarity) else "§6").append(name)
+
+        if (maxed) {
+            text.append(" §a§lMAXED")
+        } else {
+            if (pending > 0) text.append(" §a+").append(formatXp(pending))
+            if (cur >= 0 && next > 0) {
+                text.append(" §7(").append(formatXp(cur)).append("/").append(formatXp(next))
+                        .append(" ").append(fishmod.utils.Fmt.f1(pct.toDouble()) + "%").append(")")
+            }
+        }
+        return text.toString()
+    }
+
+    private fun drawHud(ctx: GuiGraphicsExtractor, icon: ItemStack?, text: String) {
+        val font = Minecraft.getInstance().font
+        if (icon != null) {
+            ctx.item(icon, 0, -4)
+            ctx.text(font, text.trimStart(), 18, 0, -1, true)
+        } else {
+            ctx.text(font, text, 0, 0, -1, true)
+        }
+    }
+
+    private fun registerExample() {
+        HudPreview.register("Pet") {
+            val name = petName ?: "Ender Dragon"
+            val icon = if (FishSettings.petHudIcon) PetIcons.icon(name) else null
+            val text = hudText(name, 87, RarityTier.LEGENDARY, icon != null, false, 1250.0, 1_200_000.0, 3_400_000.0, 35.3f)
+            val shown = if (icon != null) text.trimStart() else text
+            HudExample((if (icon != null) 18 else 0) + Minecraft.getInstance().font.width(shown), 10) { ctx -> drawHud(ctx, icon, text) }
         }
     }
 
