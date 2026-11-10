@@ -92,18 +92,21 @@ object KuudraExtras {
         })
         MiningHuds.reg("Kuudra Backbone", "kuudra_backbone", 100, 10,
             { S.kuudraBackboneX }, { S.kuudraBackboneX = it }, { S.kuudraBackboneY }, { S.kuudraBackboneY = it },
-            { S.kuudraBackboneScale }, { S.kuudraBackboneScale = it }, { S.kuudraBossMaster && S.kuudraBackbone && Kuudra.inKuudra() && (boneLeft > 0 || rendShow > 0) }, { S.kuudraBossMaster && S.kuudraBackbone }) {
-            if (rendShow > 0) listOf("§a§lREND NOW!")
-            else {
-                val done = ((boneStart - boneLeft) * 20 / maxOf(1, boneStart)).coerceIn(0, 20)
-                listOf("§6Backbone §c" + "|".repeat(done) + "§7" + "|".repeat(20 - done))
-            }
+            { S.kuudraBackboneScale }, { S.kuudraBackboneScale = it }, { S.kuudraBossMaster && S.kuudraBackbone && Kuudra.inKuudra() && (boneLeft > 0 || rendShow > 0) }, { S.kuudraBossMaster && S.kuudraBackbone },
+            example = { backboneLines(false, 100, 50) }) {
+            backboneLines(rendShow > 0, boneStart, boneLeft)
         }
         RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.3", "kuudra extras fill render failed") { fills(ps, vc) }
             // screenLine emits quads: draw on the QUADS buffer, DEBUG_LINES turns them into corner ticks
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.4", "kuudra extras line render failed") { lines(ps, vc) }
         }
+    }
+
+    private fun backboneLines(rend: Boolean, start: Int, left: Int): List<String> {
+        if (rend) return listOf("§a§lREND NOW!")
+        val done = ((start - left) * 20 / maxOf(1, start)).coerceIn(0, 20)
+        return listOf("§6Backbone §c" + "|".repeat(done) + "§7" + "|".repeat(20 - done))
     }
 
     private fun reset() {

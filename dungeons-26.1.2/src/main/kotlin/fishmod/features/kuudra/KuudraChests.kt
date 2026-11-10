@@ -80,7 +80,19 @@ object KuudraChests {
 
         MiningHuds.reg("Kuudra Chest Value", "kuudra_chest_value", 150, 60,
             { S.kuudraChestValueX }, { S.kuudraChestValueX = it }, { S.kuudraChestValueY }, { S.kuudraChestValueY = it },
-            { S.kuudraChestValueScale }, { S.kuudraChestValueScale = it }, { (S.kuudraChestsMaster && S.kuudraChestValue) }) { emptyList() }
+            { S.kuudraChestValueScale }, { S.kuudraChestValueScale = it }, { (S.kuudraChestsMaster && S.kuudraChestValue) },
+            example = { valueLines("Paid Chest", listOf(1_200_000.0 to "Example Item", 340_000.0 to "Example Essence x40"), 400_000.0) }) { emptyList() }
+    }
+
+    // Header, one tab-aligned row per drop, cost and profit (shared by the chest screen and the HUD editor example)
+    private fun valueLines(title: String, rows: List<Pair<Double, String>>, cost: Double): List<String> {
+        val out = arrayListOf("§6§l$title Value")
+        var value = 0.0
+        for ((v, l) in rows) { value += v; out += "§a${Mining.short(v)}\t§f$l" }
+        out += "§7Cost: §c${Mining.short(cost)}"
+        val profit = value - cost
+        out += "§eProfit: " + (if (profit >= 0) "§a" else "§c") + Mining.short(profit)
+        return out
     }
 
     private fun lore(s: ItemStack): List<String> = s.get(DataComponents.LORE)?.lines()?.map { Mining.strip(it.string).trim() } ?: emptyList()
@@ -107,7 +119,7 @@ object KuudraChests {
             val lore = lore(st)
             val ci = lore.indexOf("Contents")
             if (ci < 0) continue
-            val out = arrayListOf("§6§l${scr.title.string} Value")
+            val rows = ArrayList<Pair<Double, String>>()
             var value = 0.0; var cost = 0.0; var inCost = false
             val drops = ArrayList<Triple<String, Int, Double>>()
             for (l in lore.drop(ci + 1)) {
@@ -122,12 +134,9 @@ object KuudraChests {
                 value += v
                 val am = AMOUNT.find(l.replace(",", ""))
                 drops += Triple(am?.groupValues?.get(1) ?: l, am?.groupValues?.get(2)?.toIntOrNull() ?: 1, v)
-                out += "§a${Mining.short(v)}	§f$l"
+                rows += v to l
             }
-            out += "§7Cost: §c${Mining.short(cost)}"
-            val profit = value - cost
-            out += "§eProfit: " + (if (profit >= 0) "§a" else "§c") + Mining.short(profit)
-            return Parsed(i, out, value, cost, drops, lore.hashCode())
+            return Parsed(i, valueLines(scr.title.string, rows, cost), value, cost, drops, lore.hashCode())
         }
         return null
     }
