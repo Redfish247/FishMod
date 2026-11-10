@@ -86,17 +86,27 @@ object SpotifyLyricsHud {
         Runtime.getRuntime().addShutdownHook(Thread { stop() })
     }
 
+    // Set before the reader thread starts so per-frame draw() can't spawn a second helper
+    @Volatile private var running = false
+    private var nextStartMs = 0L
+    private val isWindows = System.getProperty("os.name", "").startsWith("Windows")
+
     private fun start() {
-        if (proc != null) return
+        val now = System.currentTimeMillis()
+        if (running || !isWindows || now < nextStartMs) return
+        running = true
+        nextStartMs = now + 10_000L
         val t = Thread({
             try {
                 val p = ProcessBuilder("powershell", "-NoProfile", "-NonInteractive", "-Command", SCRIPT).redirectErrorStream(true).start()
                 proc = p
+                if (!FishSettings.spotifyLyricsEnabled) p.destroy()
                 BufferedReader(InputStreamReader(p.inputStream, Charsets.UTF_8)).use { r ->
                     while (true) { title = r.readLine()?.trim() ?: break }
                 }
+                p.destroy()
             } catch (_: Throwable) {
-            } finally { proc = null; title = "" }
+            } finally { proc = null; title = ""; running = false }
         }, "fishmod-spotify")
         t.isDaemon = true
         t.start()
@@ -227,7 +237,7 @@ object SpotifyLyricsHud {
     }
 
     private fun draw(ctx: GuiGraphicsExtractor) {
-        if (!FishSettings.spotifyLyricsEnabled) { if (proc != null) stop(); return }
+        if (!FishSettings.spotifyLyricsEnabled) { if (running) stop(); return }
         if (proc == null) { start(); return }
         val mc = Minecraft.getInstance()
         val nowNs = System.nanoTime()
