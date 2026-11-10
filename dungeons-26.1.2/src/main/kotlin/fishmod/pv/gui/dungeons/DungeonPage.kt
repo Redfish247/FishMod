@@ -17,6 +17,7 @@ import fishmod.pv.gui.PvDraw
 import fishmod.pv.gui.PvTooltip
 import fishmod.pv.gui.essence.EssenceShopColumn
 import java.util.Locale
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.pow
@@ -295,28 +296,21 @@ class DungeonPage {
 		val showEssence = if (animating && cos(angle) < 0.0) classFlipTarget else classEssenceFace
 
 		pushFlip(g, x, y, w, h, animating, angle)
-		PvDraw.innerPanel(g, x, y, w, h)
 		if (showEssence) {
 			drawWitherUndeadEssenceFace(g, font, x + PAD, y + PAD, w - PAD * 2, h - PAD * 2, !animating)
 		} else {
 			drawClassStatsFace(g, font, x, y, w, totalY)
 		}
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun pushFlip(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, animating: Boolean, angle: Float) {
-		var scaleX = 1f
-		var scaleY = 1f
-		if (animating) {
-			scaleY = maxOf(0.04f, abs(cos(angle)))
-			scaleX = 1f - (1f - scaleY) * 0.06f
-		}
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
+		PvDraw.innerPanel(g, x, y, w, h)
+		val slideDx = if (animating) PvDraw.slideOffset(angle / PI.toFloat(), w) else 0f
+		g.enableScissor(x, y, x + w, y + h)
 		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
+		g.pose().translate(slideDx, 0f)
 	}
 
 	private fun drawClassStatsFace(g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, totalY: Int) {
@@ -470,13 +464,13 @@ class DungeonPage {
 		val showEssence = if (animating && cos(angle) < 0.0) runsFlipTarget else runsEssenceFace
 
 		pushFlip(g, x, y, w, h, animating, angle)
-		PvDraw.innerPanel(g, x, y, w, h)
 		if (showEssence) {
 			drawIceSpiderDragonEssenceFace(g, font, x + PAD, y + PAD, w - PAD * 2, h - PAD * 2, !animating)
 		} else {
 			drawRunsFace(g, font, x, y, w, floors)
 		}
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawRunsFace(g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, floors: FloorLayout) {

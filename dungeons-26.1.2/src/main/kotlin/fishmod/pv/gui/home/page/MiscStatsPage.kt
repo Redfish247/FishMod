@@ -195,7 +195,7 @@ class MiscStatsPage {
 		// Only the profile face draws the guild button; a stale hitbox would swallow flip clicks.
 		guildBtnW = 0
 		var showExtras = leftExtrasFace
-		var scaleX = 1F
+		var slideDx = 0F
 		if (leftFlipStartMs != 0L) {
 			val t = (System.currentTimeMillis() - leftFlipStartMs) / FLIP_MS.toFloat()
 			if (t >= 1F) {
@@ -205,17 +205,15 @@ class MiscStatsPage {
 			} else {
 				val eased = easeInOutCubic(t.coerceIn(0F, 1F))
 				val angle = eased * PI
-				scaleX = maxOf(0.04, abs(cos(angle))).toFloat()
+				slideDx = PvDraw.slideOffset(eased, w)
 				showExtras = if (cos(angle) < 0) leftFlipTarget else leftExtrasFace
 			}
 		}
 
-		g.pose().pushMatrix()
-		g.pose().translate(x + w / 2F, y + h / 2F)
-		g.pose().scale(1F, scaleX)
-		g.pose().translate(-(x + w / 2F), -(y + h / 2F))
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0F)
 		if (hovering && leftFlipStartMs == 0L) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -229,6 +227,7 @@ class MiscStatsPage {
 			drawProfileFace(g, font, lx, ly, lw, y + h - PAD, mx, my)
 		}
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawProfileFace(g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, bottom: Int, mx: Int, my: Int) {
@@ -531,7 +530,7 @@ class MiscStatsPage {
 
 		val hovering = hit(mx.toDouble(), my.toDouble(), x, y, w, h)
 		var showDeaths = rightDeathsFace
-		var scaleX = 1F
+		var slideDx = 0F
 		if (rightFlipStartMs != 0L) {
 			val t = (System.currentTimeMillis() - rightFlipStartMs) / FLIP_MS.toFloat()
 			if (t >= 1F) {
@@ -541,17 +540,15 @@ class MiscStatsPage {
 			} else {
 				val eased = easeInOutCubic(t.coerceIn(0F, 1F))
 				val angle = eased * PI
-				scaleX = maxOf(0.04, abs(cos(angle))).toFloat()
+				slideDx = PvDraw.slideOffset(eased, w)
 				showDeaths = if (cos(angle) < 0) rightFlipTarget else rightDeathsFace
 			}
 		}
 
-		g.pose().pushMatrix()
-		g.pose().translate(x + w / 2F, y + h / 2F)
-		g.pose().scale(1F, scaleX)
-		g.pose().translate(-(x + w / 2F), -(y + h / 2F))
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0F)
 		if (hovering && rightFlipStartMs == 0L) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -622,6 +619,7 @@ class MiscStatsPage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun stat(
