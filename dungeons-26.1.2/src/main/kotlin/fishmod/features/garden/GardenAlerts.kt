@@ -27,9 +27,18 @@ object GardenAlerts {
 
     fun show(title: String, sub: String, sound: Boolean = true) {
         if (!S.gardenAlert) return
-        lines = listOf(title, sub).filter { it.isNotEmpty() }
+        lines = alertLines(title to sub)
         until = System.currentTimeMillis() + S.gardenAlertSeconds.coerceIn(1, 15) * 1000L
         if (sound) FishUtil.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
+    }
+
+    private fun alertLines(t: Pair<String, String>) = listOf(t.first, t.second).filter { it.isNotEmpty() }
+
+    // The alert the player's settings can fire: rare crop first, else rare reward
+    private fun example(): List<String> = when {
+        S.gardenRareCrop && S.gardenRareCropTitle -> alertLines(GardenWidgets.rareCropAlert("RARE CROP! Cropie"))
+        S.gardenRareRewardWarn -> alertLines(Visitors.rareRewardAlert("Overgrown Grass"))
+        else -> emptyList()
     }
 
     fun init() {
@@ -37,6 +46,6 @@ object GardenAlerts {
             { S.gardenAlertX }, { S.gardenAlertX = it }, { S.gardenAlertY }, { S.gardenAlertY = it },
             { S.gardenAlertScale }, { S.gardenAlertScale = it },
             { S.gardenAlert && System.currentTimeMillis() < until }, { S.gardenAlert },
-            example = { listOf("§6§lRARE CROP!", "§6Example Rare Crop") }) { lines }
+            example = ::example) { lines }
     }
 }

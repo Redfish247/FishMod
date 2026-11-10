@@ -78,6 +78,12 @@ object Visitors {
         }
     }
 
+    // Alert title + sub for a rare visitor reward (also the HUD editor example)
+    fun rareRewardAlert(rare: String): Pair<String, String> {
+        val rc = GardenAlerts.rarityColor(rare, rare.replace(TRAIL_AMT, ""), rare.replace(LEAD_AMT, "")) ?: "§d"
+        return rc + "§lRARE REWARD!" to rc + rare
+    }
+
     private fun timerLines(count: Int, next: String) =
         listOf("§aVisitors: §f$count  §7Next: " + (if (next.contains("Full", true)) "§cQueue Full" else "§b$next"))
 
@@ -130,8 +136,7 @@ object Visitors {
             warnedScreen = scr
             val rare = rareIn(lore)
             if (rare != null && S.gardenRareRewardWarn) {
-                val rc = GardenAlerts.rarityColor(rare, rare.replace(TRAIL_AMT, ""), rare.replace(LEAD_AMT, "")) ?: "§d"
-                GardenAlerts.show(rc + "§lRARE REWARD!", rc + rare)
+                rareRewardAlert(rare).let { (t, sub) -> GardenAlerts.show(t, sub) }
                 FishMsg.send("§dThis visitor offers §f$rare§d!")
             }
         }
