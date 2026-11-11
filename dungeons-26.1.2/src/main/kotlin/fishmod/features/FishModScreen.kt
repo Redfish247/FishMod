@@ -1578,6 +1578,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Sign Calculator", "signCalculator")
+            f.sub.add(SubcategoryHeader("Type math like 9*9, 1.5k/2 or (2+3)*64 in Hypixel input signs; shows \"= 81\" and sends the result"))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Render Optimizer", VisualSettings::class.java, "renderOptimizer")
             f.sub.add(ToggleSetting("Hide Nearby Players", "Hide other players within range", VisualSettings::class.java, "hideNearbyPlayers"))
             f.sub.add(SliderDoubleSetting("Player Range", "Blocks", VisualSettings::class.java, "hidePlayersRadius", 1.0, 12.0).gatedBy { VisualSettings.hideNearbyPlayers })

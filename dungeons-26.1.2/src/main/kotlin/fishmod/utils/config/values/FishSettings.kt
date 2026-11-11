@@ -565,6 +565,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false
     @ConfigValue @JvmField var auctionAutofillPercent: Int = 5
+    @ConfigValue @JvmField var signCalculator: Boolean = true
 
     @ConfigValue @JvmField var tooltipScrollEnabled: Boolean = false
     @ConfigValue @JvmField var tooltipScrollScale: Int = 100

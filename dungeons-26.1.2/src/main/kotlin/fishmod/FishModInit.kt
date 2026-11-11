@@ -449,6 +449,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.32c", "fishmod.features.item.TooltipPinBottom.init() failed") { fishmod.features.item.TooltipPinBottom.init() }
         FishDiag.guard("FishModInit.33", "fishmod.features.item.ContainerValue.init() failed") { fishmod.features.item.ContainerValue.init() }
         FishDiag.guard("FishModInit.34", "fishmod.features.item.AuctionPriceAutofill.init() failed") { fishmod.features.item.AuctionPriceAutofill.init() }
+        FishDiag.guard("FishModInit.34b", "fishmod.features.item.SignCalculator.init() failed") { fishmod.features.item.SignCalculator.init() }
         FishDiag.guard("FishModInit.35", "MayorApi.init() failed") { MayorApi.init() }
         FishDiag.guard("FishModInit.36", "fishmod.features.FireFreezeTimer.init() failed") { fishmod.features.FireFreezeTimer.init() }
         FishDiag.guard("FishModInit.37", "fishmod.features.LoadoutTitle.init() failed") { fishmod.features.LoadoutTitle.init() }
