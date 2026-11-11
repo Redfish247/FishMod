@@ -1,3 +1,17 @@
+FishMod Changelog - 2026-11-11
+==================================
+Fixed:
+- Garden: the Speed Sign Helper now only appears on the "Set your crop speed cap!" sign instead of on every sign you edit in the Garden.
+- Garden: the Speed Sign Helper text now sits in the bottom-left corner of the screen so it no longer covers the sign.
+- Experiment Profit tracker: pets from the Experimentation Table (like the Guardian) now show their real rarity colour, different rarities get their own row, and they now have an auction house price.
+Reported bugs fixed (from fishmod.dev):
+- #534 speed sign helper shows on the wrong signs
+- #532 speed sign helper moved to the bottom left
+- #537 experiment profit tracker ignores Guardian rarity and has no price
+- Fixed in an earlier build, now marked for testing: #538 Party Finder stats lookup error report
+Known issues (not fixed yet):
+- #533 the Secret Hunters leaderboard stops at 13 secrets. The website caps the score at 13 (there are now 28 secret achievements); it needs a website update, not a mod update.
+- #459 players far from spawn appear stuck or glitching. Still needs a video or a /fm debug report.
 FishMod Changelog - 2026-11-10
 ==================================
 Fixed:
