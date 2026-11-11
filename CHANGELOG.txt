@@ -12,6 +12,23 @@ Reported bugs fixed (from fishmod.dev):
 Known issues (not fixed yet):
 - #533 the Secret Hunters leaderboard stops at 13 secrets. The website caps the score at 13 (there are now 28 secret achievements); it needs a website update, not a mod update.
 - #459 players far from spawn appear stuck or glitching. Still needs a video or a /fm debug report.
+Test in game:
+1. Garden: hold a crop and open the crop speed sign. The helper shows bottom-left. Open any other sign (bazaar or AH search): no helper.
+2. Experimentation Table: claim a Superpairs pet reward (Guardian). The profit HUD shows "Epic Guardian" in the rarity colour with a coin value, not "?".
+3. If the pet row is still grey, send a chat screenshot of the reward line.
+Run notes:
+- Start commit bf374f5d (Ship 1.7.71). Fix commits e44b87a4 (#534, #532), dfe56748 (#537). Built 26.1.2 + 26.2 as 1.7.72 (26.3 not built). Jar copied to Prism Skyblock, 1.7.71 removed; FishTest not updated. Not tested in game.
+- #534 garden/SpeedSignHelper.kt + AbstractSignEditScreenAccessor.java: new messages accessor; only draws when the joined sign lines contain "crop speed cap" (case-insensitive).
+- #532 garden/SpeedSignHelper.kt: text moved from top-centre to bottom-left (x 4, bottom margin 4).
+- #537 features/ExperimentProfitTracker.kt: rarity was read from the grey [Lvl N] tag, now skipped. Pet prices used LVL_1_<TIER>_<PET> keys but CroesusPrices uses NEU keys (GUARDIAN;3); NEU key tried first. Rows keyed per rarity ("Epic Guardian").
+- #538 already fixed: PartyFinderStats.kt no longer auto-reports transient lookup failures (same as #494). Moved to Testing.
+- #533 needs decision: worker.js ACH_MAX_SECRETS = 13, ACH_MAX_POINTS = 8281; mod has 28 secret achievements, about 8706 points. Needs a wrangler deploy with Eli's OK and a live-vs-repo diff. Card left Planned.
+- #459 needs a video or /fm debug report. Card left In progress.
+- Board: #532, #534, #537, #538 moved to Testing. Nothing set to Done.
+- Skipped: full source sweep; checked the 33 files changed since last run and every player!!/level!!/connection!! site, nothing new.
+- Prompt arrived cut off at the API token again; full text taken from tools/daily-bugfix/prompt.md. The Modrinth path in the prompt is an old 1.21.8 profile; prompt should point at Prism.
+- Notes for Obsidian: Speed Sign Helper keys on "crop speed cap" via AbstractSignEditScreenAccessor.fishmod$getMessages(). CroesusPrices lbin is the Coflnet NEU list, pets are NAME;tier (COMMON 0 .. MYTHIC 5). Leaderboard caps in the worker must go up when achievements are added. roadmap-status needs numeric ids (string ids silently update 0).
+
 FishMod Changelog - 2026-11-10
 ==================================
 Fixed:
