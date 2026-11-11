@@ -66,7 +66,6 @@ object LagTracker {
             } else if (active && RUN_END_PATTERN.matcher(s).find()) {
                 val wallSec = (System.currentTimeMillis() - startMs) / 1000.0
                 val tickSec = ticks * 0.05
-                // Ping ticks can outrun wall time when the server catches up; clamp
                 val lag = maxOf(0.0, wallSec - tickSec)
                 active = false
                 ended = true
@@ -85,7 +84,8 @@ object LagTracker {
                 probeTick = 0
                 if (fishmod.utils.SkyblockLocation.inDungeon() && (FishDiag.guard("LagTracker.3", "run time tab scan failed") { scoreboardRunSeconds() } ?: -1) > 0) start()
             }
-            if (active) ticks++
+            // Catch-up bursts can't credit more ticks than wall time elapsed
+            if (active) ticks = minOf(ticks + 1, (System.currentTimeMillis() - startMs) / 50)
             false
         }
 
