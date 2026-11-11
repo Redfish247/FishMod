@@ -422,3 +422,6 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 ## 2026-11-11: secrets leaderboard capped at 13 (#533)
 - Symptom: secret count on the achievement leaderboard stuck at 13. Cause: the worker clamped submits to a stale `ACH_MAX_SECRETS = 13` (registry now has 28; points cap 8281 vs 8706 is stale too). Rule: when a value tops out at a suspicious round number, check server-side clamps before the client parser. The mod now sends its registry maxima so the worker never needs a constant ([[Achievement Anti-Cheat]]).
+
+## 2026-11-11: MayorApi 403 then MalformedJson (#542/#543)
+- Symptom: `MayorApi.1 HTTP 403` followed by `MayorApi.2 MalformedJsonException line 1 column 8`. Cause: a `FishDiag.check` on status only logs, it does not stop execution, so the Cloudflare `error code: 1020` text body was parsed as JSON. The failure stamp also kept `stale()` true right after a term switch, hammering the API. Rule: every HTTP caller returns on non-2xx before parsing, and backoff uses its own `retryAt`, never a faked `lastFetch` ([[Mayor API]]).
