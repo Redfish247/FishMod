@@ -18,7 +18,8 @@ object PartyFinderPanel {
     private val LEVEL_REQ = Regex("Dungeon Level Required:\\s*(\\d+)")
     private val FLOOR = Regex("Floor:\\s*(?:Floor\\s+)?(\\w+)")
     private val MEMBERS = Regex("Members:\\s*\\(?(\\d+)\\s*/\\s*(\\d+)")
-    private val LEADER = Regex("^(\\w{1,16})['’]s? Party$")
+    // Unanchored: title may carry a rank prefix like "[MVP+] Name's Party"
+    private val LEADER = Regex("(\\w{1,16})['’]s? Party$")
     private val NAME = Regex("\\w{1,16}")
     private val PB_LINE = Regex("^(\\d+):(\\d{2})\\s+S\\+?$")
     private val CLASSES = listOf("Archer", "Tank", "Berserk", "Healer", "Mage")
@@ -96,11 +97,14 @@ object PartyFinderPanel {
                 }
             }
             val nameStr = strip(stack.hoverName.string).trim()
-            val leader = LEADER.find(nameStr)?.groupValues?.get(1)
-                ?: nameStr.split(' ').lastOrNull { it.matches(NAME) }
-                ?: names.firstOrNull() ?: run { FishDiag.fail("PartyFinderPanel.4", "no leader parsed from '$nameStr' slot=$i"); "?" }
-            if (mem == 0) mem = (names + leader).distinctBy { it.lowercase() }.size
-            FishDiag.check(mem <= maxMem, "PartyFinderPanel.5") { "members $mem > max $maxMem for $leader" }
+            val titleLeader = LEADER.find(nameStr)?.groupValues?.get(1)
+            val leader = titleLeader
+                ?: names.firstOrNull()
+                ?: nameStr.split(' ').lastOrNull { it.matches(NAME) && !it.equals("Party", true) }
+                ?: run { FishDiag.fail("PartyFinderPanel.4", "no leader parsed from '$nameStr' slot=$i"); "?" }
+            // Only a title-parsed leader may add to the lore member count
+            if (mem == 0) mem = (if (titleLeader != null) names + titleLeader else names).distinctBy { it.lowercase() }.size.coerceAtLeast(1)
+            FishDiag.check(mem <= maxMem, "PartyFinderPanel.5") { "members $mem > max $maxMem for $leader title='$nameStr' names=$names" }
             out.add(Party(i, leader, mem, maxMem, floor, master, present, names, note, levelReq))
         }
         return out
