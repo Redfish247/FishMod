@@ -86,20 +86,28 @@ object ExperimentProfitTracker {
         }
         if (NOT_ITEM.containsMatchIn(reward)) return
         val cm = COUNT.find(reward)
-        val name = cm?.groupValues?.get(1)?.trim() ?: reward
+        val base = cm?.groupValues?.get(1)?.trim() ?: reward
         val n = cm?.groupValues?.get(2)?.replace(",", "")?.toLongOrNull() ?: 1L
+        val color = rewardColor(raw)
+        // Pets of different rarities are separate rows ("Epic Guardian")
+        val tier = if (s.startsWith("+[Lvl ")) PET_TIER_CODES.indexOf(color) else -1
+        val name = if (tier >= 0) "${PET_TIERS[tier].lowercase().replaceFirstChar(Char::uppercase)} $base" else base
         data.drops.merge(name, n, Long::plus)
-        rewardColor(raw)?.let { (data.colors ?: LinkedHashMap<String, String>().also { m -> data.colors = m })[name] = it }
+        color?.let { (data.colors ?: LinkedHashMap<String, String>().also { m -> data.colors = m })[name] = it }
         changed()
     }
 
-    // Hypixel colours the reward name by rarity: take the colour of the first text after the "+"
+    private val PET_TIERS = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC")
+    private val PET_TIER_CODES = listOf("§f", "§a", "§9", "§5", "§6", "§d")
+    private val LVL_TAG = Regex("\\[Lvl \\d+]")
+
+    // Hypixel colours the reward name by rarity: take the colour of the first text after the "+" (skipping the grey "[Lvl 1]")
     private fun rewardColor(raw: Component): String? {
         var seenPlus = false
         var out: String? = null
         raw.visit({ style, text ->
-            if (!seenPlus) { if (text.contains('+')) { seenPlus = true; if (text.substringAfter('+').isNotBlank()) out = code(style) } }
-            else if (out == null && text.isNotBlank()) out = code(style)
+            if (!seenPlus) { if (text.contains('+')) { seenPlus = true; if (text.substringAfter('+').replace(LVL_TAG, "").isNotBlank()) out = code(style) } }
+            else if (out == null && text.replace(LVL_TAG, "").isNotBlank()) out = code(style)
             java.util.Optional.empty<Unit>()
         }, net.minecraft.network.chat.Style.EMPTY)
         return out
@@ -125,14 +133,18 @@ object ExperimentProfitTracker {
         return (v * when (suffix) { "k" -> 1e3; "M" -> 1e6; "B" -> 1e9; else -> 1.0 }).toLong()
     }
 
-    // Pets drop as "[Lvl 1] Guardian": price the LVL_1 auction key from the rarity colour
+    // Pets drop as "[Lvl 1] Guardian", stored as "Epic Guardian": the price list keys pets as "GUARDIAN;3"
     private fun petPrice(name: String): Double {
-        val tier = when (colorOf(name)) {
-            "§f" -> "COMMON"; "§a" -> "UNCOMMON"; "§9" -> "RARE"; "§5" -> "EPIC"; "§6" -> "LEGENDARY"; "§d" -> "MYTHIC"; else -> return 0.0
+        val first = name.substringBefore(' ').uppercase()
+        val prefixed = ' ' in name && first in PET_TIERS
+        val tier = if (prefixed) PET_TIERS.indexOf(first) else PET_TIER_CODES.indexOf(colorOf(name))
+        if (tier < 0) return 0.0
+        val type = (if (prefixed) name.substringAfter(' ') else name).uppercase().replace(' ', '_').replace("'", "")
+        for (id in listOf("$type;$tier", "LVL_1_${PET_TIERS[tier]}_$type")) {
+            val p = CroesusPrices.price(id)
+            if (p > 0 && !p.isNaN()) return p
         }
-        val type = name.uppercase().replace(' ', '_').replace("'", "")
-        val p = CroesusPrices.price("LVL_1_${tier}_$type")
-        return if (p.isNaN()) 0.0 else p
+        return 0.0
     }
 
     // Books come through as "Protection VII" / "Ultimate Wise V"
