@@ -85,14 +85,12 @@ object FairySouls {
             JsonParser.parseString(Files.readString(PATH)).asJsonObject.entrySet().forEach { (k, v) ->
                 found[k] = ConcurrentHashMap.newKeySet<String>().apply { v.asJsonArray.forEach { add(it.asString) } }
             }
-        } catch (e: Exception) { FishDiag.fail("FairySouls.1", "fairy soul save unreadable", e) }
+        } catch (e: java.io.IOException) { FishDiag.fail("FairySouls.1", "fairy soul save unreadable", e) }
+        catch (e: RuntimeException) { found.clear(); fishmod.utils.SafeFiles.quarantine(PATH, e) }
     }
 
     private fun save() {
         val snap = found.mapValues { it.value.toList() }
-        IoExecutor.execute {
-            try { Files.createDirectories(PATH.parent); Files.writeString(PATH, gson.toJson(snap)) }
-            catch (e: Exception) { FishDiag.fail("FairySouls.2", "fairy soul save failed", e) }
-        }
+        IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(PATH, gson.toJson(snap)) }
     }
 }

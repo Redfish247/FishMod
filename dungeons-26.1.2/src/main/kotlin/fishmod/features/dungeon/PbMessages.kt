@@ -4,7 +4,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.FishDebug
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
@@ -104,22 +103,15 @@ object PbMessages {
                 val t = object : TypeToken<HashMap<String, Double>>() {}.type
                 GSON.fromJson<HashMap<String, Double>>(Files.readString(FILE), t)?.let { pbs.putAll(it) }
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
             FishDiag.fail("PbMessages.2", "loading personal_bests.json failed", e)
-            FishDebug.LOGGER.warn("[PbMessages] load failed: {}", e.toString())
+        } catch (e: RuntimeException) {
+            fishmod.utils.SafeFiles.quarantine(FILE, e)
         }
     }
 
     private fun save() {
         val json = GSON.toJson(pbs)
-        fishmod.utils.IoExecutor.execute {
-            try {
-                Files.createDirectories(FILE.parent)
-                Files.writeString(FILE, json)
-            } catch (e: Exception) {
-                FishDiag.fail("PbMessages.3", "saving personal_bests.json failed", e)
-                FishDebug.LOGGER.warn("[PbMessages] save failed: {}", e.toString())
-            }
-        }
+        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(FILE, json) }
     }
 }
