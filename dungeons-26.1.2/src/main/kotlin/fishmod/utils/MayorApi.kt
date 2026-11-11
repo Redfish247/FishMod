@@ -16,6 +16,7 @@ object MayorApi {
     private const val URL = "https://api.hypixel.net/v2/resources/skyblock/election"
     private const val CACHE_MS = 10 * 60 * 1000L
     private const val FAIL_CACHE_MS = 60 * 1000L
+    private const val MAX_BACKOFF_MS = 30 * 60 * 1000L
     private const val SWITCH_CACHE_MS = 60 * 1000L
     private const val SWITCH_WINDOW_MS = 15 * 60 * 1000L
     private const val SB_EPOCH_MS = 1560276000_000L
@@ -37,8 +38,18 @@ object MayorApi {
     private var lastFetch = 0L
     @Volatile
     private var fetching = false
+    @Volatile
+    private var retryAt = 0L
+    @Volatile
+    private var failures = 0
+    @Volatile
+    private var httpErrorReported = false
 
-    private fun failStamp(): Long = System.currentTimeMillis() - CACHE_MS + FAIL_CACHE_MS
+    // Exponential backoff after a failure: 1, 2, 4 ... capped at 30 min
+    private fun backoff() {
+        failures = (failures + 1).coerceAtMost(6)
+        retryAt = System.currentTimeMillis() + (FAIL_CACHE_MS shl (failures - 1)).coerceAtMost(MAX_BACKOFF_MS)
+    }
 
     // Start of the current mayor term (Late Spring 27, every 5d4h real time)
     private fun lastSwitchMs(now: Long): Long {
@@ -49,6 +60,7 @@ object MayorApi {
     // Refetch at each term switch, then every minute for a while in case the API lags
     private fun stale(): Boolean {
         val now = System.currentTimeMillis()
+        if (now < retryAt) return false
         val sw = lastSwitchMs(now)
         if (lastFetch < sw) return true
         val ttl = if (now - sw < SWITCH_WINDOW_MS) SWITCH_CACHE_MS else CACHE_MS
@@ -87,30 +99,44 @@ object MayorApi {
         fetching = true
         val req = HttpRequest.newBuilder()
             .uri(URI.create(URL))
-            .header("User-Agent", "Mozilla/5.0")
+            .header("User-Agent", "FishMod")
+            .header("Accept", "application/json")
             .GET()
             .timeout(Duration.ofSeconds(8))
             .build()
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept { resp ->
             try {
-                FishDiag.check(resp.statusCode() == 200, "MayorApi.1") { "election API returned HTTP ${resp.statusCode()}" }
+                val code = resp.statusCode()
+                if (code !in 200..299) {
+                    // Cloudflare/HTML error body (e.g. "error code: 1020"): never parse it
+                    val snippet = resp.body().orEmpty().take(80).replace(Regex("\\s+"), " ")
+                    FishDebug.LOGGER.warn("MayorApi: HTTP {} - {}", code, snippet)
+                    if (!httpErrorReported) {
+                        httpErrorReported = true
+                        FishDiag.fail("MayorApi.1", "election API returned HTTP $code: $snippet")
+                    }
+                    backoff()
+                    return@thenAccept
+                }
                 val root = JsonParser.parseString(resp.body()).asJsonObject
                 paulDungeonBonus = parsePaul(root)
                 dianaRitual = hasPerk(root, "diana", "mythological ritual")
                 mayorLine = parseMayorLine(root)
                 parseMayorDetail(root)
                 lastFetch = System.currentTimeMillis()
+                failures = 0
+                retryAt = 0L
             } catch (e: Exception) {
                 FishDiag.fail("MayorApi.2", "election response parse failed", e)
                 FishDebug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
-                lastFetch = failStamp()
+                backoff()
             } finally {
                 fetching = false
             }
         }.exceptionally { e ->
             FishDiag.fail("MayorApi.3", "election request failed", e)
             FishDebug.LOGGER.warn("MayorApi: fetch failed - {}", e.message)
-            lastFetch = failStamp()
+            backoff()
             fetching = false
             null
         }
