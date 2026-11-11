@@ -412,7 +412,13 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 - **2026-11-10, daily-bugfix skipped because of a leftover version bump.** `tools/deploy.ps1` bumped `mod_version` in all three modules but committed with `--allow-empty` and no `git add`. All `gradle.properties` files are tracked (not gitignored, despite older notes), so `dungeons-26.3/gradle.properties` stayed dirty and the 05:00 runner skipped on its clean-tree check. Fix: deploy.ps1 now stages the bumped files before committing, and `/ship` says to commit every bumped `gradle.properties` and finish with a clean `git status`. Rule: anything that bumps a version must commit it in the same step.
 
+## 2026-11-11: Party Finder counted "Party" as a member (#544)
+- `^`-anchored leader regex missed prefixed titles; the fallback picked the word "Party" and the count went to 6/5. Rule: Hypixel titles can carry rank prefixes, so match names unanchored, and a fallback must never return a fixed word from the template. See [[Technical Gotchas]] §3.
+
 ## 2026-11-11: Claude Changelog page, and a wrong "rule broken" claim
 - Mistake: I told Eli the daily bugfix run broke the no-build rule by building and installing 1.7.72. `tools/daily-bugfix/prompt.md` gives explicit authorization for exactly that. Read the prompt or brief that started a session before judging what it did.
 - The daily run wrote `BUGFIX_REPORT.md`. Eli wants the report in `CHANGELOG.txt` (Run notes) and on the hidden fishmod.dev page ([[Claude Changelog]]), never as a separate file.
 - Worker deploy from this machine failed with Cloudflare 9109: the `CLOUDFLARE_API_TOKEN` user env var is IP-restricted. Check `wrangler whoami` before promising a deploy.
+
+## 2026-11-11: secrets leaderboard capped at 13 (#533)
+- Symptom: secret count on the achievement leaderboard stuck at 13. Cause: the worker clamped submits to a stale `ACH_MAX_SECRETS = 13` (registry now has 28; points cap 8281 vs 8706 is stale too). Rule: when a value tops out at a suspicious round number, check server-side clamps before the client parser. The mod now sends its registry maxima so the worker never needs a constant ([[Achievement Anti-Cheat]]).

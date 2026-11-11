@@ -33,6 +33,7 @@ object AchLeaderboard {
     private const val RANGE = 48.0
     private const val LINE_H = 0.25
     private val SECRET_TOTAL: Int by lazy { AchRegistry.ALL.count { it.section == "Secret Achievements" } }
+    private val MAX_POINTS: Int by lazy { AchRegistry.ALL.sumOf { it.points } }
 
     @Volatile var points: List<Entry> = emptyList(); private set
     @Volatile var secrets: List<Entry> = emptyList(); private set
@@ -103,6 +104,9 @@ object AchLeaderboard {
             addProperty("points", AchEngine.points())
             addProperty("secrets", secretCount())
             addProperty("unlocked", AchStore.data.unlocked.size)
+            // Registry maxima so the worker's clamp follows new achievements (#533)
+            addProperty("maxPoints", MAX_POINTS)
+            addProperty("maxSecrets", SECRET_TOTAL)
         }
         val r = try { req("/submit").header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body.toString())).build() }
         catch (t: Throwable) { submitting = false; return }
