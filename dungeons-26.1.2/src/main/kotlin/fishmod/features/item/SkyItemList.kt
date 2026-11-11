@@ -3,6 +3,7 @@ package fishmod.features.item
 import fishmod.compat.GLFW
 import fishmod.compat.showScreen
 import fishmod.mixin.accessors.HandledScreenAccessor
+import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.NeuRepo
@@ -10,10 +11,13 @@ import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.world.item.ItemStack
 
 // JEI-style side panel of NEU Skyblock items; cached icons, only visible rows drawn, filter only on query change.
 object SkyItemList {
@@ -90,6 +94,7 @@ object SkyItemList {
 
     private fun ensureBuilt(): Boolean {
         if (built) return true
+        CroesusPrices.refreshIfStale()
         NeuRepo.ensureLoaded()
         if (!NeuRepo.isLoaded()) return false
         val all = NeuRepo.ids().toTypedArray()
@@ -204,9 +209,51 @@ object SkyItemList {
         ctx.text(font, favLabel, px + pw - PAD - font.width(favLabel), py + ph - FOOT_H + 2, if (favOnly) 0xFFFFD83A.toInt() else 0xFF9AA4B0.toInt(), false)
         // afterExtract runs after the screen's deferred pass, so flush the tooltip ourselves
         if (hover >= 0) {
-            ctx.setTooltipForNextFrame(font, RecipeViewer.stackFor(ids[shown[hover]]), mx, my)
+            val id = ids[shown[hover]]
+            val stack = RecipeViewer.stackFor(id)
+            if (FishSettings.skyItemListClickKey) ctx.setTooltipForNextFrame(font, tooltipWithKey(id, stack), stack.tooltipImage, mx, my)
+            else ctx.setTooltipForNextFrame(font, stack, mx, my)
             ctx.extractDeferredElements(mx, my, 0f)
         }
+    }
+
+    // Yellow click key appended under the item's own tooltip (mirrors onClick)
+    private fun tooltipWithKey(id: String, stack: ItemStack): List<Component> {
+        val lines = ArrayList(Screen.getTooltipFromItem(Minecraft.getInstance(), stack))
+        lines.add(Component.empty())
+        if (RecipeViewer.recipesFor(id).isNotEmpty()) lines.add(Component.literal("§eLeft Click: View Recipe"))
+        lines.add(Component.literal(if (favs.contains(id)) "§eRight Click: Remove Favorite" else "§eRight Click: Add Favorite"))
+        lines.add(Component.literal(if (onBazaar(id)) "§eShift-Left Click: Open in Bazaar" else "§eShift-Left Click: Open in Auction House"))
+        return lines
+    }
+
+    private fun bazaarKey(id: String): String {
+        val semi = id.indexOf(';')
+        return if (semi > 0 && NeuRepo.get(id)?.get("itemid")?.asString == "minecraft:enchanted_book") "ENCHANTMENT_${id.substring(0, semi)}_${id.substring(semi + 1)}" else id
+    }
+
+    private fun onBazaar(id: String): Boolean {
+        val key = bazaarKey(id)
+        return CroesusPrices.bazaarPrice(key, true) != null || CroesusPrices.bazaarPrice(key, false) != null
+    }
+
+    private val LVL_RE = Regex("^\\[Lvl [^\\]]*]\\s*")
+
+    // Search term: NEU display name, book enchant name from lore, pet level tag dropped
+    private fun searchName(id: String): String {
+        val o = NeuRepo.get(id)
+        var name = TextStrip.plain(o?.get("displayname")?.asString ?: id).trim()
+        if (name.equals("Enchanted Book", true)) o?.getAsJsonArray("lore")?.takeIf { it.size() > 0 }?.let { name = TextStrip.plain(it[0].asString).trim() }
+        return LVL_RE.replace(name, "")
+    }
+
+    // One shift-click = one /bz or /ahs command
+    private fun openMarket(id: String) {
+        val conn = Minecraft.getInstance().connection ?: return
+        val name = searchName(id)
+        if (name.isEmpty()) return
+        CroesusPrices.refreshIfStale()
+        conn.sendCommand(if (onBazaar(id)) "bz $name" else "ahs $name")
     }
 
     @JvmStatic
@@ -234,7 +281,8 @@ object SkyItemList {
         if (c < 0) return true
         val id = ids[shown[c]]
         when (GLFW.btn(click)) {
-            0 -> if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
+            0 -> if (Minecraft.getInstance().hasShiftDown()) openMarket(id)
+            else if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
             1 -> { if (!favs.remove(id)) favs.add(id); saveFavs(); val keep = scroll; refilter(); scroll = keep }
         }
         return true
