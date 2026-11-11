@@ -425,3 +425,6 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 ## 2026-11-11: MayorApi 403 then MalformedJson (#542/#543)
 - Symptom: `MayorApi.1 HTTP 403` followed by `MayorApi.2 MalformedJsonException line 1 column 8`. Cause: a `FishDiag.check` on status only logs, it does not stop execution, so the Cloudflare `error code: 1020` text body was parsed as JSON. The failure stamp also kept `stale()` true right after a term switch, hammering the API. Rule: every HTTP caller returns on non-2xx before parsing, and backoff uses its own `retryAt`, never a faked `lastFetch` ([[Mayor API]]).
+
+## 2026-11-11: session_stats.json "Expected BEGIN_OBJECT but was STRING" every launch (#541)
+- Symptom: startup auto error report `SessionStats.5` on every launch. Cause: non-atomic `Files.writeString` on the daemon IO thread left a corrupt (NUL-filled) file after a crash; load reported it but never moved it aside, so it failed forever. Rule: every persisted JSON uses `SafeFiles.writeAtomic` and quarantines unparseable files instead of FishDiag-reporting them ([[Technical Gotchas]] §2).

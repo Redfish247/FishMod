@@ -249,7 +249,8 @@ object SessionStats {
         } catch (e: IOException) {
             FishDiag.fail("SessionStats.4", "reading session_stats.json failed", e)
         } catch (e: RuntimeException) {
-            FishDiag.fail("SessionStats.5", "parsing session_stats.json failed", e)
+            // corrupt file (e.g. NUL bytes after a crash mid-write): move aside and start fresh, no error report
+            fishmod.utils.SafeFiles.quarantine(SAVE_FILE, e)
         }
     }
 
@@ -264,14 +265,7 @@ object SessionStats {
         d.autoPaused = autoPaused
         d.lastActivityMs = lastActivityMs
         val json = GSON.toJson(d)
-        fishmod.utils.IoExecutor.execute {
-            try {
-                Files.createDirectories(SAVE_FILE.parent)
-                Files.writeString(SAVE_FILE, json)
-            } catch (e: IOException) {
-                FishDiag.fail("SessionStats.6", "writing session_stats.json failed", e)
-            }
-        }
+        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(SAVE_FILE, json) }
     }
 
     private fun runsPerHour(): Double {
