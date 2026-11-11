@@ -24,6 +24,7 @@
     "AbstractSignEditScreenMixin",
     "accessors.MapItemSavedDataAccessor",
     "accessors.PlayerTabOverlayAccessor",
+    "accessors.EditBoxAccessor",
 
     "FishChatInvoker",
     "ChatHudMixin",
@@ -31,6 +32,7 @@
     "ChatHistoryMixin",
     "ChatHistoryLimitMixin",
     "ChatSearchMixin",
+    "ChatCommandHintMixin",
     "FishCopyChatMixin",
     "CosmeticChatMixin",
     "WorldTextShadowMixin",

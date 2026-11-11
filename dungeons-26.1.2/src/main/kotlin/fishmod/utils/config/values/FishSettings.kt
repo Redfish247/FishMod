@@ -193,6 +193,7 @@ object FishSettings {
     @ConfigValue @JvmField var compactTabShowEffects: Boolean = false
 
     @ConfigValue @JvmField var partyCommandsEnabled: Boolean = false
+    @ConfigValue @JvmField var pcArgHints: Boolean = true
     @ConfigValue @JvmField var pcAllinvite: Boolean = false
     @ConfigValue @JvmField var pcPb: Boolean = false
     @ConfigValue @JvmField var pcCata: Boolean = false
