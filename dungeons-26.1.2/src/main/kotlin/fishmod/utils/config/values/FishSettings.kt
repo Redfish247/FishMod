@@ -560,6 +560,7 @@ object FishSettings {
     @ConfigValue @JvmField var skyItemListRarityOpacity: Int = 40
     @ConfigValue @JvmField var skyItemListRarityRound: Boolean = false
     @ConfigValue @JvmField var skyItemListAccentColor: Int = 0xFF24B6B0.toInt()
+    @ConfigValue @JvmField var skyItemListClickKey: Boolean = true
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
 
     @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false
