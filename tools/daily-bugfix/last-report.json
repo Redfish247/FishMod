@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-11",
+  "version": "1.7.72",
+  "summary": "Built 1.7.72 on 26.1.2 and 26.2 (26.3 not built) and installed it in Prism Skyblock; FishTest not updated. Not tested in game. Started from `bf374f5d` (Ship 1.7.71).",
+  "fixed": [
+    {"id": 534, "title": "Speed sign helper showed on every sign", "files": ["garden/SpeedSignHelper.kt", "AbstractSignEditScreenAccessor.java"], "detail": "The helper drew over every sign edit screen in the Garden. It now reads the sign's lines and only shows when they contain \"crop speed cap\", however Hypixel wraps the text."},
+    {"id": 532, "title": "Speed sign helper covered the sign", "files": ["garden/SpeedSignHelper.kt"], "detail": "Moved from top-centre to the bottom-left corner."},
+    {"id": 537, "title": "Experiment profit tracker missed pet rarity and price", "files": ["features/ExperimentProfitTracker.kt"], "detail": [
+      "Rarity came from the grey `[Lvl 1]` tag, so pets had none. That tag is now skipped.",
+      "Prices used SkyHelper keys (`LVL_1_EPIC_GUARDIAN`), but the price list uses NEU keys (`GUARDIAN;3`). It now tries the NEU key first.",
+      "Pets are stored per rarity (\"Epic Guardian\") so rarities don't merge. Old rows still get a price."
+    ]}
+  ],
+  "already": [
+    {"id": 538, "title": "PF stats lookup failed for Devlion", "detail": "Reported from mod 1.7.18. Current code no longer auto-reports short lookup failures. Same as #494."}
+  ],
+  "open": [
+    {"id": 533, "title": "Secret leaderboard capped at 13", "status": "Needs your OK", "detail": "The worker caps secrets at 13 and points at 8281. The mod now has 28 secret achievements and about 8706 points. Raising both caps needs a `wrangler deploy`, your OK and a check against the live code first."},
+    {"id": 459, "title": "Players get stuck and glitch", "status": "Needs a report", "detail": "No change. Needs a video or a `/fm debug` report."}
+  ],
+  "tests": [
+    "Garden: hold a crop and open the crop speed sign. The helper should show bottom-left. Open any other sign (bazaar or AH search): no helper.",
+    "Experimentation Table: claim a Superpairs pet reward (Guardian). The profit HUD should show \"Epic Guardian\" in the rarity colour with a coin value, not \"?\".",
+    "If the pet row is still grey, send a chat screenshot of the reward line."
+  ],
+  "facts": [
+    ["Commits", "`e44b87a4` #534, #532 · `dfe56748` #537"],
+    ["Build", "26.1.2 and 26.2 OK after the fixes and after the bump"],
+    ["Board", "#532, #534, #537, #538 moved to Testing. Nothing set to Done."],
+    ["Sweep", "Checked the 33 files changed since last run and every `player!!` / `level!!` site. Nothing new."]
+  ],
+  "notes": [
+    "The prompt arrived cut off again. The full text came from `tools/daily-bugfix/prompt.md`.",
+    "The Modrinth path in the prompt is an old 1.21.8 profile. `prompt.md` should point at Prism.",
+    "`roadmap-status` silently updates nothing when ids are strings. Send numbers.",
+    "Leaderboard caps in the worker must go up whenever achievements are added, or scores get clamped.",
+    "Speed Sign Helper keys on \"crop speed cap\" via `AbstractSignEditScreenAccessor.fishmod$getMessages()`. CroesusPrices pets are `NAME;tier` (COMMON 0 .. MYTHIC 5)."
+  ]
+}

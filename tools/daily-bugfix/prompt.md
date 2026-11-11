@@ -67,4 +67,20 @@ Changelog:
   Write everything above "Run notes" so a player can understand it; Run notes are short dev notes for Eli.
 - Commit CHANGELOG.txt to main.
 
+Claude Changelog page (fishmod.dev, hidden owner page):
+- After the changelog, write the same report as JSON to `tools/daily-bugfix/last-report.json` (UTF-8, overwrite) and post it with `powershell -NoProfile -File tools/claude-changelog.ps1 tools/daily-bugfix/last-report.json`. Expect `{"success":true,...}`. It merges into today's entry, so other sessions' items stay; post once per run. If it fails, say so in the Run notes. Never print the secret.
+- Format (all strings plain text; wrap code, file names and commands in backticks):
+  {
+    "date": "YYYY-MM-DD", "version": "1.7.72",
+    "summary": "one line: what was built, where it went, tested or not",
+    "alert": "optional one line Eli must see first, else omit",
+    "fixed":   [{"id": 534, "title": "short player-facing title", "files": ["garden/SpeedSignHelper.kt"], "detail": "one or two sentences, or an array of bullets"}],
+    "already": [{"id": 538, "title": "...", "detail": "..."}],
+    "open":    [{"id": 533, "title": "...", "status": "Needs your OK | Needs a report | Can't reproduce | Not FishMod", "detail": "why"}],
+    "tests":   ["each in-game test step"],
+    "facts":   [["Commits", "..."], ["Build", "..."], ["Board", "..."], ["Sweep", "..."]],
+    "notes":   ["side notes and Notes for Obsidian"]
+  }
+  Use `id` only for fishmod.dev card numbers (omit it for bugs you found yourself).
+
 Last step: run `powershell -NoProfile -ExecutionPolicy Bypass -File D:\fishmoddungeons\tools\daily-bugfix\open-changelog.ps1` (opens CHANGELOG.txt in VS Code on Display 1). If it prints "Couldn't find the VS Code window", wait a few seconds and run it again once.
