@@ -428,3 +428,6 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 ## 2026-11-11: session_stats.json "Expected BEGIN_OBJECT but was STRING" every launch (#541)
 - Symptom: startup auto error report `SessionStats.5` on every launch. Cause: non-atomic `Files.writeString` on the daemon IO thread left a corrupt (NUL-filled) file after a crash; load reported it but never moved it aside, so it failed forever. Rule: every persisted JSON uses `SafeFiles.writeAtomic` and quarantines unparseable files instead of FishDiag-reporting them ([[Technical Gotchas]] §2).
+
+## 2026-11-11: LagTracker "negative lag -41.35s" (#545)
+- Symptom: auto error report `LagTracker.2 negative lag (wall=300.851 ticks=6844)` from 1.6.382; later builds only clamped the final number, hiding it. Cause: server ping ticks arrive in catch-up bursts after server lag, so the tick count can exceed wall time and refund lag that happened before the run started. Rule: cap tick counters at `elapsedMs / 50` per tick instead of clamping only the end result ([[Technical Gotchas]] §2).
