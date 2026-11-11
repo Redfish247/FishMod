@@ -1227,6 +1227,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Party Commands", "partyCommandsEnabled")
+            f.sub.add(ToggleSetting("Argument Hints in Chat", "Gray usage key after a .command while typing", "pcArgHints"))
             f.sub.add(ToggleSetting(".ai", "", "pcAllinvite"))
             f.sub.add(ToggleSetting(".pb", "", "pcPb"))
             f.sub.add(ToggleSetting(".cata", "", "pcCata"))

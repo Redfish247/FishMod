@@ -60,7 +60,39 @@ public class PartyCommandHandler {
 
     private static final String CMD_ALT =
             "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|chim|chimera|chimls|inq|inqs|inquis|king|manti|sphinx|core|stinger|wool|food|relic|relics|stick|sticks|hilt|since|burrow|burrows|mob|mobs|profit|playtime|mf|diana|help|\\?|e|[fm][1-7]|t[1-5]";
-    private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
+    // Argument keys shown as ghost text in the chat input (#536); keep in sync with the switch in onPartyCommand
+    private static final String P = "<player (empty for yourself)>";
+    private static final String FLOOR_M7 = "<floor (empty for m7)>";
+    public static final java.util.Map<String, String[]> USAGE = new java.util.LinkedHashMap<>();
+    private static void usage(String names, String... args) { for (String n : names.split(" ")) USAGE.put(n, args); }
+    static {
+        usage("cata", P);
+        usage("pb", P, FLOOR_M7);
+        usage("rtca", P);
+        usage("rtc", P, "<level (empty for 50)>");
+        usage("crtc", P, "<healer|mage|berserk|archer|tank>", "<level (empty for 50)>");
+        usage("secrets sa totalruns mp nw networth level sblvl farming nuc nucleus worm scatha bank powder corpse corpses", P);
+        usage("runs", P, FLOOR_M7);
+        usage("collection", P, "<floor (empty for all)>");
+        usage("help ? dprofit crit fps tps ping ai allinv d warp w ptme");
+        usage("kick k promote pro demote dem", "<player>");
+        usage("transfer pt", P);
+        usage("since", "<chim|chimls|stick|relic|inq|king|manti|sphinx|core|stinger|wool|food>");
+        usage("diana chim chimera chimls inq inqs inquis king manti sphinx core stinger wool food relic relics stick sticks hilt burrow burrows mob mobs profit playtime mf");
+        usage("e f1 f2 f3 f4 f5 f6 f7 m1 m2 m3 m4 m5 m6 m7 t1 t2 t3 t4 t5");
+    }
+
+    /** Usage slots the first typed arg fills: 2 when it skips the optional player (e.g. ".pb m7"). */
+    public static int hintSlotsForFirstArg(String cmd, String firstArg) {
+        return switch (cmd) {
+            case "pb", "runs", "collection" -> isFloor(firstArg) ? 2 : 1;
+            case "rtc" -> DIGITS_RE.matcher(firstArg).matches() ? 2 : 1;
+            case "crtc" -> resolveClass(firstArg) != null ? 2 : 1;
+            default -> 1;
+        };
+    }
+
+    private static final String ARG_TAIL ="(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
     private static final java.util.regex.Pattern PARTY_CMD = java.util.regex.Pattern.compile(
             "^Party > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final java.util.regex.Pattern GUILD_CMD = java.util.regex.Pattern.compile(
