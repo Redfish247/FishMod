@@ -5,4 +5,4 @@
 "open":[{"id":533,"title":"Secret leaderboard capped at 13","status":"Needs your OK","detail":"Worker caps ACH_MAX_SECRETS at 13; needs a wrangler deploy by Eli."},{"id":459,"title":"Players get stuck and glitch","status":"Needs a report","detail":"No repro; needs a video or /fm debug report."}],
 "tests":["M7 Wither Dragons: play a run, dragons tracked spawn to death, no error-report toast."],
 "facts":[["Commits","d22af24c fix, changelog commit after it"],["Build","26.1.2 + 26.2 OK as 1.7.92, 26.3 not built"],["Board","#568 and #569 moved to Testing; nothing Done"],["Sweep","No other open Bug cards changed; 24 already in Testing"]],
-"notes":["Auto error reports from old mod versions (1.6.x) keep arriving as new Bug cards; check the version line first.","Modrinth path Skyblock 1.21.8\mods does not exist on this machine."]}
+"notes":["Auto error reports from old mod versions (1.6.x) keep arriving as new Bug cards; check the version line first.","Modrinth path Skyblock 1.21.8 mods folder does not exist on this machine."]}
