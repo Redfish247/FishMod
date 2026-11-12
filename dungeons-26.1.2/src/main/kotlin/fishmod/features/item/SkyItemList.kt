@@ -227,7 +227,7 @@ object SkyItemList {
         if (!NeuRepo.isLoaded()) return false
         val all = NeuRepo.ids().toTypedArray()
         val names = Array(all.size) { i ->
-            TextStrip.plain(NeuRepo.get(all[i])?.get("displayname")?.asString ?: all[i]).filter { it !in ''..'' }.trim().lowercase()
+            TextStrip.plain(NeuRepo.get(all[i])?.get("displayname")?.asString ?: all[i]).filter { it.code !in 0xE000..0xF8FF }.trim().lowercase()
         }
         val order = all.indices.sortedWith(compareBy({ names[it] }, { all[it] }))
         ids = Array(all.size) { all[order[it]] }
