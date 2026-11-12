@@ -67,7 +67,6 @@ object RiftPreviews {
             for (i in 0..2) P.box(c, x - 40 + i * 28, y, 24, 24, S.riftHayColor)
         }
         P.register("Leech Supreme Helper") { c, x, y ->
-            if (S.riftLeechTitle) P.title(c, x, y, "§c§lLASER!", "§7Go to the safe spot")
             P.box(c, x - 14, y + 4, 28, 28, S.riftLeechColor)
             P.line(c, x, y + 80, x, y + 32, S.riftLeechColor)
         }
