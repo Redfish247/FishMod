@@ -62,6 +62,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     companion object {
         private val ENTRIES: MutableList<HudEntry> = ArrayList()
+        // HUDs hidden in the editor (right-click or the eye): faded and unclickable except the eye; not saved
+        private val FROZEN: MutableSet<String> = HashSet()
+        private const val EYE_W = 11
+        private const val EYE_H = 9
 
         private fun addEntry(e: HudEntry) {
             if (ENTRIES.any { it.name() == e.name() }) FishDiag.fail("FishHudEditor.1", "HUD '${e.name()}' registered twice (entries=${ENTRIES.size})")
@@ -602,10 +606,46 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return mx in (gx - GRIP - 1)..(gx + GRIP) && my in (gy - GRIP - 1)..(gy + GRIP)
     }
 
-    private fun boxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { e ->
+    private fun frozen(e: HudEntry) = e.name() in FROZEN
+
+    private fun inBox(e: HudEntry, mx: Int, my: Int): Boolean {
         val x = e.getX().asInt
         val y = e.getY().asInt
-        mx in x..(x + sw(e)) && my in y..(y + sh(e))
+        return mx in x..(x + sw(e)) && my in y..(y + sh(e))
+    }
+
+    private fun boxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { !frozen(it) && inBox(it, mx, my) }
+
+    // Frozen ones too, for right-click unhide
+    private fun anyBoxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { inBox(it, mx, my) }
+
+    private fun eyeX(e: HudEntry) = e.getX().asInt + sw(e) - EYE_W
+    private fun eyeY(e: HudEntry): Int { val y = e.getY().asInt; return if (y - EYE_H - 1 >= 0) y - EYE_H - 1 else y + sh(e) + 1 }
+
+    // The eye shows on the hovered, selected and hidden HUDs
+    private fun eyeShown(e: HudEntry, hover: HudEntry?) = frozen(e) || e === selected || e === hover
+
+    private fun eyeUnder(mx: Int, my: Int): HudEntry? {
+        val hover = anyBoxUnder(mx, my)
+        return shown().lastOrNull { eyeShown(it, hover) && mx in eyeX(it)..(eyeX(it) + EYE_W) && my in eyeY(it)..(eyeY(it) + EYE_H) }
+    }
+
+    private fun toggleFrozen(e: HudEntry) {
+        if (!FROZEN.remove(e.name())) { FROZEN.add(e.name()); if (selected === e) selected = null; if (dragging === e) dragging = null; if (resizing === e) resizing = null }
+    }
+
+    private fun drawEye(ctx: GuiGraphicsExtractor, e: HudEntry, mx: Int, my: Int) {
+        val x = eyeX(e); val y = eyeY(e)
+        val off = frozen(e)
+        val hov = mx in x..(x + EYE_W) && my in y..(y + EYE_H)
+        ctx.fill(x, y, x + EYE_W, y + EYE_H, if (hov) 0xE0203A40.toInt() else 0xB0101C20.toInt())
+        val c = if (off) 0xFF8A9A9C.toInt() else 0xFFFFFFFF.toInt()
+        ctx.fill(x + 3, y + 2, x + 8, y + 3, c)
+        ctx.fill(x + 1, y + 3, x + 3, y + 4, c); ctx.fill(x + 8, y + 3, x + 10, y + 4, c)
+        ctx.fill(x + 1, y + 4, x + 3, y + 5, c); ctx.fill(x + 8, y + 4, x + 10, y + 5, c)
+        ctx.fill(x + 3, y + 5, x + 8, y + 6, c)
+        if (!off) ctx.fill(x + 4, y + 3, x + 7, y + 5, c)
+        else for (i in 0..6) ctx.fill(x + 2 + i, y + 7 - i, x + 3 + i, y + 8 - i, 0xFFFF6B6B.toInt())
     }
 
     private fun outline(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, c: Int) {
@@ -675,6 +715,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val w = sw(e)
             val h = sh(e)
             drawExample(ctx, e, x, y)
+            // ~65% opacity look for hidden HUDs: dim it toward the background
+            if (frozen(e)) ctx.fill(x, y, x + w, y + h, 0x59000000)
             when {
                 e === sel -> {
                     outline(ctx, x - 1, y - 1, w + 2, h + 2, 0xFFFFFFFF.toInt())
@@ -694,6 +736,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 e.locked() -> outline(ctx, x - 1, y - 1, w + 2, h + 2, 0x55888888)
                 e === hover -> outline(ctx, x - 1, y - 1, w + 2, h + 2, HOVER_OUTLINE)
             }
+        }
+
+        if (dragging == null && resizing == null) {
+            val eh = if (sideOpen) null else anyBoxUnder(mouseX, mouseY)
+            for (e in shown()) if (eyeShown(e, eh)) drawEye(ctx, e, mouseX, mouseY)
         }
 
         guideX?.let { ctx.fill(it, 0, it + 1, this.height, GUIDE) }
@@ -897,6 +944,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             return true
         }
         resetArmed = false
+
+        if (fishmod.compat.GLFW.btn(click) == 0) eyeUnder(mx, my)?.let { toggleFrozen(it); return true }
+        if (fishmod.compat.GLFW.btn(click) == 1) anyBoxUnder(mx, my)?.let { toggleFrozen(it); return true }
 
         val sel = selected
         if (sel != null && onGrip(sel, mx, my)) {
