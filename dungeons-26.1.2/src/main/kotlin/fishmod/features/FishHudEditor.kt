@@ -625,8 +625,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     // The eye shows on the hovered, selected and hidden HUDs
     private fun eyeShown(e: HudEntry, hover: HudEntry?) = frozen(e) || e === selected || e === hover
 
+    // Box or its eye strip, so the eye stays visible while the mouse moves onto it
+    private fun hoverEntry(mx: Int, my: Int): HudEntry? =
+        shown().lastOrNull { inBox(it, mx, my) || (mx in eyeX(it)..(eyeX(it) + EYE_W) && my in eyeY(it)..(eyeY(it) + EYE_H)) }
+
     private fun eyeUnder(mx: Int, my: Int): HudEntry? {
-        val hover = anyBoxUnder(mx, my)
+        val hover = hoverEntry(mx, my)
         return shown().lastOrNull { eyeShown(it, hover) && mx in eyeX(it)..(eyeX(it) + EYE_W) && my in eyeY(it)..(eyeY(it) + EYE_H) }
     }
 
@@ -739,7 +743,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
 
         if (dragging == null && resizing == null) {
-            val eh = if (sideOpen) null else anyBoxUnder(mouseX, mouseY)
+            val eh = if (sideOpen) null else hoverEntry(mouseX, mouseY)
             for (e in shown()) if (eyeShown(e, eh)) drawEye(ctx, e, mouseX, mouseY)
         }
 
