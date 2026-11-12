@@ -54,6 +54,16 @@ object QuizSolver {
         }
     }
 
+    // Option lines in chat: the correct answer green, the others red
+    fun colorize(c: net.minecraft.network.chat.Component): net.minecraft.network.chat.Component {
+        val ans = triviaAnswers ?: return c
+        val plain = c.string
+        val t = plain.trim()
+        if (!(t.startsWith("ⓐ") || t.startsWith("ⓑ") || t.startsWith("ⓒ"))) return c
+        val ok = ans.any { plain.endsWith(it) }
+        return net.minecraft.network.chat.Component.literal(plain).withStyle(if (ok) net.minecraft.ChatFormatting.GREEN else net.minecraft.ChatFormatting.RED)
+    }
+
     fun onRenderWorld() {
         val opt = correctOption
         if (opt < 0) return

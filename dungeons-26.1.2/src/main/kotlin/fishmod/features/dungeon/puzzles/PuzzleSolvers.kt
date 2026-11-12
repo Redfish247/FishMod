@@ -94,6 +94,11 @@ object PuzzleSolvers {
             InteractionResult.PASS
         })
 
+        net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.MODIFY_GAME.register { msg, overlay ->
+            if (overlay || !enabled || !FishSettings.quizSolver || !SkyblockLocation.inDungeon()) msg
+            else FishDiag.guard("PuzzleSolvers.40", "quiz chat colouring failed") { QuizSolver.colorize(msg) } ?: msg
+        }
+
         FishEvents.chat.register { text ->
             if (!enabled || !SkyblockLocation.inDungeon()) return@register false
             val msg = text.chatPlain
