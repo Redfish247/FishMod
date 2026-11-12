@@ -25,14 +25,47 @@ object SkyItemList {
     private const val CELL = 20
     private const val PAD = 6
     private const val HEAD_H = 26
-    private const val FOOT_H = 12
+    private const val FOOT_H = 2
     private const val GAP = 8
     private const val SEARCH_H = 14
+    private const val TAB_W = 20
+    private const val TAB_H = 20
 
     private var ids: Array<String> = emptyArray()
     private var hay: Array<String> = emptyArray()
     private var rar: IntArray = IntArray(0)
     private var shown: IntArray = IntArray(0)
+    private var cat: IntArray = IntArray(0)
+    private var selCat = 0
+
+    private val CAT_NAMES = arrayOf("All", "Weapons", "Armor", "Accessories", "Tools", "Pets", "Books", "Other", "Favorites")
+    private val CAT_ICONS: Array<net.minecraft.world.item.Item> = arrayOf(
+        net.minecraft.world.item.Items.BOOKSHELF, net.minecraft.world.item.Items.DIAMOND_SWORD, net.minecraft.world.item.Items.DIAMOND_CHESTPLATE,
+        net.minecraft.world.item.Items.ENDER_EYE, net.minecraft.world.item.Items.DIAMOND_PICKAXE, net.minecraft.world.item.Items.BONE,
+        net.minecraft.world.item.Items.ENCHANTED_BOOK, net.minecraft.world.item.Items.CHEST, net.minecraft.world.item.Items.NETHER_STAR
+    )
+
+    // Category from the item type word after the rarity in the last NEU lore lines ("LEGENDARY DUNGEON SWORD")
+    private fun catOf(id: String): Int {
+        val o = NeuRepo.get(id) ?: return 7
+        if (o.get("itemid")?.asString == "minecraft:enchanted_book") return 6
+        if (PET_ID.matches(id)) return 5
+        val lore = o.getAsJsonArray("lore") ?: return 7
+        for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
+            val line = TextStrip.plain(lore[k].asString).trim().uppercase()
+            val m = RARITY_RE.find(line) ?: continue
+            val w = line.substring(m.range.last + 1).trim().split(' ').toSet()
+            return when {
+                w.any { it == "HELMET" || it == "CHESTPLATE" || it == "LEGGINGS" || it == "BOOTS" } -> 2
+                w.any { it == "ACCESSORY" || it == "HATCESSORY" } -> 3
+                "PET" in w -> 5
+                w.any { it == "PICKAXE" || it == "AXE" || it == "SHOVEL" || it == "HOE" || it == "ROD" || it == "DRILL" || it == "GAUNTLET" || it == "SHEARS" || it == "FISHING" } -> 4
+                w.any { it == "SWORD" || it == "LONGSWORD" || it == "BOW" || it == "SHORTBOW" || it == "WAND" || it == "WEAPON" } -> 1
+                else -> 7
+            }
+        }
+        return 7
+    }
 
     private val RARITY_RE = Regex("(VERY SPECIAL|UNCOMMON|COMMON|RARE|EPIC|LEGENDARY|MYTHIC|DIVINE|SPECIAL|ULTIMATE|SUPREME)")
     private fun rarityRgb(name: String) = when (name) {
@@ -105,6 +138,7 @@ object SkyItemList {
         ids = Array(all.size) { all[order[it]] }
         hay = Array(all.size) { names[order[it]] + " " + all[order[it]].lowercase() }
         rar = IntArray(all.size) { rarityOf(ids[it]) }
+        cat = IntArray(all.size) { catOf(ids[it]) }
         shown = IntArray(all.size)
         built = true
         refilter()
@@ -114,8 +148,9 @@ object SkyItemList {
     private fun refilter() {
         val q = query.trim().lowercase()
         var n = 0
-        for (i in hay.indices) if (favs.contains(ids[i]) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
-        if (!favOnly) for (i in hay.indices) if (!favs.contains(ids[i]) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
+        favOnly = selCat == 8
+        for (i in hay.indices) if (favs.contains(ids[i]) && (selCat == 0 || selCat == 8 || cat[i] == selCat) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
+        if (!favOnly) for (i in hay.indices) if (!favs.contains(ids[i]) && (selCat == 0 || cat[i] == selCat) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
         shownCount = n
         scroll = 0
     }
@@ -125,10 +160,10 @@ object SkyItemList {
         val sw = mc.window.guiScaledWidth
         val sh = mc.window.guiScaledHeight
         val acc = screen as HandledScreenAccessor
-        val avail = (sw * 3 / 5 - PAD * 2) / CELL
+        val avail = (sw * 3 / 5 - PAD * 2 - TAB_W) / CELL
         cols = minOf(FishSettings.skyItemListColumns, avail)
         if (cols < 2) return false
-        pw = PAD * 2 + cols * CELL
+        pw = PAD * 2 + cols * CELL + TAB_W
         px = sw - pw
         py = 0
         ph = sh
@@ -166,7 +201,7 @@ object SkyItemList {
         val accent = FishSettings.skyItemListAccentColor or 0xFF000000.toInt()
         ctx.fill(px, py, px + pw, py + ph, bg)
         ctx.fill(px, py, px + pw, py + 1, accent)
-        val sx = px + PAD; val sy = py + 6; val sw = pw - PAD * 2
+        val sx = px + PAD; val sy = py + 6; val sw = pw - PAD * 2 - TAB_W
         ctx.fill(sx, sy, sx + sw, sy + SEARCH_H, 0x80000000.toInt())
         if (focused) ctx.fill(sx, sy + SEARCH_H - 1, sx + sw, sy + SEARCH_H, accent)
         if (!built && !ensureBuilt()) {
@@ -201,19 +236,42 @@ object SkyItemList {
             val trackH = rowsVis * CELL
             val barH = (trackH * rowsVis / (rowsVis + ms)).coerceAtLeast(10)
             val barY = py + HEAD_H + (trackH - barH) * scroll / ms
-            ctx.fill(px + pw - 4, barY, px + pw - 2, barY + barH, accent)
+            ctx.fill(gridRight() - 4, barY, gridRight() - 2, barY + barH, accent)
         }
-        val foot = if (hover >= 0) "L: recipe  R: favorite" else "$shownCount items"
-        ctx.text(font, foot, px + PAD, py + ph - FOOT_H + 2, 0xFF6B7480.toInt(), false)
-        val favLabel = if (favOnly) "[Favs: on]" else "[Favs: off]"
-        ctx.text(font, favLabel, px + pw - PAD - font.width(favLabel), py + ph - FOOT_H + 2, if (favOnly) 0xFFFFD83A.toInt() else 0xFF9AA4B0.toInt(), false)
+        val tabHover = drawTabs(ctx, mx, my, accent)
         // afterExtract runs after the screen's deferred pass, so flush the tooltip ourselves
-        if (hover >= 0) {
+        if (tabHover >= 0) {
+            ctx.setTooltipForNextFrame(font, Component.literal(CAT_NAMES[tabHover]), mx, my)
+            ctx.extractDeferredElements(mx, my, 0f)
+        } else if (hover >= 0) {
             val id = ids[shown[hover]]
             val stack = RecipeViewer.stackFor(id)
             ctx.setTooltipForNextFrame(font, tooltipLines(id, stack), stack.tooltipImage, mx, my)
             ctx.extractDeferredElements(mx, my, 0f)
         }
+    }
+
+    private fun gridRight() = px + pw - TAB_W
+
+    private fun tabAt(mx: Double, my: Double): Int {
+        if (mx < gridRight() || mx >= px + pw) return -1
+        val i = ((my - py - HEAD_H) / TAB_H).toInt()
+        return if (my >= py + HEAD_H && i in CAT_NAMES.indices) i else -1
+    }
+
+    // Category tabs down the far right edge; returns the hovered tab or -1
+    private fun drawTabs(ctx: GuiGraphicsExtractor, mx: Int, my: Int, accent: Int): Int {
+        val hov = tabAt(mx.toDouble(), my.toDouble())
+        val x0 = gridRight()
+        for (i in CAT_NAMES.indices) {
+            val y0 = py + HEAD_H + i * TAB_H
+            val sel = i == selCat
+            ctx.fill(x0, y0, px + pw, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else if (i == hov) 0x40FFFFFF else 0x30000000)
+            if (sel) ctx.fill(px + pw - 2, y0, px + pw, y0 + TAB_H - 1, accent)
+            fishmod.features.ItemRarityHotbar.suppress = true
+            try { ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[i]), x0 + 1, y0 + 1) } finally { fishmod.features.ItemRarityHotbar.suppress = false }
+        }
+        return hov
     }
 
     private val PET_ID = Regex("^([A-Z0-9_]+);([0-5])$")
@@ -286,17 +344,21 @@ object SkyItemList {
         val x = click.x(); val y = click.y()
         if (!inPanel(x, y)) { focused = false; selectAll = false; return false }
         val sx = px + PAD; val sy = py + 6
-        if (x >= sx && x < sx + pw - PAD * 2 && y >= sy && y < sy + SEARCH_H) {
+        if (x >= sx && x < sx + pw - PAD * 2 - TAB_W && y >= sy && y < sy + SEARCH_H) {
             focused = true; selectAll = false
             if (GLFW.btn(click) == 1 && query.isNotEmpty()) { query = ""; if (built) refilter() }
             return true
         }
         focused = false; selectAll = false
         if (!built) return true
-        if (y >= py + ph - FOOT_H && x >= px + pw / 2) {
-            favOnly = !favOnly; refilter(); return true
+        val t = tabAt(x, y)
+        if (t >= 0) {
+            val n = if (t == selCat) 0 else t
+            if (GLFW.btn(click) == 0 && n != selCat) { selCat = n; refilter() }
+            else if (GLFW.btn(click) == 0) { selCat = 0; refilter() }
+            return true
         }
-        if (GLFW.btn(click) == 0 && maxScroll() > 0 && x >= px + pw - 8 && y >= py + HEAD_H && y < py + HEAD_H + rowsVis * CELL) {
+        if (GLFW.btn(click) == 0 && maxScroll() > 0 && x >= gridRight() - 8 && x < gridRight() && y >= py + HEAD_H && y < py + HEAD_H + rowsVis * CELL) {
             sbDrag = true
             sbSet(y)
             return true
