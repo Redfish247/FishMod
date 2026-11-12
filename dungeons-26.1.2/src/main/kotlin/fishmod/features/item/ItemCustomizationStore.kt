@@ -41,6 +41,15 @@ object ItemCustomizationStore {
         trim?.let { remote.armorTrims[uuid] = it }
     }
 
+    // Drops one player's shared customs so a cleared dye/trim/name/model stops showing.
+    @JvmStatic fun clearRemotePlayer(prefix: String) {
+        remote.dyeColors.keys.removeIf { it.startsWith(prefix) }
+        remote.animatedDyes.keys.removeIf { it.startsWith(prefix) }
+        remote.armorTrims.keys.removeIf { it.startsWith(prefix) }
+        remote.itemNames.keys.removeIf { it.startsWith(prefix) }
+        remote.modelIds.keys.removeIf { it.startsWith(prefix) }
+    }
+
     @JvmStatic fun clearRemote() {
         remote.dyeColors.clear(); remote.animatedDyes.clear(); remote.armorTrims.clear()
         remote.itemNames.clear(); remote.modelIds.clear()

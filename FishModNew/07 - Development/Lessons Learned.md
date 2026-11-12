@@ -431,3 +431,6 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 ## 2026-11-11: LagTracker "negative lag -41.35s" (#545)
 - Symptom: auto error report `LagTracker.2 negative lag (wall=300.851 ticks=6844)` from 1.6.382; later builds only clamped the final number, hiding it. Cause: server ping ticks arrive in catch-up bursts after server lag, so the tick count can exceed wall time and refund lag that happened before the run started. Rule: cap tick counters at `elapsedMs / 50` per tick instead of clamping only the end result ([[Technical Gotchas]] §2).
+
+## 2026-11-11: remote item customs never cleared, failed upload never retried (#548)
+- Symptom: after clearing a trim, other players kept seeing it; a failed `/items` POST left items unshared until the next edit. Cause: `ItemCustomizationStore.setRemote` only adds, and `RemoteItems.uploadIfChanged` marks the payload uploaded before the request completes. Rule: any remote-synced store must replace per player on each update, and "last sent" markers must be reset when the send fails. Two instances on a local vanilla server (rcon `item replace ... custom_data={uuid:"x"}`, `.\drive` style window capture) reproduce this in minutes.

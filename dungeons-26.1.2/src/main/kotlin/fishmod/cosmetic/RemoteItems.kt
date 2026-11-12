@@ -32,7 +32,7 @@ object RemoteItems {
     private const val CHECK_TICKS = 100
     private val GSON = Gson()
 
-    private var lastUploaded: String? = null
+    @Volatile private var lastUploaded: String? = null
     private var tick = 0
 
     @JvmStatic
@@ -94,7 +94,7 @@ object RemoteItems {
         if (payload == lastUploaded) return
         if (lastUploaded == null && payload == "[]") { lastUploaded = payload; return }
         lastUploaded = payload
-        HypixelApi.uploadItems(mc.player!!.uuid.toString().replace("-", ""), payload)
+        HypixelApi.uploadItems(mc.player!!.uuid.toString().replace("-", ""), payload) { if (lastUploaded == payload) lastUploaded = null }
         RemoteSync.forceSync()
     }
 
@@ -107,6 +107,7 @@ object RemoteItems {
             val payload = payloads[u]
             val parsed = if (payload.isNullOrEmpty()) emptyMap() else parse(payload)
             if (parsed.isEmpty()) byPlayer.remove(u) else byPlayer[u] = parsed
+            ItemCustomizationStore.clearRemotePlayer("fmr:$u:")
             for ((v, c) in parsed) ItemCustomizationStore.setRemote(synthetic(u, v), c.name, c.model, c.dye, c.animated, c.trim)
         }
     }
