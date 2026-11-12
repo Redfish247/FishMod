@@ -4,6 +4,7 @@ import fishmod.compat.GLFW
 import fishmod.compat.showScreen
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.features.croesus.CroesusPrices
+import fishmod.utils.FishUtil.abbr
 import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.NeuRepo
@@ -211,20 +212,40 @@ object SkyItemList {
         if (hover >= 0) {
             val id = ids[shown[hover]]
             val stack = RecipeViewer.stackFor(id)
-            if (FishSettings.skyItemListClickKey) ctx.setTooltipForNextFrame(font, tooltipWithKey(id, stack), stack.tooltipImage, mx, my)
-            else ctx.setTooltipForNextFrame(font, stack, mx, my)
+            ctx.setTooltipForNextFrame(font, tooltipLines(id, stack), stack.tooltipImage, mx, my)
             ctx.extractDeferredElements(mx, my, 0f)
         }
     }
 
-    // Yellow click key appended under the item's own tooltip (mirrors onClick)
-    private fun tooltipWithKey(id: String, stack: ItemStack): List<Component> {
+    // Item tooltip + price lines, plus the yellow click key (mirrors onClick) when that setting is on
+    private fun tooltipLines(id: String, stack: ItemStack): List<Component> {
         val lines = ArrayList(Screen.getTooltipFromItem(Minecraft.getInstance(), stack))
+        lines.addAll(priceLines(id))
+        if (!FishSettings.skyItemListClickKey) return lines
         lines.add(Component.empty())
         if (RecipeViewer.recipesFor(id).isNotEmpty()) lines.add(Component.literal("§eLeft Click: View Recipe"))
         lines.add(Component.literal(if (favs.contains(id)) "§eRight Click: Remove Favorite" else "§eRight Click: Add Favorite"))
         lines.add(Component.literal(if (onBazaar(id)) "§eShift-Left Click: Open in Bazaar" else "§eShift-Left Click: Open in Auction House"))
         return lines
+    }
+
+    // The list's icon stacks carry no Skyblock id, so the normal price tooltip cannot find them: build the price lines from the list id
+    private fun priceLines(id: String): List<Component> {
+        if (!FishSettings.itemTooltipPrices) return emptyList()
+        val out = ArrayList<Component>(4)
+        val key = bazaarKey(id)
+        CroesusPrices.bazaarPrice(key, true)?.takeIf { it > 0 }?.let { out.add(Component.literal("§eBazaar Sell Offer: §6${abbr(it)}")) }
+        CroesusPrices.bazaarPrice(key, false)?.takeIf { it > 0 }?.let { out.add(Component.literal("§eBazaar Insta Sell: §6${abbr(it)}")) }
+        val avg = CroesusPrices.threeDayAvg(id)
+        if (avg > 0.0) out.add(Component.literal("§e3 Day Avg: §6${abbr(avg)}"))
+        val low = CroesusPrices.currentLowBin(id)
+        if (low > 0.0) out.add(Component.literal("§eCurrent Low BIN: §6${abbr(low)}"))
+        if (FishSettings.itemTooltipNpcSell) {
+            val npc = fishmod.utils.networth.ItemsDb.npcSellPriceFor(id)
+            if (npc > 0.0) out.add(Component.literal("§eNPC Sell: §6${abbr(npc)}"))
+        }
+        if (out.isNotEmpty()) out.add(0, Component.empty())
+        return out
     }
 
     private fun bazaarKey(id: String): String {
