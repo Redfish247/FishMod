@@ -215,8 +215,9 @@ object HotspotFinder {
                     k.label = Component.literal("§6§lHotspot §f${k.perk} §7${d}m")
                 }
                 val c = capped(p, k.x, k.y, k.z, d)
-                FishDraw.gizmoBox(AABB(c[0] - 0.5, c[1] - 1.0, c[2] - 0.5, c[0] + 0.5, c[1] + 1.0, c[2] + 0.5), fill, color, true)
-                FishDraw.gizmoText(k.label as Component, Vec3(c[0], c[1] + 1.6, c[2]), 1.5f, -0x1, true)
+                // Detector waypoints are depth-tested (no x-ray); only the radar guess shows through walls
+                FishDraw.gizmoBox(AABB(c[0] - 0.5, c[1] - 1.0, c[2] - 0.5, c[0] + 0.5, c[1] + 1.0, c[2] + 0.5), fill, color, false)
+                FishDraw.gizmoText(k.label as Component, Vec3(c[0], c[1] + 1.6, c[2]), 1.5f, -0x1, false)
             }
             if (hasGuess) {
                 val d = HotspotMatch.distance(p.x, p.y, p.z, gx, gy, gz)
