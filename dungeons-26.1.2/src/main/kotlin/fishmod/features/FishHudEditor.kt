@@ -808,8 +808,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         val dx = doneX().toFloat()
         val dHov = inRect(mouseX, mouseY, doneX(), btnY(), BTN_W, BTN_H)
-        UiRecorder.fillPillBar(dx, by, bw, bh, if (dHov) ACCENT_HOVER else ACCENT)
-        centerText("Done", dx + bw / 2f, ty, ts, ON_ACCENT)
+        // Dark pill, accent ring, white text: readable on any accent colour
+        UiRecorder.roundedRectRing(dx, by, bw, bh, bh / 2f, 1.5f, if (dHov) 0xF2231A1D.toInt() else 0xE614181D.toInt(), if (dHov) ACCENT_HOVER else ACCENT)
+        centerText("Done", dx + bw / 2f, ty, ts, 0xFFFFFFFF.toInt())
 
         val rx = resetX().toFloat()
         val rHov = inRect(mouseX, mouseY, resetX(), btnY(), BTN_W, BTN_H)
