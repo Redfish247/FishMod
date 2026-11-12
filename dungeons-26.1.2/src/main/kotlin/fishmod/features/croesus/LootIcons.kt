@@ -158,6 +158,8 @@ object LootIcons {
     private fun fallback(id: String): ItemStack? = when {
         id.startsWith("SHARD_") || id.endsWith("_SHARD") -> ItemStack(Items.PRISMARINE_SHARD)
         id.startsWith("DYE_") || id.endsWith("_DYE") -> ItemStack(CI.MAGENTA_DYE)
+        // Essences aren't in the Hypixel items DB; the NEU repo has them with their skull textures
+        id.startsWith("ESSENCE_") && fishmod.utils.data.NeuRepo.get(id) != null -> fishmod.features.item.RecipeViewer.stackFor(id).copy()
         else -> null
     }
 
