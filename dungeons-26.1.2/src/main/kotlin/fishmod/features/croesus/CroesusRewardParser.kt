@@ -15,7 +15,7 @@ object CroesusRewardParser {
     private val ITEM_REPLACEMENTS: MutableMap<String, String> = HashMap()
     private val BOOK_PATTERN: Pattern = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)")
     private val PET_PATTERN: Pattern = Pattern.compile("\\[Lvl \\d+\\]\\s*(?:§([0-9a-f]))?([\\w' §0-9a-fk-or]+)")
-    @JvmField val TRAILING_QTY = Regex("\s+x[\d,]+$")
+    @JvmField val TRAILING_QTY = Regex("""\s+x[\d,]+$""")
     private val ESSENCE_PATTERN: Pattern = Pattern.compile("^(\\w+) Essence x(\\d+)$")
 
     init {
