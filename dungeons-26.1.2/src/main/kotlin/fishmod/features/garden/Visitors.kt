@@ -214,9 +214,10 @@ object Visitors {
     private class Hit(val x0: Int, val y0: Int, val x1: Int, val y1: Int, val name: String, val amount: Int)
     private var hits: List<Hit> = emptyList()
 
+    // Shown in the Bazaar and in the visitor's own menu (#562)
     private fun isBazaar(screen: AbstractContainerScreen<*>): Boolean {
         val t = Garden.strip(screen.title.string)
-        return t.contains("Bazaar") || t.contains("➜")
+        return t.contains("Bazaar") || t.contains("➜") || isVisitorMenu()
     }
 
     @JvmStatic
