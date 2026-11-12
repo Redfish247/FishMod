@@ -1,3 +1,26 @@
+FishMod Changelog - 2026-11-12 (run 2)
+==================================
+Fixed:
+- Wither Dragons (M7): when the server re-adds a dragon that is still alive (for example after a chunk reload), the mod now keeps tracking it instead of losing it and sending an error report.
+- Stray ender dragon entities that match no pit no longer produce error reports.
+Reported bugs fixed (from fishmod.dev):
+- #569 DragonCheck.2 ender dragon spawned with no spawning dragon matching
+- #568 DragonCheck.1 dragon spawn particle at unknown spot (already fixed in an earlier build, now marked for testing)
+Known issues (not fixed yet):
+- #533 the Secret Hunters leaderboard stops at 13 secrets. The website caps the score; it needs a website update (wrangler deploy by Eli), not a mod update.
+- #459 players far from spawn appear stuck or glitching. No repro; needs a video or a /fm debug report.
+Test in game:
+1. M7 Wither Dragons: play a run; dragons are tracked from spawn to death with no error-report toast.
+Run notes:
+- Start commit e2e04a9a (tree clean). Fix commit d22af24c. Built 26.1.2 + 26.2 as 1.7.92, both OK (26.3 not built). Jar NOT copied: Skyblock game was running (check-game-closed exit 1). Modrinth path "Skyblock 1.21.8\mods" does not exist on this machine. Jar is at dungeons-26.2/build/libs/FishModDungeons-1.7.92-26.2.jar. Not tested in game.
+- #569 dungeons-26.1.2 .../dragons/DragonCheck.kt dragonSpawn: an ALIVE dragon whose pit box contains the new entity position now gets entityId = new id and entity re-resolved; otherwise only a debug-mode log line (removed the FishDiag.fail). Reports came from mod 1.6.382.
+- #568 already fixed in 62438956 (in-pit spawn bursts); reports were from 1.6.382. Moved to Testing.
+- Other open Bug cards (24) were already in Testing from earlier runs, not re-tested: #567 #565 #561 #562 #563 #548 #553 #560 #547 #549 #532 #534 #537 #530 #566 #502 #510 #525 #526 #513 #520 #521 #533 #459.
+- #533 and #459 not fixable from the mod (website cap / no repro); #533 worker change needs a wrangler deploy by Eli.
+- Skipped: full source sweep, nothing new since the last run apart from the dragon cards.
+- Board: #568 and #569 moved to Testing (updated 2). Nothing set to Done.
+- Notes for Obsidian: auto error reports from old mod versions (1.6.x) keep arriving as new Bug cards; check the version line before debugging. Dragon pit boxes (WitherDragon.box) are the way to match a re-added entity.
+
 FishMod Changelog - 2026-11-12
 ==================================
 Fixed:
