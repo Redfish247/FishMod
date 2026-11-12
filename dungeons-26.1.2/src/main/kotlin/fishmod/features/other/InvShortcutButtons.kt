@@ -10,6 +10,7 @@ import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.InvButtonSettings
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.Identifier
@@ -76,6 +77,7 @@ object InvShortcutButtons {
     // edit/add pills sit just under the inventory's bottom-right corner
     private val EDIT = intArrayOf(INV_W - 34, INV_H + 2, 34, 11)
     private val ADD = intArrayOf(INV_W - 72, INV_H + 2, 36, 11)
+    private val HELP = intArrayOf(INV_W - 86, INV_H + 2, 12, 11)
 
     private fun load() {
         if (InvButtonSettings.buttonsJson == loadedJson) return
@@ -273,8 +275,12 @@ object InvShortcutButtons {
             guideX?.let { context.fill(it, -400, it + 1, 600, GUIDE) }
             guideY?.let { context.fill(-400, it, 800, it + 1, GUIDE) }
             val font = Minecraft.getInstance().font
-            context.text(font, "Drag to move, right-click to edit (or with an item to set icon), Alt = no snap", -40, INV_H + 16, 0xFFFFFF55.toInt(), true)
             pill(context, ADD, "+ Add", false, mouseX, mouseY)
+            pill(context, HELP, "?", false, mouseX, mouseY)
+            if (inside(mouseX.toDouble(), mouseY.toDouble(), HELP)) {
+                val pose = context.pose()
+                context.setTooltipForNextFrame(font, Component.literal("Drag to move, right-click to edit (or with an item to set icon), Alt = no snap"), mouseX + pose.m20().toInt(), mouseY + pose.m21().toInt())
+            }
         }
         if (editMode) pill(context, EDIT, "Done", true, mouseX, mouseY)
         for (b in buttons) {
