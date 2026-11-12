@@ -15,9 +15,18 @@ object ItemValue {
         0.0
     }
 
+    // Pets carry their data as a petInfo JSON string; PetWorth prices level, tier, held item and skin
+    private fun petValue(stack: ItemStack): Double {
+        val raw = stack.fishmodCustomDataTag()?.getString("petInfo")?.orElse("") ?: return 0.0
+        if (raw.isEmpty()) return 0.0
+        val o = com.google.gson.JsonParser.parseString(raw).asJsonObject
+        return fishmod.pv.networth.PetWorth.value(o, true)
+    }
+
     private fun estimateInner(stack: ItemStack): Double {
         if (stack.isEmpty) return 0.0
         val id = ItemTools.getId(stack) ?: return 0.0
+        if (id == "PET") return petValue(stack)
         val mods = ModifierValue.calc(stack)
         FishDiag.check(!mods.isNaN() && mods >= 0.0, "ItemValue.2") { "modifier value $mods for $id" }
         val tag = stack.fishmodCustomDataTag()

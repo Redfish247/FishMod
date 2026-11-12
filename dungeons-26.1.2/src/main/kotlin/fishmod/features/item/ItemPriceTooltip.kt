@@ -61,6 +61,12 @@ object ItemPriceTooltip {
                     built.add(Component.literal("$each$stackPart"))
                 }
 
+                // Pets are valued per pet (level, held item, skin); the shared "PET" id has no market price of its own
+                if (id == "PET") {
+                    cachedStack = stack; cachedAt = now; cachedLines = built; lines.addAll(built)
+                    return@ItemTooltipCallback
+                }
+
                 val avg = CroesusPrices.threeDayAvg(id)
                 FishDiag.check(!avg.isNaN(), "ItemPriceTooltip.4") { "threeDayAvg NaN for $id" }
                 if (avg > 0.0) built.add(Component.literal("§e3 Day Avg: §6${abbr(avg)}"))

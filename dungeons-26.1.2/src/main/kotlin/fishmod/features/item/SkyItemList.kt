@@ -216,11 +216,21 @@ object SkyItemList {
         }
     }
 
+    private val PET_ID = Regex("^([A-Z0-9_]+);([0-5])$")
+
     // Item tooltip + price lines, plus the yellow click key (mirrors onClick) when that setting is on
     private fun tooltipLines(id: String, stack: ItemStack): List<Component> {
         // The list's icon stacks carry no Skyblock id; tag a copy so the normal price lines (Value, 3 Day Avg, Low BIN, NPC Sell) are added to it
         val tagged = stack.copy()
-        tagged.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(net.minecraft.nbt.CompoundTag().also { it.putString("id", id) }))
+        val petTier = PET_ID.matchEntire(id)?.takeIf { NeuRepo.get(id)?.get("displayname")?.asString?.contains("[Lvl") == true }
+        val tag = net.minecraft.nbt.CompoundTag()
+        if (petTier != null) {
+            // List pets are shown at max level: price them as a PET stack with enough xp
+            val tier = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC")[petTier.groupValues[2].toInt()]
+            tag.putString("id", "PET")
+            tag.putString("petInfo", "{\"type\":\"${petTier.groupValues[1]}\",\"tier\":\"$tier\",\"exp\":1.0E9}")
+        } else tag.putString("id", id)
+        tagged.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(tag))
         val lines = ArrayList(Screen.getTooltipFromItem(Minecraft.getInstance(), tagged))
         lines.addAll(bazaarLines(id))
         if (!FishSettings.skyItemListClickKey) return lines
