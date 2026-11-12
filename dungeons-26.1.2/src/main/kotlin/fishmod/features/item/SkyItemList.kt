@@ -59,7 +59,7 @@ object SkyItemList {
         net.minecraft.world.item.Items.NETHER_STAR,
         net.minecraft.world.item.Items.ARMOR_STAND,
         net.minecraft.world.item.Items.PAINTING,
-        net.minecraft.world.item.Items.RED_DYE,
+        net.minecraft.world.item.Items.INK_SAC,
         net.minecraft.world.item.Items.PRISMARINE_SHARD,
         net.minecraft.world.item.Items.TROPICAL_FISH,
         net.minecraft.world.item.Items.FISHING_ROD,
