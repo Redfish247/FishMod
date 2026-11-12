@@ -728,7 +728,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     val ts = 6.5f
                     val ty = if (y - 2 - 10f * k >= 1f) (y - 2) / k - 10f else (y + h + 2) / k
                     val tx = (x - 1) / k
-                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, ACCENT)
+                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, 0xE6101C20.toInt())
                     UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, 0xFFFFFFFF.toInt())
                     if (e.setScale() != null && !e.locked()) {
                         UiRecorder.roundedRectRing(
