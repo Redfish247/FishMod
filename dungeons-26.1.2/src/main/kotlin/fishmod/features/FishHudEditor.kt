@@ -294,6 +294,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         private val CONTROLS = listOf(
             "Hover left edge" to "Pick HUDs",
+            "Shift/Ctrl+click" to "Add/remove HUDs",
             "Drag" to "Move",
             "Scroll / corner" to "Resize",
             "Tab" to "Swap selected",
@@ -350,7 +351,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val pickW = UiRecorder.textWidth("pick all", 5.5f)
             var w = 8f + UiRecorder.textWidth("Pick HUDs to move", 7.5f) + 1f
             w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to pick it all", 6f))
-            w = Math.max(w, 8f + UiRecorder.textWidth("Shift-click to add more", 6f))
+            w = Math.max(w, 8f + UiRecorder.textWidth("Shift/Ctrl-click to add more", 6f))
             for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 6.5f))
             for (g in GROUPS.map { it.first } + listOf("Other", "No HUDs match")) {
                 w = Math.max(w, 8f + UiRecorder.textWidth(g.uppercase(), 6f) + 1f + 6f + pickW)
@@ -445,9 +446,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         selected = items.first()
     }
 
+    // Shift or Ctrl held = add/remove from the pick instead of replacing it
     private fun shiftDown(): Boolean {
         val w = Minecraft.getInstance().window
-        return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT)
+        return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT) ||
+            fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_CONTROL) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_CONTROL)
     }
 
     // Examples are rebuilt at most every 200ms (hit-tests ask for sizes many times a frame)
@@ -779,7 +782,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ScreenTheme.nTextFieldContent(search, searchFocused, 6, SEARCH_Y, sw, SEARCH_H, 6.5f)
         }
         UiRecorder.text("Click a category to pick it all", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
-        UiRecorder.text("Shift-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
+        UiRecorder.text("Shift/Ctrl-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
 
         UiRecorder.pushScissor(0f, SIDE_TOP.toFloat(), sideW - 1f, sh - SIDE_TOP - 5f)
         val hovRow = if (mouseX < sideW) rowAt(mouseY) else null

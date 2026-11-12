@@ -49,8 +49,8 @@ object ChatRuleHandler {
             { ChatRuleStore.isMasterEnabled() }
         )
         HudPreview.register("Chat Alerts") {
-            // The user's first title rule text; no title rules = nothing ever shows
-            val t = ChatRuleStore.rules().firstOrNull { it.enabled && it.titleMessage.isNotBlank() }?.titleMessage ?: return@register null
+            // First title rule text, else a placeholder so the editor shows a real HUD (#547)
+            val t = ChatRuleStore.rules().firstOrNull { it.enabled && it.titleMessage.isNotBlank() }?.titleMessage ?: "Chat Alert"
             HudExample(HUD_WIDTH, HudPreview.textHeight(1, 11)) { ctx -> drawAlerts(ctx, listOf(t)) }
         }
     }
