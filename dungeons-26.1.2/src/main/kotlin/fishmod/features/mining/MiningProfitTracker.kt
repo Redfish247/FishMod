@@ -69,6 +69,7 @@ object MiningProfitTracker {
 
     fun init() {
         load()
+        ProfitTrackerKit.registerEdit("miningtracker", "mining profit", Cat.MINING, Cat.entries.toTypedArray(), { data.session.items.keys + data.total.items.keys }) { c, n, v -> add(c, n, v) }
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
         FishEvents.worldChange.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
