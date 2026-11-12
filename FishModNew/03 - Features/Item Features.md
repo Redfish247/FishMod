@@ -74,3 +74,9 @@ see [[General & QoL Features]].
 - Only rewrites when the text has an operator or bracket. Plain numbers (`64`, `1.5k`, `-5`) and invalid text (`9*`, `abc`, divide by zero) are sent raw, so Hypixel's own parsing still applies.
 - Hook: `AbstractSignEditScreenMixin.removed()` HEAD calls `SignCalculator.beforeSend`, which edits the `messages` array through `AbstractSignEditScreenAccessor`; skipped when `AuctionPriceAutofill.suppressSignSend` cancels. The Auto BIN Price replacement screen (`AuctionPriceScreen`) has its own field and is not covered.
 - Preview position (`w/2 + 52, y 72`) is a guess at the first sign line; adjust after Eli sees it. Status: not built, untested.
+
+## See Others' Items (RemoteItems) behaviour (2026-11-11, fishmod.dev #548)
+- Needs `remoteItemsEnabled` ON (default OFF) on BOTH the sharer and the viewer; the toggle also controls uploading. Customs are keyed by vanilla item type, not item uuid.
+- Two-client test on a local vanilla server (real accounts, live fishmod.dev): dye, name, trim and trim+dye sync to the other client, including live edits from the Item Customize screen. A trim on the worn armor showed on the viewer even when the viewer's copy of the stack had no uuid.
+- Fixed: clearing a trim/dye/name/model never reached viewers (the remote store only ever added entries); `acceptItems` now drops a player's synthetic entries before re-adding. Upload now retries after a network error/5xx/429 (`lastUploaded` was set before the POST, so one failed upload meant nothing was shared until the next change).
+- Not reproduced: the Hypixel-only "friend can't see my trim" case. If it recurs, first check both players have the toggle on and run the same jar.
