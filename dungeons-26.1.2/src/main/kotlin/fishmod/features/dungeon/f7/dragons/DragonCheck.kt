@@ -72,12 +72,13 @@ object DragonCheck {
             else if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: ${late.name} not on scoreboard")
             return
         }
-        WitherDragon.real.firstOrNull { it.state == WitherDragonState.ALIVE && it.entity == null && it.entityId == p.id }
-            ?.let { it.entityId = p.id }
-            ?: if (WitherDragon.real.all { it.state == WitherDragonState.DEAD }) {
-                // Nothing spawning or alive: stray/re-tracked dragon entity, not a tracking fault.
-                if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: no dragon expected at $v") else Unit
-            } else FishDiag.fail("DragonCheck.2", "ender dragon ${p.id} spawned at $v with no spawning dragon matching (states=${WitherDragon.real.map { it.state }})")
+        // Alive dragon re-added by the server (chunk reload, new id) inside its own pit: re-track it.
+        val alive = WitherDragon.real.firstOrNull {
+            it.state == WitherDragonState.ALIVE && v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
+        }
+        if (alive != null) { alive.entityId = p.id; alive.entity = null; return }
+        // Stray dragon entity matching no pit: not a tracking fault, log only (#569).
+        if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: no dragon expected at $v (states=${WitherDragon.real.map { it.state }})")
     }
 
     fun dragonUpdate(p: ClientboundSetEntityDataPacket, tick: Long) {
