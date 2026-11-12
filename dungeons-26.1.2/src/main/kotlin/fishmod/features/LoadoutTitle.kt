@@ -27,16 +27,10 @@ object LoadoutTitle {
         val title = Component.literal(m.group(1))
         val subtitle = Component.literal("§7Loadout equipped")
 
-        val mc = Minecraft.getInstance()
-        mc.execute {
-            try {
-                val hud = mc.hud
-                hud.setTimes(0, 25, 8)
-                hud.setTitle(title)
-                hud.setSubtitle(subtitle)
-            } catch (t: Throwable) {
-                FishDiag.fail("LoadoutTitle.1", "loadout title display failed for '${title.string}'", t)
-            }
+        try {
+            fishmod.utils.FishUtil.forceTitle(title, subtitle, 1250)
+        } catch (t: Throwable) {
+            FishDiag.fail("LoadoutTitle.1", "loadout title display failed for '${title.string}'", t)
         }
         return false
     }

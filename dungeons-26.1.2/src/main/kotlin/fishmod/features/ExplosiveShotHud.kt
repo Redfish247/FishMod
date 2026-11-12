@@ -64,12 +64,7 @@ object ExplosiveShotHud {
             val subtitle = Component.literal(
                 "§7Explosive Shot §8• §f" + enemies + (if (enemies == 1) " enemy" else " enemies")
             )
-            mc.execute {
-                val hud = mc.hud
-                hud.setTimes(0, 25, 8)
-                hud.setTitle(title)
-                hud.setSubtitle(subtitle)
-            }
+            fishmod.utils.FishUtil.forceTitle(title, subtitle, 1250)
         }
 
         if (FishSettings.explosiveShotAnnounceParty && DungeonRole.isClass(DungeonRole.ARCHER)) {
