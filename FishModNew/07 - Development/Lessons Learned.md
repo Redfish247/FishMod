@@ -434,3 +434,10 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 ## 2026-11-11: remote item customs never cleared, failed upload never retried (#548)
 - Symptom: after clearing a trim, other players kept seeing it; a failed `/items` POST left items unshared until the next edit. Cause: `ItemCustomizationStore.setRemote` only adds, and `RemoteItems.uploadIfChanged` marks the payload uploaded before the request completes. Rule: any remote-synced store must replace per player on each update, and "last sent" markers must be reset when the send fails. Two instances on a local vanilla server (rcon `item replace ... custom_data={uuid:"x"}`, `.\drive` style window capture) reproduce this in minutes.
+
+## 2026-11-11: five NoClassDefFoundError reports from one damaged jar (#554-#558)
+- Symptom: five auto reports (`FishModInit.1/13/14/103`, `Init.Config`) from one 1.7.73-26.1.2 startup, all `fishmod/shaded/practicalconfig/...` missing. The shipped 1.7.74 jar was fine (jar-in-jar declared and present), so the cause was the install (corrupt or swapped jar), not the build. Rule: a missing bundled library fails every `init()` separately and floods the board; `FishModInit.bundledLibsOk()` now probes it first, files ONE report with jar size + sha256 and stops init. Compare that hash to the real jar before assuming a code bug.
+
+## 2026-11-11: closed cards before reading the whole board batch
+- I called #548 and #533 "no change needed" and left cards at Planned although they were fixed in 1.7.74/1.7.73. Rule: when a card's fix is already in `git log --grep "#N"`, move it to Testing on fishmod.dev (`POST /dashboard/api/roadmap-status` with `{updates:[{id,status}]}` and the `ROADMAP_SECRET` bearer) in the same session; only Eli sets Done.
+- I also told Eli "no code change" for the install-error cards when a guard was possible. Rule: for an unreproducible report, still add the diagnostic (one report with the evidence needed to tell causes apart) instead of closing it.

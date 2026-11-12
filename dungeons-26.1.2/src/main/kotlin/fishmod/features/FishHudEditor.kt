@@ -619,9 +619,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     // Frozen ones too, for right-click unhide
     private fun anyBoxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { inBox(it, mx, my) }
 
-    private fun eyeX(e: HudEntry) = e.getX().asInt + sw(e) - EYE_W
-    private fun eyeY(e: HudEntry): Int { val y = e.getY().asInt; return if (y - EYE_H - 1 >= 0) y - EYE_H - 1 else y + sh(e) + 1 }
-
+    // Beside the box (right, or left near the screen edge) so the name tag above/below and the resize grip never cover it
+    private fun eyeX(e: HudEntry): Int { val r = e.getX().asInt + sw(e) + 3; return if (r + EYE_W <= this.width) r else e.getX().asInt - EYE_W - 3 }
+    private fun eyeY(e: HudEntry) = e.getY().asInt
     // The eye shows on the hovered, selected and hidden HUDs
     private fun eyeShown(e: HudEntry, hover: HudEntry?) = frozen(e) || e === selected || e === hover
 
@@ -729,7 +729,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     val ty = if (y - 2 - 10f * k >= 1f) (y - 2) / k - 10f else (y + h + 2) / k
                     val tx = (x - 1) / k
                     UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, ACCENT)
-                    UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, ON_ACCENT)
+                    UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, 0xFFFFFFFF.toInt())
                     if (e.setScale() != null && !e.locked()) {
                         UiRecorder.roundedRectRing(
                             (x + w - GRIP) / k, (y + h - GRIP) / k, GRIP * 2f / k, GRIP * 2f / k,
