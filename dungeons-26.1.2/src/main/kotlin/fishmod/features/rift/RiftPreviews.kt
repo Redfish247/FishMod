@@ -33,7 +33,6 @@ object RiftPreviews {
             P.box(c, x - 10, y - 24, 20, 20, S.riftStemColor)
         }
         P.register("Crux Helper") { c, x, y ->
-            P.title(c, x, y, "§eLook away!")
             P.box(c, x - 14, y - 10, 28, 40, 0xFFAA55FF.toInt())
         }
         P.register("Fleespook Tracker") { c, x, y ->
@@ -41,7 +40,6 @@ object RiftPreviews {
             P.box(c, x + 62, y - 36, 18, 18, S.riftFleespookColor)
         }
         P.register("Bacte Helper") { c, x, y ->
-            P.title(c, x, y, "§a§lBacte!", "§7Bacte spawned")
             P.line(c, x - 70, y + 40, x + 40, y + 10, S.riftBacteColor)
             P.box(c, x + 34, y + 2, 16, 16, 0xFF55FF55.toInt())
         }
@@ -54,20 +52,18 @@ object RiftPreviews {
                 P.box(c, x - 54 + i * 20, y - 6, 16, 16, if (broken) 0xFF55FF55.toInt() else S.riftEffigyColor)
             }
         }
-        P.register("Colosseum Kill Zone Warning") { c, x, y -> P.title(c, x, y, "§c§lGet back in the arena!") }
+        P.register("Colosseum Kill Zone Warning") { c, x, y -> P.box(c, x - 40, y, 80, 30, 0xFFFF5555.toInt()) }
         P.register("Snake Helper") { c, x, y ->
             val cols = intArrayOf(S.riftSnakeTailColor, S.riftSnakeColor, S.riftSnakeColor, S.riftSnakeColor, S.riftSnakeHeadColor)
             for ((i, col) in cols.withIndex()) P.box(c, x - 50 + i * 20, y - 8 + (i % 2) * 14, 16, 16, col)
         }
         P.register("Vampire Slayer Helper") { c, x, y ->
-            if (S.riftVampireSteakTitle) P.title(c, x, y, "§c§lSTEAK!")
             P.box(c, x - 14, y - 10, 28, 40, S.riftVampireSteakColor)
             if (S.riftVampireLine) P.line(c, x, y + 80, x, y + 30, S.riftVampireLineColor)
             if (S.riftVampireIchor) P.box(c, x + 40, y + 10, 14, 14, S.riftVampireIchorColor)
             if (S.riftVampireSpring) P.box(c, x - 54, y + 10, 14, 14, S.riftVampireSpringColor)
         }
         P.register("Half-Eaten Cave Hay Warning") { c, x, y ->
-            if (S.riftHayTitle) P.text(c, S.riftHayText.replace('&', '§'), x, y - 50, 3f)
             for (i in 0..2) P.box(c, x - 40 + i * 28, y, 24, 24, S.riftHayColor)
         }
         P.register("Leech Supreme Helper") { c, x, y ->
@@ -75,8 +71,6 @@ object RiftPreviews {
             P.box(c, x - 14, y + 4, 28, 28, S.riftLeechColor)
             P.line(c, x, y + 80, x, y + 32, S.riftLeechColor)
         }
-        P.register("Burger Warning") { c, x, y ->
-            if (S.riftBurgerTitle) P.title(c, x, y, "§cBurgers 3/5", "§7Highlite sells for more with 5/5")
-        }
+        P.register("Burger Warning") { c, x, y -> P.caption(c, x, y, "Warning title shown at its alert spot") }
     }
 }

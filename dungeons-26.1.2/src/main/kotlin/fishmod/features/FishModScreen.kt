@@ -3117,7 +3117,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (!(fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT))) return
         var drawn = false
         for (n in HudPreview.namesFor(name)) if (FishHudEditor.drawPreview(ctx, n)) drawn = true
-        if (!drawn && WorldPreview.draw(ctx, name, this.width, this.height)) drawn = true
+        if (WorldPreview.draw(ctx, name, this.width, this.height)) drawn = true
         if (!drawn) return
         UiRecorder.clear()
         ctx.centeredText(this.font, "§7Preview: $name (release Shift to return)", this.width / 2, 6, 0xFFFFFFFF.toInt())
