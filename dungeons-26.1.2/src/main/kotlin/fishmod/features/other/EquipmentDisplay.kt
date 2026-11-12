@@ -111,8 +111,21 @@ object EquipmentDisplay {
         return true
     }
 
+    // Hovered slot's tooltip is drawn by flushTooltip after the mixin pops its translate, so it is placed with screen coordinates only
+    private var tipStack: net.minecraft.world.item.ItemStack? = null
+    private var tipX = 0
+    private var tipY = 0
+
+    @JvmStatic
+    fun flushTooltip(ctx: GuiGraphicsExtractor) {
+        val st = tipStack ?: return
+        tipStack = null
+        ctx.setTooltipForNextFrame(Minecraft.getInstance().font, st, tipX, tipY)
+    }
+
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, left: Int, top: Int) {
+        tipStack = null
         ensureLoaded()
         val x = X
         for (i in 0..3) {
@@ -125,8 +138,7 @@ object EquipmentDisplay {
             }
             if (st.isEmpty) continue
             ctx.item(st, x, y)
-            if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16)
-                ctx.setTooltipForNextFrame(Minecraft.getInstance().font, st, mouseX + left, mouseY + top)
+            if (mouseX >= x && mouseX < x + 16 && mouseY >= y && mouseY < y + 16) { tipStack = st; tipX = mouseX + left; tipY = mouseY + top }
         }
         if (cached.all { it == null } && mouseX >= x && mouseX < x + 16 && mouseY >= 8 && mouseY < 8 + 72)
             ctx.text(Minecraft.getInstance().font, "Open /equipment once", x - 40, 8 + 74, 0xffaaaaaa.toInt(), true)
