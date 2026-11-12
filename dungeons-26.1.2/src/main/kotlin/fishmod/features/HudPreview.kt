@@ -27,6 +27,35 @@ object HudPreview {
     @JvmStatic
     fun has(name: String) = makers.containsKey(name)
 
+    // Config feature name -> editor HUD names when they differ or one feature drives several HUDs (shift preview in the config screen)
+    private val ALIASES: Map<String, List<String>> = mapOf(
+        "Charmed Visitor HUD" to listOf("Charmed Visitor"), "Composter HUD" to listOf("Composter"), "Crop Milestone HUD" to listOf("Crop Milestone"),
+        "Jacob's Contest HUD" to listOf("Jacob's Contest"), "Mooshroom Cow Perk HUD" to listOf("Mooshroom Cow Perk"), "Pest Timer HUD" to listOf("Pest Timer"),
+        "Pet HUD" to listOf("Pet"), "Rare Crop Tracker" to listOf("Rare Crops"), "Greenhouse Status" to listOf("Greenhouse"),
+        "Hoe Level Overflow" to listOf("Hoe Level"), "Garden Level Overflow" to listOf("Garden Level"),
+        "Farming Profit Tracker" to listOf("Farming Profit"), "Mining Profit Tracker" to listOf("Mining Profit"),
+        "Mineshaft Pity Display" to listOf("Mineshaft Pity"), "Fossil Excavator Solver" to listOf("Fossil Solver"), "Log Book Stats" to listOf("Log Book"),
+        "Mouse Sensitivity Reducer" to listOf("Sensitivity"), "Puzzle Overlay" to listOf("Puzzles"), "Puzzle Solvers" to listOf("Puzzles"),
+        "Achievements" to listOf("Achievement Popup"),
+        "Crown of Avarice Counter" to listOf("Crown of Avarice"), "Crown of Avarice Tracker" to listOf("Crown of Avarice"),
+        "Diana Tracker" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find"),
+        "Fishing Trackers" to listOf("Fishing Area Tracker", "Fishing Efficiency", "Fishing Profit", "Fishing Sea Creatures", "Barn Fishing Timer", "Fishing Festival"),
+        "Kuudra Chests" to listOf("Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Profit"),
+        "Kuudra Boss" to listOf("Kuudra Health", "Kuudra Backbone"), "Supply Helper" to listOf("Kuudra Supplies"), "Build Helper" to listOf("Kuudra Build"),
+        "Mining Abilities" to listOf("Maniac Miner", "SkyMall", "Pickobulus"),
+        // F7: one feature drives all tick timers / banners (owner of each HUD's settings in the config screen)
+        "Boss Tick Clocks" to listOf("Boss Tick Clock", "Storm Kill Time", "Py Tick Timer", "Necron LB Timer", "Necron Drag Timer", "Necron Drop Lava/Platform",
+            "LB Release Timer", "Storm Crush Banner", "Pillar Blast Timer", "Terminals Open In"),
+        "Crystal Respawn" to listOf("Crystal Respawn", "Crystal Not Placed"),
+    )
+
+    /** HUD editor names the config screen should preview for a feature row; empty when none. */
+    @JvmStatic
+    fun namesFor(feature: String): List<String> {
+        if (makers.containsKey(feature)) return listOf(feature)
+        return (ALIASES[feature] ?: return emptyList()).filter { makers.containsKey(it) }
+    }
+
     @JvmStatic
     fun example(name: String): HudExample? {
         val m = makers[name] ?: return null
