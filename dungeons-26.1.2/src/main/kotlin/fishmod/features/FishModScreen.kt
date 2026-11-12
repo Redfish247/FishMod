@@ -3099,7 +3099,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         UiRecorder.text(label, (x0 + 10).toFloat(), (top + (ROW_H - 8) / 2).toFloat(), NVG_BASE_TEXT_SIZE, if (on) TEXT_COLOR else SUBTEXT_COLOR)
         if (hover) {
-            val canPreview = HudPreview.namesFor(f.name).isNotEmpty()
+            val canPreview = HudPreview.namesFor(f.name).isNotEmpty() || WorldPreview.has(f.name)
             val d = descFor(f.name).let { if (canPreview) (if (it.isEmpty()) "Hold Shift to preview" else "$it  -  Hold Shift to preview") else it }
             if (d.isNotEmpty()) { hoverDesc = d; hoverDescX = x1 + 8; hoverDescY = top }
             if (canPreview) hoverPreview = f.name
@@ -3117,6 +3117,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (!(fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT))) return
         var drawn = false
         for (n in HudPreview.namesFor(name)) if (FishHudEditor.drawPreview(ctx, n)) drawn = true
+        if (!drawn && WorldPreview.draw(ctx, name, this.width, this.height)) drawn = true
         if (!drawn) return
         UiRecorder.clear()
         ctx.centeredText(this.font, "§7Preview: $name (release Shift to return)", this.width / 2, 6, 0xFFFFFFFF.toInt())
