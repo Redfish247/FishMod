@@ -12,6 +12,7 @@ object RiftMenu {
 
     fun column(): Column {
         val col = Column("Rift")
+        RiftPreviews.register()
 
         val tag = Feature("Rift Nametag Stats", S::class.java, "riftNametag")
         tag.sub.add(ToggleSetting("Vampire Slayer", "Vampire level + XP", S::class.java, "riftNametagVampire"))
