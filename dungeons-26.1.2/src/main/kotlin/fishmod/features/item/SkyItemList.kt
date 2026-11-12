@@ -28,8 +28,10 @@ object SkyItemList {
     private const val FOOT_H = 2
     private const val GAP = 8
     private const val SEARCH_H = 14
-    private const val TAB_W = 20
-    private const val TAB_H = 20
+    private const val TAB_COLS = 2
+    private const val TAB_CELL = 18
+    private const val TAB_W = TAB_COLS * TAB_CELL
+    private const val TAB_H = TAB_CELL
 
     private var ids: Array<String> = emptyArray()
     private var hay: Array<String> = emptyArray()
@@ -38,35 +40,79 @@ object SkyItemList {
     private var cat: IntArray = IntArray(0)
     private var selCat = 0
 
-    private val CAT_NAMES = arrayOf("All", "Weapons", "Armor", "Accessories", "Tools", "Pets", "Books", "Other", "Favorites")
-    // Tab order top to bottom (Favorites first); values index CAT_NAMES
-    private val TAB_ORDER = intArrayOf(8, 0, 1, 2, 3, 4, 5, 6, 7)
+    private val CAT_NAMES = arrayOf(
+        "All", "Weapons", "Armor", "Accessories", "Tools", "Pets", "Books", "Other", "Favorites",
+        "Minions", "Cosmetics", "Dyes", "Shards", "Trophy Fish & Frogs", "Fishing", "Reforges", "Gems & Ores",
+        "Garden", "Dungeon", "Consumables", "NPCs", "Materials"
+    )
+    // Tab order top to bottom, two columns (Favorites first); values index CAT_NAMES
+    private val TAB_ORDER = intArrayOf(8, 0, 1, 2, 3, 4, 14, 5, 6, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 7)
     private val CAT_ICONS: Array<net.minecraft.world.item.Item> = arrayOf(
-        net.minecraft.world.item.Items.BOOKSHELF, net.minecraft.world.item.Items.DIAMOND_SWORD, net.minecraft.world.item.Items.DIAMOND_CHESTPLATE,
-        net.minecraft.world.item.Items.ENDER_EYE, net.minecraft.world.item.Items.DIAMOND_PICKAXE, net.minecraft.world.item.Items.BONE,
-        net.minecraft.world.item.Items.ENCHANTED_BOOK, net.minecraft.world.item.Items.CHEST, net.minecraft.world.item.Items.NETHER_STAR
+        net.minecraft.world.item.Items.BOOKSHELF,
+        net.minecraft.world.item.Items.DIAMOND_SWORD,
+        net.minecraft.world.item.Items.DIAMOND_CHESTPLATE,
+        net.minecraft.world.item.Items.ENDER_EYE,
+        net.minecraft.world.item.Items.DIAMOND_PICKAXE,
+        net.minecraft.world.item.Items.BONE,
+        net.minecraft.world.item.Items.ENCHANTED_BOOK,
+        net.minecraft.world.item.Items.CHEST,
+        net.minecraft.world.item.Items.NETHER_STAR,
+        net.minecraft.world.item.Items.ARMOR_STAND,
+        net.minecraft.world.item.Items.PAINTING,
+        net.minecraft.world.item.Items.RED_DYE,
+        net.minecraft.world.item.Items.PRISMARINE_SHARD,
+        net.minecraft.world.item.Items.TROPICAL_FISH,
+        net.minecraft.world.item.Items.FISHING_ROD,
+        net.minecraft.world.item.Items.ANVIL,
+        net.minecraft.world.item.Items.EMERALD,
+        net.minecraft.world.item.Items.WHEAT,
+        net.minecraft.world.item.Items.SKELETON_SKULL,
+        net.minecraft.world.item.Items.POTION,
+        net.minecraft.world.item.Items.PLAYER_HEAD,
+        net.minecraft.world.item.Items.IRON_INGOT
     )
 
-    // Category from the item type word after the rarity in the last NEU lore lines ("LEGENDARY DUNGEON SWORD")
+    private val MINION_RE = Regex("_GENERATOR_[0-9]+$")
+
+    // Category from the item type words after the rarity in the last NEU lore lines ("LEGENDARY DUNGEON SWORD"), then id/name hints
     private fun catOf(id: String): Int {
         val o = NeuRepo.get(id) ?: return 7
-        if (o.get("itemid")?.asString == "minecraft:enchanted_book") return 6
+        val itemId = o.get("itemid")?.asString
+        if (itemId == "minecraft:enchanted_book") return 6
         if (PET_ID.matches(id)) return 5
-        val lore = o.getAsJsonArray("lore") ?: return 7
-        for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
+        if (MINION_RE.containsMatchIn(id)) return 9
+        val name = TextStrip.plain(o.get("displayname")?.asString ?: "")
+        if (id.endsWith("_NPC") || name.endsWith("(NPC)")) return 20
+        val lore = o.getAsJsonArray("lore")
+        if (lore != null) for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
             val line = TextStrip.plain(lore[k].asString).trim().uppercase()
             val m = RARITY_RE.find(line) ?: continue
-            val w = line.substring(m.range.last + 1).trim().split(' ').toSet()
+            val kind = line.substring(m.range.last + 1).trim()
+            val w = kind.split(' ').toSet()
             return when {
                 w.any { it == "HELMET" || it == "CHESTPLATE" || it == "LEGGINGS" || it == "BOOTS" } -> 2
-                w.any { it == "ACCESSORY" || it == "HATCESSORY" } -> 3
+                w.any { it == "ACCESSORY" || it == "HATCESSORY" || it == "BELT" || it == "NECKLACE" || it == "CLOAK" || it == "GLOVES" || it == "BRACELET" } -> 3
+                "COSMETIC" in w -> 10
+                "DYE" in w -> 11
+                "SHARD" in w -> 12
+                "TROPHY" in w -> 13
+                kind == "REFORGE STONE" -> 15
                 "PET" in w -> 5
-                w.any { it == "PICKAXE" || it == "AXE" || it == "SHOVEL" || it == "HOE" || it == "ROD" || it == "DRILL" || it == "GAUNTLET" || it == "SHEARS" || it == "FISHING" } -> 4
+                kind == "FISHING ROD" || "BAIT" in w || kind == "ROD PART" || kind == "FISHING NET" -> 14
+                kind == "FARMING TOOL" || "MUTATION" in w || kind == "GARDEN CHIP" || kind == "WATERING CAN" || "VACUUM" in w -> 17
+                w.any { it == "PICKAXE" || it == "AXE" || it == "SHOVEL" || it == "HOE" || it == "DRILL" || it == "GAUNTLET" || it == "SHEARS" || it == "CHISEL" } -> 4
                 w.any { it == "SWORD" || it == "LONGSWORD" || it == "BOW" || it == "SHORTBOW" || it == "WAND" || it == "WEAPON" } -> 1
+                "GEMSTONE" in w || "ORE" in w || kind == "DWARVEN METAL" -> 16
+                kind.startsWith("DUNGEON") -> 18
                 else -> 7
             }
         }
-        return 7
+        return when {
+            itemId == "minecraft:potion" || id.startsWith("POTION_") -> 19
+            name.endsWith(" Shard", true) && itemId != "minecraft:prismarine_shard" -> 12
+            name.startsWith("Enchanted ") || id.startsWith("ENCHANTED_") || id.startsWith("ESSENCE_") -> 21
+            else -> 7
+        }
     }
 
     private val RARITY_RE = Regex("(VERY SPECIAL|UNCOMMON|COMMON|RARE|EPIC|LEGENDARY|MYTHIC|DIVINE|SPECIAL|ULTIMATE|SUPREME)")
@@ -257,8 +303,9 @@ object SkyItemList {
 
     private fun tabAt(mx: Double, my: Double): Int {
         if (mx < gridRight() || mx >= px + pw) return -1
-        val i = ((my - py - HEAD_H) / TAB_H).toInt()
-        return if (my >= py + HEAD_H && i in TAB_ORDER.indices) TAB_ORDER[i] else -1
+        if (my < py + HEAD_H) return -1
+        val slot = ((my - py - HEAD_H) / TAB_H).toInt() * TAB_COLS + ((mx - gridRight()) / TAB_CELL).toInt()
+        return if (slot in TAB_ORDER.indices) TAB_ORDER[slot] else -1
     }
 
     // Category tabs down the far right edge; returns the hovered tab or -1
@@ -266,12 +313,13 @@ object SkyItemList {
         val hov = tabAt(mx.toDouble(), my.toDouble())
         val x0 = gridRight()
         for ((slot, i) in TAB_ORDER.withIndex()) {
-            val y0 = py + HEAD_H + slot * TAB_H
+            val tx = x0 + (slot % TAB_COLS) * TAB_CELL
+            val y0 = py + HEAD_H + (slot / TAB_COLS) * TAB_H
             val sel = i == selCat
-            ctx.fill(x0, y0, px + pw, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else if (i == hov) 0x40FFFFFF else 0x30000000)
-            if (sel) ctx.fill(px + pw - 2, y0, px + pw, y0 + TAB_H - 1, accent)
+            ctx.fill(tx, y0, tx + TAB_CELL - 1, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else if (i == hov) 0x40FFFFFF else 0x30000000)
+            if (sel) ctx.fill(tx, y0 + TAB_H - 2, tx + TAB_CELL - 1, y0 + TAB_H - 1, accent)
             fishmod.features.ItemRarityHotbar.suppress = true
-            try { ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[i]), x0 + 1, y0 + 1) } finally { fishmod.features.ItemRarityHotbar.suppress = false }
+            try { ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[i]), tx + 1, y0 + 1) } finally { fishmod.features.ItemRarityHotbar.suppress = false }
         }
         return hov
     }
