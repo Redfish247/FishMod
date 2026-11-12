@@ -265,6 +265,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Fishing" to listOf("Fishing Sea Creatures", "Fishing Profit", "Fishing Efficiency", "Barn Fishing Timer", "Fishing Festival", "Fishing Area Tracker",
                 "Fishing Creature Alert", "Fishing Rare Drop Alert", "Fishing Hotspot Alert", "Fishing Wormhole Alert", "Fishing Trophy Alert", "Fishing Deployable Alert", "Fishing Bait Alert"),
             "Rift" to listOf("Rift Guide"),
+            "Alert Titles" to AlertTitles.NAMES,
             "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
         )
 
