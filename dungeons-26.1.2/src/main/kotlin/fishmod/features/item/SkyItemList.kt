@@ -551,7 +551,7 @@ object SkyItemList {
             val kb = Minecraft.getInstance().keyboardHandler
             when (input.key()) {
                 GLFW.GLFW_KEY_V -> {
-                    val clip = kb.clipboard?.filter { !Character.isISOControl(it) }.orEmpty()
+                    val clip = kb.clipboard.filter { !Character.isISOControl(it) }
                     if (selectAll) query = ""
                     selectAll = false
                     query = (query + clip).take(40); if (built) refilter()
