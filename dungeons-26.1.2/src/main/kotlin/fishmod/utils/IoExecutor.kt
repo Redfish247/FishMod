@@ -17,8 +17,8 @@ object IoExecutor : Executor {
         ClientLifecycleEvents.CLIENT_STOPPING.register {
             executor.shutdown()
             try {
-                val done = executor.awaitTermination(3, TimeUnit.SECONDS)
-                FishDiag.check(done, "IoExecutor.2") { "IO executor did not finish within 3s on shutdown, writes may be lost" }
+                val done = executor.awaitTermination(8, TimeUnit.SECONDS)
+                FishDiag.check(done, "IoExecutor.2") { "IO executor did not finish within 8s on shutdown, writes may be lost" }
             } catch (e: InterruptedException) {
                 FishDiag.fail("IoExecutor.1", "interrupted while flushing IO on shutdown", e)
             }

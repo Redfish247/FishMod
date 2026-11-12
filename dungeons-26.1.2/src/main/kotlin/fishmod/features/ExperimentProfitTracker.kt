@@ -24,6 +24,8 @@ object ExperimentProfitTracker {
 
     const val HUD = "Experiment Profit"
 
+    private enum class XCat(override val color: String, override val short: String) : ProfitTrackerKit.Cat { EXP("§d", "EXP") }
+
     private class Data(
         var experiments: Int = 0,
         var xp: Long = 0,
@@ -58,6 +60,11 @@ object ExperimentProfitTracker {
             { FishSettings.expProfitEnabled },
         )
         registerExample()
+        ProfitTrackerKit.registerEdit("experimenttracker", "experiment profit", XCat.EXP, XCat.entries.toTypedArray(), { data.drops.keys.map { "EXP|$it" } }) { _, n, v ->
+            val left = (data.drops[n] ?: 0L) + v
+            if (left <= 0L) data.drops.remove(n) else data.drops[n] = left
+            changed()
+        }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             val s = mc.curScreen ?: return@register
             if (FishSettings.expProfitEnabled && TABLE_SCREEN.containsMatchIn(fishmod.utils.ScreenTitle.plain(s))) {
