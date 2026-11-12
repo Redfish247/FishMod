@@ -110,6 +110,9 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
     private fun tabY() = py + 50
     private fun prevX() = px + PAD
     private fun nextX() = px + W - PAD - 16
+    private fun craftX() = px + PAD
+    private fun craftY() = py + H - 32
+    private fun craftName(): String? = current()?.takeIf { it.grid }?.let { RecipeViewer.clean(RecipeViewer.displayName(it.output.id)).trim() }?.takeIf { it.isNotEmpty() }
 
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val scale = UiScale.factor()
@@ -200,6 +203,7 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
             }
         }
 
+        craftName()?.let { button("Super Craft", craftX(), craftY(), 60, mx, my, false) }
         val hint = if (history.isNotEmpty()) "Click an item to view it  ·  Backspace: back  ·  Esc: close" else "Click an item to view it  ·  Esc: close"
         UiRecorder.text(hint, px + W / 2f - UiRecorder.textWidth(hint, 6f) / 2f, (py + H - 14).toFloat(), 6f, DIM)
 
@@ -257,6 +261,13 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
         val my = UiScale.vx(click.y())
         if (fishmod.compat.GLFW.btn(click) == GLFW.GLFW_MOUSE_BUTTON_4) { goBack(); return true }
         if (history.isNotEmpty() && inside(mx, my, backX(), py + 15, 46, TAB_H)) { goBack(); return true }
+        craftName()?.let { n ->
+            if (inside(mx, my, craftX(), craftY(), 60, TAB_H)) {
+                // One click = one /recipe; the Super Craft button is then clicked in Hypixel's recipe menu
+                net.minecraft.client.Minecraft.getInstance().connection?.sendCommand("recipe $n")
+                return true
+            }
+        }
         val n = recipes().size
         val tabs = tabs()
         if (tabs == null) {
