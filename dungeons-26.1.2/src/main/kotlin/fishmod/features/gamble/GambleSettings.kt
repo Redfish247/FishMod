@@ -8,7 +8,6 @@ object GambleSettings {
     const val API_BASE = "https://fishmod.dev/api/gamble"
     @ConfigValue @JvmField var gamblePlaytime: Boolean = true
     @ConfigValue @JvmField var gambleShowPoints: Boolean = true
-    @ConfigValue @JvmField var gambleLeaderboard: Boolean = true
     @ConfigValue @JvmField var gambleCrown: Boolean = true
     @ConfigValue @JvmField var gambleCrownChat: Boolean = true
 }

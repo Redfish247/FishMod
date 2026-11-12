@@ -13,10 +13,9 @@ object GambleMenu {
         val col = Column("Gamble Points")
 
         val main = Feature("Gamble Points", S::class.java, "gambleEnabled")
-        main.sub.add(LabelSetting("/gamble <amount|NN%|all>", "Results show in your chat only; /gamble top shows the board"))
+        main.sub.add(LabelSetting("/gamble <amount|NN%|all>", "Results show in your chat only"))
         main.sub.add(ToggleSetting("Playtime Tracking", "Send input counts every 5 minutes to earn points (counts only, never keys or text)", S::class.java, "gamblePlaytime"))
         main.sub.add(ToggleSetting("Show Points Earned", "Print points from each playtime block in chat", S::class.java, "gambleShowPoints"))
-        main.sub.add(ToggleSetting("Leaderboard", "Allow /gamble top", S::class.java, "gambleLeaderboard"))
         col.features.add(main)
 
         val crown = Feature("Crown Badge", S::class.java, "gambleCrown")
