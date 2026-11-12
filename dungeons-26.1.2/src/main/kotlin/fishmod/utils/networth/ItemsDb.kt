@@ -53,6 +53,9 @@ object ItemsDb {
     }
 
     @JvmStatic
+    fun names(): Collection<String> = nameToId.keys
+
+    @JvmStatic
     fun npcSellPriceFor(id: String?): Double {
         if (id == null) return 0.0
         return npcSellPrice[id] ?: 0.0

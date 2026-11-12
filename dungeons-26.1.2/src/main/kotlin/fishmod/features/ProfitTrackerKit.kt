@@ -1,11 +1,68 @@
 package fishmod.features
 
+import com.mojang.brigadier.arguments.StringArgumentType
+import fishmod.utils.FishMsg
 import fishmod.utils.networth.ItemsDb
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 
 // Shared pieces of the Farming and Mining profit trackers
 object ProfitTrackerKit {
 
     interface Cat { val color: String; val short: String }
+
+    private val EDIT_ARGS = Regex("""^(.+?)\s+(-?[\d,]+(?:\.\d+)?[kmb]?)$""", RegexOption.IGNORE_CASE)
+
+    private fun parseAmount(s: String): Long? {
+        val t = s.lowercase().replace(",", "")
+        val mult = when { t.endsWith("k") -> 1_000.0; t.endsWith("m") -> 1_000_000.0; t.endsWith("b") -> 1_000_000_000.0; else -> 1.0 }
+        return t.removeSuffix("k").removeSuffix("m").removeSuffix("b").toDoubleOrNull()?.let { (it * mult).toLong() }
+    }
+
+    // /<literal> edit <item> <number>: adds (or with a negative number removes) items; shared by the profit trackers
+    // existing = tracker keys "CAT|Item Name" (session + total), used for exact-case names and the item's own category
+    fun <C> registerEdit(literal: String, label: String, defaultCat: C, cats: Array<C>, existing: () -> Collection<String>, edit: (C, String, Long) -> Unit)
+        where C : Enum<C>, C : Cat {
+        fun known(): Map<String, C> {
+            val m = LinkedHashMap<String, C>()
+            for (k in existing()) {
+                val cat = cats.firstOrNull { k.startsWith(it.name + "|") } ?: continue
+                m.putIfAbsent(k.substringAfter('|'), cat)
+            }
+            return m
+        }
+        ClientCommandRegistrationCallback.EVENT.register { d, _ ->
+            d.register(ClientCommands.literal(literal).then(ClientCommands.literal("edit").then(
+                ClientCommands.argument("args", StringArgumentType.greedyString())
+                    .suggests { _, b ->
+                        val rem = b.remaining
+                        if (!EDIT_ARGS.matches(rem)) {
+                            val low = rem.lowercase()
+                            val names = LinkedHashSet<String>(known().keys)
+                            if (low.length >= 2) names.addAll(ItemsDb.names())
+                            names.filter { it.lowercase().startsWith(low) }.sorted().take(60).forEach { b.suggest(it) }
+                        }
+                        b.buildFuture()
+                    }
+                    .executes { ctx ->
+                        val raw = StringArgumentType.getString(ctx, "args").trim()
+                        val m = EDIT_ARGS.matchEntire(raw)
+                        val n = m?.let { parseAmount(it.groupValues[2]) }
+                        if (m == null || n == null || n == 0L) {
+                            FishMsg.send("§cUsage: /$literal edit <item> <number> (negative removes)"); return@executes 0
+                        }
+                        val typed = m.groupValues[1].trim()
+                        val kn = known()
+                        val hit = kn.entries.firstOrNull { it.key.equals(typed, true) }
+                        val name = hit?.key ?: ItemsDb.names().firstOrNull { it.equals(typed, true) }
+                        if (name == null) { FishMsg.send("§cUnknown item '$typed'."); return@executes 0 }
+                        edit(hit?.value ?: defaultCat, name, n)
+                        FishMsg.send("§a" + (if (n > 0) "Added " else "Removed ") + "§f" + Math.abs(n) + "x $name §a" + (if (n > 0) "to" else "from") + " the $label tracker.")
+                        1
+                    }
+            )))
+        }
+    }
 
     class Row<C>(val cat: C, val name: String, val n: Long, val value: Double, val split: Map<C, Long> = emptyMap())
 

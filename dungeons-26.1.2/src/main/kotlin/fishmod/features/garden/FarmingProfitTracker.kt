@@ -66,6 +66,7 @@ object FarmingProfitTracker {
 
     fun init() {
         load()
+        ProfitTrackerKit.registerEdit("farmingtracker", "farming profit", Cat.CROPS, Cat.entries.toTypedArray(), { data.session.items.keys + data.total.items.keys }) { c, n, v -> add(c, n, v) }
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
         FishEvents.worldChange.register { save(true); pending.clear(); rewardUntil = 0L; false }
