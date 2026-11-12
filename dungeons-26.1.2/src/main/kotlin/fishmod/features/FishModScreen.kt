@@ -56,6 +56,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var resetArmed = false
     private var resetArmedAt = 0L
     private var hoverDesc: String? = null
+    private var hoverPreview: String? = null
     private var hoverDescX = 0
     private var hoverDescY = 0
     private var hScroll = 0
@@ -2621,6 +2622,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val vmy = vx(mouseY)
 
         hoverDesc = null
+        hoverPreview = null
         try {
             renderTopBar(ctx, vmx, vmy)
             renderContent(ctx, vmx, vmy)
@@ -2628,6 +2630,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             // hint is wider than the sidebar, so only show it while hovering the sidebar
             if (vmx in stackX0()..stackX0() + STACK_W) renderHint(ctx)
             renderHoverTooltip(ctx)
+            renderShiftPreview(ctx)
         } catch (t: Throwable) {
             FishDiag.fail("FishModScreen.10", "widget rendering failed search='$searchText' hScroll=$hScroll", t)
             if (!widgetRenderFailureLogged) {
@@ -3096,13 +3099,25 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         UiRecorder.text(label, (x0 + 10).toFloat(), (top + (ROW_H - 8) / 2).toFloat(), NVG_BASE_TEXT_SIZE, if (on) TEXT_COLOR else SUBTEXT_COLOR)
         if (hover) {
-            val d = descFor(f.name)
+            val canPreview = HudPreview.has(f.name)
+            val d = descFor(f.name).let { if (canPreview) (if (it.isEmpty()) "Hold Shift to preview" else "$it  -  Hold Shift to preview") else it }
             if (d.isNotEmpty()) { hoverDesc = d; hoverDescX = x1 + 8; hoverDescY = top }
+            if (canPreview) hoverPreview = f.name
         }
 
         if (f.sub.isNotEmpty()) {
             drawChevron(ctx, x1 - 14, top + ROW_H / 2 - 2, f.expanded(), if (f.expanded()) ACCENT else CHEVRON_COLOR)
         }
+    }
+
+    // Shift over a HUD feature row: hide the panels and show its HUD example (current settings) where it sits in game.
+    private fun renderShiftPreview(ctx: GuiGraphicsExtractor) {
+        val name = hoverPreview ?: return
+        val w = Minecraft.getInstance().window
+        if (!(fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT))) return
+        if (!FishHudEditor.drawPreview(ctx, name)) return
+        UiRecorder.clear()
+        ctx.centeredText(this.font, "§7Preview: $name (release Shift to return)", this.width / 2, 6, 0xFFFFFFFF.toInt())
     }
 
     private fun renderHoverTooltip(ctx: GuiGraphicsExtractor) {

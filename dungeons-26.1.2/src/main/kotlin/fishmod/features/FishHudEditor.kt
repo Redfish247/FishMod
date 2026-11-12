@@ -68,6 +68,24 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ENTRIES.add(e)
         }
 
+        /** Draws a HUD's example at its configured spot for the config screen's shift preview; false if it has none. */
+        @JvmStatic
+        fun drawPreview(ctx: GuiGraphicsExtractor, name: String): Boolean {
+            val e = ENTRIES.firstOrNull { it.name() == name } ?: return false
+            val ex = HudPreview.example(name) ?: return false
+            val sc = e.scale().toFloat()
+            val pose = ctx.pose()
+            pose.pushMatrix()
+            try {
+                pose.translate(e.getX().asInt.toFloat(), e.getY().asInt.toFloat())
+                pose.scale(sc, sc)
+                HudPreview.draw(ex, ctx, name)
+            } finally {
+                pose.popMatrix()
+            }
+            return true
+        }
+
         @JvmStatic
         fun register(
             name: String,
