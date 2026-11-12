@@ -45,6 +45,8 @@ object AlertTitles {
         Def("SlayerBossPhases", "Alert: Slayer Phase", "§6Phase change"),
         Def("SlayerCarryTracker", "Alert: Slayer Carry Done", "§aCarry done!", "§ePlayer §73/3"),
         Def("GoldorSection", "Alert: Goldor Section", "", "§aSection cleared"),
+        Def("ExplosiveShotHud", "Alert: Explosive Shot", "§c1.2M", "§7Explosive Shot §8• §f3 enemies"),
+        Def("LoadoutTitle", "Alert: Loadout Equipped", "§fLoadout 1", "§7Loadout equipped"),
         Def("Other", "Alert: Other", "§eAlert!", "§7Example"),
     )
 
