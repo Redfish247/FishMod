@@ -1,3 +1,24 @@
+FishMod Changelog - 2026-11-12
+==================================
+Fixed:
+- Item list: tidied the search box paste code (no player-visible change expected).
+Reported bugs fixed (from fishmod.dev):
+- None new. All 24 open Bug cards were already fixed in earlier builds and sit in Testing; nothing is Done until you say so.
+Known issues (not fixed yet):
+- #533 the Secret Hunters leaderboard stops at 13 secrets. The website caps the score at 13; it needs a website update (needs Eli's OK), not a mod update.
+- #459 players far from spawn appear stuck or glitching. Still needs a video or a /fm debug report.
+Test in game:
+1. Item list: click the search box, press Ctrl+V with text on the clipboard. It pastes as before.
+Run notes:
+- Start commit f2610eda (tree was clean). Fix commit b6a62e26. Built 26.1.2 + 26.2 as 1.7.91, both OK (26.3 not built). Jar 26.2 copied to Prism Skyblock, 1.7.90 removed (game was closed). FishTest not updated. Not tested in game.
+- The prompt arrived cut off again (no token, no Modrinth path); the full text came from tools/daily-bugfix/prompt.md. The Modrinth profile path does not exist on this machine, so the jar went to Prism Skyblock like last run.
+- Bug cards 24 open, all status testing already: #567 #565 #561 #562 #563 #548 #553 #560 #547 #549 #532 #534 #537 #530 #566 #502 #510 #525 #526 #513 #520 #521 #533 #459. Commits exist for most; #502 #510 (eb7c1ea3), #513 #525 #526 (872a9dbc), #521 (a32e0653, 171b73a1, 7dc8877f), #520 (7dc8877f). I did not re-test them, they need Eli's in-game check.
+- #533 needs decision (worker caps 13 / 8281, wrangler deploy). #459 needs a video or /fm debug report.
+- Fix: item/SkyItemList.kt line 554, removed an unnecessary safe call on the clipboard string (the only real compiler warning in main sources).
+- Sweep: read the code added since 1.7.72 (NpcTravel, SignCalculator, ChatCommandHintMixin, PartyCommandHint, AlertTitles, MayorApi backoff, HypixelApi.uploadItems retry, IoExecutor). Found nothing else broken. Test-source warnings (Api2ParsersTest unchecked casts) left alone.
+- Board: no card changed status, nothing new fixed. Nothing set to Done.
+- Notes for Obsidian: none.
+
 FishMod Changelog - 2026-11-11
 ==================================
 Fixed:
