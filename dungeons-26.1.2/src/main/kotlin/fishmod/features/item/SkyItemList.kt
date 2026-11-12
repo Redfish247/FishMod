@@ -28,7 +28,7 @@ object SkyItemList {
     private const val FOOT_H = 2
     private const val GAP = 8
     private const val SEARCH_H = 14
-    private const val TAB_COLS = 2
+    private const val TAB_COLS = 1
     private const val TAB_CELL = 18
     private const val TAB_W = TAB_COLS * TAB_CELL
     private const val TAB_H = TAB_CELL
@@ -301,20 +301,29 @@ object SkyItemList {
 
     private fun gridRight() = px + pw - TAB_W
 
+    // One tab column: scrolls with the wheel when the screen is too short for every tab
+    private var tabScroll = 0
+    private fun tabRows() = ((ph - HEAD_H - 2) / TAB_H).coerceAtLeast(1)
+    private fun tabMaxScroll() = (TAB_ORDER.size - tabRows()).coerceAtLeast(0)
+
     private fun tabAt(mx: Double, my: Double): Int {
         if (mx < gridRight() || mx >= px + pw) return -1
         if (my < py + HEAD_H) return -1
-        val slot = ((my - py - HEAD_H) / TAB_H).toInt() * TAB_COLS + ((mx - gridRight()) / TAB_CELL).toInt()
-        return if (slot in TAB_ORDER.indices) TAB_ORDER[slot] else -1
+        val row = ((my - py - HEAD_H) / TAB_H).toInt()
+        val slot = row + tabScroll
+        return if (row in 0 until tabRows() && slot in TAB_ORDER.indices) TAB_ORDER[slot] else -1
     }
 
     // Category tabs down the far right edge; returns the hovered tab or -1
     private fun drawTabs(ctx: GuiGraphicsExtractor, mx: Int, my: Int, accent: Int): Int {
         val hov = tabAt(mx.toDouble(), my.toDouble())
         val x0 = gridRight()
+        tabScroll = tabScroll.coerceIn(0, tabMaxScroll())
         for ((slot, i) in TAB_ORDER.withIndex()) {
-            val tx = x0 + (slot % TAB_COLS) * TAB_CELL
-            val y0 = py + HEAD_H + (slot / TAB_COLS) * TAB_H
+            val row = slot - tabScroll
+            if (row < 0 || row >= tabRows()) continue
+            val tx = x0
+            val y0 = py + HEAD_H + row * TAB_H
             val sel = i == selCat
             ctx.fill(tx, y0, tx + TAB_CELL - 1, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else if (i == hov) 0x40FFFFFF else 0x30000000)
             if (sel) ctx.fill(tx, y0 + TAB_H - 2, tx + TAB_CELL - 1, y0 + TAB_H - 1, accent)
@@ -458,6 +467,7 @@ object SkyItemList {
     @JvmStatic
     fun onScroll(mx: Double, my: Double, v: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!on() || hiddenFor(screen) || !built || !layout(screen) || !inPanel(mx, my)) return false
+        if (mx >= gridRight()) { tabScroll = (tabScroll + if (v > 0) -1 else 1).coerceIn(0, tabMaxScroll()); return true }
         scroll = (scroll + if (v > 0) -1 else 1).coerceIn(0, maxScroll())
         return true
     }
