@@ -66,8 +66,9 @@ object GardenWidgets {
     }
 
     private val CROP_COLOR = mapOf(
-        "wheat" to "§6", "carrot" to "§6", "potato" to "§e", "pumpkin" to "§6", "melon" to "§a",
+        "wheat" to "§6", "carrot" to "§6", "potato" to "RGB:8B5A2B", "pumpkin" to "§6", "melon" to "§a",
         "mushroom" to "§c", "cocoa" to "§6", "cactus" to "§2", "sugar cane" to "§a", "nether wart" to "§4",
+        "sunflower" to "§e", "moonflower" to "§9", "wild rose" to "§c",
     )
 
     // Label in grey, value coloured per row; INACTIVE / 0 shown in the warning colour
@@ -94,6 +95,7 @@ object GardenWidgets {
         val i = t.indexOf(':')
         if (i in 1..18) return "§7" + t.substring(0, i + 1) + " §e" + t.substring(i + 1).trim()
         val c = CROP_COLOR.entries.firstOrNull { t.contains(it.key, true) }?.value ?: "§f"
+        if (c.startsWith("RGB:")) return fishmod.features.mining.MiningHuds.rgb(c.substring(4), t)
         return c + t
     }
 }

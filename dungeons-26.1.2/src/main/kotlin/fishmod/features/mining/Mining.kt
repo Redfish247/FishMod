@@ -222,7 +222,7 @@ object MiningHuds {
         val font = Minecraft.getInstance().font
         val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
         for ((i, l) in lines.withIndex()) {
-            if ('	' !in l) { ctx.text(font, l, 0, i * 10, -1, true); continue }
+            if ('	' !in l) { drawOne(ctx, font, l, 0, i * 10); continue }
             val left = l.substringBefore('	')
             ctx.text(font, left, colX - 6 - font.width(left), i * 10, -1, true)
             ctx.text(font, l.substringAfter('	'), colX, i * 10, -1, true)
@@ -232,7 +232,16 @@ object MiningHuds {
     fun linesWidth(lines: List<String>): Int {
         val font = Minecraft.getInstance().font
         val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
-        return lines.maxOfOrNull { if ('	' in it) colX + font.width(it.substringAfter('	')) else font.width(it) } ?: 0
+        return lines.maxOfOrNull { if ('	' in it) colX + font.width(it.substringAfter('	')) else font.width(plainOf(it)) } ?: 0
+    }
+
+    // A line starting with RGB_MARK + 6 hex digits is drawn in that exact colour (legacy codes have no brown)
+    const val RGB_MARK = ''
+    fun rgb(hex: String, text: String) = "$RGB_MARK$hex$text"
+    private fun plainOf(l: String) = if (l.length >= 7 && l[0] == RGB_MARK) l.substring(7) else l
+    private fun drawOne(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, l: String, x: Int, y: Int) {
+        val c = if (l.length >= 7 && l[0] == RGB_MARK) l.substring(1, 7).toIntOrNull(16) else null
+        if (c == null) ctx.text(font, l, x, y, -1, true) else ctx.text(font, Component.literal(l.substring(7)).withColor(c), x, y, -1, true)
     }
 
     // No lines = nothing drawn in game, so no example either
