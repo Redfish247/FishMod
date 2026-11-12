@@ -39,6 +39,8 @@ object SkyItemList {
     private var selCat = 0
 
     private val CAT_NAMES = arrayOf("All", "Weapons", "Armor", "Accessories", "Tools", "Pets", "Books", "Other", "Favorites")
+    // Tab order top to bottom (Favorites first); values index CAT_NAMES
+    private val TAB_ORDER = intArrayOf(8, 0, 1, 2, 3, 4, 5, 6, 7)
     private val CAT_ICONS: Array<net.minecraft.world.item.Item> = arrayOf(
         net.minecraft.world.item.Items.BOOKSHELF, net.minecraft.world.item.Items.DIAMOND_SWORD, net.minecraft.world.item.Items.DIAMOND_CHESTPLATE,
         net.minecraft.world.item.Items.ENDER_EYE, net.minecraft.world.item.Items.DIAMOND_PICKAXE, net.minecraft.world.item.Items.BONE,
@@ -256,15 +258,15 @@ object SkyItemList {
     private fun tabAt(mx: Double, my: Double): Int {
         if (mx < gridRight() || mx >= px + pw) return -1
         val i = ((my - py - HEAD_H) / TAB_H).toInt()
-        return if (my >= py + HEAD_H && i in CAT_NAMES.indices) i else -1
+        return if (my >= py + HEAD_H && i in TAB_ORDER.indices) TAB_ORDER[i] else -1
     }
 
     // Category tabs down the far right edge; returns the hovered tab or -1
     private fun drawTabs(ctx: GuiGraphicsExtractor, mx: Int, my: Int, accent: Int): Int {
         val hov = tabAt(mx.toDouble(), my.toDouble())
         val x0 = gridRight()
-        for (i in CAT_NAMES.indices) {
-            val y0 = py + HEAD_H + i * TAB_H
+        for ((slot, i) in TAB_ORDER.withIndex()) {
+            val y0 = py + HEAD_H + slot * TAB_H
             val sel = i == selCat
             ctx.fill(x0, y0, px + pw, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else if (i == hov) 0x40FFFFFF else 0x30000000)
             if (sel) ctx.fill(px + pw - 2, y0, px + pw, y0 + TAB_H - 1, accent)
