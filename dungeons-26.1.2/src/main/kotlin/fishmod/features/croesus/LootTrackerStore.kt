@@ -255,6 +255,9 @@ object LootTrackerStore {
                 data = read
                 if (read.rows == null) read.rows = ArrayList()
                 if (read.floors == null) read.floors = LinkedHashMap()
+                // Rows saved before the fix carry the first drop's amount in the name ("Undead Essence x108")
+                for (r in read.rows) r.name = r.name.replace(CroesusRewardParser.TRAILING_QTY, "")
+                for (f in read.floors.values) f.rows?.forEach { it.name = it.name.replace(CroesusRewardParser.TRAILING_QTY, "") }
             }
         } catch (e: Exception) {
             FishDiag.fail("LootTrackerStore.1", "loot tracker load failed, starting empty", e)

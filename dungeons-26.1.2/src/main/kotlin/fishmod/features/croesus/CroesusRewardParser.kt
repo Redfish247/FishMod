@@ -15,6 +15,7 @@ object CroesusRewardParser {
     private val ITEM_REPLACEMENTS: MutableMap<String, String> = HashMap()
     private val BOOK_PATTERN: Pattern = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)")
     private val PET_PATTERN: Pattern = Pattern.compile("\\[Lvl \\d+\\]\\s*(?:§([0-9a-f]))?([\\w' §0-9a-fk-or]+)")
+    @JvmField val TRAILING_QTY = Regex("\s+x[\d,]+$")
     private val ESSENCE_PATTERN: Pattern = Pattern.compile("^(\\w+) Essence x(\\d+)$")
 
     init {
@@ -148,7 +149,8 @@ object CroesusRewardParser {
             val ri = RewardItem()
             ri.id = result[0]
             ri.qty = FishDiag.notNull(result[1].toIntOrNull(), "CroesusRewardParser.4") { "reward qty not int: '${result[1]}' for ${result[0]}" }?.coerceAtLeast(1) ?: 1
-            ri.displayName = clean
+            // "Undead Essence x108": the amount is the quantity, not part of the name (it broke row matching and icons)
+            ri.displayName = clean.replace(TRAILING_QTY, "")
             fishmod.utils.debug.FishDebug.LOGGER.debug("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
             info.items.add(ri)
         }
