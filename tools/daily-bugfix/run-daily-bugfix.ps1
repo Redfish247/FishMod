@@ -11,6 +11,6 @@ git pull --ff-only 2>&1 | Out-File $log -Append
 
 $prompt = Get-Content (Join-Path $repo 'tools\daily-bugfix\prompt.md') -Raw
 # acceptEdits + explicit tool allowlist so the unattended run never blocks on a prompt
-claude -p $prompt --permission-mode acceptEdits `
+$prompt | claude -p --permission-mode acceptEdits `
   --allowedTools "Bash" "PowerShell" "Read" "Edit" "Write" "Glob" "Grep" "WebFetch" `
   2>&1 | Out-File $log -Append -Encoding utf8
