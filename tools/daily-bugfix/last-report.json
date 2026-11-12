@@ -1,26 +1,8 @@
-{
-  "date": "2026-11-12",
-  "version": "1.7.91",
-  "summary": "Built 1.7.91 on 26.1.2 and 26.2 (26.3 not built) and installed the 26.2 jar in Prism Skyblock; FishTest not updated. Not tested in game. Started from `f2610eda`.",
-  "fixed": [
-    {"title": "Item list search paste code tidied", "files": ["features/item/SkyItemList.kt"], "detail": "Removed an unnecessary safe call on the clipboard string, the only real compiler warning in main sources. No behaviour change."}
-  ],
-  "already": [],
-  "open": [
-    {"id": 533, "title": "Secret leaderboard capped at 13", "status": "Needs your OK", "detail": "The worker caps secrets at 13 and points at 8281; raising both needs a `wrangler deploy`, your OK and a diff against the live code."},
-    {"id": 459, "title": "Players get stuck and glitch", "status": "Needs a report", "detail": "No change. Needs a video or a `/fm debug` report."}
-  ],
-  "tests": [
-    "Item list: click the search box and press Ctrl+V with text on the clipboard. It pastes as before."
-  ],
-  "facts": [
-    ["Commits", "`b6a62e26` item list warning fix"],
-    ["Build", "26.1.2 and 26.2 OK before and after the bump"],
-    ["Board", "All 24 open Bug cards were already in Testing. No change. Nothing set to Done."],
-    ["Sweep", "Read the code added since 1.7.72 (NpcTravel, SignCalculator, PartyCommandHint, ChatCommandHintMixin, AlertTitles, MayorApi backoff, uploadItems retry, IoExecutor). Nothing else broken."]
-  ],
-  "notes": [
-    "The prompt arrived cut off again (no token, no Modrinth path). The full text came from `tools/daily-bugfix/prompt.md`.",
-    "The Modrinth path in `prompt.md` does not exist on this machine (old 1.21.8 profile); the jar went to Prism Skyblock. `prompt.md` should point at Prism."
-  ]
-}
+{"date":"2026-11-12","version":"1.7.92","summary":"Daily bugfix run 2: built 1.7.92 (26.1.2 + 26.2); jar not copied because the game was running; untested in game.",
+"alert":"Jar not installed: Skyblock was running. Jar is at dungeons-26.2/build/libs/FishModDungeons-1.7.92-26.2.jar.",
+"fixed":[{"id":569,"title":"Wither dragon re-added by the server is no longer lost","files":["dungeons-26.1.2/src/main/kotlin/fishmod/features/dungeon/f7/dragons/DragonCheck.kt"],"detail":"An alive dragon re-added inside its pit is re-tracked with the new entity id; stray dragon entities only log in debug mode instead of sending an error report."}],
+"already":[{"id":568,"title":"Dragon spawn particle at unknown spot","detail":"Fixed in 62438956; the reports came from mod 1.6.382. Moved to Testing."}],
+"open":[{"id":533,"title":"Secret leaderboard capped at 13","status":"Needs your OK","detail":"Worker caps ACH_MAX_SECRETS at 13; needs a wrangler deploy by Eli."},{"id":459,"title":"Players get stuck and glitch","status":"Needs a report","detail":"No repro; needs a video or /fm debug report."}],
+"tests":["M7 Wither Dragons: play a run, dragons tracked spawn to death, no error-report toast."],
+"facts":[["Commits","d22af24c fix, changelog commit after it"],["Build","26.1.2 + 26.2 OK as 1.7.92, 26.3 not built"],["Board","#568 and #569 moved to Testing; nothing Done"],["Sweep","No other open Bug cards changed; 24 already in Testing"]],
+"notes":["Auto error reports from old mod versions (1.6.x) keep arriving as new Bug cards; check the version line first.","Modrinth path Skyblock 1.21.8\mods does not exist on this machine."]}
