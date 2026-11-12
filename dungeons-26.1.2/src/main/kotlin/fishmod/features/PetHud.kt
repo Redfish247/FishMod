@@ -145,6 +145,7 @@ object PetHud {
             }
             val lo = LOADOUT_EQUIP_PAT.matcher(s)
             if (lo.find()) {
+                petRarity = RarityTier.NONE
                 lastApiFetchAt = 0
                 if (debugDumpPetLines) fishmod.utils.FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] loadout equip → re-sync"))
             }
@@ -241,6 +242,7 @@ object PetHud {
             if (withinClobberGuard && lastChatPetName != null && !tempName.equals(lastChatPetName, ignoreCase = true)) {
                 return
             }
+            if (!tempName.equals(petName, ignoreCase = true)) petRarity = RarityTier.NONE
             petName = tempName
             petLevel = tempLevel
             if (tempRarity != RarityTier.NONE) petRarity = tempRarity
@@ -272,6 +274,7 @@ object PetHud {
             return
         }
 
+        if (!info.name.equals(petName, ignoreCase = true)) petRarity = RarityTier.NONE
         petName = info.name
         rarityFromTier(info.tier).let { if (it != RarityTier.NONE) petRarity = it }
         petLevel = info.level
@@ -304,7 +307,9 @@ object PetHud {
             val m = PET_ITEM_NAME.matcher(displayName)
             if (m.find()) {
                 petLevel = safeInt(m.group(1), petLevel)
-                petName = m.group(2).trim()
+                val menuName = m.group(2).trim()
+                if (!menuName.equals(petName, ignoreCase = true)) petRarity = RarityTier.NONE
+                petName = menuName
                 rarityBeforeName(stack.hoverName.string, petName).let { if (it != RarityTier.NONE) petRarity = it }
             } else {
                 FishDiag.fail("PetHud.6", "active pet item name unparsed: '$displayName'")
