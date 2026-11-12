@@ -31,7 +31,7 @@ How to fix:
 - Commit to main after each working fix with a message starting with "fix:" saying what was wrong. If it's a reported bug from the site, mention that in the message.
 - Never commit code that doesn't build.
 - Don't add new features or redesign things. Only fix stuff that's broken or risky.
-- If a fix needs a decision from me or could change how a feature behaves, skip it and add it to the list below.
+- ALWAYS FIX BUGS (Eli's standing rule). Never park a bug as "needs decision" or "can't reproduce". Pick the most sensible behaviour yourself and fix it. If there is no repro, read the code path, harden it (null checks, bounds, try/catch) and add a short /fm debug log line so the next report is diagnosable. If the fix is in the fishmod.dev worker (D:\FishMod-WorkerBoard), make and commit the change there and put the diff in the Run notes, but do NOT `wrangler deploy` it (Eli deploys). Only list under Known issues what is truly impossible from this machine, with the reason.
 
 When you're done:
 - Run a final `.\gradlew build`.
