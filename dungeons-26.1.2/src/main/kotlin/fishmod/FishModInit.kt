@@ -388,7 +388,28 @@ class FishModInit : ClientModInitializer {
         }
     }
 
+    // True when the bundled config library loads; else one report with the jar's size and hash and init stops
+    private fun bundledLibsOk(): Boolean {
+        try {
+            Class.forName("fishmod.shaded.practicalconfig.hud.HUDComponent", false, FishModInit::class.java.classLoader)
+            return true
+        } catch (t: Throwable) {
+            val info = try {
+                val p = FabricLoader.getInstance().getModContainer("fishmod-dungeons").get().origin.paths.firstOrNull()
+                if (p != null && java.nio.file.Files.isRegularFile(p)) {
+                    val md = java.security.MessageDigest.getInstance("SHA-256")
+                    java.nio.file.Files.newInputStream(p).use { s -> val b = ByteArray(65536); while (true) { val n = s.read(b); if (n < 0) break; md.update(b, 0, n) } }
+                    "${p.fileName} ${java.nio.file.Files.size(p)} bytes sha256=" + md.digest().joinToString("") { "%02x".format(it) }
+                } else "origin=$p"
+            } catch (e: Throwable) { "jar unreadable: $e" }
+            FishDiag.fail("FishModInit.0", "FishMod jar is damaged (bundled config library missing), re-download it. $info", t)
+            System.err.println("[FishMod] The jar is damaged: the bundled config library is missing. Re-download FishMod and replace the file. $info")
+            return false
+        }
+    }
+
     override fun onInitializeClient() {
+        if (!bundledLibsOk()) return
         FishDiag.guard("FishModInit.1", "FishConfig.manager.load() failed") { FishConfig.manager.load() }
         safeInit("Config") { ConfigRoot.manager.load() }
         if (!fishmod.pv.ProfileViewer.standaloneLoaded()) safeInit("ProfileViewer") { fishmod.pv.PvClient.init() }
