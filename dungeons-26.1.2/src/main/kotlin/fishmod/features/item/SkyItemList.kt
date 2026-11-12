@@ -46,7 +46,7 @@ object SkyItemList {
     private val CAT_NAMES = arrayOf(
         "All", "Weapons", "Armor", "Accessories", "Tools", "Pets", "Books", "Other", "Favorites",
         "Minions", "Cosmetics", "Dyes", "Shards", "Trophy Fish & Frogs", "Fishing", "Reforges", "Gems & Ores",
-        "Garden", "Dungeon", "Consumables", "NPCs", "Materials"
+        "Garden", "Dungeon", "Consumables", "NPCs", "Travel Scrolls"
     )
     // Tab order top to bottom, two columns (Favorites first); values index CAT_NAMES
     private val TAB_ORDER = intArrayOf(8, 0, 1, 2, 3, 4, 14, 5, 6, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 7)
@@ -72,7 +72,7 @@ object SkyItemList {
         net.minecraft.world.item.Items.SKELETON_SKULL,
         net.minecraft.world.item.Items.POTION,
         net.minecraft.world.item.Items.PLAYER_HEAD,
-        net.minecraft.world.item.Items.IRON_INGOT
+        net.minecraft.world.item.Items.ENDER_PEARL
     )
 
     private val GEM_PREFIX = Regex("^(ENCHANTED|REFINED|ROUGH|FLAWED|FINE|FLAWLESS|PERFECT)_")
@@ -121,6 +121,13 @@ object SkyItemList {
     private val MINION_RE = Regex("_GENERATOR_[0-9]+$")
 
     // Category from the item type words after the rarity in the last NEU lore lines ("LEGENDARY DUNGEON SWORD"), then id/name hints
+    private val MOB_RE = Regex("[(](Monster|Boss|Miniboss|Animal|Sea Creature|Pest|Mythological Creature|Mayor|Retired Mayor)[)]$", RegexOption.IGNORE_CASE)
+
+    // NEU lists mobs, bosses and mayors as items; they are not items, so they are left out of the list
+    private fun isMob(id: String): Boolean = MOB_RE.containsMatchIn(TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim())
+
+    private fun isNpc(id: String): Boolean = id.endsWith("_NPC") || TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim().endsWith("(NPC)")
+
     private fun catOf(id: String): Int {
         val o = NeuRepo.get(id) ?: return 7
         val itemId = o.get("itemid")?.asString
@@ -129,14 +136,14 @@ object SkyItemList {
         if (MINION_RE.containsMatchIn(id)) return 9
         if (id.startsWith("ATTRIBUTE_SHARD_")) return 12
         val name = TextStrip.plain(o.get("displayname")?.asString ?: "")
-        if (id.endsWith("_NPC") || name.endsWith("(NPC)")) return 20
+        if (isNpc(id)) return 20
         val lore = o.getAsJsonArray("lore")
         if (lore != null) for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
             val line = TextStrip.plain(lore[k].asString).trim().uppercase()
             val m = RARITY_RE.find(line) ?: continue
             val kind = line.substring(m.range.last + 1).trim()
             val w = kind.split(' ').toSet()
-            return when {
+            val r = when {
                 w.any { it == "HELMET" || it == "CHESTPLATE" || it == "LEGGINGS" || it == "BOOTS" } -> 2
                 w.any { it == "ACCESSORY" || it == "HATCESSORY" || it == "BELT" || it == "NECKLACE" || it == "CLOAK" || it == "GLOVES" || it == "BRACELET" } -> 3
                 "COSMETIC" in w -> 10
@@ -151,13 +158,18 @@ object SkyItemList {
                 w.any { it == "SWORD" || it == "LONGSWORD" || it == "BOW" || it == "SHORTBOW" || it == "WAND" || it == "WEAPON" } -> 1
                 "GEMSTONE" in w || "ORE" in w || kind == "DWARVEN METAL" -> 16
                 kind.startsWith("DUNGEON") -> 18
-                else -> 7
+                kind == "TRAVEL SCROLL" -> 21
+                "POTION" in w || "BOOSTER" in w || "SALT" in w || "DEPLOYABLE" in w || "CAPSULE" in w -> 19
+                else -> -1
             }
+            if (r >= 0) return r
+            break
         }
         return when {
             itemId == "minecraft:potion" || id.startsWith("POTION_") -> 19
             name.endsWith(" Shard", true) && itemId != "minecraft:prismarine_shard" -> 12
-            name.startsWith("Enchanted ") || id.startsWith("ENCHANTED_") || id.startsWith("ESSENCE_") -> 21
+            id.endsWith("TRAVEL_SCROLL") -> 21
+            name.contains("Potion", true) -> 19
             else -> 7
         }
     }
@@ -205,6 +217,7 @@ object SkyItemList {
 
     @JvmStatic
     fun init() {
+        NpcTravel.init()
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is AbstractContainerScreen<*>) return@AfterInit
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
@@ -225,7 +238,7 @@ object SkyItemList {
         CroesusPrices.refreshIfStale()
         NeuRepo.ensureLoaded()
         if (!NeuRepo.isLoaded()) return false
-        val all = NeuRepo.ids().toTypedArray()
+        val all = NeuRepo.ids().filter { !isMob(it) }.toTypedArray()
         val names = Array(all.size) { i ->
             TextStrip.plain(NeuRepo.get(all[i])?.get("displayname")?.asString ?: all[i]).filter { it.code !in 0xE000..0xF8FF }.trim().lowercase()
         }
@@ -407,9 +420,11 @@ object SkyItemList {
         lines.addAll(bazaarLines(id))
         if (!FishSettings.skyItemListClickKey) return lines
         lines.add(Component.empty())
-        if (RecipeViewer.recipesFor(id).isNotEmpty()) lines.add(Component.literal("§eLeft Click: View Recipe"))
+        val npc = isNpc(id)
+        if (npc) lines.add(Component.literal("§eLeft Click: Waypoint to NPC"))
+        else if (RecipeViewer.recipesFor(id).isNotEmpty()) lines.add(Component.literal("§eLeft Click: View Recipe"))
         lines.add(Component.literal(if (favs.contains(id)) "§eRight Click: Remove Favorite" else "§eRight Click: Add Favorite"))
-        lines.add(Component.literal(if (onBazaar(id)) "§eShift-Left Click: Open in Bazaar" else "§eShift-Left Click: Open in Auction House"))
+        if (!npc) lines.add(Component.literal(if (onBazaar(id)) "§eShift-Left Click: Open in Bazaar" else "§eShift-Left Click: Open in Auction House"))
         return lines
     }
 
@@ -481,7 +496,8 @@ object SkyItemList {
         if (c < 0) return true
         val id = ids[shown[c]]
         when (GLFW.btn(click)) {
-            0 -> if (Minecraft.getInstance().hasShiftDown()) openMarket(id)
+            0 -> if (isNpc(id)) NpcTravel.go(id)
+            else if (Minecraft.getInstance().hasShiftDown()) openMarket(id)
             else if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
             1 -> { if (!favs.remove(id)) favs.add(id); saveFavs(); val keep = scroll; refilter(); scroll = keep }
         }
