@@ -56,11 +56,6 @@ object CrownBadge {
     }
 
     private fun lookup(k: String, uuid: String?, name: String) {
-        if (GambleLeaderboard.fake != null) {
-            val me = uuid?.replace("-", "")
-            cache[k] = Entry(holder.equals(name, true) || (!me.isNullOrEmpty() && me == holderUuid), System.currentTimeMillis())
-            return
-        }
         if (!inFlight.add(k)) return
         GambleApi.call("GET", "/crown", null) { res ->
             val o = res?.json
@@ -93,7 +88,11 @@ object CrownBadge {
         val now = System.currentTimeMillis()
         if (now - lastHolderFetch < HOLDER_REFRESH_MS) return
         lastHolderFetch = now
-        GambleLeaderboard.fetch { }
+        GambleApi.call("GET", "/crown", null) { res ->
+            val o = res?.json
+            val n = o?.get("name")?.takeIf { !it.isJsonNull }?.asString
+            if (res?.status == 200 && !n.isNullOrEmpty()) setHolder(n, o?.get("uuid")?.takeIf { !it.isJsonNull }?.asString ?: "")
+        }
     }
 
     // Dev reset: forget holder and cached answers
