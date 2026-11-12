@@ -38,6 +38,9 @@ object SkyItemList {
     private var rar: IntArray = IntArray(0)
     private var shown: IntArray = IntArray(0)
     private var cat: IntArray = IntArray(0)
+    private var allIdx: IntArray = IntArray(0)
+    // Custom in-category order (Shards, Gems & Ores, Garden): sub-group, family, tier, then name
+    private val catOrder = arrayOfNulls<IntArray>(22)
     private var selCat = 0
 
     private val CAT_NAMES = arrayOf(
@@ -72,6 +75,49 @@ object SkyItemList {
         net.minecraft.world.item.Items.IRON_INGOT
     )
 
+    private val GEM_PREFIX = Regex("^(ENCHANTED|REFINED|ROUGH|FLAWED|FINE|FLAWLESS|PERFECT)_")
+    private val GEM_SUFFIX = Regex("_(BLOCK|ORE|GEM)$")
+    private val GEM_TIERS = listOf("ROUGH", "FLAWED", "FINE", "FLAWLESS", "PERFECT")
+
+    private fun kindOf(id: String): String {
+        val lore = NeuRepo.get(id)?.getAsJsonArray("lore") ?: return ""
+        for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
+            val line = TextStrip.plain(lore[k].asString).trim().uppercase()
+            val m = RARITY_RE.find(line) ?: continue
+            return line.substring(m.range.last + 1).trim()
+        }
+        return ""
+    }
+
+    // Sort keys for the categories that get a custom order: (sub-group, family, tier)
+    private fun sortKey(c: Int, id: String): Triple<Int, String, Int> = when (c) {
+        17 -> {
+            val k = kindOf(id)
+            Triple(when { k == "FARMING TOOL" -> 0; k == "MUTATION" -> 1; k == "GARDEN CHIP" -> 2; k == "WATERING CAN" -> 3; k == "VACUUM" -> 4; else -> 5 }, "", 0)
+        }
+        16 -> {
+            val pre = GEM_PREFIX.find(id)?.groupValues?.get(1)
+            val fam = GEM_SUFFIX.replace(GEM_PREFIX.replace(id, ""), "")
+            val tier = when {
+                pre == null -> if (id.endsWith("_BLOCK")) 3 else 0
+                pre == "ENCHANTED" -> if (id.endsWith("_BLOCK")) 2 else 1
+                pre == "REFINED" -> 2
+                else -> GEM_TIERS.indexOf(pre).coerceAtLeast(0)
+            }
+            Triple(0, fam, tier)
+        }
+        12 -> {
+            val lore = NeuRepo.get(id)?.getAsJsonArray("lore")
+            var fam = ""
+            if (lore != null) for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 3)) {
+                val line = TextStrip.plain(lore[k].asString).trim().uppercase()
+                if (line.contains(" SHARD")) { fam = line.substringBefore(' '); break }
+            }
+            Triple(0, fam, 0)
+        }
+        else -> Triple(0, "", 0)
+    }
+
     private val MINION_RE = Regex("_GENERATOR_[0-9]+$")
 
     // Category from the item type words after the rarity in the last NEU lore lines ("LEGENDARY DUNGEON SWORD"), then id/name hints
@@ -81,6 +127,7 @@ object SkyItemList {
         if (itemId == "minecraft:enchanted_book") return 6
         if (PET_ID.matches(id)) return 5
         if (MINION_RE.containsMatchIn(id)) return 9
+        if (id.startsWith("ATTRIBUTE_SHARD_")) return 12
         val name = TextStrip.plain(o.get("displayname")?.asString ?: "")
         if (id.endsWith("_NPC") || name.endsWith("(NPC)")) return 20
         val lore = o.getAsJsonArray("lore")
@@ -180,13 +227,20 @@ object SkyItemList {
         if (!NeuRepo.isLoaded()) return false
         val all = NeuRepo.ids().toTypedArray()
         val names = Array(all.size) { i ->
-            TextStrip.plain(NeuRepo.get(all[i])?.get("displayname")?.asString ?: all[i]).lowercase()
+            TextStrip.plain(NeuRepo.get(all[i])?.get("displayname")?.asString ?: all[i]).filter { it !in ''..'' }.trim().lowercase()
         }
         val order = all.indices.sortedWith(compareBy({ names[it] }, { all[it] }))
         ids = Array(all.size) { all[order[it]] }
         hay = Array(all.size) { names[order[it]] + " " + all[order[it]].lowercase() }
         rar = IntArray(all.size) { rarityOf(ids[it]) }
         cat = IntArray(all.size) { catOf(ids[it]) }
+        allIdx = IntArray(all.size) { it }
+        for (c in intArrayOf(12, 16, 17)) {
+            val keys = HashMap<Int, Triple<Int, String, Int>>()
+            val idxs = allIdx.filter { cat[it] == c }
+            for (i in idxs) keys[i] = sortKey(c, ids[i])
+            catOrder[c] = idxs.sortedWith(compareBy({ keys[it]!!.first }, { keys[it]!!.second }, { keys[it]!!.third }, { it })).toIntArray()
+        }
         shown = IntArray(all.size)
         built = true
         refilter()
@@ -197,8 +251,9 @@ object SkyItemList {
         val q = query.trim().lowercase()
         var n = 0
         favOnly = selCat == 8
-        for (i in hay.indices) if (favs.contains(ids[i]) && (selCat == 0 || selCat == 8 || cat[i] == selCat) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
-        if (!favOnly) for (i in hay.indices) if (!favs.contains(ids[i]) && (selCat == 0 || cat[i] == selCat) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
+        val src = catOrder[selCat] ?: allIdx
+        for (i in src) if (favs.contains(ids[i]) && (selCat == 0 || selCat == 8 || cat[i] == selCat) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
+        if (!favOnly) for (i in src) if (!favs.contains(ids[i]) && (selCat == 0 || cat[i] == selCat) && (q.isEmpty() || hay[i].contains(q))) shown[n++] = i
         shownCount = n
         scroll = 0
     }
