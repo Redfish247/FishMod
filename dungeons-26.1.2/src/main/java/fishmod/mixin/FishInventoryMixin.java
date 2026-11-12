@@ -42,6 +42,7 @@ public abstract class FishInventoryMixin extends AbstractRecipeBookScreen<Invent
             fishmod.utils.debug.FishDiag.fail("FishInventoryMixin.1", "inventory buttons render failed", t);
         }
         stack.popMatrix();
+        if (InvButtonSettings.showEquipment) fishmod.features.other.EquipmentDisplay.flushTooltip(context);
     }
 
     @Override
