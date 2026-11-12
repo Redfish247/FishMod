@@ -60,26 +60,12 @@ object FishUtil {
         forceMainThread { INSTANCE.hud.setTitle(text) }
     }
 
+    // Mod alerts are drawn by AlertTitles (movable per feature in the HUD editor), not the vanilla title
     @JvmStatic
-    fun forceTitle(title: Component, subtitle: Component) {
-        forceMainThread {
-            INSTANCE.hud.setTitle(title)
-            INSTANCE.hud.setSubtitle(subtitle)
-        }
-    }
+    fun forceTitle(title: Component, subtitle: Component) = fishmod.features.AlertTitles.show(title, subtitle, 3500)
 
     @JvmStatic
-    fun forceTitle(title: Component, subtitle: Component, stayMs: Int) {
-        forceMainThread {
-            val gui = INSTANCE.hud
-            val acc = gui as fishmod.mixin.accessors.GuiAccessor
-            acc.`fishmod$setTitleFadeInTime`(5)
-            acc.`fishmod$setTitleStayTime`((stayMs / 50).coerceIn(1, 20 * 120))
-            acc.`fishmod$setTitleFadeOutTime`(10)
-            gui.setTitle(title)
-            gui.setSubtitle(subtitle)
-        }
-    }
+    fun forceTitle(title: Component, subtitle: Component, stayMs: Int) = fishmod.features.AlertTitles.show(title, subtitle, stayMs)
 
     @JvmStatic
     fun executeCommand(string: String) {

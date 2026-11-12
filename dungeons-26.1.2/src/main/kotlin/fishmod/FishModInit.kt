@@ -417,6 +417,7 @@ class FishModInit : ClientModInitializer {
         safeInit("EnchantColors") { fishmod.pv.gui.inventories.EnchantTooltip.init() }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
         FishDiag.guard("FishModInit.2", "fishmod.utils.IoExecutor.init() failed") { fishmod.utils.IoExecutor.init() }
+        safeInit("AlertTitles") { fishmod.features.AlertTitles.init() }
 
         fishmod.cosmetic.NickData.load()
         // Rebuild from settings so a nick saved by an older gradient build picks up the current colours
