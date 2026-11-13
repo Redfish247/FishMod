@@ -40,16 +40,16 @@ object SkyItemList {
     private var cat: IntArray = IntArray(0)
     private var allIdx: IntArray = IntArray(0)
     // Custom in-category order (Shards, Gems & Ores, Garden): sub-group, family, tier, then name
-    private val catOrder = arrayOfNulls<IntArray>(22)
+    private val catOrder = arrayOfNulls<IntArray>(23)
     private var selCat = 0
 
     private val CAT_NAMES = arrayOf(
         "All", "Weapons", "Armor", "Accessories", "Tools", "Pets", "Books", "Other", "Favorites",
         "Minions", "Cosmetics", "Dyes", "Shards", "Trophy Fish & Frogs", "Fishing", "Reforges", "Gems & Ores",
-        "Garden", "Dungeon", "Consumables", "NPCs", "Travel Scrolls"
+        "Garden", "Dungeon", "Consumables", "NPCs", "Travel Scrolls", "Vanilla"
     )
     // Tab order top to bottom, two columns (Favorites first); values index CAT_NAMES
-    private val TAB_ORDER = intArrayOf(8, 0, 1, 2, 3, 4, 14, 5, 6, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 7)
+    private val TAB_ORDER = intArrayOf(8, 0, 1, 2, 3, 4, 14, 5, 6, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 7)
     private val CAT_ICONS: Array<net.minecraft.world.item.Item> = arrayOf(
         net.minecraft.world.item.Items.BOOKSHELF,
         net.minecraft.world.item.Items.DIAMOND_SWORD,
@@ -72,7 +72,8 @@ object SkyItemList {
         net.minecraft.world.item.Items.SKELETON_SKULL,
         net.minecraft.world.item.Items.POTION,
         net.minecraft.world.item.Items.PLAYER_HEAD,
-        net.minecraft.world.item.Items.ENDER_PEARL
+        net.minecraft.world.item.Items.ENDER_PEARL,
+        net.minecraft.world.item.Items.GRASS_BLOCK
     )
 
     private val GEM_PREFIX = Regex("^(ENCHANTED|REFINED|ROUGH|FLAWED|FINE|FLAWLESS|PERFECT)_")
@@ -106,6 +107,23 @@ object SkyItemList {
             }
             Triple(0, fam, tier)
         }
+        3 -> {
+            val k = kindOf(id)
+            val fam = ACC_SUFFIX.replace(ACC_SUFFIX.replace(id, ""), "")
+            val rank = RARITY_RANK.indexOfFirst { rarityNameOf(id) == it }.coerceAtLeast(0)
+            Triple(if (k.startsWith("DUNGEON")) 1 else 0, fam, rank)
+        }
+        4 -> {
+            val w = kindOf(id).split(' ').toSet()
+            Triple(when {
+                w.any { it == "PICKAXE" || it == "DRILL" || it == "GAUNTLET" || it == "CHISEL" } -> 0
+                "AXE" in w -> 1
+                "SHOVEL" in w -> 2
+                "HOE" in w -> 3
+                "SHEARS" in w -> 4
+                else -> 5
+            }, "", 0)
+        }
         12 -> {
             val lore = NeuRepo.get(id)?.getAsJsonArray("lore")
             var fam = ""
@@ -127,6 +145,15 @@ object SkyItemList {
     private fun isMob(id: String): Boolean = MOB_RE.containsMatchIn(TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim())
 
     private fun isNpc(id: String): Boolean = id.endsWith("_NPC") || TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim().endsWith("(NPC)")
+
+    // Plain Minecraft items: id is the vanilla item name (or NAME:data) and NEU gives them no item type
+    private fun isVanilla(id: String, itemId: String?): Boolean {
+        if (itemId == null || !itemId.startsWith("minecraft:") || id.any { it.isLowerCase() } || id.contains(';')) return false
+        return id.contains(':') || itemId.removePrefix("minecraft:").uppercase() == id
+    }
+
+    private val ACC_SUFFIX = Regex("_(TALISMAN|RING|ARTIFACT|RELIC|CHARM|[0-9]+)$")
+    private val RARITY_RANK = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "SPECIAL", "VERY SPECIAL", "ULTIMATE", "SUPREME")
 
     private fun catOf(id: String): Int {
         val o = NeuRepo.get(id) ?: return 7
@@ -159,17 +186,18 @@ object SkyItemList {
                 "GEMSTONE" in w || "ORE" in w || kind == "DWARVEN METAL" -> 16
                 kind.startsWith("DUNGEON") -> 18
                 kind == "TRAVEL SCROLL" -> 21
-                "POTION" in w || "BOOSTER" in w || "SALT" in w || "DEPLOYABLE" in w || "CAPSULE" in w -> 19
+                "BOOSTER" in w || "SALT" in w || "DEPLOYABLE" in w || "CAPSULE" in w -> 19
                 else -> -1
             }
             if (r >= 0) return r
             break
         }
         return when {
-            itemId == "minecraft:potion" || id.startsWith("POTION_") -> 19
+            itemId == "minecraft:potion" || id.startsWith("POTION_") -> 7
             name.endsWith(" Shard", true) && itemId != "minecraft:prismarine_shard" -> 12
             id.endsWith("TRAVEL_SCROLL") -> 21
-            name.contains("Potion", true) -> 19
+            name.contains("Potion", true) -> 7
+            isVanilla(id, itemId) -> 22
             else -> 7
         }
     }
@@ -179,6 +207,15 @@ object SkyItemList {
         "COMMON" -> 0xFFFFFF; "UNCOMMON" -> 0x55FF55; "RARE" -> 0x5555FF; "EPIC" -> 0xAA00AA
         "LEGENDARY" -> 0xFFAA00; "MYTHIC" -> 0xFF55FF; "DIVINE" -> 0x55FFFF
         "ULTIMATE", "SUPREME" -> 0xAA0000; else -> 0xFF5555
+    }
+
+    private fun rarityNameOf(id: String): String {
+        val lore = NeuRepo.get(id)?.getAsJsonArray("lore") ?: return ""
+        for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
+            val m = RARITY_RE.find(TextStrip.plain(lore[k].asString).trim().uppercase()) ?: continue
+            return m.value
+        }
+        return ""
     }
 
     // Rarity is the keyword in the last NEU lore lines; 0 = unknown
@@ -248,7 +285,7 @@ object SkyItemList {
         rar = IntArray(all.size) { rarityOf(ids[it]) }
         cat = IntArray(all.size) { catOf(ids[it]) }
         allIdx = IntArray(all.size) { it }
-        for (c in intArrayOf(12, 16, 17)) {
+        for (c in intArrayOf(3, 4, 12, 16, 17)) {
             val keys = HashMap<Int, Triple<Int, String, Int>>()
             val idxs = allIdx.filter { cat[it] == c }
             for (i in idxs) keys[i] = sortKey(c, ids[i])
