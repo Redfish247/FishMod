@@ -74,7 +74,8 @@ object SkyItemList {
     )
 
     private val GEM_PREFIX = Regex("^(ENCHANTED|REFINED|ROUGH|FLAWED|FINE|FLAWLESS|PERFECT)_")
-    private val GEM_SUFFIX = Regex("_(BLOCK|ORE|GEM)$")
+    private val GEM_SUFFIX = Regex("_(BLOCK|ORE|GEM|INGOT|CUBE)$")
+    private val METAL_FAMS = setOf("UMBER", "TUNGSTEN", "MITHRIL", "TITANIUM")
     private val GEM_TIERS = listOf("ROUGH", "FLAWED", "FINE", "FLAWLESS", "PERFECT")
 
     private fun kindOf(id: String): String {
@@ -94,14 +95,28 @@ object SkyItemList {
         }
         16 -> {
             val pre = GEM_PREFIX.find(id)?.groupValues?.get(1)
-            val fam = GEM_SUFFIX.replace(GEM_PREFIX.replace(id, ""), "")
-            val tier = when {
-                pre == null -> if (id.endsWith("_BLOCK")) 3 else 0
-                pre == "ENCHANTED" -> if (id.endsWith("_BLOCK")) 2 else 1
-                pre == "REFINED" -> 2
-                else -> GEM_TIERS.indexOf(pre).coerceAtLeast(0)
+            var fam = GEM_SUFFIX.replace(GEM_PREFIX.replace(id, ""), "")
+            if (fam == "INK_SACK-4" || fam == "LAPIS") fam = "LAPIS_LAZULI"
+            val ore = id.endsWith("_ORE")
+            val block = id.endsWith("_BLOCK") || id.endsWith("_CUBE")
+            val metal = fam in METAL_FAMS
+            // ore blocks, plain materials, enchanted, enchanted blocks, gemstones, umber/tungsten/mithril/titanium, glacite
+            val group = when {
+                pre != null && pre in GEM_TIERS -> 4
+                ore -> 0
+                fam == "GLACITE" -> 6
+                metal -> 5
+                pre == "ENCHANTED" -> if (block) 3 else 2
+                else -> 1
             }
-            Triple(0, fam, tier)
+            val tier = when {
+                group == 4 -> GEM_TIERS.indexOf(pre)
+                pre == "REFINED" -> 2
+                pre == "ENCHANTED" -> 1
+                block -> 1
+                else -> 0
+            }
+            Triple(group, fam, tier)
         }
         3 -> {
             val k = kindOf(id)
