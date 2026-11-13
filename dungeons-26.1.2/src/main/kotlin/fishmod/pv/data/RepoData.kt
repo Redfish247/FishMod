@@ -18,7 +18,6 @@ import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
 object RepoData {
-    // Volatile: read from profile-loading executor threads as well as the render thread.
     @Volatile
     private var weight: JsonObject? = null
 
@@ -76,7 +75,6 @@ object RepoData {
         return if (map.has(slayer) && map.get(slayer).isJsonArray) map.getAsJsonArray(slayer) else null
     }
 
-    /** XP rewarded per boss kill by tier (T1…T5). Prefers per-type override, else shared table. */
     @JvmStatic
     fun slayerBossXp(slayer: String?): JsonArray? {
         val root = leveling() ?: return null
@@ -87,7 +85,6 @@ object RepoData {
         return if (root.has("slayer_boss_xp") && root.get("slayer_boss_xp").isJsonArray) root.getAsJsonArray("slayer_boss_xp") else null
     }
 
-    /** Highest available boss tier for a slayer id (1-based), or 5 if unknown. */
     @JvmStatic
     fun slayerHighestTier(slayer: String?): Int {
         val root = leveling()

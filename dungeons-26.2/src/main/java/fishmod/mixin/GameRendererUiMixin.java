@@ -15,7 +15,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// 26.2 side: GuiRenderer.render() no longer takes a fog slice and the render state getter was renamed.
 @Mixin(GameRenderer.class)
 public class GameRendererUiMixin {
 

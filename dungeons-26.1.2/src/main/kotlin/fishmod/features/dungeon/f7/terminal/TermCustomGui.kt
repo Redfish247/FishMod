@@ -156,7 +156,6 @@ object TermCustomGui {
         }
     }
 
-    // Grid bounds from the actual panes (2x7 live, 2x5 alpha).
     private fun numbersBounds(t: TerminalHandler): IntArray {
         var minC = 9; var maxC = -1; var minR = 9; var maxR = -1
         for (i in 0 until t.windowSize) {

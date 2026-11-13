@@ -49,7 +49,6 @@ object FossilSolver {
         Fossil("Ugly", "6.2%", intArrayOf(0,1, 1,0, 1,1, 1,2, 2,0, 2,1, 2,2, 2,3, 3,0, 3,1, 3,2, 3,3, 4,0, 4,1, 4,2, 5,1), ROT),
     )
 
-    // Opening sequences (tile, chance, boards left) used before any fossil tile is found
     private val RISKY = listOf(Tile(4, 2) to 0.515, Tile(5, 3) to 0.393, Tile(3, 2) to 0.513, Tile(7, 2) to 0.345,
         Tile(1, 3) to 0.342, Tile(3, 4) to 0.6, Tile(5, 1) to 0.8, Tile(4, 3) to 1.0)
     private val SAFE = listOf(Tile(4, 2) to 0.515, Tile(5, 4) to 0.413, Tile(3, 3) to 0.461, Tile(5, 2) to 0.387,
@@ -66,8 +65,8 @@ object FossilSolver {
     private var charges = 0
     private var maxCharges = 0
     private var types: List<String> = emptyList()
-    private var possible: Map<Int, Double> = emptyMap() // slot -> share of placements covering it
-    private var sure: Set<Int> = emptySet()             // slots every remaining placement covers
+    private var possible: Map<Int, Double> = emptyMap()
+    private var sure: Set<Int> = emptySet()
     private var fossilName = ""
 
     private fun screen(): AbstractContainerScreen<*>? =

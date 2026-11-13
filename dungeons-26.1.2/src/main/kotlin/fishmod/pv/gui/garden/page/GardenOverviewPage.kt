@@ -45,7 +45,6 @@ class GardenOverviewPage {
 	private var scrollH = 0
 	private var fortuneRow: IntArray? = null
 
-	/** True when the click lands on the Farming Fortune row and its breakdown is available. */
 	fun fortuneRowHit(mx: Double, my: Double): Boolean {
 		val r = fortuneRow ?: return false
 		return mx >= r[0] && mx < r[0] + r[2] && my >= r[1] && my < r[1] + r[3]
@@ -254,12 +253,10 @@ class GardenOverviewPage {
 			"set bonuses and temporary buffs."
 		)
 
-		/** {maxed crops, summed milestone levels}. */
 		@JvmStatic
 		fun milestoneTotals(crops: List<GardenSnapshot.CropRow>): IntArray =
 			intArrayOf(crops.count { it.milestoneMaxed }, crops.sumOf { maxOf(0, it.milestone) })
 
-		/** Crops holding a tool, crop sections in the toolkit, and filled slots. */
 		@JvmStatic
 		fun stockedCrops(slots: List<GardenSnapshot.FarmingToolkitSlot>): IntArray {
 			val sections = HashSet<String>()

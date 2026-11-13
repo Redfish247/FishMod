@@ -20,10 +20,8 @@ object RemoteNicks {
     private val inFlight: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     private const val NEGATIVE_TTL_MS = 15 * 60_000L
-    // Every name-like chat word costs a UUID + nick lookup; skipped names retry the next time they show up
     private const val MAX_IN_FLIGHT = 8
     private val IGN_PAT: Pattern = Pattern.compile("\\b([A-Za-z0-9_]{3,16})\\b")
-    // Nametags carry legacy codes ("§bName"), which would glue the code letter onto the name
 
     @JvmStatic
     fun init() {
@@ -103,7 +101,6 @@ object RemoteNicks {
         }
     }
 
-    /** Shared lookup for any list that shows player names: queues a lazy fetch if the nick is unknown. */
     @JvmStatic
     fun ensureKnown(name: String?) {
         if (name.isNullOrEmpty() || !fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return
@@ -114,7 +111,6 @@ object RemoteNicks {
         lookupAndCache(name)
     }
 
-    /** Styled nick for a name if already loaded (own name excluded), else null; queues a fetch when missing. */
     @JvmStatic
     fun styledFor(name: String): Component? {
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return null
@@ -123,7 +119,6 @@ object RemoteNicks {
         return styledByName[name]
     }
 
-    /** Plain-text display name for string-only UIs: the nick without colours, or the real name. */
     @JvmStatic
     fun plainFor(name: String): String = styledFor(name)?.string?.takeIf { it.isNotBlank() } ?: name
 

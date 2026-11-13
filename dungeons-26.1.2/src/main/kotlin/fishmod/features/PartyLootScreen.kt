@@ -121,7 +121,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val winH = min(400, vh - 32)
         val winX = (vw - winW) / 2
         val winY = (vh - winH) / 2
-        // panel is drawn in the vanilla layer so item icons render on top of it
         for (i in 8 downTo 2 step 2) ScreenTheme.roundedRect(ctx, winX - i, winY - i + 4, winW + i * 2, winH + i * 2, 12 + i, 0x12000000)
         ScreenTheme.roundedRect(ctx, winX, winY, winW, winH, 12, PANEL)
         UiRecorder.roundedRectRing(winX.toFloat(), winY.toFloat(), winW.toFloat(), winH.toFloat(), 12f, 1f, 0, LINE)
@@ -239,7 +238,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         else -> k
     }
 
-    // side tabs: All plus every floor that has at least one run
     private fun renderFloorTabs(x: Int, y: Int, h: Int, floors: List<String>) {
         val keys = listOf<String?>(null) + floors
         val tabH = 18

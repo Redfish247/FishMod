@@ -25,7 +25,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 
-/** One full-height column of the Kuudra gear checklist (back side of the Kuudra page). */
 internal class KuudraChecklistColumn {
 	private enum class Kind { GROUP, ENTRY, CHIPS, NOTE, GAP }
 
@@ -208,7 +207,6 @@ internal class KuudraChecklistColumn {
 
 		fun hasPreview(entry: Entry): Boolean = entry.stack != null || entry.pet != null
 
-		/** Only an owned item's icon slot opens the full item tooltip; the rest of the row gets a short note. */
 		fun hoverAt(mx: Int, my: Int, lx: Int, ly: Int, lw: Int, lineH: Int, clipTop: Int, clipBottom: Int, preview: Boolean): Hover {
 			val y0 = maxOf(ly, clipTop)
 			val y1 = minOf(ly + lineH, clipBottom)
@@ -309,7 +307,6 @@ internal class KuudraChecklistColumn {
 			return segs
 		}
 
-		/** Green satisfied, yellow upgrade, red essential missing, grey unverifiable. Informational rows stay grey. */
 		fun checkColor(check: Check, info: Boolean): Int = when (check.state) {
 			CheckState.OK -> if (check.highlight) COLOR_HIGHLIGHT else COLOR_OK
 			CheckState.UPGRADE -> if (info) PvDraw.COLOR_MUTED else COLOR_UPGRADE
@@ -350,7 +347,6 @@ internal class KuudraChecklistColumn {
 			return if (countable && group.owned > 1 && group.status != KuudraGearChecks.Status.UNKNOWN) "${group.owned}x  $word" else word
 		}
 
-		/** Full item preview, only for owned items. */
 		private fun itemTip(entry: Entry): List<Component> {
 			val lore = KuudraGearChecks.previewLore(entry)
 			val title = KuudraGearChecks.previewTitle(entry)
@@ -364,7 +360,6 @@ internal class KuudraChecklistColumn {
 			return tip
 		}
 
-		/** Short reasons for a row's colour; null when there's nothing specific to say. */
 		private fun rowTip(entry: Entry): List<Component>? {
 			val lines = rowTipLines(entry)
 			if (lines.isEmpty()) {

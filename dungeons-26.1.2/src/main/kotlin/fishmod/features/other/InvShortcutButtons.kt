@@ -18,7 +18,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import fishmod.compat.GLFW
 
-// One user button; x/y are relative to the inventory's top-left corner.
 class InvButton(
     var x: Int = 0,
     var y: Int = 0,
@@ -74,7 +73,6 @@ object InvShortcutButtons {
     private var guideX: Int? = null
     private var guideY: Int? = null
 
-    // edit/add pills sit just under the inventory's bottom-right corner
     private val EDIT = intArrayOf(INV_W - 34, INV_H + 2, 34, 11)
     private val ADD = intArrayOf(INV_W - 72, INV_H + 2, 36, 11)
     private val HELP = intArrayOf(INV_W - 86, INV_H + 2, 12, 11)
@@ -164,7 +162,6 @@ object InvShortcutButtons {
         return true
     }
 
-    // opened from the mod menu; inventory shows Done until clicked
     @JvmStatic
     fun openEditMode() {
         val mc = Minecraft.getInstance()

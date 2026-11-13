@@ -26,7 +26,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 
-/** Home → Essence: shop selector on the left, the selected shop's perks and progress on the right. */
 class EssencePage {
 	private var entries: List<EssenceShops.Entry> = EssenceShops.resolve(null)
 	private var selected = 0

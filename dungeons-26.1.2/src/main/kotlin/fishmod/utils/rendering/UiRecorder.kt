@@ -189,7 +189,6 @@ object UiRecorder {
     @JvmStatic
     fun textWidth(s: String, size: Float): Float = UiFont.width(s, size)
 
-    // Bold stamps each glyph one device pixel wider than textWidth measures.
     @JvmStatic
     fun textWidthBold(s: String, size: Float): Float {
         val devPerVirtual = net.minecraft.client.Minecraft.getInstance().window.guiScale * UiScale.factor()

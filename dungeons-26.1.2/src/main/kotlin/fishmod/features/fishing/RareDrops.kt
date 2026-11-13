@@ -11,10 +11,8 @@ class RareDropInfo(val name: String, val id: String, val extreme: Boolean)
 class RareDrop(
     val kind: RareDropKind,
     val itemName: String,
-    // SkyBlock id when known, else null
     val itemId: String?,
     val magicFind: Int,
-    // ItemPricer price, 0 when unknown
     val price: Double,
     val extreme: Boolean,
     val petRarity: SeaRarity?,
@@ -36,13 +34,11 @@ object RareDrops {
         d("Prince's Crown Jewel", "PRINCE_CROWN_JEWEL"),
     )
 
-    // Enchanted Book names shown as "Enchanted Book (<name>)"
     @JvmField val BOOKS: List<RareDropInfo> = listOf(
         d("Flash 1", "ENCHANTMENT_ULTIMATE_FLASH_1"), d("Flash I", "ENCHANTMENT_ULTIMATE_FLASH_1"),
         d("Pyroclasm 6", "ENCHANTMENT_MAGMARIZER_6"), d("Pyroclasm VI", "ENCHANTMENT_MAGMARIZER_6"),
     )
 
-    // Pet drops with a priceable id; the rarity index is appended (COMMON=0..LEGENDARY=4)
     private val PET_IDS = mapOf(
         "flying fish" to "FLYING_FISH", "megalodon" to "MEGALODON", "squid" to "SQUID", "phoenix" to "PHOENIX",
     )
@@ -66,7 +62,6 @@ object RareDrops {
     private val BOOK_BY_NAME = BOOKS.associateBy { it.name }
     private val DYE_BY_NAME = DYES.associateBy { it.name }
 
-    // Parses a colour-stripped chat line; null when not a rare drop. ownName gates dye/phoenix lines.
     @JvmStatic fun parse(plain: String, ownName: String?): RareDrop? {
         val c = plain.firstOrNull() ?: return null
         when (c) {

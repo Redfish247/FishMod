@@ -26,7 +26,6 @@ object GardenCosts {
 	@JvmRecord
 	data class Cost(val itemId: String, val amount: Long)
 
-	/** {@code x}/{@code y} are the 5x5 map column/row, row 0 at the top. */
 	@JvmRecord
 	data class Plot(val id: String, val tier: String, val number: Int, val x: Int, val y: Int)
 
@@ -37,14 +36,12 @@ object GardenCosts {
 		fun maxed(): Boolean = total > 0L && spent >= total
 	}
 
-	/** Resources still needed to max one or more composter upgrades. */
 	@JvmRecord
 	data class ComposterRemaining(val copper: Long, val crops: Map<String, Long>, val rare: Map<String, Long>) {
 		fun none(): Boolean = copper <= 0L && crops.isEmpty() && rare.isEmpty()
 
 		fun needsItems(): Boolean = crops.isNotEmpty() || rare.isNotEmpty()
 
-		/** Bazaar coin value of the remaining crops; copper has no coin price. */
 		fun coins(): Double = coins { ItemPricer.materialPrice(it) }
 
 		fun coins(price: ToDoubleFunction<String>): Double {
@@ -76,7 +73,6 @@ object GardenCosts {
 	@JvmStatic
 	fun itemCoins(itemId: String?, amount: Long): Double = ItemPricer.materialPrice(itemId) * maxOf(0L, amount)
 
-	/** Sowdust spent getting a chip to {@code level} (level 1 is free) vs. the level 20 total. */
 	@JvmStatic
 	fun chipSowdust(level: Int): Progress {
 		ensureLoaded()
@@ -101,10 +97,6 @@ object GardenCosts {
 		return plots
 	}
 
-	/**
-	 * Price of the next plot bought in {@code tier}: Hypixel prices by how many plots of that tier are
-	 * already unlocked, not by which specific plot. Null when the tier is fully unlocked or unknown.
-	 */
 	@JvmStatic
 	fun nextPlotCost(tier: String?, unlockedInTier: Int): Cost? {
 		ensureLoaded()
@@ -125,7 +117,6 @@ object GardenCosts {
 	fun composterRemaining(upgradeId: String?, level: Int): ComposterRemaining =
 		composterRemaining(mapOf((upgradeId ?: "") to level))
 
-	/** Sums every unpurchased level above the current one; ids without cost data are ignored. */
 	@JvmStatic
 	fun composterRemaining(levels: Map<String, Int?>): ComposterRemaining {
 		ensureLoaded()

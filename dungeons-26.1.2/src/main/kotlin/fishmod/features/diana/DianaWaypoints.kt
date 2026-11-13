@@ -43,7 +43,6 @@ class Waypoint(val pos: BlockPos, var type: WpType, var label: String) {
 
 object DianaWaypoints {
 
-    // Hub play area, same bounds Hypixel spawns burrows in
     const val MIN_X = -283; const val MIN_Y = 60; const val MIN_Z = -208
     const val MAX_X = 175; const val MAX_Y = 105; const val MAX_Z = 205
     private const val SNAP_RADIUS = 6
@@ -67,7 +66,6 @@ object DianaWaypoints {
 
     private val removedAt = HashMap<BlockPos, Long>()
 
-    // Per-frame draw targets, only valid inside render()
     private lateinit var rCtx: LevelRenderContext
     private lateinit var rPs: PoseStack
     private lateinit var rVc: VertexConsumer
@@ -75,7 +73,6 @@ object DianaWaypoints {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         FishEvents.worldChange.register { clearAll(); false }
-        // Boxes, lines and labels all go through our own see-through pass, no vanilla gizmos
         RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc ->
             rCtx = ctx; rPs = ps; rVc = vc
             render()
@@ -96,7 +93,6 @@ object DianaWaypoints {
         val level = Minecraft.getInstance().level ?: return true
         if (!level.hasChunk(p.x shr 4, p.z shr 4)) return true
         val st = level.getBlockState(p)
-        // void_air = chunk counted as present but has no real data yet; unknown, not invalid
         if (st.`is`(Blocks.VOID_AIR)) return true
         val ok = st.`is`(Blocks.GRASS_BLOCK) || (st.isAir && Diana.clickedRecently(p))
         val valid = ok && level.getBlockState(p.above()).isAir
@@ -109,8 +105,6 @@ object DianaWaypoints {
         return level.hasChunk(p.x shr 4, p.z shr 4) && !level.getBlockState(p).`is`(Blocks.VOID_AIR)
     }
 
-    // Grass-with-air-above nearest p in height, searching the whole hub Y range of p's column, then rings out to 6;
-    // null if the chunk isn't loaded or there's no grass nearby (village, paths...)
     fun snapToGround(p: BlockPos): BlockPos? {
         val level = Minecraft.getInstance().level ?: return null
         if (!level.hasChunk(p.x shr 4, p.z shr 4)) return null
@@ -134,7 +128,6 @@ object DianaWaypoints {
     fun findDiggable(p: BlockPos): Waypoint? =
         at(p, WpType.BURROW) ?: at(p, WpType.ARROW) ?: at(p, WpType.GUESS) ?: at(p, WpType.SUB)
 
-    // Sub guesses are a block or two off the real burrow, so match loosely
     fun removeSubsNear(p: BlockPos, r: Int = 3) {
         list.filter { it.type == WpType.SUB && Math.abs(it.pos.x - p.x) <= r && Math.abs(it.pos.z - p.z) <= r && Math.abs(it.pos.y - p.y) <= 4 }
             .forEach { remove(it) }
@@ -176,7 +169,6 @@ object DianaWaypoints {
         val now = System.currentTimeMillis()
         removedAt.entries.removeIf { now - it.value > 1000 }
         list.removeIf { (now > it.expiresAt || (it.type != WpType.WORLD && it.type != WpType.RARE && !inHubBounds(it.pos))).also { r -> if (r) DianaTest.log("wp: drop ${it.type} ${it.pos} expired/outOfHub") } }
-        // Spade guesses defer to a burrow/arrow in range; drop only when the spot is clearly invalid (loaded)
         for (g in list.filter { it.type == WpType.GUESS }) {
             val better = list.firstOrNull { (it.type == WpType.BURROW || it.type == WpType.ARROW) && it.center.distanceTo(g.center) <= 32 }
             if (better != null) { DianaTest.log("wp: drop GUESS ${g.pos} merged into ${better.type} ${better.pos}"); better.carryFrom(g); list.remove(g); continue }
@@ -187,14 +179,12 @@ object DianaWaypoints {
             // Far guesses have a rough Y; move onto the nearest grass instead of dropping
             snapToGround(g.pos)?.takeIf { at(it, WpType.GUESS, WpType.BURROW) == null }?.let { add(Waypoint(it, WpType.GUESS, g.label)) }
         }
-        // Arrow on a known burrow merges into it
         for (a in list.filter { it.type == WpType.ARROW || it.type == WpType.SUB }) {
             val b = at(a.pos, WpType.BURROW) ?: continue
             b.carryFrom(a); list.remove(a)
         }
     }
 
-    // ---- rendering ----
 
     private fun visible(): Boolean = Diana.active() || Diana.testMode
 
@@ -257,7 +247,6 @@ object DianaWaypoints {
             val d = w.distTo(eye)
             val a = opacity(d)
             val rgb = baseColor(w, closest)
-            // Past render distance, draw a shrunken copy closer along the same ray so it isn't far-clipped
             val (c, k) = FishDraw.pullIn(w.center, eye)
             FishDraw.fillBox(rPs, rVc, AABB.ofSize(c, k, k, k), withAlpha(rgb, a))
             if (DianaSettings.dianaBeaconBeam && w.type != WpType.SUB && d > DianaSettings.dianaBeaconDistance) {
@@ -266,8 +255,6 @@ object DianaWaypoints {
             }
             val text = if (w.type == WpType.SUB) (if (DianaSettings.dianaSubGuessText) "Possible" else "") else label(w, d)
             if (text.isNotEmpty()) {
-                // World size per font pixel grows with distance so labels stay the same size on screen;
-                // past render distance the label is pulled in along the same ray (SBO does the same)
                 val (pos, pk) = FishDraw.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.2 + d / 60.0, w.pos.z + 0.5), eye)
                 val px = (DianaSettings.dianaTextScale * maxOf(0.035, d * 0.0035) * pk).toFloat()
                 val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
@@ -298,7 +285,6 @@ object DianaWaypoints {
         WpType.SUB -> "§7"
     }
 
-    // Greedy nearest-neighbour path from the player; first leg always, legs 2-3 only if within 50
     private fun renderOrder(eye: Vec3, width: Float) {
         val left = targets().toMutableList()
         var from = eye

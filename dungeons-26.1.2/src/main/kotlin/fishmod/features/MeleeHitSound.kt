@@ -10,7 +10,6 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 
-// Arrow Hit Sound for melee: plays only when the server registers the hit
 object MeleeHitSound {
 
     private const val CONFIRM_MS = 600L
@@ -19,7 +18,6 @@ object MeleeHitSound {
     private var swingMs = 0L
     private var lastHurt = 0
     private val seenSplashes = HashSet<Int>()
-    // Hypixel's damage numbers, e.g. "1,234" or "✧12,345✧"
     private val SPLASH = Regex("""^\D{0,3}[\d,.]+[kKmM]?\D{0,3}$""")
 
     fun init() {
@@ -28,7 +26,6 @@ object MeleeHitSound {
             if (level.isClientSide && FishSettings.meleeHitSoundEnabled && entity is LivingEntity && !entity.isDeadOrDying) {
                 target = entity
                 lastHurt = entity.hurtTime
-                // Numbers already floating belong to earlier swings
                 level.getEntitiesOfClass(ArmorStand::class.java, entity.boundingBox.inflate(3.0)).forEach { seenSplashes.add(it.id) }
                 swingMs = System.currentTimeMillis()
             }
@@ -40,7 +37,6 @@ object MeleeHitSound {
             // A new hit resets hurtTime upward; otherwise it only counts down
             val rose = t.hurtTime > lastHurt
             lastHurt = t.hurtTime
-            // Hypixel sends damage packets even for blocked swings, so only a restarted hurt flash counts
             if (rose || damageSplash(t)) {
                 target = null
                 FishDiag.guard("MeleeHitSound.1", "melee hit sound '${FishSettings.meleeHitSoundName}' failed") {
@@ -55,7 +51,6 @@ object MeleeHitSound {
         }
     }
 
-    // A fresh damage number next to the target means the hit landed, even when ferocity keeps the hurt flash pinned
     private fun damageSplash(t: LivingEntity): Boolean {
         val level = t.level()
         var found = false
@@ -68,7 +63,6 @@ object MeleeHitSound {
         return found
     }
 
-    // Vanilla player.attack.* sounds that land right after one of our swings
     @JvmStatic
     fun onLocalSound(instance: SoundInstance): Boolean {
         if (!FishSettings.meleeHitSoundEnabled || !FishSettings.meleeHitSoundSuppress) return false

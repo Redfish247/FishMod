@@ -12,7 +12,6 @@ object ChatHideState {
         suppressedAtNanos = System.nanoTime()
     }
 
-    // Drops a blank line that arrived right before a hidden message (Hypixel pads blocks with blanks).
     @JvmStatic
     fun dropPrecedingBlank(hud: net.minecraft.client.gui.components.ChatComponent) {
         try {

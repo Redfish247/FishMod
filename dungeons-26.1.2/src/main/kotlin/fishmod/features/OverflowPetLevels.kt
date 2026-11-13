@@ -43,7 +43,6 @@ object OverflowPetLevels {
             exp -= getXpForLevel(i, rarity)
             i++
             if (rarity.offset + i >= LIST_OF_XP.size && exp > 0) {
-                // past the table every level costs the same, so finish arithmetically
                 i += kotlin.math.ceil(exp / 1886700.0).toInt()
                 break
             }

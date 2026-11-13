@@ -176,7 +176,6 @@ object CooldownOverlay {
         }
     }
 
-    // class level from own tab entry "(Mage XL)", 0 if missing
     private fun currentClassLevel(myName: String): Int {
         val e = fishmod.utils.TabListCache.entries.firstOrNull { it.info.profile.name == myName } ?: return 0
         val display = e.info.tabListDisplayName?.string ?: myName

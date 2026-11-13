@@ -4,7 +4,6 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object MiningSettings {
 
-    // Crystal Nucleus
     @ConfigValue @JvmField var miningNucleusBoxes: Boolean = false
     @ConfigValue @JvmField var miningNucleusFilled: Boolean = true
     @ConfigValue @JvmField var miningNucleusOpacity: Int = 35
@@ -15,7 +14,6 @@ object MiningSettings {
     @ConfigValue @JvmField var miningNucleusJade: Int = 0xFF55FF55.toInt()
     @ConfigValue @JvmField var miningNucleusSapphire: Int = 0xFF55FFFF.toInt()
 
-    // Mineshaft pity
     @ConfigValue @JvmField var miningPity: Boolean = false
     @ConfigValue @JvmField var miningPityBreakdown: Boolean = false
     @ConfigValue @JvmField var miningPityShowChance: Boolean = true
@@ -26,7 +24,6 @@ object MiningSettings {
     @ConfigValue @JvmField var miningPityHudY: Int = 120
     @ConfigValue @JvmField var miningPityHudScale: Double = 1.0
 
-    // Gemstone locator
     @ConfigValue @JvmField var miningGemLines: Boolean = false
     @ConfigValue @JvmField var miningGemBoxes: Boolean = true
     @ConfigValue @JvmField var miningGemPaths: Boolean = true
@@ -35,7 +32,6 @@ object MiningSettings {
     @ConfigValue @JvmField var miningGemLineWidth: Int = 3
     @ConfigValue @JvmField var miningGemOpacity: Int = 60
 
-    // Fossil solver
     @ConfigValue @JvmField var miningFossilSolver: Boolean = false
     @ConfigValue @JvmField var miningFossilColor: Int = 0xFF55FF55.toInt()
     @ConfigValue @JvmField var miningFossilOpacity: Int = 55
@@ -44,7 +40,6 @@ object MiningSettings {
     @ConfigValue @JvmField var miningFossilHudY: Int = 40
     @ConfigValue @JvmField var miningFossilHudScale: Double = 1.0
 
-    // Profit tracker
     @ConfigValue @JvmField var miningProfit: Boolean = false
     @ConfigValue @JvmField var miningProfitMode: String = "Session"
     @ConfigValue @JvmField var miningProfitCategory: String = "Combined"
@@ -58,7 +53,6 @@ object MiningSettings {
     @ConfigValue @JvmField var miningProfitHudY: Int = 160
     @ConfigValue @JvmField var miningProfitHudScale: Double = 1.0
 
-    // Abilities
     @ConfigValue @JvmField var miningAbilityTitle: Boolean = true
     @ConfigValue @JvmField var miningAbilityTitleText: String = "§a{ability} Ready!"
     @ConfigValue @JvmField var miningAbilityTitleMs: Int = 1500
@@ -80,7 +74,6 @@ object MiningSettings {
     @ConfigValue @JvmField var miningSkyMallHudY: Int = 120
     @ConfigValue @JvmField var miningSkyMallHudScale: Double = 1.0
 
-    // Commissions
     @ConfigValue @JvmField var miningCommissions: Boolean = false
     @ConfigValue @JvmField var miningAbilities: Boolean = false
     @ConfigValue @JvmField var miningCommHud: Boolean = true
@@ -93,14 +86,12 @@ object MiningSettings {
     @ConfigValue @JvmField var miningCommHudY: Int = 60
     @ConfigValue @JvmField var miningCommHudScale: Double = 1.0
 
-    // Powder chests
     @ConfigValue @JvmField var miningChests: Boolean = false
     @ConfigValue @JvmField var miningChestLine: Boolean = true
     @ConfigValue @JvmField var miningChestColor: Int = 0xFFFFAA00.toInt()
     @ConfigValue @JvmField var miningChestOpacity: Int = 45
     @ConfigValue @JvmField var miningChestLineWidth: Int = 3
 
-    // Corpses / shafts
     @ConfigValue @JvmField var miningCorpseAnnounce: Boolean = false
     @ConfigValue @JvmField var miningCorpseFormat: String = "x: {x}, y: {y}, z: {z} | {type} Corpse"
     @ConfigValue @JvmField var miningCorpseLapis: Boolean = true

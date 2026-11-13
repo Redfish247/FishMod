@@ -21,7 +21,6 @@ import net.minecraft.network.chat.Component
 import java.io.File
 import kotlin.math.abs
 
-// Diana loot/mob/stat tracker (Event, Session, Total) with chat parsing and announcers
 object DianaTracker {
     private const val MAX_PAST = 200
 
@@ -29,7 +28,7 @@ object DianaTracker {
     private const val SB_EPOCH = 1560276000L
     private const val DAY_S = 1200L
     private const val YEAR_S = DAY_S * 372
-    private const val ELECTION_DAY = 88 // Late Spring 27, 0-based
+    private const val ELECTION_DAY = 88
     private const val LS_WINDOW_MS = 2000L
     private val GSON = GsonBuilder().setPrettyPrinting().create()
 
@@ -112,14 +111,12 @@ object DianaTracker {
     // SkyBlock item id for a tracker key (Chimera is a book, shards/dye are prefixed)
     fun itemId(k: String): String = k.removeSuffix("_LS").let { PRICE_ID[it] ?: if (it == "MYTHOLOGICAL_DYE") "DYE_MYTHOLOGICAL" else it }
 
-    // Stackable mob drops with no chat line: counted from inventory pickups and the [Sacks] hover (as SBO does)
     private val STACK_DROPS = setOf("ENCHANTED_GOLD", "ENCHANTED_ANCIENT_CLAW", "ANCIENT_CLAW")
     private val SACK_NAMES = mapOf(
         "Enchanted Gold" to "ENCHANTED_GOLD", "Enchanted Ancient Claw" to "ENCHANTED_ANCIENT_CLAW", "Ancient Claw" to "ANCIENT_CLAW",
         "Gold" to "GOLD_INGOT",
     )
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
-    // Sack auto-crafting swaps 160 base items for 1 enchanted one; that's not a drop
     private val CRAFTED_FROM = mapOf("ENCHANTED_ANCIENT_CLAW" to "ANCIENT_CLAW", "ENCHANTED_GOLD" to "GOLD_INGOT")
     private const val CRAFT_RATIO = 160L
     private var lastSackHover = ""
@@ -131,12 +128,10 @@ object DianaTracker {
 
     private val BURROW = Regex("^You .*?Griffin [Bb]urrow")
     private val DUG_MOB = Regex("You dug (?:out )?(?:an? )?(.+?)!$")
-    // A cocoon spawns another copy of the mob, so it counts as an extra dig
     private val COCOON_MOB = Regex("CAUGHT!.*?You cocooned (?:an? )?(.+?)!$")
     private val COINS = Regex("^Wow! You dug out ([\\d,]+) coins!")
     private val TREASURE = Regex("^RARE DROP! You dug out an? (.+?)!$")
     private val RARE_DROP = Regex("^RARE DROP! (.+)$")
-    // Only the number is reliable; star glyph and spacing vary (SBO matches the same way)
     private val MF = Regex("\\(\\+([\\d,]+)[^)]*Magic Find")
     private val CHARM = Regex("^CHARM! You charmed .+? and received (\\d+) (.+?) Shards?!")
     private val LS_SHARD = Regex("^LOOT SHARE You received (\\d+) (.+?) Shards? for assisting")
@@ -189,7 +184,6 @@ object DianaTracker {
         DianaTrackerHud.init()
     }
 
-    // Message hider still works with the tracker off
     private fun hideOnly(s: String): Boolean {
         if (DianaMessageHider.shouldHide(s)) return true
         if (!DianaSettings.dianaMessageHider || s.contains(": ")) return false
@@ -199,7 +193,6 @@ object DianaTracker {
         return PREFIXES.fold(name) { n, p -> n.removePrefix(p) } in MOBS
     }
 
-    // Returns true to hide the line
     private fun onChat(s: String): Boolean {
         if (s.isEmpty() || s.contains(": ") && !s.startsWith("RARE DROP!")) return DianaMessageHider.shouldHide(s)
         val now = System.currentTimeMillis()
@@ -268,7 +261,6 @@ object DianaTracker {
 
     private fun lsRecent() = System.currentTimeMillis() - lastLsMs <= LS_WINDOW_MS
 
-    // Hooked to RareMobs death listeners
     @JvmStatic
     fun onRareMobDeath(name: String, nearby: Boolean) {
         val k = MOBS.firstOrNull { name.contains(it) }?.let(::key)?.takeIf { it in RARE } ?: return
@@ -392,7 +384,6 @@ object DianaTracker {
             .replace("{lstext}", if (ls) "(LS)" else "")
             .replace('&', '§')
         if (mf <= 0) out = out.replace(EMPTY_MF, "")
-        // An empty slot like {lstext} leaves "§d " between two spaces; fold those into one space
         var prev: String
         do { prev = out; out = out.replace(SPACE_CODES_SPACE, " $1") } while (out != prev)
         return out.replace(SPACES, " ").trim()
@@ -420,7 +411,6 @@ object DianaTracker {
 
     private fun changed() { dirty = true; version++ }
 
-    // Mobs since last <mob> and its chance % in the event tracker
     @JvmStatic
     fun since(mob: String): Pair<Int, Double> {
         val name = MOBS.firstOrNull { mob.contains(it, true) } ?: return 0 to 0.0
@@ -456,7 +446,6 @@ object DianaTracker {
         val ev = data.event
         if (ev.year == 0) { ev.year = y; changed(); return }
         if (ev.year >= y) return
-        // New year only counts once Diana (Mythological Ritual) is confirmed elected
         if (!fishmod.utils.MayorApi.isDianaRitualActive()) return
         if (ev.mobs.values.any { it > 0 }) {
             data.past.add(PastEvent().also {
@@ -470,7 +459,6 @@ object DianaTracker {
         FishMsg.send("§aDiana event tracker reset for Year $y.")
     }
 
-    // Bazaar items follow the Diana price mode; everything else falls back to lowest BIN
     fun priceOf(k: String): Double {
         val base = k.removeSuffix("_LS")
         if (base in NO_PRICE) return 0.0
@@ -505,7 +493,6 @@ object DianaTracker {
                 data.event.timeMs += d; data.session.timeMs += d; data.total.timeMs += d
                 if (tickN % 20 == 0) version++
             } else {
-                // Went AFK: pause and take back the idle time counted since the last dig
                 for (t in listOf(data.event, data.session, data.total)) t.timeMs = (t.timeMs - sinceActivityMs).coerceAtLeast(0)
                 sinceActivityMs = 0L
                 afk = true
@@ -524,7 +511,6 @@ object DianaTracker {
 
     private fun mobDiedWithin(ms: Long) = System.currentTimeMillis() - RareMobs.lastDianaMobDeathMs <= ms
 
-    // Claws / enchanted gold picked up right after a Diana mob dies; menus reset the baseline so moving items isn't counted
     private fun scanStackDrops(mc: Minecraft, p: net.minecraft.world.entity.player.Player) {
         val cur = HashMap<String, Int>()
         for (st in p.inventory.nonEquipmentItems) {
@@ -545,7 +531,6 @@ object DianaTracker {
     private var shurikenCount = -1
     private var shurikenHeld = false
 
-    // Shurikens used: stack shrinks outside menus while one was in hand
     private fun scanShurikens(menu: Boolean, p: net.minecraft.world.entity.player.Player) {
         var n = 0
         for (st in p.inventory.nonEquipmentItems) if (ItemTools.getId(st)?.contains("SHURIKEN") == true) n += st.count
@@ -555,10 +540,8 @@ object DianaTracker {
         shurikenCount = n; shurikenHeld = held
     }
 
-    // "[Sacks] +N items" lists what went straight to sacks in its hover text
     private fun onSacks(text: Component) {
         if (!mobDiedWithin(SACK_WINDOW_MS)) return
-        // Several parts of the line carry the same hover, so collect each distinct text once
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
             (c.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string.replace(FishConstants.STRIP_COLOR_REGEX, "") }
@@ -586,7 +569,6 @@ object DianaTracker {
         }
     }
 
-    // Hypixel sends no chat line for hilts, so watch for a fresh one in the inventory
     private fun scanHilts(p: net.minecraft.world.entity.player.Player) {
         val cur = ArrayList<Pair<String, Long>>()
         for (st in p.inventory.nonEquipmentItems) {
@@ -620,7 +602,6 @@ object DianaTracker {
     private val SBO_KEYS = mapOf("coins" to "COINS", "Total Burrows" to "TOTAL_BURROWS", "TotalMobs" to "TOTAL_MOBS")
     private val SBO_SKIP = setOf("time", "scavengerCoins", "fishCoins")
 
-    // SBO tracker JSON {items:{..}, mobs:{..}} -> our Tracker; SBO keeps playtime in items.time (ms)
     private fun fromSbo(o: com.google.gson.JsonObject): Tracker {
         val t = Tracker()
         if (o.has("year")) t.year = o.get("year").asInt
@@ -675,7 +656,6 @@ object DianaTracker {
             .then(ClientCommands.literal("pastevents").executes { openPastEvents(); 1 })
             .then(ClientCommands.literal("importsbo").executes { importSbo(); 1 })
 
-    // Party command replies from the Event tracker, null if not a Diana command
     @JvmStatic
     fun partyReply(cmd: String, arg: String?): String? {
         val e = data.event

@@ -2,9 +2,7 @@ package fishmod.features.fishing
 
 import fishmod.utils.SkyblockLocation
 
-// Counters of one tracker bucket (session or total). Gson-persisted for totals.
 class FishingBucket {
-    // catch events (hooks that landed a sea creature) and creatures (double hook counts 2)
     var events = 0L
     var catches = 0L
     var doubles = 0L
@@ -14,9 +12,7 @@ class FishingBucket {
     var drops: MutableMap<String, Long> = LinkedHashMap()
     var dropCoins: MutableMap<String, Double> = LinkedHashMap()
     var lines: MutableMap<String, Long> = LinkedHashMap()
-    // net coins from area chat lines (dice)
     var lineCoins = 0.0
-    // pity: pitySc catches since the last pityDrop
     var pity = 0L
     @Transient var lastAt = 0L
     @Transient var lastLineAt = 0L
@@ -26,7 +22,6 @@ class FishingBucket {
 
 class FishingTotals { var buckets: MutableMap<String, FishingBucket> = LinkedHashMap() }
 
-// Barn timer: started by the first catch, reset after an idle gap or a full-barn line.
 class BarnState {
     var startedAt = 0L
     var lastAt = 0L
@@ -44,7 +39,6 @@ class BarnState {
     companion object { const val IDLE_MS = 300_000L }
 }
 
-// Fishing festival: shark counts, over on the end line or 61 min after the first shark.
 class FestivalState {
     val sharks = LinkedHashMap<String, Long>()
     var startedAt = 0L
@@ -68,7 +62,6 @@ class FestivalState {
     }
 }
 
-// All tracker state and update rules; no Minecraft types, so tests drive it directly.
 object FishingTrackerStore {
     const val MAIN = "main"
 
@@ -79,21 +72,16 @@ object FishingTrackerStore {
 
     @JvmField @Volatile var paused = false
 
-    // Session clock: accumulated while running, paused with the pause key, cleared by resetSession
     private var sessionAcc = 0L
     private var sessionResumeAt = System.currentTimeMillis()
     @JvmStatic fun sessionElapsed(now: Long): Long = sessionAcc + (if (paused) 0L else (now - sessionResumeAt).coerceAtLeast(0L))
 
-    // HUDs draw only while the player's own hook existed within the last 60 s
     const val CAST_WINDOW_MS = 60_000L
     @JvmField @Volatile var lastCastAt = 0L
     @JvmStatic fun noteCast(now: Long) { lastCastAt = now }
     @JvmStatic fun castRecent(now: Long): Boolean = lastCastAt != 0L && now - lastCastAt <= CAST_WINDOW_MS
-    // Draw gate: fishing island (Fishing.active()) and a recent cast
-    // either=false: both must hold (default); either=true: one is enough
     @JvmStatic @JvmOverloads fun shouldDraw(active: Boolean, now: Long, either: Boolean = false): Boolean =
         if (either) active || castRecent(now) else active && castRecent(now)
-    // Bumped on every change; HUD line caches rebuild on it
     @JvmField @Volatile var version = 0
     @JvmField @Volatile var dirty = false
 
@@ -131,7 +119,6 @@ object FishingTrackerStore {
         bump()
     }
 
-    // Rare drop with its ItemPricer price (0 when unknown)
     @JvmStatic
     fun onDrop(name: String, price: Double) {
         if (paused) return
@@ -150,7 +137,6 @@ object FishingTrackerStore {
         bump()
     }
 
-    // Fishing-sack gain (n items, total price) into the main bucket
     @JvmStatic
     fun onSackItem(name: String, n: Long, coins: Double) {
         if (paused || n <= 0) return
@@ -161,7 +147,6 @@ object FishingTrackerStore {
         bump()
     }
 
-    // Chat line of an area def with a line parser (treasure, dice); true when counted
     @JvmStatic
     fun onLine(areaId: String, line: AreaLine, now: Long) {
         if (paused) return

@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 
-/** External profile pages for the viewed player. */
 object SocialLinks {
 	private val NAME = Regex("[A-Za-z0-9_]{1,16}")
 	private val HEX32 = Regex("[0-9a-f]{32}")
@@ -31,7 +30,6 @@ object SocialLinks {
 	@JvmRecord
 	data class Target(val uuid: UUID?, val name: String?, val profileId: String?, val profileName: String?)
 
-	/** Returns null when the target has nothing the site can look up. */
 	@JvmStatic
 	fun url(site: Site?, target: Target?): String? {
 		if (site == null || target == null) {
@@ -43,7 +41,6 @@ object SocialLinks {
 		return when (site) {
 			Site.PLANCKE -> player?.let { "https://plancke.io/hypixel/player/stats/$it" }
 			Site.SKYCRYPT -> player?.let {
-				// SkyCrypt rejects profile ids, only the profile name selects a profile.
 				val profile = blankToNull(target.profileName)
 				"https://sky.shiiyu.moe/stats/" + it + (if (profile == null) "" else "/" + segment(profile))
 			}

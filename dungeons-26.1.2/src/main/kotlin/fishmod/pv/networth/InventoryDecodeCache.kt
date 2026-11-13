@@ -12,10 +12,6 @@ import com.google.gson.JsonObject
 import java.io.IOException
 import java.util.function.Supplier
 
-/**
- * Sole owner of ThreadLocal NBT decode caches for [InventoryDecoder].
- * Nested [withSharedDecode] calls reuse the outer cache.
- */
 internal object InventoryDecodeCache {
     private val DECODE_KEEPING_EMPTY_CACHE = ThreadLocal<MutableMap<String, List<InventoryDecoder.Stack?>>>()
     private val DECODE_COMPACT_CACHE = ThreadLocal<MutableMap<String, List<InventoryDecoder.Stack>>>()

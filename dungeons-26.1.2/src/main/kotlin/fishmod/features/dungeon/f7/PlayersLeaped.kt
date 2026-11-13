@@ -52,7 +52,6 @@ object PlayersLeaped {
         val level = mc.level ?: return 0
         val me = mc.player ?: return 0
         val team = DungeonRole.getAll().keys
-        // class map empty (tab not parsed yet): count any other player in the zone
         return level.players().count { p ->
             p !== me && p.isAlive && (team.isEmpty() || p.gameProfile.name in team) && zone.box.contains(p.position())
         }

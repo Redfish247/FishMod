@@ -13,7 +13,6 @@ import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Vanilla stand-in icons for essence shop perks, shared by every shop view. */
 object EssenceIcons {
 	@JvmStatic
 	fun shop(skyblockId: String?): ItemStack {
@@ -24,7 +23,6 @@ object EssenceIcons {
 	@JvmStatic
 	fun perk(perkId: String?): ItemStack = perk(perkId, Items.PAPER)
 
-	// Drawn every frame; shared read-only stacks per (fallback, perk).
 	private val CACHE = ConcurrentHashMap<Item, ConcurrentHashMap<String, ItemStack>>()
 
 	@JvmStatic
@@ -41,7 +39,6 @@ object EssenceIcons {
 			return ItemStack(fallback)
 		}
 		return when (perkId) {
-			// Dungeons (Malik)
 			"permanent_health", "catacombs_health" -> ItemStack(Items.GOLDEN_APPLE)
 			"permanent_defense", "catacombs_defense" -> ItemStack(Items.IRON_CHESTPLATE)
 			"permanent_speed" -> ItemStack(Items.SUGAR)
@@ -72,7 +69,6 @@ object EssenceIcons {
 			"dragon_reforges_buff" -> ItemStack(Items.ANVIL)
 			"increased_sup_chances" -> ItemStack(Items.EGG)
 			"unbridled_rage" -> ItemStack(Items.BLAZE_POWDER)
-			// Gold / Diamond
 			"heart_of_gold" -> ItemStack(Items.GOLDEN_APPLE)
 			"treasures_of_the_earth" -> ItemStack(Items.CHEST)
 			"dwarven_training" -> ItemStack(Items.IRON_PICKAXE)
@@ -85,21 +81,18 @@ object EssenceIcons {
 			"under_pressure" -> ItemStack(Items.OBSIDIAN)
 			"high_roller" -> ItemStack(Items.GOLD_BLOCK)
 			"return_to_sender" -> ItemStack(Items.ARROW)
-			// Fossil
 			"prehistorian" -> ItemStack(Items.BONE)
 			"resourceful" -> ItemStack(Items.CHEST)
 			"chilled_to_the_bone" -> ItemStack(Items.BLUE_ICE)
 			"dwarven_expertise" -> ItemStack(Items.IRON_PICKAXE)
 			"sleight_of_hand" -> ItemStack(Items.GOLDEN_PICKAXE)
 			"cut_loose" -> ItemStack(Items.SHEARS)
-			// Forest
 			"trapped" -> ItemStack(Items.IRON_TRAPDOOR)
 			"axed" -> ItemStack(Items.IRON_AXE)
 			"extreme_pressure" -> ItemStack(Items.OBSIDIAN)
 			"lumberjack" -> ItemStack(Items.OAK_LOG)
 			"tasty" -> ItemStack(Items.APPLE)
 			"forest_training" -> ItemStack(Items.BOOK)
-			// Safari
 			"critter_catcher" -> ItemStack(Items.EGG)
 			"critter_master" -> ItemStack(Items.NETHER_STAR)
 			"floortunate" -> ItemStack(Items.STRING)
@@ -112,7 +105,6 @@ object EssenceIcons {
 			"amateur_hour" -> ItemStack(Items.BOOK)
 			"sparkling_specialist" -> ItemStack(Items.AMETHYST_SHARD)
 			"eagles_advantage" -> orFallback(SkyBlockItemFactory.iconStack("EAGLE;4"), Items.FEATHER)
-			// Crimson
 			"strongarm_kuudra" -> ItemStack(Items.FISHING_ROD)
 			"fresh_tools_kuudra" -> ItemStack(Items.IRON_PICKAXE)
 			"headstart_kuudra" -> ItemStack(Items.GOLD_NUGGET)
@@ -125,7 +117,6 @@ object EssenceIcons {
 		}
 	}
 
-	// iconStack returns paper until the NEU repo has loaded the item.
 	private fun orFallback(resolved: ItemStack?, fallback: Item): ItemStack =
 		if (resolved != null && !resolved.isEmpty && isResolved(resolved.item)) resolved else ItemStack(fallback)
 

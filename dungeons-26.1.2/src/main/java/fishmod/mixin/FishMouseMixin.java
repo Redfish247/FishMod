@@ -63,7 +63,6 @@ public class FishMouseMixin {
         if (NoCursorReset.shouldHook() && fishmod.compat.McCompatKt.getCurScreen(Minecraft.getInstance()) instanceof AbstractContainerScreen) {
             this.xpos = this.fishmod$beforeX;
             this.ypos = this.fishmod$beforeY;
-            // Move the real OS cursor too, or the next mouse move snaps back to centre
             fishmod.compat.GLFW.glfwSetCursorPos(Minecraft.getInstance().getWindow().handle(), this.xpos, this.ypos);
         }
     }

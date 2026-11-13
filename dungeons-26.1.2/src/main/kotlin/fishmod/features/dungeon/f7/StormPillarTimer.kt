@@ -15,7 +15,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
 
-// Storm's hit lines mean a pillar just crushed him: 1s pillar blast countdown plus a banner.
 object StormPillarTimer {
 
     private val HIT_LINES = setOf("[BOSS] Storm: Oof", "[BOSS] Storm: Ouch, that hurt!")

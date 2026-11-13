@@ -21,7 +21,6 @@ import fishmod.features.rift.RiftSettings as S
 // Own Bloodfiend helper, detection modelled on SkyHanni's VampireSlayerFeatures
 object RiftVampire {
 
-    // Skin hashes of the Blood Ichor and Killer Spring skull stands
     private const val ICHOR_SKIN = "c0340923a6de4825a176813d133503eff186db0896e32b6704928c2a2bf68422"
     private const val SPRING_SKIN = "77f7a7bc8ac86f23ca7bf98afeb76960227e1832fe209a3026f6ceb8bde74f54"
     private val TWINCLAWS = Regex("TWINCLAWS \\d[\\d.,]*s")
@@ -50,7 +49,6 @@ object RiftVampire {
         val name = me.gameProfile.name
         val area = me.boundingBox.inflate(RANGE)
 
-        // Bloodfiend is an NPC player; its "Spawned by" tag floats ~3 blocks above it
         val b = level.getEntitiesOfClass(Player::class.java, area) {
             it !== me && it.isAlive && it.uuid.version() != 4 && Rift.strip(it.name.string).trim() == "Bloodfiend"
         }.firstOrNull { tagsNear(it, "Spawned by").any { s -> s.contains(name) } }
@@ -76,7 +74,6 @@ object RiftVampire {
         }
     }
 
-    // Stand names in a 3-block box centred 3 blocks above the entity, stretched 3 more vertically
     private fun tagsNear(e: Player, contains: String): List<String> {
         val c = e.position().add(0.0, 3.0, 0.0)
         val box = AABB(c.x - 3, c.y - 6, c.z - 3, c.x + 3, c.y + 6, c.z + 3)

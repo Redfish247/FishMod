@@ -9,7 +9,6 @@ import fishmod.utils.events.chatPlain
 // Fan-out of fishing chat lines into typed events. Strings adapted from Feesh (Sleepy-Panda, Apache-2.0); UNVERIFIED in game.
 class SeaCreatureCaught(
     val creature: SeaCreature,
-    // 2 when a Double Hook line came right before, else 1
     val count: Int,
     val cocoon: Boolean,
     val location: SkyblockLocation,
@@ -31,7 +30,6 @@ object FishingEvents {
     private const val COCOON = "CAUGHT! You cocooned "
     private val COCOON_RE = Regex("""^CAUGHT! You cocooned (?:a|an) (.+)!$""")
 
-    // Window in which the catch line after "Double Hook" counts x2
     private const val DOUBLE_WINDOW_MS = 10_000L
     private var doubleAt = 0L
 
@@ -45,7 +43,6 @@ object FishingEvents {
         }
     }
 
-    // Public for tests and replay: one colour-stripped chat line.
     @JvmStatic
     @JvmOverloads
     fun handle(plain: String, now: Long = System.currentTimeMillis(), ownName: String? = null) {

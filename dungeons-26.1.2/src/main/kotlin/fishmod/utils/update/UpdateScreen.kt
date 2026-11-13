@@ -142,7 +142,6 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         ScreenTheme.nPanel(x, y, x + panelW, y + panelH, 10, fade(BG, p), fade(if (bodyHov) ScreenTheme.ACCENT else BORDER, p))
         UiRecorder.fillRect((x + 10).toFloat(), y.toFloat(), (panelW - 20).toFloat(), 2f, fade(ScreenTheme.ACCENT, p))
 
-        // Header: arrow glyph, title, version delta, page link.
         ScreenTheme.nRoundedRect(x + pad, y + 12, 24, 24, 6, fade(0x2424B6B0, p))
         UiRecorder.fillRect((x + pad + 11).toFloat(), (y + 17).toFloat(), 2f, 11f, fade(ScreenTheme.ACCENT, p))
         UiRecorder.chevron((x + pad + 8).toFloat(), (y + 27).toFloat(), true, fade(ScreenTheme.ACCENT, p))
@@ -160,7 +159,6 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         }
         ScreenTheme.nRect(x + pad, y + 44, innerW, 1, fade(BORDER, p))
 
-        // Changelog (scrolls; clicking anywhere outside the buttons opens the mod page).
         val ly = logY + dy
         ScreenTheme.nRoundedRect(x + pad, ly, innerW, logH, 6, fade(LOG_BG, p))
         UiRecorder.pushScissor((x + pad).toFloat(), ly.toFloat(), innerW.toFloat(), logH.toFloat())
@@ -189,7 +187,6 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
             UiRecorder.text(hint, x + panelW / 2f - hw / 2f, ly + logH - 11.5f, 6f, ScreenTheme.ACCENT_HOVER)
         }
 
-        // Buttons.
         val by = btnY + dy
         val sHov = inside(mx, my, skipX, btnY, skipW, btnH)
         ScreenTheme.nRoundedRectRing(skipX, by, skipW, btnH, btnH / 2, 1, fade(if (sHov) CARD_HOVER else CARD, p), fade(BORDER, p))
@@ -249,7 +246,6 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
     private val MD_TAG = Regex("<[^>]+>")
     private val MD_BULLET = Regex("""^[-*+]\s+""")
 
-    // Release markdown → plain lines; headings are tagged with \u0001 so they render bold.
     private fun changelog(body: String): List<String> {
         val out = ArrayList<String>()
         for (raw in body.replace("\r", "").lines()) {

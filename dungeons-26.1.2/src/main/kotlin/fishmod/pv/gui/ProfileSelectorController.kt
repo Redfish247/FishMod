@@ -27,7 +27,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.ResolvableProfile
 
-/** Profile footer menu, coop flyout, and profile-switch hit testing. */
 class ProfileSelectorController(private val screen: ProfileViewerScreen) {
 	private var cachedProfileFooter = ""
 	private var cachedProfileFooterName = ""
@@ -282,7 +281,6 @@ class ProfileSelectorController(private val screen: ProfileViewerScreen) {
 		}
 	}
 
-	/** Screen height in the viewer's scaled coordinates, so popups use the room that is actually there. */
 	private fun visibleScreenH(): Int {
 		val virtual = IconButtonBar.virtualHeight()
 		return if (virtual > 0) virtual else screen.height
@@ -383,7 +381,6 @@ class ProfileSelectorController(private val screen: ProfileViewerScreen) {
 		flyoutY: Int,
 		flyoutH: Int
 	) {
-		// Scissoring hides pixels, but still extracting a head can resolve its profile online.
 		if (y + PROFILE_COOP_FLYOUT_ROW <= flyoutY || y >= flyoutY + flyoutH) return
 		val resolved = ProfileFetcher.coopNameResolved(member)
 		val hover = resolved &&

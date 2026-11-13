@@ -7,7 +7,6 @@ import fishmod.features.FishModScreen.SliderIntSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.rift.RiftSettings as S
 
-// The Rift tab in /fm
 object RiftMenu {
 
     fun column(): Column {

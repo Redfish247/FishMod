@@ -26,7 +26,6 @@ import net.minecraft.world.phys.Vec3
 object Kuudra {
 
     enum class Supply(val pick: BlockPos, val drop: BlockPos, val cx: Double, val cz: Double) {
-        // drop centres (cx, cz) are IQ's pile positions
         Triangle(BlockPos(-67, 77, -122), BlockPos(-95, 78, -107), -94.0, -106.0),
         X(BlockPos(-142, 77, -151), BlockPos(-107, 78, -114), -106.0, -113.0),
         Equals(BlockPos(-65, 76, -87), BlockPos(-107, 78, -100), -106.0, -99.0),
@@ -52,7 +51,6 @@ object Kuudra {
     var supplies = 0; private set
     val supplyTimes = ArrayList<Pair<String, Long>>()
     val freshers = LinkedHashMap<String, Long>()
-    // phaseStart[0] = run start (supplies), [4] = run end
     val phaseStart = LongArray(5)
     var preSpot = Supply.None; private set
     var missing = Supply.None; private set
@@ -127,7 +125,6 @@ object Kuudra {
         }
     }
 
-    // Nearest drop spot to the "SUPPLIES RECEIVED" hologram is marked placed
     private fun dropDone(x: Double, z: Double) {
         val s = Supply.entries.filter { it != Supply.None && it != Supply.Square }
             .minByOrNull { val dx = it.cx - x; val dz = it.cz - z; dx * dx + dz * dz } ?: return
@@ -155,7 +152,6 @@ object Kuudra {
         PARTY_NOPRE.find(msg)?.let { onMissing(Supply.entries.first { s -> s.name.equals(it.groupValues[2].replace(" ", ""), true) }) }
         SUPPLY.find(msg)?.let { m ->
             supplies = m.groupValues[2].toInt()
-            // supplies phase starts at phaseStart[0]; [1] is the build start
             val t = if (phaseStart[0] > 0) now() - phaseStart[0] else 0L
             supplyTimes.add(m.groupValues[1] to t)
             if (m.groupValues[1] == Minecraft.getInstance().player?.name?.string) {

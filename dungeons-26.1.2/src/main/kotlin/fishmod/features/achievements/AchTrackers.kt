@@ -15,7 +15,6 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
-// Counters fed by AchEvents plus polled ledgers over the existing profit/Diana/mining trackers
 object AchTrackers {
 
     private val RNG_RARITIES = setOf("CRAZY RARE", "INSANE", "PRAY TO RNGESUS", "RNGESUS INCARNATE", "PRAY RNGESUS")
@@ -45,7 +44,6 @@ object AchTrackers {
 
     private fun secret(k: String) = AchStore.max("secret.$k", 1)
 
-    // Unlocks when `need` events land inside the sliding window
     private fun burst(q: ArrayDeque<Long>, windowMs: Long, need: Int, k: String) {
         val now = System.currentTimeMillis()
         q.addLast(now)
@@ -220,7 +218,6 @@ object AchTrackers {
         return best
     }
 
-    // Lifetime value per source; a big drop means the tracker was reset, so the old total moves into base
     private fun feed(name: String, cur: Double): Double {
         if (cur.isNaN() || cur.isInfinite()) return 0.0
         val f = AchStore.data.feeds.getOrPut(name) { AchStore.Feed() }
@@ -231,7 +228,6 @@ object AchTrackers {
         return v
     }
 
-    // Lifetime dungeon chest loot value from the loot tracker rows (chest costs aren't recorded)
     private fun dungeonLootValue(): Double {
         var v = 0.0
         for (r in fishmod.features.croesus.LootTrackerStore.rows()) {
@@ -277,7 +273,6 @@ object AchTrackers {
         FishDiag.guard("AchTrackers.3", "rng feed") { pollRng() }
     }
 
-    // Rare drops from the real trackers: count/best/log, idempotent via max() and a per-item baseline
     private fun pollRng() {
         val st = AchStore
         val min = AchSettings.achRngMinValue.toDouble()

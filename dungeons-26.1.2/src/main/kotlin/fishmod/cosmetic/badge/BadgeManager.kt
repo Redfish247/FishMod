@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 object BadgeManager {
 
-    // Gamble #1 crown, drawn like any other badge
     private val CROWN = BadgeDef("gamble_crown", "Gamble #1", "♛", 0xFFAA00, -1)
 
     private val byUuid: MutableMap<String, List<String>> = ConcurrentHashMap()

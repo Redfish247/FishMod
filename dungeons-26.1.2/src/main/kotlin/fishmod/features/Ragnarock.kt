@@ -46,7 +46,6 @@ object Ragnarock {
         return FishDiag.guard("Ragnarock.2", "rag axe id lookup failed") { ItemTools.getId(p.mainHandItem) == "RAGNAROCK_AXE" } ?: false
     }
 
-    // Ability grants 1.5x the held weapon's lore Strength
     private fun strengthGained(): Int? {
         val p = Minecraft.getInstance().player ?: return null
         val lore = p.mainHandItem.get(DataComponents.LORE) ?: return null

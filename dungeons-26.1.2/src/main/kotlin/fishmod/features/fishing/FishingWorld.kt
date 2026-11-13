@@ -9,9 +9,7 @@ import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.fishing.FishingWorldSettings as W
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
-// World + items. init() runs from Fishing.init(), addMenu()/describe() from FishingMenu.
 object FishingWorld {
-    // Cached once per tick so the entity render mixin does one static boolean read per entity.
     @JvmField @Volatile var anyOn = false
     @JvmField @Volatile var anyHookTimer = false
     @JvmField @Volatile var anyRare = false

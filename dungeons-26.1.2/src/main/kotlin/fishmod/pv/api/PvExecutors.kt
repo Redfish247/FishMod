@@ -5,7 +5,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ThreadFactory
 
-// Shared daemon pools for the pv caches.
 object PvExecutors {
     @JvmField
     val SCHEDULER: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemon("FishPV-Refresh"))

@@ -13,13 +13,8 @@ import kotlin.math.max
 import kotlin.math.min
 
 object ClassXpCalculator {
-	/**
-	 * Off-class share used by Adjectils / common RTCA sims (`selectedRate / 4`).
-	 * UI tips often say 0.2×; matching Adjectils requires 0.25.
-	 */
 	private const val OFF_CLASS_RATE = 0.25
 
-	/** Adjectils caps Derpy/Aura class XP at +50% even when Aura is +59%. */
 	private const val CLASS_MAYOR_CAP = 1.5
 	private const val RTCA_MAX_RUNS = 200_000
 
@@ -63,11 +58,6 @@ object ClassXpCalculator {
 		return calculateForClass(data, query.classId, query.displayName, query.targetLevel)
 	}
 
-	/**
-	 * Adjectils-style equal-runs planner: each run selects the class with the most XP still needed;
-	 * that class gains full XP/run, others gain [OFF_CLASS_RATE]. Stops when every class
-	 * has reached the XP for `targetLevel` (Hypixel CA 50 requires all five at 50).
-	 */
 	@JvmStatic
 	fun calculateAverage(data: DungeonSnapshot, targetLevel: Int): AverageResult {
 		DungeonXpData.ensureLoaded()
@@ -220,7 +210,6 @@ object ClassXpCalculator {
 		return best
 	}
 
-	// Floors the player can run: cata level, master unlock and previous-floor chain
 	private fun availableFloors(data: DungeonSnapshot): List<DungeonXpData.FloorDef> {
 		val cataLevel = data.cataLevel
 		val masterUnlocked = completions(data.normal, "7") > 0L

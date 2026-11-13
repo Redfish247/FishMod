@@ -168,7 +168,6 @@ object DoorHighlight {
     private var outlineCache: List<Door> = emptyList()
     private var outlineCacheAt = 0L
 
-    // shared across the three render passes; refreshed at most once per tick
     private fun outlineDoors(): List<Door> {
         val now = System.currentTimeMillis()
         if (now - outlineCacheAt >= 50) {

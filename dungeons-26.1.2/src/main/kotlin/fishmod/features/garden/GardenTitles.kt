@@ -4,7 +4,6 @@ import fishmod.utils.FishUtil
 import net.minecraft.sounds.SoundEvents
 import fishmod.features.garden.GardenSettings as S
 
-// Visitor / pest / composter title messages as a HUD, placed and scaled in the HUD editor
 object GardenTitles {
 
     private var lines: List<String> = emptyList()
@@ -24,7 +23,6 @@ object GardenTitles {
 
     private fun visitorFullOn() = S.gardenVisitorSixthWarn && S.gardenVisitorTimer
 
-    // First title the player has turned on, none when all are off
     private fun example(): List<String> = listOfNotNull(when {
         visitorFullOn() -> visitorFull()
         S.gardenVisitorArrivalTitle -> visitorArrived("Example Visitor")

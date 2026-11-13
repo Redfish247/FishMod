@@ -37,7 +37,6 @@ public class FishDrawContextMixin {
     @Shadow
     private Matrix3x2fStack pose;
 
-    // Vanilla sits 12px off the cursor; pull it 6px closer on whichever side it lands.
     private static final int FISHMOD$TOOLTIP_PULL = 6;
     private static final ClientTooltipPositioner FISHMOD$CLOSER = (sw, sh, x, y, w, h) -> {
         Vector2ic p = DefaultTooltipPositioner.INSTANCE.positionTooltip(sw, sh, x, y, w, h);

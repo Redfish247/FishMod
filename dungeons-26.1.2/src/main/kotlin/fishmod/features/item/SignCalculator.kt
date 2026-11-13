@@ -9,7 +9,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-// Math in Hypixel input signs: "9*9" previews "= 81" and is sent as 81
 object SignCalculator {
 
     @JvmStatic
@@ -21,13 +20,11 @@ object SignCalculator {
                 val msgs = messages(screen) ?: return@AfterExtract
                 if (!isInputSign(msgs)) return@AfterExtract
                 val v = evaluate(msgs[0]) ?: return@AfterExtract
-                // Right of the sign's first (input) line
                 ctx.text(Minecraft.getInstance().font, "§a= §f${format(v)}", w / 2 + 52, 72, -1, true)
             })
         })
     }
 
-    // Called from removed() before vanilla sends the sign packet
     @JvmStatic
     fun beforeSend(screen: AbstractSignEditScreen) {
         if (!FishSettings.signCalculator) return
@@ -40,11 +37,9 @@ object SignCalculator {
     private fun messages(screen: AbstractSignEditScreen): Array<String>? =
         (screen as? AbstractSignEditScreenAccessor)?.`fishmod$getMessages`()?.takeIf { it.isNotEmpty() }
 
-    // Hypixel input signs: typed text on line 1, "^^^^" under it
     private fun isInputSign(msgs: Array<String>): Boolean =
         SkyblockLocation.inSkyblock() || (msgs.size > 1 && msgs[1].contains("^^^"))
 
-    // Null unless the text is a valid expression with at least one operator or bracket
     @JvmStatic
     fun evaluate(raw: String): BigDecimal? {
         val s = raw.replace(",", "").replace(" ", "").lowercase().replace('x', '*').replace('×', '*').replace('÷', '/')

@@ -6,7 +6,6 @@ import fishmod.utils.events.FishEvents
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Sound (and optional title) when someone joins your party
 object PartyJoinSound {
     private val JOIN = Regex("""^(?:\[[^]]+]\s+)?(\w{1,16}) joined the party\.$""")
     private var last = ""

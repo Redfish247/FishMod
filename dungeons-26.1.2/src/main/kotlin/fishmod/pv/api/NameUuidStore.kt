@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Name to UUID lookups kept across sessions so repeat /pv targets skip Mojang. */
 internal object NameUuidStore {
     // Mojang holds a changed name for 37 days before anyone else can claim it, so a
     // shorter TTL can never map a name to the wrong account.
@@ -75,7 +74,6 @@ internal object NameUuidStore {
         if (ENTRIES.remove(name.lowercase(Locale.ROOT)) != null) scheduleSave()
     }
 
-    // Drops names this account no longer has once its current name is confirmed.
     @JvmStatic
     fun forgetOtherNames(uuid: UUID?, currentName: String?) {
         if (uuid == null || currentName == null) return

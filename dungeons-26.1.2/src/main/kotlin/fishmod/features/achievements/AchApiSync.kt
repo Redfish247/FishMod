@@ -7,7 +7,6 @@ import fishmod.utils.HypixelApi
 import net.minecraft.client.Minecraft
 import kotlin.math.floor
 
-// One selected-profile pull through the fishmod.dev proxy; values only ever raise counters
 object AchApiSync {
 
     private const val MIN_GAP_MS = 10 * 60_000L
@@ -57,7 +56,6 @@ object AchApiSync {
         }
     }
 
-    // Separate endpoints (museum, garden, collection tiers); each lands on its own and only raises counters
     private fun extras(uuid: String, pid: String?, member: JsonObject) {
         val mc = Minecraft.getInstance()
         fun land(f: () -> Unit) = mc.execute {
@@ -68,7 +66,6 @@ object AchApiSync {
         if (pid != null) {
             HypixelApi.fetchJson("/skyblock/museum?profile=$pid") { root ->
                 val museumMember = fishmod.pv.api.ProfileMuseumLookup.findMuseumMember(root, pid, uuid) ?: return@fetchJson
-                // armor sets are one entry holding several pieces, so count decoded stacks
                 val items = fishmod.pv.networth.InventoryDecoder.parseMuseum(museumMember).size
                 land { put("museum.items", items.toDouble()) }
             }
@@ -96,7 +93,6 @@ object AchApiSync {
         }
     }
 
-    // Crafted minions are shared across coop members; community shop adds up to 5 slots
     private fun minions(profile: JsonObject, member: JsonObject) {
         val gens = HashSet<String>()
         val members = profile.getAsJsonObject("members")?.entrySet()?.map { it.value }.orEmpty() + member
@@ -261,7 +257,6 @@ object AchApiSync {
         }
 
         put("purse", num(m, "currencies.coin_purse"))
-        // API chocolate_level is the prestige count minus one (1 = Prestige I... first tier is level 0)
         if (obj(m, "events.easter")?.has("chocolate_level") == true) put("choc.prestige", num(m, "events.easter.chocolate_level") + 1)
         put("choc.rabbits", obj(m, "events.easter.rabbits")?.keySet()?.count { it != "collected_eggs" && it != "collected_locations" }?.toDouble() ?: 0.0)
 

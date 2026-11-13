@@ -45,7 +45,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Foraging overview subtab (left stats + flip panel). */
 public final class ForagingOverviewPage {
 	private final List<HoverZone> zones = new ArrayList<>();
 

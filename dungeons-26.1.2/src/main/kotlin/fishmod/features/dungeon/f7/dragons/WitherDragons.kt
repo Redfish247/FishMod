@@ -115,7 +115,6 @@ object WitherDragons {
             if (d.state == WitherDragonState.SPAWNING) {
                 d.timeToSpawn--
                 if (d.timeToSpawn <= -20) {
-                    // Ping-tick timer can run slow; a late spawn is recovered in DragonCheck.dragonSpawn.
                     if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7${d.name} spawn timer ran out, waiting for late spawn")
                     d.setDead(true, tick)
                 }
@@ -212,7 +211,6 @@ object WitherDragons {
         if (list.isEmpty()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        // One line per dragon, #1 on top.
         val lines = list.map { hudLine(rankTag(it), it, it.timeToSpawn) }
         val sc = FishSettings.witherDragonsHudScale.toFloat()
         val w = (lines.maxOf { mc.font.width(it) }) * sc

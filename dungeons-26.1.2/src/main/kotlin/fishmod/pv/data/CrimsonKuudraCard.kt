@@ -328,7 +328,6 @@ class CrimsonKuudraCard private constructor(
 			val cubism = enchLevel(ench, "cubism")
 			val power = enchLevel(ench, "power")
 			val rend = enchLevel(ench, "rend", "ultimate_rend")
-			// Duplex is stored as ultimate_reiterate in item NBT.
 			val duplex = enchLevel(ench, "ultimate_reiterate", "ultimate_duplex")
 			val fatalTempo = enchLevel(ench, "ultimate_fatal_tempo", "fatal_tempo")
 			if (cubism > 0) {
@@ -368,7 +367,6 @@ class CrimsonKuudraCard private constructor(
 			val ench = NbtAttrs.intMap(best.extraAttributes, "enchantments")
 			val s = stars(best)
 			val chimera = enchLevel(ench, "ultimate_chimera", "chimera")
-			// Line: [Ragnarock] [N★] [Chim x]
 			return ownedItem("[Ragnarock] [$s★] [Chim $chimera]", baseId(best), listOf(), best)
 		}
 
@@ -409,7 +407,6 @@ class CrimsonKuudraCard private constructor(
 			return ImportantItem(label, owned, iconId, java.util.List.copyOf(details), stackLore(stack), display)
 		}
 
-		/** Append dungeon stars to the colored display name when missing. */
 		@JvmStatic
 		fun withStarsInName(displayName: String?, stars: Int): String {
 			if (displayName.isNullOrBlank() || stars <= 0) {
@@ -421,7 +418,6 @@ class CrimsonKuudraCard private constructor(
 			return displayName.trim() + " " + "✪".repeat(minOf(10, stars))
 		}
 
-		/** If inventory name lost its § colour, restore from NEU displayname / tier. */
 		@JvmStatic
 		fun ensureColoredName(name: String?, itemId: String?): String {
 			if (name != null && name.contains("§")) {
@@ -435,7 +431,6 @@ class CrimsonKuudraCard private constructor(
 					if (plain.isBlank()) {
 						return neuName
 					}
-					// Keep live name (reforge etc.) but reuse NEU leading colour codes.
 					val prefix = StringBuilder()
 					var i = 0
 					while (i + 1 < neuName.length && neuName[i] == '§') {
@@ -481,11 +476,9 @@ class CrimsonKuudraCard private constructor(
 					continue
 				}
 				val mageReforge = isMageReforge(NbtAttrs.string(stack.extraAttributes, "modifier"))
-				// Hollow/Terror only count as mage with Loving/Necrotic; Aurora + goggles always ok.
 				if (!goggles && !aurora && (hollow || terror) && !mageReforge) {
 					continue
 				}
-				// Tier first so Infernal Loving Terror beats lower Aurora.
 				var rank = kuudraTierRank(id) * 100 + stars(stack)
 				if (mageReforge) {
 					rank += 50
@@ -527,7 +520,6 @@ class CrimsonKuudraCard private constructor(
 				val aurora = id.contains("AURORA")
 				val hollow = id.contains("HOLLOW")
 				val mageReforge = isMageReforge(NbtAttrs.string(stack.extraAttributes, "modifier"))
-				// Mage: Aurora always; Hollow/Terror only with Loving or Necrotic. Archer: Terror only.
 				val accepted = if (mage) aurora || ((hollow || terror) && mageReforge) else terror
 				if (!accepted) {
 					continue

@@ -17,7 +17,6 @@ object CustomCrosshair {
     fun register() {
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "custom_crosshair")) { g, _ ->
             val mc = Minecraft.getInstance()
-            // Vanilla's crosshair stays cancelled by the mixin; only skip our draw while a screen (e.g. Storage Overlay) is open
             if (mc.curScreen == null && active(mc)) try {
                 val cx = g.guiWidth() / 2
                 val cy = g.guiHeight() / 2

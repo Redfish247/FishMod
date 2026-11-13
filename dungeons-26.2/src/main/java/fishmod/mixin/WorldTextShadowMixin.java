@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-// Text Shadow: drop shadow on nametags (world text is in SubmitTextShadowMixin, which skips signs)
 @Mixin(NameTagFeatureRenderer.class)
 public abstract class WorldTextShadowMixin {
 

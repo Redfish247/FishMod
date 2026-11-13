@@ -6,7 +6,6 @@ import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.debug.FishDiag
 
 object ScreenTheme {
-    // follows the config accent once FishModScreen has refreshed its theme
     var ACCENT = 0xFF24B6B0.toInt()
     var ACCENT_HOVER = 0xFF3AD8D1.toInt()
     val CARD_BG = 0xFF14181D.toInt()
@@ -168,7 +167,6 @@ object ScreenTheme {
     private var tooltipWidthSize = -1f
     private var tooltipTextW = 0f
 
-    // Bold stamps each glyph one device pixel wider; paintScale is the scale the recorder is replayed at.
     private fun runWidth(r: Run, size: Float, paintScale: Float): Float {
         val w = UiRecorder.textWidth(r.text, size)
         if (!r.bold) return w

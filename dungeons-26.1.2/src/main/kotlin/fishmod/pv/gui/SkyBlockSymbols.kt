@@ -13,24 +13,17 @@ package fishmod.pv.gui
  * Mapping follows Hypixel/SkyHanni icon ids → classic SkyBlock chat symbols.
  */
 object SkyBlockSymbols {
-	/** Vanilla fallback for a Hypixel SkyBlock PUA stat/item glyph. */
 	@JvmStatic
 	fun glyph(codePoint: Int): String = map(codePoint)
 
-	/** Replace Hypixel custom-font codepoints in a §-legacy or plain string. */
 	@JvmStatic
 	fun replace(text: String): String {
 		if (text.isEmpty() || text.none { it in ''..'' }) {
 			return text
 		}
-		// Gem slots reuse the same PUA as stats; prefer diamond/X inside Gemstones: [...] groups.
 		return mapPua(replaceGemstoneSlots(text)) { map(it) }
 	}
 
-	/**
-	 * Inside `Gemstones: [..] [..]` lines, filled slots become ◆ and empty unlocked
-	 * slots (`U+E054`) become ✖. Keeps § colour codes so Hypixel colours still apply.
-	 */
 	private fun replaceGemstoneSlots(text: String): String {
 		if (!text.contains("Gemstone")) {
 			return text
@@ -72,73 +65,68 @@ object SkyBlockSymbols {
 
 	private fun map(codePoint: Int): String = when (codePoint) {
 		// Combat / core stats (SkyHanni SkyblockStat)
-		0xE010 -> "❤" // Health
-		0xE011 -> "❣" // Health Regen
-		0xE008 -> "❈" // Defense
-		0xE027 -> "❂" // True Defense
-		0xE00D -> "❁" // Strength
-		0xE02C -> "☣" // Crit Chance
-		0xE007 -> "☠" // Crit Damage
-		0xE001 -> "⚔" // Attack Speed
-		0xE00B -> "⫽" // Ferocity
-		0xE003 -> "✎" // Intelligence
-		0xE002 -> "๑" // Ability Damage
-		0xE028 -> "♥" // Vitality
-		0xE014 -> "☄" // Mending
-		0xE024 -> "Ⓢ" // Swing Range
-		0xE050 -> "❁" // Damage (weapon)
+		0xE010 -> "❤"
+		0xE011 -> "❣"
+		0xE008 -> "❈"
+		0xE027 -> "❂"
+		0xE00D -> "❁"
+		0xE02C -> "☣"
+		0xE007 -> "☠"
+		0xE001 -> "⚔"
+		0xE00B -> "⫽"
+		0xE003 -> "✎"
+		0xE002 -> "๑"
+		0xE028 -> "♥"
+		0xE014 -> "☄"
+		0xE024 -> "Ⓢ"
+		0xE050 -> "❁"
 
-		// Mining / foraging / farming
-		0xE005 -> "Ⓟ" // Breaking Power
-		0xE015 -> "⸕" // Mining Speed
-		0xE016 -> "Ｙ" // Mining Spread
-		0xE02E -> "⚒" // Timber
-		0xE00F -> "❖" // Gemstone Spread
-		0xE01C -> "✧" // Pristine
-		0xE053 -> "☘" // Mining Fortune
-		0xE051 -> "☘" // Farming Fortune
-		0xE054 -> "☘" // Foraging Fortune (empty gem slot handled above)
-		0xE023 -> "∮" // Sweep
-		0xE019 -> "ൠ" // Bonus Pest Chance
-		0xE02B -> "✿" // Overbloom
-		0xE018 -> "ൠ" // Pest (lore)
-		0xE00E -> "⛽" // Fuel
+		0xE005 -> "Ⓟ"
+		0xE015 -> "⸕"
+		0xE016 -> "Ｙ"
+		0xE02E -> "⚒"
+		0xE00F -> "❖"
+		0xE01C -> "✧"
+		0xE053 -> "☘"
+		0xE051 -> "☘"
+		0xE054 -> "☘"
+		0xE023 -> "∮"
+		0xE019 -> "ൠ"
+		0xE02B -> "✿"
+		0xE018 -> "ൠ"
+		0xE00E -> "⛽"
 		0xE017 -> "▄" // Overflow mana
 
-		// Fishing
-		0xE00C -> "☂" // Fishing Speed
-		0xE021 -> "α" // Sea Creature Chance
-		0xE009 -> "⚓" // Double Hook
-		0xE02A -> "♔" // Trophy Chance
-		0xE025 -> "☁" // Treasure Chance
+		0xE00C -> "☂"
+		0xE021 -> "α"
+		0xE009 -> "⚓"
+		0xE02A -> "♔"
+		0xE025 -> "☁"
 
-		// Misc
-		0xE022 -> "✦" // Speed
-		0xE01A -> "✯" // Magic Find
-		0xE013 -> "♣" // Pet Luck
-		0xE012 -> "♨" // Heat Resistance
-		0xE006 -> "❄" // Cold Resistance
-		0xE01D -> "🐡" // Respiration
-		0xE01B -> "❂" // Pressure Resistance
-		0xE00A -> "☠" // Fear
-		0xE077 -> "◎" // Tracking
-		0xE02D -> "⤴" // Pull
-		0xE05B -> "☘" // Hunter Fortune
+		0xE022 -> "✦"
+		0xE01A -> "✯"
+		0xE013 -> "♣"
+		0xE012 -> "♨"
+		0xE006 -> "❄"
+		0xE01D -> "🐡"
+		0xE01B -> "❂"
+		0xE00A -> "☠"
+		0xE077 -> "◎"
+		0xE02D -> "⤴"
+		0xE05B -> "☘"
 
-		// Rift
-		0xE020 -> "ф" // Rift Time
-		0xE01E -> "❁" // Rift Damage
-		0xE004 -> "⚡" // Mana Regen
-		0xE01F -> "❤" // Hearts
+		0xE020 -> "ф"
+		0xE01E -> "❁"
+		0xE004 -> "⚡"
+		0xE01F -> "❤"
 
 		// Mob-type / name prefix icons in lore
-		0xE085 -> "☠" // Wither
-		0xE081 -> "💀" // Skeletal
-		0xE078 -> "✦" // Ender
-		0xE07E -> "⚡" // Mythological
-		0xE068 -> "★" // Named item / skin marker
+		0xE085 -> "☠"
+		0xE081 -> "💀"
+		0xE078 -> "✦"
+		0xE07E -> "⚡"
+		0xE068 -> "★"
 
-		// Common slot / UI marks (0xE000, 0xE071, 0xE074, 0xE07C, 0xE07D, 0xE084)
 		else -> "•"
 	}
 }

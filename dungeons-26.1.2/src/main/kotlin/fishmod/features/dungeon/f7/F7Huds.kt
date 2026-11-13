@@ -148,7 +148,6 @@ object F7Huds {
     // Editor examples: each HUD's real render, fed example data while HudPreview.active
     private fun examples() {
         fun ex(name: String, c: HUDComponent, r: HUDComponent.RenderSupplier) = HudPreview.register(name) { HudPreview.component(c, r) }
-        // left-aligned label HUDs: the box is the text itself, like in game
         fun exText(name: String, c: HUDComponent, r: HUDComponent.RenderSupplier, sample: String) = HudPreview.register(name) {
             HudPreview.component(c, r, HudPreview.textWidth(listOf(sample)), HudPreview.TEXT_H)
         }

@@ -20,7 +20,6 @@ import java.util.Date
 import kotlin.math.max
 import kotlin.math.min
 
-// Achievements browser opened by /fm ach
 class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("Achievements")), HasUiOverlay {
 
     companion object {
@@ -130,7 +129,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    // left category rail with count rings
     private fun rail(x: Int, y: Int, w: Int, h: Int, mx: Int, my: Int) {
         UiRecorder.fillRoundedRect((x + 1).toFloat(), (y + 1).toFloat(), w.toFloat(), (h - 2).toFloat(), 13f, PANEL2)
         UiRecorder.fillRect((x + w - 10).toFloat(), (y + 1).toFloat(), 11f, (h - 2).toFloat(), PANEL2)
@@ -195,9 +193,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         clicks.add(intArrayOf(bx, by, bw, bh) to { onClose() })
     }
 
-    // hero strip: AP ring, rank title, overall bar, search
     private fun hero(x: Int, y: Int, w: Int) {
-        // Stats follow the selected category; All/Recent/Leaderboard use everything
         val all = if (group == ALL || group == RECENT || group == LB) AchRegistry.ALL else AchRegistry.ALL.filter { it.section == group }
         val done = all.count { AchEngine.unlocked(it) }
         val frac = if (all.isNotEmpty()) done.toFloat() / all.size else 0f
@@ -262,7 +258,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         }
     }
 
-    // Two ranked lists: AP and secret achievements
     private fun leaderboard(x: Int, y: Int, w: Int, h: Int) {
         val colW = (w - GAP) / 2
         panel(x, y, colW, h, "Top Achievement Points", false)
@@ -365,7 +360,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         else bar(x + 12, by, w - 24, 3, max(frac, 0f), 0xFF2F8F8B.toInt())
     }
 
-    // -1 when there is no numeric progress to show
     private fun progress(a: Ach): Float {
         if (secretHidden(a) || a.serverSide || !a.tracked) return -1f
         if (a.metric.startsWith("meta.") || a.metric.startsWith("secret.") || a.goal <= 1) return -1f
@@ -383,7 +377,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         return out
     }
 
-    // floating detail card for the hovered tile
     private fun detail(a: Ach, mx: Int, my: Int) {
         val done = AchEngine.unlocked(a)
         val secret = secretHidden(a)
@@ -428,7 +421,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         UiRecorder.text(a.difficulty, (cx + cw - 12 - tw(a.difficulty, S_XS)).toFloat(), ty.toFloat(), S_XS, dcol)
     }
 
-    // arc drawn as small discs, clockwise from top
     private fun ring(cx: Float, cy: Float, r: Float, frac: Float, color: Int, thick: Float) {
         val n = max(24, (r * 4).toInt())
         for (i in 0 until n) {
@@ -508,7 +500,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
 
     override fun charTyped(input: CharacterEvent): Boolean {
         if (search.isFocused) { search.charTyped(input); return true }
-        // Typing anywhere starts a search
         search.isFocused = true
         search.charTyped(input)
         return true

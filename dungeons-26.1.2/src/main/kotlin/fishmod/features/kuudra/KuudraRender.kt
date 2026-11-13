@@ -67,7 +67,6 @@ object KuudraRender {
         }
     }
 
-    // IQ's offset from the giant to the crate on the ground
     fun supplyPos(g: Entity): Vec3 {
         val p = EntityTools.getLerpedPos(g)
         val r = Math.toRadians(g.yRot + 130.0)
@@ -108,7 +107,6 @@ object KuudraRender {
         }
     }
 
-    // Closest lineup only when "hide far" is on; Square aims only at the called-missing crate
     private inline fun pearls(draw: (AABB, Int, Boolean) -> Unit) {
         val me = Minecraft.getInstance().player?.blockPosition() ?: return
         val sorted = LINEUPS.sortedBy { l -> l.start.minOf { it.distSqr(me) } }

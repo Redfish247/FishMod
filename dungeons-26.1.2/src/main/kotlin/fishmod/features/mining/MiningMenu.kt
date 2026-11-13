@@ -11,7 +11,6 @@ import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.mining.MiningSettings as S
 
-// The Mining tab in /fm
 object MiningMenu {
 
     fun column(): Column {

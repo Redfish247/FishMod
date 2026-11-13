@@ -2,11 +2,9 @@ import fishmod.features.dungeon.f7.TerminalTrackerState
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-// Replays Eli's 2026-10-26 22:35 run (Skyblock latest.log) at its real pace
 class TerminalTrackerReplayTest {
     private class Ev(val ms: Long, val section: Int, val name: String, val objective: String)
 
-    // ms after "Who dares trespass", section = Section counter at that moment
     private val run = listOf(
         Ev(1880, 1, "Olkebex", "terminal"), Ev(2250, 1, "Hayacyaa", "lever"), Ev(3260, 1, "Hayacyaa", "lever"),
         Ev(5110, 1, "Olkebex", "terminal"), Ev(5660, 1, "xkxr", "terminal"), Ev(5780, 1, "RedFish2471", "device"),
@@ -20,7 +18,6 @@ class TerminalTrackerReplayTest {
     private val gates = mapOf(1 to 4030L, 2 to 14640L)
     private val sectionStarts = mapOf(2 to 8650L, 3 to 17610L)
 
-    // Positions unknown (players out of render range): worst case for section detection
     private fun play(st: TerminalTrackerState, t0: Long, upTo: Long = Long.MAX_VALUE) {
         st.terminalsStarted(t0)
         var sec = 1
@@ -40,7 +37,6 @@ class TerminalTrackerReplayTest {
         listOf("T1", "T2", "L1").forEach { lab -> st.list(4).first { it.label == lab }.doneAt = 31000 }
         assertTrue(done(st, 4) > 0)
 
-        // Requeue straight into the next run: no location change, P3 starts again
         play(st, 1_000_000, upTo = 0)
         for (s in 1..4) assertEquals(0, done(st, s), "S$s should start empty")
         assertEquals(1, st.current(1))

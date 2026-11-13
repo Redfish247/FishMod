@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 
-// Red "[Reset]" under a tracker HUD while the inventory is open; two clicks reset that tracker
 object TrackerResetButton {
 
     private const val CONFIRM_MS = 3_000L
@@ -29,7 +28,6 @@ object TrackerResetButton {
         })
     }
 
-    // x/y = screen position of the button's top-left, same scale as the tracker above it
     fun draw(ctx: GuiGraphicsExtractor, key: String, x: Int, y: Int, scale: Double, mx: Int, my: Int, reset: () -> Unit) {
         val font = Minecraft.getInstance().font
         val text = if (armed(key)) "[Click again]" else "[Reset]"

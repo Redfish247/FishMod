@@ -27,7 +27,6 @@ object HudPreview {
     @JvmStatic
     fun has(name: String) = makers.containsKey(name)
 
-    // Config feature name -> editor HUD names when they differ or one feature drives several HUDs (shift preview in the config screen)
     private val ALIASES: Map<String, List<String>> = mapOf(
         "Charmed Visitor HUD" to listOf("Charmed Visitor"), "Composter HUD" to listOf("Composter"), "Crop Milestone HUD" to listOf("Crop Milestone"),
         "Jacob's Contest HUD" to listOf("Jacob's Contest"), "Mooshroom Cow Perk HUD" to listOf("Mooshroom Cow Perk"), "Pest Timer HUD" to listOf("Pest Timer"),
@@ -57,13 +56,11 @@ object HudPreview {
         "Mythos Mob HP" to listOf("Diana Mythos HP"), "No Shuriken Overlay" to listOf("Diana No Shuriken"),
         "Kuudra Fight Extras" to listOf("Kuudra Backbone"),
         "Pest Spawn Title" to listOf("Garden Titles"), "Visitor Arrival Alert" to listOf("Garden Titles"),
-        // F7: one feature drives all tick timers / banners (owner of each HUD's settings in the config screen)
         "Boss Tick Clocks" to listOf("Boss Tick Clock", "Storm Kill Time", "Py Tick Timer", "Necron LB Timer", "Necron Drag Timer", "Necron Drop Lava/Platform",
             "LB Release Timer", "Storm Crush Banner", "Pillar Blast Timer", "Terminals Open In"),
         "Crystal Respawn" to listOf("Crystal Respawn", "Crystal Not Placed"),
     )
 
-    /** HUD editor names the config screen should preview for a feature row; empty when none. */
     @JvmStatic
     fun namesFor(feature: String): List<String> {
         if (makers.containsKey(feature)) return listOf(feature)

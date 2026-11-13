@@ -7,7 +7,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Marks sign text submits so Text Shadow leaves signs alone
 @Mixin(AbstractSignRenderer.class)
 public abstract class SignRendererShadowMixin {
 

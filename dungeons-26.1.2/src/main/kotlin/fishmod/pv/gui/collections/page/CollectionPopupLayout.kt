@@ -23,10 +23,6 @@ internal data class CollectionPopupLayout(
 	val columnsY: Int, val bottom: Int,
 	val rewardsW: Int, val recipeX: Int, val recipeW: Int,
 ) {
-	/**
-	 * Measured with the real font. `statsW` is the collected text plus the next-tier text on one line,
-	 * `rewardW` the widest reward row, `recipeTitleW` the widest name that has a recipe.
-	 */
 	data class Content(
 		val tierCount: Int, val maxRewards: Int, val recipes: Boolean,
 		val headerW: Int, val statsW: Int, val rewardW: Int, val recipeTitleW: Int,

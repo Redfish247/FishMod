@@ -6,7 +6,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.world.item.ItemStack
 import fishmod.features.garden.GardenExtraSettings as X
 
-// Buy-order HUD shown only while Jeff's chip shop is open
 object GardenJeff {
 
     private val LEVEL = Regex("""(\d+)\s*/\s*(\d+)""")
@@ -16,7 +15,6 @@ object GardenJeff {
     private fun isMaxed(lore: List<String>) =
         lore.any { it.contains("MAX", true) } || lore.firstNotNullOfOrNull { LEVEL.find(it) }?.let { it.groupValues[1] == it.groupValues[2] } == true
 
-    // First chip in the buy order that is not maxed
     private fun pickNext() {
         val slots = GardenExtras.slots()
         nextStack = order().firstNotNullOfOrNull { chip ->
@@ -27,7 +25,6 @@ object GardenJeff {
 
     private fun order() = X.gardenJeffOrder.split(',').map { it.trim() }.filter { it.isNotEmpty() }
 
-    // Level text per chip from the menu (guessed lore "x/y" or MAXED); null when not in the menu
     private fun lines(): List<String> {
         val slots = GardenExtras.slots()
         return lines { chip -> slots.firstOrNull { GardenExtras.name(it.item).contains(chip, true) }?.item?.let { Garden.lore(it) } ?: emptyList() }

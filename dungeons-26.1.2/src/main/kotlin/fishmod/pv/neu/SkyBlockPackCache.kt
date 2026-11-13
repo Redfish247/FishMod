@@ -26,14 +26,9 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.ZipInputStream
 
-/**
- * Official Hypixel SkyBlock resource pack (custom `hypixel_skyblock:` item textures).
- * Cached under `config/fishmod/pv/skyblock-pack`.
- */
 object SkyBlockPackCache {
 	private const val PACK_VERSION = "v2"
 
-	/** Known dump of the Hypixel SkyBlock pack; mirrors keep first-run icons working offline of Hypixel later. */
 	private val PACK_URLS = arrayOf(
 		"https://resourcepacks.hypixel.net/SkyBlock/5c59e0a9-9865-4d4e-91d2-915515672cbd/84.zip",
 		"https://github.com/EnderNon/skyblockpack-dump/raw/main/resourcepacks.hypixel.net/SkyBlock/5c59e0a9-9865-4d4e-91d2-915515672cbd/84.zip"
@@ -53,7 +48,6 @@ object SkyBlockPackCache {
 	@Volatile
 	private var loadFailed = false
 
-	/** `.../extracted/assets/hypixel_skyblock` */
 	@Volatile
 	private var assetsRoot: Path? = null
 
@@ -85,10 +79,6 @@ object SkyBlockPackCache {
 		return ready && root != null && Files.isDirectory(root)
 	}
 
-	/**
-	 * Resolve GUI texture layers for an item model id such as
-	 * `hypixel_skyblock:item/uncategorized/magma_chunk` or a composite drill / attuned dagger.
-	 */
 	@JvmStatic
 	fun resolveTextureLayers(itemModel: String?): List<Path> {
 		if (!isReady() || itemModel.isNullOrBlank()) return emptyList()
@@ -148,7 +138,6 @@ object SkyBlockPackCache {
 			}
 			"select" -> walkFallbackThenFirst(obj, "cases", out, seen, depth)
 			"range_dispatch" -> walkFallbackThenFirst(obj, "entries", out, seen, depth)
-			// "model" and unknown types both follow a primitive model ref
 			else -> {
 				val model = obj.get("model")
 				if (model != null && model.isJsonPrimitive) resolveRef(model.asString, out, seen, depth + 1)

@@ -182,7 +182,6 @@ object UiFont {
             val gw = x1[0] - x0[0]; val gh = y1[0] - y0[0]
             if (gw <= 0 || gh <= 0) return Glyph(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
             if (gw + 2 * GAP >= ATLAS || gh + 2 * GAP >= ATLAS) {
-                // Would write past the atlas array (AIOOBE every frame); skip the glyph instead.
                 FishDiag.fail("UiFont.8", "glyph cp=$cp at size $devSize is ${gw}x$gh, bigger than the ${ATLAS}px atlas")
                 return Glyph(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
             }

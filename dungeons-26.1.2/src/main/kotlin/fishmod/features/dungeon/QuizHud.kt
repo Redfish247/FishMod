@@ -44,7 +44,6 @@ object QuizHud {
                     FishDiag.check(stage == 2 || stage == 3 || stage == 0, "QuizHud.2") { "quiz stage 3 arrived from stage $stage" }
                     stage = 3; ticksLeft = 100
                 }
-                // backup when the "questions left" lines are missed: "answered Question #N correctly!"
                 s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered Question #") && s.endsWith("correctly!") -> {
                     val n = s.substringAfter("answered Question #").takeWhile { it.isDigit() }.toIntOrNull()
                     if (n != null && n in 1..2 && stage in 1..n) { stage = n + 1; ticksLeft = 100 }

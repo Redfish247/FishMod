@@ -30,7 +30,6 @@ import java.util.Locale
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Garden visitors subpage. */
 class VisitorsPage {
 	private var scroll = 0
 	private var maxScroll = 0

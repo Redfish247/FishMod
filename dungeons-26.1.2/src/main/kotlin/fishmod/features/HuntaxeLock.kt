@@ -10,13 +10,11 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 
-// Cancels single right clicks with a Huntaxe; the second click inside the window passes.
 object HuntaxeLock {
     private var lastBlockedMs = 0L
     private var decidedAtMs = 0L
     private var decidedBlock = false
 
-    // Huntaxe id is unverified: match SkyBlock id or display name containing "huntaxe".
     private fun isHuntaxe(stack: ItemStack): Boolean {
         if (stack.isEmpty) return false
         if (ItemTools.getId(stack)?.contains("HUNTAXE", ignoreCase = true) == true) return true
@@ -27,7 +25,6 @@ object HuntaxeLock {
         if (!FishSettings.huntaxeLockEnabled || hand != InteractionHand.MAIN_HAND) return false
         if (!SkyblockLocation.inSkyblock() || !isHuntaxe(player.getItemInHand(hand))) return false
         val now = System.currentTimeMillis()
-        // Block and item callbacks can both fire for one click; reuse the decision.
         if (now - decidedAtMs < 50) return decidedBlock
         decidedAtMs = now
         decidedBlock = now - lastBlockedMs > FishSettings.huntaxeLockWindowMs

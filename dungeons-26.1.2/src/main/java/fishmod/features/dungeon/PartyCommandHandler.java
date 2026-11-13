@@ -51,7 +51,6 @@ public class PartyCommandHandler {
         // Don't count the world-swap gap as one huge tick.
         FishEvents.worldChange.register(() -> { lastTickMs = -1; return false; });
 
-        // server packets only: addMessage also sees chat replayed by history mods on join, which re-ran old commands
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
             if (!overlay) onServerChat(fishmod.utils.HypixelApi.STRIP_COLOR.matcher(message.getString()).replaceAll(""));
             return true;
@@ -82,7 +81,6 @@ public class PartyCommandHandler {
         usage("e f1 f2 f3 f4 f5 f6 f7 m1 m2 m3 m4 m5 m6 m7 t1 t2 t3 t4 t5");
     }
 
-    /** Usage slots the first typed arg fills: 2 when it skips the optional player (e.g. ".pb m7"). */
     public static int hintSlotsForFirstArg(String cmd, String firstArg) {
         return switch (cmd) {
             case "pb", "runs", "collection" -> isFloor(firstArg) ? 2 : 1;

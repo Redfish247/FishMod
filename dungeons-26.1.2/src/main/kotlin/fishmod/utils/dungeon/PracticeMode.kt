@@ -23,7 +23,6 @@ object PracticeMode {
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, mc ->
             try { refresh(mc) } catch (t: Throwable) { FishDiag.fail("PracticeMode.1", "practice mode refresh on join", t) }
         })
-        // The sim announces each boss end in chat; follow it so no manual /fmpractice is needed mid-run.
         FishEvents.chat.register { text ->
             if (active) {
                 val s = text.chatRaw

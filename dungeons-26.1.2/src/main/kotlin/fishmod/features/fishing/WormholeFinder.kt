@@ -38,7 +38,6 @@ object WormholeFinder {
     private const val DEPARTURE_PITCH = 0.6984127f
     private val FROGGLES = setOf("FROGGLES_DIAMOND", "FROGGLES_GOLD")
 
-    // Swapped whole on every scan, read by the render hook
     @Volatile private var targets: List<Vec3> = emptyList()
     private var area: List<WormholeMatch.Node> = emptyList()
     private var areaName = ""
@@ -68,7 +67,6 @@ object WormholeFinder {
         }
     }
 
-    // Also called by the existing "wormhole gone" chat alert so the waypoint disappears with the wormhole.
     fun onGone() = reset()
 
     private fun reset() {
@@ -104,7 +102,6 @@ object WormholeFinder {
                 if (i >= 0 && matched.add(i)) changed = true
             }
             if (arrows.isNotEmpty() && matched.isNotEmpty()) matchedAt = now
-            // Drop nodes we walked up to, and everything after a minute without arrows
             if (matched.removeIf { val n = area[it]; val dx = n.x + 0.5 - player.x; val dz = n.z + 0.5 - player.z; dx * dx + dz * dz < REACHED_SQ }) changed = true
             if (matched.isNotEmpty() && now - matchedAt > KEEP_MS) { matched.clear(); changed = true }
             if (changed) {
@@ -115,7 +112,6 @@ object WormholeFinder {
         }
     }
 
-    // Horizontal heading of the arrow: the display's left rotation applied to local +Y, flattened (UNVERIFIED axis).
     private fun forward(a: Display.TextDisplay): FloatArray? {
         val q = a.renderState()?.transformation?.get(0f)?.leftRotation() ?: return null
         val v = Vector3f(0f, 1f, 0f)

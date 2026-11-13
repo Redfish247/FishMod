@@ -11,7 +11,6 @@ import fishmod.features.FishModScreen.SliderIntSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.kuudra.KuudraSettings as S
 
-// The Kuudra tab in /fm
 object KuudraMenu {
 
     fun column(): Column {
@@ -123,7 +122,6 @@ object KuudraMenu {
 
     private fun perkBlocked(perk: String): Boolean = perkList().any { it.equals(perk, true) }
 
-    // Other entries in the saved list are kept as they are
     private fun setPerkBlocked(perk: String, on: Boolean) {
         val rest = perkList().filterNot { it.equals(perk, true) }
         S.kuudraBlockPerksList = (if (on) rest + perk else rest).joinToString(", ")

@@ -12,7 +12,6 @@ import kotlin.math.sqrt
 // control point's distance from the launch pitch, and evaluate the cubic at t = 3 * controlDist / |tangent|.
 // Model from SkyHanni's ParticlePathBezierFitter behaviour (studied, not copied); constants calibrated in HotspotMatchTest.
 object TrailBezier {
-    // xs/ys/zs hold n points in order. Returns {x, y, z} or null (too few points, singular fit, flat tangent).
     @JvmStatic
     fun solve(xs: DoubleArray, ys: DoubleArray, zs: DoubleArray, n: Int): DoubleArray? {
         if (n < 4) return null
@@ -30,7 +29,6 @@ object TrailBezier {
     @JvmStatic
     fun controlDistance(dx: Double, dy: Double, dz: Double): Double {
         val pitch0 = -atan2(dy, sqrt(dx * dx + dz * dz))
-        // Solve the launch pitch whose trail tangent at t=0 matches the observed one
         var lo = -PI / 2; var hi = PI / 2; var pitch = 0.0
         repeat(100) {
             pitch = (lo + hi) / 2

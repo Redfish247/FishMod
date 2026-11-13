@@ -25,7 +25,6 @@ object GambleApi {
 
     private fun base(): String = GambleSettings.API_BASE.trim().trimEnd('/')
 
-    // Runs on the worker thread; cb is called on the same thread (use mc.execute for UI)
     fun call(method: String, path: String, body: JsonObject?, cb: (Result?) -> Unit) {
         pool.execute {
             val res = try { callBlocking(method, path, body) } catch (t: Throwable) { null }
@@ -33,10 +32,8 @@ object GambleApi {
         }
     }
 
-    // Why the last call returned nothing (shown in chat so "offline" is diagnosable)
     @Volatile @JvmField var lastError: String = ""
 
-    // Public boards need no session; skip the Mojang login for them
     private fun isPublic(method: String, path: String) = method == "GET" && (path.startsWith("/leaderboard") || path.startsWith("/crown"))
 
     private fun callBlocking(method: String, path: String, body: JsonObject?): Result? {

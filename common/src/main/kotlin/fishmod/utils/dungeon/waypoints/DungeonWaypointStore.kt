@@ -32,7 +32,6 @@ object DungeonWaypointStore {
         save()
     }
 
-    // Bulk merge with one save; skips entries at a position already used in that room.
     @JvmStatic
     fun addAll(entries: Map<String, List<StoredWaypoint>>, epsilon: Double): Int {
         var added = 0

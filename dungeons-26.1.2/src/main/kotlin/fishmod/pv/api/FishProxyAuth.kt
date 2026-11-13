@@ -6,7 +6,6 @@ import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import net.minecraft.client.Minecraft
 
-/** Auth for the fishmod.dev Hypixel proxy: shared mod token plus the local player's id. */
 object FishProxyAuth {
     private const val MOD_TOKEN = "fishmod123"
 

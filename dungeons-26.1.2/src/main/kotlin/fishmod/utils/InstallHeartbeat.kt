@@ -63,7 +63,6 @@ object InstallHeartbeat {
         }
     }
 
-    /** Live revoke from /sync: a blocked uuid loses its custom name immediately, a cleared one drops a nick set before the clear. */
     @JvmStatic
     fun applyAdminRevoke(blocked: Boolean, nickClearedAt: Long) {
         if (blocked) {

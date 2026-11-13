@@ -36,7 +36,6 @@ object RiftDreadfarm {
     @Volatile var lastFirework = "none"; private set
     fun wandHeld() = hasWand
     fun berberisCount() = berbs.size
-    // Firework particles seen in the last 5s (any area / wand state)
     fun recentParticles(): Int { val n = System.currentTimeMillis(); seenTimes.removeIf { n - it > 5000L }; return seenTimes.size }
     private var tick = 0
 

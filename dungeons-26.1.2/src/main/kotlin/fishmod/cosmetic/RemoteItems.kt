@@ -21,7 +21,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.component.CustomData
 import java.util.concurrent.ConcurrentHashMap
 
-/** Shares your item customs (keyed by vanilla item type, since Hypixel hides other players' item uuids) and paints other players' on their worn/held items. */
 object RemoteItems {
 
     private class Custom(val name: String?, val model: String?, val dye: Int?, val animated: AnimatedDye?, val trim: ArmorTrimId?)

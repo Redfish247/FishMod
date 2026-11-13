@@ -7,7 +7,6 @@ import fishmod.features.kuudra.KuudraSettings as S
 
 object KuudraHuds {
 
-    // PBs per tier: "5=s0,s1,s2,s3,total;4=..."
     private fun pbs(t: Int): LongArray {
         val raw = S.kuudraPbs.split(';').firstOrNull { it.startsWith("$t=") }?.substringAfter('=') ?: return LongArray(5)
         val v = raw.split(',').map { it.toLongOrNull() ?: 0L }
@@ -69,7 +68,6 @@ object KuudraHuds {
         MiningHuds.reg("Kuudra Health", "kuudra_hp", 100, 10,
             { S.kuudraHpHudX }, { S.kuudraHpHudX = it }, { S.kuudraHpHudY }, { S.kuudraHpHudY = it },
             { S.kuudraHpHudScale }, { S.kuudraHpHudScale = it }, { (S.kuudraBossMaster && S.kuudraHpHud) && Kuudra.inKuudra() && Kuudra.boss?.isAlive == true }, { (S.kuudraBossMaster && S.kuudraHpHud) },
-            // Scaled HP on: show the T5 kill-phase format it changes
             example = { listOf(if (S.kuudraHpScaled) hpText(20_000f, 4) else hpText(80_000f, 1)) }) {
             listOf(hpText(Kuudra.boss?.health ?: 0f))
         }
@@ -113,7 +111,6 @@ object KuudraHuds {
 
     private fun freshLines(rows: List<Pair<String, Long>>) = rows.map { (n, left) -> "§6$n§f: ${fishmod.utils.Fmt.f1(left / 1000.0)}s" }
 
-    // Splits mid-run: supplies and build done, eat running (relative ms)
     private fun exSplits(): List<String> = splitLines(5, longArrayOf(1_000L, 46_000L, 120_000L, 0L, 0L), 150_000L)
 
     private fun splitLines(): List<String> = splitLines(Kuudra.tier, Kuudra.phaseStart, Kuudra.now())
@@ -140,7 +137,6 @@ object KuudraHuds {
     fun hpText(hp: Float, phase: Int = Kuudra.phase): String {
         val c = when { hp > 99000 -> "§a"; hp > 75000 -> "§2"; hp > 50000 -> "§e"; hp > 25000 -> "§6"; hp > 10000 -> "§c"; else -> "§4" }
         val k = hp / 1000.0
-        // T5 kill phase: real HP x9600 = shown HP (25k -> 240M)
         return if (phase == 4 && S.kuudraHpScaled && hp <= 25000f && Kuudra.tier !in 1..4) "$c${fishmod.utils.Fmt.f1(hp * 9600.0 / 1_000_000.0)}M§7/§a240M§c❤"
         else "$c${fishmod.utils.Fmt.f1(k)}K§7/§a100K§c❤"
     }

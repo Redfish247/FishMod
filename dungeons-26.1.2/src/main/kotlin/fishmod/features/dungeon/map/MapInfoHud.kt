@@ -97,7 +97,6 @@ object MapInfoHud {
 
     private fun scale() = DungeonMapSettings.mapInfoScale.coerceIn(0.5f, 20.0f)
 
-    // Editor box left/top: under the map when tied (centred on its anchor), else mapInfoX/Y
     @JvmStatic
     fun editorX(): Int =
         if (DungeonMapSettings.mapInfoMapTied) Math.round(MapHud.tiedAnchor()[0] - exampleW() * scale() / 2f)
@@ -107,7 +106,6 @@ object MapInfoHud {
     fun editorY(): Int =
         if (DungeonMapSettings.mapInfoMapTied) Math.round(MapHud.tiedAnchor()[1]) else DungeonMapSettings.mapInfoY.toInt()
 
-    // Dragging a tied block unties it (keeps where it was), like the scoreboard's Position -> Custom
     private fun untie() {
         if (!DungeonMapSettings.mapInfoMapTied) return
         val x = editorX(); val y = editorY()

@@ -77,7 +77,7 @@ object EnchantTooltip {
 			if (ExtrasSettings.enchantColors) {
 				val s = ExtrasSettings
 				out.append(when {
-					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true, px(out)) // ultimates always use their own colour
+					ultimate -> tier(label, s.enchantUltColor, s.enchantUltChroma, true, px(out))
 					level >= max -> tier(label, s.enchantMaxColor, s.enchantMaxChroma, s.enchantBold, px(out))
 					level == max - 1 -> tier(label, s.enchantHighColor, s.enchantHighChroma, s.enchantBold, px(out))
 					else -> tier(label, s.enchantNormalColor, s.enchantNormalChroma, false, px(out))
@@ -104,9 +104,8 @@ object EnchantTooltip {
 	}
 
 	private const val CHROMA_MS = 6000L
-	private const val WAVE_STEP = -0.0127f // per pixel; negative so the wave travels left-to-right
+	private const val WAVE_STEP = -0.0127f
 
-	// Hue follows screen x so same-x letters share a colour on every line.
 	private fun px(out: Component): Int = Minecraft.getInstance().font.width(out)
 
 	private fun chromaPx(label: String, bold: Boolean, startPx: Int): Component {
@@ -125,7 +124,6 @@ object EnchantTooltip {
 		if (chroma) chromaPx(label, bold, start)
 		else Component.literal(label).withStyle(Style.EMPTY.withColor(argb and 0xFFFFFF).withBold(bold).withItalic(false))
 
-	/** Recolours enchant lines in every item tooltip when Enchant Colors is on. */
 	@JvmStatic
 	fun init() {
 		ItemTooltipCallback.EVENT.register(ItemTooltipCallback { _, _, _, lines ->
@@ -134,7 +132,6 @@ object EnchantTooltip {
 		})
 	}
 
-	// Java String.split semantics: trailing empty parts dropped.
 	private fun splitParts(plain: String): List<String> = plain.split(COMMA).dropLastWhile { it.isEmpty() }
 
 	private fun looksLikeEnchantLine(plain: String): Boolean =
@@ -168,7 +165,6 @@ object EnchantTooltip {
 		try {
 			load(maxes, ultimates)
 		} finally {
-			// Publish only fully built maps (ultimate first: callers gate on maxByName).
 			ultimateByName = ultimates
 			maxByName = maxes
 		}

@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import fishmod.features.garden.GardenMilestoneSettings as S
 
-// Visitor Log Book stats HUD (menu/chat formats are guesses, unverified)
 object GardenMisc {
 
     private val STAT = Regex("^([A-Za-z' ]+): ([\\d,]+)(?:/([\\d,]+))?$")
@@ -28,7 +27,6 @@ object GardenMisc {
 
     private fun logLines(rows: Map<String, String>) = listOf(Garden.legacy(S.gardenLogBookColor) + "§lLog Book") + rows.map { "§7${it.key}: §f${it.value}" }
 
-    // Caches "Name: x/y" stat lines from the Logbook menu's info item
     private fun scanLogBook() {
         val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val t = Garden.strip(scr.title.string)

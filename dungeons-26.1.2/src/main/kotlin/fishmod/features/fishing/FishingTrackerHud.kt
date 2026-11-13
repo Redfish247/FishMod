@@ -8,12 +8,10 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.resources.Identifier
 
-// Line builders (pure, tested) and the HUD registration for the fishing trackers.
 object FishingTrackerLines {
     private fun title(t: String, total: Boolean) =
         "§b§l$t §7(${if (total) "Total" else "Session"})" + (if (FishingTrackerStore.paused) " §c[paused]" else "")
 
-    // Session mode rates use the session clock; total mode keeps the bucket's active time
     private fun rateMs(b: FishingBucket, total: Boolean, sessionMs: Long) = if (total) b.activeMs else sessionMs
     private fun timeLine(total: Boolean, sessionMs: Long) = "§7Session time §f${FishingTrackerMath.clock(sessionMs)}"
 
@@ -86,7 +84,6 @@ object FishingTrackerLines {
         )
     }
 
-    // One data-driven block per matching area def
     @JvmStatic
     fun areas(total: Boolean, loc: SkyblockLocation, now: Long, treasure: Boolean, dice: Boolean, cap: Int, sessionMs: Long = 0L): List<String> {
         val out = ArrayList<String>()
@@ -170,7 +167,6 @@ object FishingTrackerHud {
     private fun draw(ctx: GuiGraphicsExtractor, hud: Hud) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        // Cached lines: rebuilt on a data change, else once a second (clocks)
         val rows = hud.cache.get(FishingTrackerStore.version, hud.lines)
         if (rows.isEmpty()) return
         val sc = hud.gs().toFloat()

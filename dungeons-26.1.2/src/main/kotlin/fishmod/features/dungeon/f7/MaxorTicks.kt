@@ -9,7 +9,6 @@ import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-// Counts server ticks while Maxor (P1) is up.
 object MaxorTicks {
 
     private val counter = TickTimer()

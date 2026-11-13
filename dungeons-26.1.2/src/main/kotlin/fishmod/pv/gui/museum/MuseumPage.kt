@@ -31,9 +31,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Museum tab: left ~70% scrollable slot grid, right ~30% progress + cheapest missing.
- */
 class MuseumPage {
 	enum class LoadState {
 		IDLE,
@@ -72,11 +69,9 @@ class MuseumPage {
 	private var sort = MuseumSort.ALL
 
 	private var slots: List<Slot> = listOf()
-	// Keyed by slot identity: grid indices shift when "missing only" filters the view.
 	private val iconByIndex = IdentityHashMap<Slot, ItemStack>()
 	private val missingIconById = HashMap<String, ItemStack>()
 	private val viewBySlot = IdentityHashMap<Slot, SlotView>()
-	// Weak (paper) icons are cached too and dropped here periodically so NEU textures can upgrade them.
 	private val weakSlots = ArrayList<Slot>()
 	private val weakMissingIds = ArrayList<String>()
 	private var nextWeakRetryMs = 0L
@@ -87,7 +82,6 @@ class MuseumPage {
 	private var donatedValue = 0.0
 	private var donatedCount = 0
 	private var totalCount = 0
-	/** `null` when museum member has no `appraisal` field. */
 	private var appraisal: Boolean? = null
 	private var cacheDirty = true
 
@@ -193,13 +187,11 @@ class MuseumPage {
 		hoverTip = listOf()
 	}
 
-	/** Clicking a cheapest-missing row runs /ahs for it. */
 	fun clickCheapest(): Boolean {
 		val name = hoverCheapName ?: return false
 		return PvAhs.search(name)
 	}
 
-	/** Toggles the "Missing only" filter; true when the click landed on its button. */
 	fun clickMissingOnly(mx: Double, my: Double): Boolean {
 		for (hit in sortHits) {
 			if (mx >= hit.x && mx < hit.x + hit.w && my >= hit.y && my < hit.y + hit.h) {
@@ -224,7 +216,6 @@ class MuseumPage {
 			&& refreshHitW > 0
 			&& state != LoadState.LOADING
 
-	/** Scroll left grid or right missing list depending on cursor position. */
 	fun mouseScrolled(mx: Double, my: Double, scrollY: Double): Boolean {
 		if (state != LoadState.READY) {
 			return false
@@ -351,7 +342,6 @@ class MuseumPage {
 
 		ly += font.lineHeight + 6
 
-		// Category filter as labelled pills (the old side icons were generic vanilla items).
 		sortHits.clear()
 		var sx = lx
 		var sy = ly
@@ -430,7 +420,6 @@ class MuseumPage {
 			}
 			val hovered = mx >= bx && mx < bx + SLOT && my >= by && my < by + SLOT && my >= gridY && my < gridY + gridH
 			val sv = slotView(slot)
-			// Rounded fills/rings are dozens of draw calls each; the grid has hundreds of slots, so plain rects.
 			PvDraw.fill(g, bx, by, SLOT, SLOT, raritySlotBackground(sv.rarityArgb, slot.missing, hovered))
 			if (hovered) {
 				g.outline(bx, by, SLOT, SLOT, PvDraw.COLOR_ACCENT)
@@ -556,7 +545,6 @@ class MuseumPage {
 			return
 		}
 		rebuildCache()
-		// The catalog comes from Hypixel item defs; keep retrying until they arrive.
 		cacheDirty = HypixelItemsCache.allItems().isEmpty()
 		if (cacheDirty) {
 			HypixelItemsCache.requestIfEmpty()
@@ -597,7 +585,6 @@ class MuseumPage {
 				}
 			}
 		}
-		// Priced ascending, unknowns (0) at the end.
 		cheap.sortWith(
 			compareBy<CheapRow> { if (it.price > 0) 0 else 1 }
 				.thenBy { it.price }
@@ -621,7 +608,6 @@ class MuseumPage {
 		SkyBlockItemFactory.prefetchIds(warm)
 	}
 
-	/** Shared by the grid and the cheapest-missing list. */
 	private fun missingIcon(donationId: String, iconId: String): ItemStack {
 		missingIconById[donationId]?.let { return it }
 		var icon = SkyBlockItemFactory.iconStack(iconId)
@@ -629,7 +615,6 @@ class MuseumPage {
 			icon = MISSING_ICON
 		}
 		missingIconById[donationId] = icon
-		// Paper+item_model is normal until the pack texture resolves - retry later.
 		if (isWeakIcon(icon) && !SkyBlockIconRenderer.hasKnownIcon(iconId)) {
 			weakMissingIds.add(donationId)
 		}
@@ -670,7 +655,6 @@ class MuseumPage {
 		var icon: ItemStack = if (!slot.coveredByHigherTier() && stack != null
 			&& (!stack.skullValue.isNullOrBlank() || stack.dyeColor != null)
 		) {
-			// Donated NBT skulls / dyed leather - same path as tooltips.
 			SkyBlockItemFactory.toStack(toUiSlot(slot))
 		} else if (iconId.isNotBlank() && !isSpecialKey(iconId)) {
 			var found = SkyBlockItemFactory.iconStack(iconId)
@@ -811,7 +795,6 @@ class MuseumPage {
 		return readDonatedTime(entry)
 	}
 
-	/** `SPECIAL:<index>[:<stack>]` → `special[index]`. */
 	private fun specialEntry(key: String): JsonObject? {
 		if (!museumMember.has("special") || !museumMember.get("special").isJsonArray) {
 			return null
@@ -845,14 +828,12 @@ class MuseumPage {
 		private val MISSING_ICON = ItemStack(CI.GRAY_DYE)
 		private val TIER_ORDER = arrayOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE")
 
-		/** Prefer SkyBlock pack / NEU textures over paper stand-ins (modern custom-model items). */
 		private fun drawSkyblockIcon(g: GuiGraphicsExtractor, iconId: String, fallback: ItemStack?, x: Int, y: Int, size: Int) {
 			SkyBlockIconRenderer.draw(g, fallback ?: ItemStack.EMPTY, iconId, x, y, size)
 		}
 
 		private fun resolveIconId(slot: Slot): String {
 			val stack = slot.stack
-			// Covered-by-higher: show this slot's catalog icon, not the donor's Hyperion/etc.
 			if (!slot.missing && !slot.coveredByHigherTier() && stack != null) {
 				val id = stack.id
 				if (id.isNotBlank() && !isSpecialKey(id)) {
@@ -903,12 +884,10 @@ class MuseumPage {
 			return TIER_ORDER[minOf(TIER_ORDER.size - 1, idx + upgrades)]
 		}
 
-		/** Dark rarity-tinted slot fill (keeps icons readable). Missing slots use a softer tint. */
 		private fun raritySlotBackground(rarityArgb: Int, missing: Boolean, hovered: Boolean): Int {
 			val r = (rarityArgb ushr 16) and 0xFF
 			val green = (rarityArgb ushr 8) and 0xFF
 			val b = rarityArgb and 0xFF
-			// Unknown / white common: keep the neutral museum slot colour.
 			if (r >= 240 && green >= 240 && b >= 240) {
 				return if (hovered) PvDraw.CELL else ITEM_SLOT_BG
 			}
@@ -922,7 +901,6 @@ class MuseumPage {
 		private fun isWeakIcon(icon: ItemStack?): Boolean =
 			icon == null || icon.isEmpty || icon.`is`(Items.PAPER) || icon.`is`(Items.BARRIER)
 
-		/** Only items NEU has loaded; armor sets and unknown ids get no recipe section at all. */
 		private fun addRecipeLines(tip: MutableList<Component>, donationId: String?) {
 			val item = if (donationId == null || isSpecialKey(donationId)) null else NeuRepoCache.get(donationId)
 			if (item == null) {

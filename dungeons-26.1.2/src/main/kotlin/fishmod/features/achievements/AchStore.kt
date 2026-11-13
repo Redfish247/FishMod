@@ -9,7 +9,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
-// Achievement counters, unlocks and run/RNG logs, one file per Minecraft UUID; main-thread mutations, debounced off-thread writes
 object AchStore {
 
     class RunRec { var t = 0L; var floor = ""; var secs = 0.0; var score = 0; var deaths = 0; var secrets = 0; var solo = false }
@@ -42,7 +41,6 @@ object AchStore {
     private const val MAX_RNG = 2000
     private val DIR: Path = Paths.get("config/fishmod/achievements")
     private val LEGACY: Path = Paths.get("config/fishmod/achievements.json")
-    // Un-keyed saves shipped in Eli's modpack (matched by their creation stamp); only his UUID may claim them
     private val KNOWN_LEGACY = mapOf(1792038447645L to "2abb218fada349bea6d181a2872941e2", 1792037278734L to "2abb218fada349bea6d181a2872941e2")
     private val GSON = GsonBuilder().setPrettyPrinting().create()
 
@@ -53,10 +51,8 @@ object AchStore {
 
     fun load() { bind() }
 
-    // True when the loaded progress belongs to this dashless UUID
     fun ownedBy(uuid: String): Boolean = uuid.isNotEmpty() && data.owner == uuid
 
-    // Swaps to the logged-in player's file; called every tick, cheap when nothing changed
     fun bind() {
         val uuid = Minecraft.getInstance().player?.uuid?.toString()?.replace("-", "")?.lowercase() ?: return
         if (data.owner == uuid) return
@@ -88,7 +84,6 @@ object AchStore {
         return fresh(uuid)
     }
 
-    // Old un-keyed achievements.json: first player on this install claims it, except a known copied save
     private fun claimLegacy(uuid: String): Data {
         val d = GSON.fromJson(Files.readString(LEGACY), Data::class.java)
         Files.move(LEGACY, LEGACY.resolveSibling("achievements.json.legacy"), StandardCopyOption.REPLACE_EXISTING)

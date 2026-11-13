@@ -12,7 +12,6 @@ import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.garden.GardenSettings as S
 
-// The Farming tab in /fm
 object GardenMenu {
 
     fun column(): Column {

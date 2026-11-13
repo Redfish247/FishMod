@@ -33,7 +33,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Crimson Overview: factions, essence, with Dojo and the Crimson Essence Shop stacked on the right. */
 class CrimsonOverviewPage {
 	private val zones = ArrayList<HoverZone>()
 
@@ -144,7 +143,6 @@ class CrimsonOverviewPage {
 		zones.add(HoverZone.of(lx, loreY, lw, STAT_ROW, loreTip))
 	}
 
-	/** Side-by-side bordered faction cards. */
 	private fun drawFactionCards(g: GuiGraphicsExtractor, font: Font, snapshot: CrimsonSnapshot, x: Int, y: Int, w: Int): Int {
 		val gap = 8
 		val colW = (w - gap) / 2
@@ -207,7 +205,6 @@ class CrimsonOverviewPage {
 		val bottom = y + h - PAD
 		val available = maxOf(rows * 22, bottom - ly)
 		val entryGap = 1
-		// Icon + Points + Rank (no time).
 		val entryH = minOf(maxOf(16 + STAT_ROW, (available - (rows - 1) * entryGap) / rows), 16 + STAT_ROW * 3)
 
 		for ((i, challenge) in challenges.withIndex()) {
@@ -279,7 +276,6 @@ class CrimsonOverviewPage {
 			}
 			var raw = id.trim().lowercase(Locale.ROOT).removePrefix("crimson_isle_")
 			raw = raw.replace('_', ' ').replace(Regex("\\s+"), " ").trim()
-			// Drop trailing letter grades like " a" / " b" / " c" when they look like tier tags.
 			if (raw.length > 2 && raw[raw.length - 2] == ' ' && raw[raw.length - 1].isLetter()) {
 				val grade = raw[raw.length - 1].lowercaseChar()
 				if (grade in 'a'..'d') {

@@ -3,7 +3,6 @@ package fishmod.features.storage
 import net.minecraft.client.Minecraft
 import fishmod.compat.GLFW
 
-// Caret, selection and hotkeys for a text field the UI recorder draws itself
 class SearchFieldState(private val maxLength: Int = 256) {
     var text = ""
         set(value) {
@@ -48,7 +47,6 @@ class SearchFieldState(private val maxLength: Int = 256) {
         replaceRange(selStart, selEnd, clean.substring(0, cut))
     }
 
-    // Returns true when the key was a field hotkey
     fun keyPressed(key: Int, modifiers: Int): Boolean {
         val shift = modifiers and GLFW.GLFW_MOD_SHIFT != 0
         val alt = modifiers and GLFW.GLFW_MOD_ALT != 0

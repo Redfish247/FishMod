@@ -112,7 +112,6 @@ object AnitaShop {
 
     private fun price(id: String?): Double = if (id == null) 0.0 else CroesusPrices.price(id).takeIf { !it.isNaN() } ?: 0.0
 
-    // Books show as "Enchanted Book" with the enchant on the first lore line
     private fun itemValue(stack: ItemStack, name: String, lore: List<String>): Double {
         val id = ItemTools.getId(stack) ?: ItemsDb.idFor(name)
         if (id != null && id != "ENCHANTED_BOOK") return price(id)

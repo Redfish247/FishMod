@@ -228,7 +228,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     private fun dyeCols() = max(1, (rw + SWATCH_GAP) / (SWATCH + SWATCH_GAP))
     private fun dyeRows() = (dyes().size + dyeCols() - 1) / dyeCols()
 
-    // NEU's Hypixel dyes when loaded (with their real hex), then the vanilla dyes
     private var dyeCache: List<Array<String>> = DYES.toList()
     private var dyeCacheNeu = false
     private fun dyes(): List<Array<String>> {

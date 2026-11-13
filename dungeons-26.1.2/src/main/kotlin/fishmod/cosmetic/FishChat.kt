@@ -48,7 +48,6 @@ object FishChat {
         lastSent = now
     }
 
-    // Called on the websocket thread for {t:"chat"} frames
     fun receive(root: JsonObject) {
         if (!FishSettings.fishChatEnabled) return
         val name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.take(16)?.takeIf { it.isNotBlank() } ?: return

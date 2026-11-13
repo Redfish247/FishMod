@@ -9,7 +9,6 @@ package fishmod.pv.gui
 
 import java.util.Locale
 
-/** Colour sets for the viewer's glass surfaces; picked in the /fm screen. */
 object PvTheme {
 	@JvmField
 	val NAMES = arrayOf("Dark Glass", "Midnight", "Clear Glass", "Frost", "Ember", "Obsidian", "Nearly Clear")
@@ -27,7 +26,6 @@ object PvTheme {
 		}
 	}
 
-	// Long params: ARGB literals above 0x7FFFFFFF are Long in Kotlin.
 	private fun set(top: Long, bottom: Long, innerTop: Long, innerBottom: Long, cell: Long, accent: Long) {
 		PvDraw.COLOR_ACCENT = accent.toInt()
 		PvDraw.GLASS_TOP = top.toInt()

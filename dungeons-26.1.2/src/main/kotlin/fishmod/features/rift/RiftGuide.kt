@@ -12,14 +12,12 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.resources.Identifier
 import fishmod.features.rift.RiftSettings as S
 
-// Rift Guide overlay: caches unfinished tasks of every guide page you open and draws them as a HUD
 object RiftGuide {
 
     private const val NAME = "Rift Guide"
     private const val BACK_SLOT = 40
     private const val LINE_H = 10
 
-    // page title -> unfinished task names, in the order the pages were opened
     private val pages = LinkedHashMap<String, List<String>>()
     @Volatile private var rows: List<String> = emptyList()
 

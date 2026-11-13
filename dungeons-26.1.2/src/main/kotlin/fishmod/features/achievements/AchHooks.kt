@@ -18,7 +18,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
 
-// Turns chat, scoreboard and existing tracker state into AchEvents (passive only)
 object AchHooks {
 
     private const val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
@@ -74,7 +73,6 @@ object AchHooks {
     private val FISH_NAMES = setOf("fish", "redfish2471")
     private val HI_FISH = Regex("(?i)\\bhi fish\\b")
 
-    // Own "Hi Fish" line while Fish is in the tab list
     private fun hiFish(s: String) {
         val mc = Minecraft.getInstance()
         val me = mc.player?.name?.string ?: return
@@ -87,7 +85,6 @@ object AchHooks {
 
     private val PLAYTIME = Regex("""^You have (?:(\d[\d,]*) hours?)?(?: and )?(?:(\d+) minutes?)? ?playtime!""")
 
-    // Reply to the player's own /playtime: Hypixel's real total beats the local counter
     private fun playtime(s: String) {
         val m = PLAYTIME.find(s) ?: return
         val h = m.groupValues[1].replace(",", "").toLongOrNull() ?: 0L
@@ -113,7 +110,6 @@ object AchHooks {
             val n = m.groupValues[1].replace(",", "").toDoubleOrNull() ?: continue
             val secs = (if (m.groupValues[2].startsWith("hour")) n * 3600 else n * 60).toLong()
             val island = m.groupValues[3]
-            // same scope as the local counter: inside runs only, not Dungeon Hub / Crimson Isle
             val key = when {
                 island.contains("Dungeon Hub", true) -> null
                 island.contains("Dungeon", true) || island.contains("Catacombs", true) -> "play.dungeon"
@@ -158,7 +154,7 @@ object AchHooks {
                     val t = fishmod.features.dungeon.puzzles.odin.WaterSolver.secondsSinceOpen()
                     if (t in 0.0..5.0) AchStore.inc("puzzle.waterSub5")
                 }
-                if (s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) AchBus.post(AchEvent.PuzzleDone(false)) // own puzzles only
+                if (s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) AchBus.post(AchEvent.PuzzleDone(false))
             }
             s.startsWith("PUZZLE FAIL!") && SkyblockLocation.inDungeon() -> if (s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) AchBus.post(AchEvent.PuzzleDone(true))
             s.startsWith("☠ You ") -> AchBus.post(AchEvent.OwnDeath(s))
@@ -173,7 +169,6 @@ object AchHooks {
         if (PracticeMode.active) return
         val secs = if (runStartMs > 0) (System.currentTimeMillis() - runStartMs) / 1000.0 else parseElapsed(DungeonScore.elapsedTime)
         flushRunEnd(-1)
-        // held until Hypixel's "Team Score" line, live score can lag the real one
         pendingEnd = AchEvent.RunEnded(BossPhase.getFloor(), secs, DungeonScore.score, DungeonScore.deaths,
             maxOf(runSecrets, DungeonScore.secretsFound), !PartyTools.isInParty(), DungeonScore.percentCleared)
         runStartMs = 0L
@@ -198,7 +193,6 @@ object AchHooks {
         return t
     }
 
-    // Every tick so short lava touches count; 5 ticks out of lava ends a fall
     private fun trackLava() {
         if (!SkyblockLocation.inDungeon()) return
         if (Minecraft.getInstance().player?.isInLava == true) {
@@ -208,17 +202,14 @@ object AchHooks {
         } else if (wasInLava && ++lavaOutTicks >= 5) wasInLava = false
     }
 
-    // State polled from existing trackers each tick
     fun onTick() {
         trackLava()
         if (tick++ % 5 != 0) return
         detailedPlaytime()
         if (fishmod.features.rift.Rift.inRift()) {
-            // Rift sidebar uses "ф", Rift.area() resolves it with sidebar/tab fallbacks
             val a = fishmod.features.rift.Rift.area().trim()
             if (a.isNotEmpty() && fishmod.features.rift.Rift.knownOtherArea() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
         }
-        // tab secret count can drop to 0 at run end, keep the run's peak (even if the start line was missed)
         if (SkyblockLocation.inDungeon()) runSecrets = maxOf(runSecrets, DungeonScore.secretsFound)
         if (SkyblockLocation.inDungeon() && runStartMs > 0) {
             if (!bloodSeen && DungeonState.bloodOpened) {

@@ -26,7 +26,6 @@ object Zoom {
     @JvmStatic
     fun smoothCamera(): Boolean = FishSettings.zoomSmoothCamera && active()
 
-    // Returns true when the scroll was used for zoom.
     @JvmStatic
     fun onScroll(vertical: Double): Boolean {
         if (!FishSettings.zoomScroll || !active() || vertical == 0.0) return false

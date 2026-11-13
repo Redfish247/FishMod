@@ -11,10 +11,6 @@ import com.google.gson.JsonObject
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Session-lifetime museum cache. Fetched only when the Museum tab is opened (or refreshed).
- * Refresh is rate-limited to once per [REFRESH_COOLDOWN_MS].
- */
 object MuseumCache {
     const val REFRESH_COOLDOWN_MS: Long = 30L * 60L * 1000L
 
@@ -25,7 +21,6 @@ object MuseumCache {
     }
 
     private val CACHE = ConcurrentHashMap<String, Entry>()
-    /** Earliest time a manual refresh is allowed (after a successful fetch/refresh). */
     private val NEXT_REFRESH_AT_MS = ConcurrentHashMap<String, Long>()
 
     @JvmStatic
@@ -50,7 +45,6 @@ object MuseumCache {
 
     @JvmStatic
     fun invalidate(uuid: UUID?, profileId: String?) {
-        // Keep NEXT_REFRESH_AT_MS so manual refresh cooldown still applies.
         CACHE.remove(key(uuid, profileId))
     }
 
@@ -66,7 +60,6 @@ object MuseumCache {
         return maxOf(0L, next - System.currentTimeMillis())
     }
 
-    /** Clear everything (e.g. when viewing a different profile). */
     @JvmStatic
     fun clearAll() {
         CACHE.clear()

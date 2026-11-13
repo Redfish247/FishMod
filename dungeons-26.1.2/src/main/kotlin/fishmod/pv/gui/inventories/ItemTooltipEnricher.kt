@@ -21,7 +21,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.world.item.ItemStack
 
-/** Tooltip assembly, recombobulator markers, and legacy § lore parsing. */
 object ItemTooltipEnricher {
 	@JvmStatic
 	fun tooltipLines(
@@ -45,7 +44,6 @@ object ItemTooltipEnricher {
 			}
 		}
 		rendered.get(DataComponents.LORE)?.let { lines.addAll(it.lines()) }
-		// Re-apply each frame so §k markers and max-enchant rainbow stay live.
 		applyRecombobulatorMarkers(lines, slot)
 		recolorizeEnchantLines(lines)
 		if (includeEstimatedValue) {
@@ -55,7 +53,6 @@ object ItemTooltipEnricher {
 		return lines
 	}
 
-	/** Rebuild T7 rainbow enchants from current time (cached lore bakes a static rainbow). */
 	@JvmStatic
 	fun recolorizeEnchantLines(lines: MutableList<Component>?) {
 		if (lines.isNullOrEmpty()) {
@@ -70,7 +67,6 @@ object ItemTooltipEnricher {
 		}
 	}
 
-	/** Hypixel `timestamp` on extraAttributes (item craft / obtain time). */
 	@JvmStatic
 	fun appendCreatedDate(lines: MutableList<Component>?, slot: InventorySnapshot.Slot?) {
 		if (slot == null || slot.isEmpty() || lines == null) {
@@ -84,7 +80,6 @@ object ItemTooltipEnricher {
 		if (ms <= 0L) {
 			return
 		}
-		// Some payloads store seconds.
 		if (ms < 10_000_000_000L) {
 			ms *= 1000L
 		}
@@ -98,7 +93,6 @@ object ItemTooltipEnricher {
 		)
 	}
 
-	/** Inserts estimated value + click hint under the rarity line when the item has a price. */
 	@JvmStatic
 	fun appendEstimatedValueHint(lines: MutableList<Component>?, slot: InventorySnapshot.Slot?) {
 		if (slot == null || slot.isEmpty() || lines == null) {
@@ -134,7 +128,6 @@ object ItemTooltipEnricher {
 		lines.add(insertAt + 1, hint)
 	}
 
-	/** Sack contents value in place of the sack item's own price; nothing when no contents are priced. */
 	@JvmStatic
 	fun appendSackValue(lines: MutableList<Component>?, value: SackValue?) {
 		if (lines == null || value == null || !value.known()) {
@@ -177,7 +170,6 @@ object ItemTooltipEnricher {
 		return out
 	}
 
-	/** Rarity / item-name colour for recombobulated rarity lines. */
 	@JvmStatic
 	fun estimatedHeaderColor(lines: List<Component>, slot: InventorySnapshot.Slot?): Int {
 		val rarityIndex = findRarityLineIndex(lines)
@@ -222,10 +214,6 @@ object ItemTooltipEnricher {
 		return -1
 	}
 
-	/**
-	 * Hypixel API lore often keeps the recomb "a" glyphs but drops `obfuscated:true`.
-	 * Rebuild the rarity line from `rarity_upgrades` (or placeholder a's) with real obfuscation.
-	 */
 	@JvmStatic
 	fun applyRecombobulatorMarkers(loreLines: MutableList<Component>?, slot: InventorySnapshot.Slot?) {
 		if (loreLines.isNullOrEmpty() || slot == null) {
@@ -283,7 +271,6 @@ object ItemTooltipEnricher {
 			.append(Component.literal("a").withStyle(marker))
 	}
 
-	/** Removes static leading/trailing recomb "a" placeholders left by API lore. */
 	private fun stripRecombPlaceholders(plain: String): String {
 		var core = plain
 		if (core.length >= 2 && isRecombA(core[0]) && core[1].let { Character.isWhitespace(it) }) {

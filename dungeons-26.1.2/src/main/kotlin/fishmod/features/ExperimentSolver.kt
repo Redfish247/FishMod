@@ -15,7 +15,6 @@ import net.minecraft.world.item.DyeItem
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-// Experimentation Table solver (NoFrills logic): highlights only, the player does every click.
 object ExperimentSolver {
 
     private enum class Game { NONE, CHRONO, ULTRA, PAIRS }
@@ -50,7 +49,6 @@ object ExperimentSolver {
         }
     }
 
-    // Only a correct click advances the solution
     @JvmStatic
     fun onSlotClicked(slotId: Int) {
         if (remember || slotId < 0) return
@@ -109,7 +107,6 @@ object ExperimentSolver {
         }
     }
 
-    // NoFrills' slot-update handler, fed by per-tick slot diffs
     private fun onUpdate(screen: AbstractContainerScreen<*>, slot: Slot, st: ItemStack) {
         if (!remember && st.`is`(Items.GLOWSTONE)) remember = true
         if (remember && st.`is`(Items.CLOCK)) remember = false

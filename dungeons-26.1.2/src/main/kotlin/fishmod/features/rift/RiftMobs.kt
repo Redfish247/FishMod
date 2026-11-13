@@ -13,7 +13,6 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.Vec3
 import fishmod.features.rift.RiftSettings as S
 
-// Crux hints, Shy warning, Fleespook tracker, Bacte alert + line
 object RiftMobs {
 
     private val CRUX_HINTS = linkedMapOf(
@@ -30,12 +29,10 @@ object RiftMobs {
     }
     // Last scan results for /fm rift debug
     @Volatile var lastCruxNames: List<String> = emptyList(); private set
-    // Crux nametags may carry only the kind plus health, e.g. "Volt 300/300❤"
     private val CRUX_TAG = Regex("^(?:Shy|Shadow|Volt|Scribe|Frozille|Splatter)(?: Crux)? [0-9,.]+[kKmM]?/[0-9,.]+[kKmM]?")
     private val SHY_LINES = setOf("I'm ugly! :(", "Eek!", "Don't look at me!", "Look away!")
     private val BACTE_NAME = Regex("(?:^|[^A-Za-z])(Bacte|Bact|Bac|Ba)(?![A-Za-z])")
     private val BACTE_CHAT = Regex("^(Bacte|Bact|Bac|Ba) (is rooting|is growing|has summoned|is vulnerable)|^BACTE DOWN")
-    // Health tag over the mob, e.g. "B 1,000/1,000❤" (name shrinks to B/Ba/Bac/Bact as it grows)
     private val BACTE_TAG = Regex("^(Bacte|Bact|Bac|Ba|B) [0-9,.]+[kKmM]?/[0-9,.]+[kKmM]?")
     private val BACTE_END = Regex("BACTE DOWN")
     @Volatile private var bacteUntil = 0L
@@ -58,7 +55,6 @@ object RiftMobs {
         RenderHooks.GIZMO.register { _ -> render() }
     }
 
-    // Chat drives the fight window; the nametag only finds the mob
     private fun onBacteChat(m: String) {
         if (!S.riftBacte || !Rift.inRift() || !BACTE_CHAT.containsMatchIn(m)) return
         val now = System.currentTimeMillis()
@@ -70,7 +66,6 @@ object RiftMobs {
         bacteUntil = now + 120_000L
     }
 
-    // Tentacle segments are slimes (sizes 8-13) that stay put; the boss is dropped via its health tag
     private val still = HashMap<Int, Pair<Vec3, Long>>()
     private fun stillFor(e: Entity): Long {
         val now = System.currentTimeMillis(); val p = e.position()
@@ -79,7 +74,6 @@ object RiftMobs {
         return now - prev.second
     }
 
-    // Slimes (they fly off in a straight line when hit) and tentacles; only while a Bacte fight is on
     private fun findBacte(me: Entity, windowOpen: Boolean) {
         val lv = Minecraft.getInstance().level ?: return
         val cand = ArrayList<String>()
@@ -104,7 +98,6 @@ object RiftMobs {
             else if (slime && stillFor(e) >= 750L) te.add(e)
         }
         if (bacteDebugOn) bacteDebug = (cand + sizes.sortedBy { it.substringAfter("#").substringBefore(" ").toInt() }).take(30)
-        // the boss is also stationary: drop whatever slime sits under its health tag
         tagStand?.let { st -> Rift.mobUnder(st)?.let { b -> te.removeAll { it.id == b.id } } }
         val on = boss || windowOpen
         if (still.size > 200) still.clear()
@@ -125,7 +118,6 @@ object RiftMobs {
         for ((stand, name) in Rift.namedStands(48.0)) {
             if (S.riftCrux && stand.isAlive && ("Crux" in name || CRUX_TAG.containsMatchIn(name)) && stand.distanceToSqr(me) <= range * range) {
                 CRUX_HINTS.entries.firstOrNull { name.contains(it.key) && hintOn(it.key) }?.let { h ->
-                    // One label per hint kind: keep only the nearest stand (Volt's ring is many stands)
                     val prev = out.indexOfFirst { it.text == h.value }
                     if (prev < 0) { out.add(Mark(stand, h.value)); names.add(name) }
                     else if (stand.distanceToSqr(me) < out[prev].e.distanceToSqr(me)) out[prev] = Mark(stand, h.value)
@@ -142,7 +134,6 @@ object RiftMobs {
         if (S.riftBacte) findBacte(me, System.currentTimeMillis() < bacteUntil) else { bacte = emptyList(); bacteSlimes = emptyList() }
     }
 
-    // Slimes of an active Bacte fight are drawn as boxes only
     fun shouldHideSlime(e: Entity): Boolean = S.riftBacte && S.riftBacteHideSlimes && S.riftBacteSlimeBoxes && bacteSlimes.contains(e)
 
     private fun render() {
@@ -156,7 +147,6 @@ object RiftMobs {
         if (S.riftBacteLine) bacteAim()
     }
 
-    // Path the slime under your crosshair takes when hit (straight, away from you); red if it crosses a tentacle
     private fun bacteAim() {
         val me = Minecraft.getInstance().player ?: return
         val eye = me.eyePosition; val look = me.lookAngle

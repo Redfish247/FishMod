@@ -11,8 +11,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 import java.util.WeakHashMap
 
-// Slot overlays: trash book highlight, rod part abbreviations, Thunder bottle charge %.
-// Lore/name strings and the `thunder_charge` key are UNVERIFIED in game (from Feesh).
 object FishingItemOverlays {
     private class Info(val book: Boolean, val parts: List<Pair<String, Int>>, val pct: Int)
     private val NONE = Info(false, emptyList(), -1)

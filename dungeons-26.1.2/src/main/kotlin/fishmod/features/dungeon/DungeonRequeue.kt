@@ -92,7 +92,6 @@ object DungeonRequeue {
     }
 
     private fun requeueCommand(): String {
-        // sidebar/chat floor can be gone by extra stats; fall back to the one seen during the run
         val live = DungeonState.floorNumber()
         val floor = if (live >= 0) live else lastFloor
         val master = if (live >= 0) DungeonState.isMasterMode() else lastMaster

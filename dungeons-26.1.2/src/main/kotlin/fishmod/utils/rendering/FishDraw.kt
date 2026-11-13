@@ -70,7 +70,6 @@ object FishDraw {
         clearDeferredFills()
     }
 
-    // Quad geometry sent while the LINE_ND layer is active is rerouted to FILL_ND; a lines buffer would pair its vertices into garbage edges.
     @JvmStatic
     var quadsToFillLayer = false
 
@@ -174,7 +173,6 @@ object FishDraw {
         Gizmos.rect(corners[0], corners[1], corners[2], corners[3], GizmoStyle.strokeAndFill(strokeArgb, 2f, fillArgb))
     }
 
-    // Filled box turned by yawDeg around its base centre (no outline)
     @JvmStatic
     fun gizmoYawBox(base: Vec3, halfWidth: Double, height: Double, yawDeg: Double, fillArgb: Int, throughWalls: Boolean) {
         if ((fillArgb ushr 24) == 0 || base.x.isNaN() || base.y.isNaN() || base.z.isNaN()) return
@@ -206,11 +204,9 @@ object FishDraw {
         Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb, width).also { if (throughWalls) it.setAlwaysOnTop() }
     }
 
-    // Furthest distance that is always inside the far clip plane
     @JvmStatic
     fun safeViewDistance(): Double = maxOf(32.0, Minecraft.getInstance().options.getEffectiveRenderDistance() * 16 * 0.8)
 
-    // Pulls a far point toward the camera along the same ray; returns the point and the size factor to keep it looking the same
     @JvmStatic
     fun pullIn(p: Vec3, cam: Vec3): Pair<Vec3, Double> {
         val d = p.distanceTo(cam)
@@ -220,7 +216,6 @@ object FishDraw {
         return cam.add(p.subtract(cam).scale(k)) to k
     }
 
-    // Camera-facing ribbon, width scaled by distance so it stays `px` pixels wide at any angle; for FILL_ND
     @JvmStatic
     fun screenLine(ps: PoseStack, vc: VertexConsumer, a0: Vec3, b0: Vec3, argb: Int, px: Float) {
         val mc = Minecraft.getInstance()
@@ -258,7 +253,6 @@ object FishDraw {
         )
     }
 
-    // Continuous flat + upright ribbon through points; shared corner edges so bends have no gaps
     @JvmStatic
     fun gizmoRibbon(pts: List<Vec3>, halfWidth: Double, argb: Int, throughWalls: (Vec3) -> Boolean) {
         if (pts.size < 2 || (argb ushr 24) == 0) return
@@ -482,7 +476,6 @@ object FishDraw {
         matrices.popPose()
     }
 
-    // See-through billboard text; `pxSize` = world units per font pixel. Flushed by the NO_DEPTH_* passes
     @JvmStatic
     fun renderSeeThroughText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, pxSize: Float, argb: Int, shadow: Boolean) {
         matrices.pushPose()
@@ -493,7 +486,6 @@ object FishDraw {
         matrices.popPose()
     }
 
-    // Text on a rigid board turned only around Y so every line rotates together; lx/ly are local board offsets
     @JvmStatic
     fun renderBoardText(matrices: PoseStack, text: Component, base: Vec3, yaw: Float, lx: Double, ly: Double, scale: Float) {
         matrices.pushPose()

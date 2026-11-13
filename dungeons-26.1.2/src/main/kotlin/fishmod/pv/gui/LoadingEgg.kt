@@ -23,10 +23,8 @@ object LoadingEgg {
 	private const val MINUTE_MS = 60L * SECOND_MS
 	private const val TEST_BREAK_SECONDS = 30L
 
-	/** Trigger the limbo → fake-ban finale after this long on a stuck load. */
 	const val BREAK_AT_MS = 60L * MINUTE_MS
 
-	/** Old test threshold seconds, proportionally scaled across the one-hour finale. */
 	private val BEATS = arrayOf(
 		Beat(1, "This is taking awhile, try again?", 0xFF9A9AAC, false, false),
 		Beat(3, "Okay, really.. try again", 0xFFE8E8F0, false, false),
@@ -51,7 +49,6 @@ object LoadingEgg {
 		fun atMs(): Long = (testAtSeconds * BREAK_AT_MS) / TEST_BREAK_SECONDS
 	}
 
-	/** All messages unlocked so far, oldest → newest (stack top to bottom). */
 	@JvmStatic
 	fun stagesUnlocked(elapsedMs: Long): List<Stage> {
 		val elapsed = maxOf(0L, elapsedMs)

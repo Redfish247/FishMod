@@ -10,7 +10,6 @@ package fishmod.pv.data
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
-/** Hypixel collection ids often use legacy forms ({@code LOG:1}, {@code INK_SACK:3}). */
 object CollectionIds {
 	private val ALIASES: Map<String, Array<String>> = mapOf(
 		"INK_SACK:3" to arrayOf("INK_SACK-3", "COCOA_BEANS", "DYE_COCOA"),
@@ -50,16 +49,11 @@ object CollectionIds {
 		"RAW_CHICKEN" to arrayOf("RAW_CHICKEN", "CHICKEN")
 	)
 
-	/**
-	 * Collection ids whose profile amounts are stored as separate component items
-	 * (sum these when the aggregate key is missing).
-	 */
 	private val COMPOSITE_PARTS: Map<String, Array<String>> = mapOf(
 		"MUSHROOM_COLLECTION" to arrayOf("RED_MUSHROOM", "BROWN_MUSHROOM"),
 		"GEMSTONE_COLLECTION" to arrayOf("RUBY", "JADE", "SAPPHIRE", "AMETHYST", "AMBER", "TOPAZ", "JASPER", "OPAL", "AQUAMARINE", "CITRINE", "ONYX", "PERIDOT")
 	)
 
-	/** Prefer modern / NEU-friendly ids for icons. */
 	private val ICON_IDS: Map<String, String> = mapOf(
 		"INK_SACK:3" to "INK_SACK-3",
 		"INK_SACK:4" to "INK_SACK-4",
@@ -125,7 +119,6 @@ object CollectionIds {
 		val keys = LinkedHashSet<String>()
 		addVariants(keys, key)
 		ALIASES[key]?.forEach { addVariants(keys, it) }
-		// Reverse: if UI id is an alias of a legacy key, include the legacy key.
 		for ((legacy, aliases) in ALIASES) {
 			for (alias in aliases) {
 				if (normalize(alias) == key || normalize(alias).replace('-', ':') == key.replace('-', ':')) {
@@ -139,7 +132,6 @@ object CollectionIds {
 		return keys
 	}
 
-	/** Component item ids to sum for aggregate collections, or empty. */
 	@JvmStatic
 	fun compositeParts(collectionId: String?): List<String> {
 		val parts = COMPOSITE_PARTS[normalize(collectionId)]

@@ -52,7 +52,6 @@ object FishDebug {
     @JvmField
     var leapDebug = false
 
-    // Bisect switches for the player-glitch hunt: true = that hook is skipped
     @JvmField var skipExtract = false
     @JvmField var skipCull = false
     @JvmField var skipScale = false
@@ -300,7 +299,6 @@ object FishDebug {
     }
 }
 
-// /fmdev holo <text>: nearest entities (64 blocks) whose name contains the text
 private fun holoDump(q: String) {
     val mc = net.minecraft.client.Minecraft.getInstance()
     val p = mc.player ?: return

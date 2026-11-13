@@ -20,8 +20,6 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
 import java.io.File
 
-// /trackcarry: counts slayer bosses spawned by a customer that die near you.
-// Owner = "Spawned by: X" stand if Hypixel shows one, else the tracked player nearest the boss when it appears.
 object SlayerCarryTracker {
 
     const val HUD = "Slayer Carries"
@@ -101,7 +99,6 @@ object SlayerCarryTracker {
         return best
     }
 
-    // "☠ Voidgloom Seraph IV 12M❤" -> "Voidgloom Seraph IV"
     private fun bossLabel(n: String): String? {
         val type = SlayerType.entries.firstOrNull { t -> t.bossNames.any { n.contains(it) } } ?: return null
         val tier = TIER_RE.find(n.substringAfter(type.bossNames.first { n.contains(it) }))?.value ?: return null
@@ -121,7 +118,6 @@ object SlayerCarryTracker {
         }
     }
 
-    // Leaving the slayer islands drops the carries
     private fun onLocation(loc: fishmod.utils.SkyblockLocation) {
         if (carries.isEmpty() || loc == fishmod.utils.SkyblockLocation.UNKNOWN) return
         if (SlayerType.entries.any { it.island == loc }) return
@@ -130,7 +126,6 @@ object SlayerCarryTracker {
         FishUtil.addChatMessage(Component.literal("§b[FM] §fLeft the slayer area, cleared $n carr${if (n == 1) "y" else "ies"}"))
     }
 
-    // ── commands ──
 
     @JvmStatic
     fun debug() {
@@ -181,7 +176,6 @@ object SlayerCarryTracker {
         for (c in carries.values) FishUtil.addChatMessage(Component.literal("§b[FM] §e${c.ign} §7${c.boss} §a${c.done}§7/§f${if (c.total > 0) c.total else "∞"}"))
     }
 
-    // ── HUD ──
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
@@ -215,7 +209,6 @@ object SlayerCarryTracker {
         }
     }
 
-    // ── storage ──
 
     private fun load() {
         if (!FILE.exists()) return

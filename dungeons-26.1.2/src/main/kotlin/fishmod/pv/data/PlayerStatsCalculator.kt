@@ -66,7 +66,6 @@ object PlayerStatsCalculator {
     )
     private val DISPLAY_IDS = DISPLAY.mapTo(HashSet()) { it.id }
 
-    /** Stats Hypixel always starts at these values; NEU misc.base_stats omits healing stats. */
     private val FALLBACK_BASE = mapOf(
         "vitality" to 100.0,
         "health_regen" to 100.0,
@@ -74,10 +73,6 @@ object PlayerStatsCalculator {
         "swing_range" to 3.0,
     )
 
-    /**
-     * Unconditional Hunting attribute → flat player stats (per level).
-     * `attributes.stacks.mending` is the Vitality shard (API id ≠ combat Mending).
-     */
     private val ATTRIBUTE_FLAT = listOf(
         AttributeFlat("life_regeneration", "health_regen", 1.25),
         AttributeFlat("mending", "vitality", 2.0),
@@ -108,7 +103,6 @@ object PlayerStatsCalculator {
         AttributeFlat("rare_bird", "pet_luck", 1.0),
     )
 
-    /** Wither Essence Forbidden perks - cumulative total at each level (wiki). */
     private val FORBIDDEN = mapOf(
         "permanent_health" to intArrayOf(0, 2, 4, 6, 8, 10),
         "permanent_defense" to intArrayOf(0, 1, 2, 3, 4, 5),
@@ -143,7 +137,6 @@ object PlayerStatsCalculator {
     @Volatile
     private var attributeShardsCache: JsonObject? = null
 
-    // Worn gear only: parseCategories also merges every saved equipment loadout into "equipment".
     @JvmStatic
     fun fromMember(member: JsonObject?): PlayerStatsSnapshot =
         fromMember(member, if (member == null) emptyMap() else InventoryDecoder.parseHomeGear(member))
@@ -199,7 +192,6 @@ object PlayerStatsCalculator {
         return PlayerStatsSnapshot(entries)
     }
 
-    /** Skill + slayer milestone bonuses from NEU `bonuses.json`. */
     private fun addBonusStats(totals: MutableMap<String, Double>, member: JsonObject): Boolean {
         val bonuses = bonuses()
         if (bonuses == null || !bonuses.has("bonus_stats") || !bonuses.get("bonus_stats").isJsonObject) return false
@@ -224,10 +216,6 @@ object PlayerStatsCalculator {
         return if (progress == null) 0 else floor(progress.level).toInt()
     }
 
-    /**
-     * NEU milestone tables only list breakpoints; the last defined bonus sticks and is applied
-     * once per level up to the player's level (combat CC is +0.5 each level, etc.).
-     */
     private fun applyMilestoneBonuses(totals: MutableMap<String, Double>, bonusStats: JsonObject, key: String, level: Int): Boolean {
         if (level <= 0 || !bonusStats.has(key) || !bonusStats.get(key).isJsonObject) return false
         val perLevel = bonusStats.getAsJsonObject(key)
@@ -246,17 +234,12 @@ object PlayerStatsCalculator {
         return added
     }
 
-    /** Zombie Slayer VIII+ permanently grants +50 Health Regen (not in NEU bonuses.json). */
     private fun addZombieSlayerRegen(totals: MutableMap<String, Double>, member: JsonObject): Boolean {
         if (slayerLevel(member, "zombie") < 8) return false
         add(totals, "health_regen", 50.0)
         return true
     }
 
-    /**
-     * Hunting Box attribute levels from `attributes.stacks` + NEU shard costs.
-     * Only unconditional flat stat grants (no island/mob-conditional bonuses).
-     */
     private fun addHuntingAttributes(totals: MutableMap<String, Double>, member: JsonObject): Boolean {
         val attributes = obj(member.get("attributes"))
         val stacks = attributes?.let { obj(it.get("stacks")) }
@@ -277,7 +260,6 @@ object PlayerStatsCalculator {
         return added
     }
 
-    /** Attribute levels for the given stack ids; empty when the NEU shard table isn't available. */
     @JvmStatic
     fun attributeLevels(member: JsonObject?, stackIds: List<String>): Map<String, Int> {
         val attributes = member?.let { obj(it.get("attributes")) }
@@ -334,7 +316,6 @@ object PlayerStatsCalculator {
         return level
     }
 
-    /** +5 HP per SB level, +5 extra every 10 levels (wiki → 2750 at 500). */
     private fun addSkyBlockLevel(totals: MutableMap<String, Double>, member: JsonObject): Boolean {
         val leveling = obj(member.get("leveling"))
         val exp = leveling?.let { Leveling.num(it.get("experience")) }
@@ -358,7 +339,6 @@ object PlayerStatsCalculator {
         val xp = Leveling.readCatacombsXp(member)
         if (xp <= 0f) return false
         val progress: Leveling.Progress? = CataXpMath.progress(xp)
-        // Stat bonuses stop at the soft cap; mastery levels are cosmetic only.
         val level = if (progress == null) 0 else minOf(CataXpMath.SOFT_CAP, progress.displayLevel())
         if (level <= 0) return false
         add(totals, "health", 2.0 * level)
@@ -380,7 +360,6 @@ object PlayerStatsCalculator {
         return added
     }
 
-    // Each consumable caps at 5 eaten.
     private fun addConsumables(totals: MutableMap<String, Double>, member: JsonObject): Boolean {
         val playerData = obj(member.get("player_data")) ?: return false
         val peppers = intOr(playerData, "reaper_peppers_eaten").coerceIn(0, 5)
@@ -524,10 +503,6 @@ object PlayerStatsCalculator {
         return null
     }
 
-    /**
-     * GDRAG Shining Scales: +11.1 STR / +2.2 MF per digit of personal Gold collection (cap 100M).
-     * Dragon's Greed is applied later once total Magic Find is known.
-     */
     private fun applyGoldenDragonAbilities(stats: MutableMap<String, Double>, member: JsonObject, level: Int) {
         if (level < 100) return
         val capped = goldCollection(member).coerceIn(0L, 100_000_000L)
@@ -536,7 +511,6 @@ object PlayerStatsCalculator {
         add(stats, "magic_find", digits * 2.2)
     }
 
-    /** Percent Strength from GDRAG Dragon's Greed using final Magic Find. */
     private fun applyDragonGreed(totals: MutableMap<String, Double>, member: JsonObject): Boolean {
         val active = activePet(member) ?: return false
         if (petType(active) != "GOLDEN_DRAGON") return false
@@ -600,7 +574,6 @@ object PlayerStatsCalculator {
         if (level >= hi) {
             val highStats = readPetStatNums(tierObj.getAsJsonObject(hi.toString()))
             if (level <= hi) return highStats
-            // Extrapolate past the last key using the gain from first→last (GDRAG 101-200).
             val first = keys.first()
             val last = keys.last()
             if (last <= first) return highStats
@@ -651,7 +624,6 @@ object PlayerStatsCalculator {
         return added
     }
 
-    /** Sum of one stat's lore lines on a single item, matched the same way as worn gear. */
     @JvmStatic
     fun loreStat(lore: List<String?>?, id: String): Double {
         if (lore.isNullOrEmpty()) return 0.0
@@ -699,7 +671,6 @@ object PlayerStatsCalculator {
         else -> k
     }
 
-    /** NEU misc.base_stats uses defence / crit_chance naming. */
     private fun readBaseStat(base: JsonObject, id: String): Double? =
         baseStatKeys(id).firstNotNullOfOrNull { Leveling.numDouble(base.get(it)) }
 
@@ -765,7 +736,6 @@ object PlayerStatsCalculator {
         }
     }
 
-    /** HOTM perk levels: the selected `skill_tree` preset, else legacy `mining_core.nodes`. */
     private fun hotmPerkNodes(member: JsonObject): JsonObject? {
         val selected = SkillTreePresets.selectedNodes(obj(member.get("skill_tree")), "mining")
         if (selected != null) {

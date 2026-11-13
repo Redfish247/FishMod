@@ -16,12 +16,10 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.world.InteractionResult
 
-// Shared Diana state: hub/spade gating, block clicks, init of all Diana parts
 object Diana {
 
     private val SPADES = setOf("ANCESTRAL_SPADE", "ARCHAIC_SPADE", "DEIFIC_SPADE")
 
-    // -Dfishmod.dianaTest=true treats any world as the hub (singleplayer testing)
     @JvmField val testMode: Boolean = java.lang.Boolean.getBoolean("fishmod.dianaTest")
 
     @JvmStatic var hasSpade = false; private set

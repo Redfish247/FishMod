@@ -163,7 +163,6 @@ class Room(
                     matrices.popMatrix()
                 }
 
-                // Names replace the centre check, so put a small one in the corner
                 if (DungeonMapSettings.mapRoomAdditionsEnabled && DungeonMapSettings.mapRoomAdditionsChecks && type != Type.FAIRY && data?.name != null
                     && (state == State.CLEARED || state == State.GREEN)) {
                     val tint = if (state == State.GREEN) DungeonMapSettings.mapRoomCheckSecretsColor else DungeonMapSettings.mapRoomCheckClearedColor

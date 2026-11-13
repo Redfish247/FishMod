@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// 26.3 side: the GL backend moved to com.mojang.renderpearl.backend.opengl.
 @Mixin(targets = "com.mojang.renderpearl.backend.opengl.GlCommandEncoder")
 public class GlCommandEncoderUiTargetMixin {
 
@@ -21,7 +20,6 @@ public class GlCommandEncoderUiTargetMixin {
         if (atts == null || atts.isEmpty() || atts.get(0) == null) return;
         var view = atts.get(0).textureView();
         if (view == null || !(view.texture() instanceof GlTexture tex)) return;
-        // Only full-window passes; picture-in-picture/blur/offscreen passes would swallow the UI.
         var main = fishmod.compat.McCompatKt.getMainTarget(net.minecraft.client.Minecraft.getInstance());
         if (main == null || tex.getWidth(0) != main.width || tex.getHeight(0) != main.height) return;
         UiRenderer.lastPassColorTex = tex.glId();

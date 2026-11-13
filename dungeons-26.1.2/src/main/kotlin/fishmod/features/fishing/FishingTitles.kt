@@ -14,7 +14,6 @@ object FishingTitles {
         val gs: () -> Double, val ss: (Double) -> Unit,
     ) {
         var main = ""; var sub = ""; var start = 0L; var stayMs = 2000
-        // -1 means centred until the player moves it
         fun x(): Int = gx().takeIf { it >= 0 } ?: ((Minecraft.getInstance().window.guiScaledWidth - w * gs()) / 2).toInt()
         fun y(): Int = gy().takeIf { it >= 0 } ?: (Minecraft.getInstance().window.guiScaledHeight / 2 + centerOffsetY)
         fun alpha(now: Long): Float {
@@ -52,13 +51,11 @@ object FishingTitles {
         else -> FishingAlerts.baitTitle("Fish Bait", null)
     }
 
-    // Drawn height: main at 2x, sub at 1.2x under it
     private fun height(sub: String): Int {
         val lh = Minecraft.getInstance().font.lineHeight
         return Math.ceil(lh * 2.0 + if (sub.isEmpty()) 0.0 else 2.0 + lh * 1.2).toInt()
     }
 
-    // The slot's own alert toggle, so the editor only lists alerts that can fire
     private fun slotOn(s: Slot): Boolean = when (s) {
         WORMHOLE -> S.fishingAlerts && S.alertWormholeGone || FishingWorldSettings.wormholeFinder && FishingWorldSettings.wormholeDeparture
         else -> S.fishingAlerts && when (s) {

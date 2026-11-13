@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// 26.3 side: GameRenderer.render() takes no arguments now (the per-frame work moved to extract(DeltaTracker, boolean)).
 @Mixin(GameRenderer.class)
 public class GameRendererUiMixin {
 

@@ -21,11 +21,9 @@ import fishmod.pv.networth.InventoryDecoder
 import java.util.Locale
 import kotlin.math.abs
 
-/** Garden overview Farming Fortune row built from the best farming setup on the profile. */
 object FarmingFortuneTip {
 	const val LABEL = "Farming Fortune (est.)"
 
-	/** Null until inventories are parsed; callers fall back to the worn-gear stat. */
 	@JvmStatic
 	fun row(stats: PlayerStatsSnapshot?, snap: GardenSnapshot?): SummaryCards.Stat? {
 		val est = stats?.farmingFortune ?: return null

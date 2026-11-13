@@ -9,7 +9,6 @@ package fishmod.pv.gui.inventories
 
 import java.util.Locale
 
-/** Shared § / & formatting helpers for item name and rarity parsing. */
 object ItemTextFormat {
 	private val FORMAT_CODE = Regex("§([0-9a-fk-or])", RegexOption.IGNORE_CASE)
 	private val SECTION_ANY = Regex("§.")

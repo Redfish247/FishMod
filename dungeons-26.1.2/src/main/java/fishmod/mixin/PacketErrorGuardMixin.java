@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Packet handler throws become "Network Protocol Error"; swallow the ones FishMod code caused.
 @Mixin(ClientCommonPacketListenerImpl.class)
 public class PacketErrorGuardMixin {
 

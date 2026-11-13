@@ -66,7 +66,6 @@ object AlertTitles {
     private const val FADE_OUT = 500L
     @Volatile private var dirty = false
 
-    /** Called by FishUtil.forceTitle; the slot is picked from the calling feature's class. */
     @JvmStatic
     fun show(main: Component, sub: Component, stayMs: Int) {
         if (main.string.isEmpty() && sub.string.isEmpty()) return

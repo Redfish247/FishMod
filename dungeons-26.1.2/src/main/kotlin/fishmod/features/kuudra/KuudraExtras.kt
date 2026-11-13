@@ -24,7 +24,6 @@ import net.minecraft.world.phys.Vec3
 import kotlin.math.cos
 import kotlin.math.sin
 
-// Ability announcer, ichor pool circle, rend damage alert, backbone timer and stun waypoints; lines and numbers follow IQ
 object KuudraExtras {
 
     enum class Pod(val label: String, val pos: Vec3) {
@@ -58,7 +57,6 @@ object KuudraExtras {
     private var boneCooldown = 0
     private var rendShow = 0
 
-    // Stun state: set by the Human Cannonball purchase, cleared when a pod dies
     private val ENTER = Vec3(-161.0, 49.0, -186.0)
     private var stunPhase = false
     private var eaten = false
@@ -162,7 +160,6 @@ object KuudraExtras {
 
     private fun podBox(p: Vec3) = AABB(p.x - 0.5, p.y, p.z - 0.5, p.x + 0.5, p.y + 1.0, p.z + 0.5)
 
-    // Waypoint stays on the pod while eaten, shifts with you during the stun flight
     private fun stunPos(): Vec3? {
         if (!(S.kuudraBossMaster && S.kuudraStunWaypoints)) return null
         val ph = Kuudra.phase

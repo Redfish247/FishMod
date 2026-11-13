@@ -12,7 +12,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// Calendar menu: adds the real local date/time after every "in 1d 2h 3m" countdown in item lore
 object CalendarTimes {
     private val COUNTDOWN = Regex("""\bin:?\s+((?:\d+[dhms]\s*)+)""", RegexOption.IGNORE_CASE)
     private val UNIT = Regex("""(\d+)([dhms])""")

@@ -2,19 +2,14 @@ package fishmod.features.fishing
 
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 
-// Phase 3 (trackers) owns this file; already registered in FishConfig. Everything ships OFF.
 object FishingTrackerSettings {
     @ConfigValue @JvmField var fishingTrackers: Boolean = false
 
-    // Which bucket the HUDs show: Session or Total
     @ConfigValue @JvmField var fishingTrackerMode: String = "Session"
     @ConfigValue @JvmField var fishingTrackerLines: Int = 10
-    // Coins spent per catch (bait etc.), subtracted in the profit tracker
     @ConfigValue @JvmField var fishingCostPerCatch: Int = 0
-    // Barn timer turns red after this many seconds
     @ConfigValue @JvmField var fishingBarnSeconds: Int = 300
 
-    // HUD visibility: "Both" = fishing island AND cast in last 60 s, "Either" = one is enough
     @ConfigValue @JvmField var fishingShowWhen: String = "Both"
 
     @ConfigValue @JvmField var fishingScHud: Boolean = false
@@ -42,12 +37,10 @@ object FishingTrackerSettings {
     @ConfigValue @JvmField var fishingFestivalHudY: Int = 310
     @ConfigValue @JvmField var fishingFestivalHudScale: Double = 1.0
 
-    // One generic HUD for the per-area trackers of the current world
     @ConfigValue @JvmField var fishingAreaHud: Boolean = false
     @ConfigValue @JvmField var fishingAreaHudX: Int = 200
     @ConfigValue @JvmField var fishingAreaHudY: Int = 60
     @ConfigValue @JvmField var fishingAreaHudScale: Double = 1.0
-    // Any-world trackers inside the area HUD
     @ConfigValue @JvmField var fishingAreaTreasure: Boolean = false
     @ConfigValue @JvmField var fishingAreaDice: Boolean = false
 }

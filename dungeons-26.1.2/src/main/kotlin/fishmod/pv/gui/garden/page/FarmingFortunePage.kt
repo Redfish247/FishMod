@@ -51,7 +51,6 @@ import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Farming Fortune breakdown, opened from the Garden overview row. Each tile is a short total; details live in tooltips. */
 class FarmingFortunePage {
 	private fun interface Icon {
 		fun draw(g: GuiGraphicsExtractor, x: Int, y: Int)
@@ -518,7 +517,6 @@ class FarmingFortunePage {
 		return if (key != null) shardIcon(key) else stack(s.iconId)
 	}
 
-	// One row: 18px icon slot, title and value on top, muted detail underneath. A null line draws no value.
 	private fun tile(
 		g: GuiGraphicsExtractor, font: Font, ui: GardenUi, r: Rect, icon: Icon?, title: String, titleColor: Int,
 		detail: String?, line: Line?, tip: () -> List<PvTooltip.Line>, mx: Int, my: Int
@@ -703,7 +701,6 @@ class FarmingFortunePage {
 
 	private fun visible(my: Int): Boolean = my >= clipTop && my < clipBottom
 
-	// Tooltips are only built for the hovered zone, clipped to the scroll area.
 	private fun addZone(ui: GardenUi, x: Int, y: Int, w: Int, h: Int, mx: Int, my: Int, tip: () -> List<PvTooltip.Line>) {
 		val y0 = maxOf(y, clipTop)
 		val y1 = minOf(y + h, clipBottom)
@@ -734,7 +731,6 @@ class FarmingFortunePage {
 			Status.INACTIVE -> PvDraw.COLOR_MUTED
 		}
 
-		// Rarity colour only for real items; Phillip and chips have no single rarity, Crop Fever uses the ultimate enchant pink.
 		private fun sourceColor(s: Source, pet: FarmingFortuneEstimate.PetPick?): Int {
 			val id = s.iconId
 			if (id in PLAIN_SOURCES) {
@@ -775,8 +771,6 @@ class FarmingFortunePage {
 			return y + HEADER_H
 		}
 
-		// By id, not a bare stack: newer gear (Blossom, Peony, vacuums) is paper in NEU and only gets its
-		// texture from the item model the icon renderer looks up.
 		@JvmStatic
 		fun withIcon(row: PvTooltip.Line, id: String?): PvTooltip.Line = if (id.isNullOrBlank()) row else row.withIcon(null, id)
 
@@ -811,7 +805,6 @@ class FarmingFortunePage {
 		private fun shardIconId(key: String): String =
 			AttributeShardsData.def(key)?.iconId() ?: (SHARD_PREFIX + key.uppercase(Locale.ROOT) + ";1")
 
-		// The paired day and night row only takes a rarity colour when both shards share it.
 		private fun shardColor(label: String): Int {
 			if (label == "Firefly and Lunar Moth shards") {
 				val day = shardRarityColor("solar_power")

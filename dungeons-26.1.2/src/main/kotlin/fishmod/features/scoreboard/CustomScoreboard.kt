@@ -80,7 +80,6 @@ object CustomScoreboard {
     private fun drawBoard(ctx: GuiGraphicsExtractor, tr: net.minecraft.client.gui.Font, b: Built, x1: Int, y0: Int, gs: Int) {
         val x2 = x1 + b.width
         val totalH = b.totalH
-        // Draw the background at real pixels so rounded corners stay smooth at any GUI scale
         ctx.pose().pushMatrix()
         ctx.pose().scale(1f / gs, 1f / gs)
         fishmod.features.ScreenTheme.roundedRect(ctx, (x1 - 2) * gs, y0 * gs, (b.width + 4) * gs, totalH * gs, FishSettings.customScoreboardRadius * gs, bgColor())
@@ -149,7 +148,6 @@ object CustomScoreboard {
     @JvmStatic
     fun previewBoxW(): Int = preview().width + 4
 
-    // Editor box left/top, placed like renderInner() incl. the anchor setting
     @JvmStatic
     fun previewBoxX(): Int {
         val sw = Minecraft.getInstance().window.guiScaledWidth
@@ -174,7 +172,6 @@ object CustomScoreboard {
         }
     }
 
-    // Dragging in the editor switches a preset anchor back to Custom so the move sticks
     @JvmStatic
     fun setPreviewBoxX(v: Int) {
         if (v == previewBoxX()) return
@@ -260,7 +257,6 @@ object CustomScoreboard {
             }
     }
 
-    // Hypixel pads lines with trailing spaces, which widened the box
     private fun trimEnd(c: Component): Component {
         val segs = ArrayList<Pair<Style, String>>()
         c.visit(FormattedText.StyledContentConsumer<Unit> { st, t -> segs.add(st to t); Optional.empty() }, Style.EMPTY)
@@ -286,7 +282,6 @@ object CustomScoreboard {
 
         val groups = ArrayList<List<Component>>()
 
-        // Hypixel's last line is the server footer
         val hyFooter = raw.indices.lastOrNull { !used[it] && raw[it].s.contains("hypixel", true) }?.let { used[it] = true; raw[it].c }
         val footer: Component? = if (!FishSettings.sbSectionFooter) null
             else FishSettings.sbFooterText.takeIf { it.isNotBlank() }?.let { Component.literal(it.replace('&', '§')) } ?: hyFooter
@@ -309,13 +304,11 @@ object CustomScoreboard {
             used[timeIdx] = true
             if (FishSettings.sbSectionTime) world.add(Component.literal("§7" + bare(raw[timeIdx].s)))
         }
-        // Location follows the time; its icon is a custom font glyph, so keep Hypixel's component
         val locIdx = timeIdx?.plus(1)?.takeIf { it < raw.size && !used[it] }
             ?: raw.indices.firstOrNull { !used[it] && (LOCATION.containsMatchIn(raw[it].s) || ScoreboardSection.classify(raw[it].s) == ScoreboardSection.LOCATION) }
         if (locIdx != null) {
             used[locIdx] = true
             if (FishSettings.sbSectionLocation) world.add(raw[locIdx].c)
-            // Island guest count "(1/8)" stays under the location
             val guestIdx = locIdx + 1
             if (guestIdx < raw.size && !used[guestIdx] && GUESTS.containsMatchIn(raw[guestIdx].s)) {
                 used[guestIdx] = true
@@ -358,7 +351,6 @@ object CustomScoreboard {
             if (FishSettings.sbSectionSlayer) groups.add(slayer)
         }
 
-        // Everything else Hypixel shows (objective, dungeon, diana, ...) stays in order
         val area = ArrayList<Component>()
         var last: ScoreboardSection? = null
         for (i in raw.indices) {
@@ -384,11 +376,9 @@ object CustomScoreboard {
         return Built(sbTitle, out, footer, 0)
     }
 
-    // Hypixel pads each line with hidden emoji to keep them unique
     private val TAB_GEMS = Regex("""^Gems:\s*([\d,.]+[kKmMbB]?)""")
     private val TAB_SOULFLOW = Regex("""^Soulflow:\s*([\d,.]+[kKmMbB]?)""")
 
-    // Value from a tab widget row like " Gems: 57,873"
     private fun tabValue(re: Regex): String? {
         for (e in TabListCache.entries) re.find(clean(e.stripped))?.let { return it.groupValues[1] }
         return null
@@ -398,7 +388,6 @@ object CustomScoreboard {
         !Character.isSurrogate(it) && Character.getType(it).toByte() != Character.FORMAT && Character.getType(it).toByte() != Character.PRIVATE_USE
     }.trim()
 
-    // White label, coloured value: "Purse: 1,234" -> §fPurse: §6...
     private fun kv(s: String, col: String): Component {
         val i = s.indexOf(':')
         if (i < 0) return Component.literal("§f$s")
@@ -426,7 +415,6 @@ object CustomScoreboard {
         return null
     }
 
-    // Style Hypixel gave the level digits in the tab entry
     private fun styleOf(c: Component?, text: String): Style {
         var found: Style = Style.EMPTY.withColor(ChatFormatting.WHITE)
         c?.visit(FormattedText.StyledContentConsumer<Unit> { st, s ->
@@ -456,7 +444,6 @@ object CustomScoreboard {
         return out
     }
 
-    // Tab widget "Party (N)" followed by member rows; absent when not in a party
     private fun partyLines(): List<Component> {
         val tab = TabListCache.entries
         val i = tab.indexOfFirst { PARTY.containsMatchIn(it.stripped.trim()) }

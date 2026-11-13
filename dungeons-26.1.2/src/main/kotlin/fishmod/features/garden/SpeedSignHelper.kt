@@ -7,10 +7,8 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents
 import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen
 import fishmod.features.garden.GardenSettings as S
 
-// Best speed and yaw/pitch for the held crop, drawn over the speed sign screen
 object SpeedSignHelper {
 
-    // Suggested speed per block count; wheat/carrot/potato/wart/pumpkin from the in-game speed list, melon assumed like pumpkin
     private val PUMP = listOf("3 Blocks" to "155", "2 Blocks" to "265", "2 Blocks" to "400")
     private val SPEEDS = mapOf(
         GardenCrops.Crop.WHEAT to listOf("5 Blocks" to "93", "4 Blocks" to "116"),
@@ -20,7 +18,6 @@ object SpeedSignHelper {
         GardenCrops.Crop.PUMPKIN to PUMP, GardenCrops.Crop.MELON to PUMP,
     )
 
-    // Clickable speed rows of the last drawn frame: y range -> speed typed into the sign
     private class Hit(val y0: Int, val y1: Int, val x1: Int, val speed: String)
     private val hits = ArrayList<Hit>()
 
@@ -50,7 +47,6 @@ object SpeedSignHelper {
                     }
                     if (held != null) lines += "§7Yaw §f${fmt(c.yaw)} §7Pitch §f${fmt(c.pitch)}"
                 }
-                // Bottom left so the sign itself stays readable
                 val y0 = (h - lines.size * 10 - 4).coerceAtLeast(2)
                 MiningHuds.draw(ctx, lines, 4, y0, 1.0)
                 hits.clear()
@@ -60,7 +56,6 @@ object SpeedSignHelper {
         })
     }
 
-    // Only the crop speed sign ("Set your crop speed cap!"), not every sign in the Garden
     private fun isSpeedSign(screen: AbstractSignEditScreen): Boolean {
         val msgs = (screen as? AbstractSignEditScreenAccessor)?.`fishmod$getMessages`() ?: return false
         return msgs.joinToString(" ").replace(Regex("\\s+"), " ").contains("crop speed cap", ignoreCase = true)

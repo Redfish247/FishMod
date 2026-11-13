@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.fabricmc.fabric.api.event.Event
 import net.minecraft.resources.Identifier
 
-// Keeps Hypixel's "and N other players" line as the last tooltip line after other features append theirs.
 object TooltipPinBottom {
 
     private val FINAL_PHASE = Identifier.fromNamespaceAndPath("fishmod", "tooltip_pin_bottom")

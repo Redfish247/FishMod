@@ -41,7 +41,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Chocolate Factory subpage (owns rabbit-list scroll). */
 class ChocolatePage {
 	private data class FactionHit(val id: String, val x: Int, val y: Int, val w: Int, val h: Int)
 
@@ -665,7 +664,6 @@ class ChocolatePage {
 			return ItemStack(Items.RABBIT_FOOT)
 		}
 
-		/** Soft rarity tint like pets/museum slots. */
 		private fun raritySlotBackground(rarityArgb: Int): Int {
 			val r = (rarityArgb shr 16) and 0xFF
 			val g = (rarityArgb shr 8) and 0xFF

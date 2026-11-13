@@ -36,7 +36,6 @@ object TerminalTracker {
     fun init() {
         FishEvents.locationChange.register { _ -> st.clear(); false }
         FishEvents.phaseChange.register {
-            // Fresh state each P3; leftovers from a run without a location change ate S1
             if (BossPhase.inTerminals()) st.terminalsStarted(System.currentTimeMillis())
             false
         }
@@ -64,7 +63,6 @@ object TerminalTracker {
         }
     }
 
-    // /termreplay: client-only replay of the 2026-10-26 22:35 run at real pace (chat + HUD, nothing sent)
     private var replayUntil = 0L
     private val replayRun = listOf(
         "0|0|§c[BOSS] Goldor§f: Who dares trespass into my domain?",
@@ -83,7 +81,6 @@ object TerminalTracker {
         java.nio.file.Files.list(replayDir).use { s -> s.map { it.fileName.toString() }.filter { it.endsWith(".dgr") }.sorted().toList().reversed() }
     } catch (e: Exception) { emptyList() }
 
-    // Goldor part of a DungeonReplay .dgr (events.json) in replayRun format; section bumps when the count resets
     private fun loadDgr(name: String): List<String>? {
         val file = replayDir.resolve(if (name == "latest") replayNames().firstOrNull() ?: return null else name)
         val events = java.util.zip.ZipFile(file.toFile()).use { z ->
@@ -124,7 +121,6 @@ object TerminalTracker {
         val t0 = System.currentTimeMillis() + 1500
         replayUntil = t0 + (run.lastOrNull()?.substringBefore('|')?.toLong() ?: 0L) + 13000
         mc.execute {
-            // Leftovers from a "previous run" so the reset is visible
             st.sectionChanged(4, t0 - 5000)
             listOf("T1", "T2", "L1").forEach { l -> st.list(4).first { it.label == l }.doneAt = t0 - 4000 }
             FishUtil.addChatMessage(Component.literal("§7[TermReplay] previous run leftovers in S4, P3 starts in 1.5s"))

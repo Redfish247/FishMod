@@ -84,7 +84,6 @@ object DungeonMap {
         DungeonScore.reset()
     }
 
-    // Map packet that arrived before the tab list said "dungeon"; retried each tick (Hypixel only resends on change)
     private var pendingPacket: ClientboundMapItemDataPacket? = null
     private var pendingSince = 0L
 
@@ -449,7 +448,6 @@ object DungeonMap {
 
                 val doorIndex = sc.add(MapVec2i(door, midRoom)).mapIndex()
                 val roomIndex = sc.add(MapVec2i(door, midRoom - hrs + 1)).mapIndex()
-                // Smaller floors have fewer than 6 rows; rows past the map edge are skipped.
                 val inMap = sc.x + door in 0..127 && sc.z + midRoom in 0..127
                 if (inMap && doorIndex in colors.indices && roomIndex in colors.indices && colors[roomIndex].toInt() == 0) {
                     handleDoor(MapVec2i(coordsDoor, coordsMidRoom), MapVec2i(a, b), MapVec2i(1, 0), colors[doorIndex])

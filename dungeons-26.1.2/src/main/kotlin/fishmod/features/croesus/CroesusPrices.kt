@@ -73,7 +73,6 @@ object CroesusPrices {
         if (bazaarBuy.isNotEmpty()) FishDiag.check(bazaar.isNotEmpty(), "CroesusPrices.22") { "price mode $mode produced empty price map" }
     }
 
-    // Raw bazaar quick_status price: sell offer = buyPrice, insta-sell = sellPrice
     @JvmStatic
     fun bazaarPrice(id: String, sellOffer: Boolean): Double? = (if (sellOffer) bazaarBuy else bazaarSell)[id]
 
@@ -426,7 +425,6 @@ object CroesusPrices {
                             try { next[key] = value.asDouble } catch (ex: Exception) { FishDiag.fail("CroesusPrices.18", "lbin value for $key not numeric", ex) }
                         }
                     }
-                    // Empty 200 keeps the cached prices and backs off
                     if (next.isEmpty()) {
                         val entries = root.size()
                         if (entries > 0 || lbin.isEmpty()) FishDiag.fail("CroesusPrices.19", "coflnet lbin parsed 0 entries (body had $entries, cached ${lbin.size})")

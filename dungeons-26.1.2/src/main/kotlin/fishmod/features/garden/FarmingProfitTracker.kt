@@ -23,7 +23,6 @@ import net.minecraft.resources.Identifier
 import java.io.File
 import fishmod.features.garden.GardenSettings as S
 
-// Farming profit tracker (same shape as the Mining one): Session/Total, per category, chat + sack parsing
 object FarmingProfitTracker {
 
     enum class Cat(val display: String, override val color: String, override val short: String) : ProfitTrackerKit.Cat {
@@ -35,7 +34,7 @@ object FarmingProfitTracker {
     val SORTS = arrayOf("Most Profit", "Least Profit", "Category")
 
     class Tracker {
-        var items: MutableMap<String, Long> = LinkedHashMap()  // "CAT|Item Name" -> count
+        var items: MutableMap<String, Long> = LinkedHashMap()
         var counts: MutableMap<String, Long> = LinkedHashMap()
         var timeMs = 0L
         var feverMs = 0L
@@ -84,7 +83,6 @@ object FarmingProfitTracker {
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
                 MiningHuds.draw(ctx, lines(), S.gardenProfitHudX, S.gardenProfitHudY, S.gardenProfitHudScale)
         }
-        // In the inventory the HUD stays up and scrolls with the mouse wheel
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is InventoryScreen) return@AfterInit
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
@@ -111,7 +109,6 @@ object FarmingProfitTracker {
 
     private fun scrollBy(d: Int): Boolean { scroll = (scroll + d).coerceAtLeast(0); version++; return true }
 
-    // ---- parsing ----
 
     private fun onChat(text: Component) {
         val raw = Garden.strip(text.string)
@@ -172,7 +169,6 @@ object FarmingProfitTracker {
 
     private fun idOf(name: String): String? = ItemsDb.idFor(name) ?: ItemsDb.idFor(name.trimStart { !it.isLetterOrDigit() })
 
-    // Sack hover lists gained items; whatever chat didn't already count is farmed crops
     private fun onSacks(text: Component, now: Long) {
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
@@ -216,7 +212,6 @@ object FarmingProfitTracker {
         save(false)
     }
 
-    // ---- values ----
 
     fun priceOf(name: String): Double {
         val id = idOf(name) ?: return 0.0
@@ -278,7 +273,6 @@ object FarmingProfitTracker {
         for ((k, n) in listOf("CROPS|Enchanted Potato" to 960L, "PESTS|Compost" to 14L, "RARE|Pesterminator" to 1L)) t.items[k] = n
         t.counts["Pests Killed"] = 17; t.counts["Visitors"] = 22; t.counts["Copper"] = 4_800; t.counts["Garden XP"] = 9_100
         t.timeMs = 3_725_000L
-        // Crop Fever time is only tracked with that feature on
         if (S.gardenFever) t.feverMs = 540_000L
         return buildLines(t, { EXAMPLE_PRICES[it] ?: 0.0 }, false, 7)
     }

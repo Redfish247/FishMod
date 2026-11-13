@@ -21,7 +21,6 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.DyedItemColor
 import net.minecraft.world.item.component.ResolvableProfile
 
-// SkyBlock id -> display ItemStack: learned from real items seen in menus (keeps resource-pack models), else built from the items DB
 object LootIcons {
 
     private val FILE = java.io.File("config/fishmod/loot_icons.json")
@@ -141,7 +140,6 @@ object LootIcons {
         val item = itemFor(material, dur) ?: run { FishDiag.fail("LootIcons.7", "no vanilla item for material '$material' (id=$id dur=$dur)"); return null }
         val stack = ItemStack(item)
         if (item == Items.PLAYER_HEAD) {
-            // some heads (e.g. SKELETON_TALISMAN) have no skin in the db; keep the plain head
             val sk = o.get("skin")
             val skin = (if (sk != null && sk.isJsonObject) sk.asJsonObject.get("value") else sk)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() } ?: return stack
             val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", skin))
@@ -154,11 +152,9 @@ object LootIcons {
         return stack
     }
 
-    // Hunting shards and dyes aren't in the Hypixel items DB
     private fun fallback(id: String): ItemStack? = when {
         id.startsWith("SHARD_") || id.endsWith("_SHARD") -> ItemStack(Items.PRISMARINE_SHARD)
         id.startsWith("DYE_") || id.endsWith("_DYE") -> ItemStack(CI.MAGENTA_DYE)
-        // Essences aren't in the Hypixel items DB; the NEU repo has them with their skull textures
         id.startsWith("ESSENCE_") && fishmod.utils.data.NeuRepo.get(id) != null -> fishmod.features.item.RecipeViewer.stackFor(id).copy()
         else -> null
     }

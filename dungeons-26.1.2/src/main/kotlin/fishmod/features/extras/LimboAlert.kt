@@ -6,7 +6,6 @@ import fishmod.utils.events.FishEvents
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Title + sound when Hypixel drops you into Limbo
 object LimboAlert {
     private var lastMs = 0L
 

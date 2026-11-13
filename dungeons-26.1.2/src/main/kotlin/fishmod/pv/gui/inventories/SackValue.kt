@@ -14,7 +14,6 @@ import java.util.Locale
 import java.util.function.Function
 import java.util.function.ToDoubleFunction
 
-/** Market value of what a sack page holds. */
 @JvmRecord
 data class SackValue(val total: Double, val priced: List<Entry>, val unpriced: List<Entry>, val shared: List<Shared>) {
 	@JvmRecord
@@ -25,7 +24,6 @@ data class SackValue(val total: Double, val priced: List<Entry>, val unpriced: L
 	@JvmRecord
 	data class Shared(val name: String, val count: Long, val countedIn: String)
 
-	/** No priced contents, so there is nothing honest to show. */
 	fun known(): Boolean = priced.isNotEmpty() && total > 0
 
 	fun breakdown(): ItemWorth.Breakdown {
@@ -70,10 +68,6 @@ data class SackValue(val total: Double, val priced: List<Entry>, val unpriced: L
 	}
 
 	companion object {
-		/**
-		 * One value per page. Sack counts are global per item id, so an item listed by several sacks is only
-		 * valued in the first page that lists it.
-		 */
 		@JvmStatic
 		fun compute(
 			pages: List<InventorySnapshot.Page>?,

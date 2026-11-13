@@ -194,7 +194,6 @@ object SecretClicked {
         val secret = block is ChestBlock || block is LeverBlock ||
             (block is AbstractSkullBlock && SecretDrops.isSecretSkull(level, pos))
         if (!secret) {
-            // Unknown skull owner id: confirm via the action-bar secret count instead
             if (block is AbstractSkullBlock) { pendingSkull = pos.immutable(); pendingSkullAt = System.currentTimeMillis() }
             return
         }

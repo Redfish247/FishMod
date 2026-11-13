@@ -15,12 +15,9 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 
-// Caches SkyBlock equipment from the /equipment menu and draws it left of the inventory.
 object EquipmentDisplay {
-    // necklace, cloak, belt, gloves/bracelet
     private val TYPES = listOf(listOf("NECKLACE"), listOf("CLOAK"), listOf("BELT"), listOf("GLOVES", "BRACELET"))
     private val cached = arrayOfNulls<ItemStack>(4)
-    // real chat line from game logs, "(n)" is added by chat stacking
     private val SWAP = Regex("^You equipped (.+)!(?: \\(\\d+\\))?$")
     private var currentLoadout: String? = null
 
@@ -45,7 +42,6 @@ object EquipmentDisplay {
     private fun storedSets(): JsonObject =
         runCatching { JsonParser.parseString(InvButtonSettings.equipmentByLoadout).asJsonObject }.getOrElse { JsonObject() }
 
-    // show what this loadout wore when last seen; unknown names (single items too) keep current gear
     private fun onSwap(name: String) {
         currentLoadout = name
         val encoded = storedSets().get(name)?.asString ?: return
@@ -70,13 +66,13 @@ object EquipmentDisplay {
 
     private fun scan(s: AbstractContainerScreen<*>) {
         val found = arrayOfNulls<ItemStack>(4)
-        val menuSize = s.menu.slots.size - 36 // skip the player's own inventory
+        val menuSize = s.menu.slots.size - 36
         for (i in 0 until menuSize.coerceAtLeast(0)) {
             val st = s.menu.slots[i].item
             if (st.isEmpty) continue
             val t = typeOf(st)
             if (t < 0) continue
-            if (found[t] != null) return // several of one type: a sets menu, not what is worn
+            if (found[t] != null) return
             found[t] = st.copy()
         }
         if (found.none { it != null }) return
@@ -94,7 +90,6 @@ object EquipmentDisplay {
 
     private var loaded = false
 
-    // restore the saved equipment once a world (and its registries) exists
     private fun ensureLoaded() {
         if (loaded || InvButtonSettings.equipmentCache.isEmpty() || Minecraft.getInstance().level == null) return
         loaded = true
@@ -103,7 +98,6 @@ object EquipmentDisplay {
 
     private const val X = -19
 
-    // player clicked the column: open the equipment menu (one click = one command)
     @JvmStatic
     fun click(mouseX: Double, mouseY: Double): Boolean {
         if (mouseX < X - 1 || mouseX >= X + 17 || mouseY < 7 || mouseY >= 8 + 72) return false
@@ -111,7 +105,6 @@ object EquipmentDisplay {
         return true
     }
 
-    // Hovered slot's tooltip is drawn by flushTooltip after the mixin pops its translate, so it is placed with screen coordinates only
     private var tipStack: net.minecraft.world.item.ItemStack? = null
     private var tipX = 0
     private var tipY = 0

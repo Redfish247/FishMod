@@ -36,7 +36,6 @@ object ContainerValue {
     private val MOTES = Regex("Motes Sell Price:?\\s*([0-9,]+)")
     private fun inRift() = SkyblockLocation.`in`(SkyblockLocation.THE_RIFT)
 
-    // Rift items are worth motes: read the "Motes Sell Price" lore line
     private fun motesValue(stack: ItemStack): Double {
         val lore = stack.get(net.minecraft.core.component.DataComponents.LORE) ?: return 0.0
         for (l in lore.lines()) {

@@ -14,7 +14,6 @@ import fishmod.pv.price.ItemPricer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Function
 
-/** Minion categories and per-tier upgrade costs from NEU recipes + item prices. */
 object MinionCosts {
     enum class Category(private val label: String) {
         FARMING("Farming"),
@@ -38,17 +37,12 @@ object MinionCosts {
         @get:JvmName("unpriced") val unpriced: List<String> = unpriced?.toList() ?: emptyList()
         @get:JvmName("noRecipe") val noRecipe: Boolean = noRecipe
 
-        /** True when every ingredient has a price. */
         fun complete(): Boolean = !noRecipe && unpriced.isEmpty()
     }
 
     @JvmRecord
     data class MissingTier(val minionId: String, val cost: TierCost)
 
-    /**
-     * Minions whose tier I ingredient isn't a Hypixel collection item (or that have no tier I recipe).
-     * Categories follow the SkyBlock wiki minion list.
-     */
     private val CATEGORY_OVERRIDES = mapOf(
         "COW_GENERATOR" to Category.FARMING,
         "MUSHROOM_GENERATOR" to Category.FARMING,
@@ -86,14 +80,12 @@ object MinionCosts {
         return tierCost(id, tier, NeuRepoCache.get(id + "_" + tier)) { ItemPricer.knownPrice(it) }
     }
 
-    /** Ingredients for one upgrade step (previous-tier minion excluded), for tooltips. */
     @JvmStatic
     fun ingredientsFor(minionId: String?, tier: Int): Map<String, Int> {
         val id = minionId?.uppercase() ?: ""
         return ingredients(recipe(NeuRepoCache.get(id + "_" + tier)), id)
     }
 
-    /** Missing tiers in order, each priced as a single upgrade step. */
     @JvmStatic
     fun missingTiers(minion: CollectionSnapshot.MinionEntry?): List<TierCost> {
         val out = ArrayList<TierCost>()
@@ -104,10 +96,6 @@ object MinionCosts {
         return out
     }
 
-    /**
-     * Missing tiers that can be crafted right now (tier I, or the previous tier was crafted),
-     * cheapest first. Unpriced / recipe-less tiers sink to the bottom.
-     */
     @JvmStatic
     fun cheapestNext(minions: List<CollectionSnapshot.MinionEntry>?): List<MissingTier> {
         val out = ArrayList<MissingTier>()
@@ -161,7 +149,6 @@ object MinionCosts {
         return TierCost(tier, coins, unpriced, false)
     }
 
-    /** Ingredient id (Hypixel colon form) → total quantity, minus any minion of the same type (none when null). */
     @JvmStatic
     fun ingredients(recipe: JsonObject?, minionId: String?): MutableMap<String, Int> {
         val out = LinkedHashMap<String, Int>()
@@ -188,7 +175,6 @@ object MinionCosts {
         return out
     }
 
-    /** NEU `recipe`, else the first crafting entry in `recipes`. */
     @JvmStatic
     fun recipe(item: JsonObject?): JsonObject? {
         if (item == null) return null

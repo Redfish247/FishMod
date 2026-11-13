@@ -37,12 +37,10 @@ class NetworthBreakdown(total: Double, categories: List<Line>, note: String?) {
         val items: List<ItemLine> = items?.toList() ?: emptyList()
     }
 
-    /** Same breakdown with another headline total (FishMod networth). */
     fun withTotal(total: Double): NetworthBreakdown = NetworthBreakdown(total, categories, note)
 
     fun tooltipLines(): List<String> = tooltipStyledLines().map { line -> line.spans().joinToString("") { it.text } }
 
-    /** [showItems] adds per-item rows for every category (Home passes left shift). */
     @JvmOverloads
     fun tooltipStyledLines(mode: NetworthMode? = null, showItems: Boolean = false): List<PvTooltip.Line> {
         val lines = ArrayList<PvTooltip.Line>()
@@ -98,7 +96,6 @@ class NetworthBreakdown(total: Double, categories: List<Line>, note: String?) {
         return lines
     }
 
-    /** NEU-style IRL estimate: networth → booster cookies (bazaar) → gems (325/cookie) → USD via the 675-gem / $4.99 pack. */
     private fun profileValueLine(): PvTooltip.Line {
         val usd = profileValueUsd(total)
             ?: return PvTooltip.Line(listOf(
@@ -114,10 +111,8 @@ class NetworthBreakdown(total: Double, categories: List<Line>, note: String?) {
     private fun share(value: Double): String = if (total <= 0) "0%" else FormatUtil.percent(value / total)
 
     companion object {
-        /** SkyBlock gem shop: gems per booster cookie. */
         private const val GEMS_PER_COOKIE = 325.0
 
-        /** Hypixel store pack: gems for $4.99. */
         private const val GEMS_PER_PACK = 675.0
         private const val USD_PER_PACK = 4.99
         private const val MAX_ITEM_ROWS = 12

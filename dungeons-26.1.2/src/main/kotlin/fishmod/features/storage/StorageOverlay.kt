@@ -81,7 +81,6 @@ object StorageOverlay {
         set(value) { searchField.text = value }
     private var searchSelecting = false
     private var searchShift = 0f
-    // page switches reopen within ~1.5s and keep the search
     private var closedAt = 0L
     private var focusedScreen: Any? = null
     private var searchFocused = false
@@ -138,7 +137,6 @@ object StorageOverlay {
         val view = StorageCache.view()
         val rift = StoragePage.inRift()
         for (i in (StorageCache.knownPages() + view.keys).sorted()) if ((i >= StoragePage.RIFT_BASE) == rift) out[StoragePage(i)] = view[i]
-        // Rift: always show both ender chest pages, even before they're cached
         if (rift) for (i in StoragePage.RIFT_BASE until StoragePage.MAX_INDEX) if (!out.containsKey(StoragePage(i))) out[StoragePage(i)] = null
         return out
     }
@@ -167,7 +165,6 @@ object StorageOverlay {
         if (!shouldFilterPages) return data
         return TreeMap<StoragePage, NBTInventory?>().apply {
             for ((page, inv) in data) {
-                // open page stays even after its last match was taken out
                 val hit = if (page == activePage) true
                 else inv?.stacks?.any(::matches) == true
                 if (hit) this[page] = inv
@@ -318,7 +315,7 @@ object StorageOverlay {
         lastMouseX = mouseX / s.toDouble()
         lastMouseY = mouseY / s.toDouble()
 
-        runCatching { ctx.blurBeforeThisStratum() }.onFailure { if (it !is IllegalStateException) FishDiag.fail("StorageOverlay.1", "blurBeforeThisStratum failed", it) } // already blurred this frame
+        runCatching { ctx.blurBeforeThisStratum() }.onFailure { if (it !is IllegalStateException) FishDiag.fail("StorageOverlay.1", "blurBeforeThisStratum failed", it) }
         runCatching { ctx.nextStratum() }.onFailure { FishDiag.fail("StorageOverlay.2", "nextStratum failed", it) }
         rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0A0A12)
 
@@ -371,7 +368,6 @@ object StorageOverlay {
         val tw = UiRecorder.textWidth(search, SEARCH_SIZE)
         val viewW = fw - SEARCH_PAD * 2 - 2
         val caretX = searchWidthTo(searchField.caret)
-        // keep the caret in view, no gap past the text end
         if (caretX - searchShift > viewW) searchShift = caretX - viewW
         if (caretX < searchShift) searchShift = caretX
         searchShift = searchShift.coerceIn(0f, (tw - viewW).coerceAtLeast(0f))
@@ -397,7 +393,6 @@ object StorageOverlay {
 
     private fun searchWidthTo(index: Int) = UiRecorder.textWidth(search.substring(0, index), SEARCH_SIZE)
 
-    // Nearest caret index to a scaled mouse x, on code point boundaries
     private fun searchIndexAt(rx: Double): Int {
         val target = (rx - (searchFieldRect[0] + SEARCH_PAD - searchShift)).toFloat()
         var best = 0
@@ -842,7 +837,6 @@ object StorageOverlay {
     private var lastMouseX = 0.0
     private var lastMouseY = 0.0
 
-    // Runs before every other container key hook; a focused field takes all keys
     @JvmStatic
     fun searchKeyPressed(input: KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen) || !searchFocused) return false

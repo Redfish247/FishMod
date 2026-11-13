@@ -14,10 +14,8 @@ import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.phys.AABB
 
-// Pings when your own device finishes at Simon Says or the 4th device, and can mute P3 titles while you stand there.
 object DeviceDoneAlert {
 
-    // SS counts within 3 blocks of the box centre
     private val SIMON_SAYS = AABB(105.0, 116.0, 91.0, 111.0, 122.0, 97.0)
     private val FOURTH_DEVICE = AABB(63.0, 127.0, 35.0, 64.0, 127.0, 36.0)
     private const val SHOW_MS = 1500L

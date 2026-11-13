@@ -18,10 +18,6 @@ import java.nio.file.Files
 import java.util.Locale
 import kotlin.math.abs
 
-/**
- * Resolves NEU pet lore placeholders (`{STRENGTH}`, `{0}`, etc.) using
- * `constants/petnums.json`, matching NotEnoughUpdates' interpolation.
- */
 object PetLoreResolver {
     private val PLACEHOLDER = Regex("\\{([A-Za-z0-9_]+)\\}|<([A-Za-z0-9_]+)>|\\(([0-9]+)\\)")
 
@@ -49,7 +45,6 @@ object PetLoreResolver {
         return out
     }
 
-    /** Lore of a NEU pet id like `BAT;4` filled in at max level (100, or 200 for curve pets); null if not a pet id. */
     @JvmStatic
     fun maxLevelLore(neuId: String): Pair<String, List<String>>? {
         val semi = neuId.indexOf(';')
@@ -76,7 +71,6 @@ object PetLoreResolver {
         return "§7[Lvl " + pet.level + "] " + tierColor + pet.displayName
     }
 
-    /** Every pet type in NEU petnums.json at its highest tier, sorted by name. */
     @JvmStatic
     fun petTypes(): List<PetType> {
         val out = ArrayList<PetType>()
@@ -153,7 +147,6 @@ object PetLoreResolver {
         return out
     }
 
-    /** NEU `stats_levelling_curve` e.g. `101:200:1` maps pet level 101→1 … 200→100. */
     private fun numsLevelFor(tierObj: JsonObject?, petLevel: Int): Int {
         val level = maxOf(1, petLevel)
         if (tierObj != null && tierObj.has("stats_levelling_curve") && tierObj.get("stats_levelling_curve").isJsonPrimitive) {

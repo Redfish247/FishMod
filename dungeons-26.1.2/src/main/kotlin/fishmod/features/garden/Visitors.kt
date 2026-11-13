@@ -15,7 +15,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import fishmod.features.garden.GardenSettings as S
 
-// Visitor timer, arrival alert, shopping list, menu info, rare reward warning, drop stats
 object Visitors {
 
     private val ARRIVED = Regex("""^(.+?) has arrived on your Garden!$""")
@@ -47,7 +46,6 @@ object Visitors {
             count = Mining.tabLine("Visitors:")?.let { COUNT.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
             nextVisitor = Mining.tabLine("Next Visitor:")?.substringAfter(":")?.trim() ?: ""
             names = Mining.tabWidget("Visitors:")
-            // Tab widget truncates long queues; only prune when every visitor is listed
             if (names.isNotEmpty() && names.size >= count && names.none { it.contains("more", true) }) shopping.keys.retainAll { k -> names.any { it.contains(k) } }
             else if (count == 0 && nextVisitor.isNotEmpty()) shopping.clear()
             val full = nextVisitor.contains("Full", true)
@@ -123,7 +121,6 @@ object Visitors {
         return scr.menu.slots.firstOrNull { !it.item.isEmpty && Garden.strip(it.item.hoverName.string) == "Accept Offer" }?.item
     }
 
-    // Reads the visitor's request once per menu open
     private fun scanMenu(mc: Minecraft) {
         val scr = mc.curScreen as? AbstractContainerScreen<*>
         if (scr == null) { warnedScreen = null; return }
@@ -210,7 +207,6 @@ object Visitors {
 
     fun clear() = shopping.clear()
 
-    // Shopping list lives in the Bazaar menu; clicking an entry opens it in /bz and copies the amount
     private class Hit(val x0: Int, val y0: Int, val x1: Int, val y1: Int, val name: String, val amount: Int)
     private var hits: List<Hit> = emptyList()
 

@@ -5,7 +5,6 @@ import fishmod.utils.TextStrip
 import fishmod.features.extras.ExtrasSettings
 import net.minecraft.client.Minecraft
 
-/** One click on a suggestion in our own screens = one /ahs search. */
 object PvAhs {
 
 	@JvmStatic

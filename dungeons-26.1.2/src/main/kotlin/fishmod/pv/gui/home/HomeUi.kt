@@ -9,7 +9,6 @@ package fishmod.pv.gui.home
 
 import kotlin.math.pow
 
-/** Shared layout constants for Home subpages. */
 object HomeUi {
 	const val PAD = 6
 	const val GAP = 6
@@ -21,7 +20,6 @@ object HomeUi {
 	const val ITEM_SLOT_BORDER = 0x00FFFFFF
 	const val ENABLED = 0xFF55FF55.toInt()
 	const val DISABLED = 0xFFFF5555.toInt()
-	/** Profile / misc section headers. */
 	const val HEADER_PROFILE = 0xFF5B8CFF.toInt()
 	const val HEADER_GUILD = 0xFF55FF55.toInt()
 	const val HEADER_HIGHLIGHTS = 0xFFFFAA00.toInt()

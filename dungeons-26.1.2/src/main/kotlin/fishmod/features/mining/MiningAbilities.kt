@@ -91,7 +91,6 @@ object MiningAbilities {
     private fun maniacLines(active: Boolean, blocks: Int, secs: Long): List<String> =
         listOf("§c§lManiac Miner" + if (active) "" else " §7(ended)", "§7Blocks: §f$blocks §8(${secs}s)")
 
-    // No expiry message seen: Maniac Miner lasts at most ~30s
     private fun maniacActive(): Boolean {
         if (maniacStart == 0L || maniacEnd != 0L) return false
         if (System.currentTimeMillis() - maniacStart > 30_000) { endManiac(); return false }
@@ -127,7 +126,6 @@ object MiningAbilities {
         val drops = HashMap<String, Int>()
         val tunnels = Mining.inTunnels(); val shaft = Mining.inShaft(); val hollows = Mining.inHollows()
         val done = Array(8) { Array(8) { BooleanArray(8) } }
-        // Repeat passes until nothing new: a block turning to air can expose ones already scanned
         var changed = true
         while (changed) { changed = false
         for (i in 1..6) for (j in 1..6) for (k in 1..6) {
@@ -145,7 +143,6 @@ object MiningAbilities {
             }
             if (!breaks) continue
             done[i][j][k] = true; changed = true
-            // In the Hollows/shafts/tunnel ice+gems the block turns to air and exposes the next layer
             if (hollows || shaft || st.`is`(Blocks.PACKED_ICE) || (tunnels && gem)) grid[i][j][k] = Blocks.AIR.defaultBlockState()
             out += pos.offset(i - 4, j - 4, k - 4)
             val name = MiningBlocks.material(st)

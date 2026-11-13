@@ -54,7 +54,6 @@ object QuizSolver {
         }
     }
 
-    // Option lines in chat: the correct answer green, the others red
     fun colorize(c: net.minecraft.network.chat.Component): net.minecraft.network.chat.Component {
         val ans = triviaAnswers ?: return c
         val plain = c.string

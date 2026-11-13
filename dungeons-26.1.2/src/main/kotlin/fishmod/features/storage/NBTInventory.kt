@@ -48,7 +48,6 @@ class NBTInventory(val stacks: List<ItemStack>, private var encoded: String? = n
                     val tag = list.getCompoundOrEmpty(i)
                     if (tag.isEmpty) { items.add(ItemStack.EMPTY); continue }
                     var parsed = ItemStack.OPTIONAL_CODEC.parse(ops, tag)
-                    // unknown registry entries (server-side enchants like "m7:hit"): retry without the bad components
                     if (parsed.error().isPresent) parsed = ItemStack.OPTIONAL_CODEC.parse(ops, stripBadComponents(ops, tag))
                     parsed.error().ifPresent { err -> FishDiag.fail("NBTInventory.2", "failed to decode stored item $i: ${err.message()}") }
                     items.add(parsed.result().orElse(ItemStack.EMPTY))
@@ -71,7 +70,6 @@ class NBTInventory(val stacks: List<ItemStack>, private var encoded: String? = n
                 val value = comps.get(key) ?: continue
                 if (accepts(key, value)) { kept.put(key, value); continue }
                 if (key != ENCHANTMENTS_KEY || value !is CompoundTag) continue
-                // drop only the unknown enchants; keep the glint they gave
                 val good = CompoundTag()
                 for (id in value.keySet()) {
                     val level = value.get(id) ?: continue

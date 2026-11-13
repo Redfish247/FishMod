@@ -64,7 +64,7 @@ object SimonSaysTracker {
     private val SS_CHAT: Pattern = Pattern.compile("Simon Says: (\\d)/[45]")
 
     private const val GOLDOR_INTRO = "who dares trespass into my domain"
-    private const val SS_ROUNDS = 4 // alpha: 4 rounds (was 5)
+    private const val SS_ROUNDS = 4
 
     @JvmField
     var debug = false
@@ -355,7 +355,6 @@ object SimonSaysTracker {
         ctx.pose().popMatrix()
     }
 
-    // Text + colour for a state, null when that state's line is toggled off
     private fun textFor(round: Int, showReset: Boolean): Pair<String, Int>? = when {
         showReset -> FishSettings.ssProgressResetText to FishSettings.ssProgressResetColor
         round >= SS_ROUNDS ->

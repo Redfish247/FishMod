@@ -19,11 +19,9 @@ object FishModAddonApi {
         fun get(): Supplier<Boolean> = toggleGet
         fun set(): Consumer<Boolean> = toggleSet
 
-        /** Sub-setting factories in registration order; they live on the toggle so removing it removes them. */
         val subSettings: MutableList<() -> FishModScreen.Setting> = CopyOnWriteArrayList()
     }
 
-    /** 2 = addons may attach sub-settings to cheat toggles (addCheat*Setting). */
     @JvmField
     val API_VERSION: Int = 2
 
@@ -64,7 +62,6 @@ object FishModAddonApi {
     @JvmStatic
     fun addCheatChoiceSetting(parent: String, name: String, description: String, options: java.util.List<String>, get: Supplier<String>, set: Consumer<String>) {
         val opts = options.toTypedArray<String>()
-        // all legacy colour names -> swatches and "Dark Purple" style labels
         val rgbOf = { s: String -> fishmod.compat.Fmt.codeOfName(s)?.let { fishmod.compat.Fmt.colorOf(it) } }
         val isColors = opts.all { rgbOf(it) != null }
         cheatParent(parent, name)?.subSettings?.add {
@@ -89,7 +86,6 @@ object FishModAddonApi {
         }
     }
 
-    /** Opens the same screen /fm opens. */
     @JvmStatic
     fun openSettings() {
         val mc = net.minecraft.client.Minecraft.getInstance()

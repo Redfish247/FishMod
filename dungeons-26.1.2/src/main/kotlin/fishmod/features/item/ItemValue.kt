@@ -15,7 +15,6 @@ object ItemValue {
         0.0
     }
 
-    // Pets carry their data as a petInfo JSON string; PetWorth prices level, tier, held item and skin
     private fun petValue(stack: ItemStack): Double {
         val raw = stack.fishmodCustomDataTag()?.getString("petInfo")?.orElse("") ?: return 0.0
         if (raw.isEmpty()) return 0.0

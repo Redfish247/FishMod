@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.minecraft.client.Minecraft
 
-// Holds the sprint key like vanilla toggle sprint, so sprint starts in the same tick its movement is sent.
 object AutoSprint {
 
     private var holding = false

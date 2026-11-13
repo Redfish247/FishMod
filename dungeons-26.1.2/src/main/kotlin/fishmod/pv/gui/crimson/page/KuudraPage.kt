@@ -43,7 +43,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.DyedItemColor
 
-/** Crimson Kuudra subtab: tier stats + scrollable Kuudra card. */
 class KuudraPage {
 	private val zones = ArrayList<HoverZone>()
 
@@ -300,7 +299,6 @@ class KuudraPage {
 			var icon = armorIcons[piece]
 			if (icon == null) {
 				icon = armorIconStack(piece)
-				// Paper is the still-loading placeholder; retry until the real icon arrives.
 				if (!icon.isEmpty && !icon.`is`(Items.PAPER)) {
 					armorIcons[piece] = icon
 				}
@@ -329,7 +327,6 @@ class KuudraPage {
 		}
 	}
 
-	/** Full item lore (when present) via legacy-formatted components, else a plain fallback tip. */
 	private fun addLoreHoverZone(
 		x: Int, y: Int, w: Int, h: Int,
 		label: String, displayName: String?, owned: Boolean, details: List<String>, lore: List<String>?,
@@ -375,7 +372,6 @@ class KuudraPage {
 		fun headerLegend(available: Int, width: ToIntFunction<String>): List<LegendPart> =
 			LEGENDS.firstOrNull { parts -> parts.sumOf { width.applyAsInt(it.text) } <= available } ?: listOf()
 
-		/** Gap between tier blocks, shrinking so every tier still fits above the checklist button. */
 		@JvmStatic
 		fun tierGap(available: Int, tiers: Int): Int = maxOf(0, minOf(6, available / maxOf(1, tiers) - STAT_ROW * 2))
 

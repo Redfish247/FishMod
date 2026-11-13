@@ -147,7 +147,6 @@ class MiningSnapshot private constructor(
         return 0
     }
 
-    /** Epoch ms the process finishes (recipe time with Quick Forge), or 0 when the duration is unknown. */
     fun forgeEndMs(process: ForgeProcess?): Long {
         if (process == null || process.startTimeMs <= 0L) return 0L
         val duration = ForgeTimes.durationMs(process.id, nodeLevel("forge_time"))
@@ -218,7 +217,6 @@ class MiningSnapshot private constructor(
             val core = Leveling.obj(member.get("mining_core"))
             val skillTree = Leveling.obj(member.get("skill_tree"))
 
-            // Modern API stores HOTM XP / tokens / ability under skill_tree; legacy under mining_core.
             val treeXp = Leveling.obj(skillTree?.get("experience"))
             val xp = if (treeXp != null && treeXp.has("mining")) doubleOf(treeXp, "mining") else doubleOf(core, "experience")
 
@@ -237,7 +235,6 @@ class MiningSnapshot private constructor(
                 hotmMaxed = false
                 hotmHover = "HOTM 0"
             } else {
-                // HOTM table is per-level step XP (SkyCrypt HOTM_XP), not cumulative thresholds.
                 val hotm = Leveling.getLevel(hotmTable, xp.toFloat(), cap, false)
                 hotmLevel = floor(hotm.level).toInt()
                 hotmFill = hotm.fill()
@@ -267,7 +264,6 @@ class MiningSnapshot private constructor(
             val glaciteData = Leveling.obj(member.get("glacite_player_data"))
             val fossils = stringList(glaciteData?.get("fossils_donated"))
             val dust = longOf(glaciteData, "fossil_dust")
-            // API exposes entered only - no mineshafts_spawned field.
             val shafts = longOf(glaciteData, "mineshafts_entered")
             val corpses = parseCorpses(Leveling.obj(glaciteData?.get("corpses_looted")))
             val corpseMs = highestCorpseMilestone(corpses)
@@ -331,15 +327,12 @@ class MiningSnapshot private constructor(
             return best
         }
 
-        // Despite the names, powder_<kind> is lifetime earned and powder_<kind>_total is the spendable
-        // balance (lifetime - spent). Checked against the in-game HOTM menu.
         private fun powder(core: JsonObject?, kind: String): Powder {
             val lifetime = maxOf(0L, longOf(core, "powder_$kind"))
             val spent = maxOf(0L, longOf(core, "powder_spent_$kind"))
             return Powder(maxOf(0L, lifetime - spent), spent)
         }
 
-        /** Selected HOTM preset from `skill_tree.nodes` as layout-id → level. */
         private fun parseSkillTreeMiningNodes(skillTree: JsonObject?): Map<String, Int> =
             parseNodes(SkillTreePresets.selectedNodes(skillTree, "mining"))
 
@@ -444,7 +437,6 @@ class MiningSnapshot private constructor(
 
         private fun longOf(obj: JsonObject?, key: String): Long {
             if (obj == null) return 0L
-            // Double, not Float: epoch-ms forge start times lose minutes in float precision.
             val n = Leveling.numDouble(obj.get(key))
             return if (n == null || n.isNaN()) 0L else Math.round(n)
         }

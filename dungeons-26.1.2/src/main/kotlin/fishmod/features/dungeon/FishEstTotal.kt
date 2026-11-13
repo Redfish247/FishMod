@@ -22,7 +22,6 @@ import java.util.regex.Pattern
 
 object FishEstTotal {
 
-    // Reads the Splits HUD's own splits so both always agree (a private copy missed early splits).
     private val currentSplits: List<RunSplit>? get() = BossPhase.currentSplitList()
     private val floor: String? get() = BossPhase.getFloor()
 
@@ -143,7 +142,6 @@ object FishEstTotal {
             try { renderAt(context, client, splits, component.scaledX, component.scaledY) } catch (e: Exception) { FishDiag.fail("FishEstTotal.10", "est total render failed (fallback pos)", e) }
             return
         }
-        // Splits draw inside their own scale, so follow it or the rows overlap at scale != 1.
         val rel = try { BossPhase.runSplitsBox.scale / component.scale } catch (t: Throwable) { 1f }
         val pose = context.pose()
         pose.pushMatrix()
@@ -158,7 +156,6 @@ object FishEstTotal {
         val splits = BossPhase.exampleSplits()
         if (splits.isEmpty()) return null
         val client = Minecraft.getInstance()
-        // in game it draws at the Splits scale; the locked editor entry has none of its own
         val s = BossPhase.runSplitsBox.scale
         return HudExample(Math.ceil(BossPhase.SPLIT_LENGTH * s.toDouble()).toInt(), Math.ceil((FishConstants.TEXT_HEIGHT + 9) * s.toDouble()).toInt()) { ctx ->
             val pose = ctx.pose()

@@ -15,7 +15,6 @@ import fishmod.features.FishModScreen.SoundSearchSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.achievements.AchSettings as S
 
-// The Achievements tab in /fm: settings only; the list lives in /fm ach
 object AchMenu {
 
     private var summary: LabelSetting? = null

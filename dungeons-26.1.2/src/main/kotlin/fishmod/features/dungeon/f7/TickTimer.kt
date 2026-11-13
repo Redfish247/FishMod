@@ -50,7 +50,6 @@ object BossTickTimer {
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         try {
             when {
-                // editor: the first phase clock the player has enabled
                 HudPreview.active -> when {
                     Floor7Settings.maxorTicksHud -> MaxorTicks.render(component, context)
                     Floor7Settings.stormTicksHud -> StormTicks.render(component, context)

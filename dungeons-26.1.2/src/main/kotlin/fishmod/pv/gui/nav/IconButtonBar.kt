@@ -65,7 +65,6 @@ class IconButtonBar {
 		entries: List<Entry>,
 		selectedKey: Any?
 	) {
-		// Tab body sits fully above the panel; selected tab opens a 1px seam into the border.
 		val tabY = panelY - TAB
 		var cx = panelX + 4
 		for (entry in entries) {
@@ -99,7 +98,6 @@ class IconButtonBar {
 				need = n * TAB + (n - 1) * gap
 			}
 			if (need > panelH) {
-				// Even with zero gap, shrink tabs so the stack ends at panel bottom.
 				tabSize = maxOf(16, panelH / n)
 				gap = maxOf(0, (panelH - n * tabSize) / maxOf(1, n - 1))
 			}
@@ -149,7 +147,6 @@ class IconButtonBar {
 		val edge = if (selected) 0x00FFFFFF else if (hovered) 0x00FFFFFF else PvDraw.GLASS_EDGE
 		PvDraw.glassSurface(g, x, y, TAB, h, 6, top, bottom, PvDraw.C_TL or PvDraw.C_TR, edge)
 		if (selected) {
-			// Open the panel's top edge under the selected tab so they read as one surface.
 			PvDraw.fill(g, x + 1, panelY, TAB - 2, 1, PvDraw.GLASS_TOP)
 			PvDraw.fill(g, x + 6, y + 1, TAB - 12, 1, PvDraw.COLOR_ACCENT)
 		}
@@ -262,7 +259,6 @@ class IconButtonBar {
 			PvTooltip.drawCenteredLeft(g, font, label, leftX, cy, screen[0], screen[1])
 		}
 
-		/** Set by the viewer each frame: screen size in the scaled viewport's coordinates. */
 		@JvmStatic
 		fun setVirtualScreen(w: Int, h: Int) {
 			virtualW = w

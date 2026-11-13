@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.minecraft.client.Minecraft
 
-// /gamble <amount|NN%|all>; results print locally only, nothing goes to Hypixel
 object GambleCommand {
 
     @Volatile private var pending = false
@@ -22,7 +21,6 @@ object GambleCommand {
         }
     }
 
-    // Returns the normalized bet or null if invalid
     fun parseBet(raw: String): String? {
         val s = raw.trim().lowercase()
         if (s == "all") return "all"
@@ -73,7 +71,6 @@ object GambleCommand {
         })
     }
 
-    // "Xm Ys", seconds only under a minute
     fun waitText(ms: Long): String {
         val total = ((ms.coerceAtLeast(0) + 999) / 1000)
         val m = total / 60

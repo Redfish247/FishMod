@@ -13,7 +13,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
 enum class MuseumSort(private val iconItem: Item, private val langKey: String) {
-	/** Aggregate of every museum category (side-tab first). */
 	ALL(Items.PAINTING, "fishmod.pv.museum.all"),
 	COMBAT(Items.IRON_SWORD, "fishmod.pv.museum.combat"),
 	MINING(Items.IRON_PICKAXE, "fishmod.pv.museum.mining"),
@@ -31,7 +30,6 @@ enum class MuseumSort(private val iconItem: Item, private val langKey: String) {
 	fun isAll(): Boolean = this == ALL
 
 	companion object {
-		/** Per-category sorts in display order (excludes [ALL]). */
 		@JvmStatic
 		fun categories(): Array<MuseumSort> = entries.drop(1).toTypedArray()
 	}

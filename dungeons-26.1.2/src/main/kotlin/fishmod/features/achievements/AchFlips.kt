@@ -1,6 +1,5 @@
 package fishmod.features.achievements
 
-// Flip profit from Bazaar/AH chat: buys set a per-item cost basis, sells realise profit against it
 object AchFlips {
 
     private val BZ_BUY = Regex("^\\[Bazaar] Claimed ([\\d,]+)x (.+?) worth ([\\d,.]+) coins bought at [\\d,.]+ each!")

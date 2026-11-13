@@ -30,7 +30,6 @@ import java.util.function.ToIntFunction
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Garden crops + composter subpage. */
 class CropsPage {
 	private var scroll = 0
 	private var maxScroll = 0
@@ -58,7 +57,6 @@ class CropsPage {
 		}
 		ly += font.lineHeight + 4
 
-		// Readable 2-col Overview-style rows; last odd item centered; row gap fills panel height.
 		val cols = 2
 		val colGap = GAP
 		val colW = (lw - colGap) / cols

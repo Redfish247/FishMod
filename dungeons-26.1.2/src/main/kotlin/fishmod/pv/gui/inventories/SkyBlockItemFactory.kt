@@ -28,23 +28,13 @@ import net.minecraft.world.item.component.CustomData
 import net.minecraft.world.item.component.DyedItemColor
 import net.minecraft.world.item.component.ItemLore
 
-/**
- * Public item-stack / tooltip facade. Stack building and lore enrichment live in package helpers:
- * [NeuItemResolver], [HypixelItemResolver], [SkullTextureApplier],
- * [LegacyMaterialMap], [ItemTooltipEnricher], [ItemStackCache].
- */
 object SkyBlockItemFactory {
 	private val FAILED_ICON_IDS: MutableSet<String> = ConcurrentHashMap.newKeySet()
 	private val PET_LEVEL = Regex("(?i)\\[Lvl\\s*(\\d+)\\]")
 	private val LVL_PLACEHOLDER = Regex("(?i)\\[Lvl\\s*\\{?LVL\\}?\\]\\s*")
-	/** NEU `MINING_2_PORTAL` skull Value (HotM / mining menu stand-in). */
 	private const val HOTM_TAB_SKULL_VALUE =
 		"ewogICJ0aW1lc3RhbXAiIDogMTYxODk5OTIyNDk2OSwKICAicHJvZmlsZUlkIiA6ICI1NjY3NWIyMjMyZjA0ZWUwODkxNzllOWM5MjA2Y2ZlOCIsCiAgInByb2ZpbGVOYW1lIiA6ICJUaGVJbmRyYSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS83NDIxM2RjNmRjNGIxNjQxZGVmZDMzM2Y0YTQ3MzJjYzcxNGRkNjc3NzE4ZmExMGYxNDBhNjkzOWMxMmFhMzJiIgogICAgfQogIH0KfQ=="
 
-	/**
-	 * Classic Flawless gemstone player-head textures (pre-item-model NEU).
-	 * Modern gems are paper; these skull Values still render the familiar 3D cubes.
-	 */
 	private val FLAWLESS_GEM_SKULLS: Map<String, String> = mapOf(
 		"JADE" to "ewogICJ0aW1lc3RhbXAiIDogMTYxODA4NTY1NzA0NywKICAicHJvZmlsZUlkIiA6ICIxYWZhZjc2NWI1ZGY0NjA3YmY3ZjY1ZGYzYWIwODhhOCIsCiAgInByb2ZpbGVOYW1lIiA6ICJMb3lfQmxvb2RBbmdlbCIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9mODlmNzVlMGIwMDM3OGE1ODNkYmJhNzI4ZGNkYzZlOTM0NmYzMWRkNjAxZDQ0OGYzZDYwNjE1Yzc0NjVjYzNlIgogICAgfQogIH0KfQ==",
 		"AMBER" to "ewogICJ0aW1lc3RhbXAiIDogMTYxODA4NTE3NjQ5NiwKICAicHJvZmlsZUlkIiA6ICJiNWRkZTVmODJlYjM0OTkzYmMwN2Q0MGFiNWY2ODYyMyIsCiAgInByb2ZpbGVOYW1lIiA6ICJsdXhlbWFuIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzlkY2U2MmY3MGFjMDQ2Yjg4MTExM2M2Y2Y4NjI5ODc3Mjc3NzRlMjY1ODg1NTAxYzlhMjQ1YjE4MGRiMDhjMGQiCiAgICB9CiAgfQp9",
@@ -93,7 +83,6 @@ object SkyBlockItemFactory {
 		return SkyBlockItemIconCache.textureSize(ItemStackCache.getItemModel(skyblockId.uppercase(Locale.ROOT)))
 	}
 
-	/** Hypixel `item_model` string for a SkyBlock id, if known. */
 	@JvmStatic
 	fun itemModel(skyblockId: String?): String? {
 		if (skyblockId.isNullOrBlank()) {
@@ -105,7 +94,6 @@ object SkyBlockItemFactory {
 		return ItemStackCache.getItemModel(key)
 	}
 
-	/** Every item id a snapshot holds, across all panes. */
 	private fun snapshotIds(snapshot: InventorySnapshot): MutableSet<String> {
 		val ids = HashSet<String>()
 		collectIds(snapshot.inventory, ids)
@@ -126,7 +114,6 @@ object SkyBlockItemFactory {
 		return ids
 	}
 
-	/** Blocking warm on a worker thread so the first inventory paint already has textures. */
 	@JvmStatic
 	fun warmBlocking(snapshot: InventorySnapshot?) {
 		NeuRepoCache.ensureLoadedBlocking()
@@ -146,7 +133,6 @@ object SkyBlockItemFactory {
 		}
 	}
 
-	/** Prefetch + warm stacks without delaying the profile UI. */
 	@JvmStatic
 	fun warmAsync(snapshot: InventorySnapshot?) {
 		prefetch(snapshot)
@@ -158,7 +144,6 @@ object SkyBlockItemFactory {
 		}
 	}
 
-	/** Prefetch pet skull / held-item icons in the background. */
 	@JvmStatic
 	fun warmPetsAsync(pets: PetSnapshot?) {
 		prefetchPets(pets)
@@ -187,7 +172,6 @@ object SkyBlockItemFactory {
 		prefetchIds(ids)
 	}
 
-	/** Prefetch NEU defs for arbitrary SkyBlock item ids (collections / minions). */
 	@JvmStatic
 	fun prefetchIds(ids: Collection<String?>?) {
 		if (ids.isNullOrEmpty()) {
@@ -226,7 +210,6 @@ object SkyBlockItemFactory {
 			return
 		}
 		val ids = snapshotIds(snapshot)
-		// Inventory pane button skulls (backpack / sacks / bags).
 		ids.add("JUMBO_BACKPACK")
 		ids.add("POCKET_SACK_IN_A_SACK")
 		ids.add("LARGE_POTION_BAG")
@@ -288,10 +271,6 @@ object SkyBlockItemFactory {
 		return stack
 	}
 
-	/**
-	 * Heart of the Mountain tab icon - SkyBlock mining skull (Deep Caverns / HotM menu style head).
-	 * Token of the Mountain is not in the items API; this is the closest NEU mining portal skull.
-	 */
 	@JvmStatic
 	fun hotmTabIcon(): ItemStack {
 		val sky = iconStack("MINING_2_PORTAL")
@@ -349,11 +328,9 @@ object SkyBlockItemFactory {
 			return ItemStack.EMPTY
 		}
 		var stack = baseStack(slot.id).copy()
-		// Sack totals (and other huge counts) show as a single icon; quantity goes in the tooltip.
 		val displayCount = if (slot.count > 64) 1 else maxOf(1, minOf(64, slot.count))
 		stack.count = displayCount
 
-		// Prefer live inventory NBT (custom dyes / skulls) over NEU defaults.
 		if (!slot.skullValue.isNullOrBlank()) {
 			if (!stack.`is`(Items.PLAYER_HEAD)) {
 				stack = ItemStack(Items.PLAYER_HEAD, stack.count)
@@ -369,7 +346,6 @@ object SkyBlockItemFactory {
 		if (name.isNullOrBlank()) {
 			val neu = NeuItemResolver.neuItem(slot.id)
 			if (neu != null && neu.has("displayname") && neu.get("displayname").isJsonPrimitive) {
-				// Pets ship as "[Lvl {LVL}] Name" - strip the level placeholder for UI labels.
 				name = neu.get("displayname").asString.replace(LVL_PLACEHOLDER, "").trim()
 			}
 		}
@@ -394,7 +370,6 @@ object SkyBlockItemFactory {
 				loreLines.add(loreComponent(ItemTooltipEnricher.cleanLoreLine(raw)))
 			}
 		} else {
-			// Auction PET_* tags often ship with empty lore - resolve NEU pet text.
 			val petResolved = resolveAuctionPetIfNeeded(slot)
 			val petLore = petResolved?.lore
 			if (petResolved != null && !petLore.isNullOrEmpty()) {
@@ -424,9 +399,6 @@ object SkyBlockItemFactory {
 		return stack
 	}
 
-	/**
-	 * Cofl / AH `PET_JELLYFISH` → resolved NEU pet slot with PetLoreResolver lore.
-	 */
 	@JvmStatic
 	fun auctionPetSlot(tag: String?, displayName: String?, tier: String?): InventorySnapshot.Slot? {
 		if (tag.isNullOrBlank()) {
@@ -521,9 +493,6 @@ object SkyBlockItemFactory {
 		includeEstimatedValue: Boolean
 	): MutableList<Component> = ItemTooltipEnricher.tooltipLines(slot, rendered, includeEstimatedValue)
 
-	/**
-	 * Stamp SkyBlock id onto `custom_data` so CIT packs (FurfSky) can match.
-	 */
 	@JvmStatic
 	fun applySkyBlockIdentity(stack: ItemStack?, skyblockId: String?) {
 		if (stack == null || stack.isEmpty || skyblockId.isNullOrBlank()) {
@@ -663,7 +632,6 @@ object SkyBlockItemFactory {
 		return ItemTextFormat.prettyId(NeuItemResolver.canonicalId(skyblockId))
 	}
 
-	/** True when a player head has a non-blank textures property (not a Steve placeholder). */
 	@JvmStatic
 	fun isTexturedPlayerHead(stack: ItemStack?): Boolean = SkullTextureApplier.isTexturedPlayerHead(stack)
 

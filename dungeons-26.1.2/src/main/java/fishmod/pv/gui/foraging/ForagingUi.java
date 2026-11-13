@@ -20,7 +20,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Shared foraging UI constants and helpers. */
 public final class ForagingUi {
 	public static final int PAD = 6;
 	public static final int GAP = 6;
@@ -62,7 +61,6 @@ public final class ForagingUi {
 	}
 
 	public static int sectionSeparator(GuiGraphicsExtractor g, Font font, int panelX, int y, int panelW) {
-		// Center the rule in the gap between previous and next content (matches mining).
 		int visualBottom = y - Math.max(0, STAT_ROW - font.lineHeight);
 		int pad = SEP_GAP / 2;
 		int lineY = visualBottom + pad;
@@ -100,7 +98,6 @@ public final class ForagingUi {
 		}
 	}
 
-	/** Only the visible (scissor-clipped) portion of a slot/row is hoverable. */
 	public static void addClippedHover(
 		List<HoverZone> zones,
 		int bx, int by, int bw, int bh,
@@ -165,7 +162,6 @@ public final class ForagingUi {
 		return parts[0] + " " + parts[parts.length - 1];
 	}
 
-	/** Native 16x16 fish-family icon (no fractional downscale). */
 	public static void drawFishFamilyIcon(GuiGraphicsExtractor g, String id, int x, int y) {
 		if (id != null && !id.isBlank() && SkyBlockIconRenderer.hasKnownIcon(id)) {
 			SkyBlockIconRenderer.draw(g, id, x, y, 16);
@@ -191,7 +187,6 @@ public final class ForagingUi {
 			} else {
 				stack = new ItemStack(Items.TROPICAL_FISH);
 			}
-			// No known SkyBlock model/PNG: keep foraging-specific vanilla stand-ins.
 			if (size == 16) {
 				g.item(stack, x, y);
 			} else {

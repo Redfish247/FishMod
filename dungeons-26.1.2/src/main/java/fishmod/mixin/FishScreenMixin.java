@@ -31,7 +31,6 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$drawOverlays(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
-        // Direct calls with setting gates: no per-frame capturing lambdas
         try {
             Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
             fishmod.features.ScrollableTooltip.trackHoveredSlot(hs != null && !hs.getItem().isEmpty() ? hs.index : -1);
@@ -86,7 +85,6 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "extractTooltip", at = @At("HEAD"), cancellable = true)
     private void fishmod$hideTooltipInCustomTermGui(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
-        // Hidden vanilla slots still resolve hoveredSlot; the overlay paints over that tooltip and draws its own on top.
         if (fishmod.features.storage.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
     }
 

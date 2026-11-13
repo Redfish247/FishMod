@@ -11,7 +11,6 @@ import net.minecraft.world.level.block.entity.SignBlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
 
-// 26.1.2/26.2 side of small API differences; the 26.3 module overlays this file.
 typealias EndermanT = net.minecraft.world.entity.monster.EnderMan
 
 val ClientboundLevelParticlesPacket.speed: Float get() = maxSpeed
@@ -21,7 +20,6 @@ fun ItemStack.isShovel(): Boolean = item is net.minecraft.world.item.ShovelItem
 fun BlockState.blocksMotionCompat(): Boolean = blocksMotion()
 fun LocalPlayer.dropHeld(all: Boolean) { drop(all) }
 
-// Where the packet moves the entity to, or null when it carries no position change.
 fun ClientboundMoveEntityPacket.movedTo(e: Entity): Vec3? {
     if (xa.toInt() == 0 && ya.toInt() == 0 && za.toInt() == 0) return null
     return Vec3(e.x + xa / 4096.0, e.y + ya / 4096.0, e.z + za / 4096.0)

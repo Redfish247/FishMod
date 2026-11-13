@@ -61,7 +61,6 @@ object ItemPriceTooltip {
                     built.add(Component.literal("$each$stackPart"))
                 }
 
-                // Pets are valued per pet (level, held item, skin); the shared "PET" id has no market price of its own
                 if (id == "PET") {
                     cachedStack = stack; cachedAt = now; cachedLines = built; lines.addAll(built)
                     return@ItemTooltipCallback

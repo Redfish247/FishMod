@@ -13,7 +13,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import fishmod.features.garden.GardenSettings as S
 
-// Pest spawn title, infested plot waypoints, pest timer HUD, pest drop profit
 object Pests {
 
     private val APPEARED = Regex("""^\w+! (?:A|(\d+)) .*?Pests? ha(?:s|ve) (?:appeared|spawned) in (?:Plot - (.+)|(The Barn))!""")
@@ -23,7 +22,6 @@ object Pests {
     private val COUNT = Regex("""x(\d+)""")
     private val PLOT_SEP = Regex(",| and ")
 
-    // Hypixel plot numbers on the 5x5 grid, north to south
     private val LAYOUT = arrayOf(
         intArrayOf(21, 13, 9, 14, 22), intArrayOf(15, 5, 1, 6, 16), intArrayOf(10, 2, 0, 3, 11),
         intArrayOf(17, 7, 4, 8, 18), intArrayOf(23, 19, 12, 20, 24),
@@ -37,7 +35,6 @@ object Pests {
     private var kills = 0
     private var tick = 0
     private var lastScreen: Any? = null
-    // Vacuum trail: angry-villager particles lead to the pest, the farthest one is the guess
     private val trail = ArrayList<Vec3>()
     private var lastTrail = 0L
     private var guess: Vec3? = null
@@ -147,7 +144,6 @@ object Pests {
     fun killCount(): Int = kills
 
 
-    // "Configure Plots" menu: 5x5 grid from slot 2, names like "Plot - 4" or custom
     private fun scrapePlots(screen: Any?) {
         val scr = screen as? AbstractContainerScreen<*> ?: run { lastScreen = null; return }
         if (scr === lastScreen || Garden.strip(scr.title.string).trim() != "Configure Plots") return

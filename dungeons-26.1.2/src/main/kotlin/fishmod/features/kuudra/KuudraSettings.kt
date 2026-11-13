@@ -9,7 +9,6 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraBossMaster: Boolean = false
     @ConfigValue @JvmField var kuudraChestsMaster: Boolean = false
 
-    // Splits
     @ConfigValue @JvmField var kuudraSplits: Boolean = false
     @ConfigValue @JvmField var kuudraSplitsChat: Boolean = true
     @ConfigValue @JvmField var kuudraPbs: String = ""
@@ -17,7 +16,6 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraSplitsY: Int = 120
     @ConfigValue @JvmField var kuudraSplitsScale: Double = 1.0
 
-    // Alerts
     @ConfigValue @JvmField var kuudraAlerts: Boolean = false
     @ConfigValue @JvmField var kuudraRequeue: Boolean = false
     @ConfigValue @JvmField var kuudraRequeueDelayMs: Int = 8000
@@ -28,7 +26,6 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraAlertSide: Boolean = true
     @ConfigValue @JvmField var kuudraAlertSound: Boolean = true
 
-    // Supplies
     @ConfigValue @JvmField var kuudraSupplyTimes: Boolean = false
     @ConfigValue @JvmField var kuudraSupplyHideOriginal: Boolean = false
     @ConfigValue @JvmField var kuudraSupplyParty: Boolean = false
@@ -49,7 +46,6 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraPearlWaypoints: Boolean = false
     @ConfigValue @JvmField var kuudraPearlHideFar: Boolean = true
 
-    // Build
     @ConfigValue @JvmField var kuudraBuildHud: Boolean = false
     @ConfigValue @JvmField var kuudraBuildHudX: Int = 10
     @ConfigValue @JvmField var kuudraBuildHudY: Int = 230
@@ -64,7 +60,6 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraFreshHudY: Int = 270
     @ConfigValue @JvmField var kuudraFreshHudScale: Double = 1.0
 
-    // Boss
     @ConfigValue @JvmField var kuudraHighlight: Boolean = false
     @ConfigValue @JvmField var kuudraHighlightColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var kuudraHpWorld: Boolean = false
@@ -78,7 +73,6 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraElleHighlight: Boolean = false
     @ConfigValue @JvmField var kuudraElleColor: Int = 0xFFFF55FF.toInt()
 
-    // Chests
     @ConfigValue @JvmField var kuudraChestValue: Boolean = false
     @ConfigValue @JvmField var kuudraChestValueX: Int = 10
     @ConfigValue @JvmField var kuudraChestValueY: Int = 40
@@ -100,7 +94,6 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraChestCounterY: Int = 330
     @ConfigValue @JvmField var kuudraChestCounterScale: Double = 1.0
 
-    // Extras
     @ConfigValue @JvmField var kuudraAnnounce: Boolean = false
     @ConfigValue @JvmField var kuudraAnnounceSpirit: Boolean = true
     @ConfigValue @JvmField var kuudraAnnounceHollowed: Boolean = true
@@ -120,7 +113,6 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraStunStyle: String = "Outline"
     @ConfigValue @JvmField var kuudraStunColor: Int = 0xC800F5FF.toInt()
 
-    // Perks
     @ConfigValue @JvmField var kuudraBlockPerks: Boolean = false
     @ConfigValue @JvmField var kuudraBlockPerksList: String = "Steady Hands, Bomberman, Mining Frenzy, Elle's Lava Rod, Elle's Pickaxe, Auto Revive"
 }

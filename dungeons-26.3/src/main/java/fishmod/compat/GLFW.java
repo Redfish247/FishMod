@@ -3,7 +3,6 @@ package fishmod.compat;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 
-// 26.3 copy: Minecraft moved from GLFW to SDL3, so keys are SDL scancodes and mouse buttons are 1-based.
 public final class GLFW {
     private GLFW() {}
     public static final int GLFW_PRESS = 1;
@@ -65,11 +64,9 @@ public final class GLFW {
     public static void glfwSetCursorPos(long window, double x, double y) { org.lwjgl.sdl.SDLMouse.SDL_WarpMouseInWindow(window, (float) x, (float) y); }
     public static boolean keyDown(Window window, int key) { return InputConstants.isKeyDown(key); }
     public static void openUri(java.net.URI uri) { org.lwjgl.sdl.SDLMisc.SDL_OpenURL(uri.toString()); }
-    // 0 = left, 1 = right, 2 = middle like GLFW; SDL numbers them left=1, middle=2, right=3.
     public static final int KEY_MOUSE_RIGHT = InputConstants.MOUSE_BUTTON_RIGHT;
     public static int btn(net.minecraft.client.input.MouseButtonEvent click) {
         int b = click.button();
-        // SDL order is left=1, middle=2, right=3; GLFW order is left=0, right=1, middle=2.
         return b == 1 ? 0 : b == 3 ? 1 : b == 2 ? 2 : b - 1;
     }
 }

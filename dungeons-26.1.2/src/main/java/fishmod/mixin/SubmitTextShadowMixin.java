@@ -7,7 +7,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-// Text Shadow for floating world text, applied at submit time so signs can be skipped
 @Mixin(SubmitNodeCollection.class)
 public abstract class SubmitTextShadowMixin {
 

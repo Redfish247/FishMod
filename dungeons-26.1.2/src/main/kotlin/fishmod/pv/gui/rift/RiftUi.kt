@@ -18,7 +18,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 
-/** Shared Rift UI helpers, constants, and hover/hit state. */
 class RiftUi {
 	@JvmField
 	val zones = ArrayList<HoverZone>()
@@ -84,7 +83,6 @@ class RiftUi {
 		const val BAR_LABEL_GAP = 2
 		const val BAR_AFTER = 4
 
-		/** Match Inventories tab slot sizing so icons sit flush. */
 		const val SLOT = 18
 		const val SLOT_GAP = 2
 		const val COL_GAP = 4

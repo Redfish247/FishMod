@@ -12,7 +12,6 @@ import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-// Countdown from Storm's death to terminals opening.
 object TermOpenTimer {
 
     private const val COUNTDOWN_TICKS = 60
@@ -24,7 +23,6 @@ object TermOpenTimer {
     @JvmStatic
     fun init() {
         FishEvents.serverTick.register {
-            // practice servers skip the P3 chat lines, so overdue is expected there
             if (!waiting()) ticksSinceStorm = 0 // restart per P2 so stale counts never mis-fire
             else if (++ticksSinceStorm == OVERDUE_TICKS && !fishmod.utils.dungeon.PracticeMode.active) {
                 FishDiag.fail("TermOpenTimer.1", "terminals 10s overdue, P3 never detected (floor=${BossPhase.getFloor()} phase=${BossPhase.getPhase()})")

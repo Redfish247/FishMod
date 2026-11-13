@@ -14,7 +14,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.resources.Identifier
 
-// Loot / Mob / Stats / Magic Find HUDs for the Diana tracker
 object DianaTrackerHud {
 
     private val LOOT_ORDER = listOf(
@@ -32,7 +31,6 @@ object DianaTrackerHud {
         "KING_MINOS" to "§c", "MANTICORE" to "§c", "MINOS_INQUISITOR" to "§d", "SPHINX" to "§5",
         "MINOS_CHAMPION" to "§6", "MINOTAUR" to "§6", "MINOS_HUNTER" to "§9",
     )
-    // SBO order and colours; ls = also show the loot-share counter
     private class Stat(val key: String, val color: String, val label: String, val ls: Boolean = false)
     private val STATS = listOf(
         Stat("MOBS_KING_MINOS", "§c", "Mobs since King"),
@@ -80,7 +78,6 @@ object DianaTrackerHud {
 
     private fun registerExample(name: String, lines: (Src) -> List<Row>) {
         HudPreview.register(name) {
-            // lines the player hid stay hidden, like in game
             val rows = lines(example()).filter { !isHiddenRow(it) }
             val font = Minecraft.getInstance().font
             val w = rows.maxOfOrNull { it.width(font) } ?: 0
@@ -117,7 +114,6 @@ object DianaTrackerHud {
             { DianaSettings.dianaMfTracker }, ::mfRows)
         registerExample("Diana Magic Find", ::mfRows)
 
-        // In the inventory every line shows; click one to hide/unhide it
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is InventoryScreen) return@AfterInit
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
@@ -158,7 +154,6 @@ object DianaTrackerHud {
 
     private val MODES = listOf("Event", "Session", "Total")
 
-    // Inventory: clicking a tracker title swaps Event -> Session -> Total
     private fun cycleMode(id: String) {
         fun next(m: String) = MODES[(MODES.indexOf(m) + 1) % MODES.size]
         if (id == "cycle:loot") DianaSettings.dianaLootTracker = next(DianaSettings.dianaLootTracker)
@@ -190,7 +185,6 @@ object DianaTrackerHud {
         return c.rows
     }
 
-    // editing = inventory view: hidden rows stay in place, greyed and struck through
     private fun draw(ctx: GuiGraphicsExtractor, rows: List<Row>, x: Int, y: Int, scale: Double, editing: Boolean) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden || rows.isEmpty()) return
@@ -263,7 +257,6 @@ object DianaTrackerHud {
 
     private val PCT_DROPS = setOf("CHIMERA", "FATEFUL_STINGER", "SHIMMERING_WOOL", "MANTI_CORE", "MINOS_RELIC", "BRAIN_FOOD")
 
-    // Drop rate per source mob, e.g. Chimera per Inquisitor (LS drops against LS kills)
     private fun pct(t: DianaTracker.Tracker, k: String, n: Long, suffix: String): String {
         if (k !in PCT_DROPS || n <= 0) return ""
         val src = DianaTracker.drop(k).source ?: return ""

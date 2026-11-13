@@ -3,7 +3,6 @@ package fishmod.features.extras
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object ExtrasSettings {
-    // Arrow HUD
     @ConfigValue @JvmField var arrowHud: Boolean = false
     @ConfigValue @JvmField var arrowHudOnlyBow: Boolean = true
     @ConfigValue @JvmField var arrowHudExtra: Boolean = true
@@ -20,13 +19,11 @@ object ExtrasSettings {
     @ConfigValue @JvmField var calendarRealTimes: Boolean = false
     @ConfigValue @JvmField var calendarTimeColor: Int = 0xFF55FFFF.toInt()
 
-    // Limbo alert
     @ConfigValue @JvmField var limboAlert: Boolean = false
     @ConfigValue @JvmField var limboTitle: String = "§cIN LIMBO"
     @ConfigValue @JvmField var limboSound: String = "Anvil Land"
     @ConfigValue @JvmField var limboVolume: Int = 100
 
-    // Party join sound
     @ConfigValue @JvmField var partyJoinSound: Boolean = false
     @ConfigValue @JvmField var partyJoinSoundName: String = "Note: Pling"
     @ConfigValue @JvmField var partyJoinVolume: Int = 100
@@ -40,13 +37,11 @@ object ExtrasSettings {
     @ConfigValue @JvmField var patcherWaypointRemoveNear: Boolean = true
     @ConfigValue @JvmField var patcherWaypointTextScale: Double = 1.0
 
-    // Fairy soul waypoints
     @ConfigValue @JvmField var fairySoulWaypoints: Boolean = false
     @ConfigValue @JvmField var fairySoulColor: Int = 0xFFFF55FF.toInt()
     @ConfigValue @JvmField var fairySoulBeam: Boolean = true
     @ConfigValue @JvmField var fairySoulText: Boolean = true
 
-    // Item overlays + tooltip
     @ConfigValue @JvmField var overlayItemLevels: Boolean = false
     @ConfigValue @JvmField var overlayBookLevel: Boolean = true
     @ConfigValue @JvmField var overlayPetLevel: Boolean = true
@@ -57,11 +52,9 @@ object ExtrasSettings {
     @ConfigValue @JvmField var obtainedDateTooltip: Boolean = false
     @ConfigValue @JvmField var suggestionClickAhs: Boolean = true
 
-    // PV maxed highlight
     @ConfigValue @JvmField var pvMaxedColor: Int = 0xFFFFAA00.toInt()
     @ConfigValue @JvmField var pvMaxedRainbow: Boolean = false
 
-    // Enchant colours (item tooltips + PV)
     @ConfigValue @JvmField var enchantColors: Boolean = false
     @ConfigValue @JvmField var enchantMaxColor: Int = 0xFFFF55FF.toInt()
     @ConfigValue @JvmField var enchantMaxChroma: Boolean = true

@@ -17,7 +17,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import fishmod.utils.debug.FishDiag
 
-// Storm LB aim: a marker that follows your eye along the class's recorded aim direction.
 object StormLbWaypoint {
 
     private class Spot(val x: Double, val y: Double, val z: Double, yaw: Float, pitch: Float) {

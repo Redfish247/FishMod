@@ -15,7 +15,6 @@ import java.util.Locale
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Builds fallback stacks from Hypixel items API definitions when NEU misses. */
 object HypixelItemResolver {
 	private val WHITESPACE = Regex("\\s+")
 
@@ -45,12 +44,10 @@ object HypixelItemResolver {
 			(parsed.name == "SKULL_ITEM" || parsed.name == "SKULL" || parsed.name == "PLAYER_HEAD")
 		if (skinValue != null) {
 			val skull = ItemStack(Items.PLAYER_HEAD)
-			// Hypixel item skins often carry invalid signatures; unsigned Value still loads the texture URL.
 			SkullTextureApplier.applyValue(skull, skinValue, null)
 			return if (SkullTextureApplier.isTexturedPlayerHead(skull)) skull else ItemStack(Items.PAPER)
 		}
 		if (skullMaterial) {
-			// Bare SKULL_ITEM without skin renders as Steve - prefer paper so callers can fall back.
 			return ItemStack(Items.PAPER)
 		}
 		return ItemStack(LegacyMaterialMap.resolveMaterial(material, key, durability))

@@ -32,7 +32,6 @@ class FarmingFortuneEstimate private constructor(
 	internal val truffle: Boolean,
 	tools: List<ToolCandidate>
 ) {
-	/** Only counted lines add to the total; conditional ones are active some of the time and listed separately. */
 	enum class Kind { COUNTED, CONDITIONAL, UNAVAILABLE }
 
 	@JvmRecord
@@ -63,7 +62,6 @@ class FarmingFortuneEstimate private constructor(
 	@JvmRecord
 	data class Accessory(val stack: InventoryDecoder.Stack, val fortune: Double)
 
-	/** A tool valued for one crop; {@code parts} is the attribute breakdown. */
 	@JvmRecord
 	data class Tool(val stack: InventoryDecoder.Stack, val fromToolkit: Boolean, val rarity: String, val parts: List<Line>) {
 		fun total(): Double = sum(parts)
@@ -71,13 +69,11 @@ class FarmingFortuneEstimate private constructor(
 
 	internal data class ToolCandidate(val stack: InventoryDecoder.Stack, val fromToolkit: Boolean, val info: FarmingToolFortune.Info)
 
-	/** A pet valued for one crop: ability and stat lines, plus the held item when it gives fortune. */
 	@JvmRecord
 	data class PetPick(val pet: PetSnapshot.Entry, val lines: List<Line>, val item: Line?) {
 		fun total(): Double = sum(lines) + (if (item == null) 0.0 else sum(listOf(item)))
 	}
 
-	/** Island data loads separately from the profile, so plots, garden level and crop upgrades may be missing. */
 	@JvmRecord
 	data class Garden(
 		val loaded: Boolean, val plots: Int, val level: Int, val upgrades: Map<String, Int>, val milestones: Map<String, Int>,
@@ -133,10 +129,6 @@ class FarmingFortuneEstimate private constructor(
 	@get:JvmName("accessories") val accessories: List<Accessory> = java.util.List.copyOf(accessories)
 	private val tools: List<ToolCandidate> = java.util.List.copyOf(tools)
 
-	/**
-	 * Pet abilities and stats for {@code crop} (null for fortune that applies to every crop), without the held item.
-	 * Empty when the pet gives no Farming Fortune. Values come from NEU petnums and the current pet lore.
-	 */
 	internal fun petLines(pet: PetSnapshot.Entry, crop: String?, garden: Garden): List<Line> {
 		val type = pet.type.uppercase(Locale.ROOT)
 		val rarity = RARITIES.indexOf(pet.tier.uppercase(Locale.ROOT))
@@ -226,7 +218,6 @@ class FarmingFortuneEstimate private constructor(
 
 	fun toolkitTools(): Int = inputs.toolkit.size
 
-	/** Best tool for {@code crop}; Dedication depends on crop milestones, so the pick can change once the garden loads. */
 	fun tool(crop: String?, garden: Garden): Tool? {
 		if (crop == null) {
 			return null
@@ -253,7 +244,6 @@ class FarmingFortuneEstimate private constructor(
 
 	fun personalBestsUnlocked(): Boolean = inputs.personalBestsUnlocked
 
-	/** Permanent profile bonuses that apply to every crop. */
 	fun permanentLines(garden: Garden): List<Line> {
 		val out = ArrayList<Line>()
 		val level = minOf(FARMING_LEVEL_CAP, inputs.farmingLevel)
@@ -282,7 +272,6 @@ class FarmingFortuneEstimate private constructor(
 		if (galaxy > 0) {
 			out.add(Line.counted("Galaxy Fish shard", galaxy.toDouble(), "Level $galaxy"))
 		}
-		// Firefly works by day and Lunar Moth by night, so the lower level is always active.
 		val both = minOf(inputs.shards["solar_power"] ?: 0, inputs.shards["lunar_power"] ?: 0)
 		if (both > 0) {
 			out.add(Line.counted("Firefly and Lunar Moth shards", 5.0 * both, "Level $both, day and night"))
@@ -301,7 +290,6 @@ class FarmingFortuneEstimate private constructor(
 	fun temporary(crop: String?, garden: Garden, nowMs: Long): List<FarmingFortuneTemporary.Source> =
 		FarmingFortuneTemporary.sources(this, crop, garden, nowMs)
 
-	/** Owned farming pets valued for {@code crop} (null for every crop), best first, one per pet type. */
 	fun pets(crop: String?, garden: Garden): List<PetPick> {
 		val bestByType = LinkedHashMap<String, PetPick>()
 		for (pet in inputs.pets) {
@@ -328,10 +316,8 @@ class FarmingFortuneEstimate private constructor(
 
 	fun petTotal(crop: String?, garden: Garden): Double = bestPet(crop, garden)?.total() ?: 0.0
 
-	/** Fortune that applies to every crop: permanent bonuses, best armour, equipment and best all-crop pet. */
 	fun general(garden: Garden): Double = permanentTotal(garden) + armourTotal() + equipmentTotal() + petTotal(null, garden)
 
-	/** Fortune that only applies while farming {@code crop}. */
 	fun cropLines(crop: String?, garden: Garden): List<Line> {
 		val out = ArrayList<Line>()
 		val tool = tool(crop, garden)
@@ -377,7 +363,6 @@ class FarmingFortuneEstimate private constructor(
 
 	fun cropBonus(crop: String?, garden: Garden): Double = sum(cropLines(crop, garden))
 
-	/** The pet is picked for this crop, so it can differ from the one in {@link #general}. */
 	fun forCrop(crop: String?, garden: Garden): Double =
 		permanentTotal(garden) + armourTotal() + equipmentTotal() + petTotal(crop, garden) + cropBonus(crop, garden)
 
@@ -412,11 +397,9 @@ class FarmingFortuneEstimate private constructor(
 			"beetle", "cricket", "worm", "fly", "locust", "mite", "mosquito", "moth", "rat", "slug", "mouse",
 			"dragonfly", "firefly", "praying_mantis", "lunar_moth"
 		)
-		// NEU bestiary bracket 7; every other pest uses bracket 6.
 		private val SMALL_BRACKET_PESTS = setOf("mouse", "lunar_moth")
 		private val PEST_BRACKETS = intArrayOf(1, 2, 3, 5, 7, 9, 14, 17, 21, 25, 50, 80, 125, 175, 250)
 		private val MOUSE_BRACKETS = intArrayOf(1, 2, 3, 5, 7, 9, 11, 14, 17, 20, 30, 40, 55, 75, 100)
-		// Non-pest garden bestiary mobs: bracket 7, Timestalk Clone capped at 20 kills (10 tiers).
 		private val TIMESTALK_BRACKETS = intArrayOf(1, 2, 3, 5, 7, 9, 11, 14, 17, 20)
 		private const val DNA_MILESTONE_PREFIX = "dna_analysis_rewardfarming_fortune_"
 		private val PB_CROPS_PER_TIER: Map<String, Int> = mapOf(
@@ -425,7 +408,6 @@ class FarmingFortuneEstimate private constructor(
 			"Nether Wart" to 300, "Cocoa Beans" to 300, "Sunflower" to 200,
 			"Moonflower" to 200, "Wild Rose" to 200
 		)
-		// Highest owned tier wins; Helianthus Relic applies to every crop.
 		private val FERMENTO_FAMILY = listOf("HELIANTHUS_RELIC", "FERMENTO_ARTIFACT", "SQUASH_RING", "CROPIE_TALISMAN")
 		private val FERMENTO_FORTUNE: Map<String, Double> = mapOf(
 			"HELIANTHUS_RELIC" to 40.0, "FERMENTO_ARTIFACT" to 30.0, "SQUASH_RING" to 20.0, "CROPIE_TALISMAN" to 10.0
@@ -439,7 +421,6 @@ class FarmingFortuneEstimate private constructor(
 			"SQUASH_RING" to listOf("Wheat", "Carrot", "Potato", "Pumpkin", "Melon", "Mushroom", "Cocoa Beans"),
 			"CROPIE_TALISMAN" to listOf("Wheat", "Carrot", "Potato")
 		)
-		// Tiered set bonus for 2, 3 and 4 pieces of one armour family.
 		private val SET_BONUS: Map<String, IntArray> = mapOf(
 			"MELON" to intArrayOf(10, 20, 30),
 			"CROPIE" to intArrayOf(15, 30, 45),
@@ -454,7 +435,6 @@ class FarmingFortuneEstimate private constructor(
 		)
 		private val RARITIES: List<String> = FarmingToolFortune.RARITIES
 		private const val RARITY_CODES = "fa956d"
-		// Farming pets other than Rose Dragon, for Symbiosis.
 		private val SYMBIOSIS_PETS = setOf(
 			"BEE", "CHICKEN", "ELEPHANT", "HEDGEHOG", "MOOSHROOM_COW", "MOSQUITO", "ORCHID_MANTIS", "PIG", "RABBIT", "SLUG"
 		)
@@ -586,7 +566,6 @@ class FarmingFortuneEstimate private constructor(
 			}
 		}
 
-		// A set piece is worth its stat line plus its share of the family's set bonus.
 		private fun armourScore(piece: Piece): Double {
 			val family = family(piece.stack.id)
 			return piece.fortune + (if (family == null) 0.0 else SET_BONUS.getValue(family)[0].toDouble())
@@ -665,7 +644,6 @@ class FarmingFortuneEstimate private constructor(
 			}
 		}
 
-		/** Every garden bestiary mob, which is what the +0.4 per tier counts. Hunter's Insight only counts pests. */
 		internal fun gardenTiers(kills: JsonObject?): Int {
 			if (kills == null) {
 				return 0
@@ -684,7 +662,6 @@ class FarmingFortuneEstimate private constructor(
 			return 0
 		}
 
-		// Each claimed DNA Analysis reward is an objectives.tutorial entry ending in its level.
 		internal fun dnaMilestone(member: JsonObject): Int {
 			val objectives = Leveling.obj(member.get("objectives"))
 			val tutorial = objectives?.get("tutorial")
@@ -734,13 +711,11 @@ class FarmingFortuneEstimate private constructor(
 			return minOf(100.0, floor(amount.toDouble() / per) / 100.0)
 		}
 
-		// NEU petnums values scale linearly from level 1 to max; Rose Dragon's levels 101 to 200 map onto 1 to 100.
 		internal fun petScale(atOne: Double, atMax: Double, level: Int): Double {
 			val n = level.coerceIn(1, 100)
 			return atOne + (atMax - atOne) * (n - 1) / 99.0
 		}
 
-		// Toolkit tools have no display name, so build one with the reforge and rarity colour.
 		private fun named(stack: InventoryDecoder.Stack, rarity: String): InventoryDecoder.Stack {
 			if (!stack.displayName.isNullOrBlank()) {
 				return stack

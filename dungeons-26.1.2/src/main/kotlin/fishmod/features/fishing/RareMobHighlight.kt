@@ -15,8 +15,6 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 
-// Rare sea creature glow, HP and spawn-immunity text. Pattern: diana/RareMobs.kt (5-tick scan).
-// Nametag shape `Lord Jawbus 1M/2M❤` and 5 s immunity are UNVERIFIED in game (from Feesh).
 object RareMobHighlight {
     private class Label(val pos: Vec3, val text: Component)
 
@@ -24,7 +22,6 @@ object RareMobHighlight {
     private val HP = Regex("([0-9.]+[kKmMbB]?)/([0-9.]+[kKmMbB]?)❤")
     private const val RANGE_SQ = 30.0 * 30.0
 
-    // Read by the render mixin; swapped whole every scan
     @Volatile private var glow: Map<Int, Int> = emptyMap()
     @Volatile private var labels: List<Label> = emptyList()
     private var tick = 0
@@ -81,7 +78,6 @@ object RareMobHighlight {
                 if (m != null && parse(m.groupValues[1]) <= 0.0) continue
 
                 if (W.rareHighlight) {
-                    // the real mob stands just below its nametag stand
                     var best: LivingEntity? = null
                     var bd = 4.0
                     for (mob in mobs) {

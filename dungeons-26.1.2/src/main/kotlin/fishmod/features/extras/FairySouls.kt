@@ -20,11 +20,9 @@ import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 import fishmod.features.extras.ExtrasSettings as S
 
-// Uncollected fairy soul waypoints (locations from NEU repo constants/fairy_souls.json, MIT)
 object FairySouls {
     private val PATH = FabricLoader.getInstance().configDir.resolve("FishMod").resolve("fairy-souls-found.json")
     private val gson = GsonBuilder().setPrettyPrinting().create()
-    // server mode -> found "x,y,z" keys
     private val found = ConcurrentHashMap<String, MutableSet<String>>()
 
     fun init() {
