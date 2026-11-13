@@ -152,9 +152,9 @@ object SkyItemList {
         val o = NeuRepo.get(id) ?: return 7
         val itemId = o.get("itemid")?.asString
         if (itemId == "minecraft:enchanted_book") return 6
+        if (id.startsWith("ATTRIBUTE_SHARD_")) return 12
         if (PET_ID.matches(id)) return 5
         if (MINION_RE.containsMatchIn(id)) return 9
-        if (id.startsWith("ATTRIBUTE_SHARD_")) return 12
         val name = TextStrip.plain(o.get("displayname")?.asString ?: "")
         if (isNpc(id)) return 20
         val lore = o.getAsJsonArray("lore")
