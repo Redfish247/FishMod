@@ -422,7 +422,7 @@ object SkyItemList {
             val tip = tooltipLines(id, stack)
             // Sit the tooltip against the panel's left edge instead of letting it flip around the cursor
             val tw = tip.maxOfOrNull { font.width(it) } ?: 0
-            val tx = if (mx - tw - 24 < 0 || px - tw - 28 < 0) mx else px - tw - 28
+            val tx = if (mx - tw - 24 < 0 || px - tw - 18 < 0) mx else px - tw - 18
             ctx.setTooltipForNextFrame(font, tip, stack.tooltipImage, tx, my)
             ctx.extractDeferredElements(mx, my, 0f)
         }
