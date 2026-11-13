@@ -1,3 +1,21 @@
+﻿FishMod Changelog - 2026-11-13
+==================================
+Fixed:
+- Nothing new this run. The code was checked again and no new bugs turned up.
+Reported bugs fixed (from fishmod.dev):
+- None new. All 32 open Bug cards were already fixed in earlier builds and sit in Testing (#567 #565 #561 #562 #563 #533 #548 #553 #560 #547 #549 #532 #534 #537 #520 #521 #530 #513 #525 #526 #510 #502 #570 #571 #572 #573 #574 #575 #568 #569 #566). Nothing is Done until you say so.
+Known issues (not fixed yet):
+- #459 players far from spawn look stuck or glitched (Rift mountain top). Could not reproduce; most likely Hypixel's own fake-player NPCs. It still needs a video or a /fm debug report.
+Test in game:
+1. Nothing new to test. The cards in Testing still need your in-game check.
+Run notes:
+- Start commit 94e3e205 (tree clean). No fix commits. Built 26.1.2 + 26.2 as 1.7.94, both OK with no compiler warnings (26.3 not built). Jar NOT copied: the Modrinth path "Skyblock 1.21.8\mods" does not exist on this machine, and the Skyblock Prism folder only gets jars through /ship. Jar is at dungeons-26.2/build/libs/FishModDungeons-1.7.94-26.2.jar. Not tested in game.
+- Bug cards (32, all already Testing): fixes found in git for every one except #459 (#520 7dc8877f, #521 a32e0653/171b73a1, #513 #525 #526 872a9dbc, #572-575 ed8c3eaf, #570 is a socket-silent reconnect log with no crash, #571 51b23f69, #565 worker change in fa1a0d93, not deployed). I did not re-test them.
+- #533 mod side sent maxSecrets in b3d94bda; worker.js in D:\FishMod-WorkerBoard already accepts client maxSecrets (achClamp with ACH_CEIL_SECRETS), so no worker change needed. Not deployed by me.
+- #459 read PlayerSize.scaleFor, PlayerEntityRendererScaleMixin and FishEntityRenderMixin.shouldRender: remote scales are clamped and NaN/zero is ignored, culling only hides slimes/ghosts/hooks. Nothing in the mod moves other players. Reporter says it also happens with only FishMod installed, so not FishMod-specific to find from here; no code change made.
+- Sweep: grep for printStackTrace, System.out, TODO and blocking calls found only the intended update-installer logging and background-thread sleeps/joins. Found nothing else broken.
+- Board: no card changed, all fixed cards already in Testing. Nothing set to Done.
+- Notes for Obsidian: the daily-bugfix prompt still names a Modrinth folder that does not exist here; the jar path to use is Prism Skyblock through /ship.
 FishMod Changelog - 2026-11-12 (run 2)
 ==================================
 Fixed:
