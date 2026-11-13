@@ -24,16 +24,13 @@ object FormatUtil {
 		.withZone(ZoneOffset.UTC)
 	private val SUFFIXES = arrayOf("k", "m", "b", "t")
 
-	// DecimalFormat isn't thread-safe; snapshots format off the render thread too.
 	private fun fmt(format: DecimalFormat, value: Long): String = synchronized(format) { format.format(value) }
 
 	private fun fmt(format: DecimalFormat, value: Double): String = synchronized(format) { format.format(value) }
 
-	/** Calendar date in UTC (e.g. {@code Dec 1, 2024}). Empty when {@code ms <= 0}. */
 	@JvmStatic
 	fun prettyDate(ms: Long): String = if (ms <= 0L) "" else DATE_UTC.format(Instant.ofEpochMilli(ms))
 
-	/** Relative age from an epoch millis timestamp (e.g. {@code 6mo 4d ago}). */
 	@JvmStatic
 	fun ago(epochMs: Long): String =
 		if (epochMs <= 0L) "" else prettySpan(System.currentTimeMillis() - epochMs) + " ago"
@@ -47,7 +44,6 @@ object FormatUtil {
 	@JvmStatic
 	fun twoDecimals(value: Double): String = fmt(TWO_DEC, value)
 
-	/** 0..1 fraction as a percentage (e.g. {@code 41.7%}). */
 	@JvmStatic
 	fun percent(fraction: Double): String {
 		val clamped = if (fraction.isFinite()) fraction.coerceIn(0.0, 1.0) else 0.0
@@ -57,7 +53,6 @@ object FormatUtil {
 	@JvmStatic
 	fun weight(value: Double): String = fmt(WEIGHT, value)
 
-	/** Compact coins for networth display (e.g. 29.167b). */
 	@JvmStatic
 	fun shortCoins(value: Double): String = shortCompact(value, false)
 
@@ -80,19 +75,15 @@ object FormatUtil {
 		return m.toString() + ":" + pad2(s)
 	}
 
-	/**
-	 * Compact age/remaining span: at most the two largest non-zero units.
-	 * e.g. {@code 6d 4h}, {@code 3h 12m}, {@code 45s}.
-	 */
 	@JvmStatic
 	fun prettySpan(ms: Long): String {
 		var totalSec = maxOf(0L, ms / 1000L)
 		if (totalSec < 1L) {
 			return "0s"
 		}
-		val years = totalSec / 31_536_000L // 365d
+		val years = totalSec / 31_536_000L
 		totalSec %= 31_536_000L
-		val months = totalSec / 2_592_000L // 30d
+		val months = totalSec / 2_592_000L
 		totalSec %= 2_592_000L
 		val days = totalSec / 86_400L
 		totalSec %= 86_400L

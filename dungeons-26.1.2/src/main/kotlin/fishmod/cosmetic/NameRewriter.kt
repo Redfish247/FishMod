@@ -52,7 +52,6 @@ object NameRewriter {
         return out
     }
 
-    // Hovering a swapped name shows the real one (root style; children keep their own colours).
     private fun withRealNameHover(replacement: Component, realName: String): MutableComponent {
         val hover = HoverEvent.ShowText(Component.literal("§7Real name: §f$realName"))
         val root = Component.empty().withStyle { it.withHoverEvent(hover) }
@@ -60,7 +59,6 @@ object NameRewriter {
         return root
     }
 
-    // Drops the first `count` visible chars, keeping § codes and styles so the rest stays coloured
     @JvmStatic
     fun dropVisiblePrefix(original: Component, count: Int): Component {
         val out: MutableComponent = Component.empty()

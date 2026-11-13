@@ -14,7 +14,6 @@ import net.minecraft.gizmos.GizmoStyle
 import net.minecraft.gizmos.Gizmos
 import net.minecraft.world.phys.Vec3
 
-// 26.2 side: layers are recorded while the level collects submits and drawn as custom geometry.
 object RenderHooks {
 
     @JvmField var GIZMO = SimpleHandler<GizmoEvent>()
@@ -24,7 +23,6 @@ object RenderHooks {
 
     @Volatile private var registered = false
 
-    // Recorders are reused across frames; each pass restarts the pool and replay finishes before the next frame's collect
     private val recPool = ArrayList<RecordingConsumer>()
     private var recUsed = 0
     private fun newRec(): RecordingConsumer {

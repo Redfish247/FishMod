@@ -30,18 +30,14 @@ object PvDraw {
 	@JvmField
 	var COLOR_ACCENT = 0xFF5B8CFF.toInt()
 	const val COLOR_DIVIDER = 0x26FFFFFF
-	/** Visible empty track (must read against inner panel). */
 	const val COLOR_BAR_BG = 0x38FFFFFF
 	const val COLOR_BAR_FILL = 0xFF3D8B5A.toInt()
 	const val COLOR_BAR_PROGRESS = 0xFF8E8E9C.toInt()
 	const val COLOR_BAR_FILL_SLAYER = 0xFF8B4A3D.toInt()
-	/** Matches catgirllivid cosmetics name gradient. */
 	const val COLOR_MAXED_BAR_LEFT = 0xFF9278C5.toInt()
 	const val COLOR_MAXED_BAR_RIGHT = 0xFFF3E6FD.toInt()
 	const val BAR_HEIGHT = 6
 
-	// Liquid-glass theme: dark translucent bodies, soft light edge, faint top gloss.
-	/** Theme-driven cell background (set by PvTheme). */
 	@JvmField
 	var CELL = 0x38000000
 	@JvmField
@@ -68,7 +64,6 @@ object PvDraw {
 		g.fill(x, y, x + w, y + h, argb)
 	}
 
-	// Cached per radius: called many times per frame; callers only read the array.
 	private fun cornerInsets(r: Int): IntArray {
 		if (r < INSETS_CACHE.size) {
 			return INSETS_CACHE[r] ?: computeInsets(r).also { INSETS_CACHE[r] = it }
@@ -81,14 +76,12 @@ object PvDraw {
 		Math.round(r - sqrt(maxOf(0.0, r * r.toDouble() - dy * dy))).toInt()
 	}
 
-	/** Device pixels per local unit under the current pose (GUI scale times any viewer scaling). */
 	private fun deviceScale(g: GuiGraphicsExtractor): Float {
 		val guiScale = Minecraft.getInstance().window.guiScale.toFloat()
 		val poseScale = abs(g.pose().m00())
 		return maxOf(1f, guiScale * (if (poseScale <= 0f) 1f else poseScale))
 	}
 
-	/** Filled rect with circular corners; drawn on the device-pixel grid so the arc has no chunky steps. */
 	@JvmStatic
 	@JvmOverloads
 	fun roundedFill(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, argb: Int, mask: Int = C_ALL) {
@@ -172,7 +165,6 @@ object PvDraw {
 		}
 	}
 
-	/** One-pixel-ish rounded outline on the device grid; leaves the inside untouched (no tint). */
 	@JvmStatic
 	fun roundedRing(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, argb: Int, mask: Int) {
 		val k = deviceScale(g)
@@ -188,7 +180,6 @@ object PvDraw {
 		val ri = maxOf(0, dr - t)
 		val inner = if (ri > 1) cornerInsets(ri) else NO_INSETS
 		val cornerRows = minOf(dr, dh / 2)
-		// Only the corner bands need per-row work; the straight sides are two strips.
 		for (i in 0 until cornerRows) {
 			for (half in 0..1) {
 				val top = half == 0
@@ -223,14 +214,12 @@ object PvDraw {
 		g.pose().popMatrix()
 	}
 
-	/** Opaque floating surface (tooltips, menus) so nothing underneath shows through the text. */
 	@JvmStatic
 	fun popupSurface(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
 		roundedFill(g, x, y, w, h, 4, 0xFA090B11.toInt(), C_ALL)
 		roundedRing(g, x, y, w, h, 4, 0x00FFFFFF, C_ALL)
 	}
 
-	/** Near-opaque panel for popups and overlays so text on top stays readable. */
 	@JvmStatic
 	fun overlayPanel(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
 		glassShadow(g, x, y, w, h, 8)
@@ -239,7 +228,6 @@ object PvDraw {
 		roundedGradient(g, x, y, w, h, 8, top, base, C_ALL)
 	}
 
-	/** Soft dark halo under a glass surface. */
 	@JvmStatic
 	fun glassShadow(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int) {
 		roundedFill(g, x - 3, y - 2, w + 6, h + 6, r + 3, 0x08000000)
@@ -262,14 +250,9 @@ object PvDraw {
 	@JvmStatic
 	fun panel(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
 		glassShadow(g, x, y, w, h, 8)
-		// Top-left stays square: the tab row and side tabs attach there.
 		glassSurface(g, x, y, w, h, 8, GLASS_TOP, GLASS_BOTTOM, C_TR or C_BR or C_BL)
 	}
 
-	/**
-	 * Horizontal offset for the card slide: the old face slides out to the left over the first half,
-	 * then the new face slides in from the right over the second half. [eased] is 0..1.
-	 */
 	@JvmStatic
 	fun slideOffset(eased: Float, w: Int): Float =
 		if (eased < 0.5f) -w * (eased * 2f) else w * (1f - (eased - 0.5f) * 2f)
@@ -303,7 +286,6 @@ object PvDraw {
 		if (value == null) {
 			return
 		}
-		// White is the fallback for unstyled runs; per-sibling Style colours still apply.
 		g.text(font, value, x, y, COLOR_WHITE, false)
 	}
 
@@ -312,7 +294,6 @@ object PvDraw {
 	@Suppress("UNUSED_PARAMETER")
 	fun styled(value: String, rgb: Int, bold: Boolean, italic: Boolean = false): Component {
 		var style = Style.EMPTY.withColor(TextColor.fromRgb(rgb and 0xFFFFFF))
-		// Bold is skipped: vanilla bold doubles Inter a whole pixel over and turns chunky.
 		if (italic) {
 			style = style.withItalic(true)
 		}
@@ -337,11 +318,6 @@ object PvDraw {
 		g.pose().popMatrix()
 	}
 
-	/**
-	 * Y positions so a square item icon and a text line share the same vertical center.
-	 * Works when `rowH` is shorter than the icon (dense lists used to pin icons to the top
-	 * while centering text, which made icons look low).
-	 */
 	@JvmRecord
 	data class IconTextAlign(val iconY: Int, val textY: Int) {
 		companion object {
@@ -429,12 +405,10 @@ object PvDraw {
 	private const val CHROMA_STEP_PX = 4
 	private const val CHROMA_BAND_ROWS = 3
 
-	/** Slow, wide, slightly diagonal rainbow; each row band is shifted a whole pixel so seams stay even. */
 	private fun chromaSlices(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
 		val r = h / 2
 		val end = w - r
 		val t = (System.currentTimeMillis() % CHROMA_PERIOD_MS) / CHROMA_PERIOD_MS.toFloat()
-		// Round caps take the gradient colour at their spot so the ends match the bar
 		val mid = h / (2 * CHROMA_BAND_ROWS)
 		roundedFill(g, x, y, minOf(2 * r, w), h, r, rainbowArgb(positiveModulo((r + mid) / CHROMA_SPAN_PX - t, 1f)))
 		roundedFill(g, x + maxOf(0, w - 2 * r), y, minOf(2 * r, w), h, r, rainbowArgb(positiveModulo((end + mid) / CHROMA_SPAN_PX - t, 1f)))
@@ -452,7 +426,6 @@ object PvDraw {
 		}
 	}
 
-	/** User-picked maxed bar colour, or a cycling rainbow. */
 	@JvmStatic
 	fun maxedColor(): Int {
 		if (ExtrasSettings.pvMaxedRainbow) {
@@ -479,7 +452,6 @@ object PvDraw {
 		return out
 	}
 
-	/** Hue wheel colour; blends toward cosmetics purple so it still nods to the name gradient. */
 	private fun rainbowArgb(hue: Float): Int {
 		val h = positiveModulo(hue, 1.0f)
 		val rgb = Color.HSBtoRGB(h, 0.85f, 1.0f) and 0xFFFFFF
@@ -530,7 +502,6 @@ object PvDraw {
 		progressBar(g, x, barY, w, BAR_HEIGHT, progress, fillColor, maxedShiny)
 	}
 
-	/** Prefers a prebuilt label line (one prepareText) for skill / slayer grids. */
 	@JvmStatic
 	fun labeledBar(
 		g: GuiGraphicsExtractor,
@@ -548,7 +519,6 @@ object PvDraw {
 		progressBar(g, x, barY, w, BAR_HEIGHT, progress, fillColor, maxedShiny)
 	}
 
-	/** Label left, value flush-right within `w` (true alignment, not space padding). */
 	@JvmStatic
 	fun drawLabelValue(
 		g: GuiGraphicsExtractor,

@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets
 import java.util.Collections
 import java.util.Locale
 
-/** Static garden XP / per-crop milestone tables (NEU constants) + visitor catalog. */
 object GardenData {
 	@Volatile
 	private var root: JsonObject? = null
@@ -31,7 +30,6 @@ object GardenData {
 	@Volatile
 	private var visitorMilestones = LongArray(0)
 
-	/** Unique Visitors Served (Dec 2025 Garden Greenhouse update thresholds). */
 	@Volatile
 	private var uniqueVisitorMilestones = LongArray(0)
 
@@ -50,7 +48,6 @@ object GardenData {
 	/** Garden caps at 15; past that, every 10,000 XP (the cost of levels 11-15) is one overflow level. */
 	internal const val GARDEN_OVERFLOW_STEP = 10_000L
 
-	/** Known garden chips (API keys) - 10 total. */
 	@JvmField
 	val CHIP_ORDER: List<String> = listOf(
 		"sowledge", "rarefinder", "hypercharge", "quickdraw", "vermin_vaporize",
@@ -164,10 +161,8 @@ object GardenData {
 		}
 	}
 
-	/** Rarity display order for visitor tallies. */
 	@JvmStatic
 	fun visitorRarityOrder(): List<String> {
-		// SkyBlock visitor tiers: Uncommon → Rare → Legendary → Mythic → Special
 		return listOf("UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "SPECIAL", "COMMON")
 	}
 
@@ -209,14 +204,12 @@ object GardenData {
 		return progressFromCumulative(visitorMilestones, maxOf(0L, completed))
 	}
 
-	/** Unique Visitors Served milestone from {@code unique_npcs_served}. */
 	@JvmStatic
 	fun uniqueVisitorMilestone(uniqueServed: Long): LevelProgress {
 		ensureLoaded()
 		return progressFromCumulative(uniqueVisitorMilestones, maxOf(0L, uniqueServed))
 	}
 
-	/** Hypixel / NEU crop id → milestone table key. */
 	@JvmStatic
 	fun normalizeCropKey(id: String?): String {
 		if (id.isNullOrBlank()) {
@@ -259,7 +252,6 @@ object GardenData {
 		}
 	}
 
-	/** Item id used for crop icons. */
 	@JvmStatic
 	fun cropIconId(id: String?): String = when (val key = normalizeCropKey(id)) {
 		"CARROT" -> "CARROT_ITEM"
@@ -275,14 +267,12 @@ object GardenData {
 		else -> key
 	}
 
-	/** Pack model for modern garden crops that NEU maps poorly. */
 	@JvmStatic
 	fun cropPackModel(id: String?): String = when (val key = normalizeCropKey(id).lowercase(Locale.ROOT)) {
 		"moonflower", "sunflower", "wild_rose" -> "hypixel_skyblock:item/island_relevant/garden/greenhouse/$key"
 		else -> ""
 	}
 
-	/** Elite Bot contest crop enum → Hypixel/NEU crop id. */
 	@JvmStatic
 	fun eliteCropId(crop: Int): String = when (crop) {
 		0 -> "CACTUS"
@@ -302,7 +292,6 @@ object GardenData {
 		else -> ""
 	}
 
-	/** Elite crop field as int, PascalCase name, or Hypixel id. */
 	@JvmStatic
 	fun eliteCropId(raw: String?): String {
 		if (raw.isNullOrBlank()) {
@@ -333,7 +322,6 @@ object GardenData {
 		}
 	}
 
-	/** Elite Bot contest medal enum → lowercase name. */
 	@JvmStatic
 	fun eliteMedalName(medal: Int): String = when (medal) {
 		-1 -> "unclaimable"
@@ -430,7 +418,6 @@ object GardenData {
 		}
 	}
 
-	/** Forced hypixel_skyblock model path when NEU has no skull (paper / deadbush style). */
 	@JvmStatic
 	fun greenhousePackModel(id: String?): String {
 		if (id.isNullOrBlank()) {
@@ -460,7 +447,6 @@ object GardenData {
 		}
 	}
 
-	/** NEU skull item id for a garden visitor. */
 	@JvmStatic
 	fun visitorNpcId(id: String?): String {
 		if (id.isNullOrBlank()) {
@@ -514,7 +500,6 @@ object GardenData {
 		}
 	}
 
-	/** Hypixel Composter Upgrades menu icon (vanilla stand-in matching the GUI). */
 	@JvmStatic
 	fun composterUpgradeIconId(id: String?): String {
 		if (id == null) {

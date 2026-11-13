@@ -112,7 +112,6 @@ public abstract class ChatSearchMixin extends Screen {
             return;
         }
 
-        // Must catch arrows from the chat input too, or vanilla arrow-nav jumps focus into the search box.
         if ((key == GLFW.GLFW_KEY_UP || key == GLFW.GLFW_KEY_DOWN) && fishmod$searchBox != null) {
             if (this.getFocused() == fishmod$searchBox) fishmod$searchBox.setFocused(false);
             if (this.input != null) { this.setFocused(this.input); this.input.setFocused(true); }

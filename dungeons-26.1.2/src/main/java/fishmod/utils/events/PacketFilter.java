@@ -52,7 +52,7 @@ public final class PacketFilter {
         if (total == 0) return false;
         Class<?> c = packet.getClass();
         if (!WANTED.get(c)) return false;
-        if (total > SUBS.size()) return true; // untyped listener present
+        if (total > SUBS.size()) return true;
         for (Sub s : SUBS) {
             if (s.matches(c) && (s.gate == null || s.gate.getAsBoolean())) return true;
         }

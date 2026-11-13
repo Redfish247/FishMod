@@ -42,7 +42,6 @@ class MiningOverviewPage {
 	private var crystalsHitW = 0
 	private var crystalsHitH = 0
 
-	/** Profile apply: HEAD only zeroed shared scroll, not the crystals flip face. */
 	fun resetScroll() {
 		scroll = 0
 	}
@@ -263,7 +262,6 @@ class MiningOverviewPage {
 		}
 	}
 
-	/** Gold / Diamond essence shops stacked full-width (names fit; rows fill each half). */
 	private fun drawMiningEssenceFace(
 		g: GuiGraphicsExtractor, font: Font, snapshot: MiningSnapshot, zones: MutableList<HoverZone>, x: Int, y: Int, w: Int, h: Int,
 	) {
@@ -373,7 +371,6 @@ class MiningOverviewPage {
 
 		fun easeInOutCubic(t: Float): Float = if (t < 0.5f) 4f * t * t * t else 1f - (-2f * t + 2f).pow(3) / 2f
 
-		/** Flawless gemstone player-head cubes (classic NBT skulls). */
 		fun drawCrystalIcon(g: GuiGraphicsExtractor, crystalApiId: String, x: Int, y: Int, size: Int) {
 			val head = SkyBlockItemFactory.gemstoneHead(crystalApiId)
 			MiningUi.drawItemIcon(g, if (head.isEmpty) ItemStack(Items.PLAYER_HEAD) else head, x, y, size)

@@ -17,7 +17,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 
-/** Shared Crimson UI constants and helpers. */
 object CrimsonUi {
 	const val PAD = 6
 	const val GAP = 6
@@ -30,19 +29,14 @@ object CrimsonUi {
 	const val SEP_GAP = 10
 	const val PANEL_HOVER = 0x0AFFFFFF
 
-	/** Mages - light purple. */
 	const val MAGE_COLOR = 0xFFD97FFF.toInt()
 
-	/** Barbarians - light red. */
 	const val BARB_COLOR = 0xFFFF7777.toInt()
 
-	/** Kuudra - red. */
 	const val KUUDRA_COLOR = 0xFFFF5555.toInt()
 
-	/** Dojo - gold. */
 	const val DOJO_COLOR = 0xFFFFAA00.toInt()
 
-	/** Crimson essence shop header - red. */
 	const val SHOP_HEADER_COLOR = 0xFFFF5555.toInt()
 	const val ENABLED = 0xFF55FF55.toInt()
 	const val DISABLED = 0xFF555555.toInt()

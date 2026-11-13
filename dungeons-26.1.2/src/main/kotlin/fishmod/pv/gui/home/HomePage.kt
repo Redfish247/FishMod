@@ -27,7 +27,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 
 class HomePage(private var snapshot: ProfileSnapshot?) {
-	/** Two-stage SkyBlock Level panel expand/collapse within Home bounds. */
 	enum class SbXpExpandPhase {
 		CLOSED,
 		EXPANDING_LEFT,
@@ -109,7 +108,6 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 		invalidateLayoutCache()
 	}
 
-	// FishMod networth (same as !nw); only for the profile it was computed on.
 	private fun requestFishNetworth(snap: ProfileSnapshot?) {
 		if (snap == null) {
 			return
@@ -144,7 +142,6 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 		historyMaxScroll = 0
 	}
 
-	/** Real cursor for the 3D model when the hover mouse passed to [render] is masked. */
 	fun setModelLook(x: Int, y: Int) {
 		leftColumn.setModelLook(x, y)
 	}
@@ -229,15 +226,12 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 		return leftColumn.beginFlip()
 	}
 
-	/** Click the SkyBlock Level strip (closed → expand) or the open page (→ collapse). */
 	fun clickSbLevelPanel(mouseX: Double, mouseY: Double): Boolean = sbXpOverlay.click(mouseX, mouseY)
 
-	/** ESC / back: collapse expanded SB Level view. */
 	fun requestSbLevelBack(): Boolean = sbXpOverlay.requestBack()
 
 	fun isSbLevelOverlayActive(): Boolean = sbXpOverlay.isActive()
 
-	/** Snap closed when leaving Home overview (tab switch, etc.). */
 	fun forceCloseSbLevelOverlay() {
 		sbXpOverlay.forceClose()
 	}
@@ -388,7 +382,6 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 			if (leftMask > 0.01F) {
 				PvDraw.fill(g, leftX, y, layout.leftW, contentH, withAlpha(HomeSbXpOverlay.SB_XP_MASK, leftMask))
 			}
-			// SkyBlock level card removed; the skill bars take its width.
 			snapshot?.let { bars.draw(g, font, barsX, y, layout.barsW, contentH, layout.rowH, it, zones) }
 			if (barsMask > 0.01F) {
 				PvDraw.fill(g, barsX, y, layout.barsW, contentH, withAlpha(HomeSbXpOverlay.SB_XP_MASK, barsMask))

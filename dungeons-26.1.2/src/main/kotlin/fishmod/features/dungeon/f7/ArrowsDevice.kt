@@ -129,7 +129,6 @@ object ArrowsDevice {
         if (old == Blocks.EMERALD_BLOCK && state.`is`(CB.BLUE_TERRACOTTA)) {
             markedPositions.add(pos.immutable())
             if (targetPosition == pos) targetPosition = null
-            // a hit block is marked, not a target: re-aim for the live target, or clear until the next green one
             if (FishSettings.arrowsDeviceShowAim) optimalAimPositions = targetPosition?.let { calculateOptimalAimPositions(it) } ?: emptyList()
         } else if (old == CB.BLUE_TERRACOTTA && state.`is`(Blocks.EMERALD_BLOCK)) {
             markedPositions.remove(pos)

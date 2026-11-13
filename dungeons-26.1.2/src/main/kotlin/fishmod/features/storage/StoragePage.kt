@@ -20,7 +20,6 @@ data class StoragePage(val index: Int) : Comparable<StoragePage> {
     override fun compareTo(other: StoragePage) = index - other.index
 
     companion object {
-        // Rift has its own 2 ender chest pages, stored after the 27 normal ones
         const val RIFT_BASE = 27
         const val MAX_INDEX = RIFT_BASE + 2
 

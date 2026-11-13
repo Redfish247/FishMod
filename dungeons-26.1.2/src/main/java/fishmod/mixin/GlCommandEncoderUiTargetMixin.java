@@ -12,7 +12,6 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.function.Supplier;
 
-// Records the colour texture of each render pass so the UI overlay lands on whatever GuiRenderer actually drew into.
 @Mixin(targets = "com.mojang.blaze3d.opengl.GlCommandEncoder")
 public class GlCommandEncoderUiTargetMixin {
 
@@ -22,7 +21,6 @@ public class GlCommandEncoderUiTargetMixin {
     )
     private void fishmod$recordPassTarget(Supplier<String> label, GpuTextureView color, OptionalInt clearColor, GpuTextureView depth, OptionalDouble clearDepth, CallbackInfoReturnable<?> cir) {
         if (color == null || !(color.texture() instanceof GlTexture tex)) return;
-        // Only full-window passes; picture-in-picture/blur/offscreen passes would swallow the UI.
         var main = net.minecraft.client.Minecraft.getInstance().getMainRenderTarget();
         if (main == null || tex.getWidth(0) != main.width || tex.getHeight(0) != main.height) return;
         UiRenderer.lastPassColorTex = tex.glId();

@@ -15,7 +15,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.Collections
 
-/** NEU `hotmlayout.json` perk grid + Hypixel API id aliases. */
 object MiningHotmData {
     @JvmRecord
     data class PerkDef(
@@ -59,7 +58,6 @@ object MiningHotmData {
         }
     }
 
-    /** Reload after NEU-REPO updates. */
     @JvmStatic
     fun reload() {
         synchronized(this) {
@@ -94,7 +92,6 @@ object MiningHotmData {
         return maxY
     }
 
-    /** Map Hypixel `mining_core.nodes` key → NEU layout id. */
     @JvmStatic
     fun layoutId(apiId: String?): String {
         if (apiId.isNullOrBlank()) return ""

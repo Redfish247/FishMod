@@ -15,7 +15,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.Locale
 
-/** NEU {@code attribute_shards.json} catalog + level costs. */
 object AttributeShardsData {
 	@JvmRecord
 	data class Def(
@@ -25,7 +24,6 @@ object AttributeShardsData {
 		fun iconId(): String =
 			if (internalName.isBlank()) "ATTRIBUTE_SHARD_" + stackId.uppercase(Locale.ROOT) + ";1" else internalName
 
-		/** Prefer bazaar product id (SHARD_*), then stripped internal name. */
 		fun priceId(): String {
 			if (bazaarName.isNotBlank()) {
 				return bazaarName
@@ -64,7 +62,6 @@ object AttributeShardsData {
 		}
 	}
 
-	/** Reload after NEU-REPO updates. */
 	@JvmStatic
 	fun reload() {
 		synchronized(this) {
@@ -89,7 +86,6 @@ object AttributeShardsData {
 		return byStackId[stackId.lowercase(Locale.ROOT)]
 	}
 
-	/** Match by display name or {@code SHARD_<NAME>} bazaar id (safari critters). */
 	@JvmStatic
 	fun byCritterId(critterId: String?): Def? {
 		ensureLoaded()
@@ -107,7 +103,6 @@ object AttributeShardsData {
 		}
 	}
 
-	/** Higher is rarer; unknown rarities sort below COMMON. */
 	@JvmStatic
 	fun rarityRank(rarity: String?): Int = if (rarity == null) -1 else RARITY_ORDER.indexOf(rarity.uppercase(Locale.ROOT))
 

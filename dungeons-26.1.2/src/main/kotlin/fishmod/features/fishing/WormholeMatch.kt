@@ -7,12 +7,10 @@ import com.google.gson.reflect.TypeToken
 // Idea: each Froggles arrow points horizontally at a wormhole; pick the known node whose bearing from the arrow best lines up.
 // Node data: SkyHanni-Repo (MIT), see NOTICE. The 0.98 tolerance and the arrow format are UNVERIFIED in game.
 object WormholeMatch {
-    // cos(angle) needed to count a node as "in the arrow's direction" (~11 degrees)
     const val DIRECTION_TOLERANCE = 0.98
 
     class Node(@JvmField val x: Int, @JvmField val y: Int, @JvmField val z: Int)
 
-    // Index of the best node for an arrow at (ox, oz) pointing along (fx, fz), or -1 when none lines up.
     fun bestNode(ox: Double, oz: Double, fx: Double, fz: Double, nodes: List<Node>, tolerance: Double = DIRECTION_TOLERANCE): Int {
         val fl = Math.sqrt(fx * fx + fz * fz)
         if (fl < 1e-6) return -1
@@ -31,7 +29,6 @@ object WormholeMatch {
         return best
     }
 
-    // Nearest of the given node indices to (px, pz), or -1 when empty.
     fun nearest(px: Double, pz: Double, nodes: List<Node>, indices: Collection<Int>): Int {
         var best = -1
         var bd = Double.MAX_VALUE
@@ -44,7 +41,6 @@ object WormholeMatch {
         return best
     }
 
-    // {"AREA": [[x,y,z], ...]} -> nodes per area name
     fun parse(json: String): Map<String, List<Node>> {
         val raw: Map<String, List<List<Int>>> = Gson().fromJson(json, object : TypeToken<Map<String, List<List<Int>>>>() {}.type) ?: return emptyMap()
         val out = HashMap<String, List<Node>>()

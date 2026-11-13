@@ -26,7 +26,6 @@ object ItemCustomizationStore {
         fun isEmpty() = dyeColors.isEmpty() && animatedDyes.isEmpty() && armorTrims.isEmpty() && itemNames.isEmpty() && modelIds.isEmpty()
     }
 
-    // Lets per-render item mixins skip the uuid read when nothing is customized.
     @JvmStatic fun hasAny(): Boolean = !data.isEmpty() || !remote.isEmpty()
 
     private var data = Data()
@@ -41,7 +40,6 @@ object ItemCustomizationStore {
         trim?.let { remote.armorTrims[uuid] = it }
     }
 
-    // Drops one player's shared customs so a cleared dye/trim/name/model stops showing.
     @JvmStatic fun clearRemotePlayer(prefix: String) {
         remote.dyeColors.keys.removeIf { it.startsWith(prefix) }
         remote.animatedDyes.keys.removeIf { it.startsWith(prefix) }

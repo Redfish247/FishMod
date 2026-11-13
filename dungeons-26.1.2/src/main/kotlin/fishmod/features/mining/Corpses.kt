@@ -13,7 +13,6 @@ import net.minecraft.world.phys.HitResult
 import kotlin.math.roundToInt
 import fishmod.features.mining.MiningSettings as S
 
-// Mineshaft corpses: party-announce each corpse once when seen; shaft type + corpse summary title/party message
 object Corpses {
 
     enum class Type(val display: String, val letter: String, val helmet: String) {
@@ -87,7 +86,6 @@ object Corpses {
         }
     }
 
-    // Solo: Hypixel drops /pc, so show it locally instead
     private fun announce(msg: String) {
         if (fishmod.utils.data.PartyTools.isInParty()) ChatQueue.enqueue("pc $msg")
         else fishmod.utils.FishMsg.send("§b$msg")
@@ -104,13 +102,11 @@ object Corpses {
         return Type.entries.filter { counts.containsKey(it) }.joinToString(" ") { "${counts[it]}${it.letter}" }
     }
 
-    // Type from the sidebar server line; corpses from the tab widget (wait up to 5s for it)
     private fun checkShaft() {
         if (shaftType == null) {
             val joined = Mining.sidebar.joinToString(" ").uppercase().replace("_", "")
             val now = System.currentTimeMillis()
             if (enteredMs == 0L) enteredMs = now
-            // Type code not on the sidebar: still announce after 5s, just without the type
             shaftType = SHAFTS.entries.firstOrNull { joined.contains(it.key) }?.value
                 ?: (if (now - enteredMs > 5000) "Mineshaft" else return)
             typeAtMs = now

@@ -23,7 +23,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Shared Garden UI helpers and hover zones. */
 class GardenUi {
 	@JvmField
 	val zones: MutableList<HoverZone> = ArrayList()

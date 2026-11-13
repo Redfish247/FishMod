@@ -36,7 +36,6 @@ object ItemRarityHotbar {
         DrawHooks.INVENTORY_SLOT_BEFORE.register(::drawRarity)
     }
 
-    // Item List panel draws its own tint, so the global one is skipped for its icons
     @JvmField var suppress = false
 
     @JvmStatic

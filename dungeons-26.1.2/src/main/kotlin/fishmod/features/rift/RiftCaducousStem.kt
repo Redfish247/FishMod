@@ -40,7 +40,6 @@ object RiftCaducousStem {
         for (dx in -RADIUS..RADIUS) for (dz in -RADIUS..RADIUS) {
             var y = base.y + RADIUS + 2
             val low = base.y - RADIUS
-            // First bush from the top of the window, then climb past the window to the stem's real top
             while (y >= low && !level.getBlockState(m.set(base.x + dx, y, base.z + dz)).`is`(Blocks.ROSE_BUSH)) y--
             if (y < low) continue
             var n = 0
@@ -50,13 +49,11 @@ object RiftCaducousStem {
         tops = found
     }
 
-    // Stem continues upward through any non-solid plant block (the vine above the bush is not a Rose Bush)
     private fun climbable(level: net.minecraft.world.level.Level, p: BlockPos): Boolean {
         val s = level.getBlockState(p)
         return !s.isAir && s.fluidState.isEmpty && s.getCollisionShape(level, p).isEmpty
     }
 
-    // /fm rift stem: block ids in the column above the targeted block
     private fun debug() {
         val mc = Minecraft.getInstance(); val level = mc.level ?: return
         val hit = mc.hitResult as? net.minecraft.world.phys.BlockHitResult

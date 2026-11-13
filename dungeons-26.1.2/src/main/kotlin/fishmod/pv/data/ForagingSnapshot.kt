@@ -36,7 +36,6 @@ class ForagingSnapshot private constructor(
 	@get:JvmName("harpTalisman") val harpTalisman: Boolean,
 	harpSelected: String?,
 	harpSongs: List<HarpSong>?,
-	// Moonglade/Galatea beacon signal strength; -1 = not present.
 	@get:JvmName("galateaBeacon") val galateaBeacon: Int,
 	hotfXp: Double,
 	forestTokensSpent: Int,
@@ -95,7 +94,6 @@ class ForagingSnapshot private constructor(
 		val level: Int, val maxLevel: Int, val shardsOwned: Int, val shardsForMax: Int, val unlocked: Boolean
 	) {
 		companion object {
-			/** Highest rarity first, then alphabetical within a rarity. */
 			@JvmStatic
 			fun byRarity(rows: List<AttributeShardRow>): List<AttributeShardRow> = java.util.List.copyOf(
 				rows.sortedWith(
@@ -138,10 +136,6 @@ class ForagingSnapshot private constructor(
 		}
 	}
 
-	/**
-	 * {@code whispers.<pool>.total} is lifetime earned; {@code whispers.<pool>.<slot>.spent} is per HOTF
-	 * loadout, so {@code spent} is the selected loadout's spend only.
-	 */
 	@JvmRecord
 	data class WhisperPool(
 		val id: String,
@@ -246,7 +240,6 @@ class ForagingSnapshot private constructor(
 	/** Log types cut in the current daily period; empty when {@link #dailyLogsDay()} is stale. */
 	fun currentDailyLogs(): List<String> = if (dailyLogsDay > 0L && !isCurrentDailyDay(dailyLogsDay)) listOf() else dailyLogs
 
-	/** Perks the API reports that NEU's HOTF layout has no slot for (newer Hypixel perks). */
 	fun unplacedHotfNodes(): List<HotfNode> = hotfNodes.filter { ForagingHotfData.perk(it.id) == null }
 
 	fun safariEssence(): Long = safariShop.balance
@@ -424,11 +417,6 @@ class ForagingSnapshot private constructor(
 			)
 		}
 
-		/**
-		 * Hypixel {@code daily_*_day} values are UTC days since epoch
-		 * ({@code floor(unixMs / 86400000)}). Verified against profile data where
-		 * {@code daily_trees_cut_day} matched that formula on the capture date.
-		 */
 		@JvmStatic
 		fun currentUtcDayId(): Long = System.currentTimeMillis() / 86_400_000L
 
@@ -721,7 +709,6 @@ class ForagingSnapshot private constructor(
 				}
 				out.add(HotfNode(perk.id, perk.name, level, perk.maxLevel, toggleEnabled(nodes, perk.id), perk.ability))
 			}
-			// Any API nodes missing from layout
 			for (id in nodes.keySet()) {
 				if (id == null || id.startsWith("toggle_") || out.any { it.id == id }) {
 					continue
@@ -761,7 +748,6 @@ class ForagingSnapshot private constructor(
 			if (stats == null) {
 				return out
 			}
-			// Stable display order for Hunting tab.
 			for (key in HUNT_ORDER) {
 				val n = longOf(stats, key)
 				if (n > 0L) {
@@ -905,7 +891,6 @@ class ForagingSnapshot private constructor(
 			}
 		}
 
-		/** Decodes bags/inventories for a SkyBlock item id (gzip NBT is not plain in member JSON). */
 		private fun memberOwnsItem(member: JsonObject?, skyblockId: String?): Boolean {
 			if (member == null || skyblockId.isNullOrBlank()) {
 				return false

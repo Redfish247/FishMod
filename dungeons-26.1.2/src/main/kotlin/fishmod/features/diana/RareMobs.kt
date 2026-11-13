@@ -53,7 +53,6 @@ enum class RareMob(val display: String, val short: String, val code: String, pri
     companion object {
         fun fromName(name: String): RareMob? = entries.firstOrNull { name.contains(it.display, ignoreCase = true) }
 
-        // Short party-chat aliases (inq, king, ...) as well as full names
         fun fromAlias(s: String): RareMob? = when (s.replace("|", "").trim().lowercase()) {
             "inq", "inquisitor", "minos inquisitor" -> INQ
             "king", "king minos" -> KING
@@ -64,7 +63,6 @@ enum class RareMob(val display: String, val short: String, val code: String, pri
     }
 }
 
-// Rare Diana mobs: name tag tracking, HP/shuriken HUDs, world scan, share/receive, cocoon, glow
 object RareMobs {
 
     private const val MYTHOS_CHAR = ''
@@ -84,7 +82,6 @@ object RareMobs {
     private const val HP_HUD = "Diana Mythos HP"
     private const val SHURIKEN_HUD = "Diana No Shuriken"
 
-    // Filled by the tracker: mob display name -> (mobs since last, chance %)
     var sinceProvider: ((String) -> Pair<Int, Double>)? = null
     val deathListeners = mutableListOf<(String, Boolean) -> Unit>()
     @Volatile var lastDianaMobDeathMs = 0L
@@ -132,7 +129,6 @@ object RareMobs {
         hpLines = emptyList(); noShuriken = false
     }
 
-    // ---- name tags ----
 
     private fun strip(s: String) = fishmod.utils.TextStrip.plain(s)
 
@@ -208,14 +204,12 @@ object RareMobs {
         if (DianaSettings.dianaRareMobs) pruneStale(eye, rareStands)
     }
 
-    // An Inquisitor tag that vanishes up close with no kill: despawned
     private fun onDeath(name: String, pos: Vec3, dist: Double, rare: RareMob?) {
         lastDianaMobDeathMs = System.currentTimeMillis()
         if (rare != null) DianaWaypoints.removeRareMobsNear(pos, 32.0)
         for (l in deathListeners) runCatching { l(name, dist <= 30) }
     }
 
-    // ---- world scan ----
 
     private fun scanStand(stand: ArmorStand, rare: RareMob) {
         val pos = stand.position()
@@ -246,7 +240,6 @@ object RareMobs {
         }
     }
 
-    // ---- chat ----
 
     private fun onChat(msg: String) {
         if (!DianaSettings.dianaRareMobs) return
@@ -307,7 +300,6 @@ object RareMobs {
         val rare = RareMob.fromAlias(trailing)
         if (rare != null) {
             if (!DianaSettings.dianaReceiveRareMob || !rare.receive()) return
-            // Always alert on a share; only skip the duplicate waypoint
             if (!DianaWaypoints.rareMobNear(Vec3.atCenterOf(pos), 10.0)) DianaWaypoints.addRareMob(pos, "${rare.label} §7($sender)", 45_000)
             if (!self) notify(rare, sender, force = true)
         } else if (!self) {
@@ -315,7 +307,6 @@ object RareMobs {
         }
     }
 
-    // ---- notify ----
 
     private fun notify(rare: RareMob, from: String, force: Boolean = false) {
         val now = System.currentTimeMillis()
@@ -331,7 +322,6 @@ object RareMobs {
         "§6§l<§b§l§kO§6§l> ${rare.code}§l${rare.short.uppercase()}! §6§l<§b§l§kO§6§l>" to (if (from.isEmpty()) "" else "§7$from")
 
     private fun playSound() {
-        // MC caps one sound at 100%, so stack copies to go louder
         var vol = DianaSettings.dianaRareMobVolume.coerceIn(0, 500) / 100f
         val snd = SoundManager.preset(DianaSettings.dianaRareMobSound)
         while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
@@ -341,7 +331,6 @@ object RareMobs {
         Minecraft.getInstance().execute { DianaTitles.rareAlert(t, sub) }
     }
 
-    // ---- glow hook (EntityRendererMixin) ----
 
     @JvmStatic
     fun glowColor(e: Entity): Int {
@@ -349,7 +338,6 @@ object RareMobs {
         return glow[e.id] ?: EntityRenderState.NO_OUTLINE
     }
 
-    // ---- HUD ----
 
     private fun renderHud(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()

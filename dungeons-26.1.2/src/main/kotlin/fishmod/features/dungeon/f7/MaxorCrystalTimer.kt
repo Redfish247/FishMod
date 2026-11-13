@@ -17,7 +17,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal
 
-// P1 energy crystals: respawn countdown after Maxor is lasered, and a nag while you still hold one.
 object MaxorCrystalTimer {
 
     private const val PICKUP_SUFFIX = " picked up an Energy Crystal!"

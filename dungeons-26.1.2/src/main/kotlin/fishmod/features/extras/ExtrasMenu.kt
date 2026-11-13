@@ -11,7 +11,6 @@ import fishmod.features.FishModScreen.SoundSearchSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.extras.ExtrasSettings as S
 
-// The Extras tab in /fm
 object ExtrasMenu {
     fun column(): Column {
         val col = Column("Extras")

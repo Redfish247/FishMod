@@ -16,7 +16,6 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.zip.ZipInputStream
 
-// SkyBlock skins (Model tab) and dyes (Dye tab) from the NEU repo, for item customize.
 object NeuItems {
 
     const val PREFIX = "neu:"
@@ -126,7 +125,6 @@ object NeuItems {
         return Entry(id, id, "", null, null, c)
     }
 
-    /** Default NEU dye colour of a leather armor piece, or null. */
     fun armorColor(id: String): Int? = armorColors[id]
 
     fun get(id: String): Entry? = entries[id]
@@ -143,7 +141,6 @@ object NeuItems {
         return out
     }
 
-    /** "neu:ID" -> NEU id, or null for a plain model id. */
     @JvmStatic
     fun idOf(stored: String?): String? = if (stored != null && stored.startsWith(PREFIX)) stored.substring(PREFIX.length) else null
 
@@ -166,7 +163,6 @@ object NeuItems {
         }.orElse(null)
     }
 
-    /** Icon stack for the picker grid. */
     fun icon(e: Entry): ItemStack = stacks.getOrPut(e.id) {
         FishDiag.guard("NeuItems.5", "NEU icon build failed for ${e.id}") {
             ItemStack(Items.PLAYER_HEAD).also { st ->

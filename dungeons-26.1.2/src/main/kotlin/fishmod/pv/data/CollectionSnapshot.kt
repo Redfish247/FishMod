@@ -110,10 +110,6 @@ class CollectionSnapshot(
 
 	fun viewedAmount(itemId: String?): Long = viewed()?.amount(itemId) ?: 0L
 
-	/**
-	 * Amount used for tiers / progress.
-	 * Shared Hypixel collections = coop sum; boss collections = viewed player only.
-	 */
 	fun totalAmount(itemId: String?): Long {
 		if (BossCollections.isBossId(itemId)) {
 			return viewedAmount(itemId)
@@ -121,7 +117,6 @@ class CollectionSnapshot(
 		return members.sumOf { it.amount(itemId) }
 	}
 
-	/** Highest unlocked tier recorded on any member ({@code unlocked_coll_tiers}). */
 	fun unlockedTier(itemId: String?): Int {
 		if (BossCollections.isBossId(itemId)) {
 			return 0
@@ -142,8 +137,6 @@ class CollectionSnapshot(
 		return if (item.maxTiers > 0) minOf(tier, item.maxTiers) else tier
 	}
 
-	// Hypixel keeps old unlocks after shrinking a collection (Redstone went 16 -> 9 tiers in 0.26.1),
-	// so REDSTONE_16 can outlive the tier it names.
 	fun legacyTier(item: HypixelCollectionsCache.Item?): Int {
 		if (item == null || item.maxTiers <= 0) {
 			return 0
@@ -152,14 +145,12 @@ class CollectionSnapshot(
 		return if (unlocked > item.maxTiers) unlocked else 0
 	}
 
-	/** Same basis as {@link #totalAmount} (real amounts only). */
 	fun progressAmount(item: HypixelCollectionsCache.Item?): Long = if (item == null) 0L else totalAmount(item.id)
 
 	fun membersByAmount(itemId: String?): List<Member> = members.sortedWith(
 		compareByDescending<Member> { it.amount(itemId) }.thenComparing({ displayName(it) }, String.CASE_INSENSITIVE_ORDER)
 	)
 
-	/** Coop ranks cost one Hypixel request per member, so they load only once Collections is shown. */
 	fun requestMemberRanks() {
 		if (ranksRequested.compareAndSet(false, true)) {
 			resolveRanksAsync()
@@ -261,7 +252,6 @@ class CollectionSnapshot(
 			)
 		}
 
-		/** Hypixel categories plus Boss, ordered to match the in-game / SkyCrypt icon bar. */
 		private fun withBossCategory(source: List<HypixelCollectionsCache.Category>?): List<HypixelCollectionsCache.Category> {
 			val ordered = ArrayList<HypixelCollectionsCache.Category>()
 			val boss = BossCollections.category()
@@ -299,7 +289,6 @@ class CollectionSnapshot(
 			return out
 		}
 
-		/** Fill aggregate collections from component items when the aggregate key is absent. */
 		private fun synthesizeComposites(out: MutableMap<String, Long>) {
 			for (aggregate in listOf("MUSHROOM_COLLECTION", "GEMSTONE_COLLECTION")) {
 				if (lookupDirect(out, aggregate) > 0L) {
@@ -363,7 +352,6 @@ class CollectionSnapshot(
 				}
 				return
 			}
-			// Fallback when collections cache is empty: split on last '_' outside a trailing number.
 			val us = key.lastIndexOf('_')
 			if (us <= 0 || us >= key.length - 1) {
 				return
@@ -444,7 +432,6 @@ class CollectionSnapshot(
 			return 0L
 		}
 
-		/** Expand each profile collection key under common aliases so UI ids resolve. */
 		private fun putAmount(out: MutableMap<String, Long>, key: String?, amount: Long) {
 			if (key.isNullOrBlank() || amount <= 0L) {
 				return

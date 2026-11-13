@@ -45,19 +45,16 @@ object MayorApi {
     @Volatile
     private var httpErrorReported = false
 
-    // Exponential backoff after a failure: 1, 2, 4 ... capped at 30 min
     private fun backoff() {
         failures = (failures + 1).coerceAtMost(6)
         retryAt = System.currentTimeMillis() + (FAIL_CACHE_MS shl (failures - 1)).coerceAtMost(MAX_BACKOFF_MS)
     }
 
-    // Start of the current mayor term (Late Spring 27, every 5d4h real time)
     private fun lastSwitchMs(now: Long): Long {
         val t = now - SB_EPOCH_MS - ELECTION_OFFSET_MS
         return SB_EPOCH_MS + ELECTION_OFFSET_MS + Math.floorDiv(t, YEAR_MS) * YEAR_MS
     }
 
-    // Refetch at each term switch, then every minute for a while in case the API lags
     private fun stale(): Boolean {
         val now = System.currentTimeMillis()
         if (now < retryAt) return false
@@ -80,7 +77,6 @@ object MayorApi {
         return paulDungeonBonus
     }
 
-    // Diana as mayor or minister with Mythological Ritual
     @JvmStatic
     fun isDianaRitualActive(): Boolean {
         refreshIfStale()
@@ -159,7 +155,6 @@ object MayorApi {
 
     private fun parseMayorLine(root: JsonObject): String? {
         val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return null // null/non-object mayor must not throw
-        // Hypixel always sends name; fall back to key quietly (tests feed partial objects)
         val name = (mayor.get("name") ?: mayor.get("key"))?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
             ?.replaceFirstChar { it.uppercaseChar() } ?: return null
         val perk = runCatching { mayor.getAsJsonArray("perks")?.firstOrNull()?.asJsonObject?.get("name")?.asString }.getOrNull()

@@ -5,7 +5,6 @@ import fishmod.utils.debug.FishDiag
 import net.minecraft.client.gui.components.ChatComponent
 
 object ChatRefresh {
-    // Vanilla refreshTrimmedMessages() calls scrollChat(1) per rebuilt line while scrolled up, flinging the view.
     @JvmStatic
     fun refreshKeepScroll(acc: FishChatInvoker) {
         val pos = acc.scrolledLines

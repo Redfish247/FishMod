@@ -24,7 +24,6 @@ object WorldText {
         val rel = Vector3f(); var world: Vec3 = Vec3.ZERO; var size = 0f; var text: Component = Component.empty(); var argb = 0; var shadow = false
     }
 
-    // Two reused item pools swapped each frame: pending is filled this frame, shown is drawn by the HUD pass
     private var pending = ArrayList<Item>()
     private var pendingN = 0
     private var shown = ArrayList<Item>()
@@ -47,7 +46,6 @@ object WorldText {
                     v.set(it.rel.x, it.rel.y, it.rel.z, 1f)
                     v.mul(view).mul(proj)
                     if (v.w <= 0.05f) continue
-                    // Vanilla's own projection (locator bar uses it), so labels track the world at any pitch
                     val sp = Minecraft.getInstance().gameRenderer.projectPointToScreen(it.world)
                     val sx = (sp.x.toFloat() * 0.5f + 0.5f) * w
                     val sy = (0.5f - sp.y.toFloat() * 0.5f) * h
@@ -75,14 +73,12 @@ object WorldText {
         for (i in 0 until pending.size) pending[i].text = Component.empty()
     }
 
-    // `ps` is already translated, rotated and scaled; text is centred on x = 0.
     fun draw(ps: PoseStack, text: Component, argb: Int, shadow: Boolean) {
         val font = Minecraft.getInstance().font
         if (VisualSettings.lateWorldText) {
             val m = ps.last().pose()
             val rel = m.transformPosition(scratchPos.set(0f, 0f, 0f))
             val size = m.transformDirection(scratchDir.set(1f, 0f, 0f)).length()
-            // Gizmo mode hands us world coords (identity stack); the collect pass hands camera-relative ones
             val cam = Minecraft.getInstance().cam.position()
             val p = Vec3(rel.x.toDouble(), rel.y.toDouble(), rel.z.toDouble())
             val world = if (VisualSettings.gizmoOverlays) p else cam.add(p)

@@ -24,7 +24,6 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.network.chat.Component
 
-// Necron's drag pulls you ~DRAG_LEN blocks horizontally along its first ticks' direction, a bit less from higher up (5 runs 2026-10-26: y64 ~57.5, y115 ~54.3).
 object NecronDropPredict {
 
     private const val DRAG_TICKS = 50
@@ -49,7 +48,6 @@ object NecronDropPredict {
     private var dragOver = false
     private var locked = false
 
-    // Singleplayer test (/fm necrondrag [random]): pulls the player to a random point in the target box with the logged speed profile.
     private const val TEST_TICKS = 40
     private const val TARGET_Y = 70.0
     private const val TARGET_Z_MIN = 105.5
@@ -150,17 +148,14 @@ object NecronDropPredict {
         val s = start ?: return
         val dx = pos.x - s.x
         val dz = pos.z - s.z
-        // Show a guess from the first pulled tick, refine it until LOCK_DIST blocks.
         val early = hypot(dx, dz) < LOCK_DIST
         if (dz < 0.5) { start = null; landing = null; return }
-        // The pull aims at a random point in the target box; snap the measured line into the box, then stop short or at the target.
         val aimX = (s.x + dx / dz * (TARGET_Z - s.z)).coerceIn(TARGET_X_MIN, TARGET_X_MAX)
         val aimDx = aimX - s.x
         val aimDz = TARGET_Z - s.z
         val reach = minOf(DRAG_LEN - (s.y - DRAG_BASE_Y).coerceAtLeast(0.0) * DRAG_LEN_PER_Y, hypot(aimDx, aimDz))
         val ex = s.x + aimDx / hypot(aimDx, aimDz) * reach
         val ez = s.z + aimDz / hypot(aimDx, aimDz) * reach
-        // Height follows how far along the line to the target the pull gets (y 70 only if it reaches).
         val ey = s.y + (TARGET_Y - s.y) * (reach / hypot(aimDx, aimDz))
         landing = Vec3(ex, ey, ez)
         lastMoveTick = phaseTicks
@@ -170,7 +165,6 @@ object NecronDropPredict {
         FishDebug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
     }
 
-    // First non-air block under the landing: true = lava, false = platform, null = nothing loaded/found.
     private fun overLava(): Boolean? {
         val s = landing ?: return null
         val level = Minecraft.getInstance().level ?: return null

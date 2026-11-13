@@ -41,7 +41,6 @@ object ExprParser {
         }
     }
 
-    // right-associative: 2^3^2 = 2^9
     private fun power(r: Reader): Double {
         val base = operand(r)
         return if (r.eat('^')) Math.pow(base, power(r)) else base
@@ -58,7 +57,6 @@ object ExprParser {
         }
     }
 
-    // 12, 1.5, 2k, 3.2m, 1b
     private fun literal(r: Reader): Double {
         val start = r.pos
         while (r.peek()?.isDigit() == true) r.pos++

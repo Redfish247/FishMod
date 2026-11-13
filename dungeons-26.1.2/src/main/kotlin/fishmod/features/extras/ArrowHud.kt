@@ -18,7 +18,6 @@ import net.minecraft.world.item.CrossbowItem
 import net.minecraft.world.item.Items
 import fishmod.features.extras.ExtrasSettings as S
 
-// Selected quiver arrow + count, with low / out warnings
 object ArrowHud {
     private val SELECTED = Regex("""^You set your selected arrow type to (.+?)!$""")
     private val COUNT_SUFFIX = Regex("""\s*x?[\d,]+$""")
@@ -62,7 +61,6 @@ object ArrowHud {
         return it.item is BowItem || it.item is CrossbowItem
     }
 
-    // Bow lore shows the active arrow; real arrow stacks (outside the quiver) are counted too
     private fun scan() {
         val p = Minecraft.getInstance().player ?: return
         if (!SkyblockLocation.inSkyblock()) return
@@ -84,7 +82,6 @@ object ArrowHud {
         if (inv > 0 && count < 0) setCount(inv)
     }
 
-    // Hotbar slot 9 holds the selected arrow stack; its name is the type and stack size the count
     private fun slotNine(p: net.minecraft.world.entity.player.Player): Boolean {
         val st = p.inventory.getItem(8)
         if (st.isEmpty) return false
@@ -99,7 +96,6 @@ object ArrowHud {
         return true
     }
 
-    // "Arrows Remaining: 1,234" lore line is the real quiver count; the stack size caps at 64
     private fun remainingFromLore(st: net.minecraft.world.item.ItemStack): Long? {
         st.get(DataComponents.LORE)?.lines()?.forEach { line ->
             val m = REMAINING.find(fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(line.string, "").trim()) ?: return@forEach

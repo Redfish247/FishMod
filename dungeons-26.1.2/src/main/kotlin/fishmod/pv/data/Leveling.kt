@@ -80,7 +80,6 @@ object Leveling {
 			return FormatUtil.commas(into) + "/" + FormatUtil.commas(need) + " (" + FormatUtil.oneDecimal(pct) + "%)"
 		}
 
-		/** Skill hover used by Mining HOTM bars, e.g. {@code HOTM 7 - 60k / 300k to Level 8}. */
 		fun skillHover(name: String?): String {
 			val lvl = cappedLevel()
 			if (maxed) {
@@ -103,7 +102,6 @@ object Leveling {
 			return lines
 		}
 
-		/** {@link #skillHoverLines} flattened for bars that only carry a String; see {@link #hoverTextLines}. */
 		fun skillHoverText(name: String?): String {
 			val text = StringBuilder(skillTitle(name))
 			for ((label, value) in skillHoverRows()) {
@@ -176,10 +174,6 @@ object Leveling {
 			return lines
 		}
 
-		/**
-		 * XP line plus kill counts ({@code T1: n  T2: n …}).
-		 * When {@code leveling.json} has reliable XP-per-kill, also estimates kills to next level.
-		 */
 		fun slayerHoverWithKills(name: String?, slayerId: String?, tierKills: IntArray?): String {
 			val sb = StringBuilder(slayerHover(name))
 			if (tierKills != null && tierKills.isNotEmpty()) {
@@ -234,7 +228,6 @@ object Leveling {
 	private const val HYPIXEL_OVERFLOW_BASE = 7_000_000L
 	private const val HYPIXEL_OVERFLOW_SLOPE = 600_000L
 
-	/** Single-line hovers stay plain; {@link Progress#skillHoverText} output becomes a title plus label/value rows. */
 	@JvmStatic
 	fun hoverTextLines(hover: String?): List<PvTooltip.Line> {
 		if (hover.isNullOrBlank()) {
@@ -243,7 +236,6 @@ object Leveling {
 		if (hover.indexOf('\n') < 0) {
 			return listOf(PvTooltip.Line.of(hover, PvDraw.COLOR_TEXT))
 		}
-		// Matches Java's split("\n"), which drops trailing empty parts.
 		val parts = hover.split("\n").dropLastWhile { it.isEmpty() }
 		val lines = ArrayList<PvTooltip.Line>(parts.size)
 		lines.add(PvTooltip.Line.of(parts[0], PvDraw.COLOR_ACCENT))
@@ -258,7 +250,6 @@ object Leveling {
 		return lines
 	}
 
-	/** Non-cumulative table (skills / cata): each entry is XP required for that level step. */
 	@JvmStatic
 	fun getLevel(table: JsonArray?, xp: Float, levelCap: Int, cumulative: Boolean): Progress =
 		getLevel(table, xp.toDouble(), levelCap, cumulative)
@@ -354,7 +345,6 @@ object Leveling {
 		var into: Double
 		var step: Double
 		if (maxed) {
-			// Hypixel Skills menu: progress toward (cap+1) can exceed 100% while soft-capped.
 			step = if (levelCap < table.size()) table.get(levelCap).asDouble else overflowStepXp(table, levelCap, false).toDouble()
 			if (step <= 0.0) {
 				step = xpForNext
@@ -479,10 +469,6 @@ object Leveling {
 		return bosses?.let { obj(it.get(slayer)) }
 	}
 
-	/**
-	 * Tier kill counts for a slayer boss. Tries {@code boss_kills_tier_0..4} first,
-	 * then {@code boss_kills_tier_1..5}. Returns a length-5 array (T1…T5).
-	 */
 	@JvmStatic
 	fun readSlayerBossKills(member: JsonObject?, slayer: String?): IntArray {
 		val kills = IntArray(5)
@@ -523,7 +509,6 @@ object Leveling {
 		return type?.let { num(it.get("experience")) } ?: 0f
 	}
 
-	/** Whole skill level as the skill pages show it, using the profile's own cap. */
 	@JvmStatic
 	fun skillLevel(member: JsonObject?, skill: String): Int {
 		val xp = readSkillXpDouble(member, skill)
@@ -548,7 +533,6 @@ object Leveling {
 			base += foragingExtraLevelCap(member)
 		}
 		if (skill == "taming") {
-			// George pet sacrifices raise the taming cap by 1 each (50 → 60).
 			val petsData = obj(member.get("pets_data"))
 			val petCare = petsData?.let { obj(it.get("pet_care")) }
 			val sacrificedEl = petCare?.get("pet_types_sacrificed")
@@ -721,10 +705,6 @@ object Leveling {
 		}
 	}
 
-	/**
-	 * Large counts (collections, crop milestones, etc.). Uses {@link Math#round(double)} so values
-	 * above {@link Integer#MAX_VALUE} are not clipped the way {@link Math#round(float)} is.
-	 */
 	@JvmStatic
 	fun longAmount(element: JsonElement?): Long {
 		val value = numDouble(element)

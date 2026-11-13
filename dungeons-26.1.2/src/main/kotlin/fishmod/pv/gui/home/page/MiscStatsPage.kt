@@ -41,9 +41,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Home → Misc: profile extras + guild/cookie (left flip), kills ↔ deaths (right flip).
- */
 class MiscStatsPage {
 	private var snapshot: MiscStatsSnapshot = MiscStatsSnapshot.empty()
 	private var guild: GuildStatus = GuildStatus.idle()
@@ -107,7 +104,6 @@ class MiscStatsPage {
 
 	fun guild(): GuildStatus = guild
 
-	/** Free cookie claim timestamp from Hypixel player (`skyblock_free_cookie`). */
 	fun applyFreeCookie(ms: Long) {
 		freeCookieMs = maxOf(0L, ms)
 		freeCookieKnown = true
@@ -402,7 +398,6 @@ class MiscStatsPage {
 		}
 	}
 
-	/** Two-column essence-shop style rows: icon + name + T#/#. */
 	private fun drawCommunityUpgrades(
 		g: GuiGraphicsExtractor, font: Font, upgrades: List<MiscStatsSnapshot.CommunityUpgrade>,
 		x: Int, y: Int, w: Int, bottom: Int, mx: Int, my: Int
@@ -568,7 +563,6 @@ class MiscStatsPage {
 		val listTop = ly
 		val listBottom = y + h - PAD
 		val listH = maxOf(STAT_ROW, listBottom - listTop)
-		// Top entries only, laid out as a two-column grid so nothing scrolls or clips.
 		val cols = 2
 		val colGap = 10
 		val cellW = (lw - colGap) / cols
@@ -637,7 +631,6 @@ class MiscStatsPage {
 	private class HoverZone(val x: Int, val y: Int, val w: Int, val h: Int, val lines: List<PvTooltip.Line>)
 
 	private companion object {
-		// Wiki total as of 0.27 (Torrhus Canyon + Safari souls).
 		const val MAX_FAIRY_SOULS = 289
 
 		val COMMUNITY_MAX: Map<String, Int> = mapOf(
@@ -706,7 +699,6 @@ class MiscStatsPage {
 			return COMMUNITY_MAX[upgrade.lowercase(Locale.ROOT)] ?: 0
 		}
 
-		/** NEU / SkyBlock id used for textured icons. */
 		fun communitySkyblockId(upgrade: String?): String {
 			if (upgrade.isNullOrBlank()) {
 				return "ELIZABETH_NPC"

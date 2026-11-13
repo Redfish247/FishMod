@@ -9,7 +9,6 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.AABB
 import fishmod.features.rift.RiftSettings as S
 
-// Shared Rift state + init of every Rift helper
 object Rift {
 
     fun inRift(): Boolean = SkyblockLocation.`in`(SkyblockLocation.THE_RIFT)
@@ -23,7 +22,6 @@ object Rift {
     @Volatile private var cachedArea = ""
     private var tick = 0
 
-    // Sidebar "ф <area>" line first (objective lines can name areas too), then any line naming a known area, tab last
     private fun pollArea() {
         val sb = fishmod.features.mining.Mining.area
         if (sb.isNotEmpty() && !sb.equals("The Rift", true)) { cachedArea = sb; return }
@@ -34,13 +32,11 @@ object Rift {
         cachedArea = if (tab.isNotEmpty() && !tab.equals("The Rift", true)) tab else ""
     }
 
-    // True only when the area is a known Rift area other than the given ones (blank/unknown = allowed)
     fun knownOtherArea(vararg allowed: String): Boolean {
         val a = area(); if (a.isEmpty() || allowed.any { a.contains(it, true) }) return false
         return KNOWN.any { a.contains(it, true) }
     }
 
-    // Current Rift area name (e.g. "Dreadfarm")
     fun area(): String = cachedArea
 
     fun heldId(): String? = Minecraft.getInstance().player?.mainHandItem?.let { fishmod.utils.data.ItemTools.getId(it) }
@@ -49,7 +45,6 @@ object Rift {
 
     fun strip(s: String) = if (s.indexOf('§') < 0) s else s.replace(FishConstants.STRIP_COLOR_REGEX, "")
 
-    // Named armor stands within r blocks of the player
     fun namedStands(r: Double): List<Pair<ArmorStand, String>> {
         val mc = Minecraft.getInstance()
         val me = mc.player ?: return emptyList()
@@ -58,7 +53,6 @@ object Rift {
             .mapNotNull { s -> s.customName?.string?.let { s to strip(it) } }
     }
 
-    // Closest non-stand mob just below a nametag stand
     fun mobUnder(stand: Entity): Entity? {
         val level = Minecraft.getInstance().level ?: return null
         return level.getEntities(stand, stand.boundingBox.inflate(1.0, 3.0, 1.0)) { it !is ArmorStand && it.isAlive }

@@ -22,7 +22,6 @@ import kotlin.math.roundToInt
 object PvConfig {
     private const val FILE_NAME = "config.json"
     private const val PROFILE_SCALE_KEY = "profileViewerScalePercent"
-    // Finished layout trials; drop their old keys from existing configs.
     @JvmField
     internal val REMOVED_TRIAL_KEYS = arrayOf("trialEssenceTab", "trialSkillOverviews", "trialFishingTrophies")
     private const val SEARCH_HISTORY_KEY = "searchHistory"
@@ -60,7 +59,6 @@ object PvConfig {
     @JvmStatic
     fun profileViewerScalePercent(): Int = normalizeProfileScale(FishSettings.guiScaleProfileViewer)
 
-    /** Optional override for the proxy fallback host (config "fallbackHost"). */
     @JvmStatic
     fun fallbackHost(): String {
         val doc = document

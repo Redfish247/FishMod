@@ -12,7 +12,6 @@ import com.google.gson.JsonObject
 import java.util.Locale
 import kotlin.math.floor
 
-/** Member-side fishing: Overview + Trophy Fish / Frogs. */
 class FishingSnapshot private constructor(
 	fishingLevel: Int, fishingFill: Float, fishingMaxed: Boolean, fishingHover: String?,
 	itemsFishedTotal: Long, itemsFishedNormal: Long, itemsFishedTreasure: Long, itemsFishedLargeTreasure: Long,
@@ -76,7 +75,6 @@ class FishingSnapshot private constructor(
 	@get:JvmName("itemsFishedOutstanding") val itemsFishedOutstanding: Long = maxOf(0L, itemsFishedOutstanding)
 	@get:JvmName("seaCreatureKills") val seaCreatureKills: Long = maxOf(0L, seaCreatureKills)
 	@get:JvmName("festivalSharksKilled") val festivalSharksKilled: Long = maxOf(0L, festivalSharksKilled)
-	/** -1 when the profile has no Dolphin milestone field. */
 	@get:JvmName("dolphinMilestone") val dolphinMilestone: Long = maxOf(-1L, dolphinMilestone)
 
 	@get:JvmName("trophyFishTotal") val trophyFishTotal: Long = maxOf(0L, trophyFishTotal)
@@ -161,7 +159,6 @@ class FishingSnapshot private constructor(
 			TrophyRow(def.id, def.name, counts, true)
 		}
 
-		/** Discovery-only fallback when Hypixel has no {@code trophy_frog} object yet. */
 		private fun parseTrophyFrogsFromTasks(completedTasks: JsonElement?): List<TrophyRow> {
 			val tasks = HashSet<String>()
 			if (completedTasks != null && completedTasks.isJsonArray) {

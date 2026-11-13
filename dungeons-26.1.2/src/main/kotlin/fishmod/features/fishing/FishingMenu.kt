@@ -5,7 +5,6 @@ import fishmod.features.FishModScreen.Feature
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.fishing.FishingSettings as S
 
-// The Fishing tab in /fm; later phases append their features through addMenu().
 object FishingMenu {
 
     fun column(): Column {

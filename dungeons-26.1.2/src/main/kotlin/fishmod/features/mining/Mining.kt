@@ -83,7 +83,6 @@ object Mining {
             area = sidebar.firstOrNull { it.startsWith("⏣") || it.startsWith("ф") }?.drop(1)?.trim() ?: ""
         }
         if (!inMiningIsland()) return
-        // Block under the crosshair while attacking = a block we're mining
         if (mc.options.keyAttack.isDown) {
             lastSwingMs = System.currentTimeMillis()
             val hit = mc.hitResult
@@ -92,7 +91,6 @@ object Mining {
                 if (st != null && !gone(st)) recentTargets[hit.blockPos.immutable()] = Target(lastSwingMs, st)
             }
         }
-        // Fallback when the update packet slipped past onBlock: a mined target turned to air/bedrock
         val level = mc.level
         if (level != null) {
             val it = recentTargets.entries.iterator()
@@ -106,7 +104,6 @@ object Mining {
         if (tick % 40 == 0) { val now = System.currentTimeMillis(); recentTargets.entries.removeIf { now - it.value.ms > 3000 } }
     }
 
-    // Runs before vanilla applies the packet, so the level still holds the old state
     private fun gone(s: BlockState) = s.isAir || s.`is`(Blocks.BEDROCK)
 
     private fun onBlock(pos: BlockPos, new: BlockState) {
@@ -126,11 +123,10 @@ object Mining {
     private fun sidebarLines(mc: Minecraft): List<String> {
         if (mc.level == null) return emptyList()
         return fishmod.utils.SidebarCache.entries.map { e ->
-            e.plain.filterNot { it.isSurrogate() }.trim()  // Hypixel pads lines with emoji
+            e.plain.filterNot { it.isSurrogate() }.trim()
         }
     }
 
-    // Tab lines after a widget header (e.g. "Commissions:"), until the next blank/header line
     private val widgetCache = HashMap<String, List<String>>()
     private val lineCache = HashMap<String, String?>()
     private var tabVersion = -1
@@ -179,7 +175,6 @@ object Mining {
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))
     }
 
-    // 12 camera-facing edges of a box
     fun outline(ps: PoseStack, vc: VertexConsumer, b: AABB, argb: Int, px: Float) {
         val xs = doubleArrayOf(b.minX, b.maxX); val ys = doubleArrayOf(b.minY, b.maxY); val zs = doubleArrayOf(b.minZ, b.maxZ)
         for (y in ys) for (z in zs) FishDraw.screenLine(ps, vc, Vec3(b.minX, y, z), Vec3(b.maxX, y, z), argb, px)
@@ -190,7 +185,6 @@ object Mining {
     fun short(v: Double): String = fishmod.features.diana.DianaTracker.short(v)
 }
 
-// Plain line HUDs registered with the HUD editor
 object MiningHuds {
 
     fun reg(
@@ -218,7 +212,6 @@ object MiningHuds {
 
     // The text block at the origin (shared by the in-game draw and the HUD editor example)
     fun drawLines(ctx: GuiGraphicsExtractor, lines: List<String>) {
-        // "value	item" lines: value right-aligned in its own column, item text after it (Diana style)
         val font = Minecraft.getInstance().font
         val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
         for ((i, l) in lines.withIndex()) {
@@ -235,7 +228,6 @@ object MiningHuds {
         return lines.maxOfOrNull { if ('	' in it) colX + font.width(it.substringAfter('	')) else font.width(plainOf(it)) } ?: 0
     }
 
-    // A line starting with RGB_MARK + 6 hex digits is drawn in that exact colour (legacy codes have no brown)
     const val RGB_MARK = ''
     fun rgb(hex: String, text: String) = "$RGB_MARK$hex$text"
     private fun plainOf(l: String) = if (l.length >= 7 && l[0] == RGB_MARK) l.substring(7) else l

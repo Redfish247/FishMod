@@ -12,7 +12,6 @@ import com.google.gson.JsonObject
 import fishmod.pv.networth.InventoryDecoder
 import kotlin.math.floor
 
-/** Member `rift.*` + motes + Vampire slayer for the Rift tab. */
 class RiftSnapshot private constructor(
     motesPurse: Long,
     lifetimeMotes: Long,
@@ -38,10 +37,6 @@ class RiftSnapshot private constructor(
     enderPages: List<InventorySnapshot.Page>?,
     questRegions: List<QuestRegion>?,
 ) {
-    /**
-     * Canonical gallery timecharms. API `type` matches [apiType];
-     * `visits` on secured trophies is the gallery visit requirement (“Visits to get”).
-     */
     enum class TimecharmDef(
         private val apiType: String,
         private val itemId: String,
@@ -289,7 +284,6 @@ class RiftSnapshot private constructor(
             if (obj == null) return emptyList()
             val lines = ArrayList<QuestLine>()
             if (intVal(obj, "shania_stage") > 0) {
-                // No published mapping for shania_stage integers (wand / harvest / reward stages).
                 lines.add(QuestLine("Harvest for Shania", "In Progress"))
             }
             val feeder = countEntries(obj.get("caducous_feeder_uses"))
@@ -352,7 +346,6 @@ class RiftSnapshot private constructor(
             if (obj == null) return emptyList()
             val lines = ArrayList<QuestLine>()
             if (intVal(obj, "fairy_step") > 0) {
-                // No published mapping for fairy_step integers.
                 lines.add(QuestLine("Castle Fairy", "In Progress"))
             }
             if (bool(obj, "unlocked_pathway_skip")) lines.add(QuestLine("Pathway Skip", "Unlocked"))
@@ -450,7 +443,6 @@ class RiftSnapshot private constructor(
                     },
                 )
             }
-            // Unknown future trophies still show up after the known set.
             for ((key, obj) in secured) {
                 if (key in seen) continue
                 val type = str(obj.get("type"))
@@ -502,7 +494,6 @@ class RiftSnapshot private constructor(
         }
 
         private fun longVal(obj: JsonObject?, key: String): Long {
-            // Double, not Float: epoch-ms timestamps lose minutes in float precision.
             val n = Leveling.numDouble(obj?.get(key))
             return if (n == null || n.isNaN()) 0L else maxOf(0L, Math.round(n))
         }

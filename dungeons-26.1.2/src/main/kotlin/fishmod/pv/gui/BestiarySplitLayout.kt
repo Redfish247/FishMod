@@ -16,7 +16,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.network.chat.Component
 
-/** Bestiary tab body split: left list + right category grid + search. */
 class BestiarySplitLayout {
 	private var bestiaryCategoryTip: Component? = null
 	private var bestiaryCategoryTipX = 0
@@ -48,7 +47,6 @@ class BestiarySplitLayout {
 		val searchH = InventorySplitLayout.SEARCH_H
 		val searchGap = InventorySplitLayout.SEARCH_GAP
 
-		// Header bar: tier totals on the left, family search on the right.
 		PvDraw.roundedFill(g, x, y, w, searchH, 3, PvDraw.CELL)
 		PvDraw.roundedRing(g, x, y, w, searchH, 3, PvDraw.COLOR_BORDER, PvDraw.C_ALL)
 		val header = "Tiers " +
@@ -73,7 +71,6 @@ class BestiarySplitLayout {
 			}
 		}
 
-		// Family tabs across the top, wrapping to as many rows as the width needs.
 		BestiaryData.ensureLoaded()
 		val cats = BestiaryData.categories()
 		val btn = 18

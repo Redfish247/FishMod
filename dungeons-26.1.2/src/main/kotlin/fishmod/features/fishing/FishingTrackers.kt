@@ -52,7 +52,6 @@ object FishingTrackers {
             }
         })
         FishEvents.chat.register { c ->
-            // setting first, then cheap contains tests inside the parsers, regex last
             if (on()) FishDiag.guard("FishingTrackers.1", "fishing tracker chat parse failed") {
                 val plain = c.chatPlain
                 if (plain.startsWith("[Sacks]")) onSacks(c) else onChat(plain)
@@ -70,7 +69,6 @@ object FishingTrackers {
             }
             if (++castTicks >= CAST_POLL_TICKS) {
                 castTicks = 0
-                // passive: only reads whether our own hook exists
                 if (on() && net.minecraft.client.Minecraft.getInstance().player?.fishing != null) FishingTrackerStore.noteCast(System.currentTimeMillis())
             }
             if (++ticks >= SAVE_EVERY_TICKS) { ticks = 0; if (FishingTrackerStore.dirty) save() }
@@ -125,7 +123,6 @@ object FishingTrackers {
         }
     }
 
-    // ── persistence ──
 
     private fun load() {
         if (!FILE.exists()) return
@@ -144,7 +141,6 @@ object FishingTrackers {
         if (sync) job.run() else IoExecutor.execute(job)
     }
 
-    // ── menu ──
 
     fun addMenu(col: Column) {
         val f = Feature("Fishing Trackers", S::class.java, "fishingTrackers")

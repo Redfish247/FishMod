@@ -14,7 +14,6 @@ import java.util.ArrayDeque
 import kotlin.math.abs
 import kotlin.math.floor
 
-// Registers nearby burrows from their particles and tracks digging progress from chat
 object BurrowDetector {
 
     private val DUG = Regex("""^You (.*?) Griffin [Bb]urrow(.*?) \((\d+)/(\d+)\)$""")
@@ -47,7 +46,6 @@ object BurrowDetector {
 
     private fun isDigLine(s: String) = DUG.matches(s) || CHAIN_DONE.matches(s) || (FIRST_DIG.matches(s) && !s.contains("Griffin Burrow"))
 
-    // ---- Hypixel's dig ding (arrow.hit_player, pitch climbs per dig) arrives the instant you dig, before the chat line ----
     private const val DIG_DING = "minecraft:entity.arrow.hit_player"
     private val DIG_SOUNDS = listOf(
         "minecraft:entity.ender_dragon.hurt" to 0.54f,
@@ -61,7 +59,6 @@ object BurrowDetector {
     private var lastDingMs = 0L
     private var samePitchCount = 0
 
-    // Temporary: recent hub sounds, dumped next to each dig chat line to find what slips past the mute
     private val recentSounds = java.util.concurrent.ConcurrentLinkedDeque<String>()
 
     private fun onServerSound(id: String, pitch: Float): Boolean {
@@ -69,7 +66,6 @@ object BurrowDetector {
             recentSounds.addLast("${System.currentTimeMillis() % 100000} $id p=$pitch")
             while (recentSounds.size > 12) recentSounds.pollFirst()
         }
-        // Hypixel's dig/burrow-pop sounds, matched by exact pitch so other uses of these sounds still play
         if (Diana.inHub() && DIG_SOUNDS.any { (snd, p) -> id == snd && abs(pitch - p) < 0.02f }) return DianaSettings.dianaMuteHypixelDug
         if (id != DIG_DING || !Diana.inHub()) return false
         // Pitch climbs per burrow; mob/treasure burrows take two breaks at the same pitch, anything past that is a post-mob cooldown smack
@@ -127,7 +123,6 @@ object BurrowDetector {
     fun register(pos: BlockPos, kind: BurrowType) {
         val existing = DianaWaypoints.at(pos, WpType.BURROW)
         if (existing != null) {
-            // Particles refine the type once a mob/treasure burrow shows its real signature
             if (existing.burrowType != kind && kind != BurrowType.START) { existing.burrowType = kind; existing.label = kind.label }
             return
         }
@@ -139,7 +134,6 @@ object BurrowDetector {
         DianaWaypoints.add(w)
     }
 
-    // Smoke puff = burrow fully dug
     private fun onDugOut(pos: BlockPos) {
         DianaWaypoints.markRemoved(pos)
         DianaWaypoints.removeAt(pos, WpType.BURROW, WpType.GUESS, WpType.ARROW, WpType.SUB)
@@ -154,7 +148,6 @@ object BurrowDetector {
 
     private fun onChat(s: String) {
         if (s.contains("Griffin")) DianaTest.log("burrow chat: '$s'")
-        // The chain-finished line also ends in (4/4), so it has to be checked before the dig pattern
         if (CHAIN_DONE.matches(s)) {
             prune(); chains.pollFirst()
             refresh(death = false, expected = 2, type = null)
@@ -182,7 +175,6 @@ object BurrowDetector {
         if (DEATH.matches(s)) refresh(death = true, expected = 1, type = null)
     }
 
-    // Updates the waypoint the player last clicked after a dig result
     private fun refresh(death: Boolean, expected: Int, type: BurrowType?) {
         val pos = Diana.lastClickedWaypoint ?: return
         val w = DianaWaypoints.findDiggable(pos) ?: return
@@ -194,7 +186,6 @@ object BurrowDetector {
             DianaWaypoints.markRemoved(w.pos)
             DianaWaypoints.removeAt(w.pos, WpType.BURROW, WpType.GUESS, WpType.ARROW, WpType.SUB)
             DianaWaypoints.removeSubsNear(w.pos)
-            // Keep lastClickedWaypoint: the next arrow spawns here and filters on it (as SBO does)
             ArrowGuess.onBurrowAt(w.pos)
             return
         }

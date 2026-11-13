@@ -25,7 +25,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** HOTM subtab: powders | perk tree | forge / unlocked flip. Owns HOTM-specific scroll fields. */
 class HotmPage {
 	private var scroll = 0
 	private var maxScroll = 0
@@ -43,7 +42,6 @@ class HotmPage {
 	private var treeW = 0
 	private var treeH = 0
 
-	/** false = forge face, true = unlocked perks face. */
 	private var unlockedFace = false
 	private var flipTarget = false
 	private var flipStartMs = 0L

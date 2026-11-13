@@ -14,7 +14,6 @@ object CrownBadge {
     const val GLYPH = "§6♛§r"
     private val FONT = net.minecraft.network.chat.FontDescription.Resource(net.minecraft.resources.Identifier.fromNamespaceAndPath("fishmod", "crown"))
 
-    // Pixel crown from our own font (the unicode queen glyph renders as a squid)
     @JvmStatic fun icon(rgb: Int = 0xFFAA00): net.minecraft.network.chat.MutableComponent =
         Component.literal("").setStyle(Style.EMPTY.withFont(FONT).withColor(rgb))
     private const val TTL_MS = 60_000L
@@ -27,7 +26,6 @@ object CrownBadge {
     @Volatile private var holder = ""
     @Volatile private var holderUuid = ""
 
-    // Crown holder's uuid (no dashes) for the badge system, only when the crown is on
     @JvmStatic fun crownUuid(): String = if (active()) holderUuid else ""
     @Volatile private var lastHolderFetch = 0L
 
@@ -70,7 +68,6 @@ object CrownBadge {
         }
     }
 
-    // "♛ " or "" for nametag/tab callers (check the per-surface setting there)
     fun prefix(uuid: String?, name: String?): String = if (isCrowned(uuid, name)) "$GLYPH " else ""
 
     fun decorate(c: Component, uuid: String?, name: String?): Component =
@@ -82,7 +79,6 @@ object CrownBadge {
         }
     }
 
-    // Keeps the holder fresh without a per-player request
     fun onTick(mc: Minecraft) {
         if (mc.player == null || !active()) return
         val now = System.currentTimeMillis()
@@ -95,7 +91,6 @@ object CrownBadge {
         }
     }
 
-    // Dev reset: forget holder and cached answers
     fun clear() {
         holder = ""; holderUuid = ""; lastHolderFetch = 0L
         cache.clear()
@@ -121,7 +116,6 @@ object CrownBadge {
                 out.append(Component.literal(s.substring(0, i)).setStyle(style))
                 out.append(icon()).append(Component.literal(" "))
                 changed = true
-                // Only the first hit per segment is badged
                 out.append(Component.literal(s.substring(i)).setStyle(style))
                 from = -1
                 break

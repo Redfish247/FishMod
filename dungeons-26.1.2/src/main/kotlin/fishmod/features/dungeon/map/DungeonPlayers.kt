@@ -157,7 +157,6 @@ object DungeonPlayers {
         if (!DungeonMapSettings.mapPlayerHeadsEnabled) return
         val mc = Minecraft.getInstance()
         val skin = mc.player?.skin
-        // room cell -> world centre -> map pixel, same formula as the live markers
         fun at(name: String, cls: String, cx: Int, cz: Int, yaw: Float) = DungeonPlayer(name).also {
             it.clazz = cls
             it.skin = skin
@@ -199,7 +198,6 @@ object DungeonPlayers {
         DungeonRole.HEALER -> 0xFF800080.toInt()
     }
 
-    // tab also shows non-class words (Customize, EMPTY); only report real-looking class names
     private val KNOWN_CLASS_NAMES = setOf("ARCHER", "BERSERK", "BERSERKER", "MAGE", "TANK", "HEALER")
 
     private fun resolveClass(player: DungeonPlayer): DungeonRole? =

@@ -33,7 +33,6 @@ enum class PvTab(private val iconItem: Item, private val langKey: String) {
 
 	fun label(): Component = Component.translatable(langKey)
 
-	/** A `/pv <page>` target. `sub` is null when the tab's default subtab should be used. */
 	@JvmRecord
 	data class Route(val tab: PvTab?, val sub: PvSubTab?) {
 		fun valid(): Boolean {
@@ -99,10 +98,6 @@ enum class PvTab(private val iconItem: Item, private val langKey: String) {
 	}
 
 	companion object {
-		/**
-		 * Resolves `/pv <page>` aliases. Returns `null` when the token is not a page
-		 * (caller should treat it as a player name).
-		 */
 		@JvmStatic
 		fun fromCommandArg(raw: String?): PvTab? = routeFromCommandArg(raw)?.tab
 
@@ -135,7 +130,6 @@ enum class PvTab(private val iconItem: Item, private val langKey: String) {
 			return if (tab == null) null else Route(tab, null)
 		}
 
-		/** Canonical `/pv <page>` tokens shown in command suggestions. */
 		@JvmStatic
 		fun commandAliases(): Array<String> = arrayOf(
 			"home",

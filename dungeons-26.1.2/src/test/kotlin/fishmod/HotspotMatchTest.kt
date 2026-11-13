@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class HotspotMatchTest {
-    // Real flame trails from Eli's 1.7.46 Skyblock log (count=1 speed=0 points, x y z flat) and the HOTSPOT stand that appeared
-    // afterwards. maxFlat = measured flat error of the solver (+ headroom); calibration results are in the commit message.
     private class Fix(val name: String, val pts: DoubleArray, val sx: Double, val sy: Double, val sz: Double, val maxFlat: Double)
 
     private val fixtures = listOf(

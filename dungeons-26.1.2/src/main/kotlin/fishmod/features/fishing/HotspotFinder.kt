@@ -46,7 +46,6 @@ object HotspotFinder {
     private var dirty = false
     private var debugCount = 0
     private var tick = 0
-    // The guess only exists while a radar is in the inventory and was right-clicked within the last minute
     private const val RADAR_USE_WINDOW_MS = 60_000L
     private var lastRadarUseMs = 0L
     // Last solved trail, kept to log the error when the real stand shows up (debug only)
@@ -100,7 +99,6 @@ object HotspotFinder {
         if (W.hotspotDebug && debugCount++ < DEBUG_MAX_PER_TRAIL) {
             FishMsg.send("§7[Hotspot] flame #${debugCount} count=$count speed=$speed at ${"%.1f".format(x)} ${"%.1f".format(y)} ${"%.1f".format(z)}")
         }
-        // Trail points are count 1 / speed 0; other flames (count 6 ...) are something else (seen in a real log)
         if (count != 1 || speed != 0f) return
         if (trail.add(x, y, z, now)) { dirty = true; guessAt = now }
     }
@@ -121,7 +119,6 @@ object HotspotFinder {
             hasGuess = false
             return
         }
-        // Snap Y to the water/lava surface under the solved point when one is found just below
         val probe = HotspotMatch.FluidProbe { x, y, z ->
             probePos.set(Math.floor(x).toInt(), Math.floor(y).toInt(), Math.floor(z).toInt())
             level.hasChunkAt(probePos) && !level.getFluidState(probePos).isEmpty
@@ -190,7 +187,6 @@ object HotspotFinder {
 
     private fun sq(v: Double) = v * v
 
-    // Far markers are drawn at most FAR_DRAW blocks out along the same direction (distance in the label stays real).
     private fun capped(p: net.minecraft.world.entity.player.Player, x: Double, y: Double, z: Double, d: Int): DoubleArray {
         if (d <= FAR_DRAW) return doubleArrayOf(x, y, z)
         val ex = p.x; val ey = p.eyeY; val ez = p.z
@@ -215,7 +211,6 @@ object HotspotFinder {
                     k.label = Component.literal("§6§lHotspot §f${k.perk} §7${d}m")
                 }
                 val c = capped(p, k.x, k.y, k.z, d)
-                // Detector waypoints are depth-tested (no x-ray); only the radar guess shows through walls
                 FishDraw.gizmoBox(AABB(c[0] - 0.5, c[1] - 1.0, c[2] - 0.5, c[0] + 0.5, c[1] + 1.0, c[2] + 0.5), fill, color, false)
                 FishDraw.gizmoText(k.label as Component, Vec3(c[0], c[1] + 1.6, c[2]), 1.5f, -0x1, false)
             }

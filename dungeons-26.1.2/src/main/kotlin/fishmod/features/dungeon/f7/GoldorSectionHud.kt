@@ -9,7 +9,6 @@ import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-// "P3 x/4": which Goldor section the party is on.
 object GoldorSectionHud {
 
     private const val SECTIONS = 4

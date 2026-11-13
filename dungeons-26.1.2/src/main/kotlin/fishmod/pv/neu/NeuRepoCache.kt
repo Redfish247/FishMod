@@ -43,10 +43,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.ZipInputStream
 import kotlin.math.max
 
-/**
- * NotEnoughUpdates-REPO item definitions (skull textures, leather colors, itemids).
- * Full zip is cached under `config/fishmod/pv/neu-repo`; individual items can be fetched on demand.
- */
 object NeuRepoCache {
 	private const val REPO_USER = "NotEnoughUpdates"
 	private const val REPO_NAME = "NotEnoughUpdates-REPO"
@@ -78,7 +74,6 @@ object NeuRepoCache {
 		SCHEDULER.scheduleAtFixedRate(::refreshIfStaleSafely, REFRESH_HOURS, REFRESH_HOURS, TimeUnit.HOURS)
 	}
 
-	/** Wait for the zip index (or finish a sync load) before warming item stacks. */
 	@JvmStatic
 	fun ensureLoadedBlocking() {
 		start()
@@ -101,17 +96,12 @@ object NeuRepoCache {
 	@JvmStatic
 	fun size(): Int = ITEMS.size
 
-	/** Sack name → item ids (from NEU `constants/sacks.json`). */
 	@JvmStatic
 	fun sackDefinitions(): Map<String, List<String>> {
 		ensureSacksLoaded()
 		return sacks
 	}
 
-	/**
-	 * NEU skull / item id for a sack display name (e.g. `Agronomy` → `LARGE_AGRONOMY_SACK`).
-	 * Also accepts titles like `Rune Sack`.
-	 */
 	@JvmStatic
 	fun sackItemId(sackName: String?): String? {
 		ensureSacksLoaded()
@@ -123,28 +113,24 @@ object NeuRepoCache {
 		return sackItems.entries.firstOrNull { it.key.equals(sackName, ignoreCase = true) }?.value
 	}
 
-	/** All NEU sack icon item ids (for prefetch). */
 	@JvmStatic
 	fun sackItemIds(): Set<String> {
 		ensureSacksLoaded()
 		return java.util.Set.copyOf(sackItems.values)
 	}
 
-	/** Minion internal name (e.g. `WHEAT_GENERATOR`) → max tier from NEU `constants/misc.json`. */
 	@JvmStatic
 	fun minionMaxTiers(): Map<String, Int> {
 		ensureMinionsLoaded()
 		return minions
 	}
 
-	/** Accessory id → every higher tier it upgrades into (NEU `misc.json` `talisman_upgrades`). */
 	@JvmStatic
 	fun talismanUpgrades(): Map<String, List<String>> {
 		ensureTalismansLoaded()
 		return TALISMAN_UPGRADES
 	}
 
-	/** Accessories NEU excludes from missing-accessory lists (`misc.json` `ignored_talisman`). */
 	@JvmStatic
 	fun ignoredTalismans(): Set<String> {
 		ensureTalismansLoaded()
@@ -154,7 +140,6 @@ object NeuRepoCache {
 	@Volatile
 	private var abiphoneContacts: JsonObject? = null
 
-	/** Contact display name → `requirement` / `callNames` (NEU `constants/abiphone.json`). */
 	@JvmStatic
 	fun abiphoneContacts(): JsonObject {
 		abiphoneContacts?.let { return it }
@@ -199,11 +184,9 @@ object NeuRepoCache {
 		}
 	}
 
-	// Immutable snapshots swapped whole: parse threads iterate them while a repo update reloads.
 	@Volatile
 	private var sacks: Map<String, List<String>> = emptyMap()
 
-	/** Sack display name → NEU item id (player-head sack skins). */
 	@Volatile
 	private var sackItems: Map<String, String> = emptyMap()
 
@@ -287,11 +270,9 @@ object NeuRepoCache {
 		return if (Files.isRegularFile(path)) path else null
 	}
 
-	/** All indexed item ids (upper-case). */
 	@JvmStatic
 	fun ids(): Set<String> = ITEMS.keys
 
-	/** constants/fairy_souls.json from the extracted repo, or null until it exists. */
 	@JvmStatic
 	fun fairySoulsJson(): JsonObject? {
 		val path = constantsPath("fairy_souls.json") ?: return null
@@ -315,14 +296,9 @@ object NeuRepoCache {
 	private var displayNameIndexSize = -1
 
 
-	/**
-	 * Item id whose NEU display name (formatting stripped) matches exactly, ignoring case.
-	 * Null when unknown or when several items share the name.
-	 */
 	@JvmStatic
 	fun idForDisplayName(name: String?): String? = idsForDisplayName(name).singleOrNull()
 
-	/** Every item id sharing that NEU display name (formatting stripped, case ignored), sorted. */
 	@JvmStatic
 	fun idsForDisplayName(name: String?): List<String> {
 		if (name.isNullOrBlank()) return emptyList()
@@ -341,7 +317,6 @@ object NeuRepoCache {
 		return displayNameIndex[name.trim().lowercase(Locale.ROOT)] ?: emptyList()
 	}
 
-	/** Prefetch many ids (off-thread). Safe to call from API/parse threads. */
 	@JvmStatic
 	fun prefetch(ids: Collection<String?>?) {
 		if (ids.isNullOrEmpty()) return
@@ -353,10 +328,6 @@ object NeuRepoCache {
 		}
 	}
 
-	/**
-	 * Blocking lookup for a single item (used when painting before the full zip is indexed).
-	 * Prefer [prefetch] + [get] on the render thread.
-	 */
 	@JvmStatic
 	fun getOrFetch(internalName: String?): JsonObject? {
 		get(internalName)?.let { return it }

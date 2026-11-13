@@ -36,7 +36,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Hunting subtab: hunting and safari stats left, critter grid and toolkit right. */
 public final class HuntingPage {
 	private static final int TOOLKIT_MAX_PCT = 55;
 

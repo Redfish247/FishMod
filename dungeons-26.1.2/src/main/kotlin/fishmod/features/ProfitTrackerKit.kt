@@ -6,7 +6,6 @@ import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 
-// Shared pieces of the Farming and Mining profit trackers
 object ProfitTrackerKit {
 
     interface Cat { val color: String; val short: String }
@@ -19,8 +18,6 @@ object ProfitTrackerKit {
         return t.removeSuffix("k").removeSuffix("m").removeSuffix("b").toDoubleOrNull()?.let { (it * mult).toLong() }
     }
 
-    // /<literal> edit <item> <number>: adds (or with a negative number removes) items; shared by the profit trackers
-    // existing = tracker keys "CAT|Item Name" (session + total), used for exact-case names and the item's own category
     fun <C> registerEdit(literal: String, label: String, defaultCat: C, cats: Array<C>, existing: () -> Collection<String>, edit: (C, String, Long) -> Unit)
         where C : Enum<C>, C : Cat {
         fun known(): Map<String, C> {
@@ -71,13 +68,11 @@ object ProfitTrackerKit {
         "MYTHIC" to "§d", "DIVINE" to "§b", "SPECIAL" to "§c", "VERY_SPECIAL" to "§c",
     )
 
-    // Name colour from the item's Hypixel tier; null for unknown items
     fun rarityColor(id: String?): String? {
         id ?: return null
         return RARITY[ItemsDb.get(id)?.get("tier")?.asString ?: "COMMON"]
     }
 
-    // Same item from several sources: one row, per-source counts shown after it
     fun <C> mergeSources(rows: List<Row<C>>): List<Row<C>> where C : Enum<C>, C : Cat = rows.groupBy { it.name }.map { (name, rs) ->
         if (rs.size == 1) rs[0]
         else Row(rs.maxBy { it.n }.cat, name, rs.sumOf { it.n }, rs.sumOf { it.value }, rs.sortedBy { it.cat.ordinal }.associate { it.cat to it.n })
@@ -93,7 +88,6 @@ object ProfitTrackerKit {
         "$value	§7| ${nameColor ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}" +
             (if (r.split.isEmpty() || !showSources) "" else " §8(" + r.split.entries.joinToString(" ") { "${it.key.color}${it.key.short} §f${"%,d".format(it.value)}" } + "§8)")
 
-    // True if the item id is stocked by one of the named NEU sacks; allows all when the NEU data isn't loaded
     fun inSacks(id: String?, vararg sacks: String): Boolean {
         id ?: return false
         val defs = fishmod.pv.neu.NeuRepoCache.sackDefinitions()
@@ -114,7 +108,6 @@ object ProfitTrackerKit {
 
     fun perHour(v: Double, timeMs: Long) = if (timeMs < 60_000) 0.0 else v * 3_600_000.0 / timeMs
 
-    // HUD lines rebuilt on a data change, else at most once a second (playtime, settings)
     class LineCache {
         private var ver = -1; private var at = 0L; private var lines: List<String> = emptyList()
         fun get(version: Int, build: () -> List<String>): List<String> {

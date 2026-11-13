@@ -47,7 +47,6 @@ private val ENCHANT_OVERRIDES: Set<Item> = buildSet {
 
 abstract class TerminalHandler(val type: TerminalType) {
     val solution = java.util.concurrent.CopyOnWriteArrayList<Int>()
-    // Live container size; alpha shrank Numbers/Melody, so it's read from the open menu.
     @Volatile var windowSize: Int = type.windowSize
     val items: Array<ItemStack?> = arrayOfNulls(54)
     val timeOpened = System.currentTimeMillis()
@@ -184,8 +183,6 @@ class MelodyHandler : TerminalHandler(TerminalType.MELODY) {
     @Volatile var targetCol: Int = -1
         private set
 
-    // Lane rows = rows with terracotta in col 7 (4 on live, 3 on alpha).
-    // Cached per item update; read per slot per frame by the solver render.
     @Volatile private var laneCache = -1
     val laneRows: Int
         get() {

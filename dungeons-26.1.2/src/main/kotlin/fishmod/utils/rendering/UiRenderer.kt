@@ -159,7 +159,6 @@ void main(){
             pixelRatio = win.guiScale.toFloat()
             if (!(pixelRatio > 0f)) FishDiag.fail("UiRenderer.5", "window guiScale invalid: ${win.guiScale}")
             if (win.width <= 0 || win.height <= 0) FishDiag.fail("UiRenderer.6", "painting UI into empty window ${win.width}x${win.height}")
-            // Map from the real framebuffer, not the rounded-up GUI size, or odd window sizes stretch text off the pixel grid.
             viewW = win.width / pixelRatio; viewH = win.height / pixelRatio
             fbH = win.height
             bindMainTarget()
@@ -206,7 +205,6 @@ void main(){
     private var targetTex = -1
     private var targetLogged = false
 
-    // Set by GlCommandEncoderUiTargetMixin: colour texture of the last render pass, i.e. what GuiRenderer just drew into.
     @JvmField @Volatile var lastPassColorTex = 0
 
     // Draw into the GUI's own target, not whatever FBO is left bound (vanilla unbinds to 0, ImmediatelyFast doesn't) or a guess at the main target (other mods redirect GUI output).
@@ -229,7 +227,6 @@ void main(){
         if (targetFbo == 0) targetFbo = GL30.glGenFramebuffers()
         if (targetFbo == 0) { FishDiag.fail("UiRenderer.12", "glGenFramebuffers returned 0"); return false }
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
-        // Re-attach every paint: a resized/recreated target can reuse the same id, leaving the old attachment dead
         GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0)
         val status = GL30.glCheckFramebufferStatus(GL30.GL_FRAMEBUFFER)
         if (status != GL30.GL_FRAMEBUFFER_COMPLETE) {

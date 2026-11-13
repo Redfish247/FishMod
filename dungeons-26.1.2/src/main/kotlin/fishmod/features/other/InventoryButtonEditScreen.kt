@@ -8,7 +8,6 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 
-// In-game editor for one inventory button (opened by right-click in edit mode).
 class InventoryButtonEditScreen(private val b: InvButton, private val parent: Screen?) : Screen(Component.literal("Edit Button")) {
 
     private lateinit var cmd: EditBox

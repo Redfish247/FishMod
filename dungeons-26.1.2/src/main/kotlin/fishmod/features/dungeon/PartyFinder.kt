@@ -45,7 +45,6 @@ object PartyFinder {
     private val sbCache = ConcurrentHashMap<String, Double>()
     private val pending = ConcurrentHashMap.newKeySet<String>()
     private val kicked = ConcurrentHashMap.newKeySet<String>()
-    // bumped on world change so in-flight lookups from the old lobby are dropped
     @Volatile private var gen = 0
     private val failedAt = ConcurrentHashMap<String, Long>()
 
@@ -377,7 +376,6 @@ object PartyFinder {
             if (g != gen) return@getByNameSilent
             pending.remove(key)
             if (data.failed) {
-                // expected (nicked/unknown name, proxy rate limit); real HTTP/parse faults report in HypixelApi
                 fishmod.utils.debug.FishDebug.LOGGER.info("PF stats lookup failed for {}", name)
                 failedAt[key] = System.currentTimeMillis()
             } else { failedAt.remove(key); cache[key] = data }

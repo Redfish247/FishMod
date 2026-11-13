@@ -104,14 +104,12 @@ object M7Relics {
     private val relicStands = ArrayList<ArmorStand>()
     private var idleTick = 0
 
-    // One entity pass per tick: spawn detection, then placed checks on the "Relic" stands.
     private fun checkRelics() {
         val level = Minecraft.getInstance().level ?: return
         if (BossPhase.getFloor() != "M7") { myRelic = null; return }
         val wantSpawn = !spawned && !(spawnEndMs == 0L && p5StartMs != 0L)
         val wantAll = Floor7Settings.relicTimesEnabled && p5StartMs != 0L && placed.size < Relic.entries.size
         if (!wantSpawn && myRelic == null && !wantAll) return
-        // Before Necron's phase nothing is timed yet: scan 4x a second.
         val early = myRelic == null && !wantAll && spawnEndMs == 0L && BossPhase.getPhase() < 8
         if (early && ++idleTick % 5 != 0) return
         var spawnSeen = false
@@ -124,7 +122,6 @@ object M7Relics {
             if (head.contains("Corrupted")) spawnSeen = true
             if (head.contains("Relic")) relicStands += e
         }
-        // Relic stands showing up = spawned: end the countdown, and start P5 tracking if no line was seen.
         if (wantSpawn && spawnSeen) {
             spawned = true
             spawnEndMs = 0L

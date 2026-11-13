@@ -158,7 +158,6 @@ object SimonSaysSolver {
         when (pos.x) {
             111 ->
                 if (updated.block === Blocks.OBSIDIAN && old === Blocks.SEA_LANTERN && pos !in clickInOrder) {
-                    // a 6th distinct lantern means a new pattern started without a seen reset: restart from it
                     if (clickInOrder.size >= 5) {
                         FishDebug.LOGGER.warn("[SS] 6th lantern ${pos.y}:${pos.z}, restarting solution (old=${clickInOrder.map { "${it.y}:${it.z}" }} needed=$clickNeeded firstPhase=$firstPhase)")
                         resetSolution()

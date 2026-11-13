@@ -48,7 +48,6 @@ object ItemOverlays {
         if (S.overlayPetLevel && id == "PET") {
             val name = stack.hoverName.string
             val lvl = PET_LVL.find(name)?.groupValues?.get(1) ?: return null
-            // Golden/other dragons cap at 200, everything else at 100
             val max = if (name.contains("Dragon")) 200 else 100
             if (S.overlayPetHideMax && lvl.toInt() >= max) return null
             return lvl

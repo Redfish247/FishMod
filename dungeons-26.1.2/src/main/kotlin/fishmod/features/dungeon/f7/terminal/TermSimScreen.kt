@@ -270,7 +270,6 @@ class TermSimScreen private constructor(
         val k = input.key()
         if (k in GLFW.GLFW_KEY_1..GLFW.GLFW_KEY_6) {
             val t = TerminalType.entries[k - GLFW.GLFW_KEY_1]
-            // a different size needs a new menu, or the old container frame shows behind the GUI
             if (t.windowSize != type.windowSize) reopenAs(t) else newRound(t)
             return true
         }

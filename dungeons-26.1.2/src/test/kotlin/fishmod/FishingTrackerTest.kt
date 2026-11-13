@@ -67,7 +67,6 @@ class FishingTrackerTest {
         assertEquals(3L, b.events); assertEquals(4L, b.catches); assertEquals(1L, b.doubles); assertEquals(1L, b.cocoons)
         assertEquals(120_000L, b.activeMs)
         assertEquals(4L, b.scCounts["Squid"])
-        // total mirrors session
         assertEquals(4L, FishingTrackerStore.total(FishingTrackerStore.MAIN).catches)
         assertEquals(120.0, FishingTrackerMath.perHour(b.catches.toDouble(), b.activeMs))
     }
@@ -108,7 +107,6 @@ class FishingTrackerTest {
         assertEquals(1L, b.lines["Roll 2"]); assertEquals(-666_000.0, b.lineCoins)
         val shown = FishingTrackerLines.areas(false, SkyblockLocation.UNKNOWN, 6_000, false, true, 10)
         assertTrue(shown.any { it.contains("Archfiend Dice") })
-        // hidden after 10 minutes, and when the toggle is off
         assertTrue(FishingTrackerLines.areas(false, SkyblockLocation.UNKNOWN, 700_000, false, true, 10).isEmpty())
         assertTrue(FishingTrackerLines.areas(false, SkyblockLocation.UNKNOWN, 6_000, false, false, 10).isEmpty())
     }
@@ -129,7 +127,6 @@ class FishingTrackerTest {
         assertEquals(3L, s.total())
         FishingTrackerStore.onFestivalEnd()
         assertFalse(s.active(3000))
-        // new shark after the end starts a fresh festival
         FishingTrackerStore.onCatch(sc("Tiger Shark"), 1, false, SkyblockLocation.HUB, 4000)
         assertEquals(1L, s.total())
         val barn = FishingTrackerStore.barn
@@ -154,7 +151,6 @@ class FishingTrackerTest {
         assertTrue(st.shouldDraw(true, 1_000_000 + 60_000))
         assertFalse(st.shouldDraw(true, 1_000_000 + 60_001))
         assertFalse(st.shouldDraw(false, 1_000_000))
-        // Either mode: island or recent cast is enough
         assertTrue(st.shouldDraw(true, 5_000_000, true))
         assertTrue(st.shouldDraw(false, 1_000_000, true))
         assertFalse(st.shouldDraw(false, 5_000_000, true))
@@ -178,7 +174,6 @@ class FishingTrackerTest {
         val sess = FishingTrackerLines.efficiency(b, false, 3_600_000)
         assertTrue(sess.any { it.contains("Session time §f1:00:00") })
         assertTrue(sess.any { it.contains("SC/hr §f1.0") })
-        // total mode ignores the session clock (activeMs is 0 here)
         val tot = FishingTrackerLines.efficiency(FishingTrackerStore.total(FishingTrackerStore.MAIN), true, 3_600_000)
         assertTrue(tot.any { it.contains("SC/hr §f-") })
         assertTrue(FishingTrackerLines.seaCreatures(b, false, 5, 65_000).any { it.contains("Session time §f1:05") })

@@ -22,18 +22,12 @@ import java.util.Locale
 object FarmingFortuneTemporary {
 	enum class Status { ACTIVE, UNKNOWN, INACTIVE }
 
-	/**
-	 * {@code crop} marks crop fortune for the selected crop only. {@code state} is the short status detail,
-	 * {@code condition} when the bonus applies, {@code iconId} the SkyBlock id behind it and {@code parts} the
-	 * value breakdown.
-	 */
 	@JvmRecord
 	data class Source(
 		val label: String, val value: Double, val status: Status, val crop: Boolean, val state: String,
 		val condition: String, val iconId: String, val parts: List<Line>
 	)
 
-	/** Buff state saved in {@code player_data}; {@code known} is false when the profile has none. */
 	@JvmRecord
 	data class Buffs(val known: Boolean, val harvestHarbingerTicks: Long, val cakeExpiresAt: Long, val hypercharge: Int, val overdrive: Int) {
 		companion object {
@@ -61,7 +55,6 @@ object FarmingFortuneTemporary {
 	)
 	private const val PHILLIP_GARDEN_LEVEL = 5
 	private const val TICK_MS = 50L
-	// SkyBlock year 1 began 2019-06-11 17:55 UTC; a year is 124 real hours and starts with three Spring months.
 	private const val SKYBLOCK_EPOCH_MS = 1_560_275_700_000L
 	private const val YEAR_MS = 124L * 60L * 60L * 1000L
 	private const val SPRING_MS = YEAR_MS / 4L
@@ -98,7 +91,6 @@ object FarmingFortuneTemporary {
 					continue
 				}
 				val expires = Leveling.longAmount(buff.get("expire_at"))
-				// Documented as epoch millis; accept seconds too rather than read them as 1970.
 				cake = maxOf(cake, if (expires < 100_000_000_000L) expires * 1000L else expires)
 			}
 		}
@@ -107,7 +99,6 @@ object FarmingFortuneTemporary {
 			FarmingFortuneEstimate.chipLevel(chips, "overdrive"))
 	}
 
-	/** Extra strength for Hypercharge-affected buffs; chip rarity isn't saved, so it follows the level cap like Cropshot. */
 	internal fun hyperchargeBonus(level: Int): Double {
 		if (level <= 0) {
 			return 0.0
@@ -125,7 +116,6 @@ object FarmingFortuneTemporary {
 
 	internal fun spring(nowMs: Long): Boolean = intoYear(nowMs) < SPRING_MS
 
-	/** Every source for {@code crop}, active ones first. */
 	internal fun sources(est: FarmingFortuneEstimate, crop: String?, garden: Garden, nowMs: Long): List<Source> {
 		val input = est.inputs
 		val buffs = input.buffs
@@ -259,7 +249,6 @@ object FarmingFortuneTemporary {
 		return Source(s.label, s.value * (1.0 + bonus), s.status, s.crop, s.state, s.condition, s.iconId, java.util.List.copyOf(parts))
 	}
 
-	// Each season shows the rolled bonus as stat lines; any other rolled stat means Farming Fortune isn't active.
 	private fun rolledOtherStat(lore: List<String>): Boolean =
 		listOf("foraging_fortune", "mining_fortune", "fishing_speed", "strength").any { PlayerStatsCalculator.loreStat(lore, it) > 0.0 }
 
@@ -274,7 +263,6 @@ object FarmingFortuneTemporary {
 	@JvmStatic
 	fun activeTotal(sources: List<Source>): Double = sources.filter { it.status == Status.ACTIVE }.sumOf { it.value }
 
-	/** Most each unconfirmed source could add; inactive ones are left out. */
 	@JvmStatic
 	fun possibleTotal(sources: List<Source>): Double = sources.filter { it.status == Status.UNKNOWN }.sumOf { it.value }
 }

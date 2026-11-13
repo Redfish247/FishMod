@@ -115,7 +115,6 @@ object HypixelCollectionsCache {
 		return itemsById[upper] ?: itemsById[upper.replace('-', ':')]
 	}
 
-	/** Wait briefly so profile parse can attach tier tables. */
 	@JvmStatic
 	fun awaitReady(timeoutMs: Long) {
 		if (!isReady()) requestRefresh()

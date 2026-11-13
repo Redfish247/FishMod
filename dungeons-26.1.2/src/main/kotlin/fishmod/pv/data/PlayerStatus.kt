@@ -9,7 +9,6 @@ package fishmod.pv.data
 
 import com.google.gson.JsonObject
 
-/** Hypixel player online status for the Home Status control. */
 class PlayerStatus private constructor(
     state: State?,
     gameType: String?,
@@ -106,7 +105,6 @@ class PlayerStatus private constructor(
         private val UNDERSCORES = Regex("_+")
 
         const val LOCATION_HIDDEN = "Location hidden"
-        // 2013-01-01, before any Hypixel login could have been recorded.
         private const val MIN_TIMESTAMP_MS = 1_356_998_400_000L
         private const val SECONDS_CUTOFF = 100_000_000_000L
         private const val FUTURE_TOLERANCE_MS = 5 * 60_000L
@@ -124,7 +122,6 @@ class PlayerStatus private constructor(
         fun online(gameType: String?, mode: String?, map: String?): PlayerStatus =
             PlayerStatus(State.ONLINE, gameType, mode, map, "", 0L, false)
 
-        /** `lastOnlineMs <= 0` means no reliable last-online time. */
         @JvmStatic
         @JvmOverloads
         fun offline(lastOnlineMs: Long = 0L): PlayerStatus = PlayerStatus(State.OFFLINE, "", "", "", "", lastOnlineMs, false)
@@ -133,7 +130,6 @@ class PlayerStatus private constructor(
         @JvmStatic
         fun offlineHidden(): PlayerStatus = PlayerStatus(State.OFFLINE, "", "", "", "", 0L, true)
 
-        /** Offline status from the `/player` object, once `/status` has said offline. */
         @JvmStatic
         fun offlineFromPlayer(player: JsonObject?, nowMs: Long): PlayerStatus {
             if (player != null && sessionHidden(player)) return offlineHidden()
@@ -165,7 +161,6 @@ class PlayerStatus private constructor(
             return flag != null && flag.isJsonPrimitive && flag.asJsonPrimitive.isBoolean && !flag.asBoolean
         }
 
-        /** Raw last-online inputs for logs; all public Hypixel fields. */
         @JvmStatic
         fun timestampDiagnostics(player: JsonObject?): String {
             if (player == null) return "player=missing"
@@ -182,7 +177,6 @@ class PlayerStatus private constructor(
 
         private fun plausible(ms: Long, nowMs: Long): Long = if (ms > nowMs + FUTURE_TOLERANCE_MS) 0L else ms
 
-        /** Accepts epoch seconds or milliseconds; returns 0 for missing or pre-Hypixel values. */
         @JvmStatic
         fun normalizeTimestamp(raw: Long): Long {
             if (raw <= 0L) return 0L
@@ -214,7 +208,6 @@ class PlayerStatus private constructor(
             }
         }
 
-        /** Hypixel `combat_3` / `dungeon_hub` → display name. */
         @JvmStatic
         fun prettyLocation(raw: String?): String {
             if (raw.isNullOrBlank()) return ""

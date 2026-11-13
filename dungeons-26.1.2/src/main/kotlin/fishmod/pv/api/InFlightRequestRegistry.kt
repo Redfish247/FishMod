@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Supplier
 
-/** Shares active work while keeping caller cancellation away from the shared source. */
 internal class InFlightRequestRegistry<K : Any, V> {
     private val requests = ConcurrentHashMap<K, Entry<V>>()
 

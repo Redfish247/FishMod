@@ -55,14 +55,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         fun scale(): Double = if (getScaleVal != null) getScaleVal.asDouble else 1.0
         fun isVisible(): Boolean = visibleVal == null || visibleVal.asBoolean
-        /** Setting-level on/off for the list pill (not "showing right now"). */
         fun isEnabledInList(): Boolean =
             enabledVal?.asBoolean ?: FeatureMasters.map[nameVal]?.invoke() ?: isVisible()
     }
 
     companion object {
         private val ENTRIES: MutableList<HudEntry> = ArrayList()
-        // HUDs hidden in the editor (right-click or the eye): faded and unclickable except the eye; not saved
         private val FROZEN: MutableSet<String> = HashSet()
         private const val EYE_W = 11
         private const val EYE_H = 9
@@ -617,16 +615,13 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun boxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { !frozen(it) && inBox(it, mx, my) }
 
-    // Frozen ones too, for right-click unhide
     private fun anyBoxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { inBox(it, mx, my) }
 
     // Beside the box (right, or left near the screen edge) so the name tag above/below and the resize grip never cover it
     private fun eyeX(e: HudEntry): Int { val r = e.getX().asInt + sw(e) + 3; return if (r + EYE_W <= this.width) r else e.getX().asInt - EYE_W - 3 }
     private fun eyeY(e: HudEntry) = e.getY().asInt
-    // The eye shows on the hovered, selected and hidden HUDs
     private fun eyeShown(e: HudEntry, hover: HudEntry?) = frozen(e) || e === selected || e === hover
 
-    // Box or its eye strip, so the eye stays visible while the mouse moves onto it
     private fun hoverEntry(mx: Int, my: Int): HudEntry? =
         shown().lastOrNull { inBox(it, mx, my) || (mx in eyeX(it)..(eyeX(it) + EYE_W) && my in eyeY(it)..(eyeY(it) + EYE_H)) }
 
@@ -720,7 +715,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val w = sw(e)
             val h = sh(e)
             drawExample(ctx, e, x, y)
-            // ~65% opacity look for hidden HUDs: dim it toward the background
             if (frozen(e)) ctx.fill(x, y, x + w, y + h, 0x59000000)
             when {
                 e === sel -> {
@@ -809,7 +803,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         val dx = doneX().toFloat()
         val dHov = inRect(mouseX, mouseY, doneX(), btnY(), BTN_W, BTN_H)
-        // Dark pill, accent ring, white text: readable on any accent colour
         UiRecorder.roundedRectRing(dx, by, bw, bh, bh / 2f, 1.5f, if (dHov) 0xF2231A1D.toInt() else 0xE614181D.toInt(), if (dHov) ACCENT_HOVER else ACCENT)
         centerText("Done", dx + bw / 2f, ty, ts, 0xFFFFFFFF.toInt())
 

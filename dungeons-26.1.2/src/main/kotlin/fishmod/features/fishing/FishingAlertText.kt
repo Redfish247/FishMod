@@ -24,7 +24,6 @@ object FishingAlertText {
         return Trophy(m.groupValues[1] == "FROG", m.groupValues[2], TrophyRarity.valueOf(m.groupValues[3]))
     }
 
-    // "NEW DISCOVERY: ..." details; fish only count in Crimson Isle unless it is Obfuscated 1 (Feesh rule)
     @JvmStatic fun newDiscovery(plain: String, crimsonIsle: Boolean): String? {
         if (!plain.startsWith("NEW DISCOVERY:")) return null
         val d = DISCOVERY_RE.matchEntire(plain)?.groupValues?.get(1) ?: return null
@@ -36,7 +35,6 @@ object FishingAlertText {
 
     @JvmStatic fun isHotspotName(plain: String): Boolean = plain.length == 7 && HOTSPOT_RE.matches(plain)
 
-    // "1m 02s", "59s", "1h 2m" -> seconds; null when no unit found
     @JvmStatic fun parseSeconds(text: String): Int? {
         var total = 0
         var any = false
@@ -63,13 +61,11 @@ object FishingAlertText {
         return name to m.groupValues[2].toInt()
     }
 
-    // Bait lore "Bait Remaining: 1,234" -> 1234
     @JvmStatic fun baitRemaining(lore: String): Int? {
         if (!lore.contains("Bait Remaining:")) return null
         return lore.substringAfter(":").replace(",", "").trim().toIntOrNull()
     }
 
-    // Replacement for the catch line in compact mode, or null to leave it alone
     @JvmStatic fun compactDoubleHook(plain: String): String? = if (plain.startsWith(DOUBLE_HOOK)) "§b§lDOUBLE HOOK!" else null
 
     @JvmStatic fun compactSpawn(sc: SeaCreature): String {

@@ -25,14 +25,12 @@ object LootTrackerStore {
     class Data {
         @JvmField var runs: Int = 0
         @JvmField var rows: MutableList<Row> = ArrayList()
-        // per-floor split (E, F1-F7, M1-M7); runs from before this existed only count in the totals above
         @JvmField var floors: MutableMap<String, FloorData> = LinkedHashMap()
     }
 
     private val ROMAN = mapOf("I" to 1, "II" to 2, "III" to 3, "IV" to 4, "V" to 5, "VI" to 6, "VII" to 7)
     private val FLOOR_RE = Regex("^(Master )?Catacombs - (?:Floor ([IVX]+|[0-9])|(Entrance))", RegexOption.IGNORE_CASE)
 
-    /** Floor key (E, F1-F7, M1-M7) from a Croesus run screen title, or null when unparseable. */
     @JvmStatic
     fun floorFromTitle(title: String): String? {
         val m = FLOOR_RE.find(title.trim()) ?: return null
@@ -46,7 +44,6 @@ object LootTrackerStore {
     @JvmStatic
     fun floorOrder(key: String): Int = if (key == "E") 0 else (if (key[0] == 'F') 0 else 7) + key.substring(1).toInt()
 
-    /** Floors with at least one recorded run, in E, F1-F7, M1-M7 order. */
     @JvmStatic
     @Synchronized
     fun floorsWithRuns(): List<String> {
@@ -110,14 +107,12 @@ object LootTrackerStore {
         val rows = floorData(floor).rows
         val old = findRow(rows, name, id)?.count ?: 0
         setCountIn(rows, name, id, count)
-        // keep the All totals in step with the floor edit
         val all = data!!.rows
         val cur = findRow(all, name, id)?.count ?: 0
         setCountIn(all, name, id, Math.max(0, cur + Math.max(0, count) - old))
         save()
     }
 
-    /** Clears one floor and takes its runs and drops back out of the All totals. */
     @JvmStatic
     @Synchronized
     fun clear(floor: String?) {

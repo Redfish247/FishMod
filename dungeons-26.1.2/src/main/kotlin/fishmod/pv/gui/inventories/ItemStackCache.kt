@@ -17,7 +17,6 @@ import net.minecraft.world.item.ItemStack
  */
 object ItemStackCache {
 	private val BASE_CACHE = ConcurrentHashMap<String, ItemStack>()
-	/** SkyBlock id → `hypixel_skyblock:item/...` for custom GUI icons. */
 	private val ITEM_MODEL_BY_ID = ConcurrentHashMap<String, String>()
 
 	@JvmStatic

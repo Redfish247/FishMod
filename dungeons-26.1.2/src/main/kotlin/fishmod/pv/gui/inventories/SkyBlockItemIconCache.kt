@@ -22,10 +22,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.texture.DynamicTexture
 import net.minecraft.resources.Identifier
 
-/**
- * Registers Hypixel SkyBlock item PNGs as dynamic GUI textures
- * (paper items, drills, attuned daggers, animated icons, …).
- */
 object SkyBlockItemIconCache {
 	private val BY_MODEL = ConcurrentHashMap<String, IconState>()
 
@@ -35,12 +31,10 @@ object SkyBlockItemIconCache {
 		BY_MODEL.clear()
 		val client: Minecraft? = Minecraft.getInstance()
 		if (client != null && ids.isNotEmpty()) {
-			// Free GPU textures; ids are deterministic so a re-request re-registers them.
 			client.execute { ids.forEach { client.textureManager.release(it) } }
 		}
 	}
 
-	/** Kick pack download; icons register as textures become available. */
 	@JvmStatic
 	fun ensurePack() {
 		SkyBlockPackCache.start()
@@ -85,7 +79,6 @@ object SkyBlockItemIconCache {
 		}
 		SkyBlockPackCache.start()
 		if (!SkyBlockPackCache.isReady()) {
-			// Pack still downloading - allow another attempt later.
 			state.requested.set(false)
 			return
 		}
@@ -144,7 +137,6 @@ object SkyBlockItemIconCache {
 		return composed
 	}
 
-	/** Animated item sheets are width×(N·width); keep the first frame for GUI icons. */
 	private fun firstFrame(image: NativeImage): NativeImage {
 		val width = image.width
 		val height = image.height

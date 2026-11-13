@@ -74,7 +74,6 @@ class ProfileSnapshot(
             this(id, name, tier, progress, maxed, 0f, xpHover, tierKills, emptyList())
     }
 
-    /** Coop bank ledger row from `profiles[].banking.transactions[]`. */
     class BankTransaction(action: String?, amount: Double, initiatorName: String?, timestampMs: Long) {
         @get:JvmName("action") val action: String = action ?: ""
         @get:JvmName("amount") val amount: Double = maxOf(0.0, amount)
@@ -82,7 +81,6 @@ class ProfileSnapshot(
         @get:JvmName("timestampMs") val timestampMs: Long = maxOf(0L, timestampMs)
     }
 
-    /** Active `slayer.slayer_quest` row. `tier` is player-facing (T1+). */
     class ActiveSlayerQuest(
         typeId: String?,
         name: String?,
@@ -101,7 +99,6 @@ class ProfileSnapshot(
         fun present(): Boolean = name.isNotBlank() && tier > 0
     }
 
-    /** `leveling.emblem_unlocks` + optional `leveling.selected_symbol`. */
     class EmblemInfo(selected: String?, unlocked: List<String>?) {
         @get:JvmName("selected") val selected: String = selected ?: ""
         @get:JvmName("unlocked") val unlocked: List<String> = unlocked?.toList() ?: emptyList()
@@ -168,7 +165,6 @@ class ProfileSnapshot(
 
     fun skyBlockProgress(): Float = skyBlockXpIntoLevel / 100.0f
 
-    /** False while [skills] still holds the loading placeholders. */
     fun skillsLoaded(): Boolean = skills.any { it.xpHover != LOADING_HOVER }
 
     /**

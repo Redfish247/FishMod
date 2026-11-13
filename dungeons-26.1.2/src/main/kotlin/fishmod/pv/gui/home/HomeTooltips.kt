@@ -17,7 +17,6 @@ import java.util.Locale
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Username history, bank, and status tooltip builders for Home. */
 object HomeTooltips {
 	const val ENABLED_GREEN = 0xFF55FF55.toInt()
 	const val OFFLINE_RED = 0xFFFF5555.toInt()
@@ -77,7 +76,6 @@ object HomeTooltips {
 				if (entries.isEmpty()) {
 					tip.add(PvTooltip.Line.meta("No history"))
 				} else {
-					// Newest first.
 					for (i in entries.indices.reversed()) {
 						val entry = entries[i]
 						val current = i == entries.size - 1
@@ -162,7 +160,6 @@ object HomeTooltips {
 		return tip
 	}
 
-	/** First line is exactly the status button text; the rest only add detail. */
 	@JvmStatic
 	fun offlineLines(playerStatus: PlayerStatus, nowMs: Long): List<String> {
 		val lines = ArrayList<String>(2)
@@ -185,7 +182,6 @@ object HomeTooltips {
 		if (iso.isNullOrBlank()) {
 			return ""
 		}
-		// Ashcon: 2015-04-01T00:00:00.000Z -> 2015-04-01
 		val t = iso.indexOf('T')
 		return if (t > 0) iso.substring(0, t) else iso
 	}

@@ -19,7 +19,6 @@ import fishmod.pv.dungeons.DungeonModifierScanner
 import fishmod.pv.dungeons.EssenceShopData
 import fishmod.pv.networth.InventoryDecoder
 
-/** Parses catacombs / dungeon snapshot fields from member JSON. */
 internal object ProfileDungeonParser {
     private val DUNGEON_CLASSES = arrayOf("healer", "mage", "berserk", "archer", "tank")
     private val DAMAGE_CLASSES = arrayOf("mage", "berserk", "archer", "healer", "tank")

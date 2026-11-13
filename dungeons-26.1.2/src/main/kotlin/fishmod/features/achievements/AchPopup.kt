@@ -9,7 +9,6 @@ import fishmod.utils.sound.SoundManager
 import net.minecraft.client.Minecraft
 import fishmod.features.achievements.AchSettings as S
 
-// Custom unlock banner drawn with the UI renderer, plus the layered unlock sounds
 object AchPopup {
 
     val STYLES = arrayOf("Fanfare", "Chime", "Level Up", "Vanilla")
@@ -111,7 +110,6 @@ object AchPopup {
     }
 
     private fun draw(c: Card, x: Float, y: Float, p: Float) {
-        // Centered glow: stacked expanded rects fading outward on every side
         for (i in 14 downTo 1) {
             val e = i * 2.5f
             R.fillRoundedRect(x - e, y - e, W + 2 * e, H + 2 * e, 10f + e, a(((0x2A * (15 - i)) / 15 shl 24) or 0xFFC83D, p))

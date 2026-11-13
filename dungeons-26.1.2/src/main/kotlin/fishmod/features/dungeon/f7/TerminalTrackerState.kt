@@ -1,6 +1,5 @@
 package fishmod.features.dungeon.f7
 
-// Pure Terminal Tracker bookkeeping (no Minecraft types) so runs can be replayed in tests
 class TerminalTrackerState {
     class Slot(val label: String, val x: Double?, val z: Double?) {
         val shown = when (label[0]) { 'T' -> label.substring(1); 'D' -> "Dev"; else -> if (label == "L1") "LL" else if (label == "L2") "RL" else label }
@@ -53,10 +52,8 @@ class TerminalTrackerState {
         if (s != null) gates[s] = now
     }
 
-    // Section counter if valid, else our own
     fun current(counter: Int): Int = counter.takeIf { it in 1..MAX_SECTION } ?: viewSection
 
-    // Section from where the player stood (survives reconnects), else the Section counter
     fun detectSection(x: Double?, z: Double?, counter: Int): Int {
         if (x != null && z != null) {
             var best = 0
@@ -70,7 +67,6 @@ class TerminalTrackerState {
         return current(counter)
     }
 
-    /** berserk/s1DeviceCounts come from the player's class; null slot = ignored. */
     fun record(name: String, objective: String, x: Double?, z: Double?, counter: Int, berserk: Boolean, s1DeviceCounts: Boolean, now: Long): Pair<Int, Slot>? {
         val section = detectSection(x, z, counter)
         if (section !in 1..MAX_SECTION) return null
@@ -98,7 +94,6 @@ class TerminalTrackerState {
         return section to slot
     }
 
-    // Berserk's S1/S2 device counts as the S4 device
     private fun preCompleteS4Device(name: String, now: Long): Slot? {
         val dev = list(4).firstOrNull { it.label == "D1" && !it.done } ?: return null
         dev.player = name

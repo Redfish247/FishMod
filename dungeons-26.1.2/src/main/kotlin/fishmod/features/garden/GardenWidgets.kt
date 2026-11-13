@@ -6,7 +6,6 @@ import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import fishmod.features.garden.GardenSettings as S
 
-// Composter and Jacob's Contest HUDs from the tab list, rare crop counter
 object GardenWidgets {
 
     private var composter: List<String> = emptyList()
@@ -71,7 +70,6 @@ object GardenWidgets {
         "sunflower" to "§e", "moonflower" to "§9", "wild rose" to "§c",
     )
 
-    // Label in grey, value coloured per row; INACTIVE / 0 shown in the warning colour
     private fun composterLine(l: String): String {
         val t = l.trim()
         val i = t.indexOf(':')
@@ -89,7 +87,6 @@ object GardenWidgets {
         return Garden.legacy(S.gardenComposterLabelColor) + label + " " + Garden.legacy(vc) + v
     }
 
-    // "Starts In: 37m" gets a yellow value; crop rows get their crop colour
     private fun jacobLine(l: String): String {
         val t = l.trim()
         val i = t.indexOf(':')

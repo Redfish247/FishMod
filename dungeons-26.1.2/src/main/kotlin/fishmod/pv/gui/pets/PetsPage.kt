@@ -25,7 +25,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Left ~56% compact pet inventory + right ~44% selected-pet details. */
 class PetsPage {
 	private var snapshot: PetSnapshot = PetSnapshot.empty()
 	private var missingPets: List<PetLoreResolver.PetType> = listOf()
@@ -101,7 +100,6 @@ class PetsPage {
 		hoverPetTip = null
 		hoverMissingName = null
 		autopetTip = null
-		// Compact pets grid (~56%) + wider details inspector (~44%).
 		var leftW = maxOf(140, Math.round(w * 0.70).toInt())
 		val rightW = maxOf(120, w - leftW - GAP)
 		leftW = w - rightW - GAP
@@ -309,10 +307,8 @@ class PetsPage {
 		PvDraw.roundedRing(g, sx, sy, slot, slot, 3, border, PvDraw.C_ALL)
 
 		val icon = petIcon(pet)
-		// Native 16px only - fractional upscale softens skull / pet textures.
 		val draw = ITEM_ICON
 		val ix = sx + (slot - draw) / 2
-		// Nudge icon up 1px so level "100" sits in the bottom band without crowding.
 		val iy = sy + maxOf(1, (slot - draw) / 2 - 1)
 		SkyBlockIconRenderer.draw(g, icon, pet.neuId, ix, iy, draw)
 
@@ -494,7 +490,6 @@ class PetsPage {
 			return source.sortedWith(comparator)
 		}
 
-		/** Dark rarity-tinted slot fill (keeps icons readable). */
 		private fun raritySlotBackground(rarityArgb: Int, active: Boolean, selected: Boolean, hovered: Boolean): Int {
 			val r = (rarityArgb ushr 16) and 0xFF
 			val green = (rarityArgb ushr 8) and 0xFF

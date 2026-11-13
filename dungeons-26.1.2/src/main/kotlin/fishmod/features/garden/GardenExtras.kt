@@ -16,7 +16,6 @@ import net.minecraft.world.item.Items
 import kotlin.math.floor
 import fishmod.features.garden.GardenExtraSettings as X
 
-// Shared helpers + init for the Working-On garden cards (display/highlight/chat only, nothing is clicked or sent for the player)
 object GardenExtras {
 
     fun init() {
@@ -29,7 +28,6 @@ object GardenExtras {
         }
     }
 
-    // Clickable + copied link to the mutations website
     private fun mutationsLink() {
         if (!X.gardenMutationsLinkOn) { FishUtil.addChatMessage(Component.literal("§7Mutations Link is off in the Farming tab.")); return }
         val url = X.gardenMutationsUrl.trim()
@@ -66,7 +64,6 @@ object GardenExtras {
     private val stacks = HashMap<Item, ItemStack>()
     fun stackOf(item: Item): ItemStack = stacks.getOrPut(item) { ItemStack(item) }
 
-    // Small item badge at the slot's bottom-right
     fun badge(ctx: GuiGraphicsExtractor, item: Item, x: Int, y: Int, scale: Float = 0.6f) {
         val p = ctx.pose()
         p.pushMatrix(); p.translate(x + 16 - 16 * scale, y + 16 - 16 * scale); p.scale(scale, scale)
@@ -74,7 +71,6 @@ object GardenExtras {
         p.popMatrix()
     }
 
-    // Header line + indented children from the tab list; header matched anywhere in the line
     fun tabBlock(header: String): List<String> {
         val out = ArrayList<String>()
         var inside = false

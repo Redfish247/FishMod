@@ -147,7 +147,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		}
 	}
 
-	/** Same SkyBlock profile and page, different co-op member. */
 	fun forCoopMember(playerName: String?, coopProfileId: String?): ProfileViewerScreen {
 		val next = ProfileViewerScreen(playerName, tab)
 		next.subSelection.putAll(subSelection)
@@ -172,7 +171,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		val invSearch = EditBox(font, 0, 0, 100, InventorySplitLayout.SEARCH_H, Component.translatable("fishmod.pv.inv.search"))
 		invSearch.setMaxLength(64)
 		invSearch.setBordered(false)
-		// EditBox colours are ARGB - stripping alpha makes typed text invisible.
 		invSearch.setTextColor(PvDraw.COLOR_TEXT)
 		invSearch.setTextColorUneditable(PvDraw.COLOR_MUTED)
 		invSearch.setValue(inventorySearchQuery)
@@ -196,7 +194,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		playerSearch = search
 
 		if (fetchStarted) {
-			// removed() drops this while a link confirm screen is up; late networth still needs to land.
 			ProfileFetcher.addNetworthListener(networthListener)
 			return
 		}
@@ -417,7 +414,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		graphics.pose().pushMatrix()
 		graphics.pose().translate(slider.offsetX, slider.offsetY)
 		graphics.pose().scale(slider.renderScale, slider.renderScale)
-		// scale slider hidden
 		graphics.pose().popMatrix()
 
 		if (dataReady && (socialsMenu.isOpen() || searchHistory.isVisible())) {
@@ -561,10 +557,8 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		}
 	}
 
-	/** Screen size in the scaled viewport's coordinates, so tooltips clamp to what is actually visible. */
 	private fun virtualW(): Int = scaleViewport?.let { ceil(it.toVirtualX(width.toDouble())).toInt() } ?: width
 
-	/** Sum of the visible virtual edges, so an overlay centred as (size - panel) / 2 lands mid-screen. */
 	private fun overlayW(): Int =
 		scaleViewport?.let { Math.round(it.toVirtualX(0.0) + it.toVirtualX(width.toDouble())).toInt() } ?: width
 
@@ -579,7 +573,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 			return 1.0f
 		}
 		val t = maxOf(0.0f, minOf(1.0f, elapsed / OPEN_ANIM_MS.toFloat()))
-		// Cubic ease-out: snappy expand from center.
 		val eased = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t)
 		return OPEN_SCALE_START + (1.0f - OPEN_SCALE_START) * eased
 	}
@@ -616,7 +609,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 			PvDraw.fill(g, panelX + 4, panelY + 4, panelW - 8, panelH - 8, 0x33AA0000)
 		}
 
-		// Loading Data + every unlocked threat, stacked oldest → newest.
 		val rows = 1 + stages.size
 		val blockH = rows * lineH - 3
 		val topY = panelY + maxOf(10, (panelH - blockH) / 2)
@@ -1109,7 +1101,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 			return true
 		}
 		if (uiInteractive() && homeOverview && (key == fishmod.compat.GLFW.GLFW_KEY_ESCAPE || key == fishmod.compat.GLFW.GLFW_KEY_BACKSPACE) && homePage.requestSbLevelBack()) {
-			// ESC / Backspace collapses SB Level overlay without closing PV.
 			return true
 		}
 		if (uiInteractive() && dungeonOverview() && dungeonPage.keyPressed(key)) {
@@ -1174,7 +1165,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 			ProfileViewer.LOGGER.warn("Bad social link {}", url, e)
 			return
 		}
-		// Same path as chat links (honours the confirm prompt); still confirm if chat links are off.
 		if (!clickUrlAction(Minecraft.getInstance(), this, uri)) {
 			ConfirmLinkScreen.confirmLinkNow(this, uri)
 		}

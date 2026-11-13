@@ -88,7 +88,6 @@ object GradientNick {
         return out.toString()
     }
 
-    // Blend in OKLab so brightness stays even; raw RGB lerp makes light/dark bands between hues
     private fun mixOklab(a: IntArray, b: IntArray, t: Double): IntArray {
         val la = toOklab(a)
         val lb = toOklab(b)

@@ -53,11 +53,6 @@ object DungeonModifierScanner {
 		return Mods(ring, hecatomb, scarf)
 	}
 
-	/**
-	 * Catacombs Graduate attribute shard: +2% class XP per level, max 10 → +20%.
-	 * Stored on the profile as `attributes.catacombs_graduate`.
-	 * When the attribute is absent from the API payload, assume max (Adjectils does the same).
-	 */
 	@JvmStatic
 	fun readCatacombsGraduateBonus(member: JsonObject?): Double {
 		if (member == null) return 0.20
@@ -76,7 +71,6 @@ object DungeonModifierScanner {
 	fun readEssenceClassBonuses(member: JsonObject?): MutableMap<String, Double> {
 		val out = HashMap<String, Double>()
 		val dungeons = obj(member?.get("dungeons")) ?: return out
-		// Common shapes: dungeons.perks / player_data.perks / essence upgrades on classes.
 		readPerkMap(out, obj(dungeons.get("perks")))
 		obj(member?.get("player_data"))?.let { readPerkMap(out, obj(it.get("perks"))) }
 		val classes = obj(dungeons.get("player_classes"))

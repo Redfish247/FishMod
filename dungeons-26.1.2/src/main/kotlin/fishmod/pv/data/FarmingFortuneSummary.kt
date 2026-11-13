@@ -23,7 +23,6 @@ object FarmingFortuneSummary {
 		SKILLS("Skills"), GARDEN("Garden"), SHARDS("Shards"), ACCESSORIES("Accessories")
 	}
 
-	/** {@code lines} holds counted and unavailable sources; temporary ones are listed separately. */
 	@JvmRecord
 	data class Group(val category: Category, val total: Double, val lines: List<Line>)
 
@@ -87,7 +86,6 @@ object FarmingFortuneSummary {
 		return SHORT[line.label] ?: line.label
 	}
 
-	/** Comma-joined short source names, for the second line of a category tile. */
 	@JvmStatic
 	fun detail(group: Group): String {
 		val out = StringBuilder()
@@ -106,7 +104,6 @@ object FarmingFortuneSummary {
 	@JvmStatic
 	fun shardKey(label: String?): String? = SHARD_KEYS[label]
 
-	/** Tile detail for the tool line when there is no tool to show. */
 	@JvmStatic
 	fun missingToolDetail(toolLine: Line): String = when (toolLine.note) {
 		"Inventory API off" -> "Inventory API off"
@@ -123,7 +120,6 @@ object FarmingFortuneSummary {
 		else -> "No $crop tool in inventories or the toolkit."
 	}
 
-	/** Display name without the reforge or "Mk." so the page can show it in one short line. */
 	@JvmStatic
 	fun shortToolName(stack: InventoryDecoder.Stack): String {
 		val raw = stack.displayName?.let { TextStrip.plain(it).trim() } ?: ""

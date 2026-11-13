@@ -19,7 +19,6 @@ import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 
-// JEI-style side panel of NEU Skyblock items; cached icons, only visible rows drawn, filter only on query change.
 object SkyItemList {
 
     private const val CELL = 20
@@ -39,7 +38,6 @@ object SkyItemList {
     private var shown: IntArray = IntArray(0)
     private var cat: IntArray = IntArray(0)
     private var allIdx: IntArray = IntArray(0)
-    // Custom in-category order (Shards, Gems & Ores, Garden): sub-group, family, tier, then name
     private val catOrder = arrayOfNulls<IntArray>(23)
     private var selCat = 0
 
@@ -48,7 +46,6 @@ object SkyItemList {
         "Minions", "Cosmetics", "Dyes", "Shards", "Trophy Fish & Frogs", "Fishing", "Reforges", "Gems & Ores",
         "Garden", "Dungeon", "Consumables", "NPCs", "Travel Scrolls", "Vanilla"
     )
-    // Tab order top to bottom, two columns (Favorites first); values index CAT_NAMES
     private val TAB_ORDER = intArrayOf(8, 0, 1, 2, 3, 4, 14, 5, 6, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 7)
     private val CAT_ICONS: Array<net.minecraft.world.item.Item> = arrayOf(
         net.minecraft.world.item.Items.BOOKSHELF,
@@ -90,7 +87,6 @@ object SkyItemList {
         return ""
     }
 
-    // Sort keys for the categories that get a custom order: (sub-group, family, tier)
     private fun sortKey(c: Int, id: String): Triple<Int, String, Int> = when (c) {
         17 -> {
             val k = kindOf(id)
@@ -138,15 +134,12 @@ object SkyItemList {
 
     private val MINION_RE = Regex("_GENERATOR_[0-9]+$")
 
-    // Category from the item type words after the rarity in the last NEU lore lines ("LEGENDARY DUNGEON SWORD"), then id/name hints
     private val MOB_RE = Regex("[(](Monster|Boss|Miniboss|Animal|Sea Creature|Pest|Mythological Creature|Mayor|Retired Mayor)[)]$", RegexOption.IGNORE_CASE)
 
-    // NEU lists mobs, bosses and mayors as items; they are not items, so they are left out of the list
     private fun isMob(id: String): Boolean = MOB_RE.containsMatchIn(TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim())
 
     private fun isNpc(id: String): Boolean = id.endsWith("_NPC") || TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim().endsWith("(NPC)")
 
-    // Plain Minecraft items: id is the vanilla item name (or NAME:data) and NEU gives them no item type
     private fun isVanilla(id: String, itemId: String?): Boolean {
         if (itemId == null || !itemId.startsWith("minecraft:") || id.any { it.isLowerCase() } || id.contains(';')) return false
         return id.contains(':') || itemId.removePrefix("minecraft:").uppercase() == id
@@ -218,7 +211,6 @@ object SkyItemList {
         return ""
     }
 
-    // Rarity is the keyword in the last NEU lore lines; 0 = unknown
     private fun rarityOf(id: String): Int {
         val lore = NeuRepo.get(id)?.getAsJsonArray("lore") ?: return 0
         for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
@@ -248,7 +240,6 @@ object SkyItemList {
         }.onFailure { FishDiag.fail("SkyItemList.2", "favorites save failed", it) }
     }
 
-    // layout, rewritten by layout() (ints only, no allocation)
     private var px = 0; private var py = 0; private var pw = 0; private var ph = 0
     private var cols = 1; private var rowsVis = 1
 
@@ -265,7 +256,6 @@ object SkyItemList {
 
     private fun on() = FishSettings.skyItemList
 
-    // Hidden over the storage/ender chest overlay
     private fun hiddenFor(screen: AbstractContainerScreen<*>) = fishmod.features.storage.StorageOverlay.isActive(screen) || fishmod.features.dungeon.LeapMenu.isActive(screen)
 
     @JvmStatic fun panelActive() = on() && System.currentTimeMillis() - fishmod.utils.rendering.FishHudLayer.panelSeenMs() < 150
@@ -336,7 +326,6 @@ object SkyItemList {
         return if (idx < shownCount) idx else -1
     }
 
-    // Corner-chopped fills give a rounded look without textures
     private fun rarityBox(ctx: GuiGraphicsExtractor, x0: Int, y0: Int, x1: Int, y1: Int, c: Int) {
         if (!FishSettings.skyItemListRarityRound) { ctx.fill(x0, y0, x1, y1, c); return }
         ctx.fill(x0 + 2, y0, x1 - 2, y1, c)
@@ -392,7 +381,6 @@ object SkyItemList {
             ctx.fill(gridRight() - 4, barY, gridRight() - 2, barY + barH, accent)
         }
         val tabHover = drawTabs(ctx, mx, my, accent)
-        // afterExtract runs after the screen's deferred pass, so flush the tooltip ourselves
         if (tabHover >= 0) {
             ctx.setTooltipForNextFrame(font, Component.literal(CAT_NAMES[tabHover]), mx, my)
             ctx.extractDeferredElements(mx, my, 0f)
@@ -406,7 +394,6 @@ object SkyItemList {
 
     private fun gridRight() = px + pw - TAB_W
 
-    // One tab column: scrolls with the wheel when the screen is too short for every tab
     private var tabScroll = 0
     private fun tabRows() = ((ph - HEAD_H - 2) / TAB_H).coerceAtLeast(1)
     private fun tabMaxScroll() = (TAB_ORDER.size - tabRows()).coerceAtLeast(0)
@@ -419,7 +406,6 @@ object SkyItemList {
         return if (row in 0 until tabRows() && slot in TAB_ORDER.indices) TAB_ORDER[slot] else -1
     }
 
-    // Category tabs down the far right edge; returns the hovered tab or -1
     private fun drawTabs(ctx: GuiGraphicsExtractor, mx: Int, my: Int, accent: Int): Int {
         val hov = tabAt(mx.toDouble(), my.toDouble())
         val x0 = gridRight()
@@ -440,14 +426,11 @@ object SkyItemList {
 
     private val PET_ID = Regex("^([A-Z0-9_]+);([0-5])$")
 
-    // Item tooltip + price lines, plus the yellow click key (mirrors onClick) when that setting is on
     private fun tooltipLines(id: String, stack: ItemStack): List<Component> {
-        // The list's icon stacks carry no Skyblock id; tag a copy so the normal price lines (Value, 3 Day Avg, Low BIN, NPC Sell) are added to it
         val tagged = stack.copy()
         val petTier = PET_ID.matchEntire(id)?.takeIf { NeuRepo.get(id)?.get("displayname")?.asString?.contains("[Lvl") == true }
         val tag = net.minecraft.nbt.CompoundTag()
         if (petTier != null) {
-            // List pets are shown at max level: price them as a PET stack with enough xp
             val tier = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC")[petTier.groupValues[2].toInt()]
             tag.putString("id", "PET")
             tag.putString("petInfo", "{\"type\":\"${petTier.groupValues[1]}\",\"tier\":\"$tier\",\"exp\":1.0E9}")
@@ -465,7 +448,6 @@ object SkyItemList {
         return lines
     }
 
-    // Bazaar items also get their sell offer / insta sell price (the normal lines only cover Value, 3 Day Avg, Low BIN, NPC)
     private fun bazaarLines(id: String): List<Component> {
         if (!FishSettings.itemTooltipPrices) return emptyList()
         val key = bazaarKey(id)
@@ -487,7 +469,6 @@ object SkyItemList {
 
     private val LVL_RE = Regex("^\\[Lvl [^\\]]*]\\s*")
 
-    // Search term: NEU display name, book enchant name from lore, pet level tag dropped
     private fun searchName(id: String): String {
         val o = NeuRepo.get(id)
         var name = TextStrip.plain(o?.get("displayname")?.asString ?: id).trim()
@@ -495,7 +476,6 @@ object SkyItemList {
         return LVL_RE.replace(name, "")
     }
 
-    // One shift-click = one /bz or /ahs command
     private fun openMarket(id: String) {
         val conn = Minecraft.getInstance().connection ?: return
         val name = searchName(id)
@@ -558,7 +538,6 @@ object SkyItemList {
         return true
     }
 
-    // Screen closed: a stuck drag or focused search box would swallow input on the next container screen
     @JvmStatic
     fun onClosed() {
         sbDrag = false

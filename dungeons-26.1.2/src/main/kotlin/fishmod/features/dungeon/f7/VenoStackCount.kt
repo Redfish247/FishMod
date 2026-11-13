@@ -19,7 +19,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import fishmod.utils.debug.FishDiag
 
-// Counts own Mage beams that hit Storm while holding a Venomous weapon (stacks cap at 40, expire 5s after last hit).
 object VenoStackCount {
 
     private const val NAME = "Veno Stack Count"

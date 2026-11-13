@@ -15,7 +15,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.Locale
 
-/** NEU {@code hotflayout.json} perk defs for Heart of the Forest. */
 object ForagingHotfData {
 	@JvmRecord
 	data class PerkDef(val id: String, val name: String, val x: Int, val y: Int, val maxLevel: Int, val ability: Boolean)
@@ -49,7 +48,6 @@ object ForagingHotfData {
 		}
 	}
 
-	/** Reload after NEU-REPO updates. */
 	@JvmStatic
 	fun reload() {
 		synchronized(this) {
@@ -77,7 +75,6 @@ object ForagingHotfData {
 	@JvmStatic
 	fun displayName(apiId: String?): String = perk(apiId)?.name ?: titleCase(apiId ?: "")
 
-	/** 0 when the perk isn't in NEU's layout, so its max is unknown. */
 	@JvmStatic
 	fun maxLevel(apiId: String?): Int {
 		val def = perk(apiId) ?: return 0

@@ -23,10 +23,6 @@ import net.minecraft.resources.Identifier
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Bestiary left panel: family grid for the selected island/category.
- * Right island buttons live in `ProfileViewerScreen` (inventory split layout).
- */
 class BestiaryPage {
 	private var snapshot: BestiarySnapshot = BestiarySnapshot.empty()
 	private var categoryId = ""
@@ -121,7 +117,6 @@ class BestiaryPage {
 		var ly = y + PAD
 		val lw = maxOf(8, w - PAD * 2)
 
-		// Four stat boxes across the top: category, tiers, milestone, last kill.
 		val boxGap = 4
 		val boxW = (lw - boxGap * 3) / 4
 		val boxH = font.lineHeight * 2 + 12
@@ -226,7 +221,6 @@ class BestiaryPage {
 		g.disableScissor()
 
 		if (linked != null) {
-			// Rebuild the tooltip only when the hovered family changes.
 			if (linked !== tipFamily) {
 				tipFamily = linked
 				tipCache = tooltipFor(linked)
@@ -236,7 +230,6 @@ class BestiaryPage {
 		}
 	}
 
-	/** Family under the cursor on the icon grid. */
 	private fun findLinkedFamily(
 		families: List<BestiarySnapshot.FamilyProgress>,
 		cols: Int,
@@ -382,7 +375,6 @@ class BestiaryPage {
 		return icon
 	}
 
-	/** Draw after island buttons / frame tabs so tips paint on top. */
 	fun renderTooltip(g: GuiGraphicsExtractor, font: Font, mouseX: Int, mouseY: Int, screenW: Int, screenH: Int) {
 		if (hoverTip.isNotEmpty()) {
 			PvTooltip.drawComponents(g, font, hoverTip, mouseX, mouseY, screenW, screenH)
@@ -409,7 +401,6 @@ class BestiaryPage {
 			return "$shown..."
 		}
 
-		/** Slot background: green when maxed, orange when started, gray when untouched. */
 		private fun slotColor(fam: BestiarySnapshot.FamilyProgress?): Int {
 			if (fam == null || fam.tier <= 0) {
 				return 0xFF2A2A32.toInt()

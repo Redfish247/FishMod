@@ -65,7 +65,6 @@ object NbtAttrs {
         return tag.get(key) as? CompoundTag
     }
 
-    /** Numeric entries keyed lowercase so Hypixel ids like `ultimate_chimera` / `rend` match. */
     @JvmStatic
     fun intMap(tag: CompoundTag?, key: String): Map<String, Int> {
         val out = LinkedHashMap<String, Int>()

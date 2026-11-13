@@ -25,7 +25,7 @@ object ExoticTooltip {
                 val tag = stack.fishmodCustomDataTag() ?: return@ItemTooltipCallback
                 if (tag.contains("dye_item")) return@ItemTooltipCallback
                 val id = tag.getString("id").orElse("")
-                if (id in SEYMOUR) return@ItemTooltipCallback // Seymour pieces drop with random colours by design
+                if (id in SEYMOUR) return@ItemTooltipCallback
                 NeuItems.ensureLoaded()
                 val base = NeuItems.armorColor(id) ?: return@ItemTooltipCallback
                 if (base == rgb) return@ItemTooltipCallback

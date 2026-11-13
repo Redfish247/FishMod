@@ -3,7 +3,6 @@ package fishmod.features.rift
 import fishmod.features.WorldPreview as P
 import fishmod.features.rift.RiftSettings as S
 
-// Shift-preview scenes for the Rift tab (world highlights have no HUD editor entry)
 object RiftPreviews {
     private var done = false
 

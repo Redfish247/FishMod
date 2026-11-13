@@ -16,19 +16,15 @@ class SeaCreature(
     val boss: Boolean,
     val lava: Boolean,
     val magmaFields: Boolean,
-    // empty = any fishing world
     val areas: Set<SkyblockLocation>,
-    // literal that every spawn line contains; cheap test before the regex
     val needle: String,
 ) {
-    // Spawn immunity after the mob appears (Feesh: 5 s)
     val immunityMs: Long get() = if (immunity) 5000L else 0L
 
     fun inArea(loc: SkyblockLocation): Boolean = areas.isEmpty() || loc in areas
 }
 
 object SeaCreatures {
-    // flags: space-separated subset of rare nodbl imm boss lava magma
     private fun sc(
         name: String, r: SeaRarity, flags: String, area: SkyblockLocation?, rx: String, needle: String = name,
     ): SeaCreature {
@@ -139,7 +135,6 @@ object SeaCreatures {
 
     @JvmStatic fun byName(name: String): SeaCreature? = BY_NAME[name.lowercase()]
 
-    // First creature in the given location whose line matches; plain = colour-stripped chat.
     @JvmStatic fun match(plain: String, loc: SkyblockLocation, anyArea: Boolean): SeaCreature? {
         if (plain.length > 160) return null
         for (sc in ALL) {

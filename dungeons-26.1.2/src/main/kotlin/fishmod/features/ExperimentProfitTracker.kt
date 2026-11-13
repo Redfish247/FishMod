@@ -96,7 +96,6 @@ object ExperimentProfitTracker {
         val base = cm?.groupValues?.get(1)?.trim() ?: reward
         val n = cm?.groupValues?.get(2)?.replace(",", "")?.toLongOrNull() ?: 1L
         val color = rewardColor(raw)
-        // Pets of different rarities are separate rows ("Epic Guardian")
         val tier = if (s.startsWith("+[Lvl ")) PET_TIER_CODES.indexOf(color) else -1
         val name = if (tier >= 0) "${PET_TIERS[tier].lowercase().replaceFirstChar(Char::uppercase)} $base" else base
         data.drops.merge(name, n, Long::plus)
@@ -108,7 +107,6 @@ object ExperimentProfitTracker {
     private val PET_TIER_CODES = listOf("§f", "§a", "§9", "§5", "§6", "§d")
     private val LVL_TAG = Regex("\\[Lvl \\d+]")
 
-    // Hypixel colours the reward name by rarity: take the colour of the first text after the "+" (skipping the grey "[Lvl 1]")
     private fun rewardColor(raw: Component): String? {
         var seenPlus = false
         var out: String? = null
@@ -140,7 +138,6 @@ object ExperimentProfitTracker {
         return (v * when (suffix) { "k" -> 1e3; "M" -> 1e6; "B" -> 1e9; else -> 1.0 }).toLong()
     }
 
-    // Pets drop as "[Lvl 1] Guardian", stored as "Epic Guardian": the price list keys pets as "GUARDIAN;3"
     private fun petPrice(name: String): Double {
         val first = name.substringBefore(' ').uppercase()
         val prefixed = ' ' in name && first in PET_TIERS
@@ -154,7 +151,6 @@ object ExperimentProfitTracker {
         return 0.0
     }
 
-    // Books come through as "Protection VII" / "Ultimate Wise V"
     private fun priceOf(name: String): Double {
         ItemsDb.idFor(name)?.let { return CroesusPrices.price(it) }
         petPrice(name).let { if (it > 0) return it }
@@ -168,7 +164,6 @@ object ExperimentProfitTracker {
         return 0.0
     }
 
-    // Priced rows rebuilt at most once a second, not every frame
     private var itemsCache: List<Triple<String, Long, Double>> = emptyList()
     private var itemsAt = 0L
     private var itemsDirty = true
@@ -185,7 +180,6 @@ object ExperimentProfitTracker {
         FishUtil.addChatMessage(Component.literal("§b[FM] §fExperiment profit tracker reset"))
     }
 
-    // ── HUD ──
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
@@ -209,7 +203,6 @@ object ExperimentProfitTracker {
         ctx.pose().popMatrix()
     }
 
-    // Same layout as the Slayer/Mining trackers: right-aligned value column, "| item count" after it
     private fun buildRows(items: List<Triple<String, Long, Double>>, byType: Map<String, Int>, xp: Long, colorOf: (String) -> String): List<Pair<String, String>> {
         val rows = ArrayList<Pair<String, String>>()
         rows.add("§e§lExperiment Profit" to "")
@@ -223,7 +216,6 @@ object ExperimentProfitTracker {
         }
         if (hiddenN > 0) rows.add("§7| §8$hiddenN more ${if (hiddenN == 1) "item" else "items"}" to "§6${short(hiddenV)}")
 
-        // Chronomatron/Ultrasequencer are add-ons: shown, but per-experiment rates use Superpairs only
         val sp = byType["Superpairs"] ?: 0
         val addons = byType.filterKeys { it != "Superpairs" }.entries.joinToString(" ") { "§7${it.key.take(6)} §f${it.value}" }
         rows.add("§7Superpairs §f$sp" + (if (addons.isNotEmpty()) " §8| $addons" else "") to "")
@@ -266,7 +258,6 @@ object ExperimentProfitTracker {
 
     private fun short(v: Double): String = fishmod.features.slayers.SlayerStatsTracker.short(v)
 
-    // ── storage ──
 
     private fun load() {
         if (!FILE.exists()) return

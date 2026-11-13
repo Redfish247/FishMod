@@ -290,7 +290,6 @@ object SlayerProfitTracker {
 
     private fun idPart(s: String) = s.uppercase().replace("'", "").replace(Regex("[^A-Z0-9]+"), "_").trim('_')
 
-    // Runes and hunting shards aren't in the items API by name: "Bite Rune I" = RUNE_BITE_1, "Primordial Shard" = SHARD_PRIMORDIAL
     private fun idFor(name: String): String? {
         if (name.endsWith("Coins")) return null
         ItemsDb.idFor(name)?.let { return it }
@@ -321,12 +320,10 @@ object SlayerProfitTracker {
         return out
     }
 
-    // Lifetime drop counts across every boss/tier, for the achievement RNG feed
     fun totalDrops(): Map<String, Long> = synchronized(lock) {
         val m = HashMap<String, Long>(); for (d in total.values) for ((n, c) in d.drops) m[n] = (m[n] ?: 0L) + c; m
     }
 
-    // Profit across every boss/tier, for the achievement ledger
     fun allProfit(sessionOnly: Boolean): Double {
         val snap = synchronized(lock) { (if (sessionOnly) session else total).values.map { Triple(HashMap(it.drops), it.spawnCost, it.mobKillCoins) } }
         return snap.sumOf { (drops, cost, mkc) ->

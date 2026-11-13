@@ -12,7 +12,6 @@ object ChatNickRefresher {
     @Volatile
     private var scheduled = false
 
-    // Chat Patches keeps thousands of lines; only re-style the recent ones, debounced
     private const val MAX_LINES = 200
     private const val DEBOUNCE_MS = 750L
     @Volatile private var lastRunMs = 0L

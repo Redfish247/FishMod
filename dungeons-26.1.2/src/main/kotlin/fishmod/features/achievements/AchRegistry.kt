@@ -1,6 +1,5 @@
 package fishmod.features.achievements
 
-// Generated from "Achievement List (Expanded).docx"; metric "" = untracked, "server." = server-side
 object AchRegistry {
 
     class Ach(
@@ -12,7 +11,6 @@ object AchRegistry {
         val serverSide: Boolean get() = metric.startsWith("server.")
     }
 
-    // Cryptic one-liners shown for secrets that are still hidden
     val HINTS = mapOf(
         "secret_found" to "Every room hides something. Start poking around.",
         "secret_hunter" to "A thousand little discoveries add up.",
@@ -58,7 +56,6 @@ object AchRegistry {
         ALL.add(x); BY_ID[id] = x
     }
 
-    // Short area blurb shown under each rail row
     val SECTION_SUBTITLES = mapOf(
         "All" to "Every achievement",
         "Recent" to "Latest unlocks",

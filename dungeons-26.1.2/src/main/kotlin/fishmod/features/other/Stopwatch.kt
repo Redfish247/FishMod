@@ -106,7 +106,6 @@ object Stopwatch {
 
     @JvmStatic
     fun init() {
-        // No ':' in names: options.txt splits on the first ':'
         toggleKey = key("Stopwatch - Start/Stop")
         splitKey = key("Stopwatch - Split")
         resetKey = key("Stopwatch - Reset")
@@ -191,7 +190,6 @@ object Stopwatch {
         }
     }
 
-    // Compiled user regexes, keyed by pattern text (null = invalid)
     private val regexCache = HashMap<String, Regex?>()
     private fun userRegex(p: String): Regex? {
         if (regexCache.size > 16) regexCache.clear()
@@ -199,7 +197,6 @@ object Stopwatch {
         return regexCache[p]
     }
 
-    // One event does one thing: reset, then stop, then split, then start
     private fun fire(t: Trigger, arg: String? = null) {
         if (!enabled || (dungeonsOnly && !SkyblockLocation.inDungeon())) return
         when {

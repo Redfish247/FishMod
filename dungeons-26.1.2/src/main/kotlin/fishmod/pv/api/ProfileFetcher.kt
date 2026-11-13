@@ -64,7 +64,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.item.ItemStack
 
 object ProfileFetcher {
-    /** Match worker profiles cache TTL (5 minutes). */
     private const val CACHE_TTL_MS = 5L * 60L * 1000L
     private val CACHE = ConcurrentHashMap<String, CacheEntry>()
     private val MINECRAFT_NAME = Regex("[A-Za-z0-9_]{1,16}")
@@ -80,7 +79,6 @@ object ProfileFetcher {
     @Volatile
     private var requestedTab: PvTab? = null
 
-    // joinedMs is coop_invitation.confirmed_timestamp, 0 for the profile creator.
     @ConsistentCopyVisibility
     data class CoopMemberRef private constructor(
         @get:JvmName("uuid") val uuid: String,
@@ -167,7 +165,6 @@ object ProfileFetcher {
         }
     }
 
-    // Fields nullable like the Java record; profiles must be immutable (listProfileChoices returns one).
     @JvmRecord
     data class LoadedProfile(
         val snapshot: ProfileSnapshot?,
@@ -300,7 +297,6 @@ object ProfileFetcher {
                     coreFuture.thenAccept { core ->
                         logStage(cleaned, "core_ready", startedNanos, correlation)
                         if (core != null && core.ok()) {
-                            // Cache core immediately so a quick second /pv is warm for first paint.
                             putCache(uuidKey(id.uuid), core)
                             putCache(nameKey(id.name), core)
                             putCache(nameKey(cleaned), core)
@@ -329,9 +325,6 @@ object ProfileFetcher {
         return switchToProfile(snapshot.playerName, uuid, root, preferredProfileId, onUpdate)
     }
 
-    // Skips the Mojang lookup when the client already knows the player. Tab entries are
-    // only trusted for real accounts (version 4 UUIDs); Hypixel NPCs and fake tab rows
-    // use version 2.
     private fun localUuid(name: String): HypixelApiClient.UuidName? {
         val client: Minecraft? = Minecraft.getInstance()
         if (client == null || !client.isSameThread() || !MINECRAFT_NAME.matches(name)) return null
@@ -381,12 +374,8 @@ object ProfileFetcher {
     private fun normalizeCorrelationId(correlationId: String?): String =
         if (correlationId != null && CORRELATION_ID.matches(correlationId)) correlationId else UUID.randomUUID().toString()
 
-    /**
-     * Prefer loading the clicked tab next while background enrichment is still running.
-     */
     @JvmStatic
     fun prioritizeTab(tab: PvTab?) {
-        // The screen asks before its session exists, so remember it for the next session too.
         requestedTab = tab
         activeEnrichment?.prioritize(tab)
     }
@@ -423,10 +412,6 @@ object ProfileFetcher {
         onUpdate: Consumer<LoadedProfile>?
     ) = scheduleNetworthRefresh(base, member, profile, museumMember, inventoryCategories, onUpdate)
 
-    /**
-     * Called after the Museum tab fetched museum data, so networth can include it
-     * without /pv ever requesting museum itself.
-     */
     @JvmStatic
     fun museumLoaded(uuid: UUID?, profileId: String?, museumMember: JsonObject?) {
         if (uuid == null || profileId == null || museumMember == null) return
@@ -529,7 +514,6 @@ object ProfileFetcher {
         val next = PlayerAuctionFutures(
             uuid,
             now,
-            // The Auctions tab is gone and the proxy has no auction route: no calls, no failures.
             CompletableFuture.completedFuture(Optional.empty()),
             CompletableFuture.completedFuture(Optional.empty()),
             CompletableFuture.completedFuture(Optional.empty())
@@ -611,7 +595,6 @@ object ProfileFetcher {
         }
     }
 
-    // Logs and falls back to the empty value when a soft data failure hits one tab.
     private inline fun <T> softParse(what: String, name: String, empty: () -> T, block: () -> T): T = try {
         block()
     } catch (exception: RuntimeException) {

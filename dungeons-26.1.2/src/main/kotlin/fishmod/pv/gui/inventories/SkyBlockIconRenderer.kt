@@ -21,17 +21,11 @@ import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Single draw path for SkyBlock icons.
- * Probes known `hypixel_skyblock:` models through `ItemModelResolver.appendItemLayers`
- * so remapper mixins can participate, then falls back to official Hypixel PNGs when missing.
- */
 object SkyBlockIconRenderer {
 	private val RESOLVES_BY_MODEL = ConcurrentHashMap<String, Boolean>()
 	private val PROBING: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
 	private val LAST_MISSING = ThreadLocal<Boolean?>()
 
-	// Built stacks reused across frames; ItemStack has identity equality, so weak keys drop with their source.
 	private val DRAWN_BY_STACK: MutableMap<ItemStack, Drawn> = Collections.synchronizedMap(WeakHashMap())
 	private val DRAWN_BY_ID = ConcurrentHashMap<String, ItemStack>()
 
@@ -42,11 +36,9 @@ object SkyBlockIconRenderer {
 		DRAWN_BY_ID.clear()
 	}
 
-	/** Used by [fishmod.pv.mixin.ItemModelResolverIconProbeMixin]. */
 	@JvmStatic
 	fun isProbing(): Boolean = PROBING.get() == true
 
-	/** Used by [fishmod.pv.mixin.ItemModelResolverIconProbeMixin]. */
 	@JvmStatic
 	fun recordProbeMissing(missing: Boolean) {
 		if (isProbing()) {
@@ -109,10 +101,6 @@ object SkyBlockIconRenderer {
 		drawStack(g, drawn, x, y, size)
 	}
 
-	/**
-	 * Whether a SkyBlock id has a known model or official texture.
-	 * Used when picking among alternate collection keys.
-	 */
 	@JvmStatic
 	fun hasKnownIcon(skyblockId: String?): Boolean {
 		if (skyblockId.isNullOrBlank()) {

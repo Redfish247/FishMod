@@ -42,7 +42,6 @@ object CroesusRewardParser {
         0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
     )
 
-    // Component text with legacy colour codes, so pet rarity survives (Component.string drops colour).
     @JvmStatic
     fun coded(c: net.minecraft.network.chat.Component): String {
         val sb = StringBuilder()
@@ -85,7 +84,6 @@ object CroesusRewardParser {
     private fun tryParsePet(line: String): Array<String>? {
         val m = PET_PATTERN.matcher(line)
         if (!m.find()) return null
-        // no colour code: assume legendary (dungeon pet drops)
         val rarity = when (m.group(1)) { "f" -> 0; "a" -> 1; "9" -> 2; "5" -> 3; "6" -> 4; "d" -> 5; null -> 4; else -> return null }
         val name = strip(m.group(2)).trim().uppercase().replace(" ", "_")
         return arrayOf("$name;$rarity", "1")
@@ -105,11 +103,9 @@ object CroesusRewardParser {
 
         val id = ItemsDb.idFor(clean)
         if (id != null && !id.startsWith("STARRED_")) return arrayOf(id, "1")
-        // Starred and plain gear share a display name; Croesus only drops the plain one
         val base = id?.removePrefix("STARRED_")
         if (base != null && base != id && ItemsDb.get(base) != null) return arrayOf(base, "1")
 
-        // name map missed it (db partly loaded): the Hypixel id is usually the upper-snake name
         val guess = clean.uppercase().replace(Regex("[^A-Z0-9 ]"), "").trim().replace(Regex("\\s+"), "_")
         if (guess.isNotEmpty() && ItemsDb.get(guess) != null) return arrayOf(guess, "1")
 
@@ -149,7 +145,6 @@ object CroesusRewardParser {
             val ri = RewardItem()
             ri.id = result[0]
             ri.qty = FishDiag.notNull(result[1].toIntOrNull(), "CroesusRewardParser.4") { "reward qty not int: '${result[1]}' for ${result[0]}" }?.coerceAtLeast(1) ?: 1
-            // "Undead Essence x108": the amount is the quantity, not part of the name (it broke row matching and icons)
             ri.displayName = clean.replace(TRAILING_QTY, "")
             fishmod.utils.debug.FishDebug.LOGGER.debug("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
             info.items.add(ri)

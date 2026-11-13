@@ -26,7 +26,6 @@ object AthenPriceCache {
 	@Volatile
 	private var prices: Map<String, Double> = emptyMap()
 
-	/** Bazaar-only unit prices (preferred for sack / material valuation). */
 	@Volatile
 	private var bazaarPrices: Map<String, Double> = emptyMap()
 

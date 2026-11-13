@@ -19,7 +19,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 
-// Paid/Free chest value + profit, Vesuvius/Croesus opened highlight, chest counter, perk click blocker
 object KuudraChests {
 
     private val CHEST_TITLE = Regex("^(Free|Paid) Chest$")
@@ -150,7 +149,6 @@ object KuudraChests {
         pending = p
     }
 
-    // IQ: a click only counts once the server confirms it with the PAID CHEST REWARDS chat line
     private fun onPaidRewards() {
         val p = pending ?: return
         pending = null

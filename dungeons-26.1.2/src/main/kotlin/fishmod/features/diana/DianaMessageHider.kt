@@ -1,6 +1,5 @@
 package fishmod.features.diana
 
-// Diana chat spam SBO hides; burrow/mob dug lines are hidden by DianaTracker as it parses them
 object DianaMessageHider {
 
     fun shouldHide(s: String): Boolean {

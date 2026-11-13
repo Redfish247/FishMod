@@ -18,7 +18,6 @@ import kotlin.math.ceil
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-// Now-playing pill from the local Spotify desktop window title; no account, Windows only. Lyrics come from lrclib.net
 object SpotifyLyricsHud {
     private const val NAME = "Spotify"
     private const val PAD_X = 6
@@ -29,14 +28,12 @@ object SpotifyLyricsHud {
     private const val HOLD_MS = 1500L
     private const val SCRIPT = "while(\$true){\$t=(Get-Process Spotify -ErrorAction SilentlyContinue|Where-Object{\$_.MainWindowTitle}|Select-Object -First 1).MainWindowTitle;[Console]::Out.WriteLine(\$t);[Console]::Out.Flush();Start-Sleep -Seconds 2}"
 
-    // Written by the reader thread, read by render; a swapped String reference is enough
     @Volatile private var title: String = ""
     @Volatile private var proc: Process? = null
 
     private class Line(val ms: Long, val text: String)
     private val http: HttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build()
 
-    // Track being timed; play time counts only while the title shows a song
     private var track = ""
     private var playMs = 0L
     private var lastNs = 0L
@@ -56,7 +53,6 @@ object SpotifyLyricsHud {
             fixedW = mc.font.width(if (scroll) s.take(c) else s)
             loopW = if (scroll) mc.font.width("$s   ") else 0
         }
-        // Pixel-smooth scroll clipped to the box, held still for a moment at the start of each loop
         fun draw(ctx: GuiGraphicsExtractor, mc: Minecraft, x: Int, y: Int, col: Int, now: Long) {
             if (!scroll) { ctx.text(mc.font, src, x, y, col, true); return }
             val t = (now - startMs) % (HOLD_MS + loopW * 1000L / SPEED)
@@ -114,7 +110,6 @@ object SpotifyLyricsHud {
 
     private fun stop() { proc?.destroy(); proc = null; title = ""; track = ""; lyrics = null }
 
-    // Spotify shows these while idle or paused
     private fun isIdle(t: String) = t.isEmpty() || t == "Spotify" || t == "Spotify Free" || t == "Spotify Premium"
 
     private fun enc(s: String) = URLEncoder.encode(s, Charsets.UTF_8)
@@ -157,7 +152,6 @@ object SpotifyLyricsHud {
         return out
     }
 
-    // Rounded pill drawn as one-pixel rows
     private fun pill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) {
         val r = minOf(h / 2.0, 7.0)
         val a = color ushr 24
@@ -167,7 +161,6 @@ object SpotifyLyricsHud {
             val inset = if (d >= r) 0.0 else { val dy = r - d - 0.5; r - sqrt(maxOf(0.0, r * r - dy * dy)) }
             val solid = ceil(inset).toInt()
             ctx.fill(x + solid, y + row, x + w - solid, y + row + 1, color)
-            // Edge pixel at partial coverage for smooth corners
             val cov = solid - inset
             if (cov > 0.02 && solid > 0) {
                 val edge = ((a * cov).toInt() shl 24) or rgb
@@ -177,7 +170,6 @@ object SpotifyLyricsHud {
         }
     }
 
-    // Sizes: separate pills stacked with a gap, or one box holding both rows
     private fun boxW(tm: Marq, lm: Marq, hasLyric: Boolean): Int {
         val tw = PAD_X * 2 + (if (FishSettings.spotifyLyricsIcon) 11 else 0) + tm.fixedW
         return if (hasLyric) maxOf(tw, PAD_X * 2 + lm.fixedW) else tw

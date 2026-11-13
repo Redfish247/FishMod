@@ -7,7 +7,6 @@ import fishmod.features.FishModScreen.InputSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.garden.GardenExtraSettings as X
 
-// Farming tab entries for the Working-On garden cards
 object GardenExtrasMenu {
 
     fun add(col: Column) {

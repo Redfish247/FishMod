@@ -4,7 +4,6 @@ import net.minecraft.client.Camera
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 
-// 26.2 side of the Minecraft API differences; overlays the 26.1.2 file of the same path.
 typealias HudT = net.minecraft.client.gui.Hud
 
 val Minecraft.curScreen: Screen? get() = gui.screen()

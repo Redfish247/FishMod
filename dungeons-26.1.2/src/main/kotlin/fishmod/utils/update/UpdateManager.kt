@@ -41,7 +41,6 @@ import java.util.zip.ZipFile
 object UpdateManager {
 
     private const val MOD_ID = "fishmod-dungeons"
-    // Cheap: repeat checks send the ETag and a 304 is free against the rate limit.
     private const val CHECK_INTERVAL_MS = 10 * 60 * 1000L
     private const val FAILURE_BACKOFF_MS = 30 * 60 * 1000L
     private const val JOIN_SETTLE_TICKS = 100
@@ -112,7 +111,6 @@ object UpdateManager {
             val staged = state.stagedFile?.let(Path::of)
             if (staged != null && Files.isRegularFile(staged) && isNewer(state.stagedVersion)) downloadState = DownloadState.STAGED
             else if (state.stagedFile != null) {
-                // Installed (or superseded): drop the staged copy; the previous jar's .bak stays until the next install.
                 staged?.let { runCatching { Files.deleteIfExists(it) }.onFailure { e -> FishDiag.fail("UpdateManager.1", "delete old staged jar $it", e) } }
                 state.stagedVersion = null; state.stagedFile = null; save()
             }
@@ -138,7 +136,6 @@ object UpdateManager {
         ClientLifecycleEvents.CLIENT_STOPPING.register { launchInstaller() }
     }
 
-    // Hypixel proxies are *.hypixel.net; the Mod API location packet confirms it once it arrives.
     private fun isHypixel(mc: Minecraft): Boolean {
         if (mc.isLocalServer) return false
         val host = mc.currentServer?.ip?.substringBefore(':')?.trim()?.trimEnd('.')?.lowercase(Locale.ROOT) ?: return false
@@ -256,7 +253,6 @@ object UpdateManager {
                 if (!FishDiag.check(!body.isNullOrBlank(), "UpdateManager.7") { "GitHub 200 with empty body" }) return
                 val parsed = JsonParser.parseString(body)
                 if (!FishDiag.check(parsed.isJsonArray, "UpdateManager.8") { "GitHub releases JSON not an array: ${body.take(120)}" }) return
-                // Newest version that ships a jar for this Minecraft version.
                 val release = parsed.asJsonArray.mapNotNull { it as? JsonObject }
                     .filter { !it.bool("draft") && !it.bool("prerelease") }
                     .mapNotNull(::parseRelease)
@@ -285,12 +281,10 @@ object UpdateManager {
     private fun rateLimitResetAt(res: HttpResponse<*>, now: Long): Long {
         val h = res.headers()
         h.firstValue("retry-after").orElse(null)?.toLongOrNull()?.let { return now + it.coerceIn(60, 86_400) * 1000 }
-        // GitHub's X-RateLimit-Reset is an epoch in seconds.
         h.firstValue("x-ratelimit-reset").orElse(null)?.toLongOrNull()?.let { return (it * 1000).coerceIn(now + 60_000, now + 86_400_000) }
         return now + FAILURE_BACKOFF_MS
     }
 
-    // Picks this MC version's jar (FishModDungeons-<ver>-<mc>.jar); the release title/tag is not trusted for the version.
     private fun parseRelease(o: JsonObject): Release? {
         val assets = o.getAsJsonArray("assets")?.mapNotNull { it as? JsonObject } ?: emptyList()
         val suffix = if (mcVersion.isNotEmpty()) "-$mcVersion.jar" else ".jar"
@@ -378,7 +372,6 @@ object UpdateManager {
         }
     }
 
-    // Util.openUri swallows failures, so launch the same OS handler ourselves and report if it didn't work.
     fun openInBrowser(url: String) {
         Thread({
             val ok = try {
@@ -431,7 +424,6 @@ object UpdateManager {
         return path.takeIf { Files.isRegularFile(it) && it.fileName.toString().endsWith(".jar") }
     }
 
-    // Runs in a separate JDK-only JVM so the locked jar can be swapped once this process has exited.
     private fun launchInstaller() {
         if (downloadState != DownloadState.STAGED) return
         try {

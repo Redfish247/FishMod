@@ -43,7 +43,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Attribute Shards subtab with dual-scroll grid + cost list. */
 public final class AttributeShardsPage {
 	private final List<HoverZone> zones = new ArrayList<>();
 	private record ClickZone(int x, int y, int w, int h, ForagingSnapshot.AttributeShardRow row) {}
@@ -92,7 +91,6 @@ public final class AttributeShardsPage {
 		return false;
 	}
 
-	// Copies the shards still needed and opens /bz for the shard.
 	private static void copyAndOpenBazaar(ForagingSnapshot.AttributeShardRow row) {
 		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
 		int need = Math.max(0, row.shardsForMax() - row.shardsOwned());
@@ -342,7 +340,6 @@ public final class AttributeShardsPage {
 		}
 		JsonObject neuItem = NeuRepoCache.get(row.iconId());
 		AttributeShardTooltip.Info info = AttributeShardTooltip.info(AttributeShardsData.def(row.stackId()), neuItem, row.name());
-		// Only cache once NEU has the item, so the description fills in after the repo finishes loading.
 		if (neuItem != null) {
 			this.shardInfo.put(row.iconId(), info);
 		}
@@ -373,7 +370,6 @@ public final class AttributeShardsPage {
 		return unit;
 	}
 
-	/** Dark rarity-tinted slot fill (keeps icons readable); white common keeps the neutral slot. */
 	private static int raritySlotBackground(int rarityArgb) {
 		int r = (rarityArgb >>> 16) & 0xFF;
 		int green = (rarityArgb >>> 8) & 0xFF;

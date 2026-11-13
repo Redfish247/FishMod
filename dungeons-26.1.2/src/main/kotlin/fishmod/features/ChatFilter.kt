@@ -16,7 +16,6 @@ object ChatFilter {
     private val FRIEND_JOIN_LEAVE: Pattern = Pattern.compile("Friend > \\S+ (?:joined|left)\\.")
 
     private val SPAM_LIST: List<Pattern> by lazy { load("chatSpam.json") }
-    // Index in chatSpamCommon.json -> its sub-toggle; unlisted lines fall under Misc.
     private val COMMON_GROUPS: List<Pair<IntArray, () -> Boolean>> = listOf(
         intArrayOf(0, 1, 2, 3, 46) to { FishSettings.cfSpamEventRewards },
         intArrayOf(4, 5) to { FishSettings.cfSpamRadio },
@@ -70,7 +69,6 @@ object ChatFilter {
             }
         }
 
-        // Stored as one line: # = off, =text exact, /regex/ regex, else partial.
         fun encode(): String = (if (enabled) "" else "#") + when (mode) {
             Mode.PARTIAL -> text
             Mode.EXACT -> "=$text"
@@ -140,7 +138,6 @@ object ChatFilter {
     @Volatile private var caller: String? = null
     @Volatile private var callerAt = 0L
 
-    // Abiphone call: hides "✆ Name ✆" and returns the first RING line with the caller folded in.
     @JvmStatic
     fun rewrite(text: Component?): Component? {
         if (text != null && fishmod.features.fishing.FishingAlertSettings.compactDoubleHook) {
@@ -170,7 +167,6 @@ object ChatFilter {
     @Volatile private var motdUntil = 0L
     @Volatile private var motdLines = 0
 
-    // MOTD box: header line, guild-specific lines, then a dashes-only closing line.
     private fun inGuildMotd(s: String): Boolean {
         if (!FishSettings.cfGuildMotd) return false
         if (s.contains("Guild: Message Of The Day")) {
@@ -198,7 +194,6 @@ object ChatFilter {
         return reason(s) != null
     }
 
-    // Which filter would hide this (colour-stripped) line, or null; used by the editor's tester.
     @JvmStatic
     fun reason(s: String): String? {
         if (FishSettings.cfKillCombo && s.contains("Kill Combo")) return "Kill Combo"

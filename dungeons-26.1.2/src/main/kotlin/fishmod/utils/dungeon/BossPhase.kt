@@ -89,7 +89,6 @@ object BossPhase {
 
     private var sawNecronBar = false
 
-    // Necron dies when his boss bar empties or vanishes; relics spawn ~6s later.
     @JvmStatic
     fun checkNecronBar() {
         if (!awaitingNecronDeath()) { sawNecronBar = false; return }
@@ -100,7 +99,6 @@ object BossPhase {
 
     private fun awaitingNecronDeath() = inFloor7 && currentPhase == 8 && currentSplits?.getOrNull(9)?.name == "Dragons"
 
-    // Goldor's line can be missed; first terminal/device/lever progress line still means P3
     private val TERM_PROGRESS: Pattern = Pattern.compile("^.{1,16} (activated|completed) a (terminal|device|lever)! \\(\\d/\\d\\)$")
     private const val P3_START = "[BOSS] Goldor: Who dares trespass into my domain?"
 

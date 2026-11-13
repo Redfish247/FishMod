@@ -14,7 +14,6 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 
-/** NEU `constants/trophyfish.json` catalog (Odger order). */
 object TrophyFishData {
     enum class Tier {
         DIAMOND,
@@ -27,7 +26,6 @@ object TrophyFishData {
         fun suffix(): String = name
 
         companion object {
-            /** Top → bottom render order. */
             @JvmStatic
             fun topToBottom(): Array<Tier> = arrayOf(DIAMOND, GOLD, SILVER, BRONZE)
         }
@@ -51,10 +49,6 @@ object TrophyFishData {
     @Volatile
     private var defs: List<Def> = emptyList()
 
-    /**
-     * Obtain hint from trophy item lore. Obfuscated 1/2 double as bait, so their lore opens with
-     * "Fishing Bait" before the real "Caught with ..." line; scan everything before falling back.
-     */
     @JvmStatic
     fun howtoFromLore(lore: List<String?>?): String? {
         if (lore == null) return null
@@ -83,7 +77,6 @@ object TrophyFishData {
         }
     }
 
-    /** Reload after NEU-REPO updates. */
     @JvmStatic
     fun reload() {
         synchronized(this) {

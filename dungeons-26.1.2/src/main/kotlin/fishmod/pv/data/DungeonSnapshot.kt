@@ -12,7 +12,6 @@ import fishmod.pv.networth.InventoryDecoder
 import java.util.Collections
 import java.util.Locale
 
-/** Catacombs / class / run stats for the Dungeons tab. */
 class DungeonSnapshot(
 	@get:JvmName("cataLevel") val cataLevel: Int,
 	@get:JvmName("cataXp") val cataXp: Float,
@@ -131,7 +130,6 @@ class DungeonSnapshot(
 	@get:JvmName("classes") val classes: List<ClassEntry> = if (classes == null) listOf() else java.util.List.copyOf(classes)
 	@get:JvmName("normal") val normal: ModeStats = normal ?: ModeStats.empty()
 	@get:JvmName("master") val master: ModeStats = master ?: ModeStats.empty()
-	/** Catacombs Graduate attribute bonus (0-0.20). */
 	@get:JvmName("catacombsGraduateBonus") val catacombsGraduateBonus: Double = maxOf(0.0, catacombsGraduateBonus)
 	private val classEssenceBonuses: Map<String, Double> =
 		if (classEssenceBonuses == null) mapOf() else Collections.unmodifiableMap(java.util.Map.copyOf(classEssenceBonuses))

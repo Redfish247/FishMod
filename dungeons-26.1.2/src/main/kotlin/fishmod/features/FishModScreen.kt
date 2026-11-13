@@ -73,9 +73,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var stackDragCol: Column? = null
     private var stackDragY = 0
     private var stackGrabDY = 0
-    // eased per-tab stack Y, keyed by column name
     private val stackAnimY = HashMap<String, Double>()
-    // unfold drop start time per column name
     private val unfoldStart = HashMap<String, Long>()
     private val folders = ArrayList<Folder>()
     private var stackDragFolder: Folder? = null
@@ -1606,7 +1604,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Hide Fire Overlay", "The first-person fire overlay", VisualSettings::class.java, "roHideFireOverlay"))
             f.sub.add(ToggleSetting("Hide Inventory Labels", "The \"Crafting\" text in your inventory", VisualSettings::class.java, "roHideInventoryLabels"))
             f.sub.add(ToggleSetting("Hide Objective", "The \"Objective:\" boss bar (e.g. Rift races)", VisualSettings::class.java, "roHideObjective"))
-            // Mutually exclusive: turning one on turns the other off
             f.sub.add(ToggleSetting("Remove Damage Indicator", "Hide the floating damage numbers",
                 { VisualSettings.roRemoveDamageIndicator }, { v -> VisualSettings.roRemoveDamageIndicator = v; if (v) VisualSettings.roFormatDamageIndicator = false }))
             f.sub.add(ToggleSetting("Format Damage Indicator", "Shorten damage numbers, e.g. 1,234,567 -> 1.23M",
@@ -2244,7 +2241,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val used = HashSet<String>()
         val reordered = ArrayList<Column>(columns.size)
         for (slot in saved.split(",")) {
-            // old merged slots ("1:A+B") split into separate columns
             val names = slot.substringAfter(':').split("+")
             for (n in names) { val c = byName[n]; if (c != null && used.add(n)) reordered.add(c) }
         }
@@ -2318,7 +2314,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         hScroll = Mth.clamp(hScroll, 0, maxHScroll())
     }
 
-    // unfold every column in the folder, or fold them all if none are folded
     private fun toggleFolderColumns(f: Folder) {
         val cols = columns.filter { folderOf(it) === f }
         if (cols.isEmpty()) return
@@ -2627,7 +2622,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             renderTopBar(ctx, vmx, vmy)
             renderContent(ctx, vmx, vmy)
             renderSearchBar(ctx, vmx, vmy)
-            // hint is wider than the sidebar, so only show it while hovering the sidebar
             if (vmx in stackX0()..stackX0() + STACK_W) renderHint(ctx)
             renderHoverTooltip(ctx)
             renderShiftPreview(ctx)
@@ -2647,7 +2641,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    // Edit HUD pill, right of the search bar
     private fun editHudRect(): IntArray {
         val bh = 28
         val x = (right() - 220) / 2 + 220 + 8
@@ -2695,7 +2688,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             sst(ctx, this.font, label, x + (w - textW) / 2, y + (h - 8) / 2, 0xFFFFFFFF.toInt(), 0.85f)
         } else {
             roundedRectRing(ctx, x, y, w, h, h / 2 - 1, 1, if (hover) 0xFF20272E.toInt() else 0xFF171C21.toInt(), if (hover) ACCENT_HOVER else accent)
-            // accent text is unreadable on dark accents; the ring already shows hover
             sst(ctx, this.font, label, x + (w - textW) / 2, y + (h - 8) / 2, TEXT_COLOR, 0.85f)
         }
     }
@@ -2732,7 +2724,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun renderHint(ctx: GuiGraphicsExtractor) {
-        // Keycap controls box, same style as the HUD editor's
         val rows = arrayOf("Click" to "Fold a column", "Drag" to "Move a column", "Drag onto folder" to "File it in the folder", "Click folder" to "Open its columns", "Right-click folder" to "Show/hide its tabs", "Shift+Right-click" to "Rename folder (empty = delete)")
         val ts = 10f
         val ks = 9.5f
@@ -2831,7 +2822,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun stackListTop(): Int = cyTop() - HEADER_H
     private fun stackListBot(): Int = cyBot()
     private fun stackPitch(): Int = STACK_TAB_H + ROW_GAP
-    // sidebar row: folder header, column tab, or the "+ New Folder" row
     private class StackRow(val folder: Folder?, val col: Column?, val indent: Int) {
         fun isAdd(): Boolean = folder == null && col == null
     }
@@ -2860,7 +2850,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun stackRowY(row: Int): Int = stackListTop() + row * stackPitch() - stackScroll
     private fun stackIdle(): Boolean = stackDragCol == null && stackDragFolder == null
 
-    // where the dragged sidebar row lands: a gap in rows (dragged one excluded) or into a folder
     private fun stackDrop(rows: List<StackRow>): StackDrop {
         val pos = stackDragY - stackGrabDY + STACK_TAB_H / 2 - stackListTop() + stackScroll
         val h = Math.floorDiv(pos, stackPitch())
@@ -2921,7 +2910,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         renamingFolder = f
     }
 
-    // empty name deletes the folder, its columns stay
     private fun commitRename() {
         val f = renamingFolder ?: return
         val name = renameField?.value?.filter { it !in ";|," }?.trim() ?: f.name
@@ -2931,7 +2919,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         saveColumnOrder()
     }
 
-    // (row, row index)
     private fun stackHitAt(mx: Int, my: Int): Pair<StackRow, Int>? {
         if (mx < stackX0() || mx > stackX0() + STACK_W) return null
         if (my < stackListTop() || my > stackListBot()) return null
@@ -3026,7 +3013,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (dropTarget) roundedRectRing(ctx, x, y, w, STACK_TAB_H, 4, 1, 0, ACCENT)
         else if (stackIdle() && mouseX in x..x + w && mouseY >= y && mouseY < y + STACK_TAB_H) roundedRect(ctx, x, y, w, STACK_TAB_H, 4, ROW_HOVER)
         val cy = y + STACK_TAB_H / 2
-        // folder glyph
         UiRecorder.fillRect((x + 5).toFloat(), (cy - 4).toFloat(), 4f, 2f, ACCENT)
         UiRecorder.fillRect((x + 5).toFloat(), (cy - 3).toFloat(), 9f, 7f, ACCENT)
         val tf = renameField
@@ -3415,7 +3401,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         val dc = dragColumn
         if (dc != null && !dragMoved) {
-            // plain click on a header folds it
             toggleFold(dc)
             dragColumn = null
         }
@@ -3593,7 +3578,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         var scroll = 0
     }
 
-    // sidebar-only folder of top-level columns, by name
     class Folder(var name: String, var open: Boolean, val members: LinkedHashSet<String>)
 
     class Feature(val name: String, val get: (() -> Boolean)?, val set: ((Boolean) -> Unit)?) {
@@ -3866,7 +3850,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
         }
         private var wrapW = 0
-        // line start offsets for the current text, wrapped at the field width
         private fun wrapStarts(text: String): List<Int> {
             val starts = arrayListOf(0)
             val maxW = wrapW - 6f
@@ -4603,7 +4586,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val SLIDER_ROW_H = 24
         private const val SLIDER_CTRL_Y = 13
         private const val TWO_LINE_CTRL_Y = 20
-        // Label sits right above its own box with a clear gap before the next row
         private const val INPUT_CTRL_Y = 12
         private const val INPUT_ROW_H = 30
 
@@ -4762,7 +4744,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 }
 
-/** Feature name -> master toggle, so the HUD editor can tell "setting off" from "not showing right now". */
 object FeatureMasters {
     @JvmField val map: java.util.concurrent.ConcurrentHashMap<String, () -> Boolean> = java.util.concurrent.ConcurrentHashMap()
 }

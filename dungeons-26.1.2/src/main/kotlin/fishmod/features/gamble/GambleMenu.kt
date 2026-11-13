@@ -6,7 +6,6 @@ import fishmod.features.FishModScreen.LabelSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.gamble.GambleSettings as S
 
-// The Gamble Points tab in /fm
 object GambleMenu {
 
     fun column(): Column {

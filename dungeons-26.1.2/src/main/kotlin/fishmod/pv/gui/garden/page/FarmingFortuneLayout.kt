@@ -7,7 +7,6 @@
  */
 package fishmod.pv.gui.garden.page
 
-/** Positions for the Farming Fortune page, kept free of rendering so the layout can be tested. */
 object FarmingFortuneLayout {
 	const val CROP_SLOT = 18
 	const val CROP_GAP = 2
@@ -20,7 +19,6 @@ object FarmingFortuneLayout {
 	const val COL_GAP = 10
 	const val COND_H = 18
 	const val COND_GAP = 4
-	// Narrowest column that still fits an icon, a short label and a value like "+1,026.5".
 	const val MIN_COL_W = 130
 
 	enum class Section { CROP, GEAR, PET, PERMANENT }
@@ -61,7 +59,6 @@ object FarmingFortuneLayout {
 		}
 	}
 
-	/** Bottom of the hero row plus any wrapped crop rows. */
 	@JvmStatic
 	fun heroBottom(y: Int, cropSlots: List<Rect>): Int = cropSlots.fold(y + HERO_H) { bottom, r -> maxOf(bottom, r.bottom()) }
 
@@ -75,7 +72,6 @@ object FarmingFortuneLayout {
 		return 1
 	}
 
-	/** Column x and width; the last column takes the rounding remainder so the grid ends flush. */
 	@JvmStatic
 	fun columns(x: Int, w: Int, count: Int): List<Rect> {
 		val colW = (w - (count - 1) * COL_GAP) / count
@@ -93,7 +89,6 @@ object FarmingFortuneLayout {
 		else -> listOf(listOf(Section.CROP, Section.GEAR, Section.PET, Section.PERMANENT))
 	}
 
-	/** Chips flow left to right and wrap; a chip wider than the row is narrowed to fit. */
 	@JvmStatic
 	fun chips(x: Int, y: Int, w: Int, widths: IntArray): List<Rect> {
 		val out = ArrayList<Rect>(widths.size)

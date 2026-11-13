@@ -73,9 +73,7 @@ object PartyFinderStats {
         run {
             if (data.failed) {
                 val reason = data.failReason ?: "error"
-                // Unknown names and rate limits are expected; parse/request errors are already logged by HypixelApi
                 if (reason == HypixelApi.FAIL_NOT_FOUND) { FishMsg.send("§cPlayer not found: $sender"); return }
-                // transient API/network failure: log only
                 fishmod.utils.debug.FishDebug.LOGGER.info("[PartyFinderStats] PF stats lookup failed for {} ({})", sender, reason)
                 FishMsg.send("§cCouldn't look up $sender's stats")
                 return

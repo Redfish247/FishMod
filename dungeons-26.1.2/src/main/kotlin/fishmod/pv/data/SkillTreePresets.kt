@@ -17,7 +17,6 @@ import kotlin.math.roundToInt
 object SkillTreePresets {
     const val MAX_SLOTS = 5
 
-    /** `selected_skill_tree_slot.<tree>`, 1 when absent. */
     @JvmStatic
     fun selectedSlot(skillTree: JsonObject?, tree: String): Int {
         val selected = Leveling.obj(skillTree?.get("selected_skill_tree_slot"))
@@ -29,14 +28,12 @@ object SkillTreePresets {
     @JvmStatic
     fun slotKey(base: String, slot: Int): String = if (slot <= 1) base else "${base}_$slot"
 
-    /** Nodes of the selected preset, falling back to slot 1 when that preset isn't stored. */
     @JvmStatic
     fun selectedNodes(skillTree: JsonObject?, tree: String): JsonObject? {
         val root = Leveling.obj(skillTree?.get("nodes")) ?: return null
         return Leveling.obj(root.get(slotKey(tree, selectedSlot(skillTree, tree)))) ?: Leveling.obj(root.get(tree))
     }
 
-    /** Tokens spent in the selected preset (`mountain`/`forest` for slot 1), or null if not stored. */
     @JvmStatic
     fun selectedTokensSpent(skillTree: JsonObject?, tree: String): Int? {
         val tokens = Leveling.obj(skillTree?.get("tokens_spent")) ?: return null

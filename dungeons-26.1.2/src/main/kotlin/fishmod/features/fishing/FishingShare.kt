@@ -9,7 +9,6 @@ import net.minecraft.network.chat.Component
 
 // Opt-in sharing of big catches. Everything off by default; hotspot sharing is click-only, never automatic.
 object FishingShare {
-    // Big mobs shown in the checklist (Feesh isRare)
     val bigMobs: List<SeaCreature> by lazy { SeaCreatures.ALL.filter { it.rare }.sortedBy { it.name } }
 
     private fun checked(): Set<String> = S.shareCreatures.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
@@ -31,7 +30,6 @@ object FishingShare {
         if (!S.shareEnabled || !e.creature.rare || !isChecked(e.creature.name)) return
         val name = e.creature.name
         if (S.shareParty) ChatQueue.enqueue("pc Caught a $name!${if (e.count > 1) " (x${e.count})" else ""}")
-        // World boss coords to all chat: off by default
         if (S.shareWorldBossAll && e.creature.boss) ChatQueue.enqueue("ac $name | ${e.location.label} | ${coords()}")
     }
 
@@ -41,7 +39,6 @@ object FishingShare {
         ChatQueue.enqueue("pc Rare drop: ${d.itemName} (${FishingAlertText.fmtCoins(d.price)})")
     }
 
-    // Local message with two buttons; each click sends exactly one chat line.
     fun offerHotspot(perk: String, zone: String?) {
         if (!S.shareEnabled || !S.shareHotspot) return
         val where = Fishing.location().label

@@ -10,7 +10,6 @@ import net.minecraft.client.gui.components.EditBox
 object PartyCommandHint {
     private const val COLOR = 0xFFAAAAAA.toInt()
 
-    // Channels whose messages PartyCommandHandler answers; no slash = current chat channel
     private val PREFIX = Regex(
         "^(?:/(?:pc|pchat|gc|gchat|ac|achat|r|(?:p|party|g|guild) chat|(?:msg|w|tell|whisper|message) \\w+) )?[.!]",
         RegexOption.IGNORE_CASE

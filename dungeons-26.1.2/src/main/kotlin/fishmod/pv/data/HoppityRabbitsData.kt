@@ -16,7 +16,6 @@ import java.nio.file.Files
 import java.util.Collections
 import java.util.Locale
 
-/** NEU {@code hoppity.json} rabbit id → rarity (COMMON … DIVINE). */
 object HoppityRabbitsData {
 	@Volatile
 	private var loaded = false
@@ -38,7 +37,6 @@ object HoppityRabbitsData {
 		}
 	}
 
-	/** Reload after NEU-REPO updates. */
 	@JvmStatic
 	fun reload() {
 		synchronized(this) {
@@ -48,7 +46,6 @@ object HoppityRabbitsData {
 		}
 	}
 
-	/** Uppercase rarity, or {@code COMMON} when unknown. */
 	@JvmStatic
 	fun rarityOf(rabbitId: String?): String {
 		ensureLoaded()
@@ -88,7 +85,6 @@ object HoppityRabbitsData {
 						}
 					}
 				}
-				// Specials are mythic/divine named rabbits; keep existing rarity if listed, else MYTHIC.
 				objectAt(hoppity, "special")?.let { special ->
 					for (id in special.keySet()) {
 						if (id.isNullOrBlank()) {

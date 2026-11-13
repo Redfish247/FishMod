@@ -22,7 +22,6 @@ object DianaTitles {
 
         fun screenW() = Minecraft.getInstance().window.guiScaledWidth
         fun screenH() = Minecraft.getInstance().window.guiScaledHeight
-        // -1 means centred on screen until the player moves it
         fun x(): Int = gx().takeIf { it >= 0 } ?: ((screenW() - w * gs()) / 2).toInt()
         fun y(): Int = gy().takeIf { it >= 0 } ?: (screenH() / 2 + centerOffsetY)
 
@@ -82,7 +81,6 @@ object DianaTitles {
 
     fun warpTitle(text: String) = show(warp, text, "", 2, 30, 6)
 
-    // Skip straight to the fade-out once the warp is used or no longer suggested
     fun fadeWarpTitle() {
         val t = (System.currentTimeMillis() - warp.start) / 50f
         if (warp.start != 0L && t < warp.fadeIn + warp.stay) warp.start = System.currentTimeMillis() - (warp.fadeIn + warp.stay) * 50L
@@ -108,7 +106,6 @@ object DianaTitles {
 
     private fun mainScaleOf(s: Slot) = s.mainScale * (if (s === warp && DianaSettings.dianaWarpTitleSubtitle) 0.6f else 1f)
 
-    // Title block at the origin, scale 1 (the box is s.w wide, text centred in it)
     private fun drawBody(ctx: GuiGraphicsExtractor, s: Slot, main: String, sub: String, alpha: Float) {
         val font = Minecraft.getInstance().font
         val mainScale = mainScaleOf(s)

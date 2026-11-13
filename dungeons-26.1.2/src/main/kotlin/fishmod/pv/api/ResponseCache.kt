@@ -19,7 +19,6 @@ import java.security.MessageDigest
 import java.util.Collections
 import java.util.Optional
 
-/** Five-minute cache for proxy responses: in memory, mirrored to disk so a restart still hits. */
 internal object ResponseCache {
     private const val TTL_MS = 5L * 60L * 1000L
     private const val MAX_MEMORY = 24
@@ -63,7 +62,6 @@ internal object ResponseCache {
 
     @JvmStatic
     fun put(key: String, original: JsonObject) {
-        // Own copy: caller mutates its object while the disk write serializes on another thread.
         val json = original.deepCopy()
         MEMORY[key] = Cached(json, System.currentTimeMillis())
         HypixelApiClient.networkExecutor().execute {

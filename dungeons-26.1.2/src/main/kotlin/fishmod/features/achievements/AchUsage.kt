@@ -11,7 +11,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDate
 
-// FishMod usage: days opened, settings changed, features turned on, HUD saves, board reports
 object AchUsage {
 
     private val CONFIG = Paths.get("config/fishmod-settings.json")
@@ -27,14 +26,12 @@ object AchUsage {
         }
     }
 
-    // Runs once a player's achievement file is loaded
     fun onBind() {
         markDay()
         val ver = FabricLoader.getInstance().getModContainer("fishmod-dungeons").map { it.metadata.version.friendlyString }.orElse("")
         if (AchStore.data.verSeen != ver) { AchStore.data.verSeen = ver; AchStore.data.updateDay = LocalDate.now().toString(); AchStore.changed() }
     }
 
-    // Player-written report accepted by the board; any thread
     @JvmStatic
     fun onReportSent(kind: String) {
         Minecraft.getInstance().execute {
@@ -59,7 +56,6 @@ object AchUsage {
         if (!Files.exists(CONFIG)) null else HashMap<String, String>().also { flatten("", JsonParser.parseString(Files.readString(CONFIG)), it) }
     } catch (t: Throwable) { FishDiag.fail("AchUsage.1", "config snapshot read failed", t); null }
 
-    // Called after /fm closes and saves the config
     @JvmStatic
     fun onConfigSaved() {
         IoExecutor.execute {
@@ -85,7 +81,6 @@ object AchUsage {
         AchStore.max("fm.hudAreas", AchStore.data.hudAreas.size.toLong())
     }
 
-    // Master toggles seen on at /fm close; feeds Ultimate Tester and The Optimizer
     @JvmStatic
     fun onFeatureScan(features: List<fishmod.features.FishModScreen.Feature>) {
         val masters = features.filter { it.hasMaster() }
@@ -96,7 +91,6 @@ object AchUsage {
         if (on.any { it == "Render Optimizer" || it == "Performance HUD" }) AchStore.max("fm.perfOn", 1)
     }
 
-    // The Perfect Setup: activities with at least one feature toggled on
     private val ACTIVITIES = listOf("Diana", "Dungeon", "Slayer", "Kuudra", "Mining")
     @JvmStatic
     fun onActivityScan(cols: List<Pair<String, List<fishmod.features.FishModScreen.Feature>>>) {

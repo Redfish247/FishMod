@@ -20,7 +20,6 @@ public class NoFogMixin {
     private void fishmod$noFog(Camera camera, int renderDistance, DeltaTracker dt, float darken, ClientLevel level, CallbackInfoReturnable<FogData> cir) {
         if (!FishSettings.noFogEnabled) return;
         var p = Minecraft.getInstance().player;
-        // keep blindness/darkness fog so effects stay readable
         if (p != null && (p.hasEffect(MobEffects.BLINDNESS) || p.hasEffect(MobEffects.DARKNESS))) return;
         FogData fog = cir.getReturnValue();
         if (fog == null) return;

@@ -39,7 +39,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Garden Jacob contests subpage. */
 class JacobPage {
 	private var scroll = 0
 	private var maxScroll = 0
@@ -472,7 +471,6 @@ class JacobPage {
 		}
 
 		fun drawOrb(g: GuiGraphicsExtractor, x: Int, y: Int, size: Int, argb: Int) {
-			// Odd sizes center cleanly; even sizes read as knobbly squares.
 			val r = size / 2
 			val mid = (size - 1) * 0.5F
 			val r2 = r * r + 0.25F
@@ -488,7 +486,6 @@ class JacobPage {
 					if (dist2 > r2) {
 						continue
 					}
-					// Soft sphere shade so medals read as circles, not flat squares.
 					var shade = 1.0F - (cy / maxOf(1F, r.toFloat())) * 0.22F
 					shade = shade.coerceIn(0.72F, 1.18F)
 					if (cx * cx + (cy + r * 0.35F) * (cy + r * 0.35F) < r2 * 0.22F) {

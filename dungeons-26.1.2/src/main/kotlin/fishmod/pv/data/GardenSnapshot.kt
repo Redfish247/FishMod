@@ -114,7 +114,6 @@ class GardenSnapshot(
 		constructor(bracket: String, crops: Int) : this(bracket, crops, listOf())
 	}
 
-	/** {@code filled} is the highest unique bracket: 0 none … 5 diamond. */
 	@JvmRecord
 	data class CropMedal(val id: String, val name: String, val iconId: String, val filled: Int)
 
@@ -127,7 +126,6 @@ class GardenSnapshot(
 		val crop: String, val cropName: String, val iconId: String, val collected: Long, val medal: String,
 		val position: Int, val participants: Int, val timestampSeconds: Long
 	) {
-		/** 1-based placement, or 0 when none was recorded. */
 		fun placement(): Int = if (position >= 0) position + 1 else 0
 	}
 
@@ -266,7 +264,6 @@ class GardenSnapshot(
 
 	fun withEliteContests(array: JsonArray?): GardenSnapshot {
 		val list = parseEliteContests(array)
-		// Prefer Elite history when present; keep Hypixel contests if Elite returned nothing useful.
 		if (list.isEmpty() && contests.isNotEmpty()) {
 			return withContestsReady()
 		}
@@ -356,7 +353,6 @@ class GardenSnapshot(
 
 	fun plotsUnlocked(): Int = unlockedPlotIds.size
 
-	/** Static plot layout with this profile's unlock state; locked plots carry their tier's next price. */
 	fun plotCells(): List<PlotCell> {
 		val unlocked = unlockedPlotIds.mapTo(LinkedHashSet()) { it.lowercase(Locale.ROOT) }
 		val unlockedPerTier = LinkedHashMap<String, Int>()
@@ -380,15 +376,9 @@ class GardenSnapshot(
 		return GardenCosts.composterRemaining(levels)
 	}
 
-	/** Crop ids that have earned a unique GOLD Jacob bracket. */
 	fun uniqueGoldCrops(): List<String> =
 		uniqueBrackets.firstOrNull { it.bracket.equals("Gold", ignoreCase = true) && it.cropIds.isNotEmpty() }?.cropIds ?: listOf()
 
-	/**
-	 * Per-crop highest unique medal as filled orb count (bronze→silver→gold→platinum→diamond).
-	 * Prefers Hypixel {@code unique_brackets} crop lists; merges Elite/Hypixel contest medals
-	 * when bracket crop ids are missing so the Jacob crop-medal row is not stuck on "None yet".
-	 */
 	fun cropMedals(): List<CropMedal> {
 		val filledByCrop = LinkedHashMap<String, Int>()
 		for (b in uniqueBrackets) {
@@ -404,7 +394,6 @@ class GardenSnapshot(
 				filledByCrop.merge(key.ifBlank { cropId }, rank) { a, c -> maxOf(a, c) }
 			}
 		}
-		// Always allow contest medals to fill gaps (Elite async / count-only unique_brackets).
 		for (contest in contests) {
 			val rank = bracketRank(contest.medal)
 			if (rank <= 0) {
@@ -433,7 +422,6 @@ class GardenSnapshot(
 		return uniqueGoldCrops().any { key == GardenData.normalizeCropKey(it) }
 	}
 
-	/** Keyed by {@link GardenData#normalizeCropKey}. */
 	fun placements(): Map<String, CropPlacement> {
 		placements?.let { return it }
 		return placementsByCrop(contests).also { placements = it }
@@ -544,7 +532,6 @@ class GardenSnapshot(
 			for (alias in listOf(id.replace("_ITEM", ""), GardenData.normalizeCropKey(id), GardenData.cropIconId(id))) {
 				amounts.remove(alias)?.let { return it }
 			}
-			// DOUBLE_PLANT is sunflower in Hypixel resources
 			if (id == "DOUBLE_PLANT") {
 				amounts.remove("SUNFLOWER")?.let { return it }
 			}
@@ -729,7 +716,6 @@ class GardenSnapshot(
 			val brackets = jacobs?.let { Leveling.obj(it.get("unique_brackets")) } ?: return listOf()
 			val out = ArrayList<BracketCount>()
 			for (key in listOf("BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND")) {
-				// Hypixel stores lowercase keys (bronze/silver/…).
 				val el = brackets.get(key) ?: brackets.get(key.lowercase(Locale.ROOT))
 				val cropIds = bracketCropIds(el)
 				val count = if (cropIds.isEmpty()) bracketCountFallback(el) else cropIds.size
@@ -1000,7 +986,6 @@ class GardenSnapshot(
 
 		private fun intOf(obj: JsonObject?, key: String): Int = longOf(obj, key).toInt()
 
-		// Elite sends position -1 for unclaimed contests; longOf clamps negatives to 0, which would read as first place.
 		@JvmStatic
 		fun positionOf(obj: JsonObject?, key: String): Int {
 			val n = if (obj == null || !obj.has(key)) null else Leveling.numDouble(obj.get(key))

@@ -42,13 +42,11 @@ object FishDiag {
     @JvmStatic
     fun fail(code: String, message: String, t: Throwable?) = record(code, message, t)
 
-    /** Logs [message] when [ok] is false. Returns [ok] so it can gate an early return. */
     inline fun check(ok: Boolean, code: String, message: () -> String): Boolean {
         if (!ok) fail(code, message())
         return ok
     }
 
-    /** Logs when [value] is null. Returns [value] unchanged. */
     inline fun <T> notNull(value: T?, code: String, message: () -> String): T? {
         if (value == null) fail(code, message())
         return value
@@ -140,7 +138,6 @@ object FishDiag {
         fishmod.utils.FishUtil.addChatMessage(msg)
     }
 
-    /** Full paste-able report: header, per-code counts, and the recent entries. */
     @JvmStatic
     fun buildReport(): String {
         val sb = StringBuilder()
@@ -179,7 +176,6 @@ object FishDiag {
                     c.message?.contains("reset by peer", ignoreCase = true) == true ||
                     c.message?.contains("not processed by peer", ignoreCase = true) == true ||
                     c.message?.contains("broken pipe", ignoreCase = true) == true ||
-                    // OS-localized socket errors (e.g. Portuguese WinSock text) only show in the stack frames
                     c.stackTrace.any { it.className.startsWith("sun.nio.ch.Socket") || it.className.startsWith("jdk.internal.net.http.") })) return true
             c = c.cause
         }

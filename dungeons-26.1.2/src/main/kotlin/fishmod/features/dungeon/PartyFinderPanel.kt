@@ -102,7 +102,6 @@ object PartyFinderPanel {
                 ?: names.firstOrNull()
                 ?: nameStr.split(' ').lastOrNull { it.matches(NAME) && !it.equals("Party", true) }
                 ?: run { FishDiag.fail("PartyFinderPanel.4", "no leader parsed from '$nameStr' slot=$i"); "?" }
-            // Only a title-parsed leader may add to the lore member count
             if (mem == 0) mem = (if (titleLeader != null) names + titleLeader else names).distinctBy { it.lowercase() }.size.coerceAtLeast(1)
             FishDiag.check(mem <= maxMem, "PartyFinderPanel.5") { "members $mem > max $maxMem for $leader title='$nameStr' names=$names" }
             out.add(Party(i, leader, mem, maxMem, floor, master, present, names, note, levelReq))

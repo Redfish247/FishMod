@@ -29,7 +29,6 @@ class AuctionSnapshot private constructor(
 	boughtPage: Int,
 	@get:JvmName("soldHasMore") val soldHasMore: Boolean,
 	@get:JvmName("boughtHasMore") val boughtHasMore: Boolean,
-	/** Sold/bought come from Coflnet, which can lag seconds behind the active listings. */
 	@get:JvmName("historyLoading") val historyLoading: Boolean
 ) {
 	enum class Bucket {
@@ -38,7 +37,6 @@ class AuctionSnapshot private constructor(
 		BOUGHT
 	}
 
-	/** {@code profileId} is the SkyBlock profile the auction belongs to; blank when the source didn't say. */
 	@JvmRecord
 	data class Listing(
 		val auctionId: String,
@@ -83,7 +81,6 @@ class AuctionSnapshot private constructor(
 		)
 	}
 
-	/** Lifetime Auction House stats from {@code player_stats.auctions}. */
 	@JvmRecord
 	data class Stats(
 		val bids: Long,
@@ -130,7 +127,6 @@ class AuctionSnapshot private constructor(
 
 			private fun rarityMap(root: JsonObject?, key: String): LinkedHashMap<String, Long> {
 				val out = LinkedHashMap<String, Long>()
-				// Highest rarity first (matches in-game AH feel / descending).
 				for (rarity in RARITY_ORDER.reversed()) {
 					out[rarity] = 0L
 				}
@@ -223,7 +219,6 @@ class AuctionSnapshot private constructor(
 
 		private fun normalizeId(id: String): String = id.replace("-", "").lowercase(Locale.ROOT)
 
-		/** Builds a listing the way the Java record's compact constructor normalised it. */
 		private fun listing(
 			auctionId: String, tag: String, itemName: String, tier: String, bin: Boolean, startingBid: Long, highestBid: Long,
 			endMs: Long, slot: InventorySnapshot.Slot?, detailLines: List<String>?, profileId: String?
@@ -283,7 +278,6 @@ class AuctionSnapshot private constructor(
 			if (name.isBlank()) {
 				return ""
 			}
-			// Cofl often mangles ✪ stars to '?'.
 			name = name.replace('�', '?')
 			val stars = coflUpgradeLevel(detail)
 			val starSuffix = if (stars <= 0) "" else " " + "✪".repeat(minOf(10, stars))
@@ -407,7 +401,6 @@ class AuctionSnapshot private constructor(
 			return AuctionSnapshot(playerUuid, active, sold, bought, Stats.empty(), 0, 0, soldMore, boughtMore)
 		}
 
-		// SkyCofl's player auctions list every auction created, including expired-unsold and live ones.
 		@JvmStatic
 		@JvmOverloads
 		fun parseCoflSold(array: JsonArray?, nowMs: Long = System.currentTimeMillis()): List<Listing> =
@@ -421,7 +414,6 @@ class AuctionSnapshot private constructor(
 			CoflnetApiClient.objects(array).filter {
 				val own = longVal(it, "highestOwnBid")
 				val high = longVal(it, "highestBid")
-				// Anything else is not a win (yet).
 				own > 0L && high > 0L && own >= high && coflEnded(it, nowMs)
 			}.map { fromCoflSummary(it, true) }
 
@@ -430,8 +422,6 @@ class AuctionSnapshot private constructor(
 			if (root == null || !root.has("auctions") || !root.get("auctions").isJsonArray) {
 				return out
 			}
-			// Hypixel ?player= returns auctions you created OR bid on - Active is only
-			// your own listings that are still running (not expired / claimed / bid-only).
 			for (el in root.getAsJsonArray("auctions")) {
 				if (el == null || !el.isJsonObject) {
 					continue

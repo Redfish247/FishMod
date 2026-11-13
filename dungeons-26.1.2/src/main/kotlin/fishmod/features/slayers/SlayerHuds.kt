@@ -75,7 +75,6 @@ object SlayerHuds {
             blockExample(spawnLines(EX_TYPE, EX_TIER, SlayerManager.State.GRINDING, SlayerManager.SpawnProgress(null, 1250.0, 2000.0, "")))
         }
         HudPreview.register(STATS_HUD) { blockExample(statsLines(EX_TYPE, EX_TIER, 1_250_000.0, 4321, 87.0, true)) }
-        // state after a new-PB kill; the Show toggles filter lines like in game
         HudPreview.register(TIMER_HUD) { blockExample(timerLines(TimerData(false, 0.0, true, 23.45, true, 23.45, true, 41.2, true, 12.3))) }
         HudPreview.register(RNG_HUD) {
             val f = Minecraft.getInstance().font
@@ -222,7 +221,6 @@ object SlayerHuds {
         }
     }
 
-    // In the inventory it is redrawn on top of the screen with a reset button under it
     @JvmStatic
     fun initInventory() {
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
@@ -277,7 +275,6 @@ object SlayerHuds {
         return rows.isNotEmpty()
     }
 
-    // value column right-aligned, item text after it (Mining/Diana style)
     private fun profitColX(rows: List<SlayerProfitTracker.DisplayRow>): Int {
         val f = Minecraft.getInstance().font
         return rows.maxOfOrNull { if (it.value.isEmpty()) 0 else f.width(it.value) + 6 } ?: 0

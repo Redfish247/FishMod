@@ -14,7 +14,6 @@ import fishmod.utils.events.chatPlain
 import fishmod.utils.sound.SoundManager
 import net.minecraft.network.chat.Component
 
-// Phase 2: alerts (titles, sounds), share and compact catch messages. All strings UNVERIFIED in game; everything off by default.
 object FishingAlerts {
     @JvmStatic fun init() {
         FishingAlertsWorld.init()
@@ -67,7 +66,6 @@ object FishingAlerts {
     fun dropTitle(item: String, price: Double) =
         "§6§lRARE DROP!" to "§f$item" + (if (price > 0) " §7(§6${FishingAlertText.fmtCoins(price)}§7)" else "")
 
-    // perk null = the tracked hotspot is gone
     fun hotspotTitle(perk: String?) = if (perk != null) "§6§lHotspot found" to "§f$perk" else "§c§lHotspot is gone" to ""
 
     fun wormholeTitle(gone: Boolean) = (if (gone) "§c§lWormhole is gone" else "§c§lWormhole closed!") to ""
@@ -76,12 +74,10 @@ object FishingAlerts {
 
     fun deployableTitle(name: String) = "§e§l$name expires soon" to ""
 
-    // left null = bait changed, else the low-bait warning
     fun baitTitle(name: String, left: Int?) = if (left == null) "§b§lBait changed" to "§f$name" else "§c§lOut of bait soon" to "§f$left $name"
 
     fun notify(slot: FishingTitles.Slot, t: Pair<String, String>, chat: String?) = notify(slot, t.first, t.second, chat)
 
-    // Title + sound + optional local chat line for the non-creature alerts
     fun notify(slot: FishingTitles.Slot, main: String, sub: String, chat: String?) {
         title(slot, main, sub)
         sound(S.alertSound, S.alertSoundVolume)
@@ -92,26 +88,22 @@ object FishingAlerts {
         FishingTitles.show(slot, main, sub, S.alertTitleMs.coerceIn(500, 10_000))
 
     private fun sound(name: String, volPct: Int) {
-        // MC caps one sound at 100%, so stack copies to go louder (as Diana does)
         var vol = volPct.coerceIn(0, 500) / 100f
         val snd = SoundManager.preset(name)
         while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }
 
-    // Chat-hud rewrite hook (called from ChatFilter.rewrite): compact catch messages, or null to leave the line alone.
     @JvmStatic fun compact(plain: String): Component? {
         if (!S.compactDoubleHook) return null
         if (!Fishing.active()) return null
         FishingAlertText.compactDoubleHook(plain)?.let { return Component.literal(it) }
         if (S.compactSpawn && plain.length > 12) {
             val sc = SeaCreatures.match(plain, Fishing.location(), FishingSettings.fishingAnyArea) ?: return null
-            // Only the spawn lines of rare mobs; short "caught" lines are already compact
             if (sc.rare || sc.boss) return Component.literal(FishingAlertText.compactSpawn(sc))
         }
         return null
     }
 
-    // ---- menu ----
 
     fun addMenu(col: Column) {
         val a = Feature("Fishing Alerts", S::class.java, "fishingAlerts")

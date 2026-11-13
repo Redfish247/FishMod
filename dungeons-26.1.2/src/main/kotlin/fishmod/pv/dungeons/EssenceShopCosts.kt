@@ -15,9 +15,7 @@ import java.nio.file.Files
 import java.util.Locale
 import kotlin.math.max
 
-/** Per-tier essence costs from NEU `constants/essenceshops.json`. */
 object EssenceShopCosts {
-	// NEU names these perks differently from the Hypixel API key.
 	private val NEU_IDS = mapOf("eagles_advantage" to "eagle_advantage")
 
 	@Volatile
@@ -52,7 +50,6 @@ object EssenceShopCosts {
 	private fun load(): Map<String, IntArray> {
 		costs?.let { return it }
 		val path = ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "essenceshops.json")
-		// Repo may still be downloading; try again on the next hover.
 		if (!Files.isRegularFile(path)) return emptyMap()
 		val out = HashMap<String, IntArray>()
 		try {
@@ -75,7 +72,6 @@ object EssenceShopCosts {
 				val arr = perk.asJsonObject.get("costs")
 				if (arr == null || !arr.isJsonArray) continue
 				val list = arr.asJsonArray
-				// bad tier = 0, keep the rest
 				val tiers = IntArray(list.size()) { i ->
 					val t = list.get(i)
 					if (t.isJsonPrimitive && t.asJsonPrimitive.isNumber) t.asInt else 0

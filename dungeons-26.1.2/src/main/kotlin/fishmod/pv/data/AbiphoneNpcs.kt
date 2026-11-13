@@ -12,7 +12,6 @@ import fishmod.pv.neu.NeuRepoCache
 import fishmod.utils.TextStrip
 import java.util.Locale
 
-/** Maps Abiphone contact ids → NEU NPC skull item ids. */
 object AbiphoneNpcs {
 	const val TOTAL_CONTACTS = 84
 	private val ALIASES: Map<String, String> = mapOf(
@@ -66,7 +65,6 @@ object AbiphoneNpcs {
 		"ted" to "FEAST_CHEF_TED_NPC",
 		"trinity" to "SISTER_TRINITY_NPC"
 	)
-	/** Hypixel contact ids that match neither the NEU name nor its callNames. */
 	private val API_TO_CONTACT: Map<String, String> = mapOf(
 		"pet_sitter" to "kat",
 		"arrow_forger" to "jax",
@@ -86,10 +84,8 @@ object AbiphoneNpcs {
 	@JvmRecord
 	data class Undiscovered(val name: String, val neuId: String, val requirement: List<String>)
 
-	/** NEU Abiphone contacts with no matching entry in the player's contact ids. */
 	@JvmStatic
 	fun undiscovered(contactIds: Collection<String?>?): List<Undiscovered> {
-		// Owning every real contact wins over NEU name matching (NEU lists extra entries).
 		if (contactIds != null && contactIds.size >= TOTAL_CONTACTS) {
 			return listOf()
 		}
@@ -115,7 +111,6 @@ object AbiphoneNpcs {
 			val key = norm(rawKey)
 			val icon = CONTACT_ICONS[key] ?: (key.uppercase(Locale.ROOT) + "_NPC")
 			var found = ids.contains(key) || idNeu.contains(icon) ||
-				// Single-word names show up inside longer ids, e.g. trevor_the_trapper or feast_chef_ted.
 				(key.indexOf('_') < 0 && tokens.contains(key))
 			for (call in strings(def, "callNames")) {
 				found = found or ids.contains(norm(call))
@@ -135,7 +130,6 @@ object AbiphoneNpcs {
 		return out
 	}
 
-	/** In-game contact name for a Hypixel contact id (e.g. {@code slayer} → Maddox the Slayer), or null if unknown. */
 	@JvmStatic
 	fun displayName(contactId: String?): String? = displayName(contactId, NeuRepoCache.abiphoneContacts())
 

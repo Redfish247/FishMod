@@ -34,14 +34,12 @@ object GardenLevels {
     private var hoeLines: List<String> = emptyList()
     private var tick = 0
 
-    // Total XP needed to reach `level`
     private fun cum(level: Int): Long {
         var t = 0L
         for (i in 0 until level) t += if (i < XP.size) XP[i] else OVERFLOW_EXP
         return t
     }
 
-    // level, xp into level, xp needed for next level
     private fun levelOf(total: Long): Triple<Int, Long, Long> {
         var tier = 0
         var sum = 0L
@@ -157,7 +155,6 @@ object GardenLevels {
             val m = TAB_LEVEL.find(e.stripped.trim()) ?: continue
             val lvl = m.groupValues[1].toInt()
             val into = if (m.groupValues[2].isNotEmpty()) num(m.groupValues[2]).toLong() else 0L
-            // resync total from the tab (xp-into-level is only present when the widget shows it)
             if (m.groupValues[2].isNotEmpty() || S.gardenLevelXp == 0L) S.gardenLevelXp = cum(lvl) + into
             checkLevelUp()
             return
@@ -182,7 +179,6 @@ object GardenLevels {
 
     private fun isHoe(id: String?) = id != null && id.contains("HOE", true)
 
-    // Called from SoundEngineMixin: true cancels the sound
     @JvmStatic
     fun muteSound(instance: SoundInstance): Boolean {
         if (!S.gardenHoeMute || !instance.identifier.path.startsWith("item.hoe.")) return false

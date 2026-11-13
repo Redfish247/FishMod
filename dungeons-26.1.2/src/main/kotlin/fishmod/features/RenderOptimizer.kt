@@ -72,7 +72,6 @@ object RenderOptimizer {
         }
     }
 
-    // Hypixel damage numbers: armor stands named like "1,234" or "✧1,234,567✧" (crit, one colour per char)
     private val DAMAGE = Regex("""^(\D{0,2})([\d,]+)(\D{0,2})$""")
     private val formatted = HashMap<Int, Pair<String, Component>>()
 

@@ -6,7 +6,6 @@ import fishmod.utils.FishMsg
 import fishmod.utils.SkyblockLocation
 import net.minecraft.client.Minecraft
 
-// 5 min windows of input counts for POST /heartbeat; counts only, nothing is read from or sent to Hypixel
 object PlaytimeTracker {
 
     @Volatile var lastBalance = -1L
@@ -54,7 +53,6 @@ object PlaytimeTracker {
             val moved = dist > 0.01 || Math.abs(dy) > 0.01
             val turned = yaw != lastYaw || pitch != lastPitch
             if (moved || turned) { moves++; active = true }
-            // Teleports and warps are not walking
             if (dist in 0.01..8.0 && !p.isPassenger) blocks += dist
         }
         hasLast = true
@@ -93,7 +91,6 @@ object PlaytimeTracker {
             val bal = o.get("balance")?.let { runCatching { it.asLong }.getOrNull() }
             val prev = lastBalance
             if (bal != null) lastBalance = bal
-            // Worker sends no amount: awarded = balance change since the last heartbeat
             val awarded = if (bal != null && prev >= 0) bal - prev else if (o.get("credited")?.asBoolean == true) 5L else 0L
             if (awarded <= 0) return@call
             Minecraft.getInstance().execute {

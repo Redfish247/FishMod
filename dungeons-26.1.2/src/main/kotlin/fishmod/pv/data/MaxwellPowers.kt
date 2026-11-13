@@ -10,18 +10,12 @@ package fishmod.pv.data
 import kotlin.math.ln
 import kotlin.math.pow
 
-/**
- * Maxwell accessory-bag powers. Scaled stats use Hypixel's MP multiplier:
- * `29.97 * ln(1 + 0.0019 * MP)^1.2`. Base values are the wiki "Base" column
- * (≈ stats at multiplier 1); unique bonuses are flat.
- */
 object MaxwellPowers {
     private class PowerDef(val base: Map<String, Double>, val unique: Map<String, Double>)
 
     private val POWERS = HashMap<String, PowerDef>()
 
     init {
-        // Starter / intermediate (unlocked without stones)
         put("fortuitous", mapOf(
             "health" to 3.35, "defense" to 1.2, "strength" to 4.8, "critical_chance" to 4.35, "critical_damage" to 4.8,
         ), mapOf())
@@ -57,7 +51,6 @@ object MaxwellPowers {
             "health" to 12.4, "defense" to 11.3, "strength" to 1.95, "critical_chance" to 0.4, "critical_damage" to 0.95,
         ), mapOf())
 
-        // Stone powers
         put("silky", mapOf("speed" to 0.6, "critical_damage" to 22.8), mapOf("attack_speed" to 5.0))
         put("sweet", mapOf("health" to 15.1, "defense" to 10.8, "speed" to 1.2), mapOf("speed" to 5.0))
         put("forceful", mapOf("health" to 1.7, "strength" to 18.0, "critical_damage" to 4.8), mapOf("ferocity" to 4.0))

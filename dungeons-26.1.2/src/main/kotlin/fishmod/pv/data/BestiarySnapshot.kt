@@ -10,7 +10,6 @@ package fishmod.pv.data
 import com.google.gson.JsonObject
 import java.util.Locale
 
-/** Parsed bestiary progress for one profile member. */
 class BestiarySnapshot private constructor(
 	private val byCategory: Map<String, CategoryProgress>,
 	@get:JvmName("claimedMilestone") val claimedMilestone: Int,
@@ -62,7 +61,6 @@ class BestiarySnapshot private constructor(
 		byCategory[cat.id] ?: CategoryProgress(cat, listOf(), 0, 0, 0, 0)
 	}
 
-	/** In-game Bestiary milestone = unique family tiers / 10 (not last claimed reward). */
 	fun milestone(): Int = totalUnlockedTiers / 10
 
 	fun milestoneProgress(): Int = totalUnlockedTiers % 10
@@ -140,11 +138,9 @@ class BestiarySnapshot private constructor(
 			return progressFor(fam, killSum, deathSum, BestiaryData.bracket(fam.bracketType, fam.bracket))
 		}
 
-		/** {@code killSum} stays the real total; only tier math is clamped to the family cap. */
 		@JvmStatic
 		fun progressFor(fam: BestiaryData.Family, killSum: Long, deathSum: Long, ladder: List<Int>): FamilyProgress {
 			val tierKills = if (fam.cap > 0) minOf(killSum, fam.cap.toLong()) else killSum
-			// NEU brackets are cumulative kill thresholds. Family cap = kills for that family's max tier.
 			val tiersMax = tiersMaxFor(ladder, fam.cap)
 			var tier = 0
 			for (i in 0 until tiersMax) {
@@ -166,7 +162,6 @@ class BestiarySnapshot private constructor(
 			return FamilyProgress(fam, killSum, deathSum, tier, tiersMax, into, next, maxed)
 		}
 
-		/** Highest ladder index whose cumulative threshold is within the family kill cap. */
 		private fun tiersMaxFor(ladder: List<Int>?, cap: Int): Int {
 			if (ladder.isNullOrEmpty()) {
 				return 0

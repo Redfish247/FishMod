@@ -16,7 +16,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 
-// Shows who is on the melody terminal, from their "n%" party callouts; clears when they finish a terminal.
 object MelodyAlert {
 
     private val PERCENT = Regex("(\\d+)%")
@@ -64,7 +63,6 @@ object MelodyAlert {
         val preview = HudPreview.active
         val who = if (preview) null else current ?: return
         val percent = if (preview) 50 else bestPercent
-        // 25/50/75 callouts mean 4 lanes, 33/67 mean 3
         val lanes = if (percent % 25 == 0) 4 else 3
         val lane = minOf(Math.round(percent * lanes / 100.0).toInt(), lanes - 1)
         val role = if (preview) DungeonRole.HEALER else DungeonRole.getClass(who?.name)

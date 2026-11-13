@@ -108,7 +108,6 @@ object SlayerManager {
     @JvmStatic
     fun inCorrectArea(): Boolean = correctArea
 
-    // quest persists everywhere; only count loot on the quest's own island
     @JvmStatic
     fun onQuestIsland(): Boolean = type?.let { onSlayerIsland(it) } ?: false
 

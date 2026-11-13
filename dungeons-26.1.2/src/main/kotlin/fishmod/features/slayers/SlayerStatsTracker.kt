@@ -25,7 +25,6 @@ object SlayerStatsTracker {
         var everStarted = false
         var rng: String? = null
         var rngStored: Long = -1
-        // lifetime totals from the profile API, plus what we counted since that pull
         var apiXp: Long = -1
         var apiKills: Long = 0
         var sinceXp: Long = 0
@@ -37,7 +36,6 @@ object SlayerStatsTracker {
     private var lastApiFetch = 0L
     @Volatile private var apiFetching = false
 
-    // profile JSON key per slayer
     private fun apiKey(t: SlayerType) = when (t) {
         SlayerType.REVENANT -> "zombie"; SlayerType.TARANTULA -> "spider"; SlayerType.SVEN -> "wolf"
         SlayerType.VOIDGLOOM -> "enderman"; SlayerType.INFERNO -> "blaze"
@@ -60,7 +58,6 @@ object SlayerStatsTracker {
     fun fromApi(): Boolean = (cur()?.apiXp ?: -1) >= 0
     fun rank(): Int = cur()?.rank ?: -1
 
-    // Elite (elitebot.dev) keeps the public slayer XP leaderboards, e.g. spider-slayer
     private fun fetchRanks(uuid: String, profileId: String) {
         for (t in SlayerType.entries) {
             val req = java.net.http.HttpRequest.newBuilder()
@@ -102,7 +99,6 @@ object SlayerStatsTracker {
             var k = 0L
             for ((key, v) in b.entrySet()) if (key.startsWith("boss_kills_tier_") && v.isJsonPrimitive) k += v.asLong
             val s = of(t)
-            // API lags a few minutes; only take it once it has caught up with our own count
             if (s.apiXp < 0 || xp >= s.apiXp + s.sinceXp) {
                 s.apiXp = xp; s.apiKills = maxOf(k, s.apiKills + s.sinceKills); s.sinceXp = 0; s.sinceKills = 0
             }
@@ -179,7 +175,6 @@ object SlayerStatsTracker {
         save()
     }
 
-    // RNG meter jump after a kill is the real slayer XP (boosts included), so it replaces the table value
     fun onRng(value: String) {
         val type = SlayerManager.type ?: return
         val s = of(type)
@@ -200,7 +195,6 @@ object SlayerStatsTracker {
     fun rngText(): String? = cur()?.rng
     fun hasData(): Boolean = cur()?.let { it.everStarted || it.apiXp >= 0 } == true
 
-    // clears our own counts; API totals stay and refresh on the next pull
     @JvmStatic
     fun reset() {
         for (s in byType.values) { s.xpGained = 0; s.kills = 0; s.activeMs = 0; s.everStarted = false }

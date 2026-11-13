@@ -23,7 +23,6 @@ object NpcTravel {
     private var mode = ""
     private var setAt = 0L
 
-    // NEU island code -> display name and warp command (null = no known warp)
     private val ISLANDS: Map<String, Pair<String, String?>> = mapOf(
         "hub" to ("Hub" to "hub"),
         "dynamic" to ("Private Island" to "is"),
@@ -57,14 +56,12 @@ object NpcTravel {
                     return@register
                 }
                 FishDraw.gizmoBox(AABB(t.x - 0.5, t.y, t.z - 0.5, t.x + 0.5, t.y + 1.0, t.z + 0.5), 0x4055FFFF, 0, true)
-                // beam helper wants the block corner and centers itself; draw it through walls
                 FishDraw.gizmoBox(AABB(t.x - 0.15, t.y, t.z - 0.15, t.x + 0.15, t.y + 24.0, t.z + 0.15), 0x4055FFFF, 0, true)
                 FishDraw.gizmoText(Component.literal("$label §7${p.position().distanceTo(t).toInt()}m"), Vec3(t.x, t.y + 2.0, t.z), 1.2f, -0x1, true)
             } catch (e: Exception) { FishDiag.fail("NpcTravel.1", "npc waypoint render threw", e) }
         }
     }
 
-    // Glacite area of the Dwarven Mines island: south, below the mines proper (NEU coords: Dulin 16,129,207)
     private fun isBaseCamp(y: Double, z: Double) = y <= 140.0 && z >= 100.0
 
     fun go(id: String) {
@@ -75,7 +72,6 @@ object NpcTravel {
         val island = o.get("island")?.takeIf { !it.isJsonNull }?.asString
         if (x == null || y == null || z == null) { FishUtil.addChatMessage(Component.literal("§b[Item List] §7No known location for §f$name§7.")); return }
         val here = SkyblockLocation.currentMode
-        // Dwarven Mines island has a far-away Base Camp / Glacite area with its own warp
         val pl = Minecraft.getInstance().player
         val baseTarget = island == "mining_3" && isBaseCamp(y, z)
         if (island == "mining_3" && here == "mining_3" && pl != null && baseTarget != isBaseCamp(pl.y, pl.z)) {

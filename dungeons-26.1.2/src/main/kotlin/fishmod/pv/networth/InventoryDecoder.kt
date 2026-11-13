@@ -17,7 +17,6 @@ import java.util.Locale
 import java.util.function.Supplier
 import net.minecraft.nbt.CompoundTag
 
-/** Decodes Hypixel inventory base64 → SkyBlock item stacks for networth. */
 object InventoryDecoder {
     data class Stack @JvmOverloads constructor(
         @get:JvmName("id") val id: String,
@@ -31,7 +30,6 @@ object InventoryDecoder {
         @get:JvmName("skullSignature") val skullSignature: String? = null,
     )
 
-    /** One loadout wardrobe set; `pieces` is helmet to boots with nulls for empty slots. */
     data class WardrobePreset(
         @get:JvmName("slot") val slot: Int,
         @get:JvmName("equipped") val equipped: Boolean,
@@ -45,7 +43,6 @@ object InventoryDecoder {
         @get:JvmName("enderPages") val enderPages: List<InventorySnapshot.Page>,
     )
 
-    /** One toolkit slot. `inUse` means the tool was taken out, so the copy in the inventory is the live one. */
     data class ToolkitItem(
         @get:JvmName("category") val category: String,
         @get:JvmName("index") val index: Int,
@@ -57,7 +54,6 @@ object InventoryDecoder {
     private val EQUIP_SLOTS = listOf("EQUIPMENT_SLOT_1", "EQUIPMENT_SLOT_2", "EQUIPMENT_SLOT_3", "EQUIPMENT_SLOT_4")
     private val TIME_POCKET_KEYS = listOf("time_pocket", "time_bag", "timed_items", "timepocket", "time_pocket_contents")
 
-    /** Runs work with a thread-local NBT decode cache; nested calls reuse it, decoded lists are immutable. */
     @JvmStatic
     fun <T> withSharedDecode(work: Supplier<T>): T = InventoryDecodeCache.withSharedDecode(work)
 
@@ -70,7 +66,6 @@ object InventoryDecoder {
     private fun bagField(bags: JsonObject?, field: String): List<Stack> =
         if (bags == null) emptyList() else InventoryDecodeCache.decodeField(bags, field)
 
-    /** Home-first-paint gear only: armor, equipment, accessories (no inventory / backpack / wardrobe NBT). */
     @JvmStatic
     fun parseHomeGear(member: JsonObject?): MutableMap<String, List<Stack>> {
         val categories = LinkedHashMap<String, List<Stack>>()
@@ -83,7 +78,6 @@ object InventoryDecoder {
         return categories
     }
 
-    /** Accessory bag plus armor accessories that still grant Magical Power (non-bag ones need an ACCESSORY lore line). */
     @JvmStatic
     fun accessoryCandidates(member: JsonObject?): MutableList<Stack> {
         val out = ArrayList<Stack>()
@@ -135,7 +129,6 @@ object InventoryDecoder {
             val page = InventoryDecodeSupport.obj(layout) ?: return@forEach
             for (slot in ARMOR_SLOTS) wardrobe.addAll(InventoryDecodeCache.decodeDataElement(page.get(slot)))
         }
-        // Legacy wardrobe blob
         if (wardrobe.isEmpty()) wardrobe.addAll(InventoryDecodeCache.decodeField(inventory, "wardrobe_contents"))
         categories["wardrobe"] = wardrobe
 
@@ -149,7 +142,7 @@ object InventoryDecoder {
         categories["museum"] = MuseumInventoryDecoder.parseMuseum(museumMember)
         categories["sacks"] = SackDecoder.parseSacks(member, inventory)
         categories["essence"] = parseEssence(member)
-        categories["pets"] = emptyList() // pets valued separately from JSON
+        categories["pets"] = emptyList()
         return categories
     }
 
@@ -160,10 +153,6 @@ object InventoryDecoder {
     fun parseMuseumById(museumMember: JsonObject?): MutableMap<String, Stack> =
         MuseumInventoryDecoder.parseMuseumById(museumMember)
 
-    /**
-     * Toolkit JSON is `{IS_UNLOCKED, IN_USE: {CROP: {"0": bool}}, CROP: {"0": {data}}}`. Older saves may use an
-     * array or a single `{data}` per crop, so all three are read.
-     */
     @JvmStatic
     fun parseToolkit(toolkit: JsonObject?): MutableList<ToolkitItem> {
         val out = ArrayList<ToolkitItem>()
@@ -202,7 +191,6 @@ object InventoryDecoder {
     fun slotFromItemBytes(itemBytes: JsonElement?): InventorySnapshot.Slot? =
         InventoryDecodeCache.decodeDataElement(itemBytes).firstOrNull()?.let(InventoryDecodeSupport::toUiSlot)
 
-    /** Slot for an item tag, with optional rarity for `PET_*` tags. */
     @JvmStatic
     @JvmOverloads
     fun slotFromTag(tag: String?, displayName: String?, tier: String? = ""): InventorySnapshot.Slot? {
@@ -289,14 +277,12 @@ object InventoryDecoder {
     @JvmStatic
     fun hasInventoryApi(member: JsonObject?): Boolean = member != null && inventoryApiEnabled(inventoryObject(member))
 
-    /** Wardrobe sets from `loadout.armor`. Empty when the profile only has the legacy wardrobe blob. */
     @JvmStatic
     fun wardrobePresets(member: JsonObject?): List<WardrobePreset> {
         if (member == null) return emptyList()
         return WardrobeDecoder.armorPresets(inventoryObject(member), InventoryDecodeSupport.obj(member.get("loadout")))
     }
 
-    /** Hypixel omits inv_contents entirely (even for an empty inventory) when the inventory API is off. */
     @JvmStatic
     fun inventoryApiEnabled(inventory: JsonObject?): Boolean {
         val contents = inventory?.get("inv_contents") ?: return false
@@ -324,18 +310,15 @@ object InventoryDecoder {
     private fun bagPage(bags: JsonObject?, field: String, title: String): InventorySnapshot.Page =
         InventorySnapshot.Page(title, uiSlots(bags, field, 27), 9)
 
-    /** Accessory bag is one flat NBT list; in-game UI pages every 45 slots (9×5). */
     private fun accessoryBagPages(bags: JsonObject?): List<InventorySnapshot.Page> =
         InventoryDecodeSupport.chunkPages(uiSlots(bags, "talisman_bag", 45), 45, 9, "Accessory Bag")
             .ifEmpty { listOf(InventorySnapshot.emptyPage("Accessory Bag", 9)) }
 
-    /** Null when no Time Pocket field exists; the API key is unconfirmed, so a few candidates are probed. */
     private fun timePocketPage(bags: JsonObject?): InventorySnapshot.Page? {
         if (bags == null) return null
         TIME_POCKET_KEYS.firstOrNull { bags.has(it) }?.let {
             return InventorySnapshot.Page("Time Pocket", uiSlots(bags, it, 27), 9)
         }
-        // Fallback: any bag key containing "time"
         for ((key, value) in bags.entrySet()) {
             if (key != null && key.lowercase(Locale.ROOT).contains("time")) {
                 return InventorySnapshot.Page(
@@ -395,15 +378,10 @@ object InventoryDecoder {
         val armorSlots = uiSlots(inv, "inv_armor", 4)
         val equipSlots = uiSlots(inv, "equipment_contents", 4)
         val invPage = InventorySnapshot.Page("Inventory", playerSlots(equipSlots, armorSlots, invSlots), 9)
-        // Rift ender chest is a flat list paged by 45 like the main one (page icons in ender_chest_page_icons).
         val ender = InventoryDecodeSupport.chunkPages(uiSlots(inv, "ender_chest_contents", 45), 45, 9, "Ender Chest")
         return RiftInventories(invPage, equipSlots, armorSlots, ender)
     }
 
-    /**
-     * Player layout used by both inventory renderers: [equip x4][helmet..boots][inv_contents x36].
-     * Hypixel inv_armor is boots-first; inv_contents is 0-8 hotbar, 9-35 main.
-     */
     @JvmStatic
     fun playerSlots(
         equipment: List<InventorySnapshot.Slot?>?,
@@ -440,7 +418,6 @@ object InventoryDecoder {
         return out
     }
 
-    /** Hypixel inv_armor order: 0 boots, 1 leggings, 2 chestplate, 3 helmet (empties kept). */
     @JvmStatic
     fun readArmorSlots(member: JsonObject): List<Stack?> {
         val inventory = inventoryObject(member)
@@ -458,7 +435,6 @@ object InventoryDecoder {
         }
     }
 
-    /** Flatten Hypixel JSON text components / quoted SNBT into a §-legacy string. */
     @JvmStatic
     fun cleanJsonText(raw: String?): String = NbtInventoryCodec.cleanJsonText(raw)
 }

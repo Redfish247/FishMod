@@ -4,7 +4,6 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object GardenSettings {
 
-    // Visitors
     @ConfigValue @JvmField var gardenVisitorTimer: Boolean = false
     @ConfigValue @JvmField var gardenVisitorSixthWarn: Boolean = false
     @ConfigValue @JvmField var gardenVisitorTimerHudX: Int = 5
@@ -29,7 +28,6 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenStatGardenXp: Int = 0
     @ConfigValue @JvmField var gardenStatRare: Int = 0
 
-    // Pests
     @ConfigValue @JvmField var gardenPestTitle: Boolean = false
     @ConfigValue @JvmField var gardenPestTitleText: String = "§c§lPEST! §e{plot}"
     @ConfigValue @JvmField var gardenPestSound: Boolean = true
@@ -70,7 +68,6 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenPestHudY: Int = 60
     @ConfigValue @JvmField var gardenPestHudScale: Double = 1.0
 
-    // Garden widgets
     @ConfigValue @JvmField var gardenComposterHud: Boolean = false
     @ConfigValue @JvmField var gardenComposterWarn: Boolean = false
     @ConfigValue @JvmField var gardenComposterHudX: Int = 200
@@ -87,7 +84,6 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenRareCropHudScale: Double = 1.0
     @ConfigValue @JvmField var gardenRareCropCount: Int = 0
 
-    // Farming profit tracker
     @ConfigValue @JvmField var gardenProfit: Boolean = false
     @ConfigValue @JvmField var gardenProfitMode: String = "Session"
     @ConfigValue @JvmField var gardenProfitCategory: String = "Combined"
@@ -101,29 +97,24 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenProfitHudY: Int = 160
     @ConfigValue @JvmField var gardenProfitHudScale: Double = 1.0
 
-    // Crop Fever tracker
     @ConfigValue @JvmField var gardenFever: Boolean = false
     @ConfigValue @JvmField var gardenFeverColor: Int = 0xFFFF55FF.toInt()
     @ConfigValue @JvmField var gardenFeverX: Int = 350
     @ConfigValue @JvmField var gardenFeverY: Int = 220
     @ConfigValue @JvmField var gardenFeverScale: Double = 1.0
 
-    // Farming fortune bonus message
     @ConfigValue @JvmField var gardenFortuneMsg: Boolean = false
     @ConfigValue @JvmField var gardenFortuneMsgText: String = "Bonus Farming Fortune: §f{bonus}"
     @ConfigValue @JvmField var gardenFortuneMsgColor: Int = 0xFFFFAA00.toInt()
 
-    // Help Carrolyn
     @ConfigValue @JvmField var gardenCarrolyn: Boolean = false
 
-    // Garden keybinds
     @ConfigValue @JvmField var gardenKeys: Boolean = false
     @ConfigValue @JvmField var gardenKeysHoe: Boolean = true
     @ConfigValue @JvmField var gardenKeysRod: Boolean = true
     @ConfigValue @JvmField var gardenKeysMousemat: Boolean = true
     @ConfigValue @JvmField var gardenKeysGrasp: Boolean = true
 
-    // Mouse sensitivity reducer
     @ConfigValue @JvmField var gardenSens: Boolean = false
     @ConfigValue @JvmField var gardenSensPercent: Int = 50
     @ConfigValue @JvmField var gardenSensItemsOnly: Boolean = false
@@ -140,7 +131,6 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenSensY: Int = 300
     @ConfigValue @JvmField var gardenSensScale: Double = 1.0
 
-    // Speed sign helper
     @ConfigValue @JvmField var gardenSpeedSign: Boolean = false
     @ConfigValue @JvmField var gardenSpeedSignColor: Int = 0xFF55FF55.toInt()
 }

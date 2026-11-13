@@ -9,7 +9,6 @@ object TextStrip {
     @JvmStatic
     fun plain(s: String): String = if (s.indexOf('§') < 0) s else SECTION.matcher(s).replaceAll("")
 
-    // also strips '&' codes, valid codes only
     @JvmStatic
     fun plainAmp(s: String): String = SECTION_AMP.matcher(s).replaceAll("")
 }

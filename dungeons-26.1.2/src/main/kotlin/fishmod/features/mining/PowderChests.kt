@@ -15,7 +15,6 @@ import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentHashMap
 import fishmod.features.mining.MiningSettings as S
 
-// Crystal Hollows treasure (powder) chests: box + line to each one spawned near you
 object PowderChests {
 
     private const val MAX_DIST_SQ = 15.0 * 15.0
@@ -28,7 +27,6 @@ object PowderChests {
             false
         }
         FishEvents.worldChange.register { chests.clear(); false }
-        // Lockpicked chests linger until Hypixel clears the block
         FishEvents.chat.register { text ->
             if (chests.isNotEmpty() && text.chatRaw.contains("CHEST LOCKPICKED")) {
                 val pp = Minecraft.getInstance().player?.position()

@@ -113,7 +113,6 @@ object MapImageLoader {
         val fileName = nameWithoutExt(path.fileName.toString())
         if (!path.toString().lowercase(Locale.ROOT).endsWith(".png")) return
 
-        // not a real PNG (renamed jpg/webp): tell the player once, no error report
         if (!hasPngSignature(path)) {
             if (BAD_WARNED.add(fileName)) FishUtil.addChatMessage(Component.literal("§c[Map] '$fileName' is not a real PNG file, skipping"))
             return

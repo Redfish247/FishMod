@@ -20,7 +20,6 @@ import fishmod.compat.GLFW
 import kotlin.math.max
 import kotlin.math.min
 
-// Diana profit across the events you pick (current event = index -1)
 class DianaPastEventsScreen(private val parent: Screen? = null) :
     Screen(Component.literal("Diana Profit")), HasUiOverlay {
 
@@ -121,11 +120,9 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    // event chips in the header, wrapping; returns bottom y
     private fun renderChips(x: Int, y: Int, w: Int): Int {
         val evs = events()
         selected.retainAll(evs.map { it.idx }.toSet())
-        // event chips, wrapping
         val chipH = 11
         var cx = x
         var cy = y
@@ -155,7 +152,6 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
     private fun renderBody(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
         val evs = events()
 
-        // aggregate the picked events
         val items = HashMap<String, Long>()
         val mobs = HashMap<String, Long>()
         var time = 0L

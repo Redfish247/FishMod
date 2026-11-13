@@ -3,7 +3,6 @@ package fishmod.utils.debug;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Shared try/catch for mixin hooks: FishDiag.fail plus one full log line per code. */
 public final class MixinGuard {
     private static final Set<String> LOGGED = ConcurrentHashMap.newKeySet();
 

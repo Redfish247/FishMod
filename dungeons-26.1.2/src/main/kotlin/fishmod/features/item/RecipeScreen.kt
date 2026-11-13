@@ -209,7 +209,6 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
 
         super.extractRenderState(ctx, rawX, rawY, delta)
 
-        // Drawn on the overlay so it sits above the overlay's own text
         slots().firstOrNull { it.id != null && inside(mx, my, it.x, it.y, it.size, it.size) }?.let { s ->
             val sid = s.id!!
             val lines = ArrayList<Component>()
@@ -263,7 +262,6 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
         if (history.isNotEmpty() && inside(mx, my, backX(), py + 15, 46, TAB_H)) { goBack(); return true }
         craftName()?.let { n ->
             if (inside(mx, my, craftX(), craftY(), 60, TAB_H)) {
-                // One click = one /recipe; the Super Craft button is then clicked in Hypixel's recipe menu
                 net.minecraft.client.Minecraft.getInstance().connection?.sendCommand("recipe $n")
                 return true
             }

@@ -27,7 +27,6 @@ object GoldorSection {
     private const val SPLIT_GOLD = 0xFFAA00
     private val splits: Array<RunSplit> = Array(4) { RunSplit("S${it + 1}", "", "", SPLIT_GOLD, 0.0) }
 
-    // "<name> activated a lever! (3/7)" style progress lines
     private val PROGRESS_LINE = Regex("^(\\w+) (activated|completed) a (terminal|device|lever)! \\((\\d)/(\\d)\\)$")
 
     @JvmField
@@ -86,7 +85,6 @@ object GoldorSection {
         splits.forEach(RunSplit::reset)
     }
 
-    // section 2 has an extra device
     @JvmStatic
     fun totalFor(section: Int): Int = if (section == 2) 8 else 7
 
@@ -133,7 +131,6 @@ object GoldorSection {
         val of = ofRaw.toInt()
         FishDiag.check(of in 1..8 && now in 0..of, "GoldorSection.7") { "odd terminal count $now/$of section=$currentSection msg='${message.string}'" }
 
-        // a full count before anything was done here is the previous section's echo
         if (completed == 0 && now == of) {
             debug("§cskipped stale echo $now/$of (section $currentSection)")
             return false
@@ -211,7 +208,6 @@ object GoldorSection {
         SplitsShownIn.TERMINALS_ONLY -> BossPhase.inTerminals()
     }
 
-    // section is done once the gate is down and the count is full, or the count wrapped back after being full
     @JvmStatic
     fun shouldIncrement(latest: Int): Boolean =
         (gateBlownUp && latest == total) || (completed >= total && latest < completed)

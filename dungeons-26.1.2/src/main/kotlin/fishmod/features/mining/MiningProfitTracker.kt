@@ -22,7 +22,6 @@ import net.minecraft.resources.Identifier
 import java.io.File
 import fishmod.features.mining.MiningSettings as S
 
-// Mining profit tracker (same shape as the Diana tracker): Session/Total, per category, chat + sack parsing
 object MiningProfitTracker {
 
     enum class Cat(val display: String, override val color: String, override val short: String) : ProfitTrackerKit.Cat {
@@ -35,8 +34,8 @@ object MiningProfitTracker {
     val SORTS = arrayOf("Most Profit", "Least Profit", "Category")
 
     class Tracker {
-        var items: MutableMap<String, Long> = LinkedHashMap()  // "CAT|Item Name" -> count
-        var counts: MutableMap<String, Long> = LinkedHashMap() // runs/corpses/chests
+        var items: MutableMap<String, Long> = LinkedHashMap()
+        var counts: MutableMap<String, Long> = LinkedHashMap()
         var timeMs = 0L
     }
     private class Persisted { var session = Tracker(); var total = Tracker() }
@@ -49,7 +48,6 @@ object MiningProfitTracker {
     var version = 0; private set
 
     private val CORPSE = Regex("""^\s*(LAPIS|UMBER|TUNGSTEN|VANGUARD) CORPSE LOOT!""")
-    // Key consumed per corpse, tracked as a negative item so profit nets it out
     private val CORPSE_KEY = mapOf("UMBER" to "Tungsten Key", "TUNGSTEN" to "Umber Key", "VANGUARD" to "Skeleton Key")
     private val BAR = Regex("""^▬{20,}$""")
     private val ITEM = Regex("""^\s{2,}[☠✦+]?\s*(.+?)(?:\s+x([\d,]+))?\s*$""")
@@ -88,7 +86,6 @@ object MiningProfitTracker {
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
                 MiningHuds.draw(ctx, lines(), S.miningProfitHudX, S.miningProfitHudY, S.miningProfitHudScale)
         }
-        // In the inventory the HUD stays up and scrolls with the mouse wheel
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is InventoryScreen) return@AfterInit
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
@@ -115,7 +112,6 @@ object MiningProfitTracker {
 
     private fun scrollBy(d: Int): Boolean { scroll = (scroll + d).coerceAtLeast(0); version++; return true }
 
-    // ---- parsing ----
 
     private fun onChat(text: Component) {
         val s = Mining.strip(text.string)
@@ -139,13 +135,11 @@ object MiningProfitTracker {
         val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: 1L
         if (!trackable(name) || name.endsWith("Powder")) return
         add(cat, name, n)
-        // [Sacks] already counted these as mined (it arrived before the loot block): move them out of Mined
         val early = consume(sackMined, norm(name), n, now)
         if (early > 0) add(Cat.MINING, name, -early)
         lootPending.getOrPut(norm(name)) { ArrayList() } += longArrayOf(n - early, now)
     }
 
-    // Loot-block items that will reappear in the batched [Sacks] summary; deducted so they aren't also "Mined"
     private val lootPending = HashMap<String, MutableList<LongArray>>()
     // Items [Sacks] credited as Mined, in case the loot block lands after the summary
     private val sackMined = HashMap<String, MutableList<LongArray>>()
@@ -206,7 +200,6 @@ object MiningProfitTracker {
             c.siblings.forEach(::walk)
         }
         walk(text)
-        // Loot blocks already list their items; sacks only add what wasn't in a recent loot block
         for (m in SACK_LINE.findAll(hovers.joinToString("\n"))) {
             if (m.groupValues[1] != "+") continue
             val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
@@ -267,7 +260,6 @@ object MiningProfitTracker {
         save(false)
     }
 
-    // ---- values ----
 
     fun priceOf(name: String): Double {
         if (name.endsWith("Powder")) return 0.0
@@ -276,7 +268,6 @@ object MiningProfitTracker {
         return CroesusPrices.price(id)
     }
 
-    // Achievement ledger reads: value of the total/session trackers and a counter
     fun profitOf(session: Boolean): Double = (if (session) data.session else data.total).items.entries.sumOf { (k, n) ->
         val name = k.substringAfter('|'); if (name.endsWith("Powder")) 0.0 else priceOf(name) * n }
     fun totalItems(): Map<String, Long> = data.total.items.entries.associate { it.key.substringAfter('|') to it.value }

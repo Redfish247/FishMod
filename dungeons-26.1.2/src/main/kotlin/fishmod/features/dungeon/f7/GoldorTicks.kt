@@ -9,7 +9,6 @@ import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-// P3 tick clock; Goldor's death tick fires every 60 ticks (3s).
 object GoldorTicks {
 
     private const val CYCLE_SECONDS = 3.0
@@ -39,7 +38,6 @@ object GoldorTicks {
             Floor7Settings.goldorTicksCountUp -> intoCycle
             else -> CYCLE_SECONDS - intoCycle
         }
-        // colour follows what is shown when counting down, else the cycle position
         val colorBase = if (Floor7Settings.goldorUseDeathTicks && !Floor7Settings.goldorTicksCountUp) shown else intoCycle
         FishDiag.guard("GoldorTicks.2", "goldor tick hud threw") { FishDraw.drawTimer(component, context, shown, cycleColor(colorBase)) }
     }

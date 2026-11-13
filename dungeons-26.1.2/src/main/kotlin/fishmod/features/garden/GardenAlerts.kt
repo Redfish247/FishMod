@@ -4,7 +4,6 @@ import fishmod.utils.FishUtil
 import net.minecraft.sounds.SoundEvents
 import fishmod.features.garden.GardenSettings as S
 
-// On-screen rare drop / rare reward alert, placed and scaled in the HUD editor
 object GardenAlerts {
 
     private var lines: List<String> = emptyList()
@@ -15,7 +14,6 @@ object GardenAlerts {
         "MYTHIC" to "§d", "DIVINE" to "§b", "SPECIAL" to "§c", "VERY_SPECIAL" to "§c",
     )
 
-    // Chat colour of the first name ItemsDb knows, from the item's Hypixel tier
     fun rarityColor(vararg names: String): String? {
         for (n in names) {
             val id = fishmod.utils.networth.ItemsDb.idFor(n.trim()) ?: continue
@@ -34,7 +32,6 @@ object GardenAlerts {
 
     private fun alertLines(t: Pair<String, String>) = listOf(t.first, t.second).filter { it.isNotEmpty() }
 
-    // The alert the player's settings can fire: rare crop first, else rare reward
     private fun example(): List<String> = when {
         S.gardenRareCrop && S.gardenRareCropTitle -> alertLines(GardenWidgets.rareCropAlert("RARE CROP! Cropie"))
         S.gardenRareRewardWarn -> alertLines(Visitors.rareRewardAlert("Overgrown Grass"))

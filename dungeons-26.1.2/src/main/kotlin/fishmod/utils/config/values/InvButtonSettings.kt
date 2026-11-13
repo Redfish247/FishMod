@@ -92,12 +92,10 @@ object InvButtonSettings {
     @JvmField
     var icon7: String = ""
 
-    // "x,y;x,y;..." per button, relative to the inventory corner; empty = default spot
     @ConfigValue
     @JvmField
     var layout: String = ""
 
-    // list of InvButton as JSON; old command/name/icon/layout fields are only read once to migrate
     @ConfigValue
     @JvmField
     var buttonsJson: String = ""
@@ -106,12 +104,10 @@ object InvButtonSettings {
     @JvmField
     var showEquipment: Boolean = false
 
-    // last equipment seen in /stats, kept until it changes
     @ConfigValue
     @JvmField
     var equipmentCache: String = ""
 
-    // loadout name -> encoded equipment, as JSON
     @ConfigValue
     @JvmField
     var equipmentByLoadout: String = "{}"

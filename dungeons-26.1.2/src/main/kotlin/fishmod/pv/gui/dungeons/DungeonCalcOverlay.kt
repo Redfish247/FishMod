@@ -15,7 +15,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Compact results popup for dungeon XP calculators. */
 class DungeonCalcOverlay {
 	@JvmRecord
 	data class FloorLine(val label: String, val runsNeeded: Long, val xpPerRun: Long, val master: Boolean)
@@ -158,7 +157,6 @@ class DungeonCalcOverlay {
 		}
 	}
 
-	/** @return true if the click was consumed (close or absorb inside panel). */
 	fun mouseClicked(mx: Double, my: Double): Boolean {
 		if (!open) {
 			return false
@@ -189,7 +187,6 @@ class DungeonCalcOverlay {
 		const val COLOR_HEALER = 0xFFFF8EC8.toInt()
 		const val COLOR_TANK = 0xFFC0C0D0.toInt()
 
-		// Theme accent captured once at class load, as before.
 		val COLOR_RUNS = PvDraw.COLOR_ACCENT
 
 		fun titleColor(view: View): Int = when {
@@ -285,7 +282,6 @@ class DungeonCalcOverlay {
 			return out
 		}
 
-		/** Matches dungeon page MM red / normal green; labels are `F7`/`M7`. */
 		fun floorColor(label: String?): Int {
 			if (label.isNullOrBlank()) {
 				return COLOR_FLOOR_NORMAL

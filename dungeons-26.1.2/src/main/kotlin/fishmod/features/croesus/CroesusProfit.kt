@@ -104,7 +104,6 @@ object CroesusProfit {
             val x = acc.bgX + s.x
             val y = acc.bgY + s.y
             ctx.fill(x, y, x + 16, y + 16, color)
-            // Redraw the icon so it sits over the highlight
             ctx.item(stack, x, y)
         }
     }
@@ -132,7 +131,6 @@ object CroesusProfit {
                 COST.find(it)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull()
             } ?: 0.0
             val err = arrayOf<String?>(null)
-            // No Cost line = not buyable (likely already opened)
             if (plain.none { it.contains("Cost") }) { noCost.add(i); continue }
             val info = CroesusRewardParser.parseRewards(tooltip, err) ?: run { FishDiag.fail("CroesusProfit.3", "chest preview in slot $i unparsed: ${err[0]}"); null } ?: continue
             var value = 0.0

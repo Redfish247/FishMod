@@ -29,7 +29,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** One collection's tiers in a calculator-style popup over the board. */
 internal class CollectionDetailView {
 	enum class TierState { UNLOCKED, NEXT, UPCOMING }
 
@@ -106,7 +105,6 @@ internal class CollectionDetailView {
 		return false
 	}
 
-	/** Every click is consumed while open; clicking outside the panel closes it. */
 	fun mouseClicked(mx: Double, my: Double): Boolean {
 		if (item == null) {
 			return false
@@ -172,7 +170,6 @@ internal class CollectionDetailView {
 		}
 	}
 
-	/** Fits the panel inside the board (`px, py, pw, ph`) it pops over. */
 	fun layoutPanel(px: Int, py: Int, pw: Int, ph: Int, lineH: Int, content: CollectionPopupLayout.Content) {
 		val l = CollectionPopupLayout.compute(px, py, pw, ph, lineH, content)
 		layout = l
@@ -184,7 +181,6 @@ internal class CollectionDetailView {
 		closeY = l.headerY + (CollectionPopupLayout.HEADER_H - CLOSE) / 2
 	}
 
-	/** Places arrows and the visible slots; slot rects are {x, y, w, h, tierIndex}. */
 	fun layoutTrack(x: Int, y: Int, w: Int, displayTier: Int) {
 		val item = item ?: return
 		val tiers = item.tiers
@@ -260,7 +256,6 @@ internal class CollectionDetailView {
 		}
 	}
 
-	/** Measured once per collection, again only while NEU or the item list is still loading. */
 	private fun content(snapshot: CollectionSnapshot, font: Font, item: HypixelCollectionsCache.Item): CollectionPopupLayout.Content {
 		content?.let { if (contentFinal) return it }
 		var maxRewards = 0
@@ -639,7 +634,6 @@ internal class CollectionDetailView {
 		private fun hit(r: IntArray?, mx: Double, my: Double): Boolean =
 			r != null && mx >= r[0] && mx < r[0] + r[2] && my >= r[1] && my < r[1] + r[3]
 
-		/** Tiers that fit across `width`; arrows only take room when paging is needed. */
 		fun perPage(tierCount: Int, width: Int): Int {
 			if (tierCount <= 0) {
 				return 1
@@ -654,7 +648,6 @@ internal class CollectionDetailView {
 		fun pageCount(tierCount: Int, perPage: Int): Int =
 			if (perPage <= 0) 1 else maxOf(1, (tierCount + perPage - 1) / perPage)
 
-		/** Spreads one page of tiers across the width so the connectors read as one track, up to a max gap. */
 		fun trackGap(count: Int, width: Int): Int {
 			if (count <= 1) {
 				return TRACK_GAP
@@ -662,13 +655,11 @@ internal class CollectionDetailView {
 			return maxOf(TRACK_GAP, minOf(MAX_TRACK_GAP, (width - count * SLOT) / (count - 1)))
 		}
 
-		/** The tier being worked towards, or the last tier once everything is unlocked. */
 		fun defaultSelection(item: HypixelCollectionsCache.Item, displayTier: Int): Int {
 			val i = item.tiers.indexOfFirst { it.tier > displayTier }
 			return if (i >= 0) i else maxOf(0, item.tiers.size - 1)
 		}
 
-		/** First reward with a recipe to preview, else the first item, else nothing. */
 		fun defaultReward(rewards: List<CollectionRewards.Reward>, hasRecipe: Predicate<String?>): Int {
 			var firstItem = -1
 			for ((i, r) in rewards.withIndex()) {
@@ -723,7 +714,6 @@ internal class CollectionDetailView {
 			return w
 		}
 
-		// NEU pet lore is full of {STAT} placeholders; build it like an auction pet so the numbers fill in.
 		private fun petSlot(id: String): InventorySnapshot.Slot? {
 			val semi = id.indexOf(';')
 			if (semi <= 0 || !CollectionRewards.isPet(id)) {
@@ -745,7 +735,6 @@ internal class CollectionDetailView {
 			TierState.UPCOMING -> PvDraw.COLOR_MUTED
 		}
 
-		/** `displayTier` already includes tiers Hypixel lists as unlocked even when amounts lag. */
 		fun tierState(
 			item: HypixelCollectionsCache.Item, tier: HypixelCollectionsCache.Tier, @Suppress("UNUSED_PARAMETER") amount: Long, displayTier: Int,
 		): TierState {
@@ -756,7 +745,6 @@ internal class CollectionDetailView {
 			return if (firstLocked.tier == tier.tier) TierState.NEXT else TierState.UPCOMING
 		}
 
-		/** Recipe / perk unlocks first; SkyBlock XP only when that's all the tier gives. */
 		fun rewardSummary(tier: HypixelCollectionsCache.Tier): String {
 			val main = ArrayList<String>()
 			var xp: String? = null

@@ -6,14 +6,12 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.decoration.ArmorStand
 
-// Armor-stand and hotbar scans for hotspot, deployable and bait alerts. Names and offsets are from Feesh and UNVERIFIED in game.
 object FishingAlertsWorld {
     private const val TICK_EVERY = 10
     private var tick = 0
 
     // Hotspot found: last two ids so a close hotspot does not re-alert
     private val seenHotspots = ArrayDeque<Int>()
-    // Hotspot gone: stand near the hook, and when it vanished
     private var trackedId = -1
     private var trackedPerk = ""
     private var trackedPos: net.minecraft.world.phys.Vec3? = null
@@ -84,7 +82,6 @@ object FishingAlertsWorld {
         if (S.alertBait) scanBait(player)
     }
 
-    // Perk is the stand directly under the HOTSPOT stand
     internal fun perkBelow(hot: ArmorStand, stands: List<ArmorStand>): String {
         var best: ArmorStand? = null
         var bestD = Double.MAX_VALUE
@@ -101,7 +98,6 @@ object FishingAlertsWorld {
                           hookHot: ArmorStand?, hookHotD: Double, stands: List<ArmorStand>) {
         if (!S.alertHotspotGone) return
         if (goneAt != 0L) {
-            // Wait 150 ms+ so a world change wins over the stand despawn (worldChange resets goneAt)
             if (System.currentTimeMillis() - goneAt < 150) return
             goneAt = 0L
             val p = trackedPos
@@ -133,7 +129,6 @@ object FishingAlertsWorld {
                 expiring(t.first)
                 continue
             }
-            // Totem: its timer stand is two ids after the "Totem of Corruption" stand and carries "Remaining: ..."
             if (name.startsWith("Owner: ") && name.endsWith(own)) {
                 val level = s.level()
                 val totemStand = level.getEntity(s.id - 2)?.customName?.string
@@ -156,7 +151,6 @@ object FishingAlertsWorld {
         FishingAlerts.notify(FishingTitles.DEPLOYABLE, FishingAlerts.deployableTitle(name), "Your $name expires soon.")
 
     private fun scanBait(player: net.minecraft.client.player.LocalPlayer) {
-        // Needs a rod in the water recently (Feesh: hook submerged within 5 min); approximated by a live hook
         if (player.fishing == null) return
         val stack = player.inventory.getItem(8)
         if (stack.isEmpty) return
@@ -171,7 +165,6 @@ object FishingAlertsWorld {
         lastBait = r; lastBaitName = name
         if (prev == -1) return
         if (name != prevName) { FishingAlerts.notify(FishingTitles.BAIT, FishingAlerts.baitTitle(name, null), "Bait changed to $name."); baitWarned = false; return }
-        // +1 is a Hypixel refund, more than +1 means bait was added
         if (r > prev) { baitWarned = false; return }
         if (r <= S.alertBaitLow && !baitWarned) {
             baitWarned = true

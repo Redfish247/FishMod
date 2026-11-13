@@ -23,7 +23,6 @@ import java.util.EnumMap
  * Higher-tier / mapped donations credit lower variants via `parent` + `mapped_item_ids`.
  */
 object MuseumCatalog {
-    /** Hypixel museum progression (early → late). */
     private val GAME_STAGE_RANK = mapOf(
         "STARTER" to 0,
         "AMATEUR" to 1,
@@ -75,15 +74,12 @@ object MuseumCatalog {
     @Volatile
     private var BY_ID: Map<String, Entry> = emptyMap()
 
-    /** Higher-tier id → lower-tier museum slots it unlocks (direct children). */
     @Volatile
     private var CHILDREN: Map<String, List<String>> = emptyMap()
 
-    /** Starred / alt id → catalog museum slot id. */
     @Volatile
     private var VARIANT_TO_BASE: Map<String, String> = emptyMap()
 
-    /** Armor/equipment piece id → museum set slot id. */
     @Volatile
     private var PIECE_TO_SET: Map<String, String> = emptyMap()
 
@@ -93,7 +89,6 @@ object MuseumCatalog {
         rebuild()
     }
 
-    /** Drop catalog so the next UI access rebuilds against fresh item defs. */
     @JvmStatic
     fun invalidate() {
         BY_SORT = emptyMap()
@@ -187,10 +182,6 @@ object MuseumCatalog {
         0
     }
 
-    /**
-     * Higher → lower edges with set pieces folded onto their set id. Hypixel sometimes keys
-     * `parent` by a piece (MANGROVE_GRIPPERS) even though the museum slot is the set.
-     */
     @JvmStatic
     fun childrenOf(upgradeTo: Map<String, String>, pieceToSet: Map<String, String>): Map<String, List<String>> {
         val children = LinkedHashMap<String, MutableList<String>>()
@@ -216,10 +207,6 @@ object MuseumCatalog {
         return donationId
     }
 
-    /**
-     * Expand museum API donations so higher tiers / mapped variants fill every covered catalog slot
-     * (e.g. Hyperion → Valkyrie / Scylla / Astraea / Necron Blade).
-     */
     @JvmStatic
     fun resolveDonations(raw: Map<String, InventoryDecoder.Stack?>?): Map<String, ResolvedDonation> {
         ensureBuilt()
@@ -248,7 +235,6 @@ object MuseumCatalog {
         return out
     }
 
-    /** Map starred / alt donation keys onto the catalog museum slot id. */
     @JvmStatic
     fun canonicalSlotId(rawId: String?): String {
         ensureBuilt()
@@ -325,14 +311,12 @@ object MuseumCatalog {
     @JvmStatic
     fun isCataloged(id: String?): Boolean = entry(id) != null
 
-    /** Item id suitable for `SkyBlockItemFactory.iconStack`. */
     @JvmStatic
     fun iconId(donationId: String?): String = entry(donationId)?.iconId ?: donationId?.uppercase() ?: ""
 
     @JvmStatic
     fun donationXp(donationId: String?): Int = entry(donationId)?.donationXp ?: 0
 
-    /** Market cost to donate this slot (armor sets = sum of pieces). */
     @JvmStatic
     fun marketPrice(donationId: String?): Double {
         val e = entry(donationId) ?: return ItemPricer.price(donationId)
@@ -401,7 +385,6 @@ object MuseumCatalog {
         return GAME_STAGE_RANK[stage.trim().uppercase()] ?: 99
     }
 
-    /** Early→late game (Hypixel museum order), then XP, then id. */
     private fun compareProgression(a: Entry?, b: Entry?, idA: String?, idB: String?): Int {
         val rankA = a?.gameStageRank ?: 99
         val rankB = b?.gameStageRank ?: 99
@@ -425,7 +408,6 @@ object MuseumCatalog {
 
     private fun stripFormatting(raw: String?): String {
         if (raw.isNullOrBlank()) return ""
-        // Hypixel: %%light_purple%%Name  plus classic § / & codes.
         val cleaned = raw.replace(HYPIXEL_COLOR, "")
         val out = StringBuilder(cleaned.length)
         var i = 0

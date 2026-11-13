@@ -13,11 +13,6 @@ import java.util.Locale
 import java.util.function.Function
 import java.util.regex.Pattern
 
-/**
- * Coin estimate for unlocking an Abiphone contact from its NEU requirement text.
- * Only "No Requirement", plain coin amounts and "Nx Item" lines with a known market price count.
- * Quests, kills, alternatives ("... or") and unpriced items make the whole estimate unknown.
- */
 object AbiphoneCosts {
 	private val COINS: Pattern = Pattern.compile("^([0-9][0-9.,]*) coins$", Pattern.CASE_INSENSITIVE)
 	private val ITEM: Pattern = Pattern.compile("^([0-9]+)x (.+)$", Pattern.CASE_INSENSITIVE)

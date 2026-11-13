@@ -60,7 +60,6 @@ object FishUtil {
         forceMainThread { INSTANCE.hud.setTitle(text) }
     }
 
-    // Mod alerts are drawn by AlertTitles (movable per feature in the HUD editor), not the vanilla title
     @JvmStatic
     fun forceTitle(title: Component, subtitle: Component) = fishmod.features.AlertTitles.show(title, subtitle, 3500)
 

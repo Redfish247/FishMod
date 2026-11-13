@@ -33,14 +33,12 @@ object EliteBotApiClient {
     private val EXECUTOR: ExecutorService = Executors.newFixedThreadPool(2, PvExecutors.daemon("FishPV-EliteBot"))
     private var nextRequestAtMillis = 0L
 
-    /** Contest participations for a profile (newest-first from API). */
     @JvmStatic
     fun contests(playerUuid: UUID?, profileId: String?): CompletableFuture<Optional<JsonArray>> {
         val url = url("contests", playerUuid, profileId) ?: return CompletableFuture.completedFuture(Optional.empty())
         return CompletableFuture.supplyAsync({ getArray(url) }, EXECUTOR)
     }
 
-    /** Farming weight for a profile. */
     @JvmStatic
     fun weight(playerUuid: UUID?, profileId: String?): CompletableFuture<Optional<JsonObject>> {
         val url = url("weight", playerUuid, profileId) ?: return CompletableFuture.completedFuture(Optional.empty())

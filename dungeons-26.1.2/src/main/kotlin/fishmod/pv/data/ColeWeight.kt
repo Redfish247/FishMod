@@ -10,10 +10,6 @@ package fishmod.pv.data
 import com.google.gson.JsonObject
 import java.util.Locale
 
-/**
- * ColeWeight (ninjune / Vinxey thresholds): each listed amount equals one weight unit.
- * Categories: experience, powder, collection, miscellaneous.
- */
 object ColeWeight {
 	@JvmRecord
 	data class Line(val category: String, val label: String, val weight: Double, val amount: Double, val perUnit: Double)

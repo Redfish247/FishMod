@@ -16,7 +16,6 @@ import fishmod.pv.gui.mining.MiningUi.HoverZone
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Glacite tunnels subtab: mineshafts, fossils, corpses, milestones. */
 class GlacitePage {
 	private var scroll = 0
 	private var maxScroll = 0
@@ -31,7 +30,6 @@ class GlacitePage {
 		scroll = 0
 	}
 
-	// The milestones panel no longer flips to the fossil essence face.
 	@Suppress("UNUSED_PARAMETER")
 	fun mouseClicked(mx: Double, my: Double): Boolean = false
 
@@ -118,7 +116,6 @@ class GlacitePage {
 		scrollH = gridH
 
 		val tiers = MiningSnapshot.CORPSE_MILESTONES
-		// Two columns side by side, no scrolling.
 		val cols = 2
 		val colGap = 12
 		val colW = (rw - colGap) / cols

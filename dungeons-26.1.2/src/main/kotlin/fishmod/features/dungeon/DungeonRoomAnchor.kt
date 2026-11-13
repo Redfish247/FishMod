@@ -31,7 +31,6 @@ object DungeonRoomAnchor {
         return BlockPos(r.x + a.clay.x, r.y, r.z + a.clay.z)
     }
 
-    // Sub-block point: block via the lattice formula, offset from the block centre rotated the same way
     @JvmStatic
     fun pointToLocal(a: Anchor, x: Double, y: Double, z: Double): DoubleArray {
         val bx = Math.floor(x); val bz = Math.floor(z)
@@ -48,7 +47,6 @@ object DungeonRoomAnchor {
         return doubleArrayOf(b.x + 0.5 + ox, y, b.z + 0.5 + oz)
     }
 
-    /** True when the room is turned 90/270 degrees, so box X/Z extents swap between frames. */
     @JvmStatic
     fun swapsAxes(a: Anchor): Boolean = a.rotation == Room.Rotation.WEST || a.rotation == Room.Rotation.EAST
 

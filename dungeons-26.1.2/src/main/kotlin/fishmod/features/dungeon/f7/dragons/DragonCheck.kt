@@ -42,11 +42,10 @@ object DragonCheck {
                 anyNew = true
             }
         }
-        // Extra spawn-animation bursts land inside a dragon's pit box but off its spawn spot; only report spots in no pit at all.
         if (!anyNew && WitherDragon.real.none { (p.x in it.xRange && p.z in it.zRange) || (p.x in it.box.minX..it.box.maxX && p.z in it.box.minZ..it.box.maxZ) }) FishDiag.fail("DragonCheck.1", "dragon spawn particle at unknown spot ${p.x},${p.z}")
         if (spawning.isNotEmpty()) {
             WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
-            WitherDragons.spawnRank = spawning.sortedBy { it.timeToSpawn } // first to spawn = #1, ties keep priority order
+            WitherDragons.spawnRank = spawning.sortedBy { it.timeToSpawn }
             if (anyNew) WitherDragons.onDragonsSpawning(spawning)
         }
     }
@@ -62,7 +61,6 @@ object DragonCheck {
             modMessage("&7dragonSpawn id=${p.id} pos=${v} matched=${inBox?.name ?: "none"}")
         }
         if (inBox != null) { inBox.setAlive(p.id, tick); return }
-        // Late spawn: ping-tick timer ran out or particle packet was missed; recover only if the scoreboard still lists it.
         val late = WitherDragon.real.firstOrNull {
             it.state == WitherDragonState.DEAD &&
                 v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
@@ -72,7 +70,6 @@ object DragonCheck {
             else if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: ${late.name} not on scoreboard")
             return
         }
-        // Alive dragon re-added by the server (chunk reload, new id) inside its own pit: re-track it.
         val alive = WitherDragon.real.firstOrNull {
             it.state == WitherDragonState.ALIVE && v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
         }

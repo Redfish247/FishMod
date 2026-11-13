@@ -24,7 +24,6 @@ object StormOverAlert {
     private val SERVER_COUNTDOWN = Regex("^[1-5]$")
 
     private var shownAt = 0L
-    // Ticks left until Storm is over; -1 when not counting.
     private var ticksLeft = -1
 
     @JvmStatic

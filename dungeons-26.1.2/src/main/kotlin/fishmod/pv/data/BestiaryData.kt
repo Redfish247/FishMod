@@ -16,9 +16,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.Locale
 
-/**
- * NEU {@code constants/bestiary.json}: island categories, families, and kill brackets.
- */
 object BestiaryData {
 	@JvmRecord
 	data class Family(
@@ -78,7 +75,6 @@ object BestiaryData {
 		}
 	}
 
-	/** Reload after NEU-REPO updates. */
 	@JvmStatic
 	fun reload() {
 		synchronized(this) {
@@ -249,7 +245,6 @@ object BestiaryData {
 		}
 		val obj = el.asJsonObject
 		var texture = str(obj, "texture")
-		// A few NEU mobs (e.g. Cow) list several textures; the first is the mob's own.
 		if (texture.isBlank() && obj.has("texture") && obj.get("texture").isJsonArray) {
 			for (t in obj.getAsJsonArray("texture")) {
 				if (t != null && t.isJsonPrimitive && t.asString.isNotBlank()) {

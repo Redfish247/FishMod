@@ -44,32 +44,26 @@ import javax.net.ssl.SSLParameters
 object HypixelApiClient {
     private const val WORKER_BASE = "https://fishmod.dev"
 
-    /** Same worker under its workers.dev name, tried when fishmod.dev is reset on the player's network. */
     private const val WORKER_FALLBACK_BASE = "https://fishmod.redfish2471.workers.dev"
 
-    /** Set once fishmod.dev is reset on this network, so later requests go straight to the fallback. */
     @Volatile
     private var fallbackSticky = false
     private val MOJANG_PROFILE: URI = URI.create("https://api.mojang.com/users/profiles/minecraft/")
     private val MOJANG_SESSION: URI = URI.create("https://sessionserver.mojang.com/session/minecraft/profile/")
     private val TIMEOUT: Duration = Duration.ofSeconds(40)
 
-    /** Why the last proxy request failed; shown in the viewer error. */
     @JvmField
     @Volatile
     internal var lastFailure: String? = null
     private val UUID_LOOKUP_TIMEOUT: Duration = Duration.ofSeconds(5)
-    // The server may try two Mojang endpoints before answering from an older entry.
     private val SERVER_UUID_TIMEOUT: Duration = Duration.ofSeconds(8)
     private val DISK_UUID_RECHECK_MS = TimeUnit.DAYS.toMillis(1)
     private const val SPACING_MS = 80L
-    // The worker's /hypixel/uuid cache is off; lookupServerUuid answers "failed" without a request.
     private const val SERVER_UUID_CACHE = false
     private val CORRELATION_ID = Regex("[A-Za-z0-9._:-]{1,80}")
 
     private val HTTP: HttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
 
-    /** Fallbacks for networks that reset the default TLS 1.3 / HTTP/2 handshake: TLS 1.2 + HTTP/1.1, then HTTP/1.1 only. */
     private val HTTP_TLS12: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(5))
         .version(HttpClient.Version.HTTP_1_1)
@@ -88,10 +82,8 @@ object HypixelApiClient {
     /** Mojang names do not change during this client session often enough to justify repeat lookups. */
     private val UUID_NAME_CACHE = ConcurrentHashMap<String, UuidName>()
 
-    /** Small pool so museum + election (and other GETs) can overlap while spacing starts. */
     private val EXECUTOR: ExecutorService = Executors.newFixedThreadPool(4, PvExecutors.daemon("FishPV-HypixelApi"))
 
-    /** Heavy profile parse (NBT / networth) stays off the HTTP pool. */
     private val PARSE_EXECUTOR: ExecutorService = Executors.newFixedThreadPool(2, PvExecutors.daemon("FishPV-ProfileParse"))
 
     /** Shared so auth, resources and /pv calls to api.vyriv.dev reuse one warm connection. */
@@ -112,7 +104,6 @@ object HypixelApiClient {
     @Volatile
     private var electionFetchedAtMillis = 0L
 
-    /** Next allowed request start time. Claimed with CAS so sleep happens off the shared path. */
     private val NEXT_REQUEST_AT_MILLIS = AtomicLong()
 
     @JvmStatic
@@ -248,8 +239,6 @@ object HypixelApiClient {
         }
     }
 
-    // Disk entries are served straight away; older ones are confirmed in the
-    // background so a rename is dropped by the next /pv.
     private fun recheckDiskUuid(cleaned: String, stored: UuidName) {
         CompletableFuture.supplyAsync({ lookupMojangUuid(cleaned) }, EXECUTOR).thenAccept { mojang ->
             if (mojang.status == LookupStatus.FOUND) {
@@ -271,7 +260,6 @@ object HypixelApiClient {
         CompletableFuture.runAsync({ lookupServerUuid(cleaned, true) }, EXECUTOR)
     }
 
-    // savedAtMs < 0 keeps the existing disk entry untouched.
     private fun rememberUuid(uuidName: UuidName, savedAtMs: Long) {
         val key = uuidName.name.lowercase(Locale.ROOT)
         UUID_NAME_CACHE[key] = uuidName
@@ -448,14 +436,12 @@ object HypixelApiClient {
         if (cached != null && System.currentTimeMillis() - PLAYER_CACHED_AT.getOrDefault(id, 0L) <= maxAgeMs) {
             return CompletableFuture.completedFuture(Optional.of(cached))
         }
-        // Home and Collections both ask for the viewed player at once; share one request.
         val created = CompletableFuture<Optional<JsonObject>>()
         PLAYER_IN_FLIGHT.putIfAbsent(id, created)?.let { return it }
         CompletableFuture.supplyAsync({
             fetchVyrivApi("$WORKER_BASE/hypixel/player/$id", "player").map { body ->
                 val player = if (body.has("player") && body.get("player").isJsonObject) body.getAsJsonObject("player") else body
                 val now = System.currentTimeMillis()
-                // evict player JSON older than an hour
                 PLAYER_CACHED_AT.entries.removeIf { e ->
                     if (now - e.value <= 3_600_000L) return@removeIf false
                     PLAYER_CACHE.remove(e.key)
@@ -480,7 +466,6 @@ object HypixelApiClient {
 
     @JvmStatic
     fun skyblockElection(): CompletableFuture<Optional<JsonObject>> {
-        // Global data; reuse it across /pv opens and profile switches unless the last fetch failed.
         val now = System.currentTimeMillis()
         val cached = electionFuture
         if (cached != null && now - electionFetchedAtMillis < ELECTION_TTL_MS && !failed(cached)) return cached
@@ -493,7 +478,6 @@ object HypixelApiClient {
         return next
     }
 
-    /** True when a finished lookup failed or came back empty, so callers should retry. */
     @JvmStatic
     fun failed(future: CompletableFuture<out Optional<*>>?): Boolean {
         if (future == null || !future.isDone) return false
@@ -524,7 +508,6 @@ object HypixelApiClient {
         val attemptStarted = System.nanoTime()
         var viaWorker = getJson(workerUrl, true, true, timing, 0)
         if (viaWorker.isEmpty && System.nanoTime() - attemptStarted > TIMEOUT.toNanos() - 2_000_000_000L) {
-            // The proxy was still fetching from Hypixel when we gave up; it caches the result, so ask again.
             ProfileViewer.LOGGER.info("[PV] {} timed out, retrying once", routeName)
             viaWorker = getJson(workerUrl, true, true, timing, 0)
         }
@@ -533,7 +516,6 @@ object HypixelApiClient {
         return Optional.empty()
     }
 
-    /** Maps the PV's /hypixel/... routes onto the fishmod.dev proxy, or public Hypixel resources. */
     @JvmStatic
     internal fun rewriteUrl(url: String?): String? {
         val prefix = "$WORKER_BASE/hypixel/"
@@ -571,7 +553,6 @@ object HypixelApiClient {
         return getJson(url, true, true, RequestTiming(UUID.randomUUID().toString(), now, now), 0)
     }
 
-    /** Connection-level failures worth retrying (Cloudflare occasionally resets a fresh TLS handshake). */
     private fun isTransientNetwork(exception: IOException): Boolean =
         exception is SSLException ||
             exception is ConnectException ||
@@ -864,10 +845,6 @@ object HypixelApiClient {
         fun readNanos(): Long = readNanos
     }
 
-    /**
-     * Enforces ~`SPACING_MS` between request starts without holding a lock during sleep.
-     * Callers sleep only for their own booked slot; other workers can claim later slots meanwhile.
-     */
     private fun waitForSlot() {
         var sleepMs: Long
         while (true) {
@@ -915,10 +892,6 @@ object HypixelApiClient {
     private const val BROWSER_UA =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
-    /**
-     * Public username history (oldest to newest).
-     * Parallel Laby + Crafty + NameMC; Ashcon only if all miss.
-     */
     @JvmStatic
     fun usernameHistory(uuid: UUID?): CompletableFuture<Optional<JsonArray>> {
         val id = undashed(uuid)
@@ -945,7 +918,6 @@ object HypixelApiClient {
         }
     }
 
-    // Shared GET for the name-history sites: transport and soft parse failures become empty.
     private inline fun nameHistoryRequest(
         label: String,
         key: String,
@@ -1024,10 +996,6 @@ object HypixelApiClient {
         }
     }
 
-    /**
-     * NameMC has no documented JSON name-history API - only the public profile HTML.
-     * Fetched once on user click; redacted rows (`&mdash;`) are skipped.
-     */
     private fun fetchNameMcNameHistory(uuidPath: String?): Optional<JsonArray> {
         if (uuidPath.isNullOrBlank()) return Optional.empty()
         return nameHistoryRequest(
@@ -1039,7 +1007,6 @@ object HypixelApiClient {
         ) { parseNameMcHistoryHtml(it) }
     }
 
-    // Desktop rows only (skip mobile duplicate rows).
     private val NAMEMC_ROW = Regex("<tr>(?!\\s*class=\"d-lg-none)[\\s\\S]*?</tr>", RegexOption.IGNORE_CASE)
     private val NAMEMC_NAME_LINK = Regex("href=\"/search\\?q=([^\"]+)\"[^>]*>([^<]+)</a>")
     private val NAMEMC_TIME = Regex("datetime=\"([^\"]+)\"")
@@ -1055,7 +1022,6 @@ object HypixelApiClient {
         for (row in NAMEMC_ROW.findAll(chunk)) {
             val tr = row.value
             if (!tr.contains("fw-bold")) continue
-            // redacted (&mdash;) or empty
             val nm = NAMEMC_NAME_LINK.find(tr) ?: continue
             val name = nm.groupValues[2].trim()
             if (name.isBlank() || name == "-" || name.equals("&mdash;", ignoreCase = true)) continue

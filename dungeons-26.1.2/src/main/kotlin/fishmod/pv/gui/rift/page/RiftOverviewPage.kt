@@ -39,7 +39,6 @@ import kotlin.math.pow
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Rift overview: progress bars + timecharms / zone unlocks. */
 class RiftOverviewPage {
 	private var questScroll = 0
 	private var questMaxScroll = 0

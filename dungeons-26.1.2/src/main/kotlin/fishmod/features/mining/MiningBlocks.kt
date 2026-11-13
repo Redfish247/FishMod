@@ -65,7 +65,6 @@ object MiningBlocks {
         }
     }
 
-    // Short material name for overlays
     fun material(state: BlockState): String {
         val b = state.block
         Gem.of(state)?.let { return it.display }

@@ -65,7 +65,6 @@ object PerformanceHud {
 
     private fun clockDetached() = FishSettings.perfHudClock && FishSettings.perfHudClockDetached
 
-    // Text block as drawn in game: vertical lines or one joined line
     private fun block(ls: List<String>): List<String> = if (FishSettings.perfHudHorizontal && ls.isNotEmpty()) listOf(ls.joinToString("  ")) else ls
 
     private val FMT_12 = DateTimeFormatter.ofPattern("h:mm:ss a", Locale.US)

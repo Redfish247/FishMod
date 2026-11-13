@@ -17,7 +17,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.DyedItemColor
 
-/** Legacy 1.8 material / damage remaps used when building stacks from NEU or Hypixel defs. */
 object LegacyMaterialMap {
 	private val VALID_PATH = Regex("[a-z0-9/._-]+")
 	private val LEGACY_DATA = Regex("\\d{1,5}")
@@ -189,15 +188,9 @@ object LegacyMaterialMap {
 		else -> "minecraft:ink_sac"
 	}
 
-	/** Hypixel item def material: legacy Bukkit name plus damage value. */
 	@JvmRecord
 	data class Material(val name: String, val damage: Int)
 
-	/**
-	 * Parses a Hypixel item def material. Accepts `NAME` (damage from `durability`),
-	 * Bukkit `NAME:data` and `minecraft:name`. Anything else is not a material:
-	 * NEU's `TYPE;N` is a pet rarity / item level, not damage. Returns null when unusable.
-	 */
 	@JvmStatic
 	fun parseMaterial(raw: String?, durability: Int): Material? {
 		if (raw.isNullOrBlank()) {
@@ -245,7 +238,6 @@ object LegacyMaterialMap {
 		if (parsed != null) {
 			val upper = parsed.name
 			val damage = parsed.damage
-			// Legacy coloured blocks used material + durability (meta).
 			val remapped = when (upper) {
 				"STAINED_GLASS_PANE" -> colorPrefixed("stained_glass_pane", damage)
 				"STAINED_GLASS" -> colorPrefixed("stained_glass", damage)

@@ -43,7 +43,6 @@ object SkyBlockStats {
 		"fishing_speed" to StatStyle("☂", "Fishing Speed", 0xFF55FFFF.toInt())
 	)
 
-	/** Rough Hypixel/Maxwell power name colours. */
 	private val POWER_COLORS: Map<String, Int> = mapOf(
 		"silky" to 0xFF55FF55,
 		"hurtful" to 0xFFFF5555,
@@ -70,7 +69,6 @@ object SkyBlockStats {
 	fun stat(id: String?): StatStyle =
 		id?.let { STATS[it.lowercase(Locale.ROOT)] } ?: StatStyle("•", "Unknown", PvDraw.COLOR_TEXT)
 
-	/** Style for a display name like "Mining Fortune", or null when it isn't a known stat. */
 	@JvmStatic
 	fun byName(fullName: String?): StatStyle? {
 		if (fullName.isNullOrBlank()) {
@@ -80,7 +78,6 @@ object SkyBlockStats {
 		return STATS.values.firstOrNull { it.fullName.equals(trimmed, ignoreCase = true) }
 	}
 
-	/** Hover tip: coloured full name, then coloured symbol + full number. */
 	@JvmStatic
 	fun tooltipLines(id: String?, formattedValue: String?): List<PvTooltip.Line> {
 		val style = stat(id)
@@ -145,7 +142,6 @@ object SkyBlockStats {
 		return out
 	}
 
-	/** Null symbol falls back to •, blank name to "Unknown". */
 	class StatStyle @JvmOverloads constructor(
 		symbol: String?,
 		fullName: String?,

@@ -17,11 +17,9 @@ import java.net.http.WebSocket
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
-// Live cosmetics: one WebSocket to fishmod.dev/live; full set on connect, then pushed changes only.
 object CosmeticLive {
     private const val URL = "wss://fishmod.dev/live"
     private const val PING_MS = 30_000L
-    // No frame (pong included) for this long = half-open socket; drop it and reconnect
     private const val DEAD_MS = 75_000L
     private const val MIN_BACKOFF_MS = 5_000L
     private const val MAX_BACKOFF_MS = 5 * 60_000L
@@ -40,7 +38,6 @@ object CosmeticLive {
     private val badges = ConcurrentHashMap<String, String>()
     private val cleared = ConcurrentHashMap<String, Long>()
     @Volatile private var blocked: Set<String> = emptySet()
-    // Dashboard message ids already shown (server may resend on reconnect).
     private val seenMsgs = LinkedHashSet<Long>()
 
     @Volatile private var ws: WebSocket? = null
@@ -60,7 +57,6 @@ object CosmeticLive {
         FishSettings.remoteNicksEnabled || FishSettings.remoteItemsEnabled || FishSettings.playerSizeShared || FishSettings.badgesEnabled ||
             FishSettings.fishChatEnabled
 
-    /** Send a text frame on the live socket; false when not connected or a previous send is still in flight. */
     @Synchronized
     fun sendText(text: String): Boolean {
         val s = ws ?: return false
@@ -74,12 +70,10 @@ object CosmeticLive {
         val socket = ws
         if (socket != null) {
             if (now - lastRx > DEAD_MS) {
-                // network drop, expected: log only
                 fishmod.utils.debug.FishDebug.LOGGER.info("[CosmeticLive] live socket silent {}s, reconnecting", (now - lastRx) / 1000)
                 ws = null
                 try { socket.abort() } catch (_: Exception) {}
                 failed()
-                // a dead socket is not a failed connect: retry soon, not after the grown backoff
                 backoff = MIN_BACKOFF_MS
                 retryAt = now + 1_000L
                 return
@@ -120,7 +114,6 @@ object CosmeticLive {
         try { s?.sendClose(WebSocket.NORMAL_CLOSURE, "bye") } catch (_: Exception) {}
     }
 
-    /** Cosmetics for these uuids, or null while not connected (caller falls back to /sync). */
     fun slice(uuids: Set<String>): Slice? {
         if (!ready) return null
         fun <V> pick(m: Map<String, V>) = HashMap<String, V>().also { out -> for (u in uuids) m[u]?.let { out[u] = it } }

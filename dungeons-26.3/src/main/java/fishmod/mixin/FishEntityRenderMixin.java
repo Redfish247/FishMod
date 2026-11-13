@@ -92,7 +92,6 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
 
             List<Component> statLines = null;
             if (FishSettings.nametagStatsEnabled && state.nameTag != null && entity instanceof Player pl) {
-                // self only: other players cost an API call each
                 if (EntityTools.isClientPlayer(pl)) {
                     String playerName = pl.getName().getString();
                     statLines = fishmod.features.NametagStats.linesFor(playerName);
@@ -116,7 +115,6 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
         List<Component> lines = ((NametagStatsHolder) state).fishmod$getNametagStats();
         if (lines == null || lines.isEmpty()) return;
         boolean above = FishSettings.nametagStatsAbove;
-        // Vanilla lifts the name one row when a score line sits under it, so go one row higher too.
         int y = above ? baseOffset - (state.scoreText != null ? 20 : 10) : baseOffset + 10;
         try {
             for (Component line : lines) {
@@ -223,7 +221,6 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        // Real players only (v4 UUID); Hypixel NPCs like Seymour can share a nicked player's name
         if (entity instanceof Player && entity.getUUID().version() == 4) out = fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
         if (prestige) out = PrestigeLevelColors.colorizeLevelPrefix(out);
         if (badges) out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, entity.getUUID().toString().replace("-", ""));

@@ -8,7 +8,6 @@ import net.hypixel.modapi.HypixelModAPI
 import net.hypixel.modapi.packet.impl.clientbound.event.ClientboundLocationPacket
 import net.minecraft.network.chat.Component
 
-// SkyBlock island from the Hypixel mod API location packet; label is the packet's map name.
 enum class SkyblockLocation(val label: String) {
     UNKNOWN("Unknown"),
     DUNGEON("Dungeon"),
@@ -16,7 +15,6 @@ enum class SkyblockLocation(val label: String) {
     PRIVATE_ISLAND("Private Island"),
     HUB("Hub"),
     GALATEA("Galatea"),
-    // own packet map names since the foraging/safari update (seen in error reports)
     MOONGLADE_MARSH("Moonglade Marsh"),
     TORRHUS_CANYON("Torrhus Canyon"),
     LOTUS_ATOLL("Lotus Atoll"),
@@ -41,7 +39,6 @@ enum class SkyblockLocation(val label: String) {
     override fun toString(): String = "$label (${(System.currentTimeMillis() - since) / 1000.0}s ago)"
 
     companion object {
-        // "Spider's Den", "SPIDERS_DEN" and "spiders den" all match; the dungeon run map is called "Catacombs"
         private fun key(s: String) = s.lowercase().replace('_', ' ').replace("'", "")
         private val BY_MAP: Map<String, SkyblockLocation> = entries.associateBy { key(it.label) } + ("catacombs" to DUNGEON)
 
@@ -49,7 +46,6 @@ enum class SkyblockLocation(val label: String) {
         private var onSkyblock = false
         private var since = System.currentTimeMillis()
 
-        // raw Hypixel server mode, e.g. "hub" or "combat_1"
         @JvmStatic var currentMode: String = ""
             private set
 
@@ -84,7 +80,6 @@ enum class SkyblockLocation(val label: String) {
             }
         }
 
-        // practice mode fakes a dungeon in singleplayer
         @JvmStatic
         fun `in`(location: SkyblockLocation): Boolean =
             (location == DUNGEON && PracticeMode.active) || (onSkyblock && here == location)

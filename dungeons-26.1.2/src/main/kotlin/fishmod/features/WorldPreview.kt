@@ -3,7 +3,6 @@ package fishmod.features
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Shift-preview scenes for features drawn in the world (boxes, lines, titles) that have no HUD editor entry. Drawn mid-screen with the player's current settings. */
 object WorldPreview {
     private val scenes = HashMap<String, (GuiGraphicsExtractor, Int, Int) -> Unit>()
 
@@ -13,7 +12,6 @@ object WorldPreview {
     @JvmStatic
     fun has(feature: String) = scenes.containsKey(feature)
 
-    /** Draws the scene centred on the screen; false when the feature has none. */
     @JvmStatic
     fun draw(ctx: GuiGraphicsExtractor, feature: String, w: Int, h: Int): Boolean {
         val s = scenes[feature] ?: return false
@@ -47,7 +45,6 @@ object WorldPreview {
         pose.popMatrix()
     }
 
-    /** Vanilla-style big title + subtitle near the upper third. */
     fun title(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, main: String, sub: String? = null) {
         text(ctx, main, cx, cy - 60, 4f)
         if (sub != null) text(ctx, sub, cx, cy - 24, 2f)

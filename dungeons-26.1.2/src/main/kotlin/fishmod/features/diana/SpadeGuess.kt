@@ -9,7 +9,6 @@ import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
 
-// Fits a cubic to the spade's lava trail and extrapolates where the trail lands
 object SpadeGuess {
 
     private val points = ArrayList<Vec3>()
@@ -67,7 +66,6 @@ object SpadeGuess {
         if (DianaWaypoints.list.any { it.type == WpType.GUESS && flat(it.pos, pos) <= 4 }) return
         DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos != pos && it.distTo(v) <= 32 }
         if (DianaWaypoints.list.any { it.pos == pos && (it.type == WpType.BURROW || it.type == WpType.GUESS) }) return
-        // Early fits can land far off; drop this trail's previous guess wherever it is
         ArrowGuess.clearGuesses()
         trailGuess?.let { old -> DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos == old } }
         DianaTest.log("spade: place $pos (raw $v)")
@@ -78,7 +76,6 @@ object SpadeGuess {
     private fun flat(a: BlockPos, b: BlockPos): Double { val dx = (a.x - b.x).toDouble(); val dz = (a.z - b.z).toDouble(); return sqrt(dx * dx + dz * dz) }
 
     fun guess(): Vec3? {
-        // 4 points extrapolate wildly; wait for a steadier fit
         if (points.size < 6) return null
         val n = points.size
         val r = fishmod.utils.TrailBezier.solve(DoubleArray(n) { points[it].x }, DoubleArray(n) { points[it].y }, DoubleArray(n) { points[it].z }, n) ?: return null

@@ -75,7 +75,6 @@ class FishModInit : ClientModInitializer {
             val mc = Minecraft.getInstance()
             val self = mc.player?.gameProfile?.name ?: return FishConstants.SUCCESS
             if (!fishmod.features.dungeon.PartyCommandHandler.localEnabled(cmd)) {
-                // raw packet: sendCommand() would re-enter our own client command and recurse forever
                 mc.connection?.send(net.minecraft.network.protocol.game.ServerboundChatCommandPacket(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" ")))
                 return FishConstants.SUCCESS
             }
@@ -388,7 +387,6 @@ class FishModInit : ClientModInitializer {
         }
     }
 
-    // True when the bundled config library loads; else one report with the jar's size and hash and init stops
     private fun bundledLibsOk(): Boolean {
         try {
             Class.forName("fishmod.shaded.practicalconfig.hud.HUDComponent", false, FishModInit::class.java.classLoader)
@@ -420,7 +418,6 @@ class FishModInit : ClientModInitializer {
         safeInit("AlertTitles") { fishmod.features.AlertTitles.init() }
 
         fishmod.cosmetic.NickData.load()
-        // Rebuild from settings so a nick saved by an older gradient build picks up the current colours
         if (fishmod.cosmetic.NickState.isActive()) fishmod.cosmetic.NickState.applyFromSettings()
         FishDiag.guard("FishModInit.3", "fishmod.cosmetic.RemoteNicks.init() failed") { fishmod.cosmetic.RemoteNicks.init() }
         FishDiag.guard("FishModInit.3b", "fishmod.cosmetic.RemoteItems.init() failed") { fishmod.cosmetic.RemoteItems.init() }
@@ -820,7 +817,6 @@ class FishModInit : ClientModInitializer {
                                     FishUtil.addChatMessage(Component.literal("§8  (…more)")); break
                                 }
                             }
-                            // Per nearby player: live socket copy vs a direct /nicks fetch
                             FishUtil.addChatMessage(Component.literal("§b[fmnicktest] §7live ready: §f" + fishmod.cosmetic.CosmeticLive.ready + " §8|§7 rev: §f" + fishmod.cosmetic.CosmeticLive.rev))
                             val self = mc.player?.uuid
                             val me = mc.player
@@ -1388,7 +1384,6 @@ class FishModInit : ClientModInitializer {
                             )
                     )
             )
-            // no "ai": Hypixel's /ai <uuid> accepts island invites
             for (name in arrayOf(
                 "fps", "tps", "ping", "dprofit", "crit", "allinv", "d",
                 "e", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "m1", "m2", "m3", "m4", "m5", "m6", "m7",

@@ -20,7 +20,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 
-/** Shared mining GUI helpers and constants. */
 object MiningUi {
 	const val PAD = 6
 	const val GAP = 6
@@ -95,10 +94,6 @@ object MiningUi {
 		PvDraw.text(g, font, if (font.width(t) <= w) t else trim(font, t, w), x, y, color)
 	}
 
-	/**
-	 * Horizontal rule centered between previous and next text.
-	 * `y` is the cursor after a STAT_ROW-based line; corrects for unused row slack.
-	 */
 	@JvmStatic
 	fun sectionSeparator(g: GuiGraphicsExtractor, font: Font, panelX: Int, y: Int, panelW: Int): Int {
 		val visualBottom = y - maxOf(0, STAT_ROW - font.lineHeight)
@@ -112,7 +107,6 @@ object MiningUi {
 		return lineY + 1 + pad
 	}
 
-	/** Header + three powder totals (no bars). Returns bottom Y. */
 	@JvmStatic
 	fun drawPowdersBlock(
 		g: GuiGraphicsExtractor, font: Font, snapshot: MiningSnapshot, x: Int, y: Int, w: Int, zones: MutableList<HoverZone>,

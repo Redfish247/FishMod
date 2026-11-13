@@ -85,7 +85,6 @@ object RecipeViewer {
         }
     }
 
-    // Single-enchant book -> NEU id like ICE_COLD;1
     private fun bookId(stack: ItemStack): String? {
         val ench = stack.fishmodCustomDataTag()?.getCompound("enchantments")?.orElse(null) ?: return null
         val key = ench.keySet().singleOrNull() ?: return null
@@ -97,7 +96,6 @@ object RecipeViewer {
         if (!NeuRepo.isLoaded()) return emptyList()
         val idx = index ?: buildIndex().also { index = it }
         idx[id]?.let { return it }
-        // NEU lists pet recipes on one tier only; show them for every rarity of that pet
         val semi = id.indexOf(';')
         if (semi <= 0 || id.substring(semi + 1).toIntOrNull() == null) return emptyList()
         val base = id.substring(0, semi)
@@ -195,7 +193,6 @@ object RecipeViewer {
                 .filter { it != Items.AIR }.map { ItemStack(it) }.orElse(null)
                 ?: LootIcons.icon(id)?.copy() ?: ItemStack(Items.PAPER)
         }
-        // Hypixel's resource pack ships the real textures under these model ids
         MODEL_RE.find(nbt)?.groupValues?.get(1)?.let(Identifier::tryParse)?.takeIf(::modelExists)?.let { stack.set(DataComponents.ITEM_MODEL, it) }
         COLOR_RE.find(nbt)?.groupValues?.get(1)?.toIntOrNull()?.let { stack.set(DataComponents.DYED_COLOR, net.minecraft.world.item.component.DyedItemColor(it)) }
         if (nbt.contains("ench:[")) stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
@@ -213,7 +210,6 @@ object RecipeViewer {
 
     fun clearCache() = stacks.clear()
 
-    // Text colour of a §-coded name's first colour code
     fun colorOf(s: String): Int {
         val i = s.indexOf('§')
         if (i < 0 || i + 1 >= s.length) return 0xFFEDF1F5.toInt()

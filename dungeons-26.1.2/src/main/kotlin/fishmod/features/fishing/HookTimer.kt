@@ -11,10 +11,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
 
-// Hook timer + bite indicator. Stand text `§e§l<sec>` / `§c§l!!!` within 5 blocks of our hook
-// (UNVERIFIED in game: read from Feesh; plain digits / "!!!" are matched, colour is not checked).
 object HookTimer {
-    // Stand being read and hidden; read by the render mixin (-1 = none)
     @JvmField @Volatile var hiddenStandId = -1
 
     @Volatile private var label: Component? = null

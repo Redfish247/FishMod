@@ -46,7 +46,6 @@ object NametagStats {
 
     @JvmStatic
     fun init() {
-        // Keep entries across lobby swaps (TTL expires them); just cap size.
         FishEvents.worldChange.register { pruneExpired(); false }
     }
 

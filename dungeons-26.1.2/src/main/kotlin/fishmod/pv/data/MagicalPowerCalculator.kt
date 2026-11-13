@@ -21,10 +21,6 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/**
- * Current Magical Power from unique active accessories (SkyCrypt-style),
- * not Hypixel's `highest_magical_power` peak field.
- */
 object MagicalPowerCalculator {
     private val MP_BY_TIER = mapOf(
         "COMMON" to 3,
@@ -116,14 +112,12 @@ object MagicalPowerCalculator {
         return el != null && el.isJsonPrimitive && el.asBoolean
     }
 
-    /** Family root from `accessory_families.json`, or the id itself when it has no family. */
     @JvmStatic
     fun accessoryFamily(id: String?): String {
         ensureFamilies()
         return familyKey(id?.trim()?.uppercase() ?: "")
     }
 
-    /** Position inside the accessory's family (0 = lowest tier). */
     @JvmStatic
     fun accessoryFamilyRank(id: String?): Int {
         ensureFamilies()
@@ -143,7 +137,6 @@ object MagicalPowerCalculator {
     }
 
     private fun effectiveTier(id: String, ea: CompoundTag?, lore: List<String?>?): String {
-        // Lore is the rarity Hypixel actually shows, including recomb and special upgrades.
         val loreTier = SkyBlockItemFactory.normalizeTier(tierFromLore(lore))
         if (loreTier.isNotBlank()) return loreTier
         var tier = SkyBlockItemFactory.normalizeTier(SkyBlockItemFactory.resolveTier(id))

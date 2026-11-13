@@ -50,7 +50,6 @@ object PvTooltip {
 		BLANK
 	}
 
-	/** Null text becomes "". */
 	class Span @JvmOverloads constructor(
 		text: String?,
 		@get:JvmName("color") val color: Int,
@@ -85,7 +84,6 @@ object PvTooltip {
 		}
 	}
 
-	/** Null kind/lists normalise to TEXT/empty; empty icon and blank iconId to null. */
 	class Line @JvmOverloads constructor(
 		kind: Kind?,
 		left: List<Span>?,
@@ -114,10 +112,8 @@ object PvTooltip {
 
 		constructor(spans: List<Span>?) : this(Kind.TEXT, spans, listOf(), listOf())
 
-		/** Small item icon drawn before the label (ROW / TEXT lines). */
 		fun withIcon(stack: ItemStack?): Line = Line(kind, left, value, meta, stack, null)
 
-		/** Icon drawn by SkyBlock id, so items NEU only has as paper still get their real texture. */
 		fun withIcon(stack: ItemStack?, skyblockId: String?): Line = Line(kind, left, value, meta, stack, skyblockId)
 
 		fun hasIcon(): Boolean = icon != null || iconId != null
@@ -162,7 +158,6 @@ object PvTooltip {
 			@JvmStatic
 			fun meta(text: String?): Line = Line(Kind.META, listOf(Span.of(text, PvDraw.COLOR_MUTED)), listOf(), listOf())
 
-			// Match inventory "Click to view value breakdown" (dark gray italic).
 			@JvmStatic
 			fun action(text: String?): Line = Line(Kind.ACTION, listOf(Span.italic(text, 0xFF555555.toInt())), listOf(), listOf())
 
@@ -252,10 +247,6 @@ object PvTooltip {
 		drawStyled(g, font, lines, mouseX, mouseY, screenW, screenH, 0, Int.MAX_VALUE, null)
 	}
 
-	/**
-	 * Draw a styled tip; when `maxBodyH` is finite, content after the sticky header
-	 * (title + optional divider) scrolls by `scrollY`.
-	 */
 	@JvmStatic
 	fun drawStyled(
 		g: GuiGraphicsExtractor,
@@ -382,7 +373,6 @@ object PvTooltip {
 		return true
 	}
 
-	// Pages rebuild their tips every frame and rainbow lore recolours per frame, so compare text only.
 	private fun sameTip(a: List<Line>?, b: List<Line>?): Boolean {
 		if (a === b) {
 			return true
@@ -548,7 +538,6 @@ object PvTooltip {
 			if (span == null || span.text.isEmpty()) {
 				continue
 			}
-			// Obfuscated / italic need Component rendering so the font applies §k scramble.
 			if (span.obfuscated || span.italic) {
 				val c = span.toComponent()
 				PvDraw.text(g, font, c, cx, y)
