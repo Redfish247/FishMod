@@ -446,6 +446,8 @@ object SkyItemList {
         val hov = tabAt(mx.toDouble(), my.toDouble())
         val x0 = gridRight()
         tabScroll = tabScroll.coerceIn(0, tabMaxScroll())
+        // dark strip behind the whole sidebar, top to bottom
+        ctx.fill(x0, py + 1, px + pw, py + ph, 0xE0000000.toInt())
         for ((slot, i) in TAB_ORDER.withIndex()) {
             val row = slot - tabScroll
             if (row < 0 || row >= tabRows()) continue
