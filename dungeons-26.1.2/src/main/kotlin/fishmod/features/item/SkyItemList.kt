@@ -154,7 +154,7 @@ object SkyItemList {
                 val line = TextStrip.plain(lore[k].asString).trim().uppercase()
                 if (line.contains(" SHARD")) { fam = line.substringBefore(' '); break }
             }
-            Triple(0, fam, 0)
+            Triple(RARITY_RANK.indexOf(rarityNameOf(id)).coerceAtLeast(0), fam, 0)
         }
         else -> Triple(0, "", 0)
     }
