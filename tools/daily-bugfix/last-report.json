@@ -1,8 +1,47 @@
-{"date":"2026-11-12","version":"1.7.92","summary":"Daily bugfix run 2: built 1.7.92 (26.1.2 + 26.2); jar not copied because the game was running; untested in game.",
-"alert":"Jar not installed: Skyblock was running. Jar is at dungeons-26.2/build/libs/FishModDungeons-1.7.92-26.2.jar.",
-"fixed":[{"id":569,"title":"Wither dragon re-added by the server is no longer lost","files":["dungeons-26.1.2/src/main/kotlin/fishmod/features/dungeon/f7/dragons/DragonCheck.kt"],"detail":"An alive dragon re-added inside its pit is re-tracked with the new entity id; stray dragon entities only log in debug mode instead of sending an error report."}],
-"already":[{"id":568,"title":"Dragon spawn particle at unknown spot","detail":"Fixed in 62438956; the reports came from mod 1.6.382. Moved to Testing."}],
-"open":[{"id":533,"title":"Secret leaderboard capped at 13","status":"Needs your OK","detail":"Worker caps ACH_MAX_SECRETS at 13; needs a wrangler deploy by Eli."},{"id":459,"title":"Players get stuck and glitch","status":"Needs a report","detail":"No repro; needs a video or /fm debug report."}],
-"tests":["M7 Wither Dragons: play a run, dragons tracked spawn to death, no error-report toast."],
-"facts":[["Commits","d22af24c fix, changelog commit after it"],["Build","26.1.2 + 26.2 OK as 1.7.92, 26.3 not built"],["Board","#568 and #569 moved to Testing; nothing Done"],["Sweep","No other open Bug cards changed; 24 already in Testing"]],
-"notes":["Auto error reports from old mod versions (1.6.x) keep arriving as new Bug cards; check the version line first.","Modrinth path Skyblock 1.21.8 mods folder does not exist on this machine."]}
+﻿{
+    "date":  "2026-11-13",
+    "version":  "1.7.94",
+    "summary":  "Daily bugfix run 3: no new bugs found; built 1.7.94 (26.1.2 + 26.2) OK; jar not copied (Modrinth folder missing); untested in game.",
+    "alert":  "Jar not installed: the Modrinth Skyblock 1.21.8 mods folder does not exist. Jar is at dungeons-26.2/build/libs/FishModDungeons-1.7.94-26.2.jar.",
+    "fixed":  [
+
+              ],
+    "already":  [
+                    {
+                        "title":  "All 31 other open Bug cards",
+                        "detail":  "Already fixed in earlier builds and in Testing (#567 #565 #561 #562 #563 #533 #548 #553 #560 #547 #549 #532 #534 #537 #520 #521 #530 #513 #525 #526 #510 #502 #570-575 #568 #569 #566); not re-tested."
+                    }
+                ],
+    "open":  [
+                 {
+                     "id":  459,
+                     "title":  "Players get stuck and glitch",
+                     "status":  "Needs a report",
+                     "detail":  "No repro. Player size scales are clamped and culling does not touch other players; likely Hypixel fake-player NPCs. Needs a video or /fm debug report."
+                 }
+             ],
+    "tests":  [
+                  "Nothing new; cards in Testing still need your in-game check."
+              ],
+    "facts":  [
+                  [
+                      "Commits",
+                      "No fix commits; changelog commit only"
+                  ],
+                  [
+                      "Build",
+                      "26.1.2 + 26.2 OK as 1.7.94, no warnings, 26.3 not built"
+                  ],
+                  [
+                      "Board",
+                      "No card changed; nothing Done"
+                  ],
+                  [
+                      "Sweep",
+                      "grep for debug leftovers and blocking calls found nothing; #533 worker already accepts client maxSecrets"
+                  ]
+              ],
+    "notes":  [
+                  "The daily-bugfix prompt names a Modrinth folder that does not exist on this machine; install via /ship to Prism Skyblock."
+              ]
+}
