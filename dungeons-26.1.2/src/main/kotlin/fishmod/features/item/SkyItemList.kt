@@ -167,9 +167,14 @@ object SkyItemList {
 
     private fun isNpc(id: String): Boolean = id.endsWith("_NPC") || TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim().endsWith("(NPC)")
 
-    private fun isVanilla(id: String, itemId: String?): Boolean {
-        if (itemId == null || !itemId.startsWith("minecraft:") || id.any { it.isLowerCase() } || id.contains(';')) return false
-        return id.contains(':') || itemId.removePrefix("minecraft:").uppercase() == id
+    private val VANILLA_EXTRA = Regex("^(RECORD_[0-9]+|GOLD_RECORD|GREEN_RECORD|GOLDEN_APPLE-1|PRISMARINE-1|WEB)$")
+
+    // Plain Minecraft items: NEU gives them a lore of only a COMMON line (optionally + type), plus a few known odd ones
+    private fun isVanilla(id: String, itemId: String?, lore: com.google.gson.JsonArray?): Boolean {
+        if (itemId == null || id.contains(';') || id.endsWith("_NPC") || itemId == "minecraft:skull" || itemId == "minecraft:spawn_egg") return false
+        if (VANILLA_EXTRA.matches(id)) return true
+        val lines = lore?.map { TextStrip.plain(it.asString).trim() }?.filter { it.isNotEmpty() } ?: return false
+        return lines.size == 1 && (lines[0] == "COMMON" || lines[0].startsWith("COMMON "))
     }
 
     private val ACC_SUFFIX = Regex("_(TALISMAN|RING|ARTIFACT|RELIC|CHARM|[0-9]+)$")
@@ -185,6 +190,7 @@ object SkyItemList {
         val name = TextStrip.plain(o.get("displayname")?.asString ?: "")
         if (isNpc(id)) return 20
         val lore = o.getAsJsonArray("lore")
+        if (isVanilla(id, itemId, lore)) return 22
         if (lore != null) for (k in lore.size() - 1 downTo maxOf(0, lore.size() - 2)) {
             val line = TextStrip.plain(lore[k].asString).trim().uppercase()
             val m = RARITY_RE.find(line) ?: continue
@@ -217,7 +223,6 @@ object SkyItemList {
             name.endsWith(" Shard", true) && itemId != "minecraft:prismarine_shard" -> 12
             id.endsWith("TRAVEL_SCROLL") -> 21
             name.contains("Potion", true) -> 7
-            isVanilla(id, itemId) -> 22
             else -> 7
         }
     }
