@@ -75,6 +75,9 @@ object SkyItemList {
 
     private val GEM_PREFIX = Regex("^(ENCHANTED|REFINED|ROUGH|FLAWED|FINE|FLAWLESS|PERFECT)_")
     private val GEM_SUFFIX = Regex("_(BLOCK|ORE|GEM|INGOT|CUBE)$")
+    private val STAR_ORDER = listOf("FIRST_MASTER_STAR", "SECOND_MASTER_STAR", "THIRD_MASTER_STAR", "FOURTH_MASTER_STAR", "FIFTH_MASTER_STAR")
+    // Rare dungeon drops go first, junk consumables last
+    private val RNG_DROP = Regex("HYPERION|VALKYRIE|SCYLLA|ASTRAEA|NECRON_BLADE|NECRON_HANDLE|_SCROLL$|DARK_CLAYMORE|GIANTS_SWORD|TERMINATOR|JUJU|LAST_BREATH|SHADOW_FURY|LIVID_DAGGER|FLOWER_OF_TRUTH|BOUQUET_OF_LIES|SPIRIT_|BONZO_STAFF|BONZO_MASK|ICE_SPRAY|BAT_WAND|STONE_BLADE|THORNS_BOOTS|MASTER_SKULL|DUNGEONBREAKER|FELTHORN_REAPER|BONE_BOOMERANG|ADAPTIVE_BLADE|SOULWEAVER|SCARF_")
     private val METAL_FAMS = setOf("UMBER", "TUNGSTEN", "MITHRIL", "TITANIUM")
     private val GEM_TIERS = listOf("ROUGH", "FLAWED", "FINE", "FLAWLESS", "PERFECT")
 
@@ -117,6 +120,15 @@ object SkyItemList {
                 else -> 0
             }
             Triple(group, fam, tier)
+        }
+        18 -> {
+            val star = STAR_ORDER.indexOf(id)
+            Triple(when {
+                RNG_DROP.containsMatchIn(id) -> 0
+                star >= 0 -> 2
+                kindOf(id) == "DUNGEON ITEM" -> 3
+                else -> 1
+            }, "", star + 1)
         }
         3 -> {
             val k = kindOf(id)
@@ -290,7 +302,7 @@ object SkyItemList {
         rar = IntArray(all.size) { rarityOf(ids[it]) }
         cat = IntArray(all.size) { catOf(ids[it]) }
         allIdx = IntArray(all.size) { it }
-        for (c in intArrayOf(3, 4, 12, 16, 17)) {
+        for (c in intArrayOf(3, 4, 12, 16, 17, 18)) {
             val keys = HashMap<Int, Triple<Int, String, Int>>()
             val idxs = allIdx.filter { cat[it] == c }
             for (i in idxs) keys[i] = sortKey(c, ids[i])
