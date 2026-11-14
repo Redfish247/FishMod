@@ -441,3 +441,5 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 ## 2026-11-11: closed cards before reading the whole board batch
 - I called #548 and #533 "no change needed" and left cards at Planned although they were fixed in 1.7.74/1.7.73. Rule: when a card's fix is already in `git log --grep "#N"`, move it to Testing on fishmod.dev (`POST /dashboard/api/roadmap-status` with `{updates:[{id,status}]}` and the `ROADMAP_SECRET` bearer) in the same session; only Eli sets Done.
 - I also told Eli "no code change" for the install-error cards when a guard was possible. Rule: for an unreproducible report, still add the diagnostic (one report with the evidence needed to tell causes apart) instead of closing it.
+
+- Run tracker timers reset / never count mid-run (xiyacats 2026-11-13): Hypixel re-sends the Dungeon location packet; `BossPhase` locationChange hook called reset(), nulling floor/splits so timers restarted and start messages were missed. Fix: skip reset for a repeat DUNGEON location while a run is live. Any per-run state hooked to locationChange needs the same guard (others still unguarded: FishEstTotal, LagTracker, GateDisplay).

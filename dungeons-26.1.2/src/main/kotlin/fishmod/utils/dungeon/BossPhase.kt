@@ -59,8 +59,10 @@ object BossPhase {
             false
         }
 
-        FishEvents.locationChange.register { _ ->
-            reset()
+        FishEvents.locationChange.register { loc ->
+            // Hypixel re-sends the Dungeon location mid-run; resetting then wipes live split timers
+            val midRun = loc == fishmod.utils.SkyblockLocation.DUNGEON && floor != null && currentPhase >= 0 && !runOver && !PracticeMode.active
+            if (midRun) fishmod.utils.debug.FishDebug.LOGGER.info("[Phase] ignored duplicate Dungeon location mid-run floor=$floor phase=$currentPhase") else reset()
             false
         }
 
