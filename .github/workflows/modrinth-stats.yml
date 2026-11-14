@@ -66,6 +66,13 @@ jobs:
             exit 1
           fi
 
+          echo "Modrinth sent $(jq '.metrics | length' main.json) slices, $(jq '[.metrics[][]] | length' main.json) entries; kinds: $(jq -c '[.metrics[][] | .metric_kind] | unique' main.json); projects: $(jq -c '[.metrics[][] | .source_project] | unique' main.json) (asked for $PROJECT_ID)"
+          MATCHED=$(jq --arg p "$PROJECT_ID" '[.metrics[][] | select(.source_project == $p or .source_project == "")] | length' main.json)
+          if [ "$MATCHED" = "0" ]; then
+            echo "::error::Modrinth returned no FishMod data for $MONTH, so nothing was saved. Check the token can read FishMod's analytics."
+            exit 1
+          fi
+
           # Revenue needs "Read payouts"; if the token doesn't have it, leave revenue blank
           if [ "$(ask '{"project_revenue":{}}' rev.json)" != "200" ]; then
             echo "::warning::Revenue skipped (token has no Read payouts)"
@@ -75,12 +82,24 @@ jobs:
             REV_OK=true
           fi
 
+          # Releases published this month (public data, so no token needed)
+          if curl -fsS -A "$UA" https://api.modrinth.com/v2/project/fishmod/version -o all-versions.json \
+             && jq --arg s "$START" --arg e "$END" '[.[] | select(.date_published >= $s and .date_published < $e)
+                  | {version: .version_number, type: .version_type, published: .date_published, downloads: .downloads}]
+                  | sort_by(.published)' all-versions.json > releases.json; then
+            REL_OK=true
+          else
+            echo "::warning::Couldn't read FishMod's versions; releases left empty"
+            echo '[]' > releases.json
+            REL_OK=false
+          fi
+
           mkdir -p stats/modrinth
           OUT="stats/modrinth/${MONTH}.json"
-          jq -n --slurpfile a main.json --slurpfile r rev.json \
+          jq -n --slurpfile a main.json --slurpfile r rev.json --slurpfile rel releases.json --argjson relok "$REL_OK" \
             --arg month "$MONTH" --arg start "$START" --arg end "$END" --arg p "$PROJECT_ID" --argjson revok "$REV_OK" '
             def pick($slice; $kind; $field):
-              [$slice[]? | select(.source_project == $p and .metric_kind == $kind) | .[$field] | tonumber] | add // 0;
+              [$slice[]? | select((.source_project == $p or .source_project == "") and .metric_kind == $kind) | .[$field] | tonumber] | add // 0;
             ($start | fromdateiso8601) as $t0 |
             [range(0; $a[0].metrics | length) as $i |
               { date: (($t0 + $i * 86400) | strftime("%Y-%m-%d")),
@@ -95,8 +114,10 @@ jobs:
                 views: ($daily | map(.views) | add // 0),
                 downloads: ($daily | map(.downloads) | add // 0),
                 playtime_hours: (($daily | map(.playtime_hours) | add // 0) * 10 | round / 10),
-                revenue_usd: (if $revok then (([$r[0].metrics[]?[]? | select(.source_project == $p and .metric_kind == "revenue") | .revenue | tonumber] | add // 0) * 100 | round / 100) else null end)
+                revenue_usd: (if $revok then (([$r[0].metrics[]?[]? | select((.source_project == $p or .source_project == "") and .metric_kind == "revenue") | .revenue | tonumber] | add // 0) * 100 | round / 100) else null end)
               },
+              releases: $rel[0],
+              releases_ok: $relok,
               daily: $daily,
               fetched_at: (now | todate) }' > "$OUT"
 
@@ -108,6 +129,10 @@ jobs:
             "",
             "Best day for downloads: \(.daily | max_by(.downloads) | "\(.date) (\(.downloads))")",
             "",
+            (if .releases_ok | not then "Releases: could not read them this run."
+             elif (.releases | length) == 0 then "Releases: none this month."
+             else "Releases (downloads so far):\n" + (.releases | map("- \(.version), \(.published[0:10]), \(.downloads)") | join("\n")) end),
+            "",
             "Range: \(.range.start) to \(.range.end) (midnight Central). Fetched \(.fetched_at)."
           ' "$OUT" > "stats/modrinth/${MONTH}.md"
           cat "stats/modrinth/${MONTH}.md"
@@ -116,5 +141,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add stats/modrinth
-          git diff --cached --quiet || (git commit -m "Modrinth stats for last month [skip ci]" && git pull --rebase && git push)
+          git add -f stats/modrinth
+          git diff --cached --quiet || (git commit -m "Modrinth stats for last month [skip ci]" && git pull --rebase -X theirs origin main && git push origin HEAD:main)
