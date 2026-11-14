@@ -82,9 +82,21 @@ jobs:
             REV_OK=true
           fi
 
+          # Releases published this month (public data, so no token needed)
+          if curl -fsS -A "$UA" https://api.modrinth.com/v2/project/fishmod/version -o all-versions.json \
+             && jq --arg s "$START" --arg e "$END" '[.[] | select(.date_published >= $s and .date_published < $e)
+                  | {version: .version_number, type: .version_type, published: .date_published, downloads: .downloads}]
+                  | sort_by(.published)' all-versions.json > releases.json; then
+            REL_OK=true
+          else
+            echo "::warning::Couldn't read FishMod's versions; releases left empty"
+            echo '[]' > releases.json
+            REL_OK=false
+          fi
+
           mkdir -p stats/modrinth
           OUT="stats/modrinth/${MONTH}.json"
-          jq -n --slurpfile a main.json --slurpfile r rev.json \
+          jq -n --slurpfile a main.json --slurpfile r rev.json --slurpfile rel releases.json --argjson relok "$REL_OK" \
             --arg month "$MONTH" --arg start "$START" --arg end "$END" --arg p "$PROJECT_ID" --argjson revok "$REV_OK" '
             def pick($slice; $kind; $field):
               [$slice[]? | select((.source_project == $p or .source_project == "") and .metric_kind == $kind) | .[$field] | tonumber] | add // 0;
@@ -104,6 +116,8 @@ jobs:
                 playtime_hours: (($daily | map(.playtime_hours) | add // 0) * 10 | round / 10),
                 revenue_usd: (if $revok then (([$r[0].metrics[]?[]? | select((.source_project == $p or .source_project == "") and .metric_kind == "revenue") | .revenue | tonumber] | add // 0) * 100 | round / 100) else null end)
               },
+              releases: $rel[0],
+              releases_ok: $relok,
               daily: $daily,
               fetched_at: (now | todate) }' > "$OUT"
 
@@ -114,6 +128,10 @@ jobs:
             "| \(.totals.views) | \(.totals.downloads) | \(.totals.playtime_hours) | \(.totals.revenue_usd // "n/a") |",
             "",
             "Best day for downloads: \(.daily | max_by(.downloads) | "\(.date) (\(.downloads))")",
+            "",
+            (if .releases_ok | not then "Releases: could not read them this run."
+             elif (.releases | length) == 0 then "Releases: none this month."
+             else "Releases (downloads so far):\n" + (.releases | map("- \(.version), \(.published[0:10]), \(.downloads)") | join("\n")) end),
             "",
             "Range: \(.range.start) to \(.range.end) (midnight Central). Fetched \(.fetched_at)."
           ' "$OUT" > "stats/modrinth/${MONTH}.md"
