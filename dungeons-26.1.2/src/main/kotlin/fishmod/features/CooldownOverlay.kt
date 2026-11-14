@@ -50,7 +50,7 @@ object CooldownOverlay {
         COOLDOWNS["WEIRD_TUBA"] = 20_000L
         COOLDOWNS["INFINITE_SPIRIT_LEAP"] = 2_000L
         COOLDOWNS["EXTREMELY_REAL_SHURIKEN"] = 1_000L
-        COOLDOWNS["HOTSPLOT_RADAR"] = 2_000L
+        COOLDOWNS["HOTSPOT_RADAR"] = 2_000L
     }
 
     private val active: MutableMap<String, Long> = HashMap()
