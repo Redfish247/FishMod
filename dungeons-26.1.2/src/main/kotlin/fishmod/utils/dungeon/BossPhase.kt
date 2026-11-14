@@ -59,15 +59,10 @@ object BossPhase {
             false
         }
 
-        FishEvents.locationChange.register { loc ->
-            // Hypixel re-sends the Dungeon location mid-run; resetting then wipes live split timers
-            if (loc == fishmod.utils.SkyblockLocation.DUNGEON && midRun()) {
-                fishmod.utils.debug.FishDebug.LOGGER.info("[Phase] ignored duplicate Dungeon location mid-run floor=$floor phase=$currentPhase")
-            } else reset()
-            false
-        }
+        // Repeat Dungeon location packets from the same server never reach here (SkyblockLocation.changeLocation drops them mid-run)
+        FishEvents.locationChange.register { _ -> reset(); false }
 
-        // A new dungeon instance is a new level; the duplicate-location guard must not carry the old run over
+        // A new dungeon instance is a new level; reset so the repeat-location guard can't carry the old run over
         FishEvents.worldChange.register { reset(); false }
 
         FishEvents.chat.register(BossPhase::parseGameMessage)
