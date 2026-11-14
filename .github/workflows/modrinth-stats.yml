@@ -67,7 +67,11 @@ jobs:
           fi
 
           echo "Modrinth sent $(jq '.metrics | length' main.json) slices, $(jq '[.metrics[][]] | length' main.json) entries; kinds: $(jq -c '[.metrics[][] | .metric_kind] | unique' main.json); projects: $(jq -c '[.metrics[][] | .source_project] | unique' main.json) (asked for $PROJECT_ID)"
-          jq -c '[.metrics[][]][0:3]' main.json
+          MATCHED=$(jq --arg p "$PROJECT_ID" '[.metrics[][] | select(.source_project == $p or .source_project == "")] | length' main.json)
+          if [ "$MATCHED" = "0" ]; then
+            echo "::error::Modrinth returned no FishMod data for $MONTH, so nothing was saved. Check the token can read FishMod's analytics."
+            exit 1
+          fi
 
           # Revenue needs "Read payouts"; if the token doesn't have it, leave revenue blank
           if [ "$(ask '{"project_revenue":{}}' rev.json)" != "200" ]; then
