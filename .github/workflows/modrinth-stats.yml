@@ -83,7 +83,7 @@ jobs:
           jq -n --slurpfile a main.json --slurpfile r rev.json \
             --arg month "$MONTH" --arg start "$START" --arg end "$END" --arg p "$PROJECT_ID" --argjson revok "$REV_OK" '
             def pick($slice; $kind; $field):
-              [$slice[]? | select(.source_project == $p and .metric_kind == $kind) | .[$field] | tonumber] | add // 0;
+              [$slice[]? | select((.source_project == $p or .source_project == "") and .metric_kind == $kind) | .[$field] | tonumber] | add // 0;
             ($start | fromdateiso8601) as $t0 |
             [range(0; $a[0].metrics | length) as $i |
               { date: (($t0 + $i * 86400) | strftime("%Y-%m-%d")),
@@ -98,7 +98,7 @@ jobs:
                 views: ($daily | map(.views) | add // 0),
                 downloads: ($daily | map(.downloads) | add // 0),
                 playtime_hours: (($daily | map(.playtime_hours) | add // 0) * 10 | round / 10),
-                revenue_usd: (if $revok then (([$r[0].metrics[]?[]? | select(.source_project == $p and .metric_kind == "revenue") | .revenue | tonumber] | add // 0) * 100 | round / 100) else null end)
+                revenue_usd: (if $revok then (([$r[0].metrics[]?[]? | select((.source_project == $p or .source_project == "") and .metric_kind == "revenue") | .revenue | tonumber] | add // 0) * 100 | round / 100) else null end)
               },
               daily: $daily,
               fetched_at: (now | todate) }' > "$OUT"
