@@ -8,229 +8,229 @@
     "timezone": "America/Chicago"
   },
   "totals": {
-    "views": 0,
-    "downloads": 0,
-    "playtime_hours": 0,
+    "views": 782,
+    "downloads": 662,
+    "playtime_hours": 6.1,
     "revenue_usd": null
   },
   "daily": [
     {
       "date": "2026-10-01",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 9,
+      "downloads": 13,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-02",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 7,
+      "downloads": 14,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-03",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 20,
+      "downloads": 16,
+      "playtime_hours": 0.2,
       "revenue_usd": null
     },
     {
       "date": "2026-10-04",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 29,
+      "downloads": 25,
+      "playtime_hours": 0.2,
       "revenue_usd": null
     },
     {
       "date": "2026-10-05",
-      "views": 0,
-      "downloads": 0,
+      "views": 17,
+      "downloads": 41,
       "playtime_hours": 0,
       "revenue_usd": null
     },
     {
       "date": "2026-10-06",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 46,
+      "downloads": 78,
+      "playtime_hours": 0.3,
       "revenue_usd": null
     },
     {
       "date": "2026-10-07",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 7,
+      "downloads": 59,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-08",
-      "views": 0,
-      "downloads": 0,
+      "views": 17,
+      "downloads": 25,
       "playtime_hours": 0,
       "revenue_usd": null
     },
     {
       "date": "2026-10-09",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 11,
+      "downloads": 16,
+      "playtime_hours": 0.7,
       "revenue_usd": null
     },
     {
       "date": "2026-10-10",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 11,
+      "downloads": 20,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-11",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 25,
+      "downloads": 20,
+      "playtime_hours": 0.2,
       "revenue_usd": null
     },
     {
       "date": "2026-10-12",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 15,
+      "downloads": 11,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-13",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 15,
+      "downloads": 13,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-14",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 14,
+      "downloads": 13,
+      "playtime_hours": 0.2,
       "revenue_usd": null
     },
     {
       "date": "2026-10-15",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 21,
+      "downloads": 18,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-16",
-      "views": 0,
-      "downloads": 0,
+      "views": 22,
+      "downloads": 11,
       "playtime_hours": 0,
       "revenue_usd": null
     },
     {
       "date": "2026-10-17",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 23,
+      "downloads": 17,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-18",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 31,
+      "downloads": 10,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-19",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 35,
+      "downloads": 11,
+      "playtime_hours": 0.2,
       "revenue_usd": null
     },
     {
       "date": "2026-10-20",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 21,
+      "downloads": 17,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-21",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 14,
+      "downloads": 18,
+      "playtime_hours": 0.2,
       "revenue_usd": null
     },
     {
       "date": "2026-10-22",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 34,
+      "downloads": 8,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-23",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 61,
+      "downloads": 16,
+      "playtime_hours": 0.4,
       "revenue_usd": null
     },
     {
       "date": "2026-10-24",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 57,
+      "downloads": 19,
+      "playtime_hours": 0.3,
       "revenue_usd": null
     },
     {
       "date": "2026-10-25",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 46,
+      "downloads": 9,
+      "playtime_hours": 0.1,
       "revenue_usd": null
     },
     {
       "date": "2026-10-26",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 15,
+      "downloads": 13,
+      "playtime_hours": 0.3,
       "revenue_usd": null
     },
     {
       "date": "2026-10-27",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 64,
+      "downloads": 63,
+      "playtime_hours": 0.6,
       "revenue_usd": null
     },
     {
       "date": "2026-10-28",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 15,
+      "downloads": 21,
+      "playtime_hours": 0.2,
       "revenue_usd": null
     },
     {
       "date": "2026-10-29",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 32,
+      "downloads": 20,
+      "playtime_hours": 0.7,
       "revenue_usd": null
     },
     {
       "date": "2026-10-30",
-      "views": 0,
-      "downloads": 0,
-      "playtime_hours": 0,
+      "views": 19,
+      "downloads": 13,
+      "playtime_hours": 0.2,
       "revenue_usd": null
     },
     {
       "date": "2026-10-31",
-      "views": 0,
-      "downloads": 0,
+      "views": 29,
+      "downloads": 14,
       "playtime_hours": 0,
       "revenue_usd": null
     }
   ],
-  "fetched_at": "2026-11-14T05:29:10Z"
+  "fetched_at": "2026-11-14T05:29:41Z"
 }
