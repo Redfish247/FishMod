@@ -13,6 +13,27 @@
     "playtime_hours": 6.1,
     "revenue_usd": null
   },
+  "releases": [
+    {
+      "version": "1.4.0-26.1.2",
+      "type": "release",
+      "published": "2026-10-06T06:05:46.650844Z",
+      "downloads": 200
+    },
+    {
+      "version": "1.7.0-26.2",
+      "type": "release",
+      "published": "2026-10-27T07:00:07.700631Z",
+      "downloads": 90
+    },
+    {
+      "version": "1.7.0-26.1.2",
+      "type": "release",
+      "published": "2026-10-27T07:01:29.300976Z",
+      "downloads": 71
+    }
+  ],
+  "releases_ok": true,
   "daily": [
     {
       "date": "2026-10-01",
@@ -232,5 +253,5 @@
       "revenue_usd": null
     }
   ],
-  "fetched_at": "2026-11-14T05:30:17Z"
+  "fetched_at": "2026-11-14T05:35:11Z"
 }
