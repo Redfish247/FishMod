@@ -1,0 +1,4 @@
+# Fill these in before a release. The bot posts them and clears them.
+# Blank headline posts "New Release". Blank next skips the Next line.
+headline:
+next:
