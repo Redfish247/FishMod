@@ -61,10 +61,14 @@ object BossPhase {
 
         FishEvents.locationChange.register { loc ->
             // Hypixel re-sends the Dungeon location mid-run; resetting then wipes live split timers
-            val midRun = loc == fishmod.utils.SkyblockLocation.DUNGEON && floor != null && currentPhase >= 0 && !runOver && !PracticeMode.active
-            if (midRun) fishmod.utils.debug.FishDebug.LOGGER.info("[Phase] ignored duplicate Dungeon location mid-run floor=$floor phase=$currentPhase") else reset()
+            if (loc == fishmod.utils.SkyblockLocation.DUNGEON && midRun()) {
+                fishmod.utils.debug.FishDebug.LOGGER.info("[Phase] ignored duplicate Dungeon location mid-run floor=$floor phase=$currentPhase")
+            } else reset()
             false
         }
+
+        // A new dungeon instance is a new level; the duplicate-location guard must not carry the old run over
+        FishEvents.worldChange.register { reset(); false }
 
         FishEvents.chat.register(BossPhase::parseGameMessage)
         NecronDeath.init()
@@ -116,6 +120,10 @@ object BossPhase {
 
     private const val P5_START = "[BOSS] Necron: All this, for nothing..."
     private const val WK_FIRST_LINE = "[BOSS] Wither King: You... again?"
+
+    // A run is live: first split started, not finished. A repeat Dungeon location packet must not reset it.
+    @JvmStatic
+    fun midRun(): Boolean = floor != null && currentPhase >= 0 && !runOver && !PracticeMode.active
 
     private fun reset() {
         currentSplits = null
