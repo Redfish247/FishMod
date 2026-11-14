@@ -1,7 +1,6 @@
 package fishmod.features.item
 
 import fishmod.mixin.accessors.AbstractSignEditScreenAccessor
-import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
@@ -37,8 +36,9 @@ object SignCalculator {
     private fun messages(screen: AbstractSignEditScreen): Array<String>? =
         (screen as? AbstractSignEditScreenAccessor)?.`fishmod$getMessages`()?.takeIf { it.isNotEmpty() }
 
+    // Only Hypixel's input signs (line 2 is the ^^^ arrows); a sign the player places and writes "3-1" on must stay as typed
     private fun isInputSign(msgs: Array<String>): Boolean =
-        SkyblockLocation.inSkyblock() || (msgs.size > 1 && msgs[1].contains("^^^"))
+        msgs.size > 1 && msgs[1].contains("^^^")
 
     @JvmStatic
     fun evaluate(raw: String): BigDecimal? {
