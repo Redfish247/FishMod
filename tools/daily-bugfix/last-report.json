@@ -1,47 +1,84 @@
 ﻿{
-    "date":  "2026-11-13",
-    "version":  "1.7.94",
-    "summary":  "Daily bugfix run 3: no new bugs found; built 1.7.94 (26.1.2 + 26.2) OK; jar not copied (Modrinth folder missing); untested in game.",
-    "alert":  "Jar not installed: the Modrinth Skyblock 1.21.8 mods folder does not exist. Jar is at dungeons-26.2/build/libs/FishModDungeons-1.7.94-26.2.jar.",
-    "fixed":  [
-
-              ],
-    "already":  [
-                    {
-                        "title":  "All 31 other open Bug cards",
-                        "detail":  "Already fixed in earlier builds and in Testing (#567 #565 #561 #562 #563 #533 #548 #553 #560 #547 #549 #532 #534 #537 #520 #521 #530 #513 #525 #526 #510 #502 #570-575 #568 #569 #566); not re-tested."
-                    }
-                ],
-    "open":  [
-                 {
-                     "id":  459,
-                     "title":  "Players get stuck and glitch",
-                     "status":  "Needs a report",
-                     "detail":  "No repro. Player size scales are clamped and culling does not touch other players; likely Hypixel fake-player NPCs. Needs a video or /fm debug report."
-                 }
-             ],
-    "tests":  [
-                  "Nothing new; cards in Testing still need your in-game check."
-              ],
-    "facts":  [
-                  [
-                      "Commits",
-                      "No fix commits; changelog commit only"
-                  ],
-                  [
-                      "Build",
-                      "26.1.2 + 26.2 OK as 1.7.94, no warnings, 26.3 not built"
-                  ],
-                  [
-                      "Board",
-                      "No card changed; nothing Done"
-                  ],
-                  [
-                      "Sweep",
-                      "grep for debug leftovers and blocking calls found nothing; #533 worker already accepts client maxSecrets"
-                  ]
-              ],
-    "notes":  [
-                  "The daily-bugfix prompt names a Modrinth folder that does not exist on this machine; install via /ship to Prism Skyblock."
-              ]
+  "date": "2026-11-14",
+  "version": "1.7.96",
+  "summary": "Daily bugfix run 4: 5 fixes, built 1.7.96 for 26.1.2 + 26.2 (both OK); jar not copied because the Modrinth folder does not exist, still 1.7.95 in Prism Skyblock; untested in game.",
+  "alert": "Jar not installed: the Modrinth Skyblock 1.21.8 profile has no mods folder. Use /ship to put 1.7.96 into Prism Skyblock. Jars are in `dungeons-26.2/build/libs` and `dungeons-26.1.2/build/libs`.",
+  "fixed": [
+    {
+      "id": 577,
+      "title": "Run timers no longer reset when Hypixel re-sends the Dungeon location",
+      "files": ["utils/SkyblockLocation.kt", "utils/dungeon/BossPhase.kt"],
+      "detail": [
+        "`SkyblockLocation.changeLocation` drops a repeat DUNGEON location from the same Hypixel server (`serverName` unchanged) while `BossPhase.midRun()`; before only BossPhase ignored it, so LagTracker, P3TitleFilter, GoldorSection, TerminalTracker, SimonSaysTracker, GateDisplay and about 20 more listeners still reset mid-run.",
+        "BossPhase also resets on world change, so a requeue into a new instance (also after a wipe) always starts clean."
+      ]
+    },
+    {
+      "title": "Sign calculator only touches Hypixel input signs",
+      "files": ["features/item/SignCalculator.kt"],
+      "detail": "`isInputSign` was `inSkyblock() || ^^^`, so any sign edited in SkyBlock had line 1 like `3-1` or `1/2` replaced by the result (follow-up to the #531 feature). Now only signs whose line 2 has the `^^^` arrows."
+    },
+    {
+      "title": "Speed sign click boxes leaked onto other signs",
+      "files": ["features/garden/SpeedSignHelper.kt"],
+      "detail": "The hit list was global and only refreshed while the speed sign rendered, so after one use, clicking that screen area on a Bazaar or auction sign wrote a crop speed into line 1 and closed it. Click handler now needs the setting, the garden and `isSpeedSign(screen)`; list is cleared when a sign opens."
+    },
+    {
+      "title": "Hotspot Radar cooldown key was misspelled",
+      "files": ["features/CooldownOverlay.kt"],
+      "detail": "`HOTSPLOT_RADAR` -> `HOTSPOT_RADAR` (NEU item id, cooldown 2s). Shows only if Hypixel sends the ability sound or mana line for it."
+    },
+    {
+      "title": "Item upload retry backs off during a worker outage",
+      "files": ["cosmetic/RemoteItems.kt"],
+      "detail": "Follow-up to #548: a failed upload retried and force-synced every 5 s; now 10 s doubling to about 2.5 min, reset on join."
+    }
+  ],
+  "already": [
+    {
+      "title": "All other open Bug cards were already fixed and in Testing",
+      "detail": "#502 #510 #513 #520 #521 #525 #526 #530 #532 #533 #534 #537 #547 #548 #549 #553 #560 #561 #562 #563 #565 #566 #567 #568 #569 #570 #571 #572 #573 #574 #575. A fix commit exists in git for each (listed in CHANGELOG.txt run notes); not re-tested in game."
+    }
+  ],
+  "open": [
+    {
+      "id": 459,
+      "title": "Players get stuck and glitch (Rift mountain top)",
+      "status": "Needs a report",
+      "detail": "No repro and nothing in FishMod moves or animates other players (render-state, scale and nametag hooks only). Ask the reporter to run `/fmdev bisect all` and say whether the glitch stops, or send a video."
+    },
+    {
+      "id": 533,
+      "title": "Secrets cap on the leaderboard: worker change waiting for your deploy",
+      "status": "Needs your OK",
+      "detail": "Clamp floors raised in `D:\\FishMod-WorkerBoard` (d12a9a3), not deployed. Diff against the live worker before `wrangler deploy`."
+    },
+    {
+      "id": 565,
+      "title": "Find a player inside one leaderboard: worker change waiting for your deploy",
+      "status": "Needs your OK",
+      "detail": "Committed in `D:\\FishMod-WorkerBoard` (398a24e), not deployed. Diff against the live worker before `wrangler deploy`."
+    }
+  ],
+  "tests": [
+    "Play a full dungeon run with Run Splits / Est. Total on: timers keep counting; `latest.log` may show `[Location] ignored repeat Dungeon location mid-run`.",
+    "Finish or wipe a run and requeue straight away: splits, Est. Total and lag start from zero.",
+    "Normal sign on your island with `3-1` or `1/2` stays as typed; Bazaar quantity sign `9*9` still becomes 81.",
+    "Garden: crop speed sign click works; then open a Bazaar or auction sign and click the lower-left area: nothing happens.",
+    "Hotspot Radar with Cooldown Overlay on: tell me if the 2s timer never shows."
+  ],
+  "facts": [
+    ["Commits", "Start 520b921d; fixes 4462290b bda86ec8 5ac867f4 c5440bce 91e26ba0 63000195; bump 01d1ea9c; changelog a2e9a21b"],
+    ["Build", "Baseline green (235 Kotlin warnings, none real); final 1.7.96 for 26.1.2 + 26.2 both BUILD SUCCESSFUL; 26.3 not built; untested in game"],
+    ["Board", "#577 Planned -> Testing (updated:1); every other open Bug card already Testing; nothing Done; tester board untouched"],
+    ["Sweep", "1211 GUI setting keys resolve, all GUI fields have `@ConfigValue`, mixin lists, lang keys, 31 JSON resources, NEU item ids and event producers all consistent; no debug leftovers"]
+  ],
+  "notes": [
+    "Hypixel's `ClientboundLocationPacket` has `serverName`; per-run state hooked on `locationChange` needs no own guard now, new location producers must go through `SkyblockLocation.changeLocation`.",
+    "Hypixel input signs are recognised by line 2 `^^^^^^^^^^^^^^^`; never treat in-SkyBlock as input sign. Screen-scoped click lists must be checked against their owning screen.",
+    "NEU repo copy for checking item ids: `dungeons-26.1.2/config/fishmod/pv/neu-repo/extract/NotEnoughUpdates-REPO-master/items`.",
+    "Dead `@ConfigValue` fields with no GUI and no reads: customScoreboardCompactNumbers, nametagStatsShowSelf, four slayer*Opacity, gardenFeverX/Y/Scale and 22 sbSection* toggles.",
+    "The daily-bugfix prompt still names the Modrinth Skyblock 1.21.8 mods folder, which does not exist; install target is Prism Skyblock through /ship.",
+    "Commits this run carry no Claude co-author trailer (memory rule); older commits do."
+  ]
 }
