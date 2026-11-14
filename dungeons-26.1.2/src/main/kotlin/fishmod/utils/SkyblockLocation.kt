@@ -50,6 +50,8 @@ enum class SkyblockLocation(val label: String) {
         @JvmStatic var currentMode: String = ""
             private set
 
+        private var lastServerName: String? = null
+
         @JvmStatic
         fun init() {
             val api = HypixelModAPI.getInstance()
@@ -58,7 +60,10 @@ enum class SkyblockLocation(val label: String) {
                     currentMode = packet.mode.orElse("")
                     val map = packet.map.orElse(null) ?: return@guard
                     packet.serverType.ifPresent { onSkyblock = it.name == "SkyBlock" }
-                    changeLocation(getLocation(map))
+                    val server = packet.serverName
+                    val sameServer = server != null && server == lastServerName
+                    lastServerName = server
+                    changeLocation(getLocation(map), sameServer)
                 }
             }
             api.subscribeToEventPacket(ClientboundLocationPacket::class.java)
@@ -72,9 +77,9 @@ enum class SkyblockLocation(val label: String) {
         }
 
         @JvmStatic
-        fun changeLocation(location: SkyblockLocation) {
-            // Hypixel re-sends the Dungeon location mid-run; listeners reset run state on it (timers, lag, P3 flags)
-            val repeat = location == DUNGEON && here == DUNGEON && BossPhase.midRun()
+        fun changeLocation(location: SkyblockLocation, sameServer: Boolean = false) {
+            // Hypixel re-sends the Dungeon location mid-run from the same server; listeners reset run state on it (timers, lag, P3 flags)
+            val repeat = sameServer && location == DUNGEON && here == DUNGEON && BossPhase.midRun()
             here = location
             if (repeat) {
                 FishDebug.LOGGER.info("[Location] ignored repeat Dungeon location mid-run")
