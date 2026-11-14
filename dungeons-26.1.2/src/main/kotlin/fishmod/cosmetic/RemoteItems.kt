@@ -32,11 +32,13 @@ object RemoteItems {
     private val GSON = Gson()
 
     @Volatile private var lastUploaded: String? = null
+    @Volatile private var retryAt = 0L
+    @Volatile private var failStreak = 0
     private var tick = 0
 
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> lastUploaded = null }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> lastUploaded = null; failStreak = 0; retryAt = 0L }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             try {
                 if (++tick % CHECK_TICKS == 0) uploadIfChanged(mc)
@@ -89,11 +91,17 @@ object RemoteItems {
 
     private fun uploadIfChanged(mc: Minecraft) {
         if (!FishSettings.remoteItemsEnabled || mc.player == null) return
+        // A failed upload backs off (10 s doubling to ~2.5 min) so a worker outage isn't hit every 5 s
+        if (System.currentTimeMillis() < retryAt) return
         val payload = buildOwnPayload(mc)
         if (payload == lastUploaded) return
         if (lastUploaded == null && payload == "[]") { lastUploaded = payload; return }
         lastUploaded = payload
-        HypixelApi.uploadItems(mc.player!!.uuid.toString().replace("-", ""), payload) { if (lastUploaded == payload) lastUploaded = null }
+        HypixelApi.uploadItems(mc.player!!.uuid.toString().replace("-", ""), payload) {
+            if (lastUploaded == payload) lastUploaded = null
+            failStreak = minOf(failStreak + 1, 5)
+            retryAt = System.currentTimeMillis() + (5_000L shl failStreak)
+        }
         RemoteSync.forceSync()
     }
 
