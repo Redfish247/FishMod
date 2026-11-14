@@ -1,0 +1,120 @@
+name: Monthly Modrinth stats
+
+# On the 1st of each month, saves last month's FishMod views, downloads,
+# playtime and revenue from Modrinth to stats/modrinth/YYYY-MM.json (+ .md).
+#
+# Needs repo secret MODRINTH_TOKEN: a Modrinth personal access token with only
+# "Read analytics" (views, downloads, playtime) and "Read payouts" (revenue).
+# Without "Read payouts" everything still works and revenue is left blank.
+#
+# Run it by hand from the Actions tab; the month box takes YYYY-MM (blank = last month).
+
+on:
+  schedule:
+    - cron: "0 23 1 * *" # 5 PM Central (6 PM during daylight time) on the 1st
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "Month to fetch as YYYY-MM (blank = last month)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modrinth-stats
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch last month's stats from Modrinth
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MONTH_INPUT: ${{ inputs.month }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MODRINTH_TOKEN:-}" ]; then echo "::error::MODRINTH_TOKEN secret is missing"; exit 1; fi
+          UA="Redfish247/FishModDungeons monthly-stats"
+
+          # Month boundaries at midnight Central time
+          if [ -n "${MONTH_INPUT:-}" ]; then MONTH="$MONTH_INPUT"; else MONTH=$(TZ=America/Chicago date -d "$(TZ=America/Chicago date +%Y-%m-01) -1 month" +%Y-%m); fi
+          [[ "$MONTH" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]] || { echo "::error::Month must look like 2026-10"; exit 1; }
+          NEXT=$(date -u -d "${MONTH}-01 +1 month" +%Y-%m)
+          START=$(date -u -d "@$(TZ=America/Chicago date -d "${MONTH}-01 00:00" +%s)" +%Y-%m-%dT%H:%M:%SZ)
+          END=$(date -u -d "@$(TZ=America/Chicago date -d "${NEXT}-01 00:00" +%s)" +%Y-%m-%dT%H:%M:%SZ)
+          DAYS=$(( ( $(date -d "$END" +%s) - $(date -d "$START" +%s) + 43200 ) / 86400 ))
+          echo "Fetching $MONTH ($START to $END, $DAYS days)"
+
+          PROJECT_ID=$(curl -fsS -A "$UA" https://api.modrinth.com/v2/project/fishmod | jq -r .id)
+
+          body() {
+            jq -n --arg s "$START" --arg e "$END" --argjson n "$DAYS" --arg p "$PROJECT_ID" --argjson m "$1" \
+              '{time_range: {start: $s, end: $e, resolution: {slices: $n}}, return_metrics: $m, project_ids: [$p]}'
+          }
+          ask() {
+            curl -sS -A "$UA" -H "Authorization: $MODRINTH_TOKEN" -H "Content-Type: application/json" \
+              -o "$2" -w "%{http_code}" -X POST https://api.modrinth.com/v3/analytics -d "$(body "$1")"
+          }
+
+          CODE=$(ask '{"project_views":{},"project_downloads":{},"project_playtime":{}}' main.json)
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Modrinth said $CODE. Check the token has Read analytics and hasn't expired."
+            exit 1
+          fi
+
+          # Revenue needs "Read payouts"; if the token doesn't have it, leave revenue blank
+          if [ "$(ask '{"project_revenue":{}}' rev.json)" != "200" ]; then
+            echo "::warning::Revenue skipped (token has no Read payouts)"
+            echo '{"metrics":[]}' > rev.json
+            REV_OK=false
+          else
+            REV_OK=true
+          fi
+
+          mkdir -p stats/modrinth
+          OUT="stats/modrinth/${MONTH}.json"
+          jq -n --slurpfile a main.json --slurpfile r rev.json \
+            --arg month "$MONTH" --arg start "$START" --arg end "$END" --arg p "$PROJECT_ID" --argjson revok "$REV_OK" '
+            def pick($slice; $kind; $field):
+              [$slice[]? | select(.source_project == $p and .metric_kind == $kind) | .[$field] | tonumber] | add // 0;
+            ($start | fromdateiso8601) as $t0 |
+            [range(0; $a[0].metrics | length) as $i |
+              { date: (($t0 + $i * 86400) | strftime("%Y-%m-%d")),
+                views: pick($a[0].metrics[$i]; "views"; "views"),
+                downloads: pick($a[0].metrics[$i]; "downloads"; "downloads"),
+                playtime_hours: ((pick($a[0].metrics[$i]; "playtime"; "seconds") / 3600 * 10 | round) / 10),
+                revenue_usd: (if $revok then ((pick($r[0].metrics[$i]; "revenue"; "revenue") * 100 | round) / 100) else null end) }
+            ] as $daily |
+            { project: "fishmod", project_id: $p, month: $month,
+              range: {start: $start, end: $end, timezone: "America/Chicago"},
+              totals: {
+                views: ($daily | map(.views) | add // 0),
+                downloads: ($daily | map(.downloads) | add // 0),
+                playtime_hours: (($daily | map(.playtime_hours) | add // 0) * 10 | round / 10),
+                revenue_usd: (if $revok then (([$r[0].metrics[]?[]? | select(.source_project == $p and .metric_kind == "revenue") | .revenue | tonumber] | add // 0) * 100 | round / 100) else null end)
+              },
+              daily: $daily,
+              fetched_at: (now | todate) }' > "$OUT"
+
+          jq -r '
+            "# FishMod on Modrinth, \(.month)\n",
+            "| Views | Downloads | Playtime (hours) | Revenue (USD) |",
+            "| --- | --- | --- | --- |",
+            "| \(.totals.views) | \(.totals.downloads) | \(.totals.playtime_hours) | \(.totals.revenue_usd // "n/a") |",
+            "",
+            "Best day for downloads: \(.daily | max_by(.downloads) | "\(.date) (\(.downloads))")",
+            "",
+            "Range: \(.range.start) to \(.range.end) (midnight Central). Fetched \(.fetched_at)."
+          ' "$OUT" > "stats/modrinth/${MONTH}.md"
+          cat "stats/modrinth/${MONTH}.md"
+
+      - name: Save to the repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stats/modrinth
+          git diff --cached --quiet || (git commit -m "Modrinth stats for last month [skip ci]" && git pull --rebase && git push)
