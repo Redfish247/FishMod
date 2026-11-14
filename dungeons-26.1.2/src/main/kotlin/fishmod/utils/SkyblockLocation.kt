@@ -2,6 +2,7 @@ package fishmod.utils
 
 import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
+import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.dungeon.PracticeMode
 import fishmod.utils.events.FishEvents
 import net.hypixel.modapi.HypixelModAPI
@@ -72,7 +73,13 @@ enum class SkyblockLocation(val label: String) {
 
         @JvmStatic
         fun changeLocation(location: SkyblockLocation) {
+            // Hypixel re-sends the Dungeon location mid-run; listeners reset run state on it (timers, lag, P3 flags)
+            val repeat = location == DUNGEON && here == DUNGEON && BossPhase.midRun()
             here = location
+            if (repeat) {
+                FishDebug.LOGGER.info("[Location] ignored repeat Dungeon location mid-run")
+                return
+            }
             since = System.currentTimeMillis()
             FishDebug.sendDebugMessage(Component.literal("Island: $here"))
             FishDiag.guard("SkyblockLocation.3", "location change listener threw for ${location.label}") {
