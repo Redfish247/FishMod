@@ -1,0 +1,101 @@
+name: Announce FishMod releases
+
+# Every 30 minutes, checks Modrinth for a new FishMod release and posts it to
+# Discord in the same layout as the hand-written release posts.
+#
+# Setup (once):
+#   - Repo secret   DISCORD_WEBHOOK_URL = the release channel's webhook
+#   - Repo variable FISHMOD_ROLE_ID     = the @FishMod role's ID (optional, for the ping)
+#
+# Before a release, fill in .github/release-post.txt (headline + "Next:" line).
+# The bot clears it after posting.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: announce-release
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Post new Modrinth release to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ROLE_ID: ${{ vars.FISHMOD_ROLE_ID }}
+        run: |
+          set -euo pipefail
+          STATE=".github/last-announced-version.txt"
+          POST=".github/release-post.txt"
+          LAST=$(cat "$STATE" 2>/dev/null || true)
+
+          VERSIONS_FILE=$(mktemp)
+          curl -fsS -A "FishMod-release-announcer" \
+            "https://api.modrinth.com/v2/project/fishmod/version" > "$VERSIONS_FILE"
+
+          # Newest full release; "1.7.1-26.2" -> base "1.7.1"
+          NEWEST=$(jq -c '[.[] | select(.version_type=="release")] | sort_by(.date_published) | last' "$VERSIONS_FILE")
+          VNUM=$(jq -r '.version_number' <<<"$NEWEST")
+          BASE="${VNUM%%-*}"
+
+          if [ "$BASE" = "$LAST" ]; then echo "Nothing new ($BASE)"; exit 0; fi
+
+          # Wait until the release is 10+ minutes old so every jar is uploaded first
+          PUBLISHED=$(jq -r '.date_published' <<<"$NEWEST")
+          AGE=$(( $(date -u +%s) - $(date -u -d "$PUBLISHED" +%s) ))
+          if [ "$AGE" -lt 600 ]; then echo "$BASE is only ${AGE}s old, posting next run"; exit 0; fi
+
+          echo "$BASE" > "$STATE"
+          if [ -z "$LAST" ]; then echo "First run: remembered $BASE without posting"; exit 0; fi
+
+          HEADLINE=$(grep -m1 '^headline:' "$POST" 2>/dev/null | sed 's/^headline:[[:space:]]*//' || true)
+          NEXT=$(grep -m1 '^next:' "$POST" 2>/dev/null | sed 's/^next:[[:space:]]*//' || true)
+          [ -n "$HEADLINE" ] || HEADLINE="New Release"
+
+          # One link per Minecraft version, newest upload first
+          LINKS=$(jq -r --arg b "$BASE" '[.[] | select(.version_type=="release" and (.version_number|startswith($b+"-")))]
+            | sort_by(.date_published) | reverse | .[] | "https://modrinth.com/mod/fishmod/version/\(.version_number)"' "$VERSIONS_FILE")
+
+          PING=""
+          [ -n "${ROLE_ID:-}" ] && PING="<@&${ROLE_ID}> "
+
+          MSG="${PING}${HEADLINE}
+          ${LINKS}
+
+          Full Change Log
+          https://modrinth.com/mod/fishmod/changelog"
+          if [ -n "$NEXT" ]; then
+            MSG="${MSG}
+
+          Next: ${NEXT}"
+          fi
+          MSG="${MSG}
+
+          If you want a feature added go to https://fishmod.dev/incomming-features and to report a bug go to https://fishmod.dev/incomming-features/bugs"
+
+          PAYLOAD=$(jq -n --arg content "$MSG" --arg role "${ROLE_ID:-}" \
+            '{content: $content,
+              allowed_mentions: (if $role == "" then {parse: []} else {roles: [$role]} end)}')
+
+          curl -fsS -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"
+          echo "Posted $BASE"
+
+          # Clear the headline and Next line for the next release
+          printf '%s\n' "# Fill these in before a release. The bot posts them and clears them." \
+            "# Blank headline posts \"New Release\". Blank next skips the Next line." \
+            "headline:" "next:" > "$POST"
+
+      - name: Remember what was posted
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/last-announced-version.txt .github/release-post.txt
+          git diff --cached --quiet || (git commit -m "Remember last announced release [skip ci]" && git push)
