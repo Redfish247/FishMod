@@ -33,6 +33,8 @@ object VisualSettings {
 
     @ConfigValue @JvmField var rarityBackground: Boolean = false
     @ConfigValue @JvmField var itemRarityOpacity: Int = 35
+    @ConfigValue @JvmField var itemRaritySeparateHotbar: Boolean = false
+    @ConfigValue @JvmField var itemRarityHotbarOpacity: Int = 35
     @ConfigValue @JvmField var itemRarityHypixelColors: Boolean = true
 
     @ConfigValue @JvmField var hideEffectHud: Boolean = false
