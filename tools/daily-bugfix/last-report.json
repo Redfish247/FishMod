@@ -1,84 +1,39 @@
 ﻿{
-  "date": "2026-11-14",
-  "version": "1.7.96",
-  "summary": "Daily bugfix run 4: 5 fixes, built 1.7.96 for 26.1.2 + 26.2 (both OK); jar not copied because the Modrinth folder does not exist, still 1.7.95 in Prism Skyblock; untested in game.",
-  "alert": "Jar not installed: the Modrinth Skyblock 1.21.8 profile has no mods folder. Use /ship to put 1.7.96 into Prism Skyblock. Jars are in `dungeons-26.2/build/libs` and `dungeons-26.1.2/build/libs`.",
+  "date": "2026-11-15",
+  "version": "1.7.97",
+  "summary": "Daily bugfix: 3 new auto error cards fixed (API failures back off and no longer auto-report), 4 more already fixed; built 1.7.97 for 26.1.2 + 26.2, jar not copied (Modrinth mods folder missing), not tested in game.",
+  "alert": "Jar not installed: the Modrinth `Skyblock 1.21.8\\mods` folder does not exist; run /ship to put 1.7.97 into Prism Skyblock (still 1.7.95).",
   "fixed": [
-    {
-      "id": 577,
-      "title": "Run timers no longer reset when Hypixel re-sends the Dungeon location",
-      "files": ["utils/SkyblockLocation.kt", "utils/dungeon/BossPhase.kt"],
-      "detail": [
-        "`SkyblockLocation.changeLocation` drops a repeat DUNGEON location from the same Hypixel server (`serverName` unchanged) while `BossPhase.midRun()`; before only BossPhase ignored it, so LagTracker, P3TitleFilter, GoldorSection, TerminalTracker, SimonSaysTracker, GateDisplay and about 20 more listeners still reset mid-run.",
-        "BossPhase also resets on world change, so a requeue into a new instance (also after a wipe) always starts clean."
-      ]
-    },
-    {
-      "title": "Sign calculator only touches Hypixel input signs",
-      "files": ["features/item/SignCalculator.kt"],
-      "detail": "`isInputSign` was `inSkyblock() || ^^^`, so any sign edited in SkyBlock had line 1 like `3-1` or `1/2` replaced by the result (follow-up to the #531 feature). Now only signs whose line 2 has the `^^^` arrows."
-    },
-    {
-      "title": "Speed sign click boxes leaked onto other signs",
-      "files": ["features/garden/SpeedSignHelper.kt"],
-      "detail": "The hit list was global and only refreshed while the speed sign rendered, so after one use, clicking that screen area on a Bazaar or auction sign wrote a crop speed into line 1 and closed it. Click handler now needs the setting, the garden and `isSpeedSign(screen)`; list is cleared when a sign opens."
-    },
-    {
-      "title": "Hotspot Radar cooldown key was misspelled",
-      "files": ["features/CooldownOverlay.kt"],
-      "detail": "`HOTSPLOT_RADAR` -> `HOTSPOT_RADAR` (NEU item id, cooldown 2s). Shows only if Hypixel sends the ability sound or mana line for it."
-    },
-    {
-      "title": "Item upload retry backs off during a worker outage",
-      "files": ["cosmetic/RemoteItems.kt"],
-      "detail": "Follow-up to #548: a failed upload retried and force-synced every 5 s; now 10 s doubling to about 2.5 min, reset on join."
-    }
+    {"id": 579, "title": "Bazaar API 403 retried with no pause and sent error reports", "files": ["features/croesus/CroesusPrices.kt"], "detail": "`fetchBazaar` only set `lastBazaar` on success, so every price lookup after a 403 re-fetched. It now backs off 15 minutes on any failure and logs non-200 instead of reporting."},
+    {"id": 580, "title": "Items API 403 sent error reports", "files": ["utils/networth/ItemsDb.kt"], "detail": "Non-200 is a warn log now; the existing 5 minute retry stays."},
+    {"id": 583, "title": "Auto-kick lookup failure sent error reports", "files": ["features/dungeon/PartyFinder.kt"], "detail": "`PartyFinder.3` replaced by a log line with the fail reason, same as the PF stats fix in `9d079570`."},
+    {"title": "Fire Sale scoreboard line reported Hypixel HTTP errors", "files": ["features/scoreboard/FireSaleInfo.kt"], "detail": "`FireSaleInfo.1` is log-only now."}
   ],
   "already": [
-    {
-      "title": "All other open Bug cards were already fixed and in Testing",
-      "detail": "#502 #510 #513 #520 #521 #525 #526 #530 #532 #533 #534 #537 #547 #548 #549 #553 #560 #561 #562 #563 #565 #566 #567 #568 #569 #570 #571 #572 #573 #574 #575. A fix commit exists in git for each (listed in CHANGELOG.txt run notes); not re-tested in game."
-    }
+    {"id": 581, "title": "Session stats pause start in the future", "detail": "Fixed in `498a4964` (clock clamp); report from 1.7.19."},
+    {"id": 582, "title": "PF stats lookup proxy 403", "detail": "Log-only since `9d079570`; report from 1.7.19."},
+    {"id": 584, "title": "Ender dragon spawned with no matching dragon", "detail": "Fixed in `d22af24c` (1.7.92); report from 1.7.18."},
+    {"id": 585, "title": "Dungeon map: no room data for core", "detail": "Debug log only since `498a4964`; report from 1.7.18."}
   ],
   "open": [
-    {
-      "id": 459,
-      "title": "Players get stuck and glitch (Rift mountain top)",
-      "status": "Needs a report",
-      "detail": "No repro and nothing in FishMod moves or animates other players (render-state, scale and nametag hooks only). Ask the reporter to run `/fmdev bisect all` and say whether the glitch stops, or send a video."
-    },
-    {
-      "id": 533,
-      "title": "Secrets cap on the leaderboard: worker change waiting for your deploy",
-      "status": "Needs your OK",
-      "detail": "Clamp floors raised in `D:\\FishMod-WorkerBoard` (d12a9a3), not deployed. Diff against the live worker before `wrangler deploy`."
-    },
-    {
-      "id": 565,
-      "title": "Find a player inside one leaderboard: worker change waiting for your deploy",
-      "status": "Needs your OK",
-      "detail": "Committed in `D:\\FishMod-WorkerBoard` (398a24e), not deployed. Diff against the live worker before `wrangler deploy`."
-    }
+    {"id": 459, "title": "Far players look stuck or glitched", "status": "Needs a report", "detail": "No code path in FishMod moves other players; reporter should try `/fmdev bisect all`."},
+    {"id": 533, "title": "Secrets leaderboard capped at 13", "status": "Needs your OK", "detail": "Worker fix committed in `D:\\FishMod-WorkerBoard`, needs `wrangler deploy`."},
+    {"id": 565, "title": "Look up a player in one leaderboard", "status": "Needs your OK", "detail": "Worker fix committed, needs `wrangler deploy`."}
   ],
   "tests": [
-    "Play a full dungeon run with Run Splits / Est. Total on: timers keep counting; `latest.log` may show `[Location] ignored repeat Dungeon location mid-run`.",
-    "Finish or wipe a run and requeue straight away: splits, Est. Total and lag start from zero.",
-    "Normal sign on your island with `3-1` or `1/2` stays as typed; Bazaar quantity sign `9*9` still becomes 81.",
-    "Garden: crop speed sign click works; then open a Bazaar or auction sign and click the lower-left area: nothing happens.",
-    "Hotspot Radar with Cooldown Overlay on: tell me if the 2s timer never shows."
+    "Open Croesus or a dungeon reward chest with chest profit on: prices show as before.",
+    "Join SkyBlock with the network blocked: no FishMod error-report toast for bazaar/items/fire sale; `latest.log` shows the backoff line.",
+    "As party leader with auto-kick on, have someone join: kick check works; on lookup failure chat says it couldn't look them up, no error report."
   ],
   "facts": [
-    ["Commits", "Start 520b921d; fixes 4462290b bda86ec8 5ac867f4 c5440bce 91e26ba0 63000195; bump 01d1ea9c; changelog a2e9a21b"],
-    ["Build", "Baseline green (235 Kotlin warnings, none real); final 1.7.96 for 26.1.2 + 26.2 both BUILD SUCCESSFUL; 26.3 not built; untested in game"],
-    ["Board", "#577 Planned -> Testing (updated:1); every other open Bug card already Testing; nothing Done; tester board untouched"],
-    ["Sweep", "1211 GUI setting keys resolve, all GUI fields have `@ConfigValue`, mixin lists, lang keys, 31 JSON resources, NEU item ids and event producers all consistent; no debug leftovers"]
+    ["Commits", "`60c94189` `a3d26a9c` fixes, `a95d359f` bump, `6a4a1024` changelog"],
+    ["Build", "1.7.97 26.1.2 + 26.2 BUILD SUCCESSFUL; 26.3 not built"],
+    ["Board", "#579-#585 Planned -> Testing (updated 7); nothing Done"],
+    ["Sweep", "grepped every `FishDiag.fail` on HTTP status codes; UpdateManager and NeuItems left as reports"]
   ],
   "notes": [
-    "Hypixel's `ClientboundLocationPacket` has `serverName`; per-run state hooked on `locationChange` needs no own guard now, new location producers must go through `SkyblockLocation.changeLocation`.",
-    "Hypixel input signs are recognised by line 2 `^^^^^^^^^^^^^^^`; never treat in-SkyBlock as input sign. Screen-scoped click lists must be checked against their owning screen.",
-    "NEU repo copy for checking item ids: `dungeons-26.1.2/config/fishmod/pv/neu-repo/extract/NotEnoughUpdates-REPO-master/items`.",
-    "Dead `@ConfigValue` fields with no GUI and no reads: customScoreboardCompactNumbers, nametagStatsShowSelf, four slayer*Opacity, gardenFeverX/Y/Scale and 22 sbSection* toggles.",
-    "The daily-bugfix prompt still names the Modrinth Skyblock 1.21.8 mods folder, which does not exist; install target is Prism Skyblock through /ship.",
-    "Commits this run carry no Claude co-author trailer (memory rule); older commits do."
+    "Rule: third-party API non-200 is never `FishDiag.fail`; log + backoff, and every fetch needs a failure timestamp.",
+    "`roadmap-status` API needs numeric ids; string ids silently update 0.",
+    "The daily prompt's Modrinth mods folder does not exist; install target is Prism Skyblock via /ship."
   ]
 }
