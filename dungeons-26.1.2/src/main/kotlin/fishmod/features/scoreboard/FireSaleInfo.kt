@@ -44,7 +44,7 @@ object FireSaleInfo {
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept { resp ->
             try {
                 if (resp.statusCode() != 200) {
-                    FishDiag.fail("FireSaleInfo.1", "firesales API returned HTTP ${resp.statusCode()}")
+                    fishmod.utils.debug.FishDebug.LOGGER.warn("[FireSaleInfo] firesales API HTTP {}", resp.statusCode())
                     mc.execute { fetchInFlight = false }; return@thenAccept
                 }
                 val root = JsonParser.parseString(resp.body()).asJsonObject
