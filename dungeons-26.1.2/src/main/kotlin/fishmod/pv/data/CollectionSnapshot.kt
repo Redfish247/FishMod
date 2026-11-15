@@ -44,13 +44,6 @@ class CollectionSnapshot(
 			}
 			return best
 		}
-
-		fun maxCraftedMinion(minionId: String?): Int {
-			if (minionId.isNullOrBlank() || craftedTiers.isEmpty()) {
-				return 0
-			}
-			return craftedTiers[minionId.uppercase(Locale.ROOT)]?.maxOrNull() ?: 0
-		}
 	}
 
 	@JvmRecord

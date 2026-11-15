@@ -216,8 +216,6 @@ class FarmingFortuneEstimate private constructor(
 
 	fun toolkitKnown(): Boolean = inputs.toolkitKnown
 
-	fun toolkitTools(): Int = inputs.toolkit.size
-
 	fun tool(crop: String?, garden: Garden): Tool? {
 		if (crop == null) {
 			return null
@@ -775,8 +773,6 @@ class FarmingFortuneEstimate private constructor(
 			}
 			return ""
 		}
-
-		internal fun toolCrops(id: String?): List<String> = FarmingToolFortune.info(id)?.crops ?: listOf()
 
 		private fun fortune(stack: InventoryDecoder.Stack?): Double =
 			if (stack == null) 0.0 else PlayerStatsCalculator.loreStat(stack.lore, "farming_fortune")

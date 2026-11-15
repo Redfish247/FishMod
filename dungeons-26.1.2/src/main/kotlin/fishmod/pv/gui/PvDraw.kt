@@ -20,8 +20,6 @@ import net.minecraft.network.chat.TextColor
 
 object PvDraw {
 	const val COLOR_PANEL = 0x8A10162A.toInt()
-	const val COLOR_PANEL_OUTER = 0xE00A0A10.toInt()
-	const val COLOR_PANEL_INNER = 0xC0181824.toInt()
 	const val COLOR_BORDER = 0x00FFFFFF
 	const val COLOR_TEXT = 0xFFE8E8F0.toInt()
 	const val COLOR_MUTED = 0xFF9A9AAC.toInt()
@@ -35,7 +33,6 @@ object PvDraw {
 	const val COLOR_BAR_PROGRESS = 0xFF8E8E9C.toInt()
 	const val COLOR_BAR_FILL_SLAYER = 0xFF8B4A3D.toInt()
 	const val COLOR_MAXED_BAR_LEFT = 0xFF9278C5.toInt()
-	const val COLOR_MAXED_BAR_RIGHT = 0xFFF3E6FD.toInt()
 	const val BAR_HEIGHT = 6
 
 	@JvmField

@@ -100,9 +100,7 @@ class GardenSnapshot(
 	data class Composter(
 		val organicMatter: Long, val fuelUnits: Long, val compostUnits: Long, val compostItems: Long,
 		val upgrades: List<ComposterUpgrade>
-	) {
-		fun totalUpgradeLevels(): Int = upgrades.sumOf { it.level }
-	}
+	)
 
 	@JvmRecord
 	data class MedalCounts(val bronze: Int, val silver: Int, val gold: Int) {
@@ -142,9 +140,7 @@ class GardenSnapshot(
 	data class PlotCell(val plot: GardenCosts.Plot, val unlocked: Boolean, val unlockCost: GardenCosts.Cost?)
 
 	@JvmRecord
-	data class GreenhouseRow(val id: String, val name: String, val iconId: String, val analyzed: Boolean) {
-		fun discoveredOnly(): Boolean = !analyzed
-	}
+	data class GreenhouseRow(val id: String, val name: String, val iconId: String, val analyzed: Boolean)
 
 	@JvmRecord
 	data class GreenhouseMeta(

@@ -179,13 +179,6 @@ object LootTrackerStore {
 
     @JvmStatic
     @Synchronized
-    fun addOrIncrement(name: String?, id: String?, delta: Int) {
-        increment(rows(), name, id, delta)
-        save()
-    }
-
-    @JvmStatic
-    @Synchronized
     fun addAll(items: List<Triple<String?, String?, Int>>) {
         if (items.isEmpty()) return
         for ((name, id, delta) in items) increment(rows(), name, id, delta)

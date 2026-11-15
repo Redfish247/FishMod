@@ -40,14 +40,6 @@ object SoundManager {
         BuiltInRegistries.SOUND_EVENT.keySet().map { it.toString() }.sorted()
     }
 
-    val shortlist: List<String> = listOf(
-        "minecraft:block.note_block.pling", "minecraft:block.note_block.harp",
-        "minecraft:block.note_block.bell", "minecraft:block.note_block.bass",
-        "minecraft:entity.arrow.hit", "minecraft:entity.arrow.hit_player",
-        "minecraft:entity.experience_orb.pickup", "minecraft:entity.player.levelup",
-        "minecraft:block.anvil.land", "minecraft:entity.item.break",
-    )
-
     private fun resolve(v: Any?): SoundEvent = when (v) {
         is SoundEvent -> v
         is net.minecraft.core.Holder<*> -> v.value() as SoundEvent

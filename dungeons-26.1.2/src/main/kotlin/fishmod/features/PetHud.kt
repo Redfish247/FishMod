@@ -26,7 +26,6 @@ object PetHud {
 
     private val AUTOPET_PAT: Pattern = Pattern.compile("Autopet equipped your \\[Lvl\\s*(\\d+)\\]\\s*(.+?)!")
     private val SUMMON_PAT: Pattern = Pattern.compile("You summoned your\\s+(.+?)!")
-    private val DESPAWN_PAT: Pattern = Pattern.compile("(?:You|Autopet) despawned your\\s+(.+?)!")
     private val LOADOUT_EQUIP_PAT: Pattern = Pattern.compile("^You equipped (.+)!$")
 
     private val PET_ITEM_NAME: Pattern = Pattern.compile("\\[Lvl\\s*(\\d+)\\]\\s*(.+)")
@@ -420,24 +419,8 @@ object PetHud {
         else -> "§6"
     }
 
-    private fun nameColorCode(): String =
-        if (FishSettings.petHudShowRarity && petRarity != RarityTier.NONE) rarityCode(petRarity) else "§6"
-
     private fun safeInt(s: String?, fallback: Int): Int {
         return try { s!!.toInt() } catch (e: NumberFormatException) { FishDiag.fail("PetHud.10", "pet level not an int: '$s'", e); fallback } catch (e: NullPointerException) { FishDiag.fail("PetHud.11", "pet level group missing", e); fallback }
-    }
-
-    @JvmStatic
-    fun currentPetLine(): String? {
-        val name = petName ?: return null
-        val text = StringBuilder("§7[Lvl ").append(petLevel).append("] ").append(nameColorCode()).append(name)
-        val maxLvl = if ("Golden Dragon".equals(name, ignoreCase = true)) 200 else 100
-        if (petLevel >= maxLvl || petMaxed) {
-            text.append(" §a§lMAXED")
-        } else if (xpCurrent >= 0 && xpNext > 0) {
-            text.append(" §7(" + fishmod.utils.Fmt.f1(xpPct.toDouble()) + "%)")
-        }
-        return text.toString()
     }
 
     @JvmStatic

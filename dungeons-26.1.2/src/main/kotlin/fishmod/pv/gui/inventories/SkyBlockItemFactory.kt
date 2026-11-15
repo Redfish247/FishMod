@@ -32,9 +32,6 @@ object SkyBlockItemFactory {
 	private val FAILED_ICON_IDS: MutableSet<String> = ConcurrentHashMap.newKeySet()
 	private val PET_LEVEL = Regex("(?i)\\[Lvl\\s*(\\d+)\\]")
 	private val LVL_PLACEHOLDER = Regex("(?i)\\[Lvl\\s*\\{?LVL\\}?\\]\\s*")
-	private const val HOTM_TAB_SKULL_VALUE =
-		"ewogICJ0aW1lc3RhbXAiIDogMTYxODk5OTIyNDk2OSwKICAicHJvZmlsZUlkIiA6ICI1NjY3NWIyMjMyZjA0ZWUwODkxNzllOWM5MjA2Y2ZlOCIsCiAgInByb2ZpbGVOYW1lIiA6ICJUaGVJbmRyYSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS83NDIxM2RjNmRjNGIxNjQxZGVmZDMzM2Y0YTQ3MzJjYzcxNGRkNjc3NzE4ZmExMGYxNDBhNjkzOWMxMmFhMzJiIgogICAgfQogIH0KfQ=="
-
 	private val FLAWLESS_GEM_SKULLS: Map<String, String> = mapOf(
 		"JADE" to "ewogICJ0aW1lc3RhbXAiIDogMTYxODA4NTY1NzA0NywKICAicHJvZmlsZUlkIiA6ICIxYWZhZjc2NWI1ZGY0NjA3YmY3ZjY1ZGYzYWIwODhhOCIsCiAgInByb2ZpbGVOYW1lIiA6ICJMb3lfQmxvb2RBbmdlbCIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9mODlmNzVlMGIwMDM3OGE1ODNkYmJhNzI4ZGNkYzZlOTM0NmYzMWRkNjAxZDQ0OGYzZDYwNjE1Yzc0NjVjYzNlIgogICAgfQogIH0KfQ==",
 		"AMBER" to "ewogICJ0aW1lc3RhbXAiIDogMTYxODA4NTE3NjQ5NiwKICAicHJvZmlsZUlkIiA6ICJiNWRkZTVmODJlYjM0OTkzYmMwN2Q0MGFiNWY2ODYyMyIsCiAgInByb2ZpbGVOYW1lIiA6ICJsdXhlbWFuIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzlkY2U2MmY3MGFjMDQ2Yjg4MTExM2M2Y2Y4NjI5ODc3Mjc3NzRlMjY1ODg1NTAxYzlhMjQ1YjE4MGRiMDhjMGQiCiAgICB9CiAgfQp9",
@@ -269,17 +266,6 @@ object SkyBlockItemFactory {
 		val stack = baseStack(skyblockId).copy()
 		applySkyBlockIdentity(stack, key)
 		return stack
-	}
-
-	@JvmStatic
-	fun hotmTabIcon(): ItemStack {
-		val sky = iconStack("MINING_2_PORTAL")
-		if (!sky.isEmpty && sky.`is`(Items.PLAYER_HEAD)) {
-			return sky
-		}
-		val head = ItemStack(Items.PLAYER_HEAD)
-		SkullTextureApplier.applyValue(head, HOTM_TAB_SKULL_VALUE, null)
-		return head
 	}
 
 	@JvmStatic

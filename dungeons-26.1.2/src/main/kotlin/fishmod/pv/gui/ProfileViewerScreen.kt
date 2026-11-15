@@ -559,12 +559,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 
 	private fun virtualW(): Int = scaleViewport?.let { ceil(it.toVirtualX(width.toDouble())).toInt() } ?: width
 
-	private fun overlayW(): Int =
-		scaleViewport?.let { Math.round(it.toVirtualX(0.0) + it.toVirtualX(width.toDouble())).toInt() } ?: width
-
-	private fun overlayH(): Int =
-		scaleViewport?.let { Math.round(it.toVirtualY(0.0) + it.toVirtualY(height.toDouble())).toInt() } ?: height
-
 	private fun virtualH(): Int = scaleViewport?.let { ceil(it.toVirtualY(height.toDouble())).toInt() } ?: height
 
 	private fun openScale(): Float {

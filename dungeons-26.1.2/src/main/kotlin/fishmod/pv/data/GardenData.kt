@@ -585,10 +585,4 @@ object GardenData {
 		}
 		return out.toString()
 	}
-
-	@JvmStatic
-	fun knownCropKeys(): MutableSet<String> {
-		ensureLoaded()
-		return LinkedHashSet(cropMilestones.keys)
-	}
 }

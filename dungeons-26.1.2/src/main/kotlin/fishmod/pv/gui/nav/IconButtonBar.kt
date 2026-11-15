@@ -34,27 +34,6 @@ class IconButtonBar {
 		return false
 	}
 
-	fun drawInnerButton(
-		g: GuiGraphicsExtractor,
-		font: Font,
-		x: Int,
-		y: Int,
-		icon: ItemStack,
-		label: Component,
-		selected: Boolean,
-		hovered: Boolean,
-		onClick: Runnable
-	) {
-		val top = if (selected) 0x70386CC8 else if (hovered) 0x40FFFFFF else PvDraw.CELL
-		val edge = if (selected) 0xB05B8CFF.toInt() else if (hovered) 0x00FFFFFF else PvDraw.GLASS_EDGE
-		PvDraw.glassSurface(g, x, y, TAB, TAB, 5, top, PvDraw.GLASS_INNER_BOTTOM, PvDraw.C_ALL, edge)
-		g.item(icon, x + 5, y + 5)
-		hits.add(Hit(x, y, TAB, TAB, onClick))
-		if (hovered) {
-			tooltipAbove(g, font, label, x + TAB / 2, y)
-		}
-	}
-
 	fun drawTopFrameTabs(
 		g: GuiGraphicsExtractor,
 		font: Font,
@@ -242,9 +221,6 @@ class IconButtonBar {
 	companion object {
 		const val TAB = 26
 		const val GAP = 1
-		const val SEAM = 3
-
-		const val BTN = TAB
 
 		private var virtualW = 0
 		private var virtualH = 0

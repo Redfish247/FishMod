@@ -74,18 +74,6 @@ object HypixelItemResolver {
 		return null
 	}
 
-	@JvmStatic
-	fun extractHypixelSkinSignature(def: JsonObject?): String? {
-		if (def == null || !def.has("skin") || !def.get("skin").isJsonObject) {
-			return null
-		}
-		val skin = def.getAsJsonObject("skin")
-		if (skin.has("signature") && skin.get("signature").isJsonPrimitive) {
-			return skin.get("signature").asString?.takeUnless { it.isBlank() }
-		}
-		return null
-	}
-
 	/**
 	 * Hypixel's items API reuses one DiscordApp placeholder skin for potion/talisman bags (and similar).
 	 * Those heads never look like the real menu icons.

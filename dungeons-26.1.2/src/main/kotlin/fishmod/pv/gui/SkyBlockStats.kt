@@ -123,10 +123,6 @@ object SkyBlockStats {
 	}
 
 	@JvmStatic
-	@Suppress("UNUSED_PARAMETER")
-	fun tuningLine(slot: Int?, stats: List<InventorySnapshot.StatPoint>?): Component = tuningStats(stats)
-
-	@JvmStatic
 	fun tuningStats(stats: List<InventorySnapshot.StatPoint>?): Component {
 		val out = Component.empty()
 		if (stats.isNullOrEmpty()) {

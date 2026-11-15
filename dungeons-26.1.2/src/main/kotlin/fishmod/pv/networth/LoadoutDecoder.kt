@@ -120,20 +120,6 @@ internal object LoadoutDecoder {
     }
 
     @JvmStatic
-    fun emptyLoadout(index: Int): InventorySnapshot.Loadout = InventorySnapshot.Loadout(
-        "Loadout ${index + 1}",
-        MutableList(4) { null },
-        MutableList(4) { null },
-        "",
-        null,
-        emptyList(),
-        null,
-        "",
-        null,
-        null,
-    )
-
-    @JvmStatic
     fun resolveTuning(info: InventorySnapshot.AccessoryInfo?, slot: Int?): List<InventorySnapshot.StatPoint> {
         if (info == null || slot == null) return emptyList()
         return info.tunings.firstOrNull { it.slot == slot }?.stats ?: emptyList()

@@ -118,8 +118,6 @@ class ForagingSnapshot private constructor(
 
 		fun totalCaptures(): Long = biomeCaptures.values.sumOf { maxOf(0L, it) }
 
-		fun totalTickets(): Long = tickets.values.sumOf { maxOf(0L, it) }
-
 		companion object {
 			@JvmStatic
 			fun empty(): SafariInfo = SafariInfo(listOf(), mapOf(), mapOf(), mapOf(), listOf(), 0L)
@@ -241,8 +239,6 @@ class ForagingSnapshot private constructor(
 	fun currentDailyLogs(): List<String> = if (dailyLogsDay > 0L && !isCurrentDailyDay(dailyLogsDay)) listOf() else dailyLogs
 
 	fun unplacedHotfNodes(): List<HotfNode> = hotfNodes.filter { ForagingHotfData.perk(it.id) == null }
-
-	fun safariEssence(): Long = safariShop.balance
 
 	fun hotfNodeLevel(id: String?): Int {
 		if (id.isNullOrBlank()) {

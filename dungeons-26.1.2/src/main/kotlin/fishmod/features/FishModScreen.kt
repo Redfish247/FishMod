@@ -4587,7 +4587,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val TWO_LINE_H = 36
         private const val SLIDER_ROW_H = 24
         private const val SLIDER_CTRL_Y = 13
-        private const val TWO_LINE_CTRL_Y = 20
         private const val INPUT_CTRL_Y = 12
         private const val INPUT_ROW_H = 30
 

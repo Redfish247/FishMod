@@ -185,9 +185,6 @@ object InventoryDecoder {
     }
 
     @JvmStatic
-    fun stacksFromItemBytes(itemBytes: JsonElement?): List<Stack> = InventoryDecodeCache.decodeDataElement(itemBytes)
-
-    @JvmStatic
     fun slotFromItemBytes(itemBytes: JsonElement?): InventorySnapshot.Slot? =
         InventoryDecodeCache.decodeDataElement(itemBytes).firstOrNull()?.let(InventoryDecodeSupport::toUiSlot)
 

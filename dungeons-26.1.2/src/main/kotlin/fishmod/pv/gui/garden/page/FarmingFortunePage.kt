@@ -79,8 +79,6 @@ class FarmingFortunePage {
 		open = false
 	}
 
-	fun selectedCrop(): String = crop
-
 	fun mouseClicked(mx: Double, my: Double): Boolean {
 		if (!open) {
 			return false

@@ -27,7 +27,6 @@ object RiftDreadfarm {
     private val berbs = java.util.concurrent.CopyOnWriteArrayList<Berb>()
     @Volatile private var hasWand = false
     @Volatile var particleSeen = 0; private set
-    @Volatile var lastParticleMs = 0L; private set
     private val seenTimes = java.util.concurrent.ConcurrentLinkedQueue<Long>()
     // Debug: proves the particle hook fires at all, and why fireworks were dropped
     @Volatile var anyParticles = 0; private set

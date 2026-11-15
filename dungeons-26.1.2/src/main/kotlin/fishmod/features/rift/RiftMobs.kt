@@ -31,7 +31,6 @@ object RiftMobs {
     @Volatile var lastCruxNames: List<String> = emptyList(); private set
     private val CRUX_TAG = Regex("^(?:Shy|Shadow|Volt|Scribe|Frozille|Splatter)(?: Crux)? [0-9,.]+[kKmM]?/[0-9,.]+[kKmM]?")
     private val SHY_LINES = setOf("I'm ugly! :(", "Eek!", "Don't look at me!", "Look away!")
-    private val BACTE_NAME = Regex("(?:^|[^A-Za-z])(Bacte|Bact|Bac|Ba)(?![A-Za-z])")
     private val BACTE_CHAT = Regex("^(Bacte|Bact|Bac|Ba) (is rooting|is growing|has summoned|is vulnerable)|^BACTE DOWN")
     private val BACTE_TAG = Regex("^(Bacte|Bact|Bac|Ba|B) [0-9,.]+[kKmM]?/[0-9,.]+[kKmM]?")
     private val BACTE_END = Regex("BACTE DOWN")

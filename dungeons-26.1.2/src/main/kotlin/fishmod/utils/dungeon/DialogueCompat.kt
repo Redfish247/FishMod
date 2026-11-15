@@ -16,8 +16,6 @@ object DialogueCompat {
 
     @JvmStatic fun isNecronEnd(s: String): Boolean = s == NECRON_END_OLD
 
-    @JvmStatic fun isWatcherOpen(s: String): Boolean = s in WATCHER_OPEN_OLD || s.startsWith(WATCHER_OPEN_NEW)
-
     @JvmStatic
     fun matches(expected: String, actual: String): Boolean = when {
         expected == actual -> true
