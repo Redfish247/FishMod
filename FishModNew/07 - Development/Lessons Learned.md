@@ -443,3 +443,7 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 - I also told Eli "no code change" for the install-error cards when a guard was possible. Rule: for an unreproducible report, still add the diagnostic (one report with the evidence needed to tell causes apart) instead of closing it.
 
 - Run tracker timers reset / never count mid-run (xiyacats 2026-11-13): Hypixel re-sends the Dungeon location packet; `BossPhase` locationChange hook called reset(), nulling floor/splits so timers restarted and start messages were missed. Fix: skip reset for a repeat DUNGEON location while a run is live. Any per-run state hooked to locationChange needs the same guard (others still unguarded: FishEstTotal, LagTracker, GateDisplay).
+
+## 2026-11-15: NEU skin list filtered by id (#588)
+- `/fm customize` only listed NEU items whose id contained `SKIN`, so ~180 helmet/dragon/backpack skins (`WISE_BABY`, `PROTECTOR_SHIMMER`, `DRAGON_WYVERN`) never showed. Rule: classify NEU repo items by lore (`This skin` + `COSMETIC`), not by id naming; when the filter changes, rename the cache file (`neu_cosmetics3.json`) so stale caches refetch. Checked against the real repo zip before fixing, not guessed.
+- Reports from old builds (#586 was 1.7.18) may already be fixed: `git log -S"<diag id>"` first, then move the card to Testing.
