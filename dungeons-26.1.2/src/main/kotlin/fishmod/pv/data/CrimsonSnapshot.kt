@@ -187,8 +187,6 @@ class CrimsonSnapshot private constructor(
 
 	fun dojoTotalPoints(): Int = dojo.values.sumOf { it.points }
 
-	fun kuudraLoremaster(): Boolean = kuudraFollower.loremaster
-
 	fun abiphoneQuestsDone(): Int = abiphoneContacts.count { it.completedQuest }
 
 	fun abiphoneDndCount(): Int = abiphoneContacts.count { it.dnd }
@@ -375,18 +373,6 @@ class CrimsonSnapshot private constructor(
 				"MAGMA_BOSS" -> "Magma Boss"
 				else -> prettyContact(id)
 			}
-		}
-
-		@JvmStatic
-		fun prettyDaily(id: String?): String {
-			if (id.isNullOrBlank()) {
-				return ""
-			}
-			var raw: String = id.removePrefix("crimson_isle_")
-			if (raw.length > 2 && raw[raw.length - 2] == '_' && Character.isLetter(raw[raw.length - 1])) {
-				raw = raw.substring(0, raw.length - 2)
-			}
-			return prettyContact(raw)
 		}
 
 		private fun prettyContact(id: String?): String {

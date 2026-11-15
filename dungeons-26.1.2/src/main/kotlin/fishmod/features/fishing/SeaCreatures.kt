@@ -19,8 +19,6 @@ class SeaCreature(
     val areas: Set<SkyblockLocation>,
     val needle: String,
 ) {
-    val immunityMs: Long get() = if (immunity) 5000L else 0L
-
     fun inArea(loc: SkyblockLocation): Boolean = areas.isEmpty() || loc in areas
 }
 

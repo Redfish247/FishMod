@@ -82,11 +82,7 @@ enum class PvTab(private val iconItem: Item, private val langKey: String) {
 		else -> PvSubTab.NONE
 	}
 
-	fun hasSubTabs(): Boolean = subTabs().isNotEmpty()
-
 	fun isBestiarySplit(): Boolean = this == BESTIARY
-
-	fun hasMuseumSort(): Boolean = this == MUSEUM
 
 	fun isInventorySplit(): Boolean = this == INVENTORIES
 
@@ -98,9 +94,6 @@ enum class PvTab(private val iconItem: Item, private val langKey: String) {
 	}
 
 	companion object {
-		@JvmStatic
-		fun fromCommandArg(raw: String?): PvTab? = routeFromCommandArg(raw)?.tab
-
 		@JvmStatic
 		fun routeFromCommandArg(raw: String?): Route? {
 			if (raw == null || raw.isBlank()) {

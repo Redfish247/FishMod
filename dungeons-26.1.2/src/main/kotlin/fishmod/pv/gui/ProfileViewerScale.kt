@@ -45,18 +45,8 @@ object ProfileViewerScale {
 
 	private fun ceilDiv(value: Int, divisor: Int): Int = (value + divisor - 1) / divisor
 
-	@JvmStatic
-	fun bottomLeftPosition(viewportWidth: Int, viewportHeight: Int, contentWidth: Int, contentHeight: Int, margin: Int): Point {
-		val x = maxOf(0, minOf(margin, viewportWidth - contentWidth))
-		val y = maxOf(0, viewportHeight - contentHeight - margin)
-		return Point(x, y)
-	}
-
 	@JvmRecord
 	data class Bounds(val left: Float, val top: Float, val right: Float, val bottom: Float)
-
-	@JvmRecord
-	data class Point(val x: Int, val y: Int)
 
 	@JvmRecord
 	data class Viewport(
@@ -71,9 +61,5 @@ object ProfileViewerScale {
 		fun toVirtualX(screenX: Double): Double = (screenX - offsetX) / renderScale
 
 		fun toVirtualY(screenY: Double): Double = (screenY - offsetY) / renderScale
-
-		fun toScreenX(virtualX: Float): Float = offsetX + virtualX * renderScale
-
-		fun toScreenY(virtualY: Float): Float = offsetY + virtualY * renderScale
 	}
 }

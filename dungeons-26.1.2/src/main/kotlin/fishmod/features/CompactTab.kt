@@ -28,12 +28,6 @@ object CompactTab {
         return (a shl 24) or BG_RGB
     }
 
-    private fun bgHead(): Int {
-        val pct = max(0, min(100, FishSettings.compactTabOpacity))
-        val a = (pct * 2.55 * 0.45).roundToInt()
-        return (a shl 24) or BG_RGB
-    }
-
     private const val BORDER = 0x66303440
     private const val DIVIDER = 0x44454a58
     private const val LABEL = 0xFF8A8F9C.toInt()

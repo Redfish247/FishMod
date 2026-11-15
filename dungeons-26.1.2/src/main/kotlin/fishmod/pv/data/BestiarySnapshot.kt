@@ -63,8 +63,6 @@ class BestiarySnapshot private constructor(
 
 	fun milestone(): Int = totalUnlockedTiers / 10
 
-	fun milestoneProgress(): Int = totalUnlockedTiers % 10
-
 	companion object {
 		@JvmStatic
 		fun empty(): BestiarySnapshot = BestiarySnapshot(mapOf(), 0, false, "", 0, 0)

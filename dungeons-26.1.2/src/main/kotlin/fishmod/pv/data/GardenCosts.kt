@@ -80,12 +80,6 @@ object GardenCosts {
 	}
 
 	@JvmStatic
-	fun cropUpgradeMax(): Int {
-		ensureLoaded()
-		return cropUpgradeCopper.size
-	}
-
-	@JvmStatic
 	fun cropUpgradeCopper(level: Int): Progress {
 		ensureLoaded()
 		return Progress(sum(cropUpgradeCopper, maxOf(0, level)), sum(cropUpgradeCopper, cropUpgradeCopper.size))

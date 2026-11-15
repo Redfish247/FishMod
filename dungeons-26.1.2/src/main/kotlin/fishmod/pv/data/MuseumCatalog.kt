@@ -306,9 +306,6 @@ object MuseumCatalog {
     }
 
     @JvmStatic
-    fun sortOfDonationId(id: String?): MuseumSort = entry(id)?.sort ?: MuseumSort.SPECIAL
-
-    @JvmStatic
     fun isCataloged(id: String?): Boolean = entry(id) != null
 
     @JvmStatic

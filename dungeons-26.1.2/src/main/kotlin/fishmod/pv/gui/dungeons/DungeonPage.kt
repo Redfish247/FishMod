@@ -153,9 +153,6 @@ class DungeonPage {
 		return true
 	}
 
-	fun isCalcButton(mx: Double, my: Double): Boolean =
-		!overlay.isOpen() && (hitButton(cataRow, mx, my) || hitButton(classRow, mx, my))
-
 	fun charTyped(codepoint: Char): Boolean {
 		if (focus == FieldFocus.NONE || overlay.isOpen()) {
 			return false
