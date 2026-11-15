@@ -35,12 +35,6 @@ object Diana {
 
     @JvmStatic fun active(): Boolean = inHub() && hasSpade
 
-    // Held a spade continuously for at least ms (200ms grace after switching away)
-    fun heldSpadeFor(ms: Long): Boolean {
-        val now = System.currentTimeMillis()
-        return holdStartMs != 0L && now - lastHoldMs < 200 && now - holdStartMs >= ms
-    }
-
     fun clickedRecently(pos: BlockPos): Boolean =
         recentClicks[pos]?.let { System.currentTimeMillis() - it < 4000 } ?: false
 

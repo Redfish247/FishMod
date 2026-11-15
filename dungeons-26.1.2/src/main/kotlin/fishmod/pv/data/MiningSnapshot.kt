@@ -175,11 +175,6 @@ class MiningSnapshot private constructor(
         return if (any) min else 0L
     }
 
-    fun nextCorpseMilestone(): CorpseMilestone? = CORPSE_MILESTONES.getOrNull(corpseMilestone)
-
-    fun currentCorpseMilestoneDef(): CorpseMilestone? =
-        if (corpseMilestone <= 0) null else CORPSE_MILESTONES[corpseMilestone - 1]
-
     companion object {
         @JvmField
         val CORPSE_MILESTONES: List<CorpseMilestone> = listOf(

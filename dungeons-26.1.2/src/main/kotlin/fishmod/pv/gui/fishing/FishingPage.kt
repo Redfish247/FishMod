@@ -226,7 +226,6 @@ class FishingPage {
 		private const val SEP_GAP = 10
 		private const val BAR_FISH = 0xFF55AAFF.toInt()
 		private const val SLOT = 16
-		private const val TIER_BORDER = 1
 		private const val COLOR_MAXED = 0xFF7CFF9A.toInt()
 		private const val SEA_CREATURE_CATEGORY = "fishing"
 		private const val NAME_COLOR = 0xFFC9A6FF.toInt()
@@ -266,15 +265,6 @@ class FishingPage {
 				compareByDescending<BestiarySnapshot.FamilyProgress> { it.kills }
 					.thenBy(String.CASE_INSENSITIVE_ORDER) { it.family().name }
 			)
-		}
-
-		@JvmStatic
-		fun drawTierBorder(g: GuiGraphicsExtractor, bx: Int, by: Int, color: Int) {
-			val t = TIER_BORDER
-			PvDraw.fill(g, bx, by, SLOT, t, color)
-			PvDraw.fill(g, bx, by + SLOT - t, SLOT, t, color)
-			PvDraw.fill(g, bx, by + t, t, SLOT - t * 2, color)
-			PvDraw.fill(g, bx + SLOT - t, by + t, t, SLOT - t * 2, color)
 		}
 
 		@JvmStatic
@@ -412,35 +402,6 @@ class FishingPage {
 			TrophyFishData.Tier.GOLD -> TIER_GOLD
 			TrophyFishData.Tier.SILVER -> TIER_SILVER
 			TrophyFishData.Tier.BRONZE -> TIER_BRONZE
-		}
-
-		@JvmStatic
-		fun prettyLast(raw: String?): String {
-			if (raw.isNullOrBlank()) {
-				return ""
-			}
-			val parts = raw.split("/").dropLastWhile { it.isEmpty() }
-			if (parts.isEmpty()) {
-				return ""
-			}
-			val sb = StringBuilder()
-			for (p in parts[0].replace('_', ' ').split(" ")) {
-				if (p.isEmpty()) {
-					continue
-				}
-				if (sb.isNotEmpty()) {
-					sb.append(' ')
-				}
-				sb.append(p[0].uppercaseChar())
-				if (p.length > 1) {
-					sb.append(p.substring(1).lowercase(Locale.ROOT))
-				}
-			}
-			if (parts.size > 1 && parts[1].isNotEmpty()) {
-				sb.append(" · ").append(parts[1].substring(0, 1).uppercase(Locale.ROOT))
-					.append(parts[1].substring(1).lowercase(Locale.ROOT))
-			}
-			return sb.toString()
 		}
 
 		private fun sectionSeparator(g: GuiGraphicsExtractor, font: Font, panelX: Int, y: Int, panelW: Int): Int {

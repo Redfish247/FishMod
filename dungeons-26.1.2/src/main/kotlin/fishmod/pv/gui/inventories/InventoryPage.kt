@@ -151,8 +151,6 @@ class InventoryPage {
 		rebuildSearchIndex()
 	}
 
-	fun searchHighlightsPane(pane: InventoryPane?): Boolean = pane != null && searchPanes.contains(pane)
-
 	private fun searchMatches(pane: InventoryPane): Set<Int> = searchPages[pane] ?: setOf()
 
 	fun render(
@@ -1605,7 +1603,6 @@ class InventoryPage {
 		private const val COL_GAP = 4
 		private const val META_GAP = 6
 		private const val LOADOUT_GAP = 14
-		private const val LOADOUT_MIN_W = 170
 		private const val LOADOUT_ROW_GAP = 8
 		private const val SEARCH_HIGHLIGHT = 0xFF55FF55.toInt()
 		private const val PANEL_HOVER = 0x0AFFFFFF

@@ -187,12 +187,6 @@ class ProfileSnapshot(
         return skills.sumOf { maxOf(it.level.toFloat(), it.overflowLevel).toDouble() } / skills.size
     }
 
-    fun withWeightText(weightText: String): ProfileSnapshot = ProfileSnapshot(
-        playerName, playerUuid, profileName, skyBlockLevel, skyBlockXpIntoLevel,
-        weightText, networthText, purseCoins, bankCoins, bankTransactions,
-        skills, slayers, social, runecrafting, activeSlayer, emblems, slayerMods,
-    )
-
     fun withNetworthText(networthText: String): ProfileSnapshot = ProfileSnapshot(
         playerName, playerUuid, profileName, skyBlockLevel, skyBlockXpIntoLevel,
         weightText, networthText, purseCoins, bankCoins, bankTransactions,

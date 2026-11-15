@@ -92,7 +92,4 @@ object NbtAttrs {
         }
         return out
     }
-
-    @JvmStatic
-    fun stringListValues(tag: CompoundTag?, key: String): List<String> = stringList(tag, key)
 }

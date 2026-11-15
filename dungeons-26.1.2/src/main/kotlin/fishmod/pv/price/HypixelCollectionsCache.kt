@@ -66,8 +66,6 @@ object HypixelCollectionsCache {
 		}
 
 		fun nextTier(amount: Long): Tier? = tiers.firstOrNull { amount < it.amountRequired } ?: tiers.lastOrNull()
-
-		fun currentTier(amount: Long): Tier? = tiers.lastOrNull { amount >= it.amountRequired }
 	}
 
 	@JvmRecord

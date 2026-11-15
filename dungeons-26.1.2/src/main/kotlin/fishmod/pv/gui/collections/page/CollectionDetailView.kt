@@ -93,8 +93,6 @@ internal class CollectionDetailView {
 
 	fun page(): Int = page
 
-	fun visibleSlots(): List<IntArray> = slots
-
 	fun pageCount(): Int = item?.let { pageCount(it.tiers.size, perPage) } ?: 0
 
 	fun keyPressed(key: Int): Boolean {
@@ -745,22 +743,6 @@ internal class CollectionDetailView {
 			return if (firstLocked.tier == tier.tier) TierState.NEXT else TierState.UPCOMING
 		}
 
-		fun rewardSummary(tier: HypixelCollectionsCache.Tier): String {
-			val main = ArrayList<String>()
-			var xp: String? = null
-			for (unlock in tier.unlocks) {
-				if (isSkyBlockXp(unlock)) {
-					xp = unlock
-				} else {
-					main.add(unlock)
-				}
-			}
-			if (main.isEmpty()) {
-				return xp ?: "-"
-			}
-			return if (main.size == 1) main[0] else main[0] + " +" + (main.size - 1) + " more"
-		}
-
 		fun tierTip(
 			item: HypixelCollectionsCache.Item,
 			tier: HypixelCollectionsCache.Tier,
@@ -799,8 +781,6 @@ internal class CollectionDetailView {
 			}
 			return lines
 		}
-
-		private fun isSkyBlockXp(unlock: String?): Boolean = unlock != null && unlock.endsWith("SkyBlock XP")
 
 		fun roman(n: Int): String {
 			if (n <= 0) {

@@ -48,7 +48,6 @@ object Mining {
     fun inShaft(): Boolean = SkyblockLocation.`in`(SkyblockLocation.MINESHAFT)
     fun inTunnels(): Boolean = SkyblockLocation.`in`(SkyblockLocation.DWARVEN_MINES) &&
         (area.contains("Glacite") || area.contains("Base Camp") || area.contains("Fossil Research") || tabLine("Glacite Mineshafts:") != null)
-    fun inGlacite(): Boolean = inTunnels() || inShaft()
 
     @JvmStatic
     fun init() {

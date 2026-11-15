@@ -29,8 +29,6 @@ object FarmingFortuneLayout {
 
 		fun bottom(): Int = y + h
 
-		fun overlaps(o: Rect): Boolean = x < o.right() && o.x < right() && y < o.bottom() && o.y < bottom()
-
 		fun contains(px: Int, py: Int): Boolean = px >= x && px < right() && py >= y && py < bottom()
 	}
 

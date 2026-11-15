@@ -55,30 +55,6 @@ class AuctionSnapshot private constructor(
 
 		fun ended(nowMs: Long): Boolean = endMs > 0L && endMs <= nowMs
 
-		fun profileKnown(): Boolean = profileId.isNotBlank()
-
-		fun onProfile(viewedProfileId: String?): Boolean =
-			profileKnown() && viewedProfileId != null && profileId == viewedProfileId.replace("-", "").lowercase(Locale.ROOT)
-
-		fun withEnrichment(
-			name: String?,
-			tier: String?,
-			slot: InventorySnapshot.Slot?,
-			details: List<String>?,
-			knownProfileId: String?
-		): Listing = listing(
-			auctionId,
-			this.tag,
-			if (name.isNullOrBlank()) itemName else name,
-			if (tier.isNullOrBlank()) this.tier else tier,
-			bin,
-			startingBid,
-			highestBid,
-			endMs,
-			slot ?: this.slot,
-			details ?: listOf(),
-			if (knownProfileId.isNullOrBlank()) profileId else knownProfileId
-		)
 	}
 
 	@JvmRecord
@@ -181,12 +157,6 @@ class AuctionSnapshot private constructor(
 		if (id.isBlank()) "https://sky.coflnet.com/" else "https://sky.coflnet.com/player/$id"
 	}
 
-	fun forBucket(bucket: Bucket?): List<Listing> = when (bucket ?: Bucket.ACTIVE) {
-		Bucket.ACTIVE -> active
-		Bucket.SOLD -> sold
-		Bucket.BOUGHT -> bought
-	}
-
 	private fun rebuild(
 		active: List<Listing> = this.active,
 		sold: List<Listing> = this.sold,
@@ -204,15 +174,12 @@ class AuctionSnapshot private constructor(
 	fun withHistoryLoading(loading: Boolean): AuctionSnapshot =
 		if (loading == historyLoading) this else rebuild(historyLoading = loading)
 
-	fun totalCoins(bucket: Bucket?): Long = forBucket(bucket).sumOf { it.price() }
-
 	fun withStats(stats: Stats?): AuctionSnapshot = rebuild(stats = stats)
 
 	companion object {
 		private val RARITY_ORDER = arrayOf(
 			"COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "SPECIAL", "VERY_SPECIAL", "ULTIMATE"
 		)
-		private val QUESTION_RUN = Regex("\\s*\\?+")
 
 		@JvmStatic
 		fun empty(): AuctionSnapshot = AuctionSnapshot(null, listOf(), listOf(), listOf(), Stats.empty(), 0, 0, false, false)
@@ -227,126 +194,6 @@ class AuctionSnapshot private constructor(
 			java.util.List.copyOf(detailLines ?: listOf()),
 			profileId?.let { normalizeId(it) } ?: ""
 		)
-
-		@JvmStatic
-		@JvmOverloads
-		fun enrichFromCoflDetail(base: Listing?, detail: JsonObject?, player: UUID? = null): Listing? {
-			if (base == null || detail == null) {
-				return base
-			}
-			val tag = str(detail, "tag").ifBlank { base.tag }
-			val tier = SkyBlockItemFactory.normalizeTier(str(detail, "tier"))
-			val name = formatCoflItemName(detail).ifBlank { base.itemName }
-			val details = coflDetailLines(detail)
-			val slot = InventoryDecoder.slotFromTag(tag, name, tier)
-			return base.withEnrichment(name, tier, slot, details, coflProfileFor(detail, player))
-		}
-
-		/** Profile the player used on this auction (as seller, else as bidder); blank if SkyCofl doesn't say. */
-		internal fun coflProfileFor(detail: JsonObject?, player: UUID?): String {
-			if (detail == null || player == null) {
-				return ""
-			}
-			val me = HypixelApiClient.undashed(player).lowercase(Locale.ROOT)
-			if (me == normalizeId(str(detail, "auctioneerId"))) {
-				return str(detail, "profileId")
-			}
-			var best = ""
-			var bestAmount = -1L
-			val bids = detail.get("bids")
-			if (bids != null && bids.isJsonArray) {
-				for (el in bids.asJsonArray) {
-					if (el == null || !el.isJsonObject) {
-						continue
-					}
-					val bid = el.asJsonObject
-					if (me != normalizeId(str(bid, "bidder"))) {
-						continue
-					}
-					val amount = longVal(bid, "amount")
-					if (amount > bestAmount) {
-						bestAmount = amount
-						best = str(bid, "profileId")
-					}
-				}
-			}
-			return best
-		}
-
-		private fun formatCoflItemName(detail: JsonObject): String {
-			var name = str(detail, "itemName")
-			if (name.isBlank()) {
-				return ""
-			}
-			name = name.replace('�', '?')
-			val stars = coflUpgradeLevel(detail)
-			val starSuffix = if (stars <= 0) "" else " " + "✪".repeat(minOf(10, stars))
-			if (name.indexOf('?') >= 0) {
-				name = QUESTION_RUN.replace(name, Regex.escapeReplacement(starSuffix)).trim()
-			} else if (stars > 0 && !name.contains("✪")) {
-				name = name.trim() + starSuffix
-			}
-			return name
-		}
-
-		private fun coflUpgradeLevel(detail: JsonObject): Int {
-			val flat = obj(detail, "flatNbt") ?: obj(detail, "flattenedNbt") ?: obj(detail, "nbtData")?.let { obj(it, "data") }
-			var level = intVal(flat, "upgrade_level")
-			if (level <= 0) {
-				level = intVal(flat, "dungeon_item_level")
-			}
-			return maxOf(0, level)
-		}
-
-		private fun coflDetailLines(detail: JsonObject): List<String> {
-			val lines = ArrayList<String>()
-			val reforge = str(detail, "reforge")
-			if (reforge.isNotBlank() && !"none".equals(reforge, ignoreCase = true)) {
-				lines.add("§7Reforge: §f" + InventoryDecoder.prettyWords(reforge))
-			}
-			val stars = coflUpgradeLevel(detail)
-			if (stars > 0) {
-				lines.add("§6Stars: §e" + stars + " " + "✪".repeat(minOf(10, stars)))
-			}
-			val flat = obj(detail, "flatNbt") ?: obj(detail, "flattenedNbt")
-			val hpb = intVal(flat, "hot_potato_count")
-			if (hpb > 0) {
-				lines.add("§7Hot Potato Books: §e$hpb")
-			}
-			val aow = intVal(flat, "art_of_war_count")
-			if (aow > 0) {
-				lines.add("§7Art of War: §e$aow")
-			}
-			val aop = intVal(flat, "art_of_peace_count")
-			if (aop > 0) {
-				lines.add("§7Art of Peace: §e$aop")
-			}
-			if (detail.has("enchantments") && detail.get("enchantments").isJsonArray) {
-				val enchants = detail.getAsJsonArray("enchantments")
-				if (!enchants.isEmpty) {
-					if (lines.isNotEmpty()) {
-						lines.add("")
-					}
-					lines.add("§9Enchantments")
-					for (el in enchants) {
-						if (el == null || !el.isJsonObject) {
-							continue
-						}
-						val ench = el.asJsonObject
-						val type = str(ench, "type")
-						if (type.isBlank()) {
-							continue
-						}
-						val level = intVal(ench, "level")
-						val color = str(ench, "color").ifBlank {
-							if (type.lowercase(Locale.ROOT).startsWith("ultimate_")) "§d" else "§9"
-						}
-						lines.add(color + InventoryDecoder.prettyWords(type) + (if (level > 0) " " + roman(level) else ""))
-					}
-				}
-			}
-			return lines
-		}
 
 		private fun roman(n: Int): String = when (n.coerceIn(0, 10)) {
 			1 -> "I"

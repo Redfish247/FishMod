@@ -37,7 +37,6 @@ object CrimsonUi {
 
 	const val DOJO_COLOR = 0xFFFFAA00.toInt()
 
-	const val SHOP_HEADER_COLOR = 0xFFFF5555.toInt()
 	const val ENABLED = 0xFF55FF55.toInt()
 	const val DISABLED = 0xFF555555.toInt()
 

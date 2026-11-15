@@ -17,22 +17,6 @@ internal object ProfileCoopIndex {
     private val COOP_MEMBER_NAMES = ConcurrentHashMap<String, String>()
 
     @JvmStatic
-    fun selectedProfile(root: JsonObject): JsonObject? {
-        val profiles = if (root.has("profiles") && root.get("profiles").isJsonArray) root.getAsJsonArray("profiles") else return null
-        var best: JsonObject? = null
-        for (element in profiles) {
-            if (!element.isJsonObject) continue
-            val profile = element.asJsonObject
-            val selected = ProfileParseSupport.bool(profile, "selected")
-            if (selected || best == null) {
-                best = profile
-                if (selected) break
-            }
-        }
-        return best
-    }
-
-    @JvmStatic
     fun pickProfile(profiles: JsonArray?, preferredProfileId: String?): JsonObject? {
         if (profiles == null) return null
         var preferred: JsonObject? = null
