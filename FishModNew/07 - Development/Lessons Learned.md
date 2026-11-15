@@ -447,3 +447,8 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 ## 2026-11-15: NEU skin list filtered by id (#588)
 - `/fm customize` only listed NEU items whose id contained `SKIN`, so ~180 helmet/dragon/backpack skins (`WISE_BABY`, `PROTECTOR_SHIMMER`, `DRAGON_WYVERN`) never showed. Rule: classify NEU repo items by lore (`This skin` + `COSMETIC`), not by id naming; when the filter changes, rename the cache file (`neu_cosmetics3.json`) so stale caches refetch. Checked against the real repo zip before fixing, not guessed.
 - Reports from old builds (#586 was 1.7.18) may already be fixed: `git log -S"<diag id>"` first, then move the card to Testing.
+
+## 2026-11-15: dead-code and packet-gate cleanup
+- A bash heredoc ate the backslashes in a helper script again (`replace('\','/')` became a syntax error). Rule: helper scripts go through the Write tool too, not only mod source.
+- Dead-code scan by "name occurs once across all modules + addons" is safe without a build, but only for Kotlin `fun`s and private/const vals. Skip constructor vals, `@ConfigValue`, serialized store fields and `FishModAddonApi`. Details in [[Performance Guide]].
+- A packet listener without a `gate` forces the main-thread hop for its packet types for every player everywhere; always pass one ([[Performance Guide]]).
