@@ -369,13 +369,14 @@ object CroesusPrices {
             .thenAccept { r ->
                 try {
                     if (r.statusCode() != 200) {
-                        FishDebug.LOGGER.warn("[CroesusPrices] bazaar status={}", r.statusCode())
-                        FishDiag.fail("CroesusPrices.11", "bazaar API returned HTTP ${r.statusCode()}")
+                        // HTTP 403/429/5xx is Hypixel/Cloudflare side: log + back off, no auto-report
+                        FishDebug.LOGGER.warn("[CroesusPrices] bazaar status={} - backing off {}m", r.statusCode(), FAIL_TTL_MS / 60000)
+                        lastBazaar = failStamp()
                         return@thenAccept
                     }
                     val root = JsonParser.parseString(r.body()).asJsonObject
                     val products = root.getAsJsonObject("products")
-                    if (products == null) { FishDebug.LOGGER.warn("[CroesusPrices] bazaar: no products"); FishDiag.fail("CroesusPrices.12", "bazaar response has no products"); return@thenAccept }
+                    if (products == null) { FishDebug.LOGGER.warn("[CroesusPrices] bazaar: no products"); FishDiag.fail("CroesusPrices.12", "bazaar response has no products"); lastBazaar = failStamp(); return@thenAccept }
                     val buy = HashMap<String, Double>()
                     val sell = HashMap<String, Double>()
                     for ((key, value) in products.entrySet()) {
@@ -400,8 +401,9 @@ object CroesusPrices {
                 } catch (ex: Exception) {
                     FishDebug.LOGGER.warn("[CroesusPrices] bazaar parse error: {}", ex.message)
                     FishDiag.fail("CroesusPrices.15", "bazaar parse failed", ex)
+                    lastBazaar = failStamp()
                 }
-            }.exceptionally { t -> FishDebug.LOGGER.warn("[CroesusPrices] bazaar fetch error: {}", t.message); FishDiag.fail("CroesusPrices.16", "bazaar fetch failed", t); null }
+            }.exceptionally { t -> FishDebug.LOGGER.warn("[CroesusPrices] bazaar fetch error: {}", t.message); FishDiag.fail("CroesusPrices.16", "bazaar fetch failed", t); lastBazaar = failStamp(); null }
     }
 
     private fun fetchLbin(): CompletableFuture<Void> {
@@ -414,7 +416,6 @@ object CroesusPrices {
                 try {
                     if (r.statusCode() != 200) {
                         if (!lbinFailLogged) { FishDebug.LOGGER.warn("[CroesusPrices] lbin status={} - backing off {}m", r.statusCode(), FAIL_TTL_MS / 60000); lbinFailLogged = true }
-                        FishDiag.fail("CroesusPrices.17", "coflnet lbin API returned HTTP ${r.statusCode()}")
                         lastLbin = failStamp()
                         return@thenAccept
                     }

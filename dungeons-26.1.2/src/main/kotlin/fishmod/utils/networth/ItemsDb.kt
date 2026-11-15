@@ -140,7 +140,8 @@ object ItemsDb {
                     FishDiag.fail("ItemsDb.8", "write items.json cache", ignored)
                 }
             } else {
-                FishDiag.fail("ItemsDb.9", "items API HTTP ${r.statusCode()}")
+                // 403/429/5xx is Hypixel/Cloudflare side: log only, retry after RETRY_MS
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[ItemsDb] items API HTTP {}", r.statusCode())
             }
         } catch (e: Exception) {
             fishmod.utils.debug.FishDebug.LOGGER.warn("[ItemsDb] fetch: {}", e.toString())
