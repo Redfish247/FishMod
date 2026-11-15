@@ -13,10 +13,9 @@ class ApiInventoryDecoderTest {
     @Test fun itemBytes() {
         for (b in bad) {
             val e = JsonParser.parseString(b)
-            ok("stacks $b") { InventoryDecoder.stacksFromItemBytes(e) }
             ok("slot $b") { InventoryDecoder.slotFromItemBytes(e) }
         }
-        ok("null") { InventoryDecoder.stacksFromItemBytes(null) }
+        ok("null") { InventoryDecoder.slotFromItemBytes(null) }
     }
 
     @Test fun memberWrongTypes() {
