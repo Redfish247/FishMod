@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.features.item.RarityTier
@@ -62,7 +63,7 @@ object ItemRarityHotbar {
         val rgb = if (VisualSettings.itemRarityHypixelColors) HYPIXEL[rarity] ?: (rarity.color and 0xFFFFFF)
                   else rarity.color and 0xFFFFFF
         // #578: no screen open = hotbar, can use its own opacity
-        val hotbar = VisualSettings.itemRaritySeparateHotbar && net.minecraft.client.Minecraft.getInstance().screen == null
+        val hotbar = VisualSettings.itemRaritySeparateHotbar && net.minecraft.client.Minecraft.getInstance().curScreen == null
         val pct = if (hotbar) VisualSettings.itemRarityHotbarOpacity else VisualSettings.itemRarityOpacity
         val alpha = pct.coerceIn(0, 100) * 255 / 100
         return (alpha shl 24) or rgb
