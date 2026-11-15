@@ -288,7 +288,8 @@ object SlayerProfitTracker {
     private val RUNE_NAME = Regex("^(.+) Rune ([IVX]+)$")
     private val SHARD_NAME = Regex("^(.+) Shard$")
 
-    private fun idPart(s: String) = s.uppercase().replace("'", "").replace(Regex("[^A-Z0-9]+"), "_").trim('_')
+    private val NON_ID = Regex("[^A-Z0-9]+")
+    private fun idPart(s: String) = s.uppercase().replace("'", "").replace(NON_ID, "_").trim('_')
 
     private fun idFor(name: String): String? {
         if (name.endsWith("Coins")) return null

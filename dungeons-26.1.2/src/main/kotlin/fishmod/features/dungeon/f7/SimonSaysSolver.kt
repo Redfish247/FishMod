@@ -70,7 +70,7 @@ object SimonSaysSolver {
             false
         }
 
-        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java) { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { BossPhase.inP3() }) { packet ->
             try {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> queueBlock(packet.pos, packet.blockState)

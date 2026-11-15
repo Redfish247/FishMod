@@ -394,7 +394,8 @@ object CustomScoreboard {
         return Component.literal("§f${s.substring(0, i)}: $col${num(s.substring(i + 1).trim())}")
     }
 
-    private fun bare(s: String): String = s.replace(Regex("""^[^\p{L}\p{N}]+"""), "").trim()
+    private val LEADING_GLYPHS = Regex("""^[^\p{L}\p{N}]+""")
+    private fun bare(s: String): String = s.replace(LEADING_GLYPHS, "").trim()
 
     private fun num(s: String): String = s
 

@@ -52,7 +52,7 @@ object Mining {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> onTick(mc) }
-        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java) { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { inMiningIsland() }) { packet ->
             if (inMiningIsland()) when (packet) {
                 is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                 is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, s -> onBlock(p, s) }
