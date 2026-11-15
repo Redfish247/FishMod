@@ -452,3 +452,8 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 - A bash heredoc ate the backslashes in a helper script again (`replace('\','/')` became a syntax error). Rule: helper scripts go through the Write tool too, not only mod source.
 - Dead-code scan by "name occurs once across all modules + addons" is safe without a build, but only for Kotlin `fun`s and private/const vals. Skip constructor vals, `@ConfigValue`, serialized store fields and `FishModAddonApi`. Details in [[Performance Guide]].
 - A packet listener without a `gate` forces the main-thread hop for its packet types for every player everywhere; always pass one ([[Performance Guide]]).
+
+## 2026-11-15: vault coverage sweep
+- The vault had no pages for about half the source (446 of 881 files). Cause: sessions updated existing area pages and never checked what had no page at all. Rule: after a big feature batch, run the base-name gap check described in [[Maintaining This Vault]] and add pages for any new package.
+- Subagent writers given disjoint output folders and "no edits to existing pages" merged cleanly; the lead links and commits. Two agents hit the heredoc backslash trap again and one overwrote another's scratchpad file, so give each agent its own scratch filename.
+- Written-from-headers pages are tagged INFERENCE; verify before relying on them.
