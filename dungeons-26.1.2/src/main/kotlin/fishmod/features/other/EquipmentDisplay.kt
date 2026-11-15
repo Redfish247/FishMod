@@ -59,7 +59,7 @@ object EquipmentDisplay {
 
     private fun typeOf(st: ItemStack): Int {
         val lines = st.get(DataComponents.LORE)?.lines() ?: return -1
-        val last = lines.asReversed().map { it.string.replace(Regex("§."), "").trim() }.firstOrNull { it.isNotEmpty() } ?: return -1
+        val last = lines.asReversed().map { it.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim() }.firstOrNull { it.isNotEmpty() } ?: return -1
         val words = last.split(' ')
         return TYPES.indexOfFirst { t -> words.any { it in t } }
     }

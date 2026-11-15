@@ -56,7 +56,7 @@ object SecretClicked {
             InteractionResult.PASS
         })
 
-        registerPacket(ClientboundTakeItemEntityPacket::class.java, ClientboundSoundPacket::class.java) { packet ->
+        registerPacket(ClientboundTakeItemEntityPacket::class.java, ClientboundSoundPacket::class.java, gate = { FishSettings.secretClickedEnabled && SkyblockLocation.inDungeon() }) { packet ->
             try {
                 when (packet) {
                     is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
