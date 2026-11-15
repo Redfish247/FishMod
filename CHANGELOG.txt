@@ -1,4 +1,36 @@
-﻿FishMod Changelog - 2026-11-14 (daily bugfix run 4, build 1.7.96)
+FishMod Changelog - 2026-11-15 (daily bugfix run, build 1.7.97)
+==================================
+Fixed:
+- Croesus / chest profit prices: if Hypixel's bazaar API refused a request (HTTP 403 or 429), the mod asked again on every price lookup with no pause. It now waits 15 minutes before retrying, like the auction price source already did.
+- Hypixel or website hiccups (HTTP 403/429/5xx from the bazaar, item list, fire sale and Party Finder auto-kick lookups) no longer send automatic error reports. They are written to the log instead, since they are not mod bugs.
+Reported bugs fixed (from fishmod.dev):
+- #579 bazaar API returned HTTP 403 (auto report): bazaar now backs off and no longer reports.
+- #580 items API HTTP 403 (auto report): log only, retries after 5 minutes as before.
+- #583 auto-kick API lookup failed (auto report): log only with the reason; chat still says "couldn't look up, not kicking".
+- Already fixed in earlier builds (reports came from 1.7.18/1.7.19), moved to Testing: #581 session stats pause clock, #582 PF stats lookup 403, #584 dragon spawned with no match, #585 dungeon map "no room data".
+- Still in Testing from earlier runs, not re-tested: #502 #510 #513 #520 #521 #525 #526 #530 #532 #533 #534 #537 #547 #548 #549 #553 #560 #561 #562 #563 #565 #566 #567 #568 #569 #570 #571 #572 #573 #574 #575 #577
+Known issues (not fixed yet):
+- #459 players far from spawn look stuck or glitched (Rift mountain top). Still no repro and nothing in FishMod moves other players; "/fmdev bisect all" from the reporter would tell whether it is FishMod at all.
+- Website fixes waiting for your deploy: #533 (secrets cap) and #565 (find a player inside one leaderboard), committed in D:\FishMod-WorkerBoard, not deployed.
+Test in game:
+1. Open Croesus or a dungeon reward chest with chest profit on: prices show as before.
+2. With the internet briefly off (or on a blocked network), join SkyBlock: no FishMod error-report toast for bazaar/items/fire sale; latest.log has "[CroesusPrices] bazaar status=... backing off 15m" or "[ItemsDb] items API HTTP ...".
+3. As party leader with Party Finder auto-kick on, have someone join: kick check works; if the lookup fails, chat says it couldn't look them up and no error report is sent.
+Run notes:
+- Start commit b331a2fa (tree clean). Fix commits 60c94189 (#579 #580 #583), a3d26a9c (fire sale), bump a95d359f (1.7.97). Build 26.1.2 + 26.2 BUILD SUCCESSFUL (26.3 not built, gradle.properties bumped there too). Not tested in game.
+- Jar NOT copied: C:\Users\Eli\AppData\Roaming\ModrinthApp\profiles\Skyblock 1.21.8\mods does not exist (checked Test-Path = False); did not create it. No javaw running. Jars: dungeons-26.1.2/build/libs/FishModDungeons-1.7.97-26.1.2.jar, dungeons-26.2/build/libs/FishModDungeons-1.7.97-26.2.jar. Prism Skyblock still has 1.7.95; install via /ship.
+- #579 features/croesus/CroesusPrices.kt fetchBazaar: lastBazaar was only set on success, so every refreshIfStale() after a 403 re-fetched; now failStamp() (15 min) on non-200, no products, parse error and exceptionally. CroesusPrices.11 and .17 (lbin non-200) are log-only.
+- #580 utils/networth/ItemsDb.kt fetch: ItemsDb.9 non-200 is now a warn log; RETRY_MS 5 min backoff already existed.
+- #583 features/dungeon/PartyFinder.kt tryAutoKick: PartyFinder.3 replaced by an info log with d.failReason (same as 9d079570 did for PartyFinderStats.3).
+- Fire sale: features/scoreboard/FireSaleInfo.kt FireSaleInfo.1 log-only (found by grepping FishDiag.fail on HTTP status codes). UpdateManager.10 and NeuItems.4 left as reports (GitHub 4xx other than rate limit would be a real bug; rate limit already handled).
+- #581 fixed in 498a4964 (session clock clamp), #582 in 9d079570, #584 in d22af24c, #585 in 498a4964 (Scan is debug log only now). All reports came from 1.7.18/1.7.19.
+- #459 not fixed: no code path found (see 2026-11-14 notes). #533/#565 need wrangler deploy by Eli.
+- Suggestion cards read again; nothing blocked. Bug-tagged features as before: #566 #567 #574 #575.
+- Skipped: full re-read of all sources (swept in the last runs, no code changed since apart from this run), 26.3 build, Minecraft launch.
+- Board: #579 #580 #581 #582 #583 #584 #585 moved Planned -> Testing (updated 7; first POST with string ids returned updated 0, ids must be numbers). Nothing set to Done. Tester board untouched.
+- No Claude co-author trailer on commits (memory rule no-claude-coauthor).
+- Notes for Obsidian: (1) Rule: HTTP non-200 from third-party APIs (Hypixel, coflnet, worker proxy) is never FishDiag.fail; log + backoff. Every fetch needs a failure timestamp, not only a success one (CroesusPrices bazaar had none). (2) roadmap-status API needs numeric ids; string ids silently update 0. (3) Modrinth "Skyblock 1.21.8\mods" path still does not exist; the daily prompt should point at Prism Skyblock via /ship.
+FishMod Changelog - 2026-11-14 (daily bugfix run 4, build 1.7.96)
 ==================================
 Fixed:
 - Dungeon run timers: when Hypixel re-sends the "Dungeon" location in the middle of a run, the mod no longer throws away its run state. Before, that could reset or freeze the lag tracker, the Terminal/Goldor trackers, the Simon Says tracker and the P3 title filter mid-run (the split timers themselves were fixed in 1.7.95). Queueing into a new dungeon always starts clean, even right after a wipe.
