@@ -70,7 +70,7 @@ object ArrowsDevice {
 
     @JvmStatic
     fun init() {
-        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java) { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { BossPhase.inP3() || SkyblockLocation.inDungeon() }) { packet ->
             try {
                 when (packet) {
                     is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)

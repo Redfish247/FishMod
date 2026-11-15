@@ -31,10 +31,10 @@ object BossPhase {
     const val SPLIT_LENGTH: Int = 165
 
     private var currentSplits: ArrayList<RunSplit>? = null
-    private var currentPhase = -1
+    @Volatile private var currentPhase = -1
     private var floor: String? = ""
 
-    private var inFloor7 = false
+    @Volatile private var inFloor7 = false
     private var stormDead = false
     private var stormKillAnnounced = false
     private var runOver = false

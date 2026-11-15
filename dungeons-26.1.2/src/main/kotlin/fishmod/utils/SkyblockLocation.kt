@@ -43,8 +43,9 @@ enum class SkyblockLocation(val label: String) {
         private fun key(s: String) = s.lowercase().replace('_', ' ').replace("'", "")
         private val BY_MAP: Map<String, SkyblockLocation> = entries.associateBy { key(it.label) } + ("catacombs" to DUNGEON)
 
-        private var here: SkyblockLocation = UNKNOWN
-        private var onSkyblock = false
+        // Volatile: packet gates read these on the netty thread
+        @Volatile private var here: SkyblockLocation = UNKNOWN
+        @Volatile private var onSkyblock = false
         private var since = System.currentTimeMillis()
 
         @JvmStatic var currentMode: String = ""

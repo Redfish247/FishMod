@@ -374,8 +374,4 @@ public final class ForagingOverviewPage {
 		ItemStack stack = SkyBlockItemFactory.iconStack(skyblockId == null ? "" : skyblockId);
 		return stack == null || stack.isEmpty() ? new ItemStack(Items.FLOWERING_AZALEA_LEAVES) : stack;
 	}
-
-	private static ItemStack forestPerkIcon(String perkId) {
-		return EssenceIcons.perk(perkId);
-	}
 }

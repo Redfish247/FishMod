@@ -151,17 +151,6 @@ public final class ForagingUi {
 		return (hours / 24L) + "d ago";
 	}
 
-	public static String shortAttr(String name) {
-		if (name == null) {
-			return "";
-		}
-		String[] parts = name.split(" ");
-		if (parts.length <= 2) {
-			return name;
-		}
-		return parts[0] + " " + parts[parts.length - 1];
-	}
-
 	public static void drawFishFamilyIcon(GuiGraphicsExtractor g, String id, int x, int y) {
 		if (id != null && !id.isBlank() && SkyBlockIconRenderer.hasKnownIcon(id)) {
 			SkyBlockIconRenderer.draw(g, id, x, y, 16);
