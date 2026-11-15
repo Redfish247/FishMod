@@ -75,7 +75,7 @@ object M7Relics {
                 p5StartMs = System.currentTimeMillis()
                 myRelic = null
                 pickers.clear(); placed.clear()
-            } else if (p5StartMs != 0L) {
+            } else if (p5StartMs != 0L || BossPhase.getFloor() == "M7") {
                 val m = PICKUP.matcher(msg)
                 if (!m.find()) {
                     if (msg.contains(" picked the Corrupted ")) FishDiag.fail("M7Relics.1", "relic pickup line didn't match: '$msg'")
@@ -158,7 +158,8 @@ object M7Relics {
         if (placed.size < Relic.entries.size) return
         for ((relic, secs) in placed) {
             val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
-            val who = pickers[relic] ?: run { FishDiag.fail("M7Relics.6", "no picker recorded for ${relic.name} relic"); "?" }
+            // #587: pickup line can be missed (late join, chat lag); show "?" and log, don't auto-report
+            val who = pickers[relic] ?: run { fishmod.utils.debug.FishDebug.LOGGER.debug("[M7Relics] no picker recorded for {} relic (pickers={})", relic.name, pickers.keys); "?" }
             val time = PbMessages.fmt(secs)
             if (Floor7Settings.relicTimesParty) ChatQueue.enqueue("pc $color Relic: $time ($who)")
             else FishUtil.addChatMessage(Component.literal("${relic.code}$color Relic§7: §e$time §7($who)"))
