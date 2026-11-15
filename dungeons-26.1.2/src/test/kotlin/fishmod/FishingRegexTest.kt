@@ -33,7 +33,7 @@ class FishingRegexTest {
         val jaw = SeaCreatures.match("You have angered a legendary creature... Lord Jawbus has arrived.", SkyblockLocation.CRIMSON_ISLE, false)!!
         assertEquals("Lord Jawbus", jaw.name); assertEquals(SeaRarity.MYTHIC, jaw.rarity); assertTrue(jaw.rare && jaw.boss)
         val thunder = SeaCreatures.match("You hear a massive rumble as Thunder emerges.", SkyblockLocation.CRIMSON_ISLE, false)!!
-        assertEquals(5000L, thunder.immunityMs)
+        assertTrue(thunder.immunity)
         assertEquals("Squid", SeaCreatures.match("A Squid appeared.", SkyblockLocation.HUB, false)!!.name)
     }
 
