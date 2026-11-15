@@ -23,7 +23,7 @@ object NeuItems {
     data class Entry(val id: String, val name: String, val model: String, val texture: String?, val hex: String? = null, val color: Int? = null)
 
     private const val ZIP_URL = "https://codeload.github.com/NotEnoughUpdates/NotEnoughUpdates-REPO/zip/refs/heads/master"
-    private val CACHE = File("config/fishmod/neu_cosmetics2.json")
+    private val CACHE = File("config/fishmod/neu_cosmetics3.json")
     private const val MAX_AGE_MS = 24L * 60 * 60 * 1000
 
     private val MODEL_RE = Regex("""ItemModel:"([a-z0-9_.:/-]+)"""")
@@ -104,12 +104,18 @@ object NeuItems {
         return out.takeIf { it.isNotEmpty() }
     }
 
-    private fun isSkin(id: String) = id.contains("SKIN") && !id.endsWith("BARN_SKIN")
+    // #588: most helmet/dragon skins (WISE_BABY, PROTECTOR_SHIMMER) lack SKIN in the id; match the lore too
+    private fun isSkin(id: String, o: com.google.gson.JsonObject): Boolean {
+        if (id.endsWith("BARN_SKIN")) return false
+        if (id.contains("SKIN")) return true
+        val lore = o.getAsJsonArray("lore")?.joinToString(" ") { it.asString } ?: return false
+        return lore.contains("This skin") && lore.contains("COSMETIC")
+    }
 
     private fun parse(id: String, text: String): Entry? = try {
         val dye = id.startsWith("DYE_")
         val o = JsonParser.parseString(text).asJsonObject
-        if (!dye && !isSkin(id)) return armorColor(id, o)
+        if (!dye && !isSkin(id, o)) return armorColor(id, o)
         val nbt = o.get("nbttag")?.asString ?: ""
         val name = fishmod.utils.TextStrip.plain(o.get("displayname")?.asString ?: id).trim().ifEmpty { id }
         val legacy = o.get("itemid")?.asString ?: "minecraft:stone"
