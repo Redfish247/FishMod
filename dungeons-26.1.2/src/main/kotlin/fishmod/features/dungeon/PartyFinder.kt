@@ -94,7 +94,8 @@ object PartyFinder {
             if (g != gen) return@getByNameSilent
             if (!d.failed) cache[key] = d
             if (d.failed) {
-                FishDiag.fail("PartyFinder.3", "auto-kick API lookup failed for $name")
+                // transient API/network failure: log only (same as PartyFinderStats)
+                fishmod.utils.debug.FishDebug.LOGGER.info("[PartyFinder] auto-kick lookup failed for {} ({})", name, d.failReason)
                 mc.execute { FishMsg.send("§9AutoKick §7> couldn't look up §e$name§7, not kicking") }
                 return@getByNameSilent
             }
