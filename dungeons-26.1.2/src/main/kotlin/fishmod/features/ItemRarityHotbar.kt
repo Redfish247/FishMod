@@ -61,7 +61,10 @@ object ItemRarityHotbar {
     private fun getTintColor(rarity: RarityTier): Int {
         val rgb = if (VisualSettings.itemRarityHypixelColors) HYPIXEL[rarity] ?: (rarity.color and 0xFFFFFF)
                   else rarity.color and 0xFFFFFF
-        val alpha = VisualSettings.itemRarityOpacity.coerceIn(0, 100) * 255 / 100
+        // #578: no screen open = hotbar, can use its own opacity
+        val hotbar = VisualSettings.itemRaritySeparateHotbar && net.minecraft.client.Minecraft.getInstance().screen == null
+        val pct = if (hotbar) VisualSettings.itemRarityHotbarOpacity else VisualSettings.itemRarityOpacity
+        val alpha = pct.coerceIn(0, 100) * 255 / 100
         return (alpha shl 24) or rgb
     }
 

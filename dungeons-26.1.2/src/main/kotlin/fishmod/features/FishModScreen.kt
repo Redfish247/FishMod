@@ -1522,7 +1522,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Item Rarity Background", VisualSettings::class.java, "rarityBackground")
-            f.sub.add(SliderIntSetting("Opacity %", "", VisualSettings::class.java, "itemRarityOpacity", 0, 100))
+            f.sub.add(SliderIntSetting("Opacity %", "Inventory slots (and hotbar unless separate)", VisualSettings::class.java, "itemRarityOpacity", 0, 100))
+            f.sub.add(ToggleSetting("Separate Hotbar Opacity", "Use a different opacity on the hotbar outside menus", VisualSettings::class.java, "itemRaritySeparateHotbar"))
+            f.sub.add(SliderIntSetting("Hotbar Opacity %", "", VisualSettings::class.java, "itemRarityHotbarOpacity", 0, 100))
             f.sub.add(ToggleSetting("Hypixel Colors", "Brighter, accurate per-rarity colours", VisualSettings::class.java, "itemRarityHypixelColors"))
             f.sub.add(ToggleSetting("Circular", "", VisualSettings::class.java, "rarityBgCircle"))
             visuals.features.add(f)
