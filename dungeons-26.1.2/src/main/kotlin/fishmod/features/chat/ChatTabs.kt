@@ -10,7 +10,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-// Chat channel tabs above the chat input (fishmod.dev #599); one click = one /chat command
+// Chat channel tabs on top of the chat history (fishmod.dev #599); one click = one /chat command
 object ChatTabs {
     enum class Tab(val label: String, val channel: String, val prefix: String?) {
         ALL("All", "all", null),
@@ -52,10 +52,19 @@ object ChatTabs {
 
     private fun tabs(): List<Tab> = Tab.entries.filter { it.enabled() }
 
+    // Top edge of the visible chat lines (same geometry as Copy Chat)
+    private fun chatTop(screenH: Int): Int {
+        val chat = Minecraft.getInstance().hud?.chat ?: return screenH - 14
+        val inv = chat as FishChatInvoker
+        val lines = minOf(chat.linesPerPage, inv.visibleMessages.size).coerceAtLeast(1)
+        val h = (lines * inv.invokeLineHeight() * inv.invokeChatScale()).toInt()
+        return (screenH - 40 - h).coerceAtLeast(H + 2)
+    }
+
     private inline fun layout(screenH: Int, each: (Tab, Int, Int, Int, Int) -> Unit) {
         val font = Minecraft.getInstance().font
         var x = 2
-        val y = screenH - 14 - H - 1
+        val y = chatTop(screenH) - H - 1
         for (t in tabs()) {
             val w = font.width(t.label) + PAD * 2
             each(t, x, y, w, H)
