@@ -9,6 +9,7 @@ import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.FishMsg
 import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -48,7 +49,8 @@ object MiningProfitTracker {
     var version = 0; private set
 
     private val CORPSE = Regex("""^\s*(LAPIS|UMBER|TUNGSTEN|VANGUARD) CORPSE LOOT!""")
-    private val CORPSE_KEY = mapOf("UMBER" to "Tungsten Key", "TUNGSTEN" to "Umber Key", "VANGUARD" to "Skeleton Key")
+    private val CORPSE_KEY = mapOf("UMBER" to "Umber Key", "TUNGSTEN" to "Tungsten Key", "VANGUARD" to "Skeleton Key")
+    private val KEY_ID = mapOf("Umber Key" to "UMBER_KEY", "Tungsten Key" to "TUNGSTEN_KEY", "Skeleton Key" to "SKELETON_KEY")
     private val BAR = Regex("""^▬{20,}$""")
     private val ITEM = Regex("""^\s{2,}[☠✦+]?\s*(.+?)(?:\s+x([\d,]+))?\s*$""")
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
@@ -263,9 +265,12 @@ object MiningProfitTracker {
 
     fun priceOf(name: String): Double {
         if (name.endsWith("Powder")) return 0.0
-        val id = idOf(name) ?: return 0.0
+        val id = KEY_ID[name] ?: idOf(name) ?: return 0.0
         CroesusPrices.bazaarPrice(id, S.miningProfitPriceMode != "Insta Sell")?.let { if (it > 0) return it }
-        return CroesusPrices.price(id)
+        val p = CroesusPrices.price(id)
+        // Key prices unverified: flag once if no source has them
+        if (name in KEY_ID) FishDiag.check(p > 0, "MiningProfit.key") { "no price for corpse key $id (${CroesusPrices.debugSource(id)})" }
+        return p
     }
 
     fun profitOf(session: Boolean): Double = (if (session) data.session else data.total).items.entries.sumOf { (k, n) ->
