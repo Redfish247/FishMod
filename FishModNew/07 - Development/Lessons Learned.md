@@ -468,4 +468,8 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 ## 2026-11-15: pest guess was a fake calc (#594)
 - `Pests.updateGuess` took the farthest trail particle as the guess, while spade and radar already shared a Bezier solver. Rule: any 'item draws a particle trail toward a target' feature reuses `HotspotMatch.Trail` + `fishmod.utils.TrailBezier`, never a new heuristic. Untested in game: the vacuum trail is assumed to use the same Bezier model.
 
+- 2026-11-15, #566 re-opened: a "make it look like our theme" fix that only tweaks colours on vanilla widgets reads as no change to Eli. Rebuild the screen on the NanoVG theme path (`ScreenTheme` n* helpers, `HasUiOverlay`) so the change is unmistakable, and compare against the main config screen before closing.
+
 - 2026-11-15, #596: a category sort that keys only on type leaves the rest in alphabetical order, which reads as unsorted for tiered gear (drills, pickaxes). Every Item List category sort needs a second key (rarity via `RARITY_RANK`) before name.
+
+- 2026-11-15 (#598): Corpse key cost in Mining Profit 'did not work' because the corpse->key map swapped Umber and Tungsten and the keys were priced through a display-name lookup. Map type-to-key 1:1 by name, price by explicit item id, and log a FishDiag when a price source returns 0 rather than showing nothing silently.
