@@ -461,3 +461,6 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 ## 2026-11-15: slayer miniboss alert dead (#590)
 - `SlayerAlerts.miniBoss` was only called from a `SLAYER MINI-BOSS ... has spawned!` chat match, while `SlayerType.miniBosses` (the real nametag list) sat unused. Rule: when a data list exists for a feature, grep that it is actually read; detect minibosses by nametag (`SlayerAlerts.scanMiniBosses`), keep chat as a fallback. Untested in game: needs Eli's confirmation that nametags match.
+
+## 2026-11-15: every pet shown as legendary (#592 #593 #595)
+- `PetHud.rarityBeforeName` scanned for `§` codes in `Component.string`, which has none (styles live in the component tree), so rarity was always NONE and the HUD fell back to `§6` (legendary gold); mythic/special/divine never showed. Overflow levels also hardcoded LEGENDARY. Rule: to read colour codes from a Component, rebuild legacy text from its styles (`PetHud.legacyOf`, same as `CompactTab.legacyOf`); a code-scanner fed `.string` is a silent no-op. Untested in game.

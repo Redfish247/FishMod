@@ -118,7 +118,7 @@ object PetHud {
             if (a.find()) {
                 petLevel = safeInt(a.group(1), -1)
                 petName = cleanPetName(a.group(2))
-                petRarity = rarityBeforeName(msg.string, petName)
+                petRarity = rarityBeforeName(legacyOf(msg), petName)
                 petMaxed = false
                 xpCurrent = -1.0; xpNext = -1.0; pendingXp = 0.0
                 lastTabUpdate = System.currentTimeMillis()
@@ -132,7 +132,7 @@ object PetHud {
             if (su.find()) {
                 val n = cleanPetName(su.group(1))
                 petName = n
-                petRarity = rarityBeforeName(msg.string, n)
+                petRarity = rarityBeforeName(legacyOf(msg), n)
                 petMaxed = false
                 xpCurrent = -1.0; xpNext = -1.0; pendingXp = 0.0
                 lastTabUpdate = System.currentTimeMillis()
@@ -221,7 +221,7 @@ object PetHud {
         var overflowXp = -1.0
 
         for (entry in TabListCache.entries) {
-            val raw = entry.info.tabListDisplayName?.string ?: continue
+            val raw = entry.info.tabListDisplayName?.let { legacyOf(it) } ?: continue
             val text = entry.stripped.trim()
             val nameMatch = TAB_NAME_LINE.matcher(text)
             if (nameMatch.find()) {
@@ -249,7 +249,7 @@ object PetHud {
             if (maxed) {
                 xpNext = -1.0
                 if (overflowXp >= 0 && tempLevel > 0) {
-                    val rar = OverflowPetLevels.Rarity.LEGENDARY
+                    val rar = overflowRarity(petRarity)
                     val total = overflowXp + OverflowPetLevels.getCalculativeXpForLevel(tempLevel, rar)
                     petOverflowLevel = OverflowPetLevels.calcLevel(total, rar)
                 } else {
@@ -309,7 +309,7 @@ object PetHud {
                 val menuName = m.group(2).trim()
                 if (!menuName.equals(petName, ignoreCase = true)) petRarity = RarityTier.NONE
                 petName = menuName
-                rarityBeforeName(stack.hoverName.string, petName).let { if (it != RarityTier.NONE) petRarity = it }
+                rarityBeforeName(legacyOf(stack.hoverName), petName).let { if (it != RarityTier.NONE) petRarity = it }
             } else {
                 FishDiag.fail("PetHud.6", "active pet item name unparsed: '$displayName'")
             }
@@ -374,6 +374,26 @@ object PetHud {
         '5' to RarityTier.EPIC, '6' to RarityTier.LEGENDARY, 'd' to RarityTier.MYTHIC,
         'b' to RarityTier.DIVINE, 'c' to RarityTier.SPECIAL
     )
+
+    // Component.string drops styles, so rebuild § codes from the style tree.
+    private fun legacyOf(c: net.minecraft.network.chat.Component): String {
+        val sb = StringBuilder()
+        c.visit({ style, text ->
+            style.color?.serialize()?.let { fishmod.compat.Fmt.codeOfName(it) }?.let { sb.append('§').append(it) }
+            sb.append(text)
+            java.util.Optional.empty<Unit>()
+        }, net.minecraft.network.chat.Style.EMPTY)
+        return sb.toString()
+    }
+
+    private fun overflowRarity(r: RarityTier): OverflowPetLevels.Rarity = when (r) {
+        RarityTier.COMMON -> OverflowPetLevels.Rarity.COMMON
+        RarityTier.UNCOMMON -> OverflowPetLevels.Rarity.UNCOMMON
+        RarityTier.RARE -> OverflowPetLevels.Rarity.RARE
+        RarityTier.EPIC -> OverflowPetLevels.Rarity.EPIC
+        RarityTier.NONE, RarityTier.LEGENDARY -> OverflowPetLevels.Rarity.LEGENDARY
+        else -> OverflowPetLevels.Rarity.MYTHIC
+    }
 
     private fun rarityBeforeName(raw: String?, name: String?): RarityTier {
         if (raw == null || name.isNullOrEmpty()) return RarityTier.NONE
