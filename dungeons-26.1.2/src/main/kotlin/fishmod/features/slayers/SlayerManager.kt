@@ -138,6 +138,8 @@ object SlayerManager {
             if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return@EndTick
             try {
                 scanScoreboard(mc)
+                val t = type
+                if (t != null && state == State.GRINDING) SlayerAlerts.scanMiniBosses(mc, t)
             } catch (e: Exception) {
                 FishDiag.fail("SlayerManager.1", "slayer scoreboard scan failed (type=$type, state=$state)", e)
             }
