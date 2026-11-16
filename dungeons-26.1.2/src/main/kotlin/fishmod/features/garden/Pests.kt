@@ -52,7 +52,8 @@ object Pests {
         val r = trail.solve() ?: return
         // Garden is 5x5 plots of 96 around 0,0; anything outside is a bad fit
         if (kotlin.math.abs(r[0]) > 260 || kotlin.math.abs(r[2]) > 260) return
-        guess = Vec3(r[0], r[1].coerceIn(66.0, 110.0), r[2]); guessShown = -1
+        // Unclamped Y, as SkyHanni does (#604)
+        guess = Vec3(r[0], r[1], r[2]); guessShown = -1
     }
 
     private fun clearGuess() { trail.clear(); guess = null; dirty = false }
@@ -66,6 +67,9 @@ object Pests {
                 // New vacuum use: fresh trail, drop the old guess
                 if (now - lastTrail > fishmod.features.fishing.HotspotMatch.NEW_TRAIL_GAP_MS) clearGuess()
                 lastTrail = now
+                // SkyHanni: trail must start >5 blocks from the player (skips vacuum-tip noise)
+                val me = net.minecraft.client.Minecraft.getInstance().player
+                if (trail.size == 0 && me != null && me.position().distanceToSqr(p.x, p.y, p.z) <= 25.0) return@register false
                 if (trail.add(p.x, p.y, p.z, now)) dirty = true
             }
             false
@@ -91,7 +95,7 @@ object Pests {
             val g = guess
             if (g != null) {
                 val me = net.minecraft.client.Minecraft.getInstance().player
-                if (now - lastTrail > 20_000L || (me != null && me.position().distanceToSqr(g) < 16.0)) guess = null
+                if (now - lastTrail > 20_000L || (me != null && now - lastTrail > 1000L && (me.x - g.x).let { it * it } + (me.z - g.z).let { it * it } < 64.0)) guess = null
             }
             guess?.let { gp ->
                 val gb = AABB(gp.x - 0.5, gp.y - 0.5, gp.z - 0.5, gp.x + 0.5, gp.y + 0.5, gp.z + 0.5)
