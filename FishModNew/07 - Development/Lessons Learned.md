@@ -473,3 +473,9 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 - 2026-11-15, #596: a category sort that keys only on type leaves the rest in alphabetical order, which reads as unsorted for tiered gear (drills, pickaxes). Every Item List category sort needs a second key (rarity via `RARITY_RANK`) before name.
 
 - 2026-11-15 (#598): Corpse key cost in Mining Profit 'did not work' because the corpse->key map swapped Umber and Tungsten and the keys were priced through a display-name lookup. Map type-to-key 1:1 by name, price by explicit item id, and log a FishDiag when a price source returns 0 rather than showing nothing silently.
+
+## 2026-11-15 pre-release prep (1.7.101 / Modrinth 1.8.0)
+- Per-module `gradle.properties` ARE tracked in git (`git ls-files`), despite notes saying gitignored. Check `git status` after touching them and commit the change.
+- The `v1.7.18` tag points at a GitHub merge commit that local main doesn't contain, so `v1.7.18..HEAD` pulled in ~2000 ancient commits. Range release notes from the last `Ship <ver>` / release merge commit that is on main.
+- "We removed X" can mean the feature was only abandoned, not deleted: Gamble was still initialised, with a default-on playtime heartbeat. Grep for the package before you believe it is gone.
+- Sub-agent audit claims need a quick check: "player!! crash" was already null-guarded and "ChatTabs mixin may fail on 26.2" was disproved by an existing mixin on the same method.
