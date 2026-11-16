@@ -464,3 +464,6 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 ## 2026-11-15: every pet shown as legendary (#592 #593 #595)
 - `PetHud.rarityBeforeName` scanned for `§` codes in `Component.string`, which has none (styles live in the component tree), so rarity was always NONE and the HUD fell back to `§6` (legendary gold); mythic/special/divine never showed. Overflow levels also hardcoded LEGENDARY. Rule: to read colour codes from a Component, rebuild legacy text from its styles (`PetHud.legacyOf`, same as `CompactTab.legacyOf`); a code-scanner fed `.string` is a silent no-op. Untested in game.
+
+## 2026-11-15: pest guess was a fake calc (#594)
+- `Pests.updateGuess` took the farthest trail particle as the guess, while spade and radar already shared a Bezier solver. Rule: any 'item draws a particle trail toward a target' feature reuses `HotspotMatch.Trail` + `fishmod.utils.TrailBezier`, never a new heuristic. Untested in game: the vacuum trail is assumed to use the same Bezier model.
