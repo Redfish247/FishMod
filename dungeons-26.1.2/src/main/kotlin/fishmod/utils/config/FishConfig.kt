@@ -41,8 +41,7 @@ object FishConfig {
             fishmod.features.garden.GardenSettings::class.java,
             fishmod.features.garden.GardenExtraSettings::class.java,
             fishmod.features.garden.GardenMilestoneSettings::class.java,
-            fishmod.features.achievements.AchSettings::class.java,
-            fishmod.features.gamble.GambleSettings::class.java
+            fishmod.features.achievements.AchSettings::class.java
         )
 
     private const val PATH = "config/fishmod-settings.json"
