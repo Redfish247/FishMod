@@ -2244,7 +2244,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(fishmod.features.extras.ExtrasMenu.column())
         columns.add(fishmod.features.garden.GardenMenu.column())
         columns.add(fishmod.features.achievements.AchMenu.column())
-        columns.add(fishmod.features.gamble.GambleMenu.column())
         columns.add(visuals)
         columns.add(cosmetics)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
@@ -4575,7 +4574,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "Extras" to "Misc & utilities",
             "Farming" to "Garden farming tools",
             "Achievements" to "Goals & progress",
-            "Gamble Points" to "Playtime points & /gamble",
         )
         private const val HEADER_STRIP_H = 3
         private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
@@ -4679,7 +4677,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             fishmod.features.extras.ExtrasMenu.describe(name)?.let { return it }
             fishmod.features.garden.GardenMenu.describe(name)?.let { return it }
             fishmod.features.achievements.AchMenu.describe(name)?.let { return it }
-            fishmod.features.gamble.GambleMenu.describe(name)?.let { return it }
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"
