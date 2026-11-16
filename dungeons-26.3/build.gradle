@@ -127,7 +127,8 @@ modrinth {
 			.orElse(providers.gradleProperty('modrinth_project_id'))
 			.orElse('glXPWTyr')
 	versionNumber = project.findProperty('modrinth_version') ?: project.mod_version
-	versionName   = "FishMod ${project.findProperty('modrinth_version') ?: project.mod_version}"
+	// Display name drops the MC suffix; game version is its own Modrinth field
+	versionName   = "FishMod ${(project.findProperty('modrinth_version') ?: project.mod_version).toString().replaceAll(/-\d+\.\d+(\.\d+)?(-dungeons)?$/, '')}"
 	versionType   = 'release'
 	uploadFile    = tasks.jar
 	gameVersions  = [project.minecraft_version]
