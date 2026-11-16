@@ -41,7 +41,6 @@ object ModifierValue {
         if (tag.getIntOr("rarity_upgrades", 0) >= 1) v += CroesusPrices.cachedPrice("RECOMBOBULATOR_3000") * NwConstants.RECOMBOBULATOR
 
         val stars = maxOf(tag.getIntOr("upgrade_level", 0), tag.getIntOr("dungeon_item_level", 0))
-        FishDiag.check(stars <= 5 + NwConstants.MASTER_STARS.size, "ModifierValue.2") { "star count $stars exceeds master star table ${NwConstants.MASTER_STARS.size}" }
         for (i in 6..stars) {
             val idx = i - 6
             if (idx < NwConstants.MASTER_STARS.size) v += CroesusPrices.cachedPrice(NwConstants.MASTER_STARS[idx])
