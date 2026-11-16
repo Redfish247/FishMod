@@ -138,14 +138,18 @@ object SkyItemList {
         }
         4 -> {
             val w = kindOf(id).split(' ').toSet()
+            // tool type, then rarity, then name (index order)
             Triple(when {
-                w.any { it == "PICKAXE" || it == "DRILL" || it == "GAUNTLET" || it == "CHISEL" } -> 0
-                "AXE" in w -> 1
-                "SHOVEL" in w -> 2
-                "HOE" in w -> 3
-                "SHEARS" in w -> 4
-                else -> 5
-            }, "", 0)
+                "PICKAXE" in w -> 0
+                "DRILL" in w -> 1
+                "GAUNTLET" in w -> 2
+                "CHISEL" in w -> 3
+                "AXE" in w -> 4
+                "SHOVEL" in w -> 5
+                "HOE" in w -> 6
+                "SHEARS" in w -> 7
+                else -> 8
+            }, "", RARITY_RANK.indexOf(rarityNameOf(id)).coerceAtLeast(0))
         }
         12 -> {
             val lore = NeuRepo.get(id)?.getAsJsonArray("lore")
