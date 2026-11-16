@@ -34,7 +34,7 @@ object SpotifyLyricsHud {
     private class Line(val ms: Long, val text: String)
     private val http: HttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build()
 
-    private var track = ""
+    @Volatile private var track = ""
     private var playMs = 0L
     private var lastNs = 0L
     @Volatile private var lyrics: List<Line>? = null
@@ -121,9 +121,12 @@ object SpotifyLyricsHud {
         if (r.statusCode() == 200) r.body() else null
     } catch (_: Throwable) { null }
 
+    private val SYNCED_LINE = Regex("""\[(\d+):(\d+(?:\.\d+)?)]\s*(.*)""")
+    // One worker; fast track skips queue instead of stacking threads
+    private val lyricsPool = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "fishmod-lyrics").apply { isDaemon = true } }
+
     private fun parseSynced(s: String): List<Line> {
-        val re = Regex("""\[(\d+):(\d+(?:\.\d+)?)]\s*(.*)""")
-        return s.lineSequence().mapNotNull { re.matchEntire(it.trim()) }
+        return s.lineSequence().mapNotNull { SYNCED_LINE.matchEntire(it.trim()) }
             .map { Line(((it.groupValues[1].toLong() * 60 + it.groupValues[2].toDouble()) * 1000).toLong(), it.groupValues[3]) }
             .toList()
     }
@@ -132,7 +135,8 @@ object SpotifyLyricsHud {
         val i = key.indexOf(" - ")
         if (i <= 0) { lyrics = emptyList(); return }
         val q = "artist_name=${enc(key.substring(0, i))}&track_name=${enc(key.substring(i + 3))}"
-        Thread({
+        lyricsPool.execute {
+            if (track != key) return@execute
             var synced: String? = null
             try {
                 httpGet("https://lrclib.net/api/get?$q")?.let { synced = JsonParser.parseString(it).asJsonObject.get("syncedLyrics")?.takeUnless { e -> e.isJsonNull }?.asString }
@@ -141,7 +145,7 @@ object SpotifyLyricsHud {
                 }
             } catch (_: Throwable) {}
             if (track == key) lyrics = synced?.let { parseSynced(it) } ?: emptyList()
-        }, "fishmod-lyrics").apply { isDaemon = true }.start()
+        }
     }
 
     private fun currentLyric(): String {
