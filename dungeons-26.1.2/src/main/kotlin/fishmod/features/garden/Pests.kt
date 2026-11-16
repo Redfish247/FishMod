@@ -35,35 +35,44 @@ object Pests {
     private var kills = 0
     private var tick = 0
     private var lastScreen: Any? = null
-    private val trail = ArrayList<Vec3>()
+    // Vacuum trail is the same Bezier particle path as the spade/radar: shared Trail + TrailBezier solve
+    private val trail = fishmod.features.fishing.HotspotMatch.Trail()
     private var lastTrail = 0L
+    private var dirty = false
     private var guess: Vec3? = null
+    private var guessLabel: net.minecraft.network.chat.Component? = null
+    private var guessShown = -1
 
     private fun holdingVacuum(): Boolean =
         net.minecraft.client.Minecraft.getInstance().player?.mainHandItem
             ?.let { fishmod.utils.data.ItemTools.getId(it) }?.contains("VACUUM") == true
 
-    private fun updateGuess() {
-        val me = net.minecraft.client.Minecraft.getInstance().player ?: return
-        if (trail.size < 2) return
-        guess = trail.maxByOrNull { it.distanceToSqr(me.position()) }
+    private fun solveGuess() {
+        dirty = false
+        val r = trail.solve() ?: return
+        // Garden is 5x5 plots of 96 around 0,0; anything outside is a bad fit
+        if (kotlin.math.abs(r[0]) > 260 || kotlin.math.abs(r[2]) > 260) return
+        guess = Vec3(r[0], r[1].coerceIn(66.0, 110.0), r[2]); guessShown = -1
     }
+
+    private fun clearGuess() { trail.clear(); guess = null; dirty = false }
 
     fun init() {
         FishEvents.chat.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.chatRaw).trim()); false }
-        FishEvents.worldChange.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
+        FishEvents.worldChange.register { tabPlots = emptyList(); clearGuess(); false }
         FishEvents.particle.register { p ->
             if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.speed == 0f && Garden.inGarden() && holdingVacuum()) {
                 val now = System.currentTimeMillis()
-                if (now - lastTrail > 2500L) { trail.clear(); guess = null }
+                // New vacuum use: fresh trail, drop the old guess
+                if (now - lastTrail > fishmod.features.fishing.HotspotMatch.NEW_TRAIL_GAP_MS) clearGuess()
                 lastTrail = now
-                trail.add(Vec3(p.x, p.y, p.z))
-                updateGuess()
+                if (trail.add(p.x, p.y, p.z, now)) dirty = true
             }
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
+            if (dirty) try { solveGuess() } catch (t: Throwable) { dirty = false; fishmod.utils.debug.FishDiag.fail("Pests.1", "pest trail solve failed", t) }
             scrapePlots(mc.curScreen)
             if (tick++ % 10 != 0 || !Garden.inGarden()) return@register
             alive = Mining.sidebar.firstOrNull { it.contains("The Garden") || it.contains("ൠ") }?.let { COUNT.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
@@ -99,6 +108,18 @@ object Pests {
                 Mining.outline(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, 100), 2f)
                 if (S.gardenPestFinderLine && guess == null) FishDraw.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestLineColor, 100), 2f)
             }
+        }
+        // Distance label, same style as the radar/spade guess
+        RenderHooks.GIZMO.register { _ ->
+            val gp = guess ?: return@register
+            if (!S.gardenPestFinder || !Garden.inGarden()) return@register
+            val me = net.minecraft.client.Minecraft.getInstance().player ?: return@register
+            val d = me.position().distanceTo(gp).toInt()
+            if (d != guessShown || guessLabel == null) {
+                guessShown = d
+                guessLabel = net.minecraft.network.chat.Component.literal("${Garden.legacy(S.gardenPestMarkerColor)}§lPest guess §7${d}m")
+            }
+            FishDraw.gizmoText(guessLabel!!, Vec3(gp.x, gp.y + 1.2, gp.z), 1.5f, -0x1, true)
         }
         Garden.hud("Pest Timer", "garden_pests", 150, 40,
             { S.gardenPestHudX }, { S.gardenPestHudX = it }, { S.gardenPestHudY }, { S.gardenPestHudY = it },
