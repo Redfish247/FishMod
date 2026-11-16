@@ -110,6 +110,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 }
 
 apply from: rootProject.file('gradle/strip-debug.gradle')
+apply from: rootProject.file('gradle/r8-shrink.gradle')
 
 jar {
 	inputs.property "archivesName", project.base.archivesName

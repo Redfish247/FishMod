@@ -1,0 +1,55 @@
+// Opt-in R8 shrink: `./gradlew shrinkJar` writes <jar>-shrunk.jar next to the normal jar (normal build untouched).
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
+
+repositories { google() }
+configurations { r8 }
+dependencies { r8 'com.android.tools:r8:8.13.25' }
+
+def r8Launcher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+def r8Out = layout.buildDirectory.file('r8/classes.jar')
+
+tasks.register('shrinkJar', JavaExec) {
+	group = 'build'
+	description = 'R8 shrink/optimize (no renaming) of the mod jar into *-shrunk.jar'
+	dependsOn tasks.named('jar')
+	javaLauncher = r8Launcher
+	classpath = configurations.r8
+	mainClass = 'com.android.tools.r8.R8'
+	def inJar = tasks.named('jar').flatMap { it.archiveFile }
+	inputs.file(inJar)
+	inputs.file(rootProject.file('gradle/r8-rules.pro'))
+	outputs.file(r8Out)
+	doFirst {
+		def out = r8Out.get().asFile
+		out.parentFile.mkdirs(); out.delete()
+		def a = ['--release', '--classfile', '--output', out.path,
+			'--pg-conf', rootProject.file('gradle/r8-rules.pro').path,
+			'--lib', r8Launcher.get().metadata.installationPath.asFile.path]
+		// libraries = compile classpath jars (MC, Fabric, Kotlin); dirs like :common output are already in the jar
+		sourceSets.main.compileClasspath.files.findAll { it.isFile() && it.name.endsWith('.jar') }.each { a += ['--lib', it.path] }
+		a += inJar.get().asFile.path
+		args = a
+	}
+	doLast {
+		// merge: R8 classes + every non-class entry (resources, nested jars, META-INF) from the original jar
+		def orig = inJar.get().asFile
+		def dest = new File(orig.parentFile, orig.name.replace('.jar', '-shrunk.jar'))
+		def seen = new HashSet<String>()
+		new ZipOutputStream(new FileOutputStream(dest)).withCloseable { zout ->
+			zout.setLevel(9)
+			def copy = { ZipFile z, Closure<Boolean> want ->
+				z.entries().each { ZipEntry e ->
+					if (e.directory || !want(e.name) || !seen.add(e.name)) return
+					zout.putNextEntry(new ZipEntry(e.name))
+					zout.write(z.getInputStream(e).bytes)
+					zout.closeEntry()
+				}
+			}
+			new ZipFile(r8Out.get().asFile).withCloseable { z -> copy(z) { String n -> n.endsWith('.class') } }
+			new ZipFile(orig).withCloseable { z -> copy(z) { String n -> !n.endsWith('.class') } }
+		}
+		logger.lifecycle("shrinkJar: ${orig.name} ${orig.length()} -> ${dest.name} ${dest.length()} bytes")
+	}
+}
