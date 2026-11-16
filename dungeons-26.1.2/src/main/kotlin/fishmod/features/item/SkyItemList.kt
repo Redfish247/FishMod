@@ -256,7 +256,9 @@ object SkyItemList {
         return 0
     }
     private var shownCount = 0
-    private var built = false
+    @Volatile private var built = false
+    @Volatile private var needRefilter = false
+    private val building = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private var query = ""
     private var selectAll = false
@@ -282,6 +284,8 @@ object SkyItemList {
     @JvmStatic
     fun init() {
         NpcTravel.init()
+        // Warm the repo + index on join so the first open is instant
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ -> if (on()) ensureBuilt() }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is AbstractContainerScreen<*>) return@AfterInit
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
@@ -296,11 +300,19 @@ object SkyItemList {
 
     @JvmStatic fun panelActive() = on() && System.currentTimeMillis() - fishmod.utils.rendering.FishHudLayer.panelSeenMs() < 150
 
+    // Index is built off-thread (#603); render shows "Loading items..." until ready
     private fun ensureBuilt(): Boolean {
         if (built) return true
         CroesusPrices.refreshIfStale()
         NeuRepo.ensureLoaded()
         if (!NeuRepo.isLoaded()) return false
+        if (building.compareAndSet(false, true)) Thread({
+            try { buildIndex() } catch (t: Throwable) { FishDiag.fail("SkyItemList.2", "item list index build failed", t); building.set(false) }
+        }, "FishMod-ItemList").apply { isDaemon = true }.start()
+        return false
+    }
+
+    private fun buildIndex() {
         val all = NeuRepo.ids().filter { !isMob(it) }.toTypedArray()
         val names = Array(all.size) { i ->
             TextStrip.plain(NeuRepo.get(all[i])?.get("displayname")?.asString ?: all[i]).filter { it.code !in 0xE000..0xF8FF }.trim().lowercase()
@@ -318,9 +330,8 @@ object SkyItemList {
             catOrder[c] = idxs.sortedWith(compareBy({ keys[it]!!.first }, { keys[it]!!.second }, { keys[it]!!.third }, { it })).toIntArray()
         }
         shown = IntArray(all.size)
+        needRefilter = true
         built = true
-        refilter()
-        return true
     }
 
     private fun refilter() {
@@ -386,6 +397,7 @@ object SkyItemList {
             ctx.text(font, "Loading items...", sx + 3, sy + 3, 0xFF9AA4B0.toInt(), false)
             return
         }
+        if (needRefilter) { needRefilter = false; refilter() }
         if (query.isEmpty() && !focused) ctx.text(font, "Search items...", sx + 3, sy + 3, 0xFF6B7480.toInt(), false)
         else {
             val shown = font.plainSubstrByWidth(query + if (focused && !selectAll) "_" else "", sw - 6, true)
