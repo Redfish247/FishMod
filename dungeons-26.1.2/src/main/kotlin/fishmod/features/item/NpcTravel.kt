@@ -9,6 +9,10 @@ import fishmod.utils.rendering.RenderHooks
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import fishmod.utils.config.values.FishSettings
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 
@@ -22,6 +26,13 @@ object NpcTravel {
     private var label = ""
     private var mode = ""
     private var setAt = 0L
+    private var fromWarp = false
+    private const val PENDING_MS = 2 * 60 * 1000L
+    private var pending: Vec3? = null
+    private var pendingLabel = ""
+    private var pendingMode = ""
+    private var pendingBase = false
+    private var pendingAt = 0L
 
     private val ISLANDS: Map<String, Pair<String, String?>> = mapOf(
         "hub" to ("Hub" to "hub"),
@@ -48,21 +59,48 @@ object NpcTravel {
 
     fun init() {
         RenderHooks.GIZMO.register { _ ->
-            val t = target ?: return@register
             try {
+                promotePending()
+                val t = target ?: return@register
                 val p = Minecraft.getInstance().player
                 if (p == null || SkyblockLocation.currentMode != mode || System.currentTimeMillis() - setAt > TTL_MS || p.position().distanceTo(t) < 3.0) {
                     target = null
                     return@register
                 }
-                FishDraw.gizmoBox(AABB(t.x - 0.5, t.y, t.z - 0.5, t.x + 0.5, t.y + 1.0, t.z + 0.5), 0x4055FFFF, 0, true)
-                FishDraw.gizmoBox(AABB(t.x - 0.15, t.y, t.z - 0.15, t.x + 0.15, t.y + 24.0, t.z + 0.15), 0x4055FFFF, 0, true)
+                val rgb = (if (fromWarp) FishSettings.npcWarpHighlightColor else COLOR) and 0xFFFFFF
+                val npc = if (fromWarp) findNpc(t) else null
+                if (npc != null) FishDraw.gizmoBox(npc.boundingBox.inflate(0.1), 0x40000000 or rgb, 0xFF000000.toInt() or rgb, true)
+                else FishDraw.gizmoBox(AABB(t.x - 0.5, t.y, t.z - 0.5, t.x + 0.5, t.y + 1.0, t.z + 0.5), 0x40000000 or rgb, 0, true)
+                if (!fromWarp || FishSettings.npcWarpHighlightBeam) FishDraw.gizmoBox(AABB(t.x - 0.15, t.y, t.z - 0.15, t.x + 0.15, t.y + 24.0, t.z + 0.15), 0x40000000 or rgb, 0, true)
                 FishDraw.gizmoText(Component.literal("$label §7${p.position().distanceTo(t).toInt()}m"), Vec3(t.x, t.y + 2.0, t.z), 1.2f, -0x1, true)
             } catch (e: Exception) { FishDiag.fail("NpcTravel.1", "npc waypoint render threw", e) }
         }
     }
 
     private fun isBaseCamp(y: Double, z: Double) = y <= 140.0 && z >= 100.0
+
+    // Arms a highlight that activates once the player lands on the NPC's island (no command sent here).
+    private fun arm(pos: Vec3, name: String, island: String, base: Boolean) {
+        if (!FishSettings.npcWarpHighlight) return
+        pending = pos; pendingLabel = "§b$name"; pendingMode = island; pendingBase = base; pendingAt = System.currentTimeMillis()
+    }
+
+    private fun promotePending() {
+        val pos = pending ?: return
+        if (System.currentTimeMillis() - pendingAt > PENDING_MS) { pending = null; return }
+        val p = Minecraft.getInstance().player ?: return
+        if (SkyblockLocation.currentMode != pendingMode) return
+        if (pendingMode == "mining_3" && isBaseCamp(p.y, p.z) != pendingBase) return
+        target = pos; label = pendingLabel; mode = pendingMode; setAt = System.currentTimeMillis(); fromWarp = true
+        pending = null
+    }
+
+    private fun findNpc(t: Vec3): Entity? {
+        val lvl = Minecraft.getInstance().level ?: return null
+        val me = Minecraft.getInstance().player
+        return lvl.getEntitiesOfClass(LivingEntity::class.java, AABB(t.x - 2.5, t.y - 2.0, t.z - 2.5, t.x + 2.5, t.y + 3.0, t.z + 2.5)) { it !== me && it !is ArmorStand && !it.isInvisible }
+            .minByOrNull { it.position().distanceToSqr(t) }
+    }
 
     fun go(id: String) {
         val o = NeuRepo.get(id) ?: return
@@ -78,6 +116,7 @@ object NpcTravel {
             val msg = Component.literal("§b[Item List] §f$name §7is in §f${if (baseTarget) "Dwarven Base Camp" else "Dwarven Mines"}§7.")
             msg.append(Component.literal(" §a[Click to warp]").withStyle { it.withClickEvent(ClickEvent.RunCommand(if (baseTarget) "/warp base" else "/warp dwarves")) })
             FishUtil.addChatMessage(msg)
+            arm(Vec3(x + 0.5, y, z + 0.5), name, "mining_3", baseTarget)
             return
         }
         if (island == null || island == here) {
@@ -85,6 +124,7 @@ object NpcTravel {
             label = "§b$name"
             mode = here
             setAt = System.currentTimeMillis()
+            fromWarp = false
             FishUtil.addChatMessage(Component.literal("§b[Item List] §7Waypoint set to §f$name §7(${x.toInt()}, ${y.toInt()}, ${z.toInt()})."))
             return
         }
@@ -93,6 +133,7 @@ object NpcTravel {
         val msg = Component.literal("§b[Item List] §f$name §7is on §f$islandName§7.")
         (if (baseTarget) "warp base" else info?.second)?.let { cmd ->
             msg.append(Component.literal(" §a[Click to warp]").withStyle { it.withClickEvent(ClickEvent.RunCommand("/$cmd")) })
+            arm(Vec3(x + 0.5, y, z + 0.5), name, island, baseTarget)
         }
         FishUtil.addChatMessage(msg)
     }

@@ -80,3 +80,9 @@ see [[General & QoL Features]].
 - Two-client test on a local vanilla server (real accounts, live fishmod.dev): dye, name, trim and trim+dye sync to the other client, including live edits from the Item Customize screen. A trim on the worn armor showed on the viewer even when the viewer's copy of the stack had no uuid.
 - Fixed: clearing a trim/dye/name/model never reached viewers (the remote store only ever added entries); `acceptItems` now drops a player's synthetic entries before re-adding. Upload now retries after a network error/5xx/429 (`lastUploaded` was set before the POST, so one failed upload meant nothing was shared until the next change).
 - Not reproduced: the Hypixel-only "friend can't see my trim" case. If it recurs, first check both players have the toggle on and run the same jar.
+
+## Item List NPC travel + warp highlight (NpcTravel.kt, #591)
+- Clicking an NPC in the Item List sets a waypoint if you are on its island; otherwise prints a [Click to warp] chat link (Hypixel runs the /warp itself, we send nothing).
+- Printing that link arms a pending highlight (2 min). Once SkyblockLocation.currentMode matches the NPC island (and base camp vs mines matches for mining_3), it becomes the target: outline on the nearest non-armorstand LivingEntity within 2.5 blocks of the NEU coords (fallback block box), optional beam, distance label. Clears within 3 blocks, on island change, or after 10 min.
+- Settings: npcWarpHighlight, npcWarpHighlightColor, npcWarpHighlightBeam (Item List feature page).
+

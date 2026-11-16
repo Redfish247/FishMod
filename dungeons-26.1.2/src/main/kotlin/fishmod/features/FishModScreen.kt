@@ -1571,6 +1571,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Background Opacity %", "0% invisible - 100% solid", "skyItemListOpacity", 0, 100))
             f.sub.add(ColorPickerSetting("Background Color", "", "skyItemListBgColor"))
             f.sub.add(ColorPickerSetting("Accent Color", "", "skyItemListAccentColor"))
+            f.sub.add(ToggleSetting("Highlight NPC After Warp", "After clicking [Click to warp] for an NPC, outline that NPC on arrival", "npcWarpHighlight"))
+            f.sub.add(ColorPickerSetting("NPC Highlight Color", "", "npcWarpHighlightColor"))
+            f.sub.add(ToggleSetting("NPC Highlight Beam", "Beacon-style beam above the NPC", "npcWarpHighlightBeam"))
             hud.features.add(f)
         }
         run {

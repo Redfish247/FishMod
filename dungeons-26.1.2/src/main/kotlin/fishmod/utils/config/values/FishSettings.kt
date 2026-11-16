@@ -561,6 +561,9 @@ object FishSettings {
     @ConfigValue @JvmField var skyItemListRarityRound: Boolean = false
     @ConfigValue @JvmField var skyItemListAccentColor: Int = 0xFF24B6B0.toInt()
     @ConfigValue @JvmField var skyItemListClickKey: Boolean = true
+    @ConfigValue @JvmField var npcWarpHighlight: Boolean = true
+    @ConfigValue @JvmField var npcWarpHighlightColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var npcWarpHighlightBeam: Boolean = true
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
 
     @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false
