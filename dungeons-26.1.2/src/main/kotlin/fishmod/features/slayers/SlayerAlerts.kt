@@ -15,7 +15,7 @@ object SlayerAlerts {
 
     @JvmStatic
     fun init() {
-        FishEvents.worldChange.register { reset(); false }
+        FishEvents.worldChange.register { reset(); seenMinis.clear(); false }
         FishEvents.chat.register { text ->
             if (FishSettings.slayerAnyEnabled()) {
                 val s = text.chatPlain.trim()
@@ -47,7 +47,29 @@ object SlayerAlerts {
     @JvmStatic
     fun miniBoss(label: String) {
         if (!FishSettings.slayerSpawnAlertEnabled || !FishSettings.slayerMiniBossAlert) return
+        lastMiniMs = System.currentTimeMillis()
         titleParts("§6§l${label.uppercase()}", "§7Miniboss spawned", FishSettings.slayerAlertDurationMs)
+    }
+
+    private val seenMinis = HashSet<Int>()
+    private var lastMiniMs = 0L
+
+    // #590: Hypixel sends no miniboss chat line, so detect the nametag near the player (Skytils approach)
+    @JvmStatic
+    fun scanMiniBosses(mc: net.minecraft.client.Minecraft, type: SlayerType) {
+        if (!FishSettings.slayerSpawnAlertEnabled || !FishSettings.slayerMiniBossAlert) return
+        val player = mc.player ?: return
+        val level = mc.level ?: return
+        for (e in level.entitiesForRendering()) {
+            if (e === player || e is net.minecraft.world.entity.player.Player) continue
+            val raw = e.customName?.string ?: continue
+            if (e.distanceToSqr(player) > 15.0 * 15.0) continue
+            val name = type.miniBosses.firstOrNull { raw.contains(it) } ?: continue
+            if (!seenMinis.add(e.id)) continue
+            fishmod.utils.debug.FishDebug.LOGGER.debug("[SlayerAlerts] miniboss nametag '{}' id={}", raw, e.id)
+            if (System.currentTimeMillis() - lastMiniMs > 1_500L) miniBoss(name)
+        }
+        if (seenMinis.size > 256) seenMinis.clear()
     }
 
     @JvmStatic
