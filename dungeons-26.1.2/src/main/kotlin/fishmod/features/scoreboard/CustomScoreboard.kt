@@ -55,6 +55,21 @@ object CustomScoreboard {
     private var builtVersion = -1
     private var cur = Built(BLANK, emptyList(), null, 0)
 
+    private const val SHRINK_DELAY_MS = 3000L
+    private var stableW = 0
+    private var narrowSince = 0L
+    private var widthLoc: Any? = null
+
+    // Grow at once, shrink only after staying narrower for a while (or on island change)
+    private fun stableWidth(w: Int, now: Long): Int {
+        val loc = SkyblockLocation.getCurrentLocation()
+        if (loc != widthLoc) { widthLoc = loc; stableW = w; narrowSince = 0L; return w }
+        if (w >= stableW) { stableW = w; narrowSince = 0L }
+        else if (narrowSince == 0L) narrowSince = now
+        else if (now - narrowSince >= SHRINK_DELAY_MS) { stableW = w; narrowSince = 0L }
+        return stableW
+    }
+
     private fun bgColor(): Int {
         val pct = max(0, min(100, FishSettings.customScoreboardOpacity))
         return (pct * 2.55).roundToInt() shl 24
@@ -217,7 +232,7 @@ object CustomScoreboard {
             builtAt = now
             builtVersion = SidebarCache.version
             val b0 = build(mc, sbTitle, readScoreboard())
-            cur = Built(b0.title, b0.lines, b0.footer, measure(tr, b0))
+            cur = Built(b0.title, b0.lines, b0.footer, stableWidth(measure(tr, b0), now))
         }
         val b = cur
         val width = b.width
@@ -304,8 +319,8 @@ object CustomScoreboard {
             used[timeIdx] = true
             if (FishSettings.sbSectionTime) world.add(Component.literal("§7" + bare(raw[timeIdx].s)))
         }
-        val locIdx = timeIdx?.plus(1)?.takeIf { it < raw.size && !used[it] }
-            ?: raw.indices.firstOrNull { !used[it] && (LOCATION.containsMatchIn(raw[it].s) || ScoreboardSection.classify(raw[it].s) == ScoreboardSection.LOCATION) }
+        // Only a real location line; the line after time differs per island
+        val locIdx = raw.indices.firstOrNull { !used[it] && (LOCATION.containsMatchIn(raw[it].s) || ScoreboardSection.classify(raw[it].s) == ScoreboardSection.LOCATION) }
         if (locIdx != null) {
             used[locIdx] = true
             if (FishSettings.sbSectionLocation) world.add(raw[locIdx].c)
@@ -318,7 +333,7 @@ object CustomScoreboard {
         groups.add(world)
 
         val money = ArrayList<Component>()
-        if (FishSettings.sbSectionLevel) (if (ex) exLevel() else levelLine(mc))?.let { money.add(it) }
+        if (FishSettings.sbSectionLevel) (if (ex) exLevel() else stickyLevel(mc))?.let { money.add(it) }
         take { PURSE.containsMatchIn(it.s) }?.let { if (FishSettings.sbSectionPurse) money.add(kv(it.s, "§6")) }
         val bits = take { BITS.containsMatchIn(it.s) }
         val motes = take { MOTES.containsMatchIn(it.s) }
@@ -330,13 +345,15 @@ object CustomScoreboard {
         else if (showMotes) money.add(kv(motes!!.s, "§5"))
         val gems = take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { bare(it.s) } ?: (if (ex) null else tabValue(TAB_GEMS))?.let { "Gems: $it" }
         if (gems != null && FishSettings.sbSectionGems) money.add(kv(gems, "§a"))
-        var soulflowShown = false
+        // Fixed slot order (enum order), not Hypixel's per-island order
+        val others = ArrayList<Pair<ScoreboardSection, Raw>>()
         while (true) {
             val r = take { ScoreboardSection.classify(it.s) in OTHER_CURRENCIES } ?: break
-            if (ScoreboardSection.classify(r.s) == ScoreboardSection.SOULFLOW) soulflowShown = true
-            if (FishSettings.sbSectionOther) money.add(compact(r, ChatFormatting.WHITE))
+            others.add(ScoreboardSection.classify(r.s) to r)
         }
-        if (!soulflowShown && FishSettings.sbSectionOther) (if (ex) "12,345" else tabValue(TAB_SOULFLOW))?.let { money.add(kv("Soulflow: $it", "§3")) }
+        if (others.none { it.first == ScoreboardSection.SOULFLOW })
+            (if (ex) "12,345" else tabValue(TAB_SOULFLOW))?.let { others.add(ScoreboardSection.SOULFLOW to Raw(kv("Soulflow: $it", "§3"), "Soulflow: $it")) }
+        if (FishSettings.sbSectionOther) others.sortedBy { it.first.ordinal }.forEach { money.add(compact(it.second, ChatFormatting.WHITE)) }
         groups.add(money)
 
         val slayerIdx = raw.indices.firstOrNull { !used[it] && raw[it].s.equals("Slayer Quest", true) }
@@ -402,6 +419,16 @@ object CustomScoreboard {
     @Suppress("UNUSED_PARAMETER")
     private fun compact(r: Raw, color: ChatFormatting): Component = r.c
 
+    private var lastLevel: Component? = null
+    private var lastLevelAt = 0L
+
+    // Tab list briefly drops the player row on refresh; hold the last level so the line doesn't blink
+    private fun stickyLevel(mc: Minecraft): Component? {
+        val now = System.currentTimeMillis()
+        levelLine(mc)?.let { lastLevel = it; lastLevelAt = now; return it }
+        return lastLevel?.takeIf { now - lastLevelAt < 5000L }
+    }
+
     private fun levelLine(mc: Minecraft): Component? {
         val name = mc.player?.gameProfile?.name ?: return null
         val re = Regex("""^\[(\d{1,4})\S*]\s+$name\b""")
@@ -425,12 +452,16 @@ object CustomScoreboard {
     }
 
     private fun powderLines(): List<Component> {
-        val out = ArrayList<Component>()
+        val found = HashMap<String, String>()
         for (e in TabListCache.entries) {
             val m = POWDER.find(e.stripped) ?: continue
-            val col = when (m.groupValues[1]) { "Mithril" -> "§2"; "Gemstone" -> "§d"; else -> "§b" }
-            out.add(Component.literal(" §7- §f${m.groupValues[1]}: $col${num(m.groupValues[2])}"))
-            if (out.size == 3) break
+            found.putIfAbsent(m.groupValues[1], m.groupValues[2])
+        }
+        // Always Mithril, Gemstone, Glacite regardless of tab order
+        val out = ArrayList<Component>()
+        for ((k, col) in listOf("Mithril" to "§2", "Gemstone" to "§d", "Glacite" to "§b")) {
+            val v = found[k] ?: continue
+            out.add(Component.literal(" §7- §f$k: $col${num(v)}"))
         }
         if (out.isNotEmpty()) out.add(0, Component.literal("§fPowder"))
         return out
