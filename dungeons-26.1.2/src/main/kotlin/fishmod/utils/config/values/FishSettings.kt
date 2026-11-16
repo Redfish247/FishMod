@@ -162,6 +162,17 @@ object FishSettings {
 
     @ConfigValue @JvmField var chatSearch: Boolean = false
 
+    @ConfigValue @JvmField var chatTabs: Boolean = false
+    @ConfigValue @JvmField var chatTabParty: Boolean = true
+    @ConfigValue @JvmField var chatTabGuild: Boolean = true
+    @ConfigValue @JvmField var chatTabOfficer: Boolean = false
+    @ConfigValue @JvmField var chatTabCoop: Boolean = true
+    @ConfigValue @JvmField var chatTabsSwitchChannel: Boolean = true
+    @ConfigValue @JvmField var chatTabsBgColor: Int = 0xC014181D.toInt()
+    @ConfigValue @JvmField var chatTabsHoverColor: Int = 0xE0283038.toInt()
+    @ConfigValue @JvmField var chatTabsSelectedColor: Int = 0xFF24B6B0.toInt()
+    @ConfigValue @JvmField var chatTabsTextColor: Int = 0xFFEDF1F5.toInt()
+
     @ConfigValue @JvmField var chatPeek: Boolean = true
 
     @ConfigValue @JvmField var zoomEnabled: Boolean = false

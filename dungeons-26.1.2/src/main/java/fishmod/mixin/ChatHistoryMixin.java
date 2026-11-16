@@ -16,6 +16,8 @@ public class ChatHistoryMixin {
         try {
             if (ChatSearch.getActive() && !ChatSearch.matches(message.content())) {
                 ci.cancel();
+            } else if (fishmod.features.chat.ChatTabs.getActive() && !fishmod.features.chat.ChatTabs.matches(message.content())) {
+                ci.cancel();
             }
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("ChatHistoryMixin.1", "chat search filter failed", t);
