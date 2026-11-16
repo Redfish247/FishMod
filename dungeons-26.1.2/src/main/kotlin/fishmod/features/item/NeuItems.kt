@@ -84,7 +84,14 @@ object NeuItems {
         FishDiag.guard("NeuItems.3", "NEU item cache write failed") { fishmod.utils.SafeFiles.writeAtomic(CACHE, Gson().toJson(list)) }
     }
 
+    // Reuse the NEU repo the profile viewer already extracted; zip only as fallback
+    private fun fromDisk(): List<Entry>? = try {
+        val dir = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo").resolve("repo").resolve("items").toFile()
+        dir.listFiles { f -> f.name.endsWith(".json") }?.mapNotNull { parse(it.name.removeSuffix(".json"), it.readText()) }?.takeIf { it.isNotEmpty() }
+    } catch (e: Exception) { null }
+
     private fun download(): List<Entry>? {
+        fromDisk()?.let { return it }
         val req = HttpRequest.newBuilder(URI.create(ZIP_URL)).timeout(Duration.ofSeconds(90)).GET().build()
         val res = fishmod.utils.Http.CLIENT.send(req, HttpResponse.BodyHandlers.ofInputStream())
         if (res.statusCode() != 200) {
