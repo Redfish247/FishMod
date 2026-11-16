@@ -147,17 +147,12 @@ object HotspotFinder {
         }
         if (++tick % SCAN_TICKS != 0) return
         try {
-            var stands: ArrayList<ArmorStand>? = null
-            for (e in level.entitiesForRendering()) {
-                if (e !is ArmorStand || !e.hasCustomName()) continue
+            val stands = NamedStands.of(level)
+            for (e in stands) {
                 val name = e.customName?.string ?: continue
                 if (!FishingAlertText.isHotspotName(name)) continue
                 val known = registry.find(e.id)
                 if (known == null) {
-                    if (stands == null) {
-                        stands = ArrayList()
-                        for (s in level.entitiesForRendering()) if (s is ArmorStand && s.hasCustomName()) stands.add(s)
-                    }
                     val perk = FishingAlertsWorld.perkBelow(e, stands)
                     registry.see(e.id, e.x, e.y, e.z, perk, now)
                     if (W.hotspotDebug) {

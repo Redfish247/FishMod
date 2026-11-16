@@ -50,8 +50,7 @@ object FishingAlertsWorld {
         var hookHot: ArmorStand? = null
         var hookHotD = Double.MAX_VALUE
         val stands = ArrayList<ArmorStand>()
-        for (e in level.entitiesForRendering()) {
-            if (e !is ArmorStand) continue
+        for (e in NamedStands.of(level)) {
             val name = e.customName?.string ?: continue
             if (name.isEmpty()) continue
             stands.add(e)
