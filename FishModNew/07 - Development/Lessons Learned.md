@@ -467,3 +467,5 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 
 ## 2026-11-15: pest guess was a fake calc (#594)
 - `Pests.updateGuess` took the farthest trail particle as the guess, while spade and radar already shared a Bezier solver. Rule: any 'item draws a particle trail toward a target' feature reuses `HotspotMatch.Trail` + `fishmod.utils.TrailBezier`, never a new heuristic. Untested in game: the vacuum trail is assumed to use the same Bezier model.
+
+- 2026-11-15, #596: a category sort that keys only on type leaves the rest in alphabetical order, which reads as unsorted for tiered gear (drills, pickaxes). Every Item List category sort needs a second key (rarity via `RARITY_RANK`) before name.

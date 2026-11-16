@@ -67,6 +67,7 @@ see [[General & QoL Features]].
 - Status: built by inspection only, not built, untested. May overlap other side panels (Party Finder, Visitors).
 - Click key (#535, `skyItemListClickKey`, default on): hovered tooltip = `Screen.getTooltipFromItem` + yellow lines built from the same conditions as `onClick` (Left: View Recipe only if `RecipeViewer.recipesFor` is non-empty; Right: Add/Remove Favorite; Shift-Left: Bazaar or Auction House). Keep `tooltipWithKey` in sync when a click action changes.
 - Shift-left click sends exactly one `/bz <name>` or `/ahs <name>`. Bazaar vs AH = id present in `CroesusPrices.bazaarPrice` (Hypixel bazaar products); NEU book ids `X;N` map to `ENCHANTMENT_X_N`. Search name: NEU display name, book enchant from lore line 0, pet `[Lvl ...]` tag stripped. Bazaar data is requested once when the list builds, so before it loads every item reads as AH.
+- Category sort (`sortKey`, built once in `ensureBuilt` for cats 3/4/12/16/17/18). Tools tab (#596): type from the lore rarity line kind (Pickaxe, Drill, Gauntlet, Chisel, Axe, Shovel, Hoe, Shears, other), then rarity rank, then name. Rods live in Fishing, farming tools in Garden. Any new category sort uses lore kind + `RARITY_RANK`, never id-string guesses.
 
 ## Sign Calculator (SignCalculator.kt, setting `signCalculator`, default on, fishmod.dev #531)
 - Math in Hypixel input signs (bazaar/AH quantity, bids, any sign with `^^^` on line 2 or anywhere in Skyblock): typing `9*9` on line 1 shows `= 81` right of the sign; on close the line is replaced with `81` before vanilla sends it.
