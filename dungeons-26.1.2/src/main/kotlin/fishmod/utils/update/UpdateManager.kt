@@ -424,12 +424,19 @@ object UpdateManager {
         return path.takeIf { Files.isRegularFile(it) && it.fileName.toString().endsWith(".jar") }
     }
 
+    // #614: ProcessHandle command is empty on some launchers/sandboxes; fall back to java.home
+    private fun javaExecutable(): String? {
+        ProcessHandle.current().info().command().orElse(null)?.takeIf { it.isNotBlank() }?.let { return it }
+        val bin = Path.of(System.getProperty("java.home") ?: return null, "bin")
+        return listOf("javaw.exe", "java.exe", "java").map(bin::resolve).firstOrNull(Files::isRegularFile)?.toString()
+    }
+
     private fun launchInstaller() {
         if (downloadState != DownloadState.STAGED) return
         try {
             val staged = FishDiag.notNull(synchronized(lock) { state.stagedFile }?.let(Path::of)?.takeIf(Files::isRegularFile), "UpdateManager.20") { "staged update file missing: ${state.stagedFile}" } ?: return
             val oldJar = FishDiag.notNull(currentJar(), "UpdateManager.21") { "cannot locate current mod jar origin=${container?.origin?.kind}" } ?: return
-            val java = FishDiag.notNull(ProcessHandle.current().info().command().orElse(null), "UpdateManager.22") { "cannot resolve java executable for installer" } ?: return
+            val java = FishDiag.notNull(javaExecutable(), "UpdateManager.22") { "cannot resolve java executable for installer" } ?: return
             val classDir = stagingDir.resolve("installer")
             val classFile = classDir.resolve("fishmod/utils/update/UpdateInstaller.class")
             Files.createDirectories(classFile.parent)
