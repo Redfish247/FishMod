@@ -879,7 +879,10 @@ class InventoryPage {
 			return null
 		}
 		val owned = ArrayList<String>()
-		for (bagPage in pagesFor(InventoryPane.ACCESSORY_BAG)) {
+		// Accessories count as owned anywhere the player keeps them, not just the bag.
+		val panes = listOf(InventoryPane.ACCESSORY_BAG, InventoryPane.INVENTORY, InventoryPane.ENDER_CHEST,
+			InventoryPane.BACKPACKS, InventoryPane.PERSONAL_VAULT)
+		for (bagPage in panes.flatMap { pagesFor(it) }) {
 			for (slot in bagPage.slots) {
 				val id = slot?.id
 				if (slot != null && !slot.isEmpty() && id != null) {
