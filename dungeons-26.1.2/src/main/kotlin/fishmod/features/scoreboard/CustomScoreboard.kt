@@ -313,8 +313,8 @@ object CustomScoreboard {
         groups.add(top)
 
         val world = ArrayList<Component>()
-        take { ScoreboardSection.DATE.matches(bare(it.s)) }?.let { if (FishSettings.sbSectionDate) world.add(Component.literal("§f" + bare(it.s))) }
-        val timeIdx = raw.indices.firstOrNull { !used[it] && ScoreboardSection.TIME.matches(bare(raw[it].s)) }
+        take { ScoreboardSection.DATE.matches(core(it.s)) }?.let { if (FishSettings.sbSectionDate) world.add(Component.literal("§f" + bare(it.s))) }
+        val timeIdx = raw.indices.firstOrNull { !used[it] && ScoreboardSection.TIME.matches(core(raw[it].s)) }
         if (timeIdx != null) {
             used[timeIdx] = true
             if (FishSettings.sbSectionTime) world.add(Component.literal("§7" + bare(raw[timeIdx].s)))
@@ -335,6 +335,10 @@ object CustomScoreboard {
         val money = ArrayList<Component>()
         if (FishSettings.sbSectionLevel) (if (ex) exLevel() else stickyLevel(mc))?.let { money.add(it) }
         take { PURSE.containsMatchIn(it.s) }?.let { if (FishSettings.sbSectionPurse) money.add(kv(it.s, "§6")) }
+        // Bank right under purse: sidebar line, else the tab list Profile widget (#606)
+        val bank = take { ScoreboardSection.classify(it.s) == ScoreboardSection.BANK }?.let { bare(it.s) }
+            ?: (if (ex) null else tabValue(TAB_BANK))?.let { "Bank: $it" }
+        if (bank != null && FishSettings.sbSectionPurse) money.add(kv(bank, "§6"))
         val bits = take { BITS.containsMatchIn(it.s) }
         val motes = take { MOTES.containsMatchIn(it.s) }
         val showBits = bits != null && FishSettings.sbSectionBits
@@ -394,7 +398,8 @@ object CustomScoreboard {
     }
 
     private val TAB_GEMS = Regex("""^Gems:\s*([\d,.]+[kKmMbB]?)""")
-    private val TAB_SOULFLOW = Regex("""^Soulflow:\s*([\d,.]+[kKmMbB]?)""")
+    private val TAB_BANK = Regex("""^(?:Co-op |Personal )?Bank:\s*(.+)$""")
+    private val TAB_SOULFLOW =Regex("""^Soulflow:\s*([\d,.]+[kKmMbB]?)""")
 
     private fun tabValue(re: Regex): String? {
         for (e in TabListCache.entries) re.find(clean(e.stripped))?.let { return it.groupValues[1] }
@@ -413,6 +418,9 @@ object CustomScoreboard {
 
     private val LEADING_GLYPHS = Regex("""^[^\p{L}\p{N}]+""")
     private fun bare(s: String): String = s.replace(LEADING_GLYPHS, "").trim()
+    private val TRAILING_GLYPHS = Regex("""[^\p{L}\p{N}]+$""")
+    // Also drops trailing weather/emoji glyphs ("4:30pm ☀") so date/time still match (#605)
+    private fun core(s: String): String = bare(s).replace(TRAILING_GLYPHS, "").trim()
 
     private fun num(s: String): String = s
 
