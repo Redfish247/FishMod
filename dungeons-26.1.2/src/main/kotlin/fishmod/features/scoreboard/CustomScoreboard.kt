@@ -30,7 +30,7 @@ object CustomScoreboard {
     private val BLANK: Component = Component.empty()
 
     private val HEADER = Regex("""^(\d{2}/\d{2}/\d{2})\s*(.*)$""")
-    private val LOCATION = Regex("""^\s*[⏣ф]""")
+    private val LOCATION = Regex("""^\s*(§.)*\s*[⏣фൠ-]""") // location icon (incl. custom-font glyphs)
     private val PURSE = Regex("""^(Purse|Piggy):\s*(.+)$""")
     private val BITS = Regex("""^Bits:\s*([\d,.]+)""")
     private val MOTES = Regex("""^Motes:\s*([\d,.]+)""")
@@ -320,12 +320,14 @@ object CustomScoreboard {
             if (FishSettings.sbSectionTime) world.add(Component.literal("§7" + bare(raw[timeIdx].s)))
         }
         // Only a real location line; the line after time differs per island
-        val locIdx = raw.indices.firstOrNull { !used[it] && (LOCATION.containsMatchIn(raw[it].s) || ScoreboardSection.classify(raw[it].s) == ScoreboardSection.LOCATION) }
+        // .s has the icon stripped, so check the raw component text; else the colon-free line after time
+        val locIdx = raw.indices.firstOrNull { !used[it] && (LOCATION.containsMatchIn(raw[it].c.string) || ScoreboardSection.classify(raw[it].s) == ScoreboardSection.LOCATION) }
+            ?: timeIdx?.plus(1)?.takeIf { it < raw.size && !used[it] && ':' !in raw[it].s && raw[it].s.isNotBlank() }
         if (locIdx != null) {
             used[locIdx] = true
             if (FishSettings.sbSectionLocation) world.add(raw[locIdx].c)
             val guestIdx = locIdx + 1
-            if (guestIdx < raw.size && !used[guestIdx] && GUESTS.containsMatchIn(raw[guestIdx].s)) {
+            if (guestIdx < raw.size && !used[guestIdx] && (GUESTS.containsMatchIn(raw[guestIdx].s) || raw[guestIdx].s.startsWith("Nearby Players"))) {
                 used[guestIdx] = true
                 if (FishSettings.sbSectionLocation) world.add(raw[guestIdx].c)
             }
