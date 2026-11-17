@@ -903,7 +903,7 @@ object FishSettings {
     @ConfigValue @JvmField var invincProcBonzoColor: Int = 0xFF5555FF.toInt()
     @ConfigValue @JvmField var invincProcPhoenixText: String = "Phoenix Procced!"
     @ConfigValue @JvmField var invincProcPhoenixColor: Int = 0xFFFF5555.toInt()
-    @ConfigValue @JvmField var invincProcSound: Boolean = true
+    @ConfigValue @JvmField var invincProcSoundOn: Boolean = false
     @ConfigValue @JvmField var invincProcSoundName: String = "Blaze Hit"
     @ConfigValue @JvmField var invincProcVolume: Int = 100
     @ConfigValue @JvmField var invincProcPitch: Double = 1.0

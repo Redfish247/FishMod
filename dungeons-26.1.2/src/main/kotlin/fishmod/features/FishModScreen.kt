@@ -841,12 +841,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Bonzo Color", "", "invincProcBonzoColor").gatedBy { FishSettings.invincProcTitle })
             f.sub.add(InputSetting("Phoenix Message", "", "invincProcPhoenixText").gatedBy { FishSettings.invincProcTitle })
             f.sub.add(ColorPickerSetting("Phoenix Color", "", "invincProcPhoenixColor").gatedBy { FishSettings.invincProcTitle })
-            f.sub.add(ToggleSetting("Proc Sound", "", "invincProcSound").gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(SubcategoryHeader("Proc Sound"))
+            f.sub.add(ToggleSetting("Sound On Proc", "Play a sound when a mask / Phoenix procs", "invincProcSoundOn"))
             f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
                 { FishSettings.invincProcSoundName }, { v -> FishSettings.invincProcSoundName = v },
-                { FishSettings.invincProcVolume }, { FishSettings.invincProcPitch }).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
-            f.sub.add(SliderIntSetting("Volume %", "", "invincProcVolume", 0, 500, 10).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
-            f.sub.add(SliderDoubleSetting("Pitch", "", "invincProcPitch", 0.0, 2.0).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
+                { FishSettings.invincProcVolume }, { FishSettings.invincProcPitch }).gatedBy { FishSettings.invincProcSoundOn })
+            f.sub.add(SliderIntSetting("Volume %", "", "invincProcVolume", 0, 500, 10).gatedBy { FishSettings.invincProcSoundOn })
+            f.sub.add(SliderDoubleSetting("Pitch", "", "invincProcPitch", 0.0, 2.0).gatedBy { FishSettings.invincProcSoundOn })
             dungeon.features.add(f)
         }
         run {
