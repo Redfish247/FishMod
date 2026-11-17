@@ -67,9 +67,9 @@ object Pests {
                 // New vacuum use: fresh trail, drop the old guess
                 if (now - lastTrail > fishmod.features.fishing.HotspotMatch.NEW_TRAIL_GAP_MS) clearGuess()
                 lastTrail = now
-                // SkyHanni: trail must start >5 blocks from the player (skips vacuum-tip noise)
+                // SkyHanni: trail must start within 5 blocks of the player; far stray particles can't seed it
                 val me = net.minecraft.client.Minecraft.getInstance().player
-                if (trail.size == 0 && me != null && me.position().distanceToSqr(p.x, p.y, p.z) <= 25.0) return@register false
+                if (trail.size == 0 && me != null && me.position().distanceToSqr(p.x, p.y, p.z) > 25.0) return@register false
                 if (trail.add(p.x, p.y, p.z, now)) dirty = true
             }
             false
