@@ -89,6 +89,7 @@ object InvincibilityTracker {
     }
 
     private fun procTitle(t: Type) {
+        procSound()
         if (!FishSettings.invincProcTitle) return
         val (text, color) = when (t) {
             Type.SPIRIT -> FishSettings.invincProcSpiritText to FishSettings.invincProcSpiritColor
@@ -99,7 +100,10 @@ object InvincibilityTracker {
             net.minecraft.network.chat.Component.literal(text.ifBlank { "${t.label} Procced!" }).withColor(color and 0xFFFFFF),
             net.minecraft.network.chat.Component.empty(), FishSettings.invincProcTitleMs
         )
-        if (FishSettings.invincProcSound) fishmod.utils.sound.SoundManager.play(
+    }
+
+    private fun procSound() {
+        if (FishSettings.invincProcSoundOn) fishmod.utils.sound.SoundManager.play(
             fishmod.utils.sound.SoundManager.preset(FishSettings.invincProcSoundName),
             FishSettings.invincProcVolume.coerceIn(0, 500) / 100f,
             FishSettings.invincProcPitch.toFloat().coerceIn(0f, 2f),
