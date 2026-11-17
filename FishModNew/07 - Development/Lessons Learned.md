@@ -481,3 +481,5 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 - Sub-agent audit claims need a quick check: "player!! crash" was already null-guarded and "ChatTabs mixin may fail on 26.2" was disproved by an existing mixin on the same method.
 
 - **2026-11-16, pest guess inverted filter (#607/#609):** when porting SkyHanni `tryAdd(emptyCondition=...)`, `emptyCondition` returning true means *reject*. Their `{ distance > 5 }` keeps only starts near the player; I ported it inverted and the guess fit from mid-trail. Read predicate semantics in the callee before porting a lambda.
+
+- **2026-11-16, scoreboard location fell under stats on every island:** `Raw.s` comes from `clean()`, which strips private-use icon glyphs, so `LOCATION` (icon regex) never matched and only the name list in `ScoreboardSection.LOCATION` worked. Match icons on `raw.c.string`, keep a colon-free-line-after-time fallback.
