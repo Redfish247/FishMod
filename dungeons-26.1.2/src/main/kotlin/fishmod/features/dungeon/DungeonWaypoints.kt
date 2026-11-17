@@ -479,6 +479,7 @@ object DungeonWaypoints {
     }
 
     private fun placePm(mc: Minecraft) {
+        if (mc.player == null || mc.level == null) return
         val aim = aimPoint(mc)
         val bb = aim.blockBox ?: return
         var px = bb.center.x; var py = bb.center.y; var pz = bb.center.z
