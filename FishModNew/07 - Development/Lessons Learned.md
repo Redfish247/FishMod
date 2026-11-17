@@ -479,3 +479,5 @@ Full catalogue: [[Issues Log 2026-09-12 to 10-17]]. Worker incidents: [[fishmod-
 - The `v1.7.18` tag points at a GitHub merge commit that local main doesn't contain, so `v1.7.18..HEAD` pulled in ~2000 ancient commits. Range release notes from the last `Ship <ver>` / release merge commit that is on main.
 - "We removed X" can mean the feature was only abandoned, not deleted: Gamble was still initialised, with a default-on playtime heartbeat. Grep for the package before you believe it is gone.
 - Sub-agent audit claims need a quick check: "player!! crash" was already null-guarded and "ChatTabs mixin may fail on 26.2" was disproved by an existing mixin on the same method.
+
+- **2026-11-16, pest guess inverted filter (#607/#609):** when porting SkyHanni `tryAdd(emptyCondition=...)`, `emptyCondition` returning true means *reject*. Their `{ distance > 5 }` keeps only starts near the player; I ported it inverted and the guess fit from mid-trail. Read predicate semantics in the callee before porting a lambda.
