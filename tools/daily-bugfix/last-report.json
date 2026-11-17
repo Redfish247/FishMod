@@ -1,39 +1,10 @@
-﻿{
-  "date": "2026-11-15",
-  "version": "1.7.97",
-  "summary": "Daily bugfix: 3 new auto error cards fixed (API failures back off and no longer auto-report), 4 more already fixed; built 1.7.97 for 26.1.2 + 26.2, jar not copied (Modrinth mods folder missing), not tested in game.",
-  "alert": "Jar not installed: the Modrinth `Skyblock 1.21.8\\mods` folder does not exist; run /ship to put 1.7.97 into Prism Skyblock (still 1.7.95).",
-  "fixed": [
-    {"id": 579, "title": "Bazaar API 403 retried with no pause and sent error reports", "files": ["features/croesus/CroesusPrices.kt"], "detail": "`fetchBazaar` only set `lastBazaar` on success, so every price lookup after a 403 re-fetched. It now backs off 15 minutes on any failure and logs non-200 instead of reporting."},
-    {"id": 580, "title": "Items API 403 sent error reports", "files": ["utils/networth/ItemsDb.kt"], "detail": "Non-200 is a warn log now; the existing 5 minute retry stays."},
-    {"id": 583, "title": "Auto-kick lookup failure sent error reports", "files": ["features/dungeon/PartyFinder.kt"], "detail": "`PartyFinder.3` replaced by a log line with the fail reason, same as the PF stats fix in `9d079570`."},
-    {"title": "Fire Sale scoreboard line reported Hypixel HTTP errors", "files": ["features/scoreboard/FireSaleInfo.kt"], "detail": "`FireSaleInfo.1` is log-only now."}
-  ],
-  "already": [
-    {"id": 581, "title": "Session stats pause start in the future", "detail": "Fixed in `498a4964` (clock clamp); report from 1.7.19."},
-    {"id": 582, "title": "PF stats lookup proxy 403", "detail": "Log-only since `9d079570`; report from 1.7.19."},
-    {"id": 584, "title": "Ender dragon spawned with no matching dragon", "detail": "Fixed in `d22af24c` (1.7.92); report from 1.7.18."},
-    {"id": 585, "title": "Dungeon map: no room data for core", "detail": "Debug log only since `498a4964`; report from 1.7.18."}
-  ],
-  "open": [
-    {"id": 459, "title": "Far players look stuck or glitched", "status": "Needs a report", "detail": "No code path in FishMod moves other players; reporter should try `/fmdev bisect all`."},
-    {"id": 533, "title": "Secrets leaderboard capped at 13", "status": "Needs your OK", "detail": "Worker fix committed in `D:\\FishMod-WorkerBoard`, needs `wrangler deploy`."},
-    {"id": 565, "title": "Look up a player in one leaderboard", "status": "Needs your OK", "detail": "Worker fix committed, needs `wrangler deploy`."}
-  ],
-  "tests": [
-    "Open Croesus or a dungeon reward chest with chest profit on: prices show as before.",
-    "Join SkyBlock with the network blocked: no FishMod error-report toast for bazaar/items/fire sale; `latest.log` shows the backoff line.",
-    "As party leader with auto-kick on, have someone join: kick check works; on lookup failure chat says it couldn't look them up, no error report."
-  ],
-  "facts": [
-    ["Commits", "`60c94189` `a3d26a9c` fixes, `a95d359f` bump, `6a4a1024` changelog"],
-    ["Build", "1.7.97 26.1.2 + 26.2 BUILD SUCCESSFUL; 26.3 not built"],
-    ["Board", "#579-#585 Planned -> Testing (updated 7); nothing Done"],
-    ["Sweep", "grepped every `FishDiag.fail` on HTTP status codes; UpdateManager and NeuItems left as reports"]
-  ],
-  "notes": [
-    "Rule: third-party API non-200 is never `FishDiag.fail`; log + backoff, and every fetch needs a failure timestamp.",
-    "`roadmap-status` API needs numeric ids; string ids silently update 0.",
-    "The daily prompt's Modrinth mods folder does not exist; install target is Prism Skyblock via /ship."
-  ]
+{
+  "date": "2026-11-17", "version": "1.7.106",
+  "summary": "Daily bugfix run: 1 crash fix in dungeon waypoints, built 26.1.2 + 26.2 OK, jar not copied (Modrinth profile folder missing), untested",
+  "fixed": [{"title": "Dungeon PM waypoint prompt no longer crashes after leaving the world", "files": ["features/dungeon/DungeonWaypoints.kt"], "detail": "`placePm()` now checks player/level; it runs from the title prompt callback, which can fire after a world leave."}],
+  "already": [{"title": "All 14 open bug cards", "detail": "#530 #567 #594 #597 #598 #600 #601 #602 #603 #604 #605 #607 #609 #610 were already fixed and sit in Testing."}],
+  "open": [],
+  "tests": ["Open a PM waypoint title prompt in a dungeon, leave the world, close the prompt: no crash."],
+  "facts": [["Commits", "`2bb37c48` fix, `3c39ec3a` changelog"], ["Build", "both modules successful"], ["Board", "no changes, all bug cards already in testing"], ["Sweep", "all `!!` on player/level/connection audited"]],
+  "notes": ["Modrinth `Skyblock 1.21.8` profile folder does not exist; deploy via /ship.", "Screen callbacks can run after world leave: re-check mc.player inside the callback."]
 }
