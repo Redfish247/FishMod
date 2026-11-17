@@ -1,3 +1,21 @@
+FishMod Changelog - 2026-11-17 (daily bugfix run, build 1.7.106 code + 1 fix)
+==================================
+Fixed:
+- Dungeon waypoints: placing a party-message waypoint and then leaving the world before closing the title prompt could crash the game. It now just does nothing.
+Reported bugs fixed (from fishmod.dev):
+- None new. All 14 open bug reports were already fixed in earlier builds and are waiting in Testing (#530 #567 #594 #597 #598 #600 #601 #602 #603 #604 #605 #607 #609 #610).
+Known issues (not fixed yet):
+- None found this run.
+Test in game:
+1. In a dungeon, turn on party-message waypoint edit mode, sneak + place to open the title prompt, then leave the world (or /lobby) and close the prompt. The game should not crash.
+2. Check the cards in Testing on fishmod.dev (#610 Honeycomb Artifact in PV, #605/#597 scoreboard order, #607/#609 pest guess) since those shipped in 1.7.104-1.7.106.
+Run notes:
+- Start commit 4cacd767, fix commit 2bb37c48. Build :dungeons-26.1.2:build :dungeons-26.2:build SUCCESSFUL (no compiler warnings). Version not bumped (still 1.7.106 in build/libs).
+- Jar NOT copied: C:\Users\Eli\AppData\Roaming\ModrinthApp\profiles\Skyblock 1.21.8\mods does not exist on this machine. Real deploy target is Prism Skyblock via /ship.
+- Fix: DungeonWaypoints.kt placePm() null-guards player/level; it runs from the DungeonWaypointTitleScreen callback which can fire after world leave, and aimPoint() does mc.player!!.
+- Sweep: audited every mc.player!!/mc.level!!/mc.connection!! in dungeons-26.1.2 src; all others are guarded on the same thread.
+- Board: all 14 open Bug cards already in testing; no status changes made. Nothing moved to done.
+- Notes for Obsidian: Technical Gotchas - screen callbacks (title/text prompts) can run after world leave; re-check mc.player in the callback, not only before opening the screen.
 FishMod Changelog - 2026-11-15 (daily bugfix run, build 1.7.97)
 ==================================
 Fixed:
