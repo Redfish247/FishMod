@@ -1,3 +1,21 @@
+FishMod Changelog - 2026-11-18 (daily bugfix run, build 1.7.109)
+==================================
+Fixed:
+- Nothing new this run. The build compiles cleanly and every open bug report was already fixed in an earlier build.
+Reported bugs fixed (from fishmod.dev):
+- None new. All 20 open bug reports were already fixed in earlier builds and are waiting in Testing (#530 #567 #594 #597 #598 #600 #601 #602 #603 #604 #605 #607 #609 #610 #611 #612 #613 #614 #616 #617).
+Known issues (not fixed yet):
+- None found this run.
+Test in game:
+1. Check the cards waiting in Testing on fishmod.dev, mainly the newer ones: #612 (no config snapshot error), #614 (auto-update installer finds Java), #616 (visitor rare reward toggles in Farming > Visitor Rare Reward Warning).
+2. Open the FishMod menu on Vulkan and OpenGL (1.7.107-1.7.109 UI renderer port): menus draw, scroll lists clip properly, no "UI disabled" message.
+Run notes:
+- Start commit 654513d0 (tree clean). No fix commits. Build :dungeons-26.1.2:build :dungeons-26.2:build SUCCESSFUL (up to date, no warnings), 1.7.109.
+- Jar NOT copied: C:\Users\Eli\AppData\Roaming\ModrinthApp\profiles\Skyblock 1.21.8\mods does not exist (Test-Path False). No javaw running. Install via /ship to Prism Skyblock.
+- No-commit cards: #601 (NametagCullingCompat.1) already logged at info since 9b215215; #611 is the same DragonCheck.1 report as #602, silenced in ea74da40; #613 (CosmeticLive.3) handled in 652d5913/9d079570; #617 (M7Relics.6) is log-only since the #587 fix. All four came from 1.7.18 builds.
+- Sweep: reviewed every source change since the last run (2bb37c48..654513d0: UiGpu/UiRenderer Vulkan port, InvincibilityTracker, GardenMenu, UpdateManager, AchUsage); no null-deref or thread issues found. invincProcSound -> invincProcSoundOn rename (default off) is intentional per roadmap 615.
+- Board: all 20 open Bug cards already in testing; no status changes made. Nothing moved to done.
+- Notes for Obsidian: none new.
 FishMod Changelog - 2026-11-17 (daily bugfix run, build 1.7.106 code + 1 fix)
 ==================================
 Fixed:
