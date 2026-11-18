@@ -87,16 +87,25 @@ object UiGpu {
         enc.writeToBuffer(u.slice(), uni)
         val vb = v.slice(0, bytes)
         val ub = u.slice()
-        enc.createRenderPass({ "fishmod ui" }, target(last), Optional.empty()).use { pass ->
+        val view = target(last)
+        val tw = view.getWidth(0); val th = view.getHeight(0)
+        enc.createRenderPass({ "fishmod ui" }, view, Optional.empty()).use { pass ->
             pass.setPipeline(p)
             pass.bindTexture("Sampler0", atlasView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR))
             pass.setUniform("UiView", ub)
             pass.setVertexBuffer(0, vb)
             for (i in 0 until nSeg) {
                 val o = i * 6
-                if (segs[o + 4] < 0) pass.disableScissor() else pass.enableScissor(segs[o + 2], segs[o + 3], segs[o + 4], segs[o + 5])
+                if (segs[o + 4] < 0) pass.disableScissor() else scissor(pass, segs, o, tw, th)
                 pass.draw(segs[o + 1], 1, segs[o], 0)
             }
         }
+    }
+
+    // Backends reject scissors past the target edge; clamp to the real target size
+    private fun scissor(pass: com.mojang.blaze3d.systems.RenderPass, s: IntArray, o: Int, tw: Int, th: Int) {
+        val x0 = s[o + 2].coerceIn(0, tw); val y0 = s[o + 3].coerceIn(0, th)
+        val x1 = (s[o + 2] + s[o + 4]).coerceIn(x0, tw); val y1 = (s[o + 3] + s[o + 5]).coerceIn(y0, th)
+        pass.enableScissor(x0, y0, x1 - x0, y1 - y0)
     }
 }
