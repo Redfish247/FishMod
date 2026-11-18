@@ -16,7 +16,7 @@ object CroesusRewardParser {
     private val BOOK_PATTERN: Pattern = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)")
     private val PET_PATTERN: Pattern = Pattern.compile("\\[Lvl \\d+\\]\\s*(?:§([0-9a-f]))?([\\w' §0-9a-fk-or]+)")
     @JvmField val TRAILING_QTY = Regex("""\s+x[\d,]+$""")
-    private val ESSENCE_PATTERN: Pattern = Pattern.compile("^(\\w+) Essence x(\\d+)$")
+    private val ESSENCE_PATTERN: Pattern = Pattern.compile("^(\\w+) Essence(?: x(\\d+))?$")
 
     init {
         ITEM_REPLACEMENTS["Shiny Wither Boots"] = "WITHER_BOOTS"
@@ -78,7 +78,7 @@ object CroesusRewardParser {
 
     private fun tryParseEssence(line: String): Array<String>? {
         val m = ESSENCE_PATTERN.matcher(line)
-        return if (!m.matches()) null else arrayOf("ESSENCE_" + m.group(1).uppercase(), m.group(2))
+        return if (!m.matches()) null else arrayOf("ESSENCE_" + m.group(1).uppercase(), m.group(2) ?: "1")
     }
 
     private fun tryParsePet(line: String): Array<String>? {
