@@ -26,6 +26,7 @@ object UiRenderer {
     private var viewH = 1f
     private var pixelRatio = 1f
     private var fbH = 1
+    private var fbW = 1
     private val scissors = ArrayDeque<FloatArray>()
 
     // Draw segments split at scissor changes: first vertex, count, scissor x/y/w/h (w < 0 = none)
@@ -46,7 +47,7 @@ object UiRenderer {
             if (!(pixelRatio > 0f)) FishDiag.fail("UiRenderer.5", "window guiScale invalid: ${win.guiScale}")
             if (win.width <= 0 || win.height <= 0) FishDiag.fail("UiRenderer.6", "painting UI into empty window ${win.width}x${win.height}")
             viewW = win.width / pixelRatio; viewH = win.height / pixelRatio
-            fbH = win.height
+            fbH = win.height; fbW = win.width
             scissors.clear()
             // A paint that threw mid-replay leaves stale floats behind; drop them or they draw in place of this frame's.
             buf.clear()
@@ -221,10 +222,11 @@ object UiRenderer {
     private fun applyScissor() {
         val s = scissors.lastOrNull()
         if (s == null) { curScissor[2] = -1; return }
-        val x0 = Math.floor((s[0] * pixelRatio).toDouble()).toInt()
-        val x1 = Math.ceil((s[2] * pixelRatio).toDouble()).toInt()
-        val y0 = Math.floor((s[1] * pixelRatio).toDouble()).toInt()
-        val y1 = Math.ceil((s[3] * pixelRatio).toDouble()).toInt()
+        // GPU API rejects scissors outside the target (GL clipped silently), so clamp to the framebuffer
+        val x0 = Math.floor((s[0] * pixelRatio).toDouble()).toInt().coerceIn(0, fbW)
+        val x1 = Math.ceil((s[2] * pixelRatio).toDouble()).toInt().coerceIn(0, fbW)
+        val y0 = Math.floor((s[1] * pixelRatio).toDouble()).toInt().coerceIn(0, fbH)
+        val y1 = Math.ceil((s[3] * pixelRatio).toDouble()).toInt().coerceIn(0, fbH)
         curScissor[0] = x0; curScissor[1] = fbH - y1
         curScissor[2] = Math.max(0, x1 - x0); curScissor[3] = Math.max(0, y1 - y0)
     }
