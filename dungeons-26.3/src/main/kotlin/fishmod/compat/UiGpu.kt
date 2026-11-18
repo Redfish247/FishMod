@@ -96,16 +96,19 @@ object UiGpu {
             pass.setVertexBuffer(0, vb)
             for (i in 0 until nSeg) {
                 val o = i * 6
-                if (segs[o + 4] < 0) pass.disableScissor() else scissor(pass, segs, o, tw, th)
+                if (segs[o + 4] < 0) pass.disableScissor() else if (!scissor(pass, segs, o, tw, th)) continue
                 pass.draw(segs[o + 1], 1, segs[o], 0)
             }
         }
     }
 
     // Backends reject scissors past the target edge; clamp to the real target size
-    private fun scissor(pass: com.mojang.renderpearl.api.commands.RenderPass, s: IntArray, o: Int, tw: Int, th: Int) {
+    private fun scissor(pass: com.mojang.renderpearl.api.commands.RenderPass, s: IntArray, o: Int, tw: Int, th: Int): Boolean {
         val x0 = s[o + 2].coerceIn(0, tw); val y0 = s[o + 3].coerceIn(0, th)
         val x1 = (s[o + 2] + s[o + 4]).coerceIn(x0, tw); val y1 = (s[o + 3] + s[o + 5]).coerceIn(y0, th)
+        // Empty clip = nothing visible; backends reject 0-size scissors
+        if (x1 <= x0 || y1 <= y0) return false
         pass.enableScissor(x0, y0, x1 - x0, y1 - y0)
+        return true
     }
 }
