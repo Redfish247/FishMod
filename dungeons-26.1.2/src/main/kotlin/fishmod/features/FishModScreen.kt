@@ -1910,6 +1910,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             floor7.features.add(f)
         }
         run {
+            val f = Feature("Relic Slot 9 Scroll Lock", Floor7Settings::class.java, "relicSlot9ScrollLock")
+            f.sub.add(SubcategoryHeader("Blocks mouse-wheel hotbar scrolling while you hold slot 9 during the P5 relic phase"))
+            floor7.features.add(f)
+        }
+        run {
             val f = Feature("Relic Times", Floor7Settings::class.java, "relicTimesEnabled")
             f.sub.add(SubcategoryHeader("Once all 5 relics are placed, lists each one's place time (from P5 start) and who placed it"))
             f.sub.add(ToggleSetting("Send To Party Chat", "Off = only you see it", Floor7Settings::class.java, "relicTimesParty"))
