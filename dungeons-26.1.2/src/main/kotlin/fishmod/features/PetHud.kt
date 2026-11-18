@@ -366,7 +366,7 @@ object PetHud {
 
     private fun cleanPetName(s: String?): String? {
         if (s == null) return null
-        return s.replace("✦", "").replace(TRAILING_PUNCT_RE, "").trim()
+        return PetSwapTitle.cleanName(s).replace(TRAILING_PUNCT_RE, "").trim()
     }
 
     private val RARITY_BY_CODE: Map<Char, RarityTier> = mapOf(
