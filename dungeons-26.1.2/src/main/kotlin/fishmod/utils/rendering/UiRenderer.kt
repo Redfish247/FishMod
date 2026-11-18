@@ -16,6 +16,7 @@ object UiRenderer {
 
     private val noUi = System.getProperty("fishmod.noui") != null
     private var failed = false
+    private var failedAt = 0L
     private var failLogged = false
     private var consecutiveFailures = 0
 
@@ -40,7 +41,12 @@ object UiRenderer {
 
     @JvmStatic
     fun paint(screenW: Int, screenH: Int, scale: Float) {
-        if (failed || noUi) return
+        if (noUi) return
+        // After repeated failures, back off for 5s then retry instead of killing every menu for the session
+        if (failed) {
+            if (System.currentTimeMillis() - failedAt < 5000L) return
+            failed = false; consecutiveFailures = 0
+        }
         try {
             val win = Minecraft.getInstance().window
             pixelRatio = win.guiScale.toFloat()
@@ -65,8 +71,8 @@ object UiRenderer {
             UiFont.markAtlasLost()
             FishDiag.fail("UiRenderer.9", "UI paint failed (attempt ${consecutiveFailures + 1})", t)
             if (++consecutiveFailures >= 3) {
-                failed = true
-                FishDiag.fail("UiRenderer.10", "UI renderer disabled after 3 consecutive paint failures")
+                failed = true; failedAt = System.currentTimeMillis()
+                FishDiag.fail("UiRenderer.10", "UI renderer paused 5s after 3 consecutive paint failures")
             }
             if (!failLogged) {
                 failLogged = true
