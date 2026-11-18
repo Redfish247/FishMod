@@ -56,6 +56,16 @@ object M7Relics {
     private val pickers = HashMap<Relic, String>()
     private val placed = LinkedHashMap<Relic, Double>()
 
+    // P5 relic phase: Necron end line seen and not all 5 placed yet.
+    @JvmStatic
+    fun inRelicPhase(): Boolean = p5StartMs != 0L && placed.size < 5 && BossPhase.getFloor() == "M7"
+
+    @JvmStatic
+    fun blockSlot9Scroll(): Boolean {
+        if (!Floor7Settings.relicSlot9ScrollLock || !inRelicPhase()) return false
+        return Minecraft.getInstance().player?.inventory?.selectedSlot == 8
+    }
+
     @JvmStatic
     fun init() {
         FishHudEditor.register(

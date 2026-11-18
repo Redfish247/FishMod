@@ -106,6 +106,10 @@ object Floor7Settings {
 
     @ConfigValue
     @JvmField
+    var relicSlot9ScrollLock: Boolean = false
+
+    @ConfigValue
+    @JvmField
     var pre4DoneAlert: Boolean = false
 
     @ConfigValue
