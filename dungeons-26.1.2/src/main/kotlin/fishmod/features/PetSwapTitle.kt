@@ -14,13 +14,19 @@ object PetSwapTitle {
 
     private val AUTOPET = Regex("""Autopet equipped your \[Lvl\s*\d+]\s*(.+?)!""")
     private val SUMMON = Regex("""You summoned your\s+(.+?)!""")
+    // Level/overflow tags like "[Lvl 100]" or "(+12)" around the name
+    private val TAGS = Regex("""\[[^\]]*]|\([^)]*\)""")
+    private val SPACES = Regex("""\s+""")
+
+    @JvmStatic
+    fun cleanName(raw: String): String = raw.replace(TAGS, " ").replace("✦", "").replace(SPACES, " ").trim()
 
     @JvmStatic
     fun init() {
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (overlay || !FishSettings.petSwapTitleEnabled) return@register
             val s = TextStrip.plain(msg.string).trim()
-            val name = (AUTOPET.find(s) ?: SUMMON.find(s))?.groupValues?.get(1)?.replace("✦", "")?.trim() ?: return@register
+            val name = (AUTOPET.find(s) ?: SUMMON.find(s))?.groupValues?.get(1)?.let(::cleanName) ?: return@register
             if (!FishDiag.check(name.isNotEmpty(), "PetSwapTitle.1") { "pet swap name empty in '$s'" }) return@register
             FishDiag.guard("PetSwapTitle.2", "pet swap title failed") { show(name, rarityColor(msg, name)) }
         }
