@@ -1,10 +1,7 @@
-{
-  "date": "2026-11-17", "version": "1.7.106",
-  "summary": "Daily bugfix run: 1 crash fix in dungeon waypoints, built 26.1.2 + 26.2 OK, jar not copied (Modrinth profile folder missing), untested",
-  "fixed": [{"title": "Dungeon PM waypoint prompt no longer crashes after leaving the world", "files": ["features/dungeon/DungeonWaypoints.kt"], "detail": "`placePm()` now checks player/level; it runs from the title prompt callback, which can fire after a world leave."}],
-  "already": [{"title": "All 14 open bug cards", "detail": "#530 #567 #594 #597 #598 #600 #601 #602 #603 #604 #605 #607 #609 #610 were already fixed and sit in Testing."}],
-  "open": [],
-  "tests": ["Open a PM waypoint title prompt in a dungeon, leave the world, close the prompt: no crash."],
-  "facts": [["Commits", "`2bb37c48` fix, `3c39ec3a` changelog"], ["Build", "both modules successful"], ["Board", "no changes, all bug cards already in testing"], ["Sweep", "all `!!` on player/level/connection audited"]],
-  "notes": ["Modrinth `Skyblock 1.21.8` profile folder does not exist; deploy via /ship.", "Screen callbacks can run after world leave: re-check mc.player inside the callback."]
-}
+{"date":"2026-11-18","version":"1.7.109","summary":"Daily bugfix run: no new bugs found, 1.7.109 builds clean (26.1.2 + 26.2), jar not copied (Modrinth folder missing), untested.",
+"fixed":[],
+"already":[{"id":601,"title":"EntityCulling Cullable not found","detail":"Logged at info since 9b215215; report from 1.7.18."},{"id":611,"title":"Dragon spawn particle at unknown spot","detail":"Same as #602, silenced in `ea74da40`."},{"id":613,"title":"Live socket silent, reconnecting","detail":"Handled in `652d5913`; report from 1.7.18."},{"id":617,"title":"No picker recorded for RED relic","detail":"Log-only since the #587 fix; report from 1.7.18."}],
+"open":[],
+"tests":["Check Testing cards #612 #614 #616 in game","Open FishMod menus on Vulkan and OpenGL: draw, clip, no UI disabled message"],
+"facts":[["Commits","start 654513d0, changelog only"],["Build","26.1.2 + 26.2 SUCCESSFUL"],["Board","all 20 bug cards already testing, no changes"],["Sweep","reviewed changes since 2bb37c48, nothing found"]],
+"notes":["Modrinth profile folder Skyblock 1.21.8 does not exist; install via /ship"]}
