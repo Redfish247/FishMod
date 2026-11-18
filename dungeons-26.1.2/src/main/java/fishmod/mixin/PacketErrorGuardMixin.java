@@ -27,9 +27,17 @@ public class PacketErrorGuardMixin {
     @Unique
     private static boolean fishmod$isOurs(Throwable t) {
         for (int depth = 0; t != null && depth < 8; depth++, t = t.getCause()) {
+            // Owner = first mod frame from the top; our packet wrapper sits under every handler (fishmod.dev #619).
             for (StackTraceElement e : t.getStackTrace()) {
                 String cls = e.getClassName();
-                if (cls.startsWith("fishmod.") || cls.startsWith("twitchbridge.") || e.getMethodName().contains("fishmod")) return true;
+                String m = e.getMethodName();
+                if (cls.startsWith("fishmod.") || cls.startsWith("twitchbridge.")) return true;
+                boolean mixinFrame = m.contains("$") && (m.startsWith("handler$") || m.startsWith("wrapOperation$") || m.startsWith("redirect$") || m.startsWith("modify"));
+                if (mixinFrame) { if (m.contains("fishmod")) return true; if (!m.contains("mixinextras$bridge")) return false; continue; }
+                if (cls.startsWith("java.") || cls.startsWith("jdk.") || cls.startsWith("sun.") || cls.startsWith("net.minecraft.")
+                        || cls.startsWith("com.mojang.") || cls.startsWith("com.google.") || cls.startsWith("io.netty.")
+                        || cls.startsWith("org.spongepowered.") || cls.startsWith("net.fabricmc.") || cls.startsWith("it.unimi.")) continue;
+                return false;
             }
         }
         return false;
