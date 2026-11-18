@@ -2218,8 +2218,12 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
         }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
             JsonObject member = null;
-            try {
-                JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+            String body = r.body();
+            // Proxy/Cloudflare error pages aren't JSON; skip quietly (fishmod.dev #623).
+            if (body == null || !body.stripLeading().startsWith("{")) {
+                fishmod.utils.debug.FishDebug.LOGGER.debug("[HypixelApi] getLocalMember non-JSON HTTP {}", r.statusCode());
+            } else try {
+                JsonObject root = JsonParser.parseString(body).getAsJsonObject();
                 if (root.has("success") && root.get("success").getAsBoolean())
                     member = findSelectedMember(root, uuid);
             } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.115", "getLocalMember failed", ignored);}
