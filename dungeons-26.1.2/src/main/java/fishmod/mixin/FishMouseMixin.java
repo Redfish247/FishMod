@@ -27,7 +27,7 @@ public class FishMouseMixin {
 
     @Inject(method = "onScroll", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getInventory()Lnet/minecraft/world/entity/player/Inventory;"), cancellable = true, require = 1)
     private void fishmod$lockHotbarScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
-        if (MiscSettings.lockHotbarScroll) {
+        if (MiscSettings.lockHotbarScroll || fishmod.features.dungeon.f7.M7Relics.blockSlot9Scroll()) {
             ci.cancel();
         }
     }
