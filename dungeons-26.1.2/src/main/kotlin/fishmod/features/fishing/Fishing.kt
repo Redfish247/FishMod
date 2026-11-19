@@ -2,6 +2,7 @@ package fishmod.features.fishing
 
 import fishmod.utils.SkyblockLocation
 import net.minecraft.client.Minecraft
+import net.minecraft.world.item.FishingRodItem
 
 object Fishing {
     private val FISHING_WORLDS = setOf(
@@ -14,10 +15,19 @@ object Fishing {
     @JvmStatic fun enabled(): Boolean = FishingSettings.fishing
 
     @JvmStatic fun active(): Boolean {
-        if (!FishingSettings.fishing) return false
+        if (!FishingSettings.fishing || !SkyblockLocation.inSkyblock() || SkyblockLocation.inDungeon()) return false
         if (FishingSettings.fishingAnyArea) return true
-        return SkyblockLocation.inSkyblock() && SkyblockLocation.getCurrentLocation() in FISHING_WORLDS
+        return SkyblockLocation.getCurrentLocation() in FISHING_WORLDS
     }
+
+    // Trackers only count in Skyblock, outside dungeons, with a fishing rod in hand
+    @JvmStatic fun holdingRod(): Boolean {
+        val p = Minecraft.getInstance().player ?: return false
+        return p.mainHandItem.item is FishingRodItem || p.offhandItem.item is FishingRodItem
+    }
+
+    @JvmStatic fun trackable(): Boolean =
+        SkyblockLocation.inSkyblock() && !SkyblockLocation.inDungeon() && holdingRod()
 
     @JvmStatic fun location(): SkyblockLocation = SkyblockLocation.getCurrentLocation()
 
