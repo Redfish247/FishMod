@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket
 import net.minecraft.util.Mth
+import net.minecraft.world.entity.PositionMoveRotation
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArraySet
@@ -28,8 +29,10 @@ object TPMazeSolver {
     private fun padNear(x: Double, z: Double): BlockPos? =
         tpPads.firstOrNull { abs(it.x + 0.5 - x) <= 1.5 && abs(it.z + 0.5 - z) <= 1.5 }
 
-    fun tpPacket(packet: ClientboundPlayerPositionPacket, from: Vec3?) {
-        val change = packet.change
+    fun tpPacket(packet: ClientboundPlayerPositionPacket, before: PositionMoveRotation?) {
+        val from = before?.position
+        // Hypixel can send relative yaw/pitch; resolve against the pre-teleport pose
+        val change = if (before != null) PositionMoveRotation.calculateAbsolute(before, packet.change, packet.relatives) else packet.change
         val pos = change.position
         if (OdinScan.currentRoomName != "Teleport Maze" || pos.x % 0.5 != 0.0 || pos.y != 69.5 ||
             pos.z % 0.5 != 0.0 || tpPads.isEmpty()) return
@@ -57,7 +60,7 @@ object TPMazeSolver {
     private fun getCorrectPortals(pos: Vec3, yaw: Float, pitch: Float) {
         if (correctPortals.isEmpty()) correctPortals = tpPads
         val player = Minecraft.getInstance().player
-        correctPortals = correctPortals.filter {
+        val narrowed = correctPortals.filter {
             it !in visited &&
                 OVecUtil.isXZInterceptable(
                     AABB(it.x.toDouble(), it.y.toDouble(), it.z.toDouble(), it.x + 1.0, it.y + 4.0, it.z + 1.0)
@@ -65,6 +68,9 @@ object TPMazeSolver {
                     32.0, pos, yaw, pitch,
                 ) && player?.boundingBox?.let { pb -> !AABB(it).inflate(0.5, 0.0, 0.5).intersects(pb) } != false
         }
+        // Never filter down to nothing: keep the last guess instead of blanking every pad
+        if (narrowed.isNotEmpty()) correctPortals = narrowed
+        else FishDiag.fail("TPMazeSolver.2", "tp maze filter emptied at $pos yaw=$yaw pitch=$pitch kept=${correctPortals.size}")
     }
 
     fun onRenderWorld() {

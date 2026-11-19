@@ -77,8 +77,8 @@ object PuzzleSolvers {
 
         registerPacket(ClientboundPlayerPositionPacket::class.java, gate = { FishSettings.tpMazeSolver }) { packet ->
             if (enabled && isInPuzzle && FishSettings.tpMazeSolver && packet is ClientboundPlayerPositionPacket) {
-                val from = Minecraft.getInstance().player?.position()
-                Minecraft.getInstance().execute { FishDiag.guard("PuzzleSolvers.14", "tp maze teleport handling failed") { TPMazeSolver.tpPacket(packet, from) } }
+                val before = Minecraft.getInstance().player?.let { net.minecraft.world.entity.PositionMoveRotation.of(it) }
+                Minecraft.getInstance().execute { FishDiag.guard("PuzzleSolvers.14", "tp maze teleport handling failed") { TPMazeSolver.tpPacket(packet, before) } }
             }
             false
         }
