@@ -62,7 +62,7 @@ object FishingTrackers {
 
         ClientTickEvents.END_CLIENT_TICK.register {
             while (pauseKey.consumeClick()) {
-                if (!on()) continue
+                if (!S.fishingTrackers || !Fishing.enabled()) continue
                 val p = !FishingTrackerStore.paused
                 FishingTrackerStore.setPaused(p)
                 FishMsg.send(if (p) "§b[Fishing] §fTrackers paused" else "§b[Fishing] §fTrackers resumed")
@@ -76,7 +76,7 @@ object FishingTrackers {
         ClientLifecycleEvents.CLIENT_STOPPING.register { if (FishingTrackerStore.dirty) save(sync = true) }
     }
 
-    private fun on() = S.fishingTrackers && Fishing.enabled()
+    private fun on() = S.fishingTrackers && Fishing.enabled() && Fishing.trackable()
 
     private val FISHING_SACKS = arrayOf("Fishing", "Enchanted Fishing", "Lava Fishing", "Bait", "Bronze Trophy Fishing", "Silver Trophy Fishing")
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")

@@ -160,7 +160,7 @@ object FishingTrackerHud {
         fishmod.features.mining.MiningHuds.registerExample(name, example)
         val hud = Hud(id, lines, visible, gx, gy, gs)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
-            if (!FishHudEditor.isOpen() && hud.on() && FishingTrackerStore.shouldDraw(Fishing.active(), System.currentTimeMillis(), S.fishingShowWhen == "Either")) draw(ctx, hud)
+            if (!FishHudEditor.isOpen() && hud.on() && fishmod.utils.SkyblockLocation.inSkyblock() && !fishmod.utils.SkyblockLocation.inDungeon() && FishingTrackerStore.shouldDraw(Fishing.active(), System.currentTimeMillis(), S.fishingShowWhen == "Either")) draw(ctx, hud)
         }
     }
 
