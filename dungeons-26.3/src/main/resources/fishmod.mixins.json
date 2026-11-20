@@ -59,6 +59,7 @@
     "FluidStateModelSetMixin",
     "LavaFogEnvironmentMixin",
     "NoFogMixin",
+    "WaterVisionMixin",
     "WaterColorMixin",
     "PlayerEntityRendererScaleMixin",
     "FishScreenMixin",
