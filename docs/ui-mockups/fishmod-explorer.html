@@ -88,11 +88,11 @@ const C={"General":["#5b8def",[["Compact GUI","Tighter rows and gaps so more fit
 "Alerts & Reminders":["#d6a12a",[["Limbo Alert","Ping when sent to limbo"],["Order Filled","Bazaar order done"],["Vanquisher Share","Post coords to party"]]],
 "Cosmetics":["#d65aa0",[["Fish Size","Scale your player"],["Custom Cape","Pick a cape"]]]};
 const S={};for(const k in C)C[k][1].forEach(f=>S[k+"/"+f[0]]=f[2]!==0);
-let col="Dungeon Solvers",sel="Ice Fill",view="grid",tabs=["Dungeon Solvers","Chat","Floor 7"];
+let col="Dungeon Solvers",sel="Ice Fill",view="grid",tabs=["Dungeon Solvers","Chat","Floor 7"],ai=0;
 const pinned=["General","Dungeon Solvers","Floor 7"],$=id=>document.getElementById(id),esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 function ini(s){return s.split(/\s+/).map(w=>w[0]).join("").slice(0,2)}
 function render(){const q=$("q").value.toLowerCase();
- $("tabs").innerHTML=tabs.map(t=>'<button class="tab'+(t===col?' act':'')+'" data-t="'+esc(t)+'">'+esc(t)+' <span class="x" data-x="'+esc(t)+'">✕</span></button>').join("")+'<button class="tab add" aria-label="New tab">＋</button>';
+ $("tabs").innerHTML=tabs.map((t,i)=>'<button class="tab'+(i===ai?' act':'')+'" data-t="'+i+'">'+esc(t)+' <span class="x" data-x="'+i+'">✕</span></button>').join("")+'<button class="tab add" id="addtab" aria-label="New tab">＋</button>';
  const nb=k=>'<button class="'+(k===col?'act':'')+'" data-c="'+esc(k)+'">'+esc(k)+'<span class="n">'+C[k][1].filter(f=>S[k+"/"+f[0]]).length+'/'+C[k][1].length+'</span></button>';
  $("side").innerHTML="<h4>Pinned</h4>"+pinned.map(nb).join("")+"<h4>All columns</h4>"+Object.keys(C).map(nb).join("");
  $("crumb").innerHTML='<button data-c="General">FishMod</button><i>›</i><button>'+(q?'Search results':esc(col))+'</button>'+(sel&&!q?'<i>›</i><span>'+esc(sel)+'</span>':'');
@@ -104,10 +104,11 @@ function render(){const q=$("q").value.toLowerCase();
  const all=Object.keys(S).length,en=Object.values(S).filter(Boolean).length;
  $("st").innerHTML='<span>'+list.length+' items</span><span>'+(sel?'1 selected':'')+'</span><span class="sp"></span><span>'+en+' of '+all+' features on</span>';
 }
-document.addEventListener("click",e=>{const t=e.target.closest("[data-x],[data-t],[data-c],[data-k],#dsw,#vg,#vl");if(!t)return;
- if(t.dataset.x){tabs=tabs.filter(x=>x!==t.dataset.x);if(col===t.dataset.x&&tabs.length)col=tabs[0];e.stopPropagation()}
- else if(t.dataset.t)col=t.dataset.t;
- else if(t.dataset.c){col=t.dataset.c;if(!tabs.includes(col))tabs.push(col);$("q").value="";sel=C[col][1][0][0]}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-x],[data-t],[data-c],[data-k],#dsw,#vg,#vl,#addtab");if(!t)return;
+ if(t.id==="addtab"){tabs.push(col);ai=tabs.length-1}
+ else if(t.dataset.x){if(tabs.length>1){const i=+t.dataset.x;tabs.splice(i,1);if(ai>=i&&ai>0)ai--;col=tabs[ai]}}
+ else if(t.dataset.t){ai=+t.dataset.t;col=tabs[ai];$("q").value=""}
+ else if(t.dataset.c){col=t.dataset.c;tabs[ai]=col;$("q").value="";sel=C[col][1][0][0]}
  else if(t.dataset.k){const k=t.dataset.k+"/"+t.dataset.f;if(e.target.dataset.sw)S[k]=!S[k];sel=t.dataset.f}
  else if(t.id==="dsw"){const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel));S[fk+"/"+sel]=!S[fk+"/"+sel]}
  else{view=t.id==="vl"?"list":"grid";$("vg").classList.toggle("on",view==="grid");$("vl").classList.toggle("on",view==="list")}
