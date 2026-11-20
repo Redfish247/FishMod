@@ -104,4 +104,15 @@ object MiningSettings {
     @ConfigValue @JvmField var miningShaftTitleMs: Int = 3000
 
     @ConfigValue @JvmField var miningFallenStar: Boolean = false
+
+    @ConfigValue @JvmField var miningShaftTimer: Boolean = false
+    @ConfigValue @JvmField var miningShaftTimerX: Int = 5
+    @ConfigValue @JvmField var miningShaftTimerY: Int = 140
+    @ConfigValue @JvmField var miningShaftTimerScale: Double = 1.0
+
+    @ConfigValue @JvmField var route: Boolean = false
+    @ConfigValue @JvmField var routePoints: String = ""
+    @ConfigValue @JvmField var routeRadius: Int = 3
+    @ConfigValue @JvmField var routeShowNext: Boolean = true
+    @ConfigValue @JvmField var routeColor: Int = 0xFF55FFFF.toInt()
 }

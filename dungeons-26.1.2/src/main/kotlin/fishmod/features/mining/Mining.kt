@@ -71,6 +71,8 @@ object Mining {
         PowderChests.init()
         Corpses.init()
         FallenStar.init()
+        MineshaftTimer.init()
+        OrderedWaypoints.init()
     }
 
     private var sidebarVersion = -1
