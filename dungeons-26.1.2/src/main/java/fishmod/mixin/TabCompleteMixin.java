@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import com.mojang.brigadier.suggestion.Suggestions;
-import fishmod.features.extras.TabComplete;
+import fishmod.features.chat.TabComplete;
 import net.minecraft.client.gui.components.CommandSuggestions;
 import net.minecraft.client.gui.components.EditBox;
 import org.spongepowered.asm.mixin.Final;

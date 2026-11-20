@@ -1,4 +1,6 @@
 package fishmod.features.garden
+
+import fishmod.features.garden.visitors.Visitors
 import fishmod.compat.curScreen
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents

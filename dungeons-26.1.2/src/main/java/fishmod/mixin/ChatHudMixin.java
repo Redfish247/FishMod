@@ -27,13 +27,13 @@ public class ChatHudMixin {
             String messageText = message.getString();
             fishmod.features.general.Ragnarock.checkP5Taunt(messageText);
 
-            Component folded = fishmod.features.general.ChatFilter.rewrite(message);
+            Component folded = fishmod.features.chat.ChatFilter.rewrite(message);
             if (folded != null) {
                 ci.cancel();
                 ((ChatComponent) (Object) this).addClientSystemMessage(folded);
                 return;
             }
-            if (fishmod.features.general.ChatFilter.isCallerLine(message) || fishmod.features.general.ChatFilter.shouldHide(message)) {
+            if (fishmod.features.chat.ChatFilter.isCallerLine(message) || fishmod.features.chat.ChatFilter.shouldHide(message)) {
                 LOGGER.info("[CHAT] {}", messageText.replace("\r", "\\r").replace("\n", "\\n"));
                 if (!messageText.isBlank()) fishmod.features.extras.ChatHideState.dropPrecedingBlank((ChatComponent) (Object) this);
                 fishmod.features.extras.ChatHideState.noteSuppressed();
@@ -72,7 +72,7 @@ public class ChatHudMixin {
             }
 
             if (FishSettings.chatFeatureEnabled && FishSettings.chatCompact
-                    && fishmod.features.general.CompactChat.tryCompact(message, (ChatComponent) (Object) this, ci)) return;
+                    && fishmod.features.chat.CompactChat.tryCompact(message, (ChatComponent) (Object) this, ci)) return;
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("ChatHudMixin.1", "chat addMessage hook failed", t);
         }

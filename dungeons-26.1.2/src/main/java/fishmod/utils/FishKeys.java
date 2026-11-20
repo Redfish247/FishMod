@@ -101,14 +101,14 @@ public class FishKeys {
             TRACKED.put("wardrobe_slot_" + i, wardrobeSlots[i]);
         }
 
-        petKeybinds = new KeyMapping[fishmod.features.general.PetKeybinds.COUNT];
+        petKeybinds = new KeyMapping[fishmod.features.inventory.PetKeybinds.COUNT];
         for (int i = 0; i < petKeybinds.length; i++) {
             petKeybinds[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                    "Pet: " + fishmod.features.general.PetKeybinds.PETS[i],
+                    "Pet: " + fishmod.features.inventory.PetKeybinds.PETS[i],
                     fishmod.compat.GLFW.KEYSYM,
                     GLFW.GLFW_KEY_UNKNOWN,
                     category));
-            TRACKED.put("pet_key_" + fishmod.features.general.PetKeybinds.PETS[i].toLowerCase().replace(' ', '_'), petKeybinds[i]);
+            TRACKED.put("pet_key_" + fishmod.features.inventory.PetKeybinds.PETS[i].toLowerCase().replace(' ', '_'), petKeybinds[i]);
         }
 
         gardenKeys = new KeyMapping[fishmod.features.garden.GardenKeybinds.NAMES.length];
@@ -266,7 +266,7 @@ public class FishKeys {
             }
 
             while (slotBindCycleProfile.consumeClick()) {
-                fishmod.features.general.SlotBinds.cycleProfile();
+                fishmod.features.inventory.SlotBinds.cycleProfile();
             }
 
             if (trades.consumeClick()) {

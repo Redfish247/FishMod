@@ -5,7 +5,7 @@ import fishmod.features.cosmetics.CustomCrosshair
 import fishmod.features.general.BridgeBot
 import fishmod.features.general.ExperimentProfitTracker
 import fishmod.features.general.Ragnarock
-import fishmod.features.general.SlotBinds
+import fishmod.features.inventory.SlotBinds
 import fishmod.features.hud.ChatCommandsScreen
 import fishmod.features.party.PartyLootScreen
 import fishmod.features.visuals.TimeChanger
@@ -237,9 +237,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Auto-Close GUI", "", "petKeybindsAutoClose"))
             f.sub.add(ToggleSetting("Don't Despawn Active Pet", "Pressing the key for your current pet does nothing", "petKeybindsNoDespawn"))
             f.sub.add(SubcategoryHeader("Open /pets yourself, then press a key to select that pet"))
-            for (i in 0 until fishmod.features.general.PetKeybinds.COUNT) {
+            for (i in 0 until fishmod.features.inventory.PetKeybinds.COUNT) {
                 val idx = i
-                f.sub.add(KeybindSetting(fishmod.features.general.PetKeybinds.PETS[idx], "", { fishmod.utils.FishKeys.petKeybinds?.getOrNull(idx) }))
+                f.sub.add(KeybindSetting(fishmod.features.inventory.PetKeybinds.PETS[idx], "", { fishmod.utils.FishKeys.petKeybinds?.getOrNull(idx) }))
             }
             general.features.add(f)
         }
@@ -248,12 +248,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Hold the bind key + click a hotbar slot then an inv slot to link; shift-left-click to swap"))
             f.sub.add(KeybindSetting("Bind Key (hold)", "Default R", { fishmod.utils.FishKeys.slotBind }))
             f.sub.add(SubcategoryHeader("Profiles — separate bind sets you can switch between"))
-            val slotBindProfiles: Array<String> = fishmod.features.general.SlotBinds.profileNames().toTypedArray()
+            val slotBindProfiles: Array<String> = fishmod.features.inventory.SlotBinds.profileNames().toTypedArray()
             f.sub.add(DropdownSetting("Profile", "", slotBindProfiles,
                 { if (FishSettings.slotBindsProfile in slotBindProfiles) FishSettings.slotBindsProfile else slotBindProfiles[0] },
                 { v -> FishSettings.slotBindsProfile = v }))
-            f.sub.add(ButtonSetting("New Profile", "Fresh empty set", Runnable { fishmod.features.general.SlotBinds.newProfile() }))
-            f.sub.add(ButtonSetting("Delete Profile", "Remove the current set (Default is only cleared)", Runnable { fishmod.features.general.SlotBinds.deleteActiveProfile() }))
+            f.sub.add(ButtonSetting("New Profile", "Fresh empty set", Runnable { fishmod.features.inventory.SlotBinds.newProfile() }))
+            f.sub.add(ButtonSetting("Delete Profile", "Remove the current set (Default is only cleared)", Runnable { fishmod.features.inventory.SlotBinds.deleteActiveProfile() }))
             f.sub.add(KeybindSetting("Cycle Profile Key", "", { fishmod.utils.FishKeys.slotBindCycleProfile }))
             f.sub.add(ToggleSetting("Show Bound Slots", "", "slotBindsShow"))
             f.sub.add(ToggleSetting("Connecting Line", "Draw a line between a bound pair", "slotBindsLine").gatedBy { FishSettings.slotBindsShow })
@@ -2304,12 +2304,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val eventsCol = Column("Events")
         val alertsCol = Column("Alerts & Reminders")
         val visitorsCol = Column("Visitors & Pests")
+        val huntCol = fishmod.features.fishing.FishingMenu.huntingColumn()
+        val itemsCol = Column("Items & Tooltips")
+        val petsCol = Column("Pets")
         fun take(to: Column, names: Set<String>, vararg from: Column) { for (c in from) { val m = c.features.filter { it.name in names }; c.features.removeAll(m); to.features.addAll(m) } }
         take(chatCol, setOf("Chat","Chat Filter","FishMod Chat (/fc)","Messages from RedFish","Mod Prefix","Guild Bridge Bot","Twitch Bridge","Chat Coord Waypoints","Command Tooltip in Chat","Compact Bestiary","SkyBlock XP in Chat","Hide Sky Mall / Lottery Messages","Command Tab Complete","Wiki Lookup"), general, extrasCol)
         take(invStorage, setOf("Inventory Buttons","Inventory Equipment","Hide Inventory Potion Effects","Wardrobe/Loadout Hotkeys","Pet Keybinds","Slot Binds","Slot Locking","Inventory Search","Backpack Preview","Fix Double Clicks","Middle Click Fix","Accessory Bag Upgrade List","Personal Compactor Contents","Stacking Enchant Progress","Item Level Overlay"), general, extrasCol)
         take(eventsCol, setOf("Calendar Real Times","SkyBlock Date HUD","Hoppity Hunt Summary","Hoppity Egg Waypoints","Stray Rabbit Alert","Trick or Treat Chest Alert","Gift Tracker HUD","Hidden Jerry Highlight","Reindrake Alert + Warp Link","Carnival Zombie Shootout Outlines","Fairy Soul Waypoints"), extrasCol)
         take(alertsCol, setOf("Limbo Alert","Server Restart Alert","Booster Cookie Warning","No Bits Available Warning","Kick Cooldown Timer","Order Filled Alert","Auction Outbid Alert","Party Join Sound","Vanquisher Party Share","Quiver Warning"), extrasCol)
         take(visitorsCol, setOf("Visitor Timer","Visitor Arrival Alert","Visitor Shopping List","Visitor Menu Info","Visitor Rare Reward Warning","Visitor Stats","Help Carrolyn","Pest Spawn Title","Pest Finder","Pest Timer HUD"), farmCol)
+        take(huntCol, setOf("HotM / HotF Helper","Moonglade Beacon Solver"), extrasCol)
+        take(itemsCol, setOf("Item Tooltip","Recipe Viewer","Item List","Auto BIN Price","Sign Calculator","Anita Medal Profit"), hud)
+        take(petsCol, setOf("Pet HUD","Pet Swap Title","Hide Pet Nametag Level","Soulflow HUD","Pet Keybinds"), hud, invStorage)
+        take(dungeon, setOf("Catacombs Overflow Levels","Fire Freeze Timer"), hud)
         columns.add(general)
         columns.add(chatCol)
         columns.add(invStorage)
@@ -2320,9 +2327,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(solvers)
         columns.add(floor7)
         columns.add(hud)
+        columns.add(itemsCol)
+        columns.add(petsCol)
         columns.add(slayer)
         columns.add(end)
-        columns.add(fishmod.features.fishing.FishingMenu.huntingColumn())
+        columns.add(huntCol)
         columns.add(fishmod.features.diana.DianaMenu.column())
         columns.add(fishmod.features.fishing.FishingMenu.column())
         columns.add(fishmod.features.mining.MiningMenu.column())

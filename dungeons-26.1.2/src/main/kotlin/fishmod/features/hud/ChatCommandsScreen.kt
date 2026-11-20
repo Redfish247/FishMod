@@ -2,7 +2,7 @@ package fishmod.features.hud
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
-import fishmod.features.general.ChatFilter
+import fishmod.features.chat.ChatFilter
 
 import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag

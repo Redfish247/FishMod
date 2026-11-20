@@ -442,7 +442,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.17", "fishmod.features.dungeon.trackers.CritTracker.init() failed") { fishmod.features.dungeon.trackers.CritTracker.init() }
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
-        FishDiag.guard("FishModInit.CalTimes", "CalendarTimes.init() failed") { fishmod.features.extras.CalendarTimes.init() }
+        FishDiag.guard("FishModInit.CalTimes", "CalendarTimes.init() failed") { fishmod.features.events.CalendarTimes.init() }
         FishDiag.guard("FishModInit.Extras", "Extras.init() failed") { fishmod.features.extras.Extras.init() }
         FishDiag.guard("FishModInit.20", "PetHud.init() failed") { PetHud.init() }
         FishDiag.guard("FishModInit.201", "ExperimentProfitTracker.init() failed") { fishmod.features.general.ExperimentProfitTracker.init() }
@@ -456,12 +456,12 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.26", "fishmod.features.general.CollectionsProgress.init() failed") { fishmod.features.general.CollectionsProgress.init() }
         FishDiag.guard("FishModInit.27", "fishmod.features.general.FireSaleInfo.init() failed") { fishmod.features.general.FireSaleInfo.init() }
         FishDiag.guard("FishModInit.28", "fishmod.features.general.CommandKeys.init() failed") { fishmod.features.general.CommandKeys.init() }
-        FishDiag.guard("FishModInit.29", "fishmod.features.general.WardrobeHotkeys.init() failed") { fishmod.features.general.WardrobeHotkeys.init() }
+        FishDiag.guard("FishModInit.29", "fishmod.features.inventory.WardrobeHotkeys.init() failed") { fishmod.features.inventory.WardrobeHotkeys.init() }
         FishDiag.guard("FishModInit.30", "ItemRarityHotbar.init() failed") { ItemRarityHotbar.init() }
         FishDiag.guard("FishModInit.31", "fishmod.features.hud.ItemQualityTooltip.init() failed") { fishmod.features.hud.ItemQualityTooltip.init() }
         FishDiag.guard("FishModInit.31b", "fishmod.features.hud.ExoticTooltip.init() failed") { fishmod.features.hud.ExoticTooltip.init() }
         FishDiag.guard("FishModInit.31c", "fishmod.features.hud.OriginalNameTooltip.init() failed") { fishmod.features.hud.OriginalNameTooltip.init() }
-        FishDiag.guard("FishModInit.31b", "fishmod.features.hud.ItemOverlays.init() failed") { fishmod.features.hud.ItemOverlays.init() }
+        FishDiag.guard("FishModInit.31b", "fishmod.features.inventory.ItemOverlays.init() failed") { fishmod.features.inventory.ItemOverlays.init() }
         FishDiag.guard("FishModInit.32", "fishmod.features.hud.ItemPriceTooltip.init() failed") { fishmod.features.hud.ItemPriceTooltip.init() }
         FishDiag.guard("FishModInit.32b", "fishmod.features.hud.RecipeViewer.init() failed") { fishmod.features.hud.RecipeViewer.init() }
         FishDiag.guard("FishModInit.32c", "fishmod.features.hud.SkyItemList.init() failed") { fishmod.features.hud.SkyItemList.init() }
@@ -486,9 +486,9 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.47", "fishmod.features.visuals.VisualTweaks.init() failed") { fishmod.features.visuals.VisualTweaks.init() }
         FishDiag.guard("FishModInit.48", "fishmod.features.visuals.RenderOptimizer.init() failed") { fishmod.features.visuals.RenderOptimizer.init() }
         FishDiag.guard("FishModInit.49", "fishmod.features.general.NoCursorReset.init() failed") { fishmod.features.general.NoCursorReset.init() }
-        FishDiag.guard("FishModInit.50", "fishmod.features.general.SlotBinds.init() failed") { fishmod.features.general.SlotBinds.init() }
-        FishDiag.guard("FishModInit.51", "fishmod.features.general.SlotLocking.init() failed") { fishmod.features.general.SlotLocking.init() }
-        FishDiag.guard("FishModInit.52", "fishmod.features.general.InvSearchBar.init() failed") { fishmod.features.general.InvSearchBar.init() }
+        FishDiag.guard("FishModInit.50", "fishmod.features.inventory.SlotBinds.init() failed") { fishmod.features.inventory.SlotBinds.init() }
+        FishDiag.guard("FishModInit.51", "fishmod.features.inventory.SlotLocking.init() failed") { fishmod.features.inventory.SlotLocking.init() }
+        FishDiag.guard("FishModInit.52", "fishmod.features.inventory.InvSearchBar.init() failed") { fishmod.features.inventory.InvSearchBar.init() }
         FishDiag.guard("FishModInit.53", "fishmod.features.general.BridgeBot.init() failed") { fishmod.features.general.BridgeBot.init() }
         FishDiag.guard("FishModInit.54", "twitchbridge.TwitchBridgeClient.init() failed") { twitchbridge.TwitchBridgeClient.init() }
         FishDiag.guard("FishModInit.55", "fishmod.features.visuals.LavaToWater.init() failed") { fishmod.features.visuals.LavaToWater.init() }

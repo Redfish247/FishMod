@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.general.InvSearchBar;
+import fishmod.features.inventory.InvSearchBar;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.gui.screens.Screen;

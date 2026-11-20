@@ -1,4 +1,7 @@
 package fishmod.features.garden
+
+import fishmod.features.garden.visitors.Pests
+import fishmod.features.garden.visitors.Visitors
 import fishmod.compat.curScreen
 
 import com.google.gson.GsonBuilder

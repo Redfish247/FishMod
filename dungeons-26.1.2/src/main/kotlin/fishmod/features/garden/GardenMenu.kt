@@ -1,5 +1,8 @@
 package fishmod.features.garden
 
+import fishmod.features.garden.visitors.Pests
+import fishmod.features.garden.visitors.Visitors
+
 import fishmod.features.FishModScreen.ButtonSetting
 import fishmod.features.FishModScreen.ColorPickerSetting
 import fishmod.features.FishModScreen.Column
