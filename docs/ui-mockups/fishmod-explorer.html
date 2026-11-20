@@ -46,7 +46,7 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 .det{border-left:1px solid var(--line);overflow:auto;padding:16px;font-size:13px}
 .det h3{font:600 18px var(--fd);margin:0 0 4px}.det p{color:var(--mut);margin:0 0 14px;line-height:1.45}
 .set{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:12px}
-.set label{display:flex;justify-content:space-between;align-items:center;gap:8px}.set input[type=range]{width:120px}
+.set label{display:flex;justify-content:space-between;align-items:center;gap:8px}.set input[type=range]{width:100px;accent-color:var(--acc)}.sl{display:flex;align-items:center;gap:6px}.num{width:52px;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:var(--pane);color:var(--fg);font:inherit;font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
 .status{display:flex;gap:16px;padding:5px 12px;font-size:12px;color:var(--mut);border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 .empty{color:var(--mut);padding:30px 0}
 @media(max-width:860px){.main{grid-template-columns:1fr}.side{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:6px}.side h4{display:none}.side button{width:auto;white-space:nowrap}.side .n{display:none}.det{border-left:0;border-top:1px solid var(--line)}.search{width:130px}.list .it .t{width:auto}.list .it .d{display:none}}
@@ -100,7 +100,7 @@ function render(){const q=$("q").value.toLowerCase();
  $("items").className="items"+(view==="list"?" list":"");
  $("items").innerHTML='<h2>'+(q?list.length+' results for “'+esc(q)+'”':esc(col))+'</h2>'+(list.length?'<div class="grid">'+list.map(([k,f])=>{const on=S[k+"/"+f[0]];return '<button class="it'+(f[0]===sel?' sel':'')+'" data-k="'+esc(k)+'" data-f="'+esc(f[0])+'"><div class="row"><span class="sw'+(on?' on':'')+'" data-sw="1" role="switch" aria-checked="'+on+'"></span></div><span class="t">'+esc(f[0])+'</span><span class="d">'+esc(q?k+' · '+f[1]:f[1])+'</span></button>'}).join("")+'</div>':'<p class="empty">No feature matches. Try a shorter word.</p>');
  const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel)),f=fk&&C[fk][1].find(f=>f[0]===sel);
- $("det").innerHTML=f?'<h3>'+esc(f[0])+'</h3><p>'+esc(f[1])+'. In '+esc(fk)+'.</p><div class="set"><label>Enabled <span class="sw'+(S[fk+"/"+f[0]]?' on':'')+'" id="dsw" role="switch"></span></label><label for="c1">Highlight color <input id="c1" type="color" value="#4ea1ff"></label><label for="o1">Opacity <input id="o1" type="range" min="0" max="100" value="70"></label><label for="t1">Text shadow <input id="t1" type="checkbox" checked></label></div>':'<p>Select a feature to see its settings.</p>';
+ $("det").innerHTML=f?'<h3>'+esc(f[0])+'</h3><p>'+esc(f[1])+'. In '+esc(fk)+'.</p><div class="set"><label>Enabled <span class="sw'+(S[fk+"/"+f[0]]?' on':'')+'" id="dsw" role="switch"></span></label><label for="c1">Highlight color <input id="c1" type="color" value="#4ea1ff"></label><label for="o1">Opacity <span class="sl"><input id="o1" type="range" min="0" max="100" value="70"><input id="o1n" class="num" type="number" min="0" max="100" value="70" aria-label="Opacity value"></span></label><label for="w1">Line width <span class="sl"><input id="w1" type="range" min="1" max="10" step="0.5" value="2.5"><input id="w1n" class="num" type="number" min="1" max="10" step="0.5" value="2.5" aria-label="Line width value"></span></label><label for="t1">Text shadow <input id="t1" type="checkbox" checked></label></div>':'<p>Select a feature to see its settings.</p>';
  const all=Object.keys(S).length,en=Object.values(S).filter(Boolean).length;
  $("st").innerHTML='<span>'+list.length+' items</span><span>'+(sel?'1 selected':'')+'</span><span class="sp"></span><span>'+en+' of '+all+' features on</span>';
 }
@@ -112,5 +112,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-x],[data-t
  else if(t.id==="dsw"){const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel));S[fk+"/"+sel]=!S[fk+"/"+sel]}
  else{view=t.id==="vl"?"list":"grid";$("vg").classList.toggle("on",view==="grid");$("vl").classList.toggle("on",view==="list")}
  render()});
-$("q").addEventListener("input",render);render();
+$("q").addEventListener("input",render);
+document.addEventListener("input",e=>{const t=e.target,id=t.id;if(!id||id==="q")return;
+ if(t.type==="range"){const n=$(id+"n");if(n)n.value=t.value}
+ else if(t.classList.contains("num")){const r=$(id.slice(0,-1));if(r&&t.value!==""){const v=Math.min(+r.max,Math.max(+r.min,+t.value));r.value=v}}});
+document.addEventListener("change",e=>{const t=e.target;if(t.classList&&t.classList.contains("num")){const r=$(t.id.slice(0,-1));if(r)t.value=r.value}});render();
 </script>
