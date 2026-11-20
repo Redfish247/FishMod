@@ -27,8 +27,12 @@ object ExoticTooltip {
                 val id = tag.getString("id").orElse("")
                 if (id in SEYMOUR) return@ItemTooltipCallback
                 NeuItems.ensureLoaded()
-                val base = NeuItems.armorColor(id) ?: return@ItemTooltipCallback
-                if (base == rgb) return@ItemTooltipCallback
+                val base = NeuItems.armorColor(id)
+                // Plain dyed armour: just show its hex in its own colour.
+                if (base == null || base == rgb) {
+                    lines.add(Component.literal("§7Hex: ").append(Component.literal("#%06X".format(rgb)).withStyle { it.withColor(rgb) }))
+                    return@ItemTooltipCallback
+                }
                 val type = when {
                     rgb in CRYSTAL -> "§bCRYSTAL"
                     rgb in FAIRY -> "§dFAIRY"
