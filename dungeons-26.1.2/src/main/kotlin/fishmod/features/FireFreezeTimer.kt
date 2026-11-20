@@ -51,6 +51,7 @@ object FireFreezeTimer {
             InteractionResult.PASS
         })
 
+        fishmod.utils.events.FishEvents.worldChange.register { frozen.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
             if (castAt != 0L && System.currentTimeMillis() - castAt <= CATCH_WINDOW_MS) {
                 try { scanFrozen() } catch (t: Throwable) { FishDiag.fail("FireFreezeTimer.4", "tick scan failed frozen=${frozen.size}", t) }

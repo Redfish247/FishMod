@@ -36,6 +36,7 @@ object PlayerSize {
         }
         if (!FishSettings.playerSizeShared) return IDENTITY
         val id = p.getUUID()
+        if (KEYS.size > 512) KEYS.clear()
         val key = KEYS.getOrPut(id) { id.toString().replace("-", "") }
         return RemoteScales.get(key) ?: IDENTITY
     }
