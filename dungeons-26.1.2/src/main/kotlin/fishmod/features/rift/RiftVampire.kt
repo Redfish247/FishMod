@@ -51,9 +51,9 @@ object RiftVampire {
 
         val b = level.getEntitiesOfClass(Player::class.java, area) {
             it !== me && it.isAlive && it.uuid.version() != 4 && Rift.strip(it.name.string).trim() == "Bloodfiend"
-        }.firstOrNull { tagsNear(it, "Spawned by").any { s -> s.contains(name) } }
+        }.firstOrNull { p -> tagsNear(p, name).any { s -> s.contains("$name's SLAYER BOSS") || s.contains("Spawned by") } }
         boss = b
-        canSteak = b != null && b.health <= b.getAttributeBaseValue(Attributes.MAX_HEALTH) * 0.2
+        canSteak = b != null && steakable(b)
         if (b != null && canSteak && S.riftVampireSteakTitle)
             FishUtil.forceTitle(Component.literal("§c§lSTEAK!"), Component.empty(), 300)
         if (b != null && S.riftVampireTwinclaws && tagsNear(b, "TWINCLAWS").any { TWINCLAWS.containsMatchIn(it) }) {
@@ -72,6 +72,23 @@ object RiftVampire {
                 else -> null
             }
         }
+    }
+
+    // Hypixel shows "Bloodfiend III 1,554/1,800♥"; the entity's own health isn't the boss HP
+    private val HP = Regex("Bloodfiend [IVX]+ ([\\d.,]+[kM]?)/([\\d.,]+[kM]?)")
+
+    private fun num(s: String): Double? {
+        val m = when (s.last()) { 'k' -> 1e3; 'M' -> 1e6; else -> 1.0 }
+        return s.trimEnd('k', 'M').replace(",", "").toDoubleOrNull()?.times(m)
+    }
+
+    private fun steakable(b: Player): Boolean {
+        val hp = tagsNear(b, "Bloodfiend").firstNotNullOfOrNull { HP.find(it) }
+        if (hp != null) {
+            val cur = num(hp.groupValues[1]); val max = num(hp.groupValues[2])
+            if (cur != null && max != null && max > 0) return cur <= max * 0.2
+        }
+        return b.health <= b.getAttributeBaseValue(Attributes.MAX_HEALTH) * 0.2
     }
 
     private fun tagsNear(e: Player, contains: String): List<String> {
