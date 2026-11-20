@@ -69,4 +69,14 @@ object ExtrasSettings {
     @ConfigValue @JvmField var enchantNormalColor: Int = 0xFF5555FF.toInt()
     @ConfigValue @JvmField var enchantNormalChroma: Boolean = false
     @ConfigValue @JvmField var enchantBold: Boolean = true
+
+    @ConfigValue @JvmField var cookieWarning: Boolean = false
+    @ConfigValue @JvmField var kickTimer: Boolean = false
+    @ConfigValue @JvmField var sbDateHud: Boolean = false
+    @ConfigValue @JvmField var sbDateHudX: Int = 10
+    @ConfigValue @JvmField var sbDateHudY: Int = 110
+    @ConfigValue @JvmField var sbDateHudScale: Double = 1.0
+    @ConfigValue @JvmField var sbDateHudRealTime: Boolean = true
+    @ConfigValue @JvmField var cfJacobSpam: Boolean = false
+    @ConfigValue @JvmField var vanquisherShare: Boolean = false
 }

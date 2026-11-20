@@ -335,6 +335,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("  Diamond", "", "cfTrophyDiamond").gatedBy { FishSettings.cfTrophyFish })
             f.sub.add(ToggleSetting("Bazaar", "", "cfBazaar"))
             f.sub.add(ToggleSetting("Warping", "", "cfWarping"))
+            f.sub.add(ToggleSetting("Jacob Contest", "Hides Jacob's Anita's Artifact fortune line", fishmod.features.extras.ExtrasSettings::class.java, "cfJacobSpam"))
             f.sub.add(ToggleSetting("Collapse Blank Lines", "Drop repeated empty chat lines", "cfCollapseBlank"))
             f.sub.add(ToggleSetting("Custom Messages", "Hide the messages listed below", "cfCustom"))
             f.sub.add(ButtonSetting("Edit Messages", "Add, test and import messages to hide (partial, exact or regex)", "Open",
