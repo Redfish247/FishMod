@@ -24,15 +24,15 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
 
     companion object {
         private val ACCENT get() = ScreenTheme.ACCENT
-        private val PANEL = 0xF014181D.toInt()
-        private val PANEL2 = 0xFF0F1317.toInt()
-        private val RAISE = 0xFF1B2027.toInt()
-        private val LINE = 0xFF262D36.toInt()
-        private val LINE2 = 0xFF3A3F48.toInt()
-        private val DIM = 0xFF5D6873.toInt()
+        private val PANEL = 0xF0171717.toInt()
+        private val PANEL2 = 0xFF121212.toInt()
+        private val RAISE = 0xFF1F1F1F.toInt()
+        private val LINE = 0xFF2C2C2C.toInt()
+        private val LINE2 = 0xFF3F3F3F.toInt()
+        private val DIM = 0xFF666666.toInt()
         private val GOLD = 0xFFF2C14E.toInt()
-        private const val ACC_SOFT = 0x2424B6B0
-        private val ACC_INK = 0xFF06302F.toInt()
+        private const val ACC_SOFT = 0x24D6D6D6
+        private val ACC_INK = 0xFF232323.toInt()
         private const val S_XS = 6.5f
         private const val S_SM = 7.5f
         private const val S_MD = 8f
@@ -322,8 +322,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val done = AchEngine.unlocked(a)
         val secret = secretHidden(a)
         val xf = x.toFloat(); val yf = y.toFloat(); val wf = w.toFloat(); val hf = TILE_H.toFloat()
-        val top = if (done) 0xFF1B2A2D.toInt() else if (hov) 0xFF1E242B.toInt() else 0xFF181D23.toInt()
-        val bot = if (done) 0xFF13191D.toInt() else 0xFF12161B.toInt()
+        val top = if (done) 0xFF262626.toInt() else if (hov) 0xFF232323.toInt() else 0xFF1C1C1C.toInt()
+        val bot = if (done) 0xFF181818.toInt() else 0xFF151515.toInt()
         UiRecorder.fillRectVGradient(xf, yf, wf, hf, top, bot, 10f)
         UiRecorder.roundedRectRing(xf, yf, wf, hf, 10f, 1f, 0, if (done) ACCENT else if (hov) LINE2 else LINE)
 
@@ -333,8 +333,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val gw = UiRecorder.textWidthBold(glyph, S_LG)
         val dc = AchIcons.diffColor(a.difficulty)
         if (secret) {
-            UiRecorder.disc(bcx, bcy, 12f, 0xFF0D1014.toInt())
-            UiRecorder.textBold(glyph, bcx - gw / 2f, bcy - S_LG / 2f, S_LG, 0xFF3A424B.toInt())
+            UiRecorder.disc(bcx, bcy, 12f, 0xFF101010.toInt())
+            UiRecorder.textBold(glyph, bcx - gw / 2f, bcy - S_LG / 2f, S_LG, 0xFF414141.toInt())
         } else if (done) {
             UiRecorder.disc(bcx, bcy, 15f, (dc and 0xFFFFFF) or 0x33000000)
             UiRecorder.disc(bcx, bcy, 12f, dc)
@@ -345,7 +345,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         }
 
         val name = if (secret) "???" else a.name
-        val nc = if (done) ScreenTheme.TEXT_COLOR else if (secret) DIM else 0xFF9AA4AE.toInt()
+        val nc = if (done) ScreenTheme.TEXT_COLOR else if (secret) DIM else 0xFFA2A2A2.toInt()
         val shownName = clip(name, (w - 14).toFloat(), S_SM)
         UiRecorder.text(shownName, bcx - tw(shownName, S_SM) / 2f, (y + 46).toFloat(), S_SM, nc)
         val ap = " · ${a.points} AP"
@@ -400,7 +400,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         if (cy + ch > vh() - 8) cy = vh() - 8 - ch
         cx = max(8, cx); cy = max(8, cy)
         UiRecorder.dropShadow(cx.toFloat(), cy.toFloat(), cw.toFloat(), ch.toFloat(), 10f, 10f, 0x80000000.toInt())
-        UiRecorder.roundedRectRing(cx.toFloat(), cy.toFloat(), cw.toFloat(), ch.toFloat(), 10f, 1f, 0xFF10141A.toInt(), if (done) ACCENT else LINE2)
+        UiRecorder.roundedRectRing(cx.toFloat(), cy.toFloat(), cw.toFloat(), ch.toFloat(), 10f, 1f, 0xFF131313.toInt(), if (done) ACCENT else LINE2)
         var ty = cy + 10
         val ap = "${a.points} AP"
         UiRecorder.textBold(clip(title, inner - tw(ap, S_SM) - 8, S_MD), (cx + 12).toFloat(), ty.toFloat(), S_MD, ScreenTheme.TEXT_COLOR)

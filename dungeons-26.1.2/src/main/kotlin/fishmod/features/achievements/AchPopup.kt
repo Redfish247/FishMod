@@ -21,7 +21,7 @@ object AchPopup {
     private const val HOLD_MS = 4000L
     private const val OUT_MS = 400L
     private const val GOLD = 0xFFFFC83D.toInt()
-    private const val TEAL = 0xFF24B6B0.toInt()
+    private const val TEAL = 0xFFD6D6D6.toInt()
     private const val BG = 0xFF12151B.toInt()
     private const val TEXT = 0xFFEDF1F5.toInt()
     private const val SUB = 0xFF8A96A3.toInt()

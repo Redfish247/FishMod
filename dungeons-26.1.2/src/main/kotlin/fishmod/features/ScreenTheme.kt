@@ -6,11 +6,11 @@ import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.debug.FishDiag
 
 object ScreenTheme {
-    var ACCENT = 0xFF24B6B0.toInt()
-    var ACCENT_HOVER = 0xFF3AD8D1.toInt()
-    val CARD_BG = 0xFF14181D.toInt()
+    var ACCENT = 0xFFD6D6D6.toInt()
+    var ACCENT_HOVER = 0xFFFFFFFF.toInt()
+    val CARD_BG = 0xFF171717.toInt()
     val TEXT_COLOR = 0xFFEDF1F5.toInt()
-    val SUBTEXT_COLOR = 0xFF8A96A3.toInt()
+    val SUBTEXT_COLOR = 0xFF949494.toInt()
     val DANGER = 0xFFE05A5A.toInt()
     val DANGER_HOVER = 0xFFEE7A7A.toInt()
 
@@ -203,7 +203,7 @@ object ScreenTheme {
         tx = tx.coerceAtLeast(4f)
         val ty = (my - 12f * u).coerceAtMost(screenH - h - 4f).coerceAtLeast(4f)
         UiRecorder.dropShadow(tx, ty, w, h, 5f * u, 6f * u, 0x66000000)
-        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, 0xFF101318.toInt(), FIELD_BORDER_DEFAULT)
+        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, 0xFF131313.toInt(), FIELD_BORDER_DEFAULT)
         var ly = ty + pad
         for ((i, rs) in runs.withIndex()) {
             var px = tx + pad
@@ -215,6 +215,6 @@ object ScreenTheme {
         }
     }
 
-    private val FIELD_BG_DEFAULT = 0xFF1A1E26.toInt()
-    private val FIELD_BORDER_DEFAULT = 0xFF2E333D.toInt()
+    private val FIELD_BG_DEFAULT = 0xFF1E1E1E.toInt()
+    private val FIELD_BORDER_DEFAULT = 0xFF333333.toInt()
 }

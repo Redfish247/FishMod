@@ -46,21 +46,21 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
         val CARD_BG = ScreenTheme.CARD_BG
 
-        val BG_PANEL = 0xF20E1016.toInt()
-        val BG_SECTION = 0xFF171A22.toInt()
-        val BORDER = 0xFF2A2D38.toInt()
-        val FIELD_BG = 0xFF1A1E26.toInt()
-        val FIELD_BORDER = 0xFF2E333D.toInt()
-        val LIST_BG = 0xFF14161D.toInt()
-        val ROW_HOVER = 0xFF1F232D.toInt()
-        val ROW_SEL = 0xFF16292B.toInt()
-        val CARD_ON = 0xFF15222A.toInt()
-        val ACCENT_SOFT = 0x3324B6B0
-        val ACCENT_RING = 0x8024B6B0.toInt()
-        val ACCENT_GLOW = 0x4024B6B0
-        val DIM = 0xFF5C6673.toInt()
-        val DARK_TEXT = 0xFF06110F.toInt()
-        val SWITCH_OFF = 0xFF3A3F4A.toInt()
+        val BG_PANEL = 0xF2101010.toInt()
+        val BG_SECTION = 0xFF1A1A1A.toInt()
+        val BORDER = 0xFF2D2D2D.toInt()
+        val FIELD_BG = 0xFF1E1E1E.toInt()
+        val FIELD_BORDER = 0xFF333333.toInt()
+        val LIST_BG = 0xFF161616.toInt()
+        val ROW_HOVER = 0xFF232323.toInt()
+        val ROW_SEL = 0xFF242424.toInt()
+        val CARD_ON = 0xFF1F1F1F.toInt()
+        val ACCENT_SOFT = 0x33D6D6D6
+        val ACCENT_RING = 0x80D6D6D6.toInt()
+        val ACCENT_GLOW = 0x40D6D6D6
+        val DIM = 0xFF646464.toInt()
+        val DARK_TEXT = 0xFF0D0D0D.toInt()
+        val SWITCH_OFF = 0xFF3F3F3F.toInt()
         val TITLE_YELLOW = 0xFFFFFF55.toInt()
 
         const val HEADER_H = 44
@@ -253,7 +253,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
             text(t.label, x + 8f, segY + 7f, 8f, if (sel) DARK_TEXT else TEXT)
             val cw = (tw(counts[i], 6.5f) + 8).toInt()
             val cx = x + 8 + tw(t.label, 8f).toInt() + 6
-            ScreenTheme.nRoundedRect(cx, segY + 6, cw, 11, 5, if (sel) 0x33000000 else 0xFF262B35.toInt())
+            ScreenTheme.nRoundedRect(cx, segY + 6, cw, 11, 5, if (sel) 0x33000000 else 0xFF2B2B2B.toInt())
             text(counts[i], cx + 4f, segY + 8f, 6.5f, if (sel) DARK_TEXT else SUB)
             hit(x, segY, w, segH) { switchTab(t) }
             x += w
@@ -654,7 +654,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
                 captureChip = intArrayOf(kx, ry + 2, chipW, 18)
             } else {
                 ScreenTheme.nRoundedRectRing(kx, ry + 2, chipW, 18, 5, 1,
-                    if (bound) 0xFF222733.toInt() else FIELD_BG, if (hov) ACCENT else FIELD_BORDER)
+                    if (bound) 0xFF272727.toInt() else FIELD_BG, if (hov) ACCENT else FIELD_BORDER)
             }
             val t = clipText(label, chipW - 10, 7.5f)
             val col = when {

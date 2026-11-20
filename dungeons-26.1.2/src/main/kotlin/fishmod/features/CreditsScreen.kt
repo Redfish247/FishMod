@@ -16,15 +16,15 @@ import kotlin.math.min
 class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Credits")), HasUiOverlay {
 
     companion object {
-        private const val BG_TOP = 0xFF11181F.toInt()
-        private const val BG_BOT = 0xFF070B0F.toInt()
-        private const val BORDER = 0xFF262F3A.toInt()
-        private const val CARD_BG = 0xFF141B22.toInt()
-        private const val CARD_BORDER = 0xFF232D38.toInt()
-        private const val BTN_BG = 0xFF182029.toInt()
-        private const val BTN_BG_HOVER = 0xFF1F2A35.toInt()
+        private const val BG_TOP = 0xFF171717.toInt()
+        private const val BG_BOT = 0xFF0A0A0A.toInt()
+        private const val BORDER = 0xFF2E2E2E.toInt()
+        private const val CARD_BG = 0xFF1A1A1A.toInt()
+        private const val CARD_BORDER = 0xFF2B2B2B.toInt()
+        private const val BTN_BG = 0xFF1F1F1F.toInt()
+        private const val BTN_BG_HOVER = 0xFF282828.toInt()
         private const val SCRIM = 0xB3000000.toInt()
-        private const val ON_ACCENT = 0xFF052A29.toInt()
+        private const val ON_ACCENT = 0xFF1F1F1F.toInt()
         private const val DISCORD = "discord.gg/3mSuQUB8kk"
         private const val DISCORD_URL = "https://discord.gg/3mSuQUB8kk"
 
@@ -40,7 +40,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
             val details: List<String> = emptyList(),
         )
 
-        private val CREATOR = Credit("RedFish", "Creator. Everything else.", 0xFF24B6B0.toInt())
+        private val CREATOR = Credit("RedFish", "Creator. Everything else.", 0xFFD6D6D6.toInt())
 
         private val CREDITS = listOf(
             Credit("BladeMasterGabe", "splits & dungeon features", 0xFFE0A63A.toInt()),
@@ -239,8 +239,8 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
 
     private fun drawCreator(x: Int, y: Int, w: Int, mx: Int, my: Int) {
         UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), CREATOR_H.toFloat(), 8f, CARD_BG)
-        UiRecorder.fillRectHGradient((x + 8).toFloat(), (y + 1).toFloat(), w * 0.7f, (CREATOR_H - 2).toFloat(), 0x3024B6B0, 0x0024B6B0)
-        ScreenTheme.nRoundedRectRing(x, y, w, CREATOR_H, 8, 1, 0, 0x5924B6B0)
+        UiRecorder.fillRectHGradient((x + 8).toFloat(), (y + 1).toFloat(), w * 0.7f, (CREATOR_H - 2).toFloat(), 0x30D6D6D6, 0x00D6D6D6)
+        ScreenTheme.nRoundedRectRing(x, y, w, CREATOR_H, 8, 1, 0, 0x59D6D6D6)
 
         val hs = 28
         val hx = x + 10

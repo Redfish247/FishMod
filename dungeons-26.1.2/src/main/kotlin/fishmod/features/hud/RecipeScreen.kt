@@ -19,15 +19,15 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
 
     private companion object {
         private const val SCRIM = 0xB3000000.toInt()
-        private const val BG = 0xFF12151B.toInt()
-        private const val BORDER = 0xFF2A2D38.toInt()
-        private const val CARD = 0xFF171B22.toInt()
-        private const val CARD_HOVER = 0xFF1E232C.toInt()
-        private const val SLOT = 0xFF0C0F14.toInt()
-        private const val SLOT_BORDER = 0xFF262A33.toInt()
+        private const val BG = 0xFF151515.toInt()
+        private const val BORDER = 0xFF2D2D2D.toInt()
+        private const val CARD = 0xFF1B1B1B.toInt()
+        private const val CARD_HOVER = 0xFF232323.toInt()
+        private const val SLOT = 0xFF0F0F0F.toInt()
+        private const val SLOT_BORDER = 0xFF2A2A2A.toInt()
         private const val GOLD = 0xFFF2C14E.toInt()
         private const val GOLD_SOFT = 0x24F2C14E
-        private const val DIM = 0xFF5A6470.toInt()
+        private const val DIM = 0xFF626262.toInt()
         private const val W = 260
         private const val H = 200
         private const val PAD = 12
@@ -226,7 +226,7 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
         val hov = inside(mx, my, x, y, w, TAB_H)
         val fill = when { selected -> ScreenTheme.ACCENT; hov -> CARD_HOVER; else -> CARD }
         ScreenTheme.nRoundedRectRing(x, y, w, TAB_H, TAB_H / 2, 1, fill, if (selected) ScreenTheme.ACCENT else BORDER)
-        val color = when { selected -> 0xFF06302F.toInt(); hov -> ScreenTheme.TEXT_COLOR; else -> ScreenTheme.SUBTEXT_COLOR }
+        val color = when { selected -> 0xFF232323.toInt(); hov -> ScreenTheme.TEXT_COLOR; else -> ScreenTheme.SUBTEXT_COLOR }
         UiRecorder.text(label, x + w / 2f - UiRecorder.textWidth(label, 6.5f) / 2f, y + 4f, 6.5f, color)
     }
 

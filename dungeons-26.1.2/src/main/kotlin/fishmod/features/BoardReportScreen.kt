@@ -19,12 +19,12 @@ import kotlin.math.min
 class BoardReportScreen(private val parent: Screen?) : Screen(Component.literal("Report")), HasUiOverlay {
 
     companion object {
-        private const val BG_TOP = 0xFF11181F.toInt()
-        private const val BG_BOT = 0xFF070B0F.toInt()
-        private const val BORDER = 0xFF262F3A.toInt()
-        private const val FIELD_BG = 0xFF14181D.toInt()
+        private const val BG_TOP = 0xFF171717.toInt()
+        private const val BG_BOT = 0xFF0A0A0A.toInt()
+        private const val BORDER = 0xFF2E2E2E.toInt()
+        private const val FIELD_BG = 0xFF171717.toInt()
         private const val SCRIM = 0xB3000000.toInt()
-        private const val ON_ACCENT = 0xFF052A29.toInt()
+        private const val ON_ACCENT = 0xFF1F1F1F.toInt()
         private const val OK = 0xFF5FD18A.toInt()
         private const val PAD = 14
         private const val FIELD_H = 20
@@ -98,7 +98,7 @@ class BoardReportScreen(private val parent: Screen?) : Screen(Component.literal(
 
     private fun box(id: String, f: EditBox, x: Int, y: Int, w: Int, active: Boolean, hint: String) {
         f.setFocused(active)
-        ScreenTheme.nRoundedRectRing(x, y, w, FIELD_H, 6, 1, FIELD_BG, if (active) ScreenTheme.ACCENT else 0xFF3A3F48.toInt())
+        ScreenTheme.nRoundedRectRing(x, y, w, FIELD_H, 6, 1, FIELD_BG, if (active) ScreenTheme.ACCENT else 0xFF3F3F3F.toInt())
         if (f.value.isEmpty() && !active) UiRecorder.text(hint, (x + 3).toFloat(), y + (FIELD_H - 7f) / 2f, 7f, ScreenTheme.SUBTEXT_COLOR)
         else FishModScreen.nvgTextFieldContent(f, x, y, w, FIELD_H)
         rects[id] = intArrayOf(x, y, w, FIELD_H)
@@ -107,7 +107,7 @@ class BoardReportScreen(private val parent: Screen?) : Screen(Component.literal(
     private fun pill(id: String, label: String, x: Int, y: Int, w: Int, h: Int, filled: Boolean, mx: Int, my: Int) {
         val hov = inside(mx, my, intArrayOf(x, y, w, h))
         if (filled) ScreenTheme.nRoundedRect(x, y, w, h, h / 2, if (hov) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT)
-        else ScreenTheme.nRoundedRectRing(x, y, w, h, h / 2, 1, 0xFF171C21.toInt(), if (hov) ScreenTheme.ACCENT_HOVER else BORDER)
+        else ScreenTheme.nRoundedRectRing(x, y, w, h, h / 2, 1, 0xFF1B1B1B.toInt(), if (hov) ScreenTheme.ACCENT_HOVER else BORDER)
         val s = 7.5f
         UiRecorder.text(label, x + w / 2f - UiRecorder.textWidth(label, s) / 2f, y + (h - s) / 2f, s, if (filled) ON_ACCENT else ScreenTheme.TEXT_COLOR)
         rects[id] = intArrayOf(x, y, w, h)
