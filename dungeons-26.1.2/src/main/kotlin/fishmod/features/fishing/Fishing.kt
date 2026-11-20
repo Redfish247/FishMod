@@ -42,5 +42,6 @@ object Fishing {
         FishingTrackers.init()
         FishingWorld.init()
         BaitHud.init()
+        ShardTracker.init()
     }
 }
