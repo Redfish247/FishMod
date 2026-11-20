@@ -52,6 +52,11 @@ object GardenExtrasMenu {
         val ang = Feature("Yaw / Pitch Display", X::class.java, "gardenAngles")
         ang.sub.add(ColorPickerSetting("Label Colour", "Nearest chat colour is used", X::class.java, "gardenAnglesColor"))
         col.features.add(ang)
+
+        val bps = Feature("BPS Tracker", X::class.java, "gardenBps")
+        bps.sub.add(ToggleSetting("Crop Speed Meter", "Crops broken per minute by crop type", X::class.java, "gardenCropSpeed"))
+        bps.sub.add(ColorPickerSetting("Label Colour", "Nearest chat colour is used", X::class.java, "gardenBpsColor"))
+        col.features.add(bps)
     }
 
     fun describe(name: String): String? = when (name) {
@@ -65,6 +70,7 @@ object GardenExtrasMenu {
         "Plot Icons" -> "Plot numbers, prices and /gp shortcut"
         "Farming Toolkit Icons" -> "Crop icons in the farming toolkit menu"
         "Yaw / Pitch Display" -> "Your yaw and pitch as a HUD while in the Garden"
+        "BPS Tracker" -> "Crop blocks you break per second (last 5s), optional crops/min per type"
         else -> null
     }
 }

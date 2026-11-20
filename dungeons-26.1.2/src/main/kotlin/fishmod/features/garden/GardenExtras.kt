@@ -24,6 +24,7 @@ object GardenExtras {
         GardenMenus.init()
         GardenPlots.init()
         GardenAngles.init()
+        GardenBps.init()
         ClientCommandRegistrationCallback.EVENT.register { d, _ ->
             d.register(ClientCommands.literal("fmmutations").executes { mutationsLink(); 1 })
         }
