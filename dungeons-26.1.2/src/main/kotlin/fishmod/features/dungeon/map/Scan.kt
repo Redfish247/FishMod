@@ -26,6 +26,10 @@ object Scan {
     @JvmField
     val rooms: MutableSet<Room> = Collections.synchronizedSet(LinkedHashSet())
 
+    // Synchronized collections need their lock held while copying, or a scan mid-copy throws CME
+    @JvmStatic fun roomsSnapshot(): List<Room> = synchronized(rooms) { ArrayList(rooms) }
+    @JvmStatic fun doorsSnapshot(): List<Door> = synchronized(doors) { ArrayList(doors) }
+
     // unknown core hashes already reported this run
     private val missedCores = HashSet<Int>()
     private val loggedMissingCores = HashSet<Int>()
