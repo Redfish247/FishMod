@@ -2791,17 +2791,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val y = navTop() + 4 + i * NAV_ROW - navScroll
                 if (y + NAV_ROW < navTop() || y > navBot()) continue
                 val c = r.second
-                if (c == null) { UiRecorder.text(r.first, (x + 10).toFloat(), y + 7f, 6.6f, SUBTEXT_COLOR); continue }
+                if (c == null) { UiRecorder.text(r.first, (x + 10).toFloat(), y + 6f, 7.4f, SUBTEXT_COLOR); continue }
                 val open = !isFolded(c)
                 val hv = mx in x..x + w && my in y until y + NAV_ROW && my in navTop()..navBot()
                 val ha = hover("nav" + c.name, hv)
                 if (open) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, 0x24FFFFFF)
                 else if (ha > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, fa(ROW_HOVER, ha))
                 val n = "${c.features.count { it.hasMaster() && it.get!!() }}/${c.features.size}"
-                val ns = 0.72f * NVG_BASE_TEXT_SIZE
+                val ns = 0.82f * NVG_BASE_TEXT_SIZE
                 val nw = UiRecorder.textWidth(n, ns)
-                val ts = 0.84f * NVG_BASE_TEXT_SIZE
-                UiRecorder.text(ellipsize(c.name, (w - nw - 26).toInt(), 0.84f), (x + 10).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
+                val ts = 1.0f * NVG_BASE_TEXT_SIZE
+                UiRecorder.text(ellipsize(c.name, (w - nw - 26).toInt(), 1.0f), (x + 10).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
                 UiRecorder.text(n, x + w - 10 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
             }
         } finally { UiRecorder.popScissor() }
