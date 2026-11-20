@@ -15,4 +15,10 @@ object BossToolsSettings {
     @ConfigValue @JvmField var bossIndicatorNether: Boolean = true
     @ConfigValue @JvmField var bossIndicatorOther: Boolean = true
     @ConfigValue @JvmField var bossIndicatorTime: Boolean = true
+
+    @ConfigValue @JvmField var sunGecko: Boolean = false
+    @ConfigValue @JvmField var sunGeckoModifiers: Boolean = true
+    @ConfigValue @JvmField var sunGeckoX: Int = 5
+    @ConfigValue @JvmField var sunGeckoY: Int = 230
+    @ConfigValue @JvmField var sunGeckoScale: Double = 1.0
 }
