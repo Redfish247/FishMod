@@ -41,6 +41,8 @@ object FishConfig {
             fishmod.features.garden.GardenSettings::class.java,
             fishmod.features.garden.GardenExtraSettings::class.java,
             fishmod.features.garden.GardenMilestoneSettings::class.java,
+            fishmod.features.slayers.EndAlertSettings::class.java,
+            fishmod.features.dungeon.DungeonMilestoneSettings::class.java,
             fishmod.features.achievements.AchSettings::class.java
         )
 

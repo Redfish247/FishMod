@@ -15,6 +15,9 @@ object SlayerAlerts {
 
     @JvmStatic
     fun init() {
+        EndAlerts.init()
+        SlayerMiniHighlight.init()
+        GroundItemNames.init()
         FishEvents.worldChange.register { reset(); seenMinis.clear(); false }
         FishEvents.chat.register { text ->
             if (FishSettings.slayerAnyEnabled()) {
