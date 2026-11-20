@@ -21,12 +21,12 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
 
     private companion object {
         private const val SCRIM = 0x99000000.toInt()
-        private const val BG = 0xFF12151B.toInt()
-        private const val BORDER = 0xFF2A2D38.toInt()
-        private const val CARD = 0xFF181C23.toInt()
-        private const val CARD_HOVER = 0xFF1E232C.toInt()
-        private const val LOG_BG = 0xFF0B0E12.toInt()
-        private const val ON_ACCENT = 0xFF06302F.toInt()
+        private const val BG = 0xFF151515.toInt()
+        private const val BORDER = 0xFF2D2D2D.toInt()
+        private const val CARD = 0xFF1C1C1C.toInt()
+        private const val CARD_HOVER = 0xFF232323.toInt()
+        private const val LOG_BG = 0xFF0E0E0E.toInt()
+        private const val ON_ACCENT = 0xFF232323.toInt()
         private const val SUCCESS = 0xFF4FD08A.toInt()
         private const val LOG_SIZE = 6.5f
         private const val LOG_LINE = 9
@@ -142,7 +142,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         ScreenTheme.nPanel(x, y, x + panelW, y + panelH, 10, fade(BG, p), fade(if (bodyHov) ScreenTheme.ACCENT else BORDER, p))
         UiRecorder.fillRect((x + 10).toFloat(), y.toFloat(), (panelW - 20).toFloat(), 2f, fade(ScreenTheme.ACCENT, p))
 
-        ScreenTheme.nRoundedRect(x + pad, y + 12, 24, 24, 6, fade(0x2424B6B0, p))
+        ScreenTheme.nRoundedRect(x + pad, y + 12, 24, 24, 6, fade(0x24D6D6D6, p))
         UiRecorder.fillRect((x + pad + 11).toFloat(), (y + 17).toFloat(), 2f, 11f, fade(ScreenTheme.ACCENT, p))
         UiRecorder.chevron((x + pad + 8).toFloat(), (y + 27).toFloat(), true, fade(ScreenTheme.ACCENT, p))
         val tx = (x + pad + 32).toFloat()
@@ -210,7 +210,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
                 if (UpdateManager.downloadProgress.isNaN()) FishDiag.fail("UpdateScreen.5", "download progress is NaN")
                 ScreenTheme.nRoundedRectRing(updateX, by, updateW, btnH, btnH / 2, 1, fade(CARD, p), fade(ScreenTheme.ACCENT, p))
                 val fillW = ((updateW - 2) * UpdateManager.downloadProgress).toInt()
-                if (fillW > btnH / 2) ScreenTheme.nRoundedRect(updateX + 1, by + 1, fillW, btnH - 2, (btnH - 2) / 2, fade(0x5524B6B0, p))
+                if (fillW > btnH / 2) ScreenTheme.nRoundedRect(updateX + 1, by + 1, fillW, btnH - 2, (btnH - 2) / 2, fade(0x55D6D6D6, p))
                 centered("Downloading ${(UpdateManager.downloadProgress * 100).toInt()}%", updateX + updateW / 2, by, fade(ScreenTheme.TEXT_COLOR, p))
             }
             state == DS.STAGED -> {

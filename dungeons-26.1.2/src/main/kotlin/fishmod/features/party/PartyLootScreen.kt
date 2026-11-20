@@ -809,15 +809,15 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
 
     companion object {
         private val ACCENT get() = ScreenTheme.ACCENT
-        private val PANEL = 0xF014181D.toInt()
-        private val PANEL2 = 0xFF0F1317.toInt()
-        private val RAISE = 0xFF1B2027.toInt()
-        private val LINE = 0xFF262D36.toInt()
-        private val LINE2 = 0xFF3A3F48.toInt()
-        private val DIM = 0xFF5D6873.toInt()
+        private val PANEL = 0xF0171717.toInt()
+        private val PANEL2 = 0xFF121212.toInt()
+        private val RAISE = 0xFF1F1F1F.toInt()
+        private val LINE = 0xFF2C2C2C.toInt()
+        private val LINE2 = 0xFF3F3F3F.toInt()
+        private val DIM = 0xFF666666.toInt()
         private val GOLD = 0xFFF2C14E.toInt()
-        private const val ACC_SOFT = 0x2424B6B0
-        private val ACC_INK = 0xFF06302F.toInt()
+        private const val ACC_SOFT = 0x24D6D6D6
+        private val ACC_INK = 0xFF232323.toInt()
 
         private const val S_XS = 6.5f
         private const val S_SM = 7.5f

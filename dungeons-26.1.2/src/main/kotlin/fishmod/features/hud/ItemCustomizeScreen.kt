@@ -35,27 +35,27 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         const val LEFT_W = 170
         const val ARM_STEP = 28
 
-        val BG_PANEL = 0xF20E1016.toInt()
-        val BG_SECTION = 0xFF171A22.toInt()
-        val PANEL_BORDER = 0xFF2A2D38.toInt()
-        val FIELD_BG = 0xFF1B1E27.toInt()
-        val FIELD_BORDER = 0xFF2E333D.toInt()
+        val BG_PANEL = 0xF2101010.toInt()
+        val BG_SECTION = 0xFF1A1A1A.toInt()
+        val PANEL_BORDER = 0xFF2D2D2D.toInt()
+        val FIELD_BG = 0xFF1E1E1E.toInt()
+        val FIELD_BORDER = 0xFF333333.toInt()
         val ACCENT get() = ScreenTheme.ACCENT
         val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
-        val ACCENT_INK = 0xFF06302F.toInt()
+        val ACCENT_INK = 0xFF232323.toInt()
         val TEXT_PRIM = ScreenTheme.TEXT_COLOR
         val TEXT_HINT = ScreenTheme.SUBTEXT_COLOR
-        val ROW_HOVER = 0xFF2A2D38.toInt()
-        val LIST_BG = 0xFF14161D.toInt()
+        val ROW_HOVER = 0xFF2D2D2D.toInt()
+        val LIST_BG = 0xFF161616.toInt()
         val DANGER = ScreenTheme.DANGER
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
         val WARN = 0xFFF2C14E.toInt()
 
-        val MC_BG = 0xFF171A22.toInt()
-        val MC_EDGE = 0xFF2A2D38.toInt()
-        val MC_SLOT = 0xFF1E2129.toInt()
-        val MC_SLOT_HOVER = 0xFF2C303B.toInt()
-        val MC_SLOT_EDGE = 0xFF2E333D.toInt()
+        val MC_BG = 0xFF1A1A1A.toInt()
+        val MC_EDGE = 0xFF2D2D2D.toInt()
+        val MC_SLOT = 0xFF212121.toInt()
+        val MC_SLOT_HOVER = 0xFF303030.toInt()
+        val MC_SLOT_EDGE = 0xFF333333.toInt()
         val MC_TAG = ScreenTheme.SUBTEXT_COLOR
 
         val ARMOR_SLOTS = intArrayOf(39, 38, 37, 36)
@@ -486,7 +486,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val sel = selected()
         val id = uuidOf(sel)
 
-        ScreenTheme.nRoundedRect(panelX + 12, panelY + 8, 16, 16, 4, 0x3324B6B0)
+        ScreenTheme.nRoundedRect(panelX + 12, panelY + 8, 16, 16, 4, 0x33D6D6D6)
         ScreenTheme.nst("Aa", panelX + 14, panelY + 12, ACCENT, 0.62f)
         ScreenTheme.nst("Item Customize", panelX + 34, panelY + 7, TEXT_PRIM, 0.85f)
         ScreenTheme.nst("Client-side only · only you see it", panelX + 34, panelY + 19, TEXT_HINT, 0.58f)
@@ -549,7 +549,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     }
 
     private fun marker(x: Int, y: Int) {
-        UiRecorder.disc((x + CELL - 4).toFloat(), (y + 4).toFloat(), 2.6f, 0xFF0E1016.toInt())
+        UiRecorder.disc((x + CELL - 4).toFloat(), (y + 4).toFloat(), 2.6f, 0xFF101010.toInt())
         UiRecorder.disc((x + CELL - 4).toFloat(), (y + 4).toFloat(), 1.9f, ACCENT)
     }
 
@@ -579,7 +579,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         ScreenTheme.nst("Custom name", rx, y0, TEXT_HINT, 0.6f)
         ScreenTheme.nTextField(nameField, focusedField === nameField, rx, y0 + 10, rw, 20, 9f)
         if (nameField.value.isEmpty() && focusedField !== nameField)
-            ScreenTheme.nst(clip(selected().hoverName.string, rw - 8, 0.7f), rx + 4, y0 + 16, 0xFF5A6470.toInt(), 0.7f)
+            ScreenTheme.nst(clip(selected().hoverName.string, rw - 8, 0.7f), rx + 4, y0 + 16, 0xFF626262.toInt(), 0.7f)
 
         val cw = 22; val ch = 14; val gap = 3
         var x = rx; var y = y0 + 38

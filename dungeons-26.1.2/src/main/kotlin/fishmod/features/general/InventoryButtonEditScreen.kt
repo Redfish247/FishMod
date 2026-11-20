@@ -22,13 +22,13 @@ class InventoryButtonEditScreen(private val b: InvButton, private val parent: Sc
 
     private companion object {
         const val SCRIM = 0x99000000.toInt()
-        const val BG = 0xFF12151B.toInt()
-        const val BORDER = 0xFF2A2D38.toInt()
-        const val CARD = 0xFF181C23.toInt()
-        const val CARD_HOVER = 0xFF1E232C.toInt()
-        const val ON_ACCENT = 0xFF06302F.toInt()
-        const val HINT = 0xFF5A6470.toInt()
-        const val OFF = 0xFF2E333D.toInt()
+        const val BG = 0xFF151515.toInt()
+        const val BORDER = 0xFF2D2D2D.toInt()
+        const val CARD = 0xFF1C1C1C.toInt()
+        const val CARD_HOVER = 0xFF232323.toInt()
+        const val ON_ACCENT = 0xFF232323.toInt()
+        const val HINT = 0xFF626262.toInt()
+        const val OFF = 0xFF333333.toInt()
     }
 
     private class Field(val box: EditBox, val hint: String, val tip: String)

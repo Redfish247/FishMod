@@ -110,7 +110,7 @@ object TermCustomGui {
                 roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalWrongCover)
                 continue
             } else {
-                roundFill(ctx, cx, cy, cell, cell, round, 0x40101820)
+                roundFill(ctx, cx, cy, cell, cell, round, 0x40171717)
             }
 
             if (st != null && !st.isEmpty) {
