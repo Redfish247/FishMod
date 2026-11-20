@@ -3454,9 +3454,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     val rowHov = mx >= leftX + 2 && mx <= rightX - 2 && my >= rowY && my <= rowY + OPTION_H
                     if (rowHov) roundedRect(ctx, leftX + 4, rowY + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER)
                     if (sw != null) disc(ctx, leftX + 12, rowY + OPTION_H / 2, 4, sw(values[i]))
-                    st(ctx, tr, label(values[i]), leftX + (if (sw != null) 22 else 10), rowY + (OPTION_H - 8) / 2,
-                        if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                    if (selected) UiRecorder.fillRect((leftX + 2).toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                    st(ctx, tr, label(values[i]), leftX + (if (sw != null) 22 else 10), rowY + (OPTION_H - 7) / 2,
+                        if (selected || rowHov) TEXT_COLOR else SUBTEXT_COLOR)
+                    if (selected) UiRecorder.fillRect((leftX + 2).toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), TEXT_COLOR)
                 }
                 if (animating) UiRecorder.popScissor()
             }
@@ -3681,7 +3681,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (hov) roundedRect(ctx, leftX + 4, ry + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER)
                 val sel = id == cur
                 val short = id.removePrefix("minecraft:")
-                st(ctx, tr, short, leftX + 10, ry + (OPTION_H - 8) / 2,
+                st(ctx, tr, short, leftX + 10, ry + (OPTION_H - 7) / 2,
                     if (sel) ACCENT_HOVER else if (hov) TEXT_COLOR else SUBTEXT_COLOR)
                 rowRects.add(intArrayOf(leftX + 2, ry, rightX - 2, ry + OPTION_H) to id)
                 ry += OPTION_H
@@ -3836,12 +3836,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val tabW = (innerX1 - innerX0) / 2
                 val tab0Hov = mx >= innerX0 && mx < innerX0 + tabW && my >= oy && my <= oy + TAB_BAR_H
                 val tab1Hov = mx >= innerX0 + tabW && mx <= innerX1 && my >= oy && my <= oy + TAB_BAR_H
-                st(ctx, tr, "Presets", innerX0 + (tabW - stw(tr, "Presets")) / 2, oy + (TAB_BAR_H - 8) / 2,
-                    if (activeTab == 0) ACCENT_HOVER else (if (tab0Hov) TEXT_COLOR else SUBTEXT_COLOR))
-                st(ctx, tr, "Your Colors", innerX0 + tabW + (tabW - stw(tr, "Your Colors")) / 2, oy + (TAB_BAR_H - 8) / 2,
-                    if (activeTab == 1) ACCENT_HOVER else (if (tab1Hov) TEXT_COLOR else SUBTEXT_COLOR))
+                st(ctx, tr, "Presets", innerX0 + (tabW - stw(tr, "Presets")) / 2, oy + (TAB_BAR_H - 7) / 2,
+                    if (activeTab == 0) TEXT_COLOR else (if (tab0Hov) TEXT_COLOR else SUBTEXT_COLOR))
+                st(ctx, tr, "Your Colors", innerX0 + tabW + (tabW - stw(tr, "Your Colors")) / 2, oy + (TAB_BAR_H - 7) / 2,
+                    if (activeTab == 1) TEXT_COLOR else (if (tab1Hov) TEXT_COLOR else SUBTEXT_COLOR))
                 val underlineX = if (activeTab == 0) innerX0 else innerX0 + tabW
-                UiRecorder.fillRect(underlineX.toFloat(), (oy + TAB_BAR_H - 2).toFloat(), tabW.toFloat(), 2f, ACCENT)
+                UiRecorder.fillRect(underlineX.toFloat(), (oy + TAB_BAR_H - 2).toFloat(), tabW.toFloat(), 2f, TEXT_COLOR)
 
                 var cy = oy + TAB_BAR_H
                 if (activeTab == 0) {
@@ -3851,9 +3851,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                         val rowHov = mx >= innerX0 && mx <= innerX1 && my >= cy && my <= cy + OPTION_H
                         if (rowHov) roundedRect(ctx, innerX0 + 2, cy + 1, innerX1 - innerX0 - 4, OPTION_H - 2, 4, ROW_HOVER)
                         disc(ctx, innerX0 + 10, cy + OPTION_H / 2, 4, dc)
-                        st(ctx, tr, "Default", innerX0 + 20, cy + (OPTION_H - 8) / 2,
-                            if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (cy + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                        st(ctx, tr, "Default", innerX0 + 20, cy + (OPTION_H - 7) / 2,
+                            if (selected || rowHov) TEXT_COLOR else SUBTEXT_COLOR)
+                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (cy + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), TEXT_COLOR)
                         cy += OPTION_H
                     }
                     for (i in PRESET_ARGB.indices) {
@@ -3862,9 +3862,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                         val rowHov = mx >= innerX0 && mx <= innerX1 && my >= rowY && my <= rowY + OPTION_H
                         if (rowHov) roundedRect(ctx, innerX0 + 2, rowY + 1, innerX1 - innerX0 - 4, OPTION_H - 2, 4, ROW_HOVER)
                         disc(ctx, innerX0 + 10, rowY + OPTION_H / 2, 4, PRESET_ARGB[i])
-                        st(ctx, tr, PRESET_NAMES[i], innerX0 + 20, rowY + (OPTION_H - 8) / 2,
-                            if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                        st(ctx, tr, PRESET_NAMES[i], innerX0 + 20, rowY + (OPTION_H - 7) / 2,
+                            if (selected || rowHov) TEXT_COLOR else SUBTEXT_COLOR)
+                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), TEXT_COLOR)
                     }
                 } else {
                     initHexField(tr)
@@ -3880,7 +3880,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     cy += HEX_ROW_H
                     val colors = UserColorStore.all()
                     if (colors.isEmpty()) {
-                        st(ctx, tr, "No custom colors yet - type a hex code above", innerX0 + 4, cy + (OPTION_H - 8) / 2, SUBTEXT_COLOR)
+                        st(ctx, tr, "No custom colors yet - type a hex code above", innerX0 + 4, cy + (OPTION_H - 7) / 2, SUBTEXT_COLOR)
                     }
                     for (i in colors.indices) {
                         val rowY = cy + i * OPTION_H
@@ -3889,9 +3889,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                         val rowHov = mx >= innerX0 && mx <= innerX1 && my >= rowY && my <= rowY + OPTION_H
                         if (rowHov) roundedRect(ctx, innerX0 + 2, rowY + 1, innerX1 - innerX0 - 4, OPTION_H - 2, 4, ROW_HOVER)
                         disc(ctx, innerX0 + 10, rowY + OPTION_H / 2, 4, c)
-                        st(ctx, tr, "#" + Integer.toHexString(c and 0xFFFFFF).padStart(6, '0').uppercase(), innerX0 + 20, rowY + (OPTION_H - 8) / 2,
-                            if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                        st(ctx, tr, "#" + Integer.toHexString(c and 0xFFFFFF).padStart(6, '0').uppercase(), innerX0 + 20, rowY + (OPTION_H - 7) / 2,
+                            if (selected || rowHov) TEXT_COLOR else SUBTEXT_COLOR)
+                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), TEXT_COLOR)
                     }
                 }
             }
