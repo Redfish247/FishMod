@@ -25,9 +25,12 @@ object RiftCaducousStem {
                     net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("stem").executes { debug(); 1 })))
         }
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 4 == 0) scan() }
-        fishmod.utils.events.FishEvents.worldChange.register { tops = emptyList(); false }
+        fishmod.utils.events.FishEvents.worldChange.register { tops = emptyList(); lastBase = null; false }
         RenderHooks.GIZMO.register { _ -> render() }
     }
+
+    private var lastBase: BlockPos? = null
+    private var lastScan = 0
 
     private fun scan() {
         val mc = Minecraft.getInstance()
@@ -35,6 +38,9 @@ object RiftCaducousStem {
         if (!S.riftStem || me == null || level == null || !Rift.inRift() || !RiftDreadfarm.wandHeld()) { tops = emptyList(); return }
         val ar = Rift.area(); if (ar.isNotEmpty() && !ar.contains("Dreadfarm", true)) { tops = emptyList(); return }
         val base = me.blockPosition()
+        // Stems rarely change; rescan when the player moves a block or once a second
+        if (base == lastBase && tick - lastScan < 20) return
+        lastBase = base; lastScan = tick
         val found = ArrayList<BlockPos>()
         val m = BlockPos.MutableBlockPos()
         for (dx in -RADIUS..RADIUS) for (dz in -RADIUS..RADIUS) {
