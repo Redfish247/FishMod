@@ -88,6 +88,9 @@ object ExtrasMenu {
         col.features.add(date)
 
         col.features.add(Feature("Vanquisher Party Share", S::class.java, "vanquisherShare"))
+        col.features.add(Feature("Fix Double Clicks", S::class.java, "fixDoubleClicks"))
+        col.features.add(Feature("Middle Click Fix", S::class.java, "middleClickFix"))
+        col.features.add(Feature("Command Tab Complete", S::class.java, "tabComplete"))
 
         return col
     }
@@ -102,9 +105,12 @@ object ExtrasMenu {
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
         "Booster Cookie Warning" -> "Chat warning on joining SkyBlock when your Cookie Buff is not active"
+        "Command Tab Complete" -> "Tab suggests /warp names, lobby players for /p kick|transfer|promote, /msg etc., and /viewrecipe item ids"
         "Kick Cooldown Timer" -> "Title one minute after a kick/limbo, when you can rejoin SkyBlock"
         "SkyBlock Date HUD" -> "Current SkyBlock date and hour, optionally with real time; move in the HUD editor"
         "Vanquisher Party Share" -> "Sends your coords to party chat when a Vanquisher spawns nearby"
+        "Fix Double Clicks" -> "SkyBlock menus: a double click counts as a normal click, not collect-all"
+        "Middle Click Fix" -> "SkyBlock menus: middle click on a menu item acts as a left click"
         "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
         else -> null
     }
