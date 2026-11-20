@@ -58,7 +58,7 @@ public class PartyCommandHandler {
     }
 
     private static final String CMD_ALT =
-            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|chim|chimera|chimls|inq|inqs|inquis|king|manti|sphinx|core|stinger|wool|food|relic|relics|stick|sticks|hilt|since|burrow|burrows|mob|mobs|profit|playtime|mf|diana|help|\\?|e|[fm][1-7]|t[1-5]";
+            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|chim|chimera|chimls|inq|inqs|inquis|king|manti|sphinx|core|stinger|wool|food|relic|relics|stick|sticks|hilt|since|burrow|burrows|mob|mobs|profit|playtime|mf|diana|holding|help|\\?|e|[fm][1-7]|t[1-5]";
     // Argument keys shown as ghost text in the chat input (#536); keep in sync with the switch in onPartyCommand
     private static final String P = "<player (empty for yourself)>";
     private static final String FLOOR_M7 = "<floor (empty for m7)>";
@@ -73,7 +73,7 @@ public class PartyCommandHandler {
         usage("secrets sa totalruns mp nw networth level sblvl farming nuc nucleus worm scatha bank powder corpse corpses", P);
         usage("runs", P, FLOOR_M7);
         usage("collection", P, "<floor (empty for all)>");
-        usage("help ? dprofit crit fps tps ping ai allinv d warp w ptme");
+        usage("holding help ? dprofit crit fps tps ping ai allinv d warp w ptme");
         usage("kick k promote pro demote dem", "<player>");
         usage("transfer pt", P);
         usage("since", "<chim|chimls|stick|relic|inq|king|manti|sphinx|core|stinger|wool|food>");
@@ -210,6 +210,7 @@ public class PartyCommandHandler {
                 case "farming" -> { if (FishSettings.pcFarming && respond(cmd, typer, isLocal)) sendFarming(mc, ign, responder); }
                 case "nuc", "nucleus" -> { if (FishSettings.pcNuc && respond(cmd, typer, isLocal)) sendNucleus(mc, ign, responder); }
                 case "worm", "scatha" -> { if (FishSettings.pcWorm && respond(cmd, typer, isLocal)) sendWorm(mc, ign, responder); }
+                case "holding" -> { if (FishSettings.pcHolding && respond(cmd, typer, isLocal)) sendHolding(mc, responder); }
                 case "fps"    -> { if (FishSettings.pcFps    && isMe) sendFps(mc, responder);  }
                 case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc, responder);  }
                 case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
@@ -259,6 +260,7 @@ public class PartyCommandHandler {
             case "farming" -> FishSettings.pcFarming;
             case "nuc", "nucleus" -> FishSettings.pcNuc;
             case "worm", "scatha" -> FishSettings.pcWorm;
+            case "holding" -> FishSettings.pcHolding;
             case "fps" -> FishSettings.pcFps;
             case "tps" -> FishSettings.pcTps;
             case "ping" -> FishSettings.pcPing;
@@ -370,6 +372,7 @@ public class PartyCommandHandler {
         if (FishSettings.pcCorpse)     cmds.add("corpses");
         if (FishSettings.pcDprofit)    cmds.add("dprofit");
         if (FishSettings.pcCrit)       cmds.add("crit");
+        if (FishSettings.pcHolding)    cmds.add("holding");
         if (FishSettings.pcFps)        cmds.add("fps");
         if (FishSettings.pcTps)        cmds.add("tps");
         if (FishSettings.pcPing)       cmds.add("ping");
@@ -797,6 +800,14 @@ public class PartyCommandHandler {
         if (v >= 1_000_000d)     return String.format("%.2fM", v / 1_000_000d);
         if (v >= 1_000d)         return String.format("%.1fk", v / 1_000d);
         return String.format("%,d", (long) v);
+    }
+
+    private static void sendHolding(Minecraft mc, String responder) {
+        if (mc.player == null) return;
+        var stack = mc.player.getMainHandItem();
+        // plain text only: server chat commands can't carry item hover data
+        String name = stack.isEmpty() ? "nothing" : HypixelApi.STRIP_COLOR.matcher(stack.getHoverName().getString()).replaceAll("");
+        sendCmd(mc, responder, "Holding: " + name + (stack.getCount() > 1 ? " x" + stack.getCount() : ""));
     }
 
     private static void sendFps(Minecraft mc, String responder) {

@@ -1251,6 +1251,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting(".crit", "", "pcCrit"))
             f.sub.add(ToggleSetting(".corpse", "", "pcCorpse"))
             f.sub.add(ToggleSetting(".f# / .m#", "", "pcJoinFloor"))
+            f.sub.add(ToggleSetting(".holding", "", "pcHolding"))
             f.sub.add(ToggleSetting(".fps", "", "pcFps"))
             f.sub.add(ToggleSetting(".tps", "", "pcTps"))
             f.sub.add(ToggleSetting(".ping", "", "pcPing"))

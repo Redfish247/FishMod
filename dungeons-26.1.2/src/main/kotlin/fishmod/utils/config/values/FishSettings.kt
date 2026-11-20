@@ -357,6 +357,7 @@ object FishSettings {
     @ConfigValue @JvmField var pcRuns: Boolean = false
     @ConfigValue @JvmField var pcJoinFloor: Boolean = false
     @ConfigValue @JvmField var pcFps: Boolean = false
+    @ConfigValue @JvmField var pcHolding: Boolean = false
     @ConfigValue @JvmField var pcTps: Boolean = false
     @ConfigValue @JvmField var pcPing: Boolean = false
     @ConfigValue @JvmField var pcDisband: Boolean = false
