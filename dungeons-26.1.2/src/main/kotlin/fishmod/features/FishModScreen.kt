@@ -2638,7 +2638,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     // title bar (tabs, – □ ✕), command bar, address bar (← → ↑, breadcrumb, search), status bar
     private val TAB_Y get() = top() + 5
     private val TAB_H = 25
-    private val CMD_Y get() = top() + 32
+    private val CMD_Y get() = top() + 33
     private val ADDR_Y get() = top() + 60
     private var listView = false
     private class Btn(val id: String, val label: String, val x: Int, val y: Int, val w: Int, val h: Int)
