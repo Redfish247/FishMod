@@ -99,9 +99,6 @@ object GardenSettings {
 
     @ConfigValue @JvmField var gardenFever: Boolean = false
     @ConfigValue @JvmField var gardenFeverColor: Int = 0xFFFF55FF.toInt()
-    @ConfigValue @JvmField var gardenFeverX: Int = 350
-    @ConfigValue @JvmField var gardenFeverY: Int = 220
-    @ConfigValue @JvmField var gardenFeverScale: Double = 1.0
 
     @ConfigValue @JvmField var gardenFortuneMsg: Boolean = false
     @ConfigValue @JvmField var gardenFortuneMsgText: String = "Bonus Farming Fortune: §f{bonus}"

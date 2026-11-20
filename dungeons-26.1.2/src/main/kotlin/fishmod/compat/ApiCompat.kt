@@ -30,4 +30,3 @@ fun signUpdatePacket(sign: SignBlockEntity, lines: List<String>): ServerboundSig
     ServerboundSignUpdatePacket(sign.blockPos, true, lines[0], lines[1], lines[2], lines[3])
 
 fun com.mojang.blaze3d.vertex.PoseStack.rotate(q: org.joml.Quaternionf) { mulPose(q) }
-fun glTextureId(t: Any?): Int = (t as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: 0

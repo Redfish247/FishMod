@@ -15,16 +15,12 @@ class SeaCreatureCaught(
     val atMs: Long,
 )
 
-class DoubleHook(val atMs: Long)
-
 fun interface SeaCreatureHook { fun onCaught(e: SeaCreatureCaught) }
 fun interface RareDropHook { fun onDrop(e: RareDrop) }
-fun interface DoubleHookHook { fun onDoubleHook(e: DoubleHook) }
 
 object FishingEvents {
     @JvmField val seaCreature = FishEventBus<SeaCreatureHook>()
     @JvmField val rareDrop = FishEventBus<RareDropHook>()
-    @JvmField val doubleHook = FishEventBus<DoubleHookHook>()
 
     private const val DOUBLE_HOOK = "It's a Double Hook!"
     private const val COCOON = "CAUGHT! You cocooned "
@@ -50,8 +46,6 @@ object FishingEvents {
         if (plain.startsWith(DOUBLE_HOOK)) {
             doubleAt = now
             debug("Double Hook")
-            val e = DoubleHook(now)
-            doubleHook.invoke { it.onDoubleHook(e); false }
             return
         }
         if (plain.startsWith(COCOON)) {
