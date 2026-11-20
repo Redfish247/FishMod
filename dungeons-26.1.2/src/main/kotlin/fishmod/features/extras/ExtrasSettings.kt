@@ -72,6 +72,7 @@ object ExtrasSettings {
     @ConfigValue @JvmField var enchantBold: Boolean = true
 
     @ConfigValue @JvmField var cookieWarning: Boolean = false
+    @ConfigValue @JvmField var bitsWarning: Boolean = false
     @ConfigValue @JvmField var kickTimer: Boolean = false
     @ConfigValue @JvmField var sbDateHud: Boolean = false
     @ConfigValue @JvmField var sbDateHudX: Int = 10
