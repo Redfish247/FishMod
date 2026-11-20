@@ -129,7 +129,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("UI Customization", null, null)
             f.sub.add(SubcategoryHeader("Background"))
-            f.sub.add(DropdownSetting("Background Preset", "", arrayOf("Dark Glass", "Deep Blue", "Crimson", "Violet", "Custom"),
+            f.sub.add(DropdownSetting("Background Preset", "", arrayOf("Graphite", "Charcoal", "Obsidian", "Moss", "Wine", "Deep Sea", "Custom"),
                 { FishSettings.fmBgPreset },
                 { v -> FishSettings.fmBgPreset = v }))
             f.sub.add(ColorPickerSetting("Custom Color", "", "fmBgCustomColor").gatedBy { FishSettings.fmBgPreset == "Custom" })
@@ -2549,11 +2549,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun cardBgRgb(): Int {
         return when (FishSettings.fmBgPreset) {
-            "Deep Blue" -> 0x0F1E3D
-            "Crimson" -> 0x3D0F14
-            "Violet" -> 0x2A0F3D
+            "Charcoal" -> 0x2B2B2B
+            "Obsidian" -> 0x0B0B0D
+            "Moss" -> 0x24311F
+            "Wine" -> 0x3A1C24
+            "Deep Sea" -> 0x13262E
             "Custom" -> FishSettings.fmBgCustomColor and 0xFFFFFF
-            else -> 0x14181D
+            else -> 0x1E1E1E
         }
     }
 
