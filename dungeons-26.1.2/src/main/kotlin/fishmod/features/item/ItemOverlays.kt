@@ -52,6 +52,10 @@ object ItemOverlays {
             if (S.overlayPetHideMax && lvl.toInt() >= max) return null
             return lvl
         }
+        if (S.overlayItemStars) {
+            val stars = maxOf(tag.getIntOr("upgrade_level", 0), tag.getIntOr("dungeon_item_level", 0))
+            if (stars > 0) return stars.toString()
+        }
         if (S.overlayMinionTier) MINION_TIER.find(id)?.let { return it.groupValues[1] }
         if (S.overlayCakeYear && id == "NEW_YEAR_CAKE") {
             return tag.getInt("new_years_cake").orElse(0).takeIf { it > 0 }?.toString()
