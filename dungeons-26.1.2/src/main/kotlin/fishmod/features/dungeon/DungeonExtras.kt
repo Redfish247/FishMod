@@ -5,7 +5,7 @@ import fishmod.features.FishHudEditor
 import fishmod.features.HudExample
 import fishmod.features.HudPreview
 import fishmod.features.dungeon.DungeonExtraSettings as S
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.utils.FishUtil
 import fishmod.utils.SidebarCache
 import fishmod.utils.SkyblockLocation

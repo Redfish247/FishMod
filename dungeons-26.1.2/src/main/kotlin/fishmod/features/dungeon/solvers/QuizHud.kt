@@ -1,0 +1,81 @@
+package fishmod.features.dungeon.solvers
+import fishmod.utils.events.chatPlain
+import fishmod.compat.hudHidden
+import fishmod.utils.TextStrip
+
+import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.events.FishEvents
+import net.minecraft.client.DeltaTracker
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.utils.debug.FishDiag
+
+// Quiz countdown (NoammAddons timings): 11s to the first question, 5s after each answer, until all 3 are done.
+object QuizHud {
+
+    private const val NAME = "Quiz Timer"
+
+    private var stage = 0
+    private var ticksLeft = 0
+
+    @JvmStatic
+    fun init() {
+        registerPreview()
+        FishHudEditor.register(
+            NAME,
+            { FishSettings.quizHudX }, { v -> FishSettings.quizHudX = v },
+            { FishSettings.quizHudY }, { v -> FishSettings.quizHudY = v },
+            90, 10,
+            { FishSettings.quizHudScale }, { v -> FishSettings.quizHudScale = v },
+            { FishSettings.quizHudEnabled }
+        )
+        FishEvents.chat.register { text ->
+            val s = text.chatPlain
+            when {
+                s.contains("I am Oruo the Omniscient. I have lived many lives.") -> { stage = 1; ticksLeft = 220 }
+                s.contains("2 questions left... Then you will have proven your worth to me!") -> {
+                    FishDiag.check(stage <= 2, "QuizHud.3") { "quiz stage 2 arrived from stage $stage" }
+                    stage = 2; ticksLeft = 100
+                }
+                s.contains("One more question!") -> {
+                    FishDiag.check(stage == 2 || stage == 3 || stage == 0, "QuizHud.2") { "quiz stage 3 arrived from stage $stage" }
+                    stage = 3; ticksLeft = 100
+                }
+                s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered Question #") && s.endsWith("correctly!") -> {
+                    val n = s.substringAfter("answered Question #").takeWhile { it.isDigit() }.toIntOrNull()
+                    if (n != null && n in 1..2 && stage in 1..n) { stage = n + 1; ticksLeft = 100 }
+                }
+                s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered the final question") -> {
+                    FishDiag.check(stage == 3 || stage == 0, "QuizHud.1") { "quiz finished while at stage $stage" }
+                    stage = 0; ticksLeft = 0
+                }
+            }
+            false
+        }
+        FishEvents.serverTick.register { if (ticksLeft > 0) ticksLeft--; false }
+        FishEvents.worldChange.register { stage = 0; ticksLeft = 0; false }
+    }
+
+    @JvmStatic
+    fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        if (!FishSettings.quizHudEnabled || !SkyblockLocation.inDungeon() || stage == 0 || ticksLeft <= 0) return
+        val mc = Minecraft.getInstance()
+        if (mc.player == null || mc.hudHidden) return
+        val sc = FishSettings.quizHudScale.toFloat()
+        ctx.pose().pushMatrix()
+        ctx.pose().translate(FishSettings.quizHudX.toFloat(), FishSettings.quizHudY.toFloat())
+        ctx.pose().scale(sc, sc)
+        ctx.text(mc.font, label(stage, ticksLeft), 0, 0, -1, true)
+        ctx.pose().popMatrix()
+    }
+
+    private fun label(stage: Int, ticks: Int) = "§dQuiz §7(§f$stage/3§7): §b" + fishmod.utils.Fmt.f1(ticks / 20.0) + "s"
+
+    // Example data: question 2, 4.2s left
+    private fun registerPreview() {
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(2, 84))) }
+    }
+}

@@ -13,7 +13,7 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.world.entity.player.PlayerSkin
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.entity.player.Player
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.hud.fishmodCustomDataTag
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.saveddata.maps.MapDecoration

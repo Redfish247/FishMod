@@ -121,7 +121,7 @@ object DianaTrackerHud {
                     val r = rows(id, h)
                     draw(ctx, r, h.gx(), h.gy(), h.gs(), true)
                     val mode = when (id) { "diana_loot" -> DianaSettings.dianaLootTracker; "diana_mobs" -> DianaSettings.dianaMobTracker; else -> "" }
-                    if (r.isNotEmpty() && mode == "Session") fishmod.features.other.TrackerResetButton.draw(ctx, "diana:$id", h.gx(), h.gy() + (r.size * 10 * h.gs()).toInt() + 2, h.gs(), mx, my) { DianaTracker.resetSession() }
+                    if (r.isNotEmpty() && mode == "Session") fishmod.features.general.TrackerResetButton.draw(ctx, "diana:$id", h.gx(), h.gy() + (r.size * 10 * h.gs()).toInt() + 2, h.gs(), mx, my) { DianaTracker.resetSession() }
                 }
             })
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->

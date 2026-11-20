@@ -8,7 +8,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.decoration.ArmorStand
-import fishmod.features.other.BossToolsSettings as S
+import fishmod.features.slayer.BossToolsSettings as S
 
 // Time Chamber Sun Gecko HUD: HP, revival phase, combo hits and modifiers
 object SunGeckoHelper {

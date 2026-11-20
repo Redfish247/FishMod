@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.chat.ChatTabs;
+import fishmod.features.general.ChatTabs;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;

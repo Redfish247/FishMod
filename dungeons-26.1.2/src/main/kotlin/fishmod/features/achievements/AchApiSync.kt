@@ -127,8 +127,8 @@ object AchApiSync {
         return lvl.toDouble()
     }
 
-    private fun unitPrice(id: String): Double = fishmod.features.croesus.CroesusPrices.bazaarPrice(id, false)?.takeIf { it > 0 }
-        ?: fishmod.features.croesus.CroesusPrices.price(id).takeIf { !it.isNaN() && it > 0 } ?: 0.0
+    private fun unitPrice(id: String): Double = fishmod.features.dungeon.trackers.CroesusPrices.bazaarPrice(id, false)?.takeIf { it > 0 }
+        ?: fishmod.features.dungeon.trackers.CroesusPrices.price(id).takeIf { !it.isNaN() && it > 0 } ?: 0.0
 
     private fun el(o: JsonObject?, path: String): JsonElement? {
         var cur: JsonElement = o ?: return null

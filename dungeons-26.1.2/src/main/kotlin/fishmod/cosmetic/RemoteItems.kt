@@ -4,9 +4,9 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import fishmod.features.item.ItemCustomizationStore
-import fishmod.features.item.ItemCustomizationStore.AnimatedDye
-import fishmod.features.item.ItemCustomizationStore.ArmorTrimId
+import fishmod.features.hud.ItemCustomizationStore
+import fishmod.features.hud.ItemCustomizationStore.AnimatedDye
+import fishmod.features.hud.ItemCustomizationStore.ArmorTrimId
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemTools

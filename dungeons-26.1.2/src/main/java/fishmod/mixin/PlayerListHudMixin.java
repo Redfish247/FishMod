@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.CompactTab;
+import fishmod.features.general.CompactTab;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.rendering.FishHudLayer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;

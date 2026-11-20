@@ -2,7 +2,7 @@ package fishmod.features.extras
 
 import com.google.gson.JsonParser
 import com.mojang.brigadier.arguments.StringArgumentType
-import fishmod.features.croesus.CroesusPrices
+import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.networth.ItemsDb

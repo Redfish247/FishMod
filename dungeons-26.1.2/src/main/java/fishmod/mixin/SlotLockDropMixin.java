@@ -12,7 +12,7 @@ public class SlotLockDropMixin {
     @Inject(method = "drop", at = @At("HEAD"), cancellable = true)
     private void fishmod$slotLockDrop(boolean all, CallbackInfoReturnable<Boolean> cir) {
         try {
-            if (fishmod.features.SlotLocking.onDrop()) cir.setReturnValue(false);
+            if (fishmod.features.general.SlotLocking.onDrop()) cir.setReturnValue(false);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("SlotLockDropMixin.1", "slot lock drop check failed", t);
         }

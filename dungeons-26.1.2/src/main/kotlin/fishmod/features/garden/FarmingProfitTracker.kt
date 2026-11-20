@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder
 import fishmod.features.FishHudEditor
 import fishmod.features.ProfitTrackerKit
 import fishmod.features.ProfitTrackerKit.Row
-import fishmod.features.croesus.CroesusPrices
+import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishMsg
 import fishmod.utils.events.FishEvents
@@ -91,7 +91,7 @@ object FarmingProfitTracker {
                 val sc = S.gardenProfitHudScale
                 MiningHuds.draw(ctx, l, S.gardenProfitHudX, S.gardenProfitHudY, sc)
                 if (S.gardenProfitMode != "Total")
-                    fishmod.features.other.TrackerResetButton.draw(ctx, "farming", S.gardenProfitHudX, S.gardenProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) { resetSession() }
+                    fishmod.features.general.TrackerResetButton.draw(ctx, "farming", S.gardenProfitHudX, S.gardenProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) { resetSession() }
             })
             ScreenMouseEvents.allowMouseScroll(screen).register(ScreenMouseEvents.AllowMouseScroll { _, mx, my, _, v ->
                 !(shown() && over(mx, my) && scrollBy(if (v > 0) -1 else 1))

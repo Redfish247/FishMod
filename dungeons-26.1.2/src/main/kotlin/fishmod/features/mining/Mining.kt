@@ -1,4 +1,6 @@
 package fishmod.features.mining
+
+import fishmod.features.hunting.MiningForagingMisc
 import fishmod.compat.cam
 import fishmod.compat.hudHidden
 

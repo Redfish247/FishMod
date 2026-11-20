@@ -1,8 +1,8 @@
 package fishmod.features.garden
 
 import fishmod.compat.curScreen
-import fishmod.features.croesus.CroesusPrices
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.dungeon.trackers.CroesusPrices
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.features.mining.Mining
 import fishmod.utils.FishUtil
 import fishmod.utils.data.ItemTools

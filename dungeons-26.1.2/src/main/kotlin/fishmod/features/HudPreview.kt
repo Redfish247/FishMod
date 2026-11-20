@@ -1,5 +1,7 @@
 package fishmod.features
 
+import fishmod.features.general.Ragnarock
+
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft

@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.LavaToWater;
+import fishmod.features.visuals.LavaToWater;
 import net.minecraft.client.renderer.block.FluidModel;
 import net.minecraft.client.renderer.block.FluidStateModelSet;
 import net.minecraft.world.level.material.FluidState;

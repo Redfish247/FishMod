@@ -180,7 +180,7 @@ object ItemsDb {
             nameToId = nextNames
             npcSellPrice = nextNpc
             fishmod.utils.debug.FishDebug.LOGGER.info("[ItemsDb] indexed {} items ({} names, {} with NPC sell price)", next.size, nextNames.size, nextNpc.size)
-            FishDiag.guard("ItemsDb.14", "apply croesus price mode after items index") { fishmod.features.croesus.CroesusPrices.applyPriceMode() }
+            FishDiag.guard("ItemsDb.14", "apply croesus price mode after items index") { fishmod.features.dungeon.trackers.CroesusPrices.applyPriceMode() }
         }
     }
 }

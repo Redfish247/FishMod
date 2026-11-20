@@ -116,7 +116,7 @@ object MiningMenu {
         col.features.add(md)
         col.features.add(Feature("Mute High Heat", S::class.java, "miningMuteHeat"))
         col.features.add(Feature("Gemstone Desync Fix", S::class.java, "miningGemDesyncFix"))
-        val ghost = Feature("Ghost Counter", fishmod.features.other.BossToolsSettings::class.java, "ghostCounter")
+        val ghost = Feature("Ghost Counter", fishmod.features.slayer.BossToolsSettings::class.java, "ghostCounter")
         ghost.sub.add(ButtonSetting("Reset Counts", "", "Reset") { GhostCounter.reset() })
         col.features.add(ghost)
 

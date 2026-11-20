@@ -6,17 +6,17 @@ import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.suggestion.SuggestionProvider
-import fishmod.features.CooldownOverlay
+import fishmod.features.hud.CooldownOverlay
 import fishmod.features.FishHudEditor
-import fishmod.features.ItemRarityHotbar
-import fishmod.features.PetHud
-import fishmod.features.SoulflowHud
+import fishmod.features.visuals.ItemRarityHotbar
+import fishmod.features.hud.PetHud
+import fishmod.features.hud.SoulflowHud
 import fishmod.features.dungeon.DungeonDeathMessage
 import fishmod.features.dungeon.FishEstTotal
-import fishmod.features.dungeon.FishPuzzleDisplay
+import fishmod.features.dungeon.solvers.FishPuzzleDisplay
 import fishmod.features.dungeon.LagTracker
-import fishmod.features.dungeon.PartyCommandHandler
-import fishmod.features.dungeon.SessionStats
+import fishmod.features.party.PartyCommandHandler
+import fishmod.features.dungeon.trackers.SessionStats
 import fishmod.utils.FishConstants
 import fishmod.utils.FishKeys
 import fishmod.utils.SkyblockLocation
@@ -74,12 +74,12 @@ class FishModInit : ClientModInitializer {
         private fun runLocalLookup(cmd: String, arg1: String?, arg2: String?, arg3: String?): Int {
             val mc = Minecraft.getInstance()
             val self = mc.player?.gameProfile?.name ?: return FishConstants.SUCCESS
-            if (!fishmod.features.dungeon.PartyCommandHandler.localEnabled(cmd)) {
+            if (!fishmod.features.party.PartyCommandHandler.localEnabled(cmd)) {
                 mc.connection?.send(net.minecraft.network.protocol.game.ServerboundChatCommandPacket(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" ")))
                 return FishConstants.SUCCESS
             }
-            fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
-                self, cmd, arg1, arg2, arg3, fishmod.features.dungeon.PartyCommandHandler.LOCAL
+            fishmod.features.party.PartyCommandHandler.onPartyCommand(
+                self, cmd, arg1, arg2, arg3, fishmod.features.party.PartyCommandHandler.LOCAL
             )
             return FishConstants.SUCCESS
         }
@@ -124,10 +124,10 @@ class FishModInit : ClientModInitializer {
         private fun sackSubcommand(alias: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> =
             ClientCommands.literal(alias)
                 .then(ClientCommands.argument("amount", IntegerArgumentType.integer(1)).executes { ctx ->
-                    fishmod.features.other.SackFill.fill(alias, IntegerArgumentType.getInteger(ctx, "amount"))
+                    fishmod.features.general.SackFill.fill(alias, IntegerArgumentType.getInteger(ctx, "amount"))
                     FishConstants.SUCCESS
                 })
-                .executes { fishmod.features.other.SackFill.fill(alias, null); FishConstants.SUCCESS }
+                .executes { fishmod.features.general.SackFill.fill(alias, null); FishConstants.SUCCESS }
 
         @JvmStatic
         private fun waypointSubcommand(name: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
@@ -296,21 +296,21 @@ class FishModInit : ClientModInitializer {
             return tree
         }
 
-        private fun chatNotificationsSubcommand(name: String, tab: fishmod.features.ChatCommandsScreen.Tab = fishmod.features.ChatCommandsScreen.Tab.NOTIFICATIONS): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
+        private fun chatNotificationsSubcommand(name: String, tab: fishmod.features.hud.ChatCommandsScreen.Tab = fishmod.features.hud.ChatCommandsScreen.Tab.NOTIFICATIONS): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
             return ClientCommands.literal(name)
                 .executes {
                     Minecraft.getInstance().schedule {
-                        Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(tab))
+                        Minecraft.getInstance().showScreen(fishmod.features.hud.ChatCommandsScreen(tab))
                     }
                     FishConstants.SUCCESS
                 }
                 .then(ClientCommands.literal("on").executes {
-                    fishmod.features.chat.ChatRuleStore.setMasterEnabled(true)
+                    fishmod.features.extras.ChatRuleStore.setMasterEnabled(true)
                     FishUtil.addChatMessage(Component.literal("§b[FM] Chat Notifications: §aON"))
                     FishConstants.SUCCESS
                 })
                 .then(ClientCommands.literal("off").executes {
-                    fishmod.features.chat.ChatRuleStore.setMasterEnabled(false)
+                    fishmod.features.extras.ChatRuleStore.setMasterEnabled(false)
                     FishUtil.addChatMessage(Component.literal("§b[FM] Chat Notifications: §cOFF"))
                     FishConstants.SUCCESS
                 })
@@ -422,8 +422,8 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.3", "fishmod.cosmetic.RemoteNicks.init() failed") { fishmod.cosmetic.RemoteNicks.init() }
         FishDiag.guard("FishModInit.3b", "fishmod.cosmetic.RemoteItems.init() failed") { fishmod.cosmetic.RemoteItems.init() }
         FishDiag.guard("FishModInit.4", "fishmod.cosmetic.PlayerSize.init() failed") { fishmod.cosmetic.PlayerSize.init() }
-        FishDiag.guard("FishModInit.MeleeHit", "MeleeHitSound.init() failed") { fishmod.features.MeleeHitSound.init() }
-        FishDiag.guard("FishModInit.5", "fishmod.features.NametagStats.init() failed") { fishmod.features.NametagStats.init() }
+        FishDiag.guard("FishModInit.MeleeHit", "MeleeHitSound.init() failed") { fishmod.features.general.MeleeHitSound.init() }
+        FishDiag.guard("FishModInit.5", "fishmod.features.cosmetics.NametagStats.init() failed") { fishmod.features.cosmetics.NametagStats.init() }
         FishDiag.guard("FishModInit.6", "fishmod.cosmetic.RemoteSync.init() failed") { fishmod.cosmetic.RemoteSync.init() }
         FishDiag.guard("FishModInit.6b", "fishmod.cosmetic.CosmeticLive.init() failed") { fishmod.cosmetic.CosmeticLive.init() }
         FishDiag.guard("FishModInit.6c", "fishmod.cosmetic.FishChat.init() failed") { fishmod.cosmetic.FishChat.init() }
@@ -438,70 +438,70 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.13", "FishPuzzleDisplay.init() failed") { FishPuzzleDisplay.init() }
         FishDiag.guard("FishModInit.14", "FishEstTotal.init() failed") { FishEstTotal.init() }
         FishDiag.guard("FishModInit.15", "DungeonDeathMessage.init() failed") { DungeonDeathMessage.init() }
-        FishDiag.guard("FishModInit.16", "fishmod.features.ExplosiveShotHud.init() failed") { fishmod.features.ExplosiveShotHud.init() }
-        FishDiag.guard("FishModInit.17", "fishmod.features.CritTracker.init() failed") { fishmod.features.CritTracker.init() }
+        FishDiag.guard("FishModInit.16", "fishmod.features.dungeon.ExplosiveShotHud.init() failed") { fishmod.features.dungeon.ExplosiveShotHud.init() }
+        FishDiag.guard("FishModInit.17", "fishmod.features.dungeon.trackers.CritTracker.init() failed") { fishmod.features.dungeon.trackers.CritTracker.init() }
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
         FishDiag.guard("FishModInit.CalTimes", "CalendarTimes.init() failed") { fishmod.features.extras.CalendarTimes.init() }
         FishDiag.guard("FishModInit.Extras", "Extras.init() failed") { fishmod.features.extras.Extras.init() }
         FishDiag.guard("FishModInit.20", "PetHud.init() failed") { PetHud.init() }
-        FishDiag.guard("FishModInit.201", "ExperimentProfitTracker.init() failed") { fishmod.features.ExperimentProfitTracker.init() }
-        FishDiag.guard("FishModInit.203", "AnitaShop.init() failed") { fishmod.features.item.AnitaShop.init() }
+        FishDiag.guard("FishModInit.201", "ExperimentProfitTracker.init() failed") { fishmod.features.general.ExperimentProfitTracker.init() }
+        FishDiag.guard("FishModInit.203", "AnitaShop.init() failed") { fishmod.features.hud.AnitaShop.init() }
         FishDiag.guard("FishModInit.21", "CooldownOverlay.init() failed") { CooldownOverlay.init() }
-        FishDiag.guard("FishModInit.HuntaxeLock", "HuntaxeLock.init() failed") { fishmod.features.HuntaxeLock.init() }
-        FishDiag.guard("FishModInit.22", "fishmod.features.croesus.CroesusLootDetector.init() failed") { fishmod.features.croesus.CroesusLootDetector.init() }
-        FishDiag.guard("FishModInit.23", "fishmod.features.CatacombsOverflowOverlay.init() failed") { fishmod.features.CatacombsOverflowOverlay.init() }
-        FishDiag.guard("FishModInit.24", "fishmod.features.scoreboard.SkillLevels.init() failed") { fishmod.features.scoreboard.SkillLevels.init() }
-        FishDiag.guard("FishModInit.25", "fishmod.features.scoreboard.BestiaryProgress.init() failed") { fishmod.features.scoreboard.BestiaryProgress.init() }
-        FishDiag.guard("FishModInit.26", "fishmod.features.scoreboard.CollectionsProgress.init() failed") { fishmod.features.scoreboard.CollectionsProgress.init() }
-        FishDiag.guard("FishModInit.27", "fishmod.features.scoreboard.FireSaleInfo.init() failed") { fishmod.features.scoreboard.FireSaleInfo.init() }
-        FishDiag.guard("FishModInit.28", "fishmod.features.other.CommandKeys.init() failed") { fishmod.features.other.CommandKeys.init() }
-        FishDiag.guard("FishModInit.29", "fishmod.features.other.WardrobeHotkeys.init() failed") { fishmod.features.other.WardrobeHotkeys.init() }
+        FishDiag.guard("FishModInit.HuntaxeLock", "HuntaxeLock.init() failed") { fishmod.features.general.HuntaxeLock.init() }
+        FishDiag.guard("FishModInit.22", "fishmod.features.dungeon.trackers.CroesusLootDetector.init() failed") { fishmod.features.dungeon.trackers.CroesusLootDetector.init() }
+        FishDiag.guard("FishModInit.23", "fishmod.features.hud.CatacombsOverflowOverlay.init() failed") { fishmod.features.hud.CatacombsOverflowOverlay.init() }
+        FishDiag.guard("FishModInit.24", "fishmod.features.general.SkillLevels.init() failed") { fishmod.features.general.SkillLevels.init() }
+        FishDiag.guard("FishModInit.25", "fishmod.features.general.BestiaryProgress.init() failed") { fishmod.features.general.BestiaryProgress.init() }
+        FishDiag.guard("FishModInit.26", "fishmod.features.general.CollectionsProgress.init() failed") { fishmod.features.general.CollectionsProgress.init() }
+        FishDiag.guard("FishModInit.27", "fishmod.features.general.FireSaleInfo.init() failed") { fishmod.features.general.FireSaleInfo.init() }
+        FishDiag.guard("FishModInit.28", "fishmod.features.general.CommandKeys.init() failed") { fishmod.features.general.CommandKeys.init() }
+        FishDiag.guard("FishModInit.29", "fishmod.features.general.WardrobeHotkeys.init() failed") { fishmod.features.general.WardrobeHotkeys.init() }
         FishDiag.guard("FishModInit.30", "ItemRarityHotbar.init() failed") { ItemRarityHotbar.init() }
-        FishDiag.guard("FishModInit.31", "fishmod.features.item.ItemQualityTooltip.init() failed") { fishmod.features.item.ItemQualityTooltip.init() }
-        FishDiag.guard("FishModInit.31b", "fishmod.features.item.ExoticTooltip.init() failed") { fishmod.features.item.ExoticTooltip.init() }
-        FishDiag.guard("FishModInit.31c", "fishmod.features.item.OriginalNameTooltip.init() failed") { fishmod.features.item.OriginalNameTooltip.init() }
-        FishDiag.guard("FishModInit.31b", "fishmod.features.item.ItemOverlays.init() failed") { fishmod.features.item.ItemOverlays.init() }
-        FishDiag.guard("FishModInit.32", "fishmod.features.item.ItemPriceTooltip.init() failed") { fishmod.features.item.ItemPriceTooltip.init() }
-        FishDiag.guard("FishModInit.32b", "fishmod.features.item.RecipeViewer.init() failed") { fishmod.features.item.RecipeViewer.init() }
-        FishDiag.guard("FishModInit.32c", "fishmod.features.item.SkyItemList.init() failed") { fishmod.features.item.SkyItemList.init() }
-        FishDiag.guard("FishModInit.32c", "fishmod.features.item.TooltipPinBottom.init() failed") { fishmod.features.item.TooltipPinBottom.init() }
-        FishDiag.guard("FishModInit.33", "fishmod.features.item.ContainerValue.init() failed") { fishmod.features.item.ContainerValue.init() }
-        FishDiag.guard("FishModInit.34", "fishmod.features.item.AuctionPriceAutofill.init() failed") { fishmod.features.item.AuctionPriceAutofill.init() }
-        FishDiag.guard("FishModInit.34b", "fishmod.features.item.SignCalculator.init() failed") { fishmod.features.item.SignCalculator.init() }
+        FishDiag.guard("FishModInit.31", "fishmod.features.hud.ItemQualityTooltip.init() failed") { fishmod.features.hud.ItemQualityTooltip.init() }
+        FishDiag.guard("FishModInit.31b", "fishmod.features.hud.ExoticTooltip.init() failed") { fishmod.features.hud.ExoticTooltip.init() }
+        FishDiag.guard("FishModInit.31c", "fishmod.features.hud.OriginalNameTooltip.init() failed") { fishmod.features.hud.OriginalNameTooltip.init() }
+        FishDiag.guard("FishModInit.31b", "fishmod.features.hud.ItemOverlays.init() failed") { fishmod.features.hud.ItemOverlays.init() }
+        FishDiag.guard("FishModInit.32", "fishmod.features.hud.ItemPriceTooltip.init() failed") { fishmod.features.hud.ItemPriceTooltip.init() }
+        FishDiag.guard("FishModInit.32b", "fishmod.features.hud.RecipeViewer.init() failed") { fishmod.features.hud.RecipeViewer.init() }
+        FishDiag.guard("FishModInit.32c", "fishmod.features.hud.SkyItemList.init() failed") { fishmod.features.hud.SkyItemList.init() }
+        FishDiag.guard("FishModInit.32c", "fishmod.features.hud.TooltipPinBottom.init() failed") { fishmod.features.hud.TooltipPinBottom.init() }
+        FishDiag.guard("FishModInit.33", "fishmod.features.inventory.ContainerValue.init() failed") { fishmod.features.inventory.ContainerValue.init() }
+        FishDiag.guard("FishModInit.34", "fishmod.features.hud.AuctionPriceAutofill.init() failed") { fishmod.features.hud.AuctionPriceAutofill.init() }
+        FishDiag.guard("FishModInit.34b", "fishmod.features.hud.SignCalculator.init() failed") { fishmod.features.hud.SignCalculator.init() }
         FishDiag.guard("FishModInit.35", "MayorApi.init() failed") { MayorApi.init() }
-        FishDiag.guard("FishModInit.36", "fishmod.features.FireFreezeTimer.init() failed") { fishmod.features.FireFreezeTimer.init() }
-        FishDiag.guard("FishModInit.37", "fishmod.features.LoadoutTitle.init() failed") { fishmod.features.LoadoutTitle.init() }
-        FishDiag.guard("FishModInit.38", "fishmod.features.AutoSprint.init() failed") { fishmod.features.AutoSprint.init() }
-        FishDiag.guard("FishModInit.39", "fishmod.features.PartyWarpTimer.init() failed") { fishmod.features.PartyWarpTimer.init() }
+        FishDiag.guard("FishModInit.36", "fishmod.features.hud.FireFreezeTimer.init() failed") { fishmod.features.hud.FireFreezeTimer.init() }
+        FishDiag.guard("FishModInit.37", "fishmod.features.hud.LoadoutTitle.init() failed") { fishmod.features.hud.LoadoutTitle.init() }
+        FishDiag.guard("FishModInit.38", "fishmod.features.general.AutoSprint.init() failed") { fishmod.features.general.AutoSprint.init() }
+        FishDiag.guard("FishModInit.39", "fishmod.features.dungeon.PartyWarpTimer.init() failed") { fishmod.features.dungeon.PartyWarpTimer.init() }
         FishDiag.guard("FishModInit.40x", "DungeonExtras.init() failed") { fishmod.features.dungeon.DungeonExtras.init() }
         FishDiag.guard("FishModInit.40m", "DungeonMilestoneHud.init() failed") { fishmod.features.dungeon.DungeonMilestoneHud.init() }
         FishDiag.guard("FishModInit.40", "fishmod.features.dungeon.DungeonBreaker.init() failed") { fishmod.features.dungeon.DungeonBreaker.init() }
-        FishDiag.guard("FishModInit.41", "fishmod.features.BlockOverlay.init() failed") { fishmod.features.BlockOverlay.init() }
-        FishDiag.guard("FishModInit.42", "fishmod.features.CameraTweaks.init() failed") { fishmod.features.CameraTweaks.init() }
-        FishDiag.guard("FishModInit.43", "fishmod.features.GyroHelper.init() failed") { fishmod.features.GyroHelper.init() }
+        FishDiag.guard("FishModInit.41", "fishmod.features.visuals.BlockOverlay.init() failed") { fishmod.features.visuals.BlockOverlay.init() }
+        FishDiag.guard("FishModInit.42", "fishmod.features.visuals.CameraTweaks.init() failed") { fishmod.features.visuals.CameraTweaks.init() }
+        FishDiag.guard("FishModInit.43", "fishmod.features.general.GyroHelper.init() failed") { fishmod.features.general.GyroHelper.init() }
         FishDiag.guard("FishModInit.44", "fishmod.features.dungeon.MageBeam.init() failed") { fishmod.features.dungeon.MageBeam.init() }
-        FishDiag.guard("FishModInit.45", "fishmod.features.SpringBoots.init() failed") { fishmod.features.SpringBoots.init() }
-        FishDiag.guard("FishModInit.46", "fishmod.features.Ragnarock.init() failed") { fishmod.features.Ragnarock.init() }
-        FishDiag.guard("FishModInit.47", "fishmod.features.VisualTweaks.init() failed") { fishmod.features.VisualTweaks.init() }
-        FishDiag.guard("FishModInit.48", "fishmod.features.RenderOptimizer.init() failed") { fishmod.features.RenderOptimizer.init() }
-        FishDiag.guard("FishModInit.49", "fishmod.features.NoCursorReset.init() failed") { fishmod.features.NoCursorReset.init() }
-        FishDiag.guard("FishModInit.50", "fishmod.features.SlotBinds.init() failed") { fishmod.features.SlotBinds.init() }
-        FishDiag.guard("FishModInit.51", "fishmod.features.SlotLocking.init() failed") { fishmod.features.SlotLocking.init() }
-        FishDiag.guard("FishModInit.52", "fishmod.features.other.InvSearchBar.init() failed") { fishmod.features.other.InvSearchBar.init() }
-        FishDiag.guard("FishModInit.53", "fishmod.features.BridgeBot.init() failed") { fishmod.features.BridgeBot.init() }
+        FishDiag.guard("FishModInit.45", "fishmod.features.hud.SpringBoots.init() failed") { fishmod.features.hud.SpringBoots.init() }
+        FishDiag.guard("FishModInit.46", "fishmod.features.general.Ragnarock.init() failed") { fishmod.features.general.Ragnarock.init() }
+        FishDiag.guard("FishModInit.47", "fishmod.features.visuals.VisualTweaks.init() failed") { fishmod.features.visuals.VisualTweaks.init() }
+        FishDiag.guard("FishModInit.48", "fishmod.features.visuals.RenderOptimizer.init() failed") { fishmod.features.visuals.RenderOptimizer.init() }
+        FishDiag.guard("FishModInit.49", "fishmod.features.general.NoCursorReset.init() failed") { fishmod.features.general.NoCursorReset.init() }
+        FishDiag.guard("FishModInit.50", "fishmod.features.general.SlotBinds.init() failed") { fishmod.features.general.SlotBinds.init() }
+        FishDiag.guard("FishModInit.51", "fishmod.features.general.SlotLocking.init() failed") { fishmod.features.general.SlotLocking.init() }
+        FishDiag.guard("FishModInit.52", "fishmod.features.general.InvSearchBar.init() failed") { fishmod.features.general.InvSearchBar.init() }
+        FishDiag.guard("FishModInit.53", "fishmod.features.general.BridgeBot.init() failed") { fishmod.features.general.BridgeBot.init() }
         FishDiag.guard("FishModInit.54", "twitchbridge.TwitchBridgeClient.init() failed") { twitchbridge.TwitchBridgeClient.init() }
-        FishDiag.guard("FishModInit.55", "fishmod.features.LavaToWater.init() failed") { fishmod.features.LavaToWater.init() }
-        FishDiag.guard("FishModInit.56", "fishmod.features.storage.StorageCache.init() failed") { fishmod.features.storage.StorageCache.init() }
+        FishDiag.guard("FishModInit.55", "fishmod.features.visuals.LavaToWater.init() failed") { fishmod.features.visuals.LavaToWater.init() }
+        FishDiag.guard("FishModInit.56", "fishmod.features.inventory.StorageCache.init() failed") { fishmod.features.inventory.StorageCache.init() }
         FishDiag.guard("FishModInit.57", "fishmod.features.dungeon.ExtraStats.init() failed") { fishmod.features.dungeon.ExtraStats.init() }
-        FishDiag.guard("FishModInit.57c", "ExperimentSolver.init() failed") { fishmod.features.ExperimentSolver.init() }
-        FishDiag.guard("FishModInit.58", "fishmod.features.EtherwarpHelper.init() failed") { fishmod.features.EtherwarpHelper.init() }
+        FishDiag.guard("FishModInit.57c", "ExperimentSolver.init() failed") { fishmod.features.general.ExperimentSolver.init() }
+        FishDiag.guard("FishModInit.58", "fishmod.features.visuals.EtherwarpHelper.init() failed") { fishmod.features.visuals.EtherwarpHelper.init() }
         FishDiag.guard("FishModInit.59", "fishmod.features.dungeon.DungeonAbilities.init() failed") { fishmod.features.dungeon.DungeonAbilities.init() }
-        FishDiag.guard("FishModInit.60", "fishmod.features.dungeon.f6.TerracottaTimer.init() failed") { fishmod.features.dungeon.f6.TerracottaTimer.init() }
-        FishDiag.guard("FishModInit.61", "fishmod.features.dungeon.f5.LividSolver.init() failed") { fishmod.features.dungeon.f5.LividSolver.init() }
-        FishDiag.guard("FishModInit.62", "fishmod.features.dungeon.f4.SpiritBear.init() failed") { fishmod.features.dungeon.f4.SpiritBear.init() }
-        FishDiag.guard("FishModInit.63", "fishmod.features.dungeon.f7.dragons.WitherDragons.init() failed") { fishmod.features.dungeon.f7.dragons.WitherDragons.init() }
-        FishDiag.guard("FishModInit.64", "fishmod.features.TacTimer.init() failed") { fishmod.features.TacTimer.init() }
+        FishDiag.guard("FishModInit.60", "fishmod.features.dungeon.TerracottaTimer.init() failed") { fishmod.features.dungeon.TerracottaTimer.init() }
+        FishDiag.guard("FishModInit.61", "fishmod.features.dungeon.LividSolver.init() failed") { fishmod.features.dungeon.LividSolver.init() }
+        FishDiag.guard("FishModInit.62", "fishmod.features.dungeon.SpiritBear.init() failed") { fishmod.features.dungeon.SpiritBear.init() }
+        FishDiag.guard("FishModInit.63", "fishmod.features.dungeon.floor7.dragons.WitherDragons.init() failed") { fishmod.features.dungeon.floor7.dragons.WitherDragons.init() }
+        FishDiag.guard("FishModInit.64", "fishmod.features.hud.TacTimer.init() failed") { fishmod.features.hud.TacTimer.init() }
         FishDiag.guard("FishModInit.65", "fishmod.features.dungeon.ArchitectDraft.init() failed") { fishmod.features.dungeon.ArchitectDraft.init() }
         FishDiag.guard("FishModInit.66", "fishmod.features.dungeon.LeapAnnounce.init() failed") { fishmod.features.dungeon.LeapAnnounce.init() }
         FishDiag.guard("FishModInit.67", "fishmod.features.dungeon.MimicAnnounce.init() failed") { fishmod.features.dungeon.MimicAnnounce.init() }
@@ -509,73 +509,73 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.69", "fishmod.features.dungeon.KeyPickupAlert.init() failed") { fishmod.features.dungeon.KeyPickupAlert.init() }
         FishDiag.guard("FishModInit.70", "fishmod.features.dungeon.DungeonRequeue.init() failed") { fishmod.features.dungeon.DungeonRequeue.init() }
         FishDiag.guard("FishModInit.71", "fishmod.features.dungeon.Blessings.init() failed") { fishmod.features.dungeon.Blessings.init() }
-        FishDiag.guard("FishModInit.72", "fishmod.features.dungeon.QuizHud.init() failed") { fishmod.features.dungeon.QuizHud.init() }
+        FishDiag.guard("FishModInit.72", "fishmod.features.dungeon.solvers.QuizHud.init() failed") { fishmod.features.dungeon.solvers.QuizHud.init() }
         FishDiag.guard("FishModInit.73", "fishmod.features.dungeon.SecretOverlay.init() failed") { fishmod.features.dungeon.SecretOverlay.init() }
         FishDiag.guard("FishModInit.74", "fishmod.features.dungeon.IceSprayTimer.init() failed") { fishmod.features.dungeon.IceSprayTimer.init() }
-        FishDiag.guard("FishModInit.75", "fishmod.features.PetSwapTitle.init() failed") { fishmod.features.PetSwapTitle.init() }
-        FishDiag.guard("FishModInit.76", "fishmod.features.PetIcons.init() failed") { fishmod.features.PetIcons.init() }
-        FishDiag.guard("FishModInit.77", "fishmod.features.croesus.LootIcons.init() failed") { fishmod.features.croesus.LootIcons.init() }
-        FishDiag.guard("FishModInit.78", "fishmod.features.dungeon.f7.StormOverAlert.init() failed") { fishmod.features.dungeon.f7.StormOverAlert.init() }
-        FishDiag.guard("FishModInit.79", "fishmod.features.dungeon.f7.VenoStackCount.init() failed") { fishmod.features.dungeon.f7.VenoStackCount.init() }
-        FishDiag.guard("FishModInit.80", "fishmod.features.PerformanceHud.init() failed") { fishmod.features.PerformanceHud.init() }
-        FishDiag.guard("FishModInit.80s", "fishmod.features.SpotifyLyricsHud.init() failed") { fishmod.features.SpotifyLyricsHud.init() }
+        FishDiag.guard("FishModInit.75", "fishmod.features.hud.PetSwapTitle.init() failed") { fishmod.features.hud.PetSwapTitle.init() }
+        FishDiag.guard("FishModInit.76", "fishmod.features.hud.PetIcons.init() failed") { fishmod.features.hud.PetIcons.init() }
+        FishDiag.guard("FishModInit.77", "fishmod.features.dungeon.trackers.LootIcons.init() failed") { fishmod.features.dungeon.trackers.LootIcons.init() }
+        FishDiag.guard("FishModInit.78", "fishmod.features.dungeon.floor7.StormOverAlert.init() failed") { fishmod.features.dungeon.floor7.StormOverAlert.init() }
+        FishDiag.guard("FishModInit.79", "fishmod.features.dungeon.floor7.VenoStackCount.init() failed") { fishmod.features.dungeon.floor7.VenoStackCount.init() }
+        FishDiag.guard("FishModInit.80", "fishmod.features.hud.PerformanceHud.init() failed") { fishmod.features.hud.PerformanceHud.init() }
+        FishDiag.guard("FishModInit.80s", "fishmod.features.hud.SpotifyLyricsHud.init() failed") { fishmod.features.hud.SpotifyLyricsHud.init() }
         FishDiag.guard("FishModInit.81", "fishmod.features.dungeon.InvincibilityTracker.init() failed") { fishmod.features.dungeon.InvincibilityTracker.init() }
         FishDiag.guard("FishModInit.82", "fishmod.features.dungeon.SecretClicked.init() failed") { fishmod.features.dungeon.SecretClicked.init() }
         FishDiag.guard("FishModInit.83", "fishmod.features.dungeon.RouteRecorder.init() failed") { fishmod.features.dungeon.RouteRecorder.init() }
-        FishDiag.guard("FishModInit.84", "fishmod.features.dungeon.f7.terminal.TerminalSolver.init() failed") { fishmod.features.dungeon.f7.terminal.TerminalSolver.init() }
-        FishDiag.guard("FishModInit.85", "fishmod.features.dungeon.f7.ArrowAlign.init() failed") { fishmod.features.dungeon.f7.ArrowAlign.init() }
-        FishDiag.guard("FishModInit.86", "fishmod.features.dungeon.f7.ArrowsDevice.init() failed") { fishmod.features.dungeon.f7.ArrowsDevice.init() }
-        FishDiag.guard("FishModInit.87", "fishmod.features.dungeon.f7.SimonSaysSolver.init() failed") { fishmod.features.dungeon.f7.SimonSaysSolver.init() }
-        FishDiag.guard("FishModInit.88", "fishmod.features.dungeon.f7.MelodyMessage.init() failed") { fishmod.features.dungeon.f7.MelodyMessage.init() }
-        FishDiag.guard("FishModInit.89", "fishmod.features.dungeon.PartyFinderStats.init() failed") { fishmod.features.dungeon.PartyFinderStats.init() }
-        FishDiag.guard("FishModInit.90", "fishmod.features.dungeon.PartyFinder.init() failed") { fishmod.features.dungeon.PartyFinder.init() }
+        FishDiag.guard("FishModInit.84", "fishmod.features.dungeon.floor7.terminal.TerminalSolver.init() failed") { fishmod.features.dungeon.floor7.terminal.TerminalSolver.init() }
+        FishDiag.guard("FishModInit.85", "fishmod.features.dungeon.floor7.ArrowAlign.init() failed") { fishmod.features.dungeon.floor7.ArrowAlign.init() }
+        FishDiag.guard("FishModInit.86", "fishmod.features.dungeon.floor7.ArrowsDevice.init() failed") { fishmod.features.dungeon.floor7.ArrowsDevice.init() }
+        FishDiag.guard("FishModInit.87", "fishmod.features.dungeon.floor7.SimonSaysSolver.init() failed") { fishmod.features.dungeon.floor7.SimonSaysSolver.init() }
+        FishDiag.guard("FishModInit.88", "fishmod.features.dungeon.floor7.MelodyMessage.init() failed") { fishmod.features.dungeon.floor7.MelodyMessage.init() }
+        FishDiag.guard("FishModInit.89", "fishmod.features.party.PartyFinderStats.init() failed") { fishmod.features.party.PartyFinderStats.init() }
+        FishDiag.guard("FishModInit.90", "fishmod.features.party.PartyFinder.init() failed") { fishmod.features.party.PartyFinder.init() }
         FishDiag.guard("FishModInit.91", "fishmod.features.dungeon.KickListManager.init() failed") { fishmod.features.dungeon.KickListManager.init() }
         FishDiag.guard("FishModInit.92", "fishmod.features.dungeon.PartyMemberTracker.init() failed") { fishmod.features.dungeon.PartyMemberTracker.init() }
-        FishDiag.guard("FishModInit.93", "fishmod.features.dungeon.PartyFinderPanel.init() failed") { fishmod.features.dungeon.PartyFinderPanel.init() }
-        FishDiag.guard("FishModInit.94", "fishmod.features.dungeon.f7.WitherESP.init() failed") { fishmod.features.dungeon.f7.WitherESP.init() }
-        FishDiag.guard("FishModInit.StormLb", "StormLbWaypoint.init() failed") { fishmod.features.dungeon.f7.StormLbWaypoint.init() }
-        FishDiag.guard("FishModInit.95", "fishmod.features.dungeon.f7.M7Relics.init() failed") { fishmod.features.dungeon.f7.M7Relics.init() }
-        FishDiag.guard("FishModInit.96", "fishmod.features.dungeon.puzzles.PuzzleSolvers.init() failed") { fishmod.features.dungeon.puzzles.PuzzleSolvers.init() }
-        FishDiag.guard("FishModInit.97", "fishmod.features.dungeon.SimonSaysTracker.init() failed") { fishmod.features.dungeon.SimonSaysTracker.init() }
-        FishDiag.guard("FishModInit.98", "fishmod.features.chat.ChatRuleHandler.init() failed") { fishmod.features.chat.ChatRuleHandler.init() }
-        FishDiag.guard("FishModInit.99", "fishmod.features.dungeon.M7LeverWaypoints.init() failed") { fishmod.features.dungeon.M7LeverWaypoints.init() }
+        FishDiag.guard("FishModInit.93", "fishmod.features.party.PartyFinderPanel.init() failed") { fishmod.features.party.PartyFinderPanel.init() }
+        FishDiag.guard("FishModInit.94", "fishmod.features.dungeon.floor7.WitherESP.init() failed") { fishmod.features.dungeon.floor7.WitherESP.init() }
+        FishDiag.guard("FishModInit.StormLb", "StormLbWaypoint.init() failed") { fishmod.features.dungeon.floor7.StormLbWaypoint.init() }
+        FishDiag.guard("FishModInit.95", "fishmod.features.dungeon.floor7.M7Relics.init() failed") { fishmod.features.dungeon.floor7.M7Relics.init() }
+        FishDiag.guard("FishModInit.96", "fishmod.features.dungeon.solvers.PuzzleSolvers.init() failed") { fishmod.features.dungeon.solvers.PuzzleSolvers.init() }
+        FishDiag.guard("FishModInit.97", "fishmod.features.dungeon.solvers.SimonSaysTracker.init() failed") { fishmod.features.dungeon.solvers.SimonSaysTracker.init() }
+        FishDiag.guard("FishModInit.98", "fishmod.features.extras.ChatRuleHandler.init() failed") { fishmod.features.extras.ChatRuleHandler.init() }
+        FishDiag.guard("FishModInit.99", "fishmod.features.dungeon.floor7.M7LeverWaypoints.init() failed") { fishmod.features.dungeon.floor7.M7LeverWaypoints.init() }
         FishDiag.guard("FishModInit.100", "fishmod.features.dungeon.DungeonWaypoints.init() failed") { fishmod.features.dungeon.DungeonWaypoints.init() }
         FishDiag.guard("FishModInit.101", "fishmod.features.dungeon.StarredMobHighlight.init() failed") { fishmod.features.dungeon.StarredMobHighlight.init() }
-        FishDiag.guard("FishModInit.MiningBoxes", "MiningBoxes.init() failed") { fishmod.features.mining.MiningBoxes.init() }
-        FishDiag.guard("FishModInit.102", "fishmod.features.slayers.SlayerManager.init() failed") { fishmod.features.slayers.SlayerManager.init() }
+        FishDiag.guard("FishModInit.MiningBoxes", "MiningBoxes.init() failed") { fishmod.features.visuals.MiningBoxes.init() }
+        FishDiag.guard("FishModInit.102", "fishmod.features.slayer.SlayerManager.init() failed") { fishmod.features.slayer.SlayerManager.init() }
         FishDiag.guard("FishModInit.156", "fishmod.features.diana.Diana.init() failed") { fishmod.features.diana.Diana.init() }
         FishDiag.guard("FishModInit.Fishing", "fishmod.features.fishing.Fishing.init() failed") { fishmod.features.fishing.Fishing.init() }
-        FishDiag.guard("FishModInit.158", "TrackerResetButton.init() failed") { fishmod.features.other.TrackerResetButton.init() }
+        FishDiag.guard("FishModInit.158", "TrackerResetButton.init() failed") { fishmod.features.general.TrackerResetButton.init() }
         FishDiag.guard("FishModInit.157", "fishmod.features.mining.Mining.init() failed") { fishmod.features.mining.Mining.init() }
         FishDiag.guard("FishModInit.157k", "fishmod.features.kuudra.Kuudra.init() failed") { fishmod.features.kuudra.Kuudra.init() }
         FishDiag.guard("FishModInit.R1", "fishmod.features.rift.Rift.init() failed") { fishmod.features.rift.Rift.init() }
         FishDiag.guard("FishModInit.garden", "fishmod.features.garden.Garden.init() failed") { fishmod.features.garden.Garden.init() }
         FishDiag.guard("FishModInit.ach", "AchEngine.init() failed") { fishmod.features.achievements.AchEngine.init() }
-        FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.f7.F7Huds.init() failed") { fishmod.features.dungeon.f7.F7Huds.init() }
+        FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.floor7.F7Huds.init() failed") { fishmod.features.dungeon.floor7.F7Huds.init() }
         FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.InvButtonSettings.init() failed") { fishmod.utils.config.values.InvButtonSettings.init() }
-        FishDiag.guard("FishModInit.104b", "EquipmentDisplay.init() failed") { fishmod.features.other.EquipmentDisplay.init() }
-        FishHudEditor.register("Boss Tick Clock", fishmod.features.dungeon.f7.F7Huds.tickTimer)
-        FishHudEditor.register("Crystal Respawn", fishmod.features.dungeon.f7.F7Huds.crystalRespawnBox)
-        FishHudEditor.register("Crystal Not Placed", fishmod.features.dungeon.f7.F7Huds.crystalReminder)
-        FishHudEditor.register("Storm Kill Time", fishmod.features.dungeon.f7.F7Huds.stormKillBox)
-        FishHudEditor.register("LB Release Timer", fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer)
-        FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.f7.F7Huds.pyTimer)
-        FishHudEditor.register("Necron LB Timer", fishmod.features.dungeon.f7.F7Huds.necronLbTimer)
-        FishHudEditor.register("Necron Drag Timer", fishmod.features.dungeon.f7.F7Huds.necronDragTimer)
-        FishHudEditor.register("Necron Drop Lava/Platform", fishmod.features.dungeon.f7.F7Huds.necronDropLanding)
-        FishHudEditor.register("Storm Crush Banner", fishmod.features.dungeon.f7.F7Huds.stormCrush)
-        FishHudEditor.register("Pillar Blast Timer", fishmod.features.dungeon.f7.F7Huds.pillarExplosion)
-        FishHudEditor.register("Terminals Open In", fishmod.features.dungeon.f7.F7Huds.termOpenBox)
-        FishHudEditor.register("Section Count", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
-        FishHudEditor.register("P3 Section", fishmod.features.dungeon.f7.F7Huds.currentSection)
-        FishHudEditor.register("Device Done", fishmod.features.dungeon.f7.F7Huds.deviceNotifier)
-        FishHudEditor.register("Melody Callout", fishmod.features.dungeon.f7.F7Huds.melodyWarning)
-        FishHudEditor.register("Section Cleared", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
-        FishHudEditor.register("Players Leaped", fishmod.features.dungeon.f7.F7Huds.playersLeaped)
+        FishDiag.guard("FishModInit.104b", "EquipmentDisplay.init() failed") { fishmod.features.general.EquipmentDisplay.init() }
+        FishHudEditor.register("Boss Tick Clock", fishmod.features.dungeon.floor7.F7Huds.tickTimer)
+        FishHudEditor.register("Crystal Respawn", fishmod.features.dungeon.floor7.F7Huds.crystalRespawnBox)
+        FishHudEditor.register("Crystal Not Placed", fishmod.features.dungeon.floor7.F7Huds.crystalReminder)
+        FishHudEditor.register("Storm Kill Time", fishmod.features.dungeon.floor7.F7Huds.stormKillBox)
+        FishHudEditor.register("LB Release Timer", fishmod.features.dungeon.floor7.F7Huds.lbReleaseTimer)
+        FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.floor7.F7Huds.pyTimer)
+        FishHudEditor.register("Necron LB Timer", fishmod.features.dungeon.floor7.F7Huds.necronLbTimer)
+        FishHudEditor.register("Necron Drag Timer", fishmod.features.dungeon.floor7.F7Huds.necronDragTimer)
+        FishHudEditor.register("Necron Drop Lava/Platform", fishmod.features.dungeon.floor7.F7Huds.necronDropLanding)
+        FishHudEditor.register("Storm Crush Banner", fishmod.features.dungeon.floor7.F7Huds.stormCrush)
+        FishHudEditor.register("Pillar Blast Timer", fishmod.features.dungeon.floor7.F7Huds.pillarExplosion)
+        FishHudEditor.register("Terminals Open In", fishmod.features.dungeon.floor7.F7Huds.termOpenBox)
+        FishHudEditor.register("Section Count", fishmod.features.dungeon.floor7.F7Huds.sectionProgress)
+        FishHudEditor.register("P3 Section", fishmod.features.dungeon.floor7.F7Huds.currentSection)
+        FishHudEditor.register("Device Done", fishmod.features.dungeon.floor7.F7Huds.deviceNotifier)
+        FishHudEditor.register("Melody Callout", fishmod.features.dungeon.floor7.F7Huds.melodyWarning)
+        FishHudEditor.register("Section Cleared", fishmod.features.dungeon.floor7.F7Huds.sectionCompletion)
+        FishHudEditor.register("Players Leaped", fishmod.features.dungeon.floor7.F7Huds.playersLeaped)
         FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.GoldorSection.goldorSplitsBox)
-        FishHudEditor.register("Terminal Tracker", fishmod.features.dungeon.f7.TerminalTracker.terminalTrackerHud)
+        FishHudEditor.register("Terminal Tracker", fishmod.features.dungeon.floor7.TerminalTracker.terminalTrackerHud)
         FishDiag.guard("FishModInit.105", "fishmod.utils.dungeon.DungeonRole.init() failed") { fishmod.utils.dungeon.DungeonRole.init() }
-        FishDiag.guard("FishModInit.106", "fishmod.features.ClassColoredBoots.init() failed") { fishmod.features.ClassColoredBoots.init() }
+        FishDiag.guard("FishModInit.106", "fishmod.features.dungeon.ClassColoredBoots.init() failed") { fishmod.features.dungeon.ClassColoredBoots.init() }
         FishDiag.guard("FishModInit.107", "fishmod.features.dungeon.DupeClassDetector.init() failed") { fishmod.features.dungeon.DupeClassDetector.init() }
 
         FishHudEditor.register("Run Splits", BossPhase.runSplitsBox)
@@ -597,46 +597,46 @@ class FishModInit : ClientModInitializer {
         FishHudEditor.register("Puzzles", FishPuzzleDisplay.puzzleHud)
 
         ClientCommandRegistrationCallback.EVENT.register(ClientCommandRegistrationCallback { dispatcher, _ ->
-            fishmod.features.other.CommandAliases.registerAll(dispatcher)
+            fishmod.features.general.CommandAliases.registerAll(dispatcher)
             dispatcher.register(
                 ClientCommands.literal("fm")
                     .then(ClientCommands.literal("stats").executes {
-                        Minecraft.getInstance().execute { fishmod.features.dungeon.SessionStats.printToChat() }
+                        Minecraft.getInstance().execute { fishmod.features.dungeon.trackers.SessionStats.printToChat() }
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("commandkeys").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
+                            Minecraft.getInstance().showScreen(fishmod.features.hud.ChatCommandsScreen(fishmod.features.hud.ChatCommandsScreen.Tab.KEYS))
                         }
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("customize").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().showScreen(fishmod.features.item.ItemCustomizeScreen())
+                            Minecraft.getInstance().showScreen(fishmod.features.hud.ItemCustomizeScreen())
                         }
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("aliases").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.ALIASES))
+                            Minecraft.getInstance().showScreen(fishmod.features.hud.ChatCommandsScreen(fishmod.features.hud.ChatCommandsScreen.Tab.ALIASES))
                         }
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("whitelist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST))
+                            Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.WHITELIST))
                         }
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("blacklist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST))
+                            Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.BLACKLIST))
                         }
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("kicklist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK))
+                            Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.KICK))
                         }
                         FishConstants.SUCCESS
                     })
@@ -669,8 +669,8 @@ class FishModInit : ClientModInitializer {
                     .then(waypointSubcommand("waypoint"))
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
-                    .then(fishmod.features.dungeon.f7.StormLbWaypoint.command())
-                    .then(fishmod.features.dungeon.f7.NecronDropPredict.command())
+                    .then(fishmod.features.dungeon.floor7.StormLbWaypoint.command())
+                    .then(fishmod.features.dungeon.floor7.NecronDropPredict.command())
                     .then(fishmod.features.diana.Diana.command())
                     .then(fishmod.features.achievements.AchEngine.command())
                     .then(ClientCommands.literal("dianaloot").executes { fishmod.features.diana.DianaTracker.openPastEvents(); 1 })
@@ -678,8 +678,8 @@ class FishModInit : ClientModInitializer {
                     .then(fishmod.features.diana.CrownOfAvarice.command())
                     .then(chatNotificationsSubcommand("chatnotifications"))
                     .then(chatNotificationsSubcommand("cn"))
-                    .then(chatNotificationsSubcommand("chatfilter", fishmod.features.ChatCommandsScreen.Tab.FILTER))
-                    .then(chatNotificationsSubcommand("cf", fishmod.features.ChatCommandsScreen.Tab.FILTER))
+                    .then(chatNotificationsSubcommand("chatfilter", fishmod.features.hud.ChatCommandsScreen.Tab.FILTER))
+                    .then(chatNotificationsSubcommand("cf", fishmod.features.hud.ChatCommandsScreen.Tab.FILTER))
                     .then(sackSubcommand("ep"))
                     .then(sackSubcommand("ij"))
                     .then(sackSubcommand("sl"))
@@ -696,23 +696,23 @@ class FishModInit : ClientModInitializer {
             )
             dispatcher.register(
                 ClientCommands.literal("trackcarry")
-                    .then(ClientCommands.literal("clear").executes { fishmod.features.slayers.SlayerCarryTracker.clear(); FishConstants.SUCCESS })
-                    .then(ClientCommands.literal("debug").executes { fishmod.features.slayers.SlayerCarryTracker.debug(); FishConstants.SUCCESS })
+                    .then(ClientCommands.literal("clear").executes { fishmod.features.slayer.SlayerCarryTracker.clear(); FishConstants.SUCCESS })
+                    .then(ClientCommands.literal("debug").executes { fishmod.features.slayer.SlayerCarryTracker.debug(); FishConstants.SUCCESS })
                     .then(ClientCommands.literal("remove").then(ClientCommands.argument("ign", StringArgumentType.word()).executes { ctx ->
-                        fishmod.features.slayers.SlayerCarryTracker.remove(StringArgumentType.getString(ctx, "ign")); FishConstants.SUCCESS
+                        fishmod.features.slayer.SlayerCarryTracker.remove(StringArgumentType.getString(ctx, "ign")); FishConstants.SUCCESS
                     }))
                     .then(ClientCommands.argument("ign", StringArgumentType.word())
                         .then(ClientCommands.argument("amount", IntegerArgumentType.integer(0, 1000)).executes { ctx ->
-                            fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), IntegerArgumentType.getInteger(ctx, "amount")); FishConstants.SUCCESS
+                            fishmod.features.slayer.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), IntegerArgumentType.getInteger(ctx, "amount")); FishConstants.SUCCESS
                         })
-                        .executes { ctx -> fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), -1); FishConstants.SUCCESS })
-                    .executes { fishmod.features.slayers.SlayerCarryTracker.list(); FishConstants.SUCCESS }
+                        .executes { ctx -> fishmod.features.slayer.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), -1); FishConstants.SUCCESS })
+                    .executes { fishmod.features.slayer.SlayerCarryTracker.list(); FishConstants.SUCCESS }
             )
             dispatcher.register(ClientCommands.literal("termreplay")
                 .then(ClientCommands.argument("replay", StringArgumentType.greedyString())
-                    .suggests { _, b -> (listOf("latest") + fishmod.features.dungeon.f7.TerminalTracker.replayNames()).forEach(b::suggest); b.buildFuture() }
-                    .executes { ctx -> fishmod.features.dungeon.f7.TerminalTracker.replay(StringArgumentType.getString(ctx, "replay")); FishConstants.SUCCESS })
-                .executes { fishmod.features.dungeon.f7.TerminalTracker.replay(); FishConstants.SUCCESS })
+                    .suggests { _, b -> (listOf("latest") + fishmod.features.dungeon.floor7.TerminalTracker.replayNames()).forEach(b::suggest); b.buildFuture() }
+                    .executes { ctx -> fishmod.features.dungeon.floor7.TerminalTracker.replay(StringArgumentType.getString(ctx, "replay")); FishConstants.SUCCESS })
+                .executes { fishmod.features.dungeon.floor7.TerminalTracker.replay(); FishConstants.SUCCESS })
             for (cmd in arrayOf("pbsplits", "splitspb")) dispatcher.register(
                 ClientCommands.literal(cmd)
                     .then(ClientCommands.argument("floor", StringArgumentType.word()).executes { ctx ->
@@ -728,7 +728,7 @@ class FishModInit : ClientModInitializer {
                 ClientCommands.literal("fmloot")
                     .executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.LOOT))
+                            Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.LOOT))
                         }
                         FishConstants.SUCCESS
                     }
@@ -736,11 +736,11 @@ class FishModInit : ClientModInitializer {
             dispatcher.register(
                 ClientCommands.literal("pfs")
                     .then(ClientCommands.argument("name", StringArgumentType.word()).executes { ctx ->
-                        fishmod.features.dungeon.PartyFinderStats.command(StringArgumentType.getString(ctx, "name"))
+                        fishmod.features.party.PartyFinderStats.command(StringArgumentType.getString(ctx, "name"))
                         FishConstants.SUCCESS
                     })
                     .executes {
-                        fishmod.features.dungeon.PartyFinderStats.command(null)
+                        fishmod.features.party.PartyFinderStats.command(null)
                         FishConstants.SUCCESS
                     }
             )
@@ -759,29 +759,29 @@ class FishModInit : ClientModInitializer {
                 ClientCommands.literal("fmtermsim")
                     .then(ClientCommands.argument("type", StringArgumentType.word()).executes { ctx ->
                         val a = StringArgumentType.getString(ctx, "type")
-                        Minecraft.getInstance().schedule { fishmod.features.dungeon.f7.terminal.TermSimScreen.open(a) }
+                        Minecraft.getInstance().schedule { fishmod.features.dungeon.floor7.terminal.TermSimScreen.open(a) }
                         FishConstants.SUCCESS
                     })
                     .executes {
-                        Minecraft.getInstance().schedule { fishmod.features.dungeon.f7.terminal.TermSimScreen.open(null) }
+                        Minecraft.getInstance().schedule { fishmod.features.dungeon.floor7.terminal.TermSimScreen.open(null) }
                         FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
                 ClientCommands.literal("storageview")
                     .executes {
-                        Minecraft.getInstance().schedule { fishmod.features.storage.StorageViewerScreen.open() }
+                        Minecraft.getInstance().schedule { fishmod.features.inventory.StorageViewerScreen.open() }
                         FishConstants.SUCCESS
                     }
             )
             dispatcher.register(
                 ClientCommands.literal("storageload")
                     .then(ClientCommands.literal("stop").executes {
-                        fishmod.features.storage.StorageAutoLoader.stop()
+                        fishmod.features.inventory.StorageAutoLoader.stop()
                         FishConstants.SUCCESS
                     })
                     .executes {
-                        fishmod.features.storage.StorageAutoLoader.start()
+                        fishmod.features.inventory.StorageAutoLoader.start()
                         FishConstants.SUCCESS
                     }
             )
@@ -932,8 +932,8 @@ class FishModInit : ClientModInitializer {
             dispatcher.register(
                 ClientCommands.literal("fmcatadump").executes { context ->
                     if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
-                    fishmod.features.CatacombsOverflowOverlay.debugDumpLines = !fishmod.features.CatacombsOverflowOverlay.debugDumpLines
-                    FishUtil.addChatMessage(Component.literal("§b[fmcata] dump Catacombs/class menu item lines: §f" + fishmod.features.CatacombsOverflowOverlay.debugDumpLines))
+                    fishmod.features.hud.CatacombsOverflowOverlay.debugDumpLines = !fishmod.features.hud.CatacombsOverflowOverlay.debugDumpLines
+                    FishUtil.addChatMessage(Component.literal("§b[fmcata] dump Catacombs/class menu item lines: §f" + fishmod.features.hud.CatacombsOverflowOverlay.debugDumpLines))
                     FishConstants.SUCCESS
                 }
             )
@@ -968,8 +968,8 @@ class FishModInit : ClientModInitializer {
             dispatcher.register(
                 ClientCommands.literal("fmssdebug").executes { context ->
                     if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
-                    fishmod.features.dungeon.SimonSaysTracker.debug = !fishmod.features.dungeon.SimonSaysTracker.debug
-                    FishUtil.addChatMessage(Component.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.SimonSaysTracker.debug))
+                    fishmod.features.dungeon.solvers.SimonSaysTracker.debug = !fishmod.features.dungeon.solvers.SimonSaysTracker.debug
+                    FishUtil.addChatMessage(Component.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.solvers.SimonSaysTracker.debug))
                     FishConstants.SUCCESS
                 }
             )
@@ -1104,11 +1104,11 @@ class FishModInit : ClientModInitializer {
                                     return@executes FishConstants.SUCCESS
                                 }
                                 val pid = parts[1].trim().uppercase()
-                                fishmod.features.croesus.CroesusPrices.refreshIfStale().whenComplete { _, _ ->
+                                fishmod.features.dungeon.trackers.CroesusPrices.refreshIfStale().whenComplete { _, _ ->
                                     mc.schedule {
                                         FishUtil.addChatMessage(
                                             Component.literal(
-                                                "§b$pid §7→ §f" + fishmod.features.croesus.CroesusPrices.debugSource(pid)
+                                                "§b$pid §7→ §f" + fishmod.features.dungeon.trackers.CroesusPrices.debugSource(pid)
                                             )
                                         )
                                     }
@@ -1404,35 +1404,35 @@ class FishModInit : ClientModInitializer {
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) PetHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.115", "pet_hud render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar")) { ctx, tickCounter -> try { CooldownOverlay.renderHotbar(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.116", "cooldown_overlay_hotbar render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) BossPhase.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.117", "phase_splits render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.118", "f7_huds render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.floor7.F7Huds.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.118", "f7_huds render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_waypoints_overlay")) { ctx, _ -> try { fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.119", "dungeon_waypoints_overlay render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) SessionStats.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.120", "session_stats render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PartyWarpTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.121", "warp_cooldown render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.PartyWarpTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.121", "warp_cooldown render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "blessings")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.Blessings.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.122", "blessings render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "quiz_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.QuizHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.123", "quiz_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "quiz_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.solvers.QuizHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.123", "quiz_hud render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "secret_overlay")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.SecretOverlay.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.124", "secret_overlay render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "storm_over")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.StormOverAlert.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.125", "storm_over render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "veno_stacks")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.VenoStackCount.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.126", "veno_stacks render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "performance")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PerformanceHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.127", "performance render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "storm_over")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.floor7.StormOverAlert.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.125", "storm_over render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "veno_stacks")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.floor7.VenoStackCount.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.126", "veno_stacks render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "performance")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.hud.PerformanceHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.127", "performance render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.128", "invincibility render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.129", "relic_timer render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.SpringBoots.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.130", "spring_boots render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "stopwatch")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.other.Stopwatch.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.204", "stopwatch render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.TacTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.131", "tac_timer render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "rag_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.Ragnarock.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.132", "rag_timer render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "spirit_bear")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f4.SpiritBear.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.133", "spirit_bear render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "wither_dragons")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.dragons.WitherDragons.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.134", "wither_dragons render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.floor7.M7Relics.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.129", "relic_timer render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.hud.SpringBoots.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.130", "spring_boots render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "stopwatch")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.hud.Stopwatch.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.204", "stopwatch render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.hud.TacTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.131", "tac_timer render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "rag_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.general.Ragnarock.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.132", "rag_timer render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "spirit_bear")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.SpiritBear.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.133", "spirit_bear render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "wither_dragons")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.floor7.dragons.WitherDragons.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.134", "wither_dragons render failed", t) } }
         FishDiag.guard("FishModInit.135", "fishmod.utils.networth.ItemsDb.initAsync() failed") { fishmod.utils.networth.ItemsDb.initAsync() }
 
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PbPaceHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.136", "pb_pace_hud render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderSpawn(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.137", "slayer_spawn_hud render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderStats(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.138", "slayer_stats_hud render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_rng_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderRng(ctx, tickCounter) }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderTimer(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.139", "slayer_timer_hud render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "experiment_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.ExperimentProfitTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.202", "experiment_profit_hud render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_carry_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerCarryTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.200", "slayer_carry_hud render failed", t) } }
-        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderProfit(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.140", "slayer_profit_hud render failed", t) } }
-        fishmod.features.PbPaceHud.registerPreview()
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.trackers.PbPaceHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.136", "pb_pace_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayer.SlayerHuds.renderSpawn(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.137", "slayer_spawn_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayer.SlayerHuds.renderStats(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.138", "slayer_stats_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_rng_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayer.SlayerHuds.renderRng(ctx, tickCounter) }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayer.SlayerHuds.renderTimer(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.139", "slayer_timer_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "experiment_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.general.ExperimentProfitTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.202", "experiment_profit_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_carry_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayer.SlayerCarryTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.200", "slayer_carry_hud render failed", t) } }
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayer.SlayerHuds.renderProfit(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.140", "slayer_profit_hud render failed", t) } }
+        fishmod.features.dungeon.trackers.PbPaceHud.registerPreview()
         FishHudEditor.register(
             "PB Pace",
             { fishmod.utils.config.values.FishSettings.pbPaceHudX },
@@ -1441,7 +1441,7 @@ class FishModInit : ClientModInitializer {
             { v -> fishmod.utils.config.values.FishSettings.pbPaceHudY = v }, 130, 14 * 3,
             { fishmod.utils.config.values.FishSettings.pbPaceScale },
             { v -> fishmod.utils.config.values.FishSettings.pbPaceScale = v },
-            { fishmod.features.PbPaceHud.isVisible() }
+            { fishmod.features.dungeon.trackers.PbPaceHud.isVisible() }
         )
 
         FishDiag.guard("FishModInit.141", "fishmod.features.dungeon.map.DungeonMap.init() failed") { fishmod.features.dungeon.map.DungeonMap.init() }
@@ -1450,8 +1450,8 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.144", "fishmod.features.dungeon.map.MapHud.register() failed") { fishmod.features.dungeon.map.MapHud.register() }
         FishDiag.guard("FishModInit.145", "fishmod.features.dungeon.map.MapInfoHud.register() failed") { fishmod.features.dungeon.map.MapInfoHud.register() }
         FishDiag.guard("FishModInit.146", "fishmod.features.dungeon.map.MapImageLoader.init() failed") { fishmod.features.dungeon.map.MapImageLoader.init() }
-        FishDiag.guard("FishModInit.147", "fishmod.features.CrosshairImageLoader.init() failed") { fishmod.features.CrosshairImageLoader.init() }
-        FishDiag.guard("FishModInit.148", "fishmod.features.CustomCrosshair.register() failed") { fishmod.features.CustomCrosshair.register() }
+        FishDiag.guard("FishModInit.147", "fishmod.features.cosmetics.CrosshairImageLoader.init() failed") { fishmod.features.cosmetics.CrosshairImageLoader.init() }
+        FishDiag.guard("FishModInit.148", "fishmod.features.cosmetics.CustomCrosshair.register() failed") { fishmod.features.cosmetics.CustomCrosshair.register() }
         FishDiag.guard("FishModInit.149", "fishmod.features.dungeon.map.DungeonScore.register() failed") { fishmod.features.dungeon.map.DungeonScore.register() }
         FishDiag.guard("FishModInit.150", "fishmod.features.dungeon.map.DoorHighlight.init() failed") { fishmod.features.dungeon.map.DoorHighlight.init() }
         fishmod.utils.events.FishEvents.chat.register { message ->
@@ -1481,13 +1481,13 @@ class FishModInit : ClientModInitializer {
             { fishmod.utils.config.values.DungeonMapSettings.mapScoreMessages && (fishmod.utils.config.values.DungeonMapSettings.mapScore270Title || fishmod.utils.config.values.DungeonMapSettings.mapScore300Title) }
         )
 
-        fishmod.features.scoreboard.CustomScoreboard.registerPreview()
+        fishmod.features.general.CustomScoreboard.registerPreview()
         FishHudEditor.register(
             "Custom Scoreboard",
-            { fishmod.features.scoreboard.CustomScoreboard.previewBoxX() },
-            { v -> fishmod.features.scoreboard.CustomScoreboard.setPreviewBoxX(v) },
-            { fishmod.features.scoreboard.CustomScoreboard.previewBoxY() },
-            { v -> fishmod.features.scoreboard.CustomScoreboard.setPreviewBoxY(v) },
+            { fishmod.features.general.CustomScoreboard.previewBoxX() },
+            { v -> fishmod.features.general.CustomScoreboard.setPreviewBoxX(v) },
+            { fishmod.features.general.CustomScoreboard.previewBoxY() },
+            { v -> fishmod.features.general.CustomScoreboard.setPreviewBoxY(v) },
             FishHudEditor.SCOREBOARD_W, 130,
             { fishmod.utils.config.values.FishSettings.customScoreboardEnabled }
         )
@@ -1520,7 +1520,7 @@ class FishModInit : ClientModInitializer {
 
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return@AfterInit
-            FishDiag.guard("FishModInit.153", "CroesusLootDetector.onScreenInit failed") { fishmod.features.croesus.CroesusLootDetector.onScreenInit(screen) }
+            FishDiag.guard("FishModInit.153", "CroesusLootDetector.onScreenInit failed") { fishmod.features.dungeon.trackers.CroesusLootDetector.onScreenInit(screen) }
             ScreenEvents.beforeExtract(screen).register(ScreenEvents.BeforeExtract { _, ctx, mx, my, _ ->
                 try { SessionStats.renderInScreen(ctx, mx, my) } catch (t: Throwable) { FishDiag.fail("FishModInit.154", "SessionStats.renderInScreen failed", t) }
             })
@@ -1530,7 +1530,7 @@ class FishModInit : ClientModInitializer {
             if (screen !is net.minecraft.client.gui.screens.ChatScreen) return@AfterInit
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
                 val handled = try {
-                    fishmod.features.slayers.SlayerHuds.onProfitClick(click.x(), click.y(), fishmod.compat.GLFW.btn(click))
+                    fishmod.features.slayer.SlayerHuds.onProfitClick(click.x(), click.y(), fishmod.compat.GLFW.btn(click))
                 } catch (t: Throwable) {
                     FishDiag.fail("FishModInit.155", "SlayerHuds.onProfitClick failed", t); false
                 }
@@ -1548,8 +1548,8 @@ class FishModInit : ClientModInitializer {
         safeInit("Phase") { BossPhase.init() }
         safeInit("PracticeMode") { fishmod.utils.dungeon.PracticeMode.init() }
         safeInit("Section") { GoldorSection.init() }
-        safeInit("TerminalTracker") { fishmod.features.dungeon.f7.TerminalTracker.init() }
-        safeInit("Stopwatch") { fishmod.features.other.Stopwatch.init() }
+        safeInit("TerminalTracker") { fishmod.features.dungeon.floor7.TerminalTracker.init() }
+        safeInit("Stopwatch") { fishmod.features.hud.Stopwatch.init() }
         safeInit("PartyUtil") { PartyTools.init() }
         safeInit("RenderingEvents") { RenderHooks.init() }
         safeInit("Scheduler") { TickScheduler.init() }

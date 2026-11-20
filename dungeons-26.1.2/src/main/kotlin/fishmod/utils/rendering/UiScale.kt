@@ -24,12 +24,12 @@ object UiScale {
         if (!FishSettings.guiSettings || screen == null) return 1f
         val pct = when (screen) {
             is fishmod.features.FishModScreen -> FishSettings.guiScaleMain
-            is fishmod.features.ChatCommandsScreen -> FishSettings.guiScaleChatCommands
-            is fishmod.features.PartyLootScreen -> FishSettings.guiScalePartyLoot
+            is fishmod.features.hud.ChatCommandsScreen -> FishSettings.guiScaleChatCommands
+            is fishmod.features.party.PartyLootScreen -> FishSettings.guiScalePartyLoot
             is fishmod.features.FishHudEditor -> FishSettings.guiScaleHudEditor
-            is fishmod.features.item.ItemCustomizeScreen -> FishSettings.guiScaleItemCustomize
-            is fishmod.features.storage.StorageViewerScreen -> FishSettings.guiScaleStorage
-            is fishmod.features.item.AuctionPriceScreen -> FishSettings.guiScaleAuction
+            is fishmod.features.hud.ItemCustomizeScreen -> FishSettings.guiScaleItemCustomize
+            is fishmod.features.inventory.StorageViewerScreen -> FishSettings.guiScaleStorage
+            is fishmod.features.hud.AuctionPriceScreen -> FishSettings.guiScaleAuction
             is fishmod.features.dungeon.DungeonWaypointTitleScreen -> FishSettings.guiScaleWaypoint
             is fishmod.features.CreditsScreen -> FishSettings.guiScaleCredits
             is fishmod.features.diana.DianaPastEventsScreen -> FishSettings.guiScaleDianaProfit

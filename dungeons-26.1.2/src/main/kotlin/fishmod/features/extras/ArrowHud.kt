@@ -91,7 +91,7 @@ object ArrowHud {
             id?.endsWith("ARROW") == true || name.contains("Arrow", true)
         if (!arrowy) return false
         type = name.replace(COUNT_SUFFIX, "").ifEmpty { name }
-        rarityRgb = fishmod.features.ItemRarityHotbar.getRarity(st).color and 0xFFFFFF
+        rarityRgb = fishmod.features.visuals.ItemRarityHotbar.getRarity(st).color and 0xFFFFFF
         setCount(remainingFromLore(st) ?: st.count.toLong())
         return true
     }

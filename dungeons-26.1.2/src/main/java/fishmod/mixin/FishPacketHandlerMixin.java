@@ -146,10 +146,10 @@ public class FishPacketHandlerMixin {
         try {
             Component text = packet.text();
             if (text != null) {
-                fishmod.features.dungeon.SimonSaysTracker.onTitle(text.getString());
+                fishmod.features.dungeon.solvers.SimonSaysTracker.onTitle(text.getString());
 
-                if (fishmod.features.dungeon.f7.P3TitleFilter.shouldHideTitle(text) || fishmod.features.dungeon.f7.DeviceDoneAlert.disableTitles(text)
-                        || fishmod.features.dungeon.f7.StormOverAlert.shouldHideServerCountdown(text)) {
+                if (fishmod.features.dungeon.floor7.P3TitleFilter.shouldHideTitle(text) || fishmod.features.dungeon.floor7.DeviceDoneAlert.disableTitles(text)
+                        || fishmod.features.dungeon.floor7.StormOverAlert.shouldHideServerCountdown(text)) {
                     ci.cancel();
                 }
             }
@@ -163,8 +163,8 @@ public class FishPacketHandlerMixin {
         if (!Minecraft.getInstance().isSameThread()) return;
         MixinGuard.run("FishPacketHandlerMixin.8", "subtitle packet handling failed", () -> {
             Component text = packet.text();
-            if (text != null && (fishmod.features.dungeon.f7.StormOverAlert.shouldHideServerCountdown(text)
-                    || fishmod.features.dungeon.f7.P3TitleFilter.shouldHideTitle(text))) ci.cancel();
+            if (text != null && (fishmod.features.dungeon.floor7.StormOverAlert.shouldHideServerCountdown(text)
+                    || fishmod.features.dungeon.floor7.P3TitleFilter.shouldHideTitle(text))) ci.cancel();
         });
     }
 

@@ -134,8 +134,8 @@ object RiftMenu {
         def.sub.add(ColorPickerSetting("Colour", "", S::class.java, "riftDefenseColor"))
         col.features.add(def)
 
-        val gecko = Feature("Sun Gecko Helper", fishmod.features.other.BossToolsSettings::class.java, "sunGecko")
-        gecko.sub.add(ToggleSetting("Show Modifiers", "", fishmod.features.other.BossToolsSettings::class.java, "sunGeckoModifiers"))
+        val gecko = Feature("Sun Gecko Helper", fishmod.features.slayer.BossToolsSettings::class.java, "sunGecko")
+        gecko.sub.add(ToggleSetting("Show Modifiers", "", fishmod.features.slayer.BossToolsSettings::class.java, "sunGeckoModifiers"))
         col.features.add(gecko)
 
         return col
