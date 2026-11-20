@@ -81,6 +81,15 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             int miniGlow = fishmod.features.slayers.SlayerMiniHighlight.glowColor(entity);
             if (miniGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = miniGlow;
 
+            int dgGlow = fishmod.features.dungeon.DungeonExtras.glowColor(entity);
+            if (dgGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dgGlow;
+            int trevorGlow = fishmod.features.extras.TrevorHelper.glowColor(entity);
+            if (trevorGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = trevorGlow;
+            int jerryGlow = fishmod.features.extras.JerryHighlight.glowColor(entity);
+            if (jerryGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = jerryGlow;
+            int carnivalGlow = fishmod.features.extras.CarnivalShootout.glowColor(entity);
+            if (carnivalGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = carnivalGlow;
+
             if (VisualSettings.hideMobFire) {
                 state.displayFireAnimation = false;
             } else if (entity instanceof Player player && VisualSettings.hideBurningInf5) {
@@ -141,6 +150,10 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 return;
             }
             if (fishmod.features.rift.RiftMobs.INSTANCE.shouldHideSlime(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
+            if (fishmod.features.dungeon.DungeonExtras.hideSkull(entity)) {
                 cir.setReturnValue(false);
                 return;
             }
