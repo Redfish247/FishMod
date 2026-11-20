@@ -33,6 +33,8 @@ object FishSettings {
     @ConfigValue @JvmField var fmPinned: String = "General"
     @ConfigValue @JvmField var fmUiAnimations: Boolean = true
     @ConfigValue @JvmField var fmThemeV2: Boolean = false
+    @ConfigValue @JvmField var fmCardColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var fmCardAlpha: Int = 7
 
     @ConfigValue @JvmField var fmAnimations: Boolean = true
 

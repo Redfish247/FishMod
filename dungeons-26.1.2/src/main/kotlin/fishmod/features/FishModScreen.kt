@@ -122,10 +122,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Accent"))
             f.sub.add(ColorPickerSetting("Accent Color", "", "fmButtonColor"))
             f.sub.add(SliderIntSetting("Accent Opacity %", "0% invisible - 100% solid", "fmButtonAlpha", 0, 100))
-            f.sub.add(SubcategoryHeader("Buttons"))
-            f.sub.add(SliderIntSetting("Button Opacity %", "Feature row fill, separate from the background", "fmRowBgAlpha", 0, 100))
-            f.sub.add(ColorPickerSetting("Enabled Tint Color", "Tint on an enabled row, e.g. Door Colors", "fmRowColor"))
-            f.sub.add(SliderIntSetting("Enabled Tint %", "0% invisible - 100% solid", "fmRowAlpha", 0, 100))
+            f.sub.add(SubcategoryHeader("Features"))
+            f.sub.add(ColorPickerSetting("Feature Background", "Colour behind each feature card", "fmCardColor"))
+            f.sub.add(SliderIntSetting("Feature Opacity %", "0% invisible - 100% solid", "fmCardAlpha", 0, 100))
             f.sub.add(SubcategoryHeader("Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
             general.features.add(f)
@@ -2842,6 +2841,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         else if (allMode) columns.flatMap { visibleFeatures(it) }
         else visibleColumns().firstOrNull()?.let { visibleFeatures(it) } ?: emptyList()
     private fun gx1(): Int = if (selected != null) cx1() - DET_W - COLUMN_GUTTER else cx1()
+    private fun cardFill(): Int = (Math.round(FishSettings.fmCardAlpha.coerceIn(0, 100) * 2.55f) shl 24) or (FishSettings.fmCardColor and 0xFFFFFF)
     private fun cardH(): Int = if (listView) 26 else CARD_TALL
     private fun gridCols(): Int = if (listView) 1 else Math.max(1, (gx1() - cx0() + CARD_GAP) / (CARD_MIN_W + CARD_GAP))
     private fun cardW(): Int { val n = gridCols(); return (gx1() - cx0() - (n - 1) * CARD_GAP) / n }
@@ -2874,7 +2874,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val on = f.hasMaster() && f.get!!()
                 val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + cardH()
                 val xf = x.toFloat(); val yf = y.toFloat()
-                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(if (f === selected) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x10), p))
+                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(cardFill(), p))
+                if (f === selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, ScreenTheme.ink(0x18))
                 val ha = hover("card" + f.name, hover)
                 if (ha > 0f && f !== selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(ScreenTheme.ink(0x10), ha))
                 if (f === selected) UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, 1f, 0, ACCENT)
