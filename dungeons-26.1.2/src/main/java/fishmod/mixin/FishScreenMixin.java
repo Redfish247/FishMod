@@ -85,7 +85,12 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "extractTooltip", at = @At("HEAD"), cancellable = true)
     private void fishmod$hideTooltipInCustomTermGui(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         if (fishmod.features.dungeon.floor7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
-        if (fishmod.features.inventory.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
+        if (fishmod.features.inventory.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) { ci.cancel(); return; }
+        ItemStack seen = fishmod.features.general.ExperimentSolver.tooltipFor(((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot());
+        if (seen != null) {
+            context.setTooltipForNextFrame(net.minecraft.client.Minecraft.getInstance().font, seen, mouseX, mouseY);
+            ci.cancel();
+        }
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))

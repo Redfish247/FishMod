@@ -47,11 +47,22 @@ object ExperimentSolver {
             // Superpairs: keep showing a revealed item after the card flips back
             if (game == Game.PAIRS) {
                 val seen = pairsSeen[slot.index]
-                if (seen != null && (isGlass(slot.item) || isPane(slot.item))) ctx.item(seen, x, y)
+                if (seen != null && (isGlass(slot.item) || isPane(slot.item))) {
+                    ctx.fill(x, y, x + 16, y + 16, 0xFF8B8B8B.toInt()) // cover the glass card
+                    ctx.item(seen, x, y)
+                }
             }
             val c = colorFor(slot.index)
             if (c != 0) ctx.fill(x, y, x + 16, y + 16, c)
         }
+    }
+
+    // Remembered Superpairs item under a glass card, for the hover tooltip
+    @JvmStatic
+    fun tooltipFor(slot: Slot?): ItemStack? {
+        if (game != Game.PAIRS || !FishSettings.experimentSolverEnabled || slot == null || slot.container is Inventory) return null
+        val seen = pairsSeen[slot.index] ?: return null
+        return if (isGlass(slot.item) || isPane(slot.item)) seen else null
     }
 
     @JvmStatic
