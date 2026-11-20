@@ -2662,8 +2662,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             out.add(Btn(id, label, x, CMD_Y, w, 22)); x += w + 2
         }
         val gw = 40
-        out.add(Btn("list", "List", right() - 10 - gw, CMD_Y + 2, gw, 18))
-        out.add(Btn("grid", "Grid", right() - 12 - gw * 2, CMD_Y + 2, gw, 18))
+        // segmented control: 3px padding on every side, flush with the 10px window margin
+        val sx0 = right() - 10 - (gw * 2 + 6)
+        out.add(Btn("grid", "Grid", sx0 + 3, CMD_Y + 3, gw, 16))
+        out.add(Btn("list", "List", sx0 + 3 + gw, CMD_Y + 3, gw, 16))
         return out
     }
     private fun winButtons(): List<Btn> = listOf("min" to "–", "max" to "□", "close" to "✕").mapIndexed { i, (id, l) -> Btn(id, l, right() - 36 * (3 - i), top(), 36, 28) }
@@ -2689,7 +2691,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val h = hov(b, mx, my)
             val a = hover("c" + b.id, h)
             if (b.id == "grid" || b.id == "list") {
-                if (b.id == "grid") UiRecorder.fillRoundedRect((b.x - 2).toFloat(), (b.y - 2).toFloat(), (b.w * 2 + 6).toFloat(), (b.h + 4).toFloat(), 6f, 0x14FFFFFF)
+                if (b.id == "grid") UiRecorder.fillRoundedRect((b.x - 3).toFloat(), (b.y - 3).toFloat(), (b.w * 2 + 6).toFloat(), (b.h + 6).toFloat(), 6f, 0x14FFFFFF)
                 UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, fa(0x2EFFFFFF, hover("v" + b.id, on)))
                 if (!on && a > 0f) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, fa(ROW_HOVER, a))
             } else if (a > 0f) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 6f, fa(0x2E808080, a))
