@@ -9,8 +9,16 @@ object ScreenTheme {
     var ACCENT = 0xFFD6D6D6.toInt()
     var ACCENT_HOVER = 0xFFFFFFFF.toInt()
     val CARD_BG = 0xFF171717.toInt()
-    val TEXT_COLOR = 0xFFEDF1F5.toInt()
-    val SUBTEXT_COLOR = 0xFF949494.toInt()
+    // Text follows the window background: dark text on light backgrounds, light text on dark ones
+    fun lightBg(): Boolean {
+        val c = windowBg(); val a = (c ushr 24) / 255f
+        val l = (0.299f * ((c shr 16) and 0xFF) + 0.587f * ((c shr 8) and 0xFF) + 0.114f * (c and 0xFF)) / 255f
+        return a > 0.45f && l > 0.55f
+    }
+    val TEXT_COLOR: Int get() = if (lightBg()) 0xFF141414.toInt() else 0xFFEDEDED.toInt()
+    val SUBTEXT_COLOR: Int get() = if (lightBg()) 0xFF5A5A5A.toInt() else 0xFF949494.toInt()
+    // white-ish overlay on dark, black-ish on light
+    fun ink(alpha: Int): Int = (alpha shl 24) or (if (lightBg()) 0x000000 else 0xFFFFFF)
     val DANGER = 0xFFE05A5A.toInt()
     val DANGER_HOVER = 0xFFEE7A7A.toInt()
 
@@ -56,9 +64,29 @@ object ScreenTheme {
         roundedRect(ctx, x, y, w, h, r, fillColor)
     }
 
+    // Window background chosen in /fm UI Customization (preset + alpha), shared by every FishMod screen
+    fun windowBg(): Int {
+        val s = fishmod.utils.config.values.FishSettings
+        val rgb = when (s.fmBgPreset) {
+            "Charcoal" -> 0x2B2B2B
+            "Obsidian" -> 0x0B0B0D
+            "Moss" -> 0x24311F
+            "Wine" -> 0x3A1C24
+            "Deep Sea" -> 0x13262E
+            "Custom" -> s.fmBgCustomColor and 0xFFFFFF
+            else -> 0x1E1E1E
+        }
+        return (Math.round(s.fmBgAlpha.coerceIn(0, 100) * 2.55f) shl 24) or rgb
+    }
+    // Dark opaque panel fills follow the chosen window background
+    private fun themed(fill: Int): Int {
+        val a = fill ushr 24; val r = (fill shr 16) and 0xFF; val g = (fill shr 8) and 0xFF; val b = fill and 0xFF
+        return if (a >= 0xC0 && r < 0x30 && g < 0x30 && b < 0x30 && Math.abs(r - g) < 8 && Math.abs(g - b) < 8) windowBg() else fill
+    }
+
     fun panel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
         roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, border)
-        roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
+        roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), themed(fill))
     }
 
     private const val NVG_BASE_TEXT_SIZE = 9.5f
@@ -83,7 +111,7 @@ object ScreenTheme {
 
     fun nPanel(x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
         nRoundedRect(x1, y1, x2 - x1, y2 - y1, r, border)
-        nRoundedRect(x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
+        nRoundedRect(x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), themed(fill))
     }
 
     fun nTextField(field: net.minecraft.client.gui.components.EditBox, focused: Boolean, x: Int, y: Int, w: Int, h: Int, textSize: Float = 7f) {

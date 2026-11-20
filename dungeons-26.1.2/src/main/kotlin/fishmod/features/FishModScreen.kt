@@ -2395,7 +2395,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val x = r[i][0]; val w = r[i][1]
             val hov = mx in x..x + w && my in y..y + 20
             val a = hover("tab$i", hov)
-            UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), 20f, 6f, if (i == ti) 0x33FFFFFF else 0x14FFFFFF)
+            UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), 20f, 6f, if (i == ti) ScreenTheme.ink(0x33) else ScreenTheme.ink(0x14))
             if (i != ti && a > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), 20f, 6f, fa(ROW_HOVER, a))
             val ts = 0.85f * NVG_BASE_TEXT_SIZE
             UiRecorder.text(ellipsize(t, w - 26, 0.85f), (x + 8).toFloat(), y + (20 - ts) / 2f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
@@ -2403,7 +2403,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         val p = r[tabs.size]
         val ph = mx in p[0]..p[0] + 20 && my in y..y + 20
-        UiRecorder.fillRoundedRect(p[0].toFloat(), y.toFloat(), 20f, 20f, 6f, 0x14FFFFFF)
+        UiRecorder.fillRoundedRect(p[0].toFloat(), y.toFloat(), 20f, 20f, 6f, ScreenTheme.ink(0x14))
         UiRecorder.fillRoundedRect(p[0].toFloat(), y.toFloat(), 20f, 20f, 6f, fa(ROW_HOVER, hover("tab+", ph)))
         icon("plus", p[0] + 10f, y + 10f, if (ph) TEXT_COLOR else SUBTEXT_COLOR)
     }
@@ -2534,17 +2534,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return (alpha shl 24) or cardBgRgb()
     }
 
-    private fun cardBgRgb(): Int {
-        return when (FishSettings.fmBgPreset) {
-            "Charcoal" -> 0x2B2B2B
-            "Obsidian" -> 0x0B0B0D
-            "Moss" -> 0x24311F
-            "Wine" -> 0x3A1C24
-            "Deep Sea" -> 0x13262E
-            "Custom" -> FishSettings.fmBgCustomColor and 0xFFFFFF
-            else -> 0x1E1E1E
-        }
-    }
+    private fun cardBgRgb(): Int = ScreenTheme.windowBg() and 0xFFFFFF
 
     private fun brighten(rgb: Int, amount: Int): Int {
         val a = (rgb ushr 24) and 0xFF
@@ -2618,7 +2608,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
         val wr = if (winMax) 0f else 12f
         UiRecorder.dropShadow(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 18f, 0x80000000.toInt())
-        UiRecorder.roundedRectRing(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 1f, fa(currentCardBg(), winP()), fa(0x33FFFFFF, winP()))
+        UiRecorder.roundedRectRing(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 1f, fa(currentCardBg(), winP()), fa(ScreenTheme.ink(0x33), winP()))
 
         val vmx = vx(mouseX)
         val vmy = vx(mouseY)
@@ -2675,10 +2665,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun renderChrome(ctx: GuiGraphicsExtractor, mx: Int, my: Int) {
         val l = left().toFloat(); val w = winW().toFloat()
-        UiRecorder.fillRect(l, (top() + 30).toFloat(), w, 1f, 0x1FFFFFFF)
-        UiRecorder.fillRect(l, (top() + 58).toFloat(), w, 1f, 0x1FFFFFFF)
-        UiRecorder.fillRect(l, (top() + 88).toFloat(), w, 1f, 0x1FFFFFFF)
-        UiRecorder.fillRect(l, (bottom() - STATUS_H).toFloat(), w, 1f, 0x1FFFFFFF)
+        UiRecorder.fillRect(l, (top() + 30).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
+        UiRecorder.fillRect(l, (top() + 58).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
+        UiRecorder.fillRect(l, (top() + 88).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
+        UiRecorder.fillRect(l, (bottom() - STATUS_H).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
         renderTabs(mx, my)
         for (b in winButtons()) {
             val h = hov(b, mx, my)
@@ -2691,17 +2681,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val h = hov(b, mx, my)
             val a = hover("c" + b.id, h)
             if (b.id == "grid" || b.id == "list") {
-                if (b.id == "grid") UiRecorder.fillRoundedRect((b.x - 3).toFloat(), (b.y - 3).toFloat(), (b.w * 2 + 6).toFloat(), (b.h + 6).toFloat(), 6f, 0x14FFFFFF)
-                UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, fa(0x2EFFFFFF, hover("v" + b.id, on)))
+                if (b.id == "grid") UiRecorder.fillRoundedRect((b.x - 3).toFloat(), (b.y - 3).toFloat(), (b.w * 2 + 6).toFloat(), (b.h + 6).toFloat(), 6f, ScreenTheme.ink(0x14))
+                UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, fa(ScreenTheme.ink(0x2E), hover("v" + b.id, on)))
                 if (!on && a > 0f) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, fa(ROW_HOVER, a))
             } else if (a > 0f) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 6f, fa(0x2E808080, a))
             val c = if (b.id == "reset" && resetArmed) 0xFFE05A5A.toInt() else TEXT_COLOR
             ctext(b.label, b.x, b.y, b.w, b.h, 0.85f, c)
         }
         var sx = left() + 10 + sw(this.font, "Edit HUD", 0.85f) + 22
-        UiRecorder.fillRect(sx.toFloat(), (CMD_Y + 5).toFloat(), 1f, 12f, 0x33FFFFFF)
+        UiRecorder.fillRect(sx.toFloat(), (CMD_Y + 5).toFloat(), 1f, 12f, ScreenTheme.ink(0x33))
         sx = cmdButtons().first { it.id == "look" }.x - 6
-        UiRecorder.fillRect(sx.toFloat(), (CMD_Y + 5).toFloat(), 1f, 12f, 0x33FFFFFF)
+        UiRecorder.fillRect(sx.toFloat(), (CMD_Y + 5).toFloat(), 1f, 12f, ScreenTheme.ink(0x33))
         for (b in navButtons()) {
             val can = when (b.id) { "back" -> hi > 0; "fwd" -> hi < hist.size - 1; else -> selected != null || searchText.isNotEmpty() }
             val a = hover("n" + b.id, can && hov(b, mx, my))
@@ -2710,11 +2700,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         val s = searchRect()
         val cx = left() + 92; val cw = s[0] - 8 - cx
-        UiRecorder.roundedRectRing(cx.toFloat(), s[1].toFloat(), cw.toFloat(), s[3].toFloat(), 6f, 1f, 0, 0x2EFFFFFF)
+        UiRecorder.roundedRectRing(cx.toFloat(), s[1].toFloat(), cw.toFloat(), s[3].toFloat(), 6f, 1f, 0, ScreenTheme.ink(0x2E))
         val col = visibleColumns().firstOrNull()
         val crumb = "FishMod  ›  " + (if (searchText.isNotEmpty()) "Search results" else col?.name ?: "") + (selected?.let { "  ›  " + it.name } ?: "")
         UiRecorder.text(ellipsize(crumb, cw - 16, 0.85f), (cx + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, TEXT_COLOR)
-        UiRecorder.roundedRectRing(s[0].toFloat(), s[1].toFloat(), s[2].toFloat(), s[3].toFloat(), 6f, 1f, 0x0FFFFFFF, if (searchFocused) ACCENT else 0x2EFFFFFF)
+        UiRecorder.roundedRectRing(s[0].toFloat(), s[1].toFloat(), s[2].toFloat(), s[3].toFloat(), 6f, 1f, ScreenTheme.ink(0x0F), if (searchFocused) ACCENT else ScreenTheme.ink(0x2E))
         var field = searchField
         if (field == null) {
             field = EditBox(this.font, s[0] + 8, s[1] + 4, s[2] - 16, s[3] - 8, Component.empty())
@@ -2795,7 +2785,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val open = !isFolded(c)
                 val hv = mx in x..x + w && my in y until y + NAV_ROW && my in navTop()..navBot()
                 val ha = hover("nav" + c.name, hv)
-                if (open) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, 0x24FFFFFF)
+                if (open) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, ScreenTheme.ink(0x24))
                 else if (ha > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, fa(ROW_HOVER, ha))
                 val n = "${c.features.count { it.hasMaster() && it.get!!() }}/${c.features.size}"
                 val ns = 0.82f * NVG_BASE_TEXT_SIZE
@@ -2835,7 +2825,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val sbx = stackX0() + STACK_W + 8
         UiRecorder.fillRect(left().toFloat(), (top() + 89).toFloat(), (sbx - left()).toFloat(), (bottom() - STATUS_H - top() - 89).toFloat(), 0x0D000000)
-        UiRecorder.fillRect(sbx.toFloat(), (top() + 89).toFloat(), 1f, (bottom() - STATUS_H - top() - 89).toFloat(), 0x1FFFFFFF)
+        UiRecorder.fillRect(sbx.toFloat(), (top() + 89).toFloat(), 1f, (bottom() - STATUS_H - top() - 89).toFloat(), ScreenTheme.ink(0x1F))
         renderNav(mouseX, mouseY)
         val items = exItems()
         val col = visibleColumns().firstOrNull()
@@ -2855,9 +2845,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val on = f.hasMaster() && f.get!!()
                 val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + cardH()
                 val xf = x.toFloat(); val yf = y.toFloat()
-                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(if (f === selected) 0x24FFFFFF else 0x10FFFFFF, p))
+                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(if (f === selected) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x10), p))
                 val ha = hover("card" + f.name, hover)
-                if (ha > 0f && f !== selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(0x10FFFFFF, ha))
+                if (ha > 0f && f !== selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(ScreenTheme.ink(0x10), ha))
                 if (f === selected) UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, 1f, 0, ACCENT)
                 val d = descFor(f.name)
                 if (listView) {
@@ -2876,7 +2866,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (items.isEmpty() && col != null) sst(ctx, this.font, "No features match", cx0(), cyTop() + 8, SUBTEXT_COLOR, 1f)
         val f = selected ?: return
         val dx0 = cx1() - DET_W + Math.round((1f - anim(selAt, 0, 220)) * 24f)
-        UiRecorder.fillRoundedRect(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), 0x0FFFFFFF)
+        UiRecorder.fillRoundedRect(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ink(0x0F))
         sst(ctx, this.font, ellipsize(f.name, DET_W - 40), dx0 + 12, ht + 9, TEXT_COLOR, 1f)
         descFor(f.name).takeIf { it.isNotEmpty() }?.let { sst(ctx, this.font, ellipsize(it, DET_W - 24, 0.75f), dx0 + 12, ht + 24, SUBTEXT_COLOR, 0.75f) }
         val xh = mouseX >= cx1() - 20 && mouseY in ht..ht + 20
@@ -3387,7 +3377,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             pillX = rightX - pillW - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
-            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) 0x24FFFFFF else 0x14FFFFFF, if (hov) 0x40FFFFFF else 0x26FFFFFF)
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x14), if (hov) ScreenTheme.ink(0x40) else ScreenTheme.ink(0x26))
             if (sw != null) disc(ctx, pillX + 12, by + PILL_H / 2, 4, sw(currentValue))
             st(ctx, tr, current, pillX + (if (sw != null) 22 else 10), by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
 
@@ -3771,7 +3761,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             pillX = rightX - pillW - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
-            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) 0x24FFFFFF else 0x14FFFFFF, if (hov) 0x40FFFFFF else 0x26FFFFFF)
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x14), if (hov) ScreenTheme.ink(0x40) else ScreenTheme.ink(0x26))
             disc(ctx, pillX + 12, by + PILL_H / 2, swatchD / 2, getter() or 0xFF000000.toInt())
             st(ctx, tr, label, pillX + 22, by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
 
@@ -3984,7 +3974,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val bx = rightX - bw - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + PILL_H
-            roundedRectRing(ctx, bx, by, bw, PILL_H, 6, 1, if (hov) 0x24FFFFFF else 0x14FFFFFF, if (hov) 0x40FFFFFF else 0x26FFFFFF)
+            roundedRectRing(ctx, bx, by, bw, PILL_H, 6, 1, if (hov) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x14), if (hov) ScreenTheme.ink(0x40) else ScreenTheme.ink(0x26))
             st(ctx, tr, text, bx + (bw - stw(tr, text)) / 2, by + (PILL_H - 8) / 2 - 1, -0x1)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
@@ -4016,7 +4006,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
             val ring = if (capturing) ACCENT_HOVER else (if (hov) ACCENT else 0xFF4B4B4B.toInt())
-            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, 0x14FFFFFF, ring)
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, ScreenTheme.ink(0x14), ring)
             st(ctx, tr, t, pillX + (pillW - textW) / 2, by + (PILL_H - 8) / 2 - 1, if (capturing) ACCENT_HOVER else TEXT_COLOR)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
@@ -4123,14 +4113,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private var ACCENT_HOVER: Int = ScreenTheme.ACCENT_HOVER
         private const val DIM_TOP = 0x2E000000
         private const val DIM_BOT = 0x50000000
-        private const val ROW_HOVER = 0x1EFFFFFF
+        private val ROW_HOVER get() = ScreenTheme.ink(0x1E)
         private var ROW_ENABLED: Int = 0x26D6D6D6
         private var ROW_BUTTON: Int = 0xFF212121.toInt()
         private const val ROW_RADIUS = 3f
         private val SUBROW_BG = 0xFF121212.toInt()
         private val TRACK_OFF = 0xFF3F3F3F.toInt()
-        private val TEXT_COLOR = ScreenTheme.TEXT_COLOR
-        private val SUBTEXT_COLOR = ScreenTheme.SUBTEXT_COLOR
+        private val TEXT_COLOR get() = ScreenTheme.TEXT_COLOR
+        private val SUBTEXT_COLOR get() = ScreenTheme.SUBTEXT_COLOR
         private val CHEVRON_COLOR = 0xFF767676.toInt()
 
         private const val TEXT_SCALE = ScreenTheme.TEXT_SCALE
@@ -4183,7 +4173,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val ITEM_HEIGHT get() = if (COMPACT) 18 else 22
         private val PILL_H get() = if (COMPACT) 15 else 18
         private const val OPTION_H = 16
-        private val SLIDER_BG = 0x26FFFFFF
+        private val SLIDER_BG = ScreenTheme.ink(0x26)
         private val SLIDER_FILL = 0xFFD6D6D6.toInt()
         private const val SLIDER_W = 56
         private const val SLIDER_H = 3
