@@ -44,5 +44,12 @@ object Fishing {
         BaitHud.init()
         ShardTracker.init()
         GoldenFishTimer.init()
+        HuntingHelpers.init()
+        TrophyBoxes.init()
+        OwnSeaCreatures.init()
+        TrophyHud.init()
+        FusionKeys.init()
+        MutePhantoms.init()
+        TotemOverlay.init()
     }
 }

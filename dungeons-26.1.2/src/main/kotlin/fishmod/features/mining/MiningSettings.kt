@@ -4,6 +4,14 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object MiningSettings {
 
+    @ConfigValue @JvmField var miningMuteHeat: Boolean = false
+    @ConfigValue @JvmField var miningMetalDetector: Boolean = false
+    @ConfigValue @JvmField var miningMetalDetectorColor: Int = 0xFFFFFF55.toInt()
+    @ConfigValue @JvmField var foragingHoneyhive: Boolean = false
+    @ConfigValue @JvmField var foragingHoneyhiveMin: Int = 60
+    @ConfigValue @JvmField var foragingQueenBee: Boolean = true
+    @ConfigValue @JvmField var miningGemDesyncFix: Boolean = false
+
     @ConfigValue @JvmField var miningNucleusBoxes: Boolean = false
     @ConfigValue @JvmField var miningNucleusFilled: Boolean = true
     @ConfigValue @JvmField var miningNucleusOpacity: Int = 35
