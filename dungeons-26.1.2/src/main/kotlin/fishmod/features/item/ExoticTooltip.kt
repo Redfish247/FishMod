@@ -18,6 +18,7 @@ object ExoticTooltip {
 
     @JvmStatic
     fun init() {
+        FocusMode.init()
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
             if (!FishSettings.exoticTooltip || !SkyblockLocation.inSkyblock()) return@ItemTooltipCallback
             try {
