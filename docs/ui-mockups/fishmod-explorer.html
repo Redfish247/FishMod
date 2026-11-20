@@ -170,7 +170,7 @@ const W=$("win");
 function hex(h){return[1,3,5].map(i=>parseInt(h.slice(i,i+2),16))}
 function sh([r,g,b],k){return[r,g,b].map(v=>Math.round(k<0?v*(1+k):v+(255-v)*k))}
 function look(){const c=hex(L.c),a=L.a/100,dk=(.299*c[0]+.587*c[1]+.114*c[2])/255<.55,rgba=(v,x)=>"rgb("+v.join(" ")+" / "+x+")";
- const p=W.style;p.setProperty("--win",rgba(c,a));p.setProperty("--pane",rgba(sh(c,dk?.06:-.05),a));
+ const p=W.style;p.background=rgba(c,a);p.setProperty("--win",dk?"#ffffff12":"#ffffff59");p.setProperty("--pane",dk?"#ffffff08":"#0000000a");
  p.setProperty("--fg",dk?"#ececec":"#1c1c1c");p.setProperty("--mut",dk?"#a0a0a0":"#5e5e5e");p.setProperty("--line",dk?"#ffffff1f":"#0000001f");
  p.setProperty("--accs",dk?"#ffffff1a":"#0000001a");p.setProperty("--acc",dk?"#9a9a9a":"#444");document.getElementById("lgd").setAttribute("scale",L.b);
  W.classList.toggle("glass",!!L.g);$("lg").classList.toggle("on",!!L.g);$("lc").value=L.c;$("la").value=$("lan").value=100-L.a;$("lb").value=$("lbn").value=L.b;
