@@ -54,4 +54,11 @@ object GardenExtraSettings {
     @ConfigValue @JvmField var gardenAnglesHudX: Int = 5
     @ConfigValue @JvmField var gardenAnglesHudY: Int = 160
     @ConfigValue @JvmField var gardenAnglesHudScale: Double = 1.0
+
+    @ConfigValue @JvmField var gardenBps: Boolean = false
+    @ConfigValue @JvmField var gardenCropSpeed: Boolean = false
+    @ConfigValue @JvmField var gardenBpsColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var gardenBpsHudX: Int = 5
+    @ConfigValue @JvmField var gardenBpsHudY: Int = 185
+    @ConfigValue @JvmField var gardenBpsHudScale: Double = 1.0
 }
