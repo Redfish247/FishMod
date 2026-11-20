@@ -82,7 +82,7 @@ object StorageCache {
     private fun uuid(): String? = Minecraft.getInstance().player?.gameProfile?.id?.toString()
 
     private fun tick(mc: Minecraft) {
-        if (!FishSettings.storageOverlayEnabled) return
+        if (!FishSettings.storageOverlayEnabled && !fishmod.features.extras.ExtrasSettings.backpackPreview) return
         val id = uuid() ?: return
         if (id != loadedFor) { load(id); loadedFor = id }
 

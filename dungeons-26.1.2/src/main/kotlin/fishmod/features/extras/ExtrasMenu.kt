@@ -76,6 +76,7 @@ object ExtrasMenu {
         lvl.sub.add(ToggleSetting("Pet Level", "", S::class.java, "overlayPetLevel"))
         lvl.sub.add(ToggleSetting("Hide Max Pet Level", "Skip the overlay on max-level pets", S::class.java, "overlayPetHideMax"))
         lvl.sub.add(ToggleSetting("Minion Tier", "", S::class.java, "overlayMinionTier"))
+        lvl.sub.add(ToggleSetting("Item Stars", "Dungeon star count on starred items", S::class.java, "overlayItemStars"))
         lvl.sub.add(ToggleSetting("Cake Year", "New Year Cakes", S::class.java, "overlayCakeYear"))
         lvl.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "overlayTextColor"))
         col.features.add(lvl)
@@ -91,6 +92,36 @@ object ExtrasMenu {
         col.features.add(Feature("Fix Double Clicks", S::class.java, "fixDoubleClicks"))
         col.features.add(Feature("Middle Click Fix", S::class.java, "middleClickFix"))
         col.features.add(Feature("Command Tab Complete", S::class.java, "tabComplete"))
+        col.features.add(Feature("Wiki Lookup", S::class.java, "wikiCommand"))
+        val ufps = Feature("Unfocused FPS Saver", S::class.java, "unfocusedFps")
+        ufps.sub.add(SliderIntSetting("FPS Cap", "Max FPS while the window is not focused", S::class.java, "unfocusedFpsLimit", 1, 60, 1))
+        col.features.add(ufps)
+        val todo = Feature("Custom Todos", S::class.java, "todoHud")
+        todo.sub.add(ColorPickerSetting("Title Color", "", S::class.java, "todoHudTitleColor"))
+        todo.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "todoHudColor"))
+        col.features.add(todo)
+        val bp = Feature("Backpack Preview", S::class.java, "backpackPreview")
+        bp.sub.add(ColorPickerSetting("Background", "", S::class.java, "backpackPreviewBg"))
+        col.features.add(bp)
+        val skill = Feature("Skill Progress HUD", S::class.java, "skillHud")
+        skill.sub.add(SliderIntSetting("Hide After (s)", "Hide when no skill XP for this long", S::class.java, "skillHudHideSeconds", 10, 600, 10))
+        skill.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "skillHudColor"))
+        col.features.add(skill)
+        val pick = Feature("Item Pickup Log", S::class.java, "pickupLog")
+        pick.sub.add(SliderIntSetting("Show For (s)", "", S::class.java, "pickupLogSeconds", 1, 30, 1))
+        pick.sub.add(ColorPickerSetting("Gain Color", "", S::class.java, "pickupLogGainColor"))
+        pick.sub.add(ColorPickerSetting("Loss Color", "", S::class.java, "pickupLogLossColor"))
+        col.features.add(pick)
+        col.features.add(Feature("Command Tooltip in Chat", S::class.java, "commandTooltip"))
+        col.features.add(Feature("Compact Bestiary", S::class.java, "compactBestiary"))
+        val ofa = Feature("Order Filled Alert", S::class.java, "orderFilledAlert")
+        ofa.sub.add(SoundSearchSetting("Sound", "Type to search every game sound", { S.orderFilledSound }, { S.orderFilledSound = it }))
+        col.features.add(ofa)
+        col.features.add(Feature("SkyBlock XP in Chat", S::class.java, "sbXpChat"))
+        col.features.add(Feature("Hoppity Hunt Summary", S::class.java, "hoppitySummary"))
+        val tt = Feature("Trick or Treat Chest Alert", S::class.java, "trickTreatAlert")
+        tt.sub.add(InputSetting("Title", "& colour codes work", S::class.java, "trickTreatTitle"))
+        col.features.add(tt)
 
         return col
     }
@@ -106,6 +137,16 @@ object ExtrasMenu {
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
         "Booster Cookie Warning" -> "Chat warning on joining SkyBlock when your Cookie Buff is not active"
         "Command Tab Complete" -> "Tab suggests /warp names, lobby players for /p kick|transfer|promote, /msg etc., and /viewrecipe item ids"
+        "Unfocused FPS Saver" -> "Caps FPS while Minecraft is not the focused window"
+        "Custom Todos" -> "Todo list HUD; /fmtodo add <text>, /fmtodo done <n>, /fmtodo clear"
+        "Backpack Preview" -> "Storage menu: hover an ender chest page or backpack to see its contents (open each once; only when Storage Overlay is off)"
+        "Skill Progress HUD" -> "Last skill XP popup: progress to next level, XP/h and ETA; move in the HUD editor"
+        "Item Pickup Log" -> "HUD of items gained or lost in your inventory over the last few seconds"
+        "Command Tooltip in Chat" -> "Hovering clickable chat shows the command it runs or suggests"
+        "Compact Bestiary" -> "Folds the multi-line BESTIARY level-up message into one line"
+        "Order Filled Alert" -> "Title + sound when a Bazaar buy order or sell offer is filled"
+        "SkyBlock XP in Chat" -> "Copies the action bar SkyBlock XP popup (amount, reason, n/100) into chat"
+        "Wiki Lookup" -> "/wiki [item name] posts a clickable Hypixel wiki link; no name = held item"
         "Kick Cooldown Timer" -> "Title one minute after a kick/limbo, when you can rejoin SkyBlock"
         "SkyBlock Date HUD" -> "Current SkyBlock date and hour, optionally with real time; move in the HUD editor"
         "Vanquisher Party Share" -> "Sends your coords to party chat when a Vanquisher spawns nearby"
