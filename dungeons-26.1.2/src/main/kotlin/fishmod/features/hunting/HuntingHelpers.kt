@@ -1,5 +1,6 @@
 package fishmod.features.hunting
 
+import fishmod.compat.speed
 import fishmod.features.AlertTitles
 import fishmod.utils.FishUtil
 import fishmod.utils.SkyblockLocation

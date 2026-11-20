@@ -9,6 +9,7 @@ object CB {
     @JvmField val BLUE_STAINED_GLASS: Block = Blocks.BLUE_STAINED_GLASS
     @JvmField val BLUE_TERRACOTTA: Block = Blocks.BLUE_TERRACOTTA
     @JvmField val BLUE_WOOL: Block = Blocks.BLUE_WOOL
+    @JvmField val BLUE_STAINED_GLASS_PANE: Block = Blocks.BLUE_STAINED_GLASS_PANE
     @JvmField val BROWN_STAINED_GLASS_PANE: Block = Blocks.BROWN_STAINED_GLASS_PANE
     @JvmField val BROWN_TERRACOTTA: Block = Blocks.BROWN_TERRACOTTA
     @JvmField val CYAN_TERRACOTTA: Block = Blocks.CYAN_TERRACOTTA

@@ -1,5 +1,6 @@
 package fishmod.features.mining
 
+import fishmod.utils.events.chatRaw
 import fishmod.utils.events.FishEvents
 import fishmod.features.mining.MiningSettings as S
 

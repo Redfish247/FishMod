@@ -1,5 +1,6 @@
 package fishmod.features.extras
 
+import fishmod.compat.hud
 import fishmod.features.FishHudEditor
 import fishmod.mixin.accessors.PlayerTabOverlayAccessor
 import fishmod.utils.FishUtil
