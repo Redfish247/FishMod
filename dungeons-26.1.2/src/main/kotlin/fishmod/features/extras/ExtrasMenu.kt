@@ -83,6 +83,7 @@ object ExtrasMenu {
 
         col.features.add(Feature("Booster Cookie Warning", S::class.java, "cookieWarning"))
         col.features.add(Feature("No Bits Available Warning", S::class.java, "bitsWarning"))
+        col.features.add(Feature("Bazaar Search + Price Graph", S::class.java, "bazaarSearch"))
         col.features.add(Feature("Kick Cooldown Timer", S::class.java, "kickTimer"))
 
         val date = Feature("SkyBlock Date HUD", S::class.java, "sbDateHud")
@@ -163,6 +164,7 @@ object ExtrasMenu {
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
         "Booster Cookie Warning" -> "Chat warning on joining SkyBlock when your Cookie Buff is not active"
         "No Bits Available Warning" -> "Title + chat when your cookie's Bits Available run out (open the Booster Cookie menu once to sync)"
+        "Bazaar Search + Price Graph" -> "/fmbz <item>: buy/sell prices and a 7-day price graph in chat"
         "Command Tab Complete" -> "Tab suggests /warp names, lobby players for /p kick|transfer|promote, /msg etc., and /viewrecipe item ids"
         "Unfocused FPS Saver" -> "Caps FPS while Minecraft is not the focused window"
         "Custom Todos" -> "Todo list HUD; /fmtodo add <text>, /fmtodo done <n>, /fmtodo clear"
