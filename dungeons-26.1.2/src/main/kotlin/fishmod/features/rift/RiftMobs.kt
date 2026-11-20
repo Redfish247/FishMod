@@ -66,6 +66,7 @@ object RiftMobs {
     }
 
     private val still = HashMap<Int, Pair<Vec3, Long>>()
+    private var bacteIdle = 0
     private fun stillFor(e: Entity): Long {
         val now = System.currentTimeMillis(); val p = e.position()
         val prev = still[e.id]
@@ -99,7 +100,7 @@ object RiftMobs {
         if (bacteDebugOn) bacteDebug = (cand + sizes.sortedBy { it.substringAfter("#").substringBefore(" ").toInt() }).take(30)
         tagStand?.let { st -> Rift.mobUnder(st)?.let { b -> te.removeAll { it.id == b.id } } }
         val on = boss || windowOpen
-        if (still.size > 200) still.clear()
+        if (still.size > 200) still.keys.retainAll(lv.entitiesForRendering().mapTo(HashSet()) { it.id })
         bacteSlimes = if (on) sl else emptyList()
         bacte = if (on) te.distinct() else emptyList()
     }
@@ -130,7 +131,10 @@ object RiftMobs {
                 FishUtil.forceTitle(Component.literal("§eLook away!"), Component.empty(), 300)
         }
         marks = out; lastCruxNames = names; fleespook = flee
-        if (S.riftBacte) findBacte(me, System.currentTimeMillis() < bacteUntil) else { bacte = emptyList(); bacteSlimes = emptyList() }
+        // Outside a Bacte fight only look for its spawn about once a second
+        val fight = System.currentTimeMillis() < bacteUntil || bacte.isNotEmpty()
+        if (S.riftBacte && (fight || ++bacteIdle % 4 == 0)) findBacte(me, System.currentTimeMillis() < bacteUntil)
+        else if (!S.riftBacte) { bacte = emptyList(); bacteSlimes = emptyList() }
     }
 
     fun shouldHideSlime(e: Entity): Boolean = S.riftBacte && S.riftBacteHideSlimes && S.riftBacteSlimeBoxes && bacteSlimes.contains(e)
