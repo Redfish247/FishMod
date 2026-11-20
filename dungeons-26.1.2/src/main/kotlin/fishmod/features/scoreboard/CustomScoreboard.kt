@@ -439,9 +439,13 @@ object CustomScoreboard {
         return lastLevel?.takeIf { now - lastLevelAt < 5000L }
     }
 
+    private var levelReName: String? = null
+    private var levelRe: Regex? = null
+
     private fun levelLine(mc: Minecraft): Component? {
         val name = mc.player?.gameProfile?.name ?: return null
-        val re = Regex("""^\[(\d{1,4})\S*]\s+$name\b""")
+        if (name != levelReName) { levelReName = name; levelRe = Regex("""^\[(\d{1,4})\S*]\s+${Regex.escape(name)}\b""") }
+        val re = levelRe ?: return null
         for (e in TabListCache.entries) {
             val m = re.find(e.stripped.trim()) ?: continue
             val lvl = m.groupValues[1]
