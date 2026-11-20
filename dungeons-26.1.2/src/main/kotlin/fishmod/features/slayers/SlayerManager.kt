@@ -122,6 +122,7 @@ object SlayerManager {
         SlayerAlerts.init()
         SlayerBossDetector.init()
         SlayerBossPhases.init()
+        BossDamageIndicator.init()
         SlayerHuds.init()
         SlayerCarryTracker.init()
         SlayerHuds.initInventory()
