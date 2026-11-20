@@ -145,6 +145,13 @@ object F7Huds {
         { false }, PlayersLeaped::render, { Floor7Settings.playersLeapedEnabled }
     )
 
+    @JvmField
+    @ConfigValue
+    var deathCounter: HUDComponent = HUDComponent(
+        10.0, 250.0, 60, 10, 1f, "Death Counter",
+        { false }, fishmod.features.dungeon.DungeonDeathCounter::render, { fishmod.utils.config.values.DungeonSettings.deathCounterHud }
+    )
+
     // Editor examples: each HUD's real render, fed example data while HudPreview.active
     private fun examples() {
         fun ex(name: String, c: HUDComponent, r: HUDComponent.RenderSupplier) = HudPreview.register(name) { HudPreview.component(c, r) }
@@ -176,6 +183,7 @@ object F7Huds {
         ex("Section Cleared", sectionCompletion, SectionDoneHud::render)
         exText("P3 Section", currentSection, GoldorSectionHud::render, "P3:  2/4")
         exText("Players Leaped", playersLeaped, PlayersLeaped::render, "Leaped (HEE2): 2/4")
+        exText("Death Counter", deathCounter, fishmod.features.dungeon.DungeonDeathCounter::render, "Deaths 2")
     }
 
     @JvmStatic
@@ -186,6 +194,7 @@ object F7Huds {
         NecronDropPredict.init()
         GateDisplay.init()
         BloodSolver.init()
+        fishmod.features.dungeon.DungeonDeathCounter.init()
         // Blade Addons ships these, so skip ours to avoid double HUDs/sounds
         if (BladeCompat.active) return
         MaxorTicks.init()
@@ -225,6 +234,7 @@ object F7Huds {
         renderOne(ctx, melodyWarning, own && MelodyAlert.display(), MelodyAlert::render, 10, 64)
         renderOne(ctx, sectionCompletion, own && SectionDoneHud.display(), SectionDoneHud::render, 10, 16)
         renderOne(ctx, playersLeaped, own && PlayersLeaped.display(), PlayersLeaped::render, 10, 90)
+        renderOne(ctx, deathCounter, fishmod.features.dungeon.DungeonDeathCounter.display(), fishmod.features.dungeon.DungeonDeathCounter::render, 10, 250)
     }
 
     private fun renderOne(

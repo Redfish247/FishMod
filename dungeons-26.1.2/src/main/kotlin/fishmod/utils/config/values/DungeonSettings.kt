@@ -44,4 +44,6 @@ object DungeonSettings {
 
     @ConfigValue @JvmField var bossHpNumbers: Boolean = false
 
+    @ConfigValue @JvmField var deathCounterHud: Boolean = false
+
 }
