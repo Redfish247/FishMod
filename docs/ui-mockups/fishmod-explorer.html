@@ -68,20 +68,20 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 .empty{color:var(--mut);padding:30px 0}
 @media(max-width:860px){.main.nodet{grid-template-columns:1fr}.win{left:16px!important;top:16px!important}.main{grid-template-columns:1fr}.side{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:6px}.side h4{display:none}.side button{width:auto;white-space:nowrap}.side .n{display:none}.det{border-left:0;border-top:1px solid var(--line)}.search{width:130px}.list .it .t{width:auto}.list .it .d{display:none}}
 
-button,.tab,.it,.sw,.sw::after,.crumb button,.side button{transition:background-color .18s,color .18s,border-color .18s,box-shadow .18s,transform .12s,filter .18s}
+button,.tab,.it,.sw,.sw::after,.crumb button,.side button{transition:background-color 0.32s,color 0.32s,border-color 0.32s,box-shadow 0.32s,transform 0.22s,filter 0.32s}
 button:active{transform:scale(.97)}
-.win{transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1),border-radius .28s,background-color .3s,box-shadow .3s,border-color .3s}
-.win.dragging{transition:background-color .3s}
+.win{transition:left 0.5s cubic-bezier(.2,.8,.2,1),top 0.5s cubic-bezier(.2,.8,.2,1),width 0.5s cubic-bezier(.2,.8,.2,1),height 0.5s cubic-bezier(.2,.8,.2,1),border-radius 0.5s,background-color 0.54s,box-shadow 0.54s,border-color 0.54s}
+.win.dragging{transition:background-color 0.54s}
 @keyframes wIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
 @keyframes wOut{to{opacity:0;transform:scale(.95)}}
 @keyframes wMin{to{opacity:0;transform:translateY(40%) scale(.6)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
-.win.opening{animation:wIn .32s cubic-bezier(.2,.8,.2,1)}.win.closing{animation:wOut .22s ease-in forwards}.win.minning{animation:wMin .22s ease-in forwards;transform-origin:50% 100%}
-.items.enter>*{animation:fadeUp .26s cubic-bezier(.2,.8,.2,1) both}.items.enter .grid>*{animation:fadeUp .3s cubic-bezier(.2,.8,.2,1) both}
-.items.enter .grid>*:nth-child(2){animation-delay:.03s}.items.enter .grid>*:nth-child(3){animation-delay:.06s}.items.enter .grid>*:nth-child(4){animation-delay:.09s}.items.enter .grid>*:nth-child(n+5){animation-delay:.12s}
-.det.enter{animation:slideIn .26s cubic-bezier(.2,.8,.2,1)}.tab.pop{animation:pop .22s cubic-bezier(.2,.8,.2,1)}.reopen{animation:pop .25s}
+.win.opening{animation:wIn 0.58s cubic-bezier(.2,.8,.2,1)}.win.closing{animation:wOut 0.4s ease-in forwards}.win.minning{animation:wMin 0.4s ease-in forwards;transform-origin:50% 100%}
+.items.enter>*{animation:fadeUp 0.47s cubic-bezier(.2,.8,.2,1) both}.items.enter .grid>*{animation:fadeUp 0.54s cubic-bezier(.2,.8,.2,1) both}
+.items.enter .grid>*:nth-child(2){animation-delay:0.05s}.items.enter .grid>*:nth-child(3){animation-delay:0.11s}.items.enter .grid>*:nth-child(4){animation-delay:0.16s}.items.enter .grid>*:nth-child(n+5){animation-delay:0.22s}
+.det.enter{animation:slideIn 0.47s cubic-bezier(.2,.8,.2,1)}.tab.pop{animation:pop 0.4s cubic-bezier(.2,.8,.2,1)}.reopen{animation:pop 0.45s}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
 <div class="stage" aria-hidden="true"></div><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lgf" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage id="lgm" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="m"/><feDisplacementMap id="lgd" in="SourceGraphic" in2="m" scale="70" xChannelSelector="R" yChannelSelector="G" result="r"/><feTurbulence id="lgt" type="fractalNoise" baseFrequency="0.004 0.007" numOctaves="1" seed="7" result="n"/><feDisplacementMap id="lgw" in="r" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G"/></filter></svg><button class="reopen" id="reopen" hidden>Open FishMod</button>
@@ -217,7 +217,7 @@ let lmT;new ResizeObserver(()=>{clearTimeout(lmT);lmT=setTimeout(()=>{if(L.g)len
 const RM=matchMedia("(prefers-reduced-motion: reduce)");let ph=0;
 (function wob(){if(L.g&&!W.hidden&&!RM.matches){ph+=.012;document.getElementById("lgt").setAttribute("baseFrequency",(0.004+0.0015*Math.sin(ph)).toFixed(5)+" "+(0.007+0.0015*Math.cos(ph*.8)).toFixed(5))}requestAnimationFrame(wob)})();
 function openWin(){W.hidden=false;$("reopen").hidden=true;W.classList.remove("closing","minning","opening");void W.offsetWidth;W.classList.add("opening")}
-function closeWin(cls){look();W.classList.add(cls);setTimeout(()=>{W.hidden=true;W.classList.remove(cls);$("reopen").hidden=false},RM.matches?0:220)}
+function closeWin(cls){look();W.classList.add(cls);setTimeout(()=>{W.hidden=true;W.classList.remove(cls);$("reopen").hidden=false},RM.matches?0:390)}
 
 look();openWin();
 document.addEventListener("input",e=>{const t=e.target,id=t.id;if(!id||id==="q")return;
