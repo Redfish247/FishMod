@@ -191,6 +191,9 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
     @org.spongepowered.asm.mixin.Unique
     private static final java.util.regex.Pattern fishmod$PET_LEVEL = java.util.regex.Pattern.compile("^\\s*\\[(?:Lvl? ?)?\\d+]\\s*(?=[^❤]+$)");
 
+    @org.spongepowered.asm.mixin.Unique
+    private static final java.util.HashMap<Integer, Component[]> fishmod$PET_CACHE = new java.util.HashMap<>();
+
     @ModifyReturnValue(method = "getNameTag(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/network/chat/Component;", at = @At("RETURN"))
     private Component fishmod$cosmeticNameTag(Component original, Entity entity) {
         if (original == null || fishmod.utils.debug.FishDebug.skipName) return original;
@@ -199,10 +202,15 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             if (dmg != original) return dmg;
         }
         if (FishSettings.petNametagHideLevel && entity instanceof ArmorStand) {
+            // Same Component instance until the tag changes, so cache the rewrite per stand
+            Component[] hit = fishmod$PET_CACHE.get(entity.getId());
+            if (hit != null && hit[0] == original) return hit[1];
             String plain = ChatFormatting.stripFormatting(original.getString());
             java.util.regex.Matcher m = fishmod$PET_LEVEL.matcher(plain);
-            if (m.find()) return NameRewriter.dropVisiblePrefix(original, m.end());
-            return original;
+            Component out = m.find() ? NameRewriter.dropVisiblePrefix(original, m.end()) : original;
+            if (fishmod$PET_CACHE.size() > 2048) fishmod$PET_CACHE.clear();
+            fishmod$PET_CACHE.put(entity.getId(), new Component[]{original, out});
+            return out;
         }
         boolean player = entity instanceof Player;
         boolean prestige = player && FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags;
