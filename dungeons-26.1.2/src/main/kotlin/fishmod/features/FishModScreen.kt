@@ -84,9 +84,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var renamingFolder: Folder? = null
     private var renameField: EditBox? = null
 
-    private val screenOpenTime = System.currentTimeMillis()
     private var closing = false
-    private var closeStartTime = 0L
     private var closeFinalized = false
 
     init {
@@ -143,13 +141,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Enabled Tint %", "0% invisible - 100% solid", "fmRowAlpha", 0, 100))
             f.sub.add(SubcategoryHeader("Layout"))
             f.sub.add(ToggleSetting("Compact GUI", "Tighter rows, gaps and columns so more fits on screen", "fmCompact"))
-            f.sub.add(SubcategoryHeader("Cascade Animation"))
-            f.sub.add(ToggleSetting("Menu Animations", "Off = the menu just appears; no cascade / expand / toggle slides", "fmAnimations"))
-            f.sub.add(SliderIntSetting("Drop Duration (ms)", "200 snappy - 1200 dramatic", "fmDropDurationMs", 200, 1200, 25).gatedBy { FishSettings.fmAnimations })
-            f.sub.add(SliderIntSetting("Stagger Delay (ms)", "Extra delay per column, 0 = all at once", "fmStaggerDelayMs", 0, 120, 5).gatedBy { FishSettings.fmAnimations })
-            f.sub.add(DropdownSetting("Exit Style", "How columns animate on close", arrayOf("Floor Fall", "Reverse Curtain"),
-                { FishSettings.fmExitStyle },
-                { v -> FishSettings.fmExitStyle = v }).gatedBy { FishSettings.fmAnimations })
+            f.sub.add(SubcategoryHeader("Animation"))
+            f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmAnimations"))
             general.features.add(f)
         }
         run {
@@ -2528,18 +2521,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return out
     }
 
-    private fun fmDropMs(): Int = if (FishSettings.fmAnimations) FishSettings.fmDropDurationMs else 0
-    private fun fmStagMs(): Int = if (FishSettings.fmAnimations) FishSettings.fmStaggerDelayMs else 0
-
-    private fun exitTotalDurationMs(): Long {
-        val n = visibleColumns().size
-        return fmDropMs().toLong() + fmStagMs().toLong() * Math.max(0, n - 1)
-    }
-
     private fun requestClose() {
         if (closing) return
         closing = true
-        closeStartTime = System.currentTimeMillis()
     }
 
     private fun currentCardBg(): Int {
@@ -2608,7 +2592,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         refreshButtonTheme()
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
 
-        if (closing && !closeFinalized && System.currentTimeMillis() - closeStartTime >= exitTotalDurationMs()) {
+        if (closing && !closeFinalized && true) {
             closeFinalized = true
             try { ConfigRoot.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.8", "Config save on /fm close failed", t) }
             try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.9", "FishConfig save on /fm close failed", t) }
