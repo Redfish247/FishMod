@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.general.InvSearchBar;
+import fishmod.features.inventory.InvSearchBar;
 import fishmod.utils.config.values.MiscSettings;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen;

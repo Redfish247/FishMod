@@ -83,9 +83,9 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             if (dgGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dgGlow;
             int trevorGlow = fishmod.features.extras.TrevorHelper.glowColor(entity);
             if (trevorGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = trevorGlow;
-            int jerryGlow = fishmod.features.extras.JerryHighlight.glowColor(entity);
+            int jerryGlow = fishmod.features.events.JerryHighlight.glowColor(entity);
             if (jerryGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = jerryGlow;
-            int carnivalGlow = fishmod.features.extras.CarnivalShootout.glowColor(entity);
+            int carnivalGlow = fishmod.features.events.CarnivalShootout.glowColor(entity);
             if (carnivalGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = carnivalGlow;
 
             if (VisualSettings.hideMobFire) {

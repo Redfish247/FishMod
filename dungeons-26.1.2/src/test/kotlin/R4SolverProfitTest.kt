@@ -1,7 +1,7 @@
 import fishmod.features.croesus.CroesusProfit
 import fishmod.features.dungeon.f7.dragons.DragonCheck
 import fishmod.features.garden.FarmingProfitTracker
-import fishmod.features.garden.Pests
+import fishmod.features.garden.visitors.Pests
 import fishmod.features.mining.MiningProfitTracker
 import fishmod.utils.rendering.FishDraw
 import org.junit.jupiter.api.Assertions.*

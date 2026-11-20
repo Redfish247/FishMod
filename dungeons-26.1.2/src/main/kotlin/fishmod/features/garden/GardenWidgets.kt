@@ -1,5 +1,7 @@
 package fishmod.features.garden
 
+import fishmod.features.garden.visitors.GardenTitles
+
 import fishmod.utils.events.chatRaw
 import fishmod.features.mining.Mining
 import fishmod.utils.events.FishEvents

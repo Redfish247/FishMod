@@ -1,5 +1,7 @@
 package fishmod.features.garden
 
+import fishmod.features.garden.visitors.Visitors
+
 import fishmod.utils.FishUtil
 import net.minecraft.sounds.SoundEvents
 import fishmod.features.garden.GardenSettings as S

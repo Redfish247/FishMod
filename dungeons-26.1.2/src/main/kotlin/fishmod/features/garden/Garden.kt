@@ -1,5 +1,10 @@
 package fishmod.features.garden
 
+import fishmod.features.garden.visitors.GardenCarrolyn
+import fishmod.features.garden.visitors.GardenTitles
+import fishmod.features.garden.visitors.Pests
+import fishmod.features.garden.visitors.Visitors
+
 import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds

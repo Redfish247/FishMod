@@ -1,8 +1,8 @@
 package fishmod.mixin;
 
 import fishmod.features.dungeon.trackers.SessionStats;
-import fishmod.features.general.InvSearchBar;
-import fishmod.features.general.WardrobeHotkeys;
+import fishmod.features.inventory.InvSearchBar;
+import fishmod.features.inventory.WardrobeHotkeys;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.debug.FishDiag;
 import fishmod.utils.rendering.DrawHooks;
@@ -54,7 +54,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
         if (FishSettings.containerValueEnabled) {
             try { fishmod.features.inventory.ContainerValue.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.6", "ContainerValue.render failed", t); }
         }
-        try { fishmod.features.garden.Visitors.renderShopping(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.16", "Visitors.renderShopping failed", t); }
+        try { fishmod.features.garden.visitors.Visitors.renderShopping(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.16", "Visitors.renderShopping failed", t); }
         if (FishSettings.auctionPriceAutofillEnabled) {
             try { fishmod.features.hud.AuctionPriceAutofill.trackScreen(self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.7", "AuctionPriceAutofill.trackScreen failed", t); }
         }
@@ -128,7 +128,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     private void fishmod$slotLock(Slot slot, int slotId, int button, net.minecraft.world.inventory.ContainerInput input, CallbackInfo ci) {
         try {
             fishmod.features.general.ExperimentSolver.onSlotClicked(slotId);
-            if (fishmod.features.general.SlotLocking.onSlotClicked(slot, slotId, input)) ci.cancel();
+            if (fishmod.features.inventory.SlotLocking.onSlotClicked(slot, slotId, input)) ci.cancel();
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishScreenMixin.13", "slot lock click check failed slotId=" + slotId, t);
         }
@@ -140,10 +140,10 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
             if (fishmod.features.hud.SkyItemList.keyPressed(input)) { cir.setReturnValue(true); return; }
             if (fishmod.features.inventory.StorageOverlay.searchKeyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (InvSearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
-            if (fishmod.features.general.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.inventory.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (fishmod.features.inventory.StorageOverlay.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-            if (fishmod.features.general.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.inventory.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishScreenMixin.14", "container keyPressed hooks failed key=" + input.key(), t);
@@ -179,7 +179,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                 return;
             }
 
-            if (fishmod.features.general.SlotBinds.onMouseClick(click, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.inventory.SlotBinds.onMouseClick(click, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
@@ -194,7 +194,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                 return;
             }
 
-            if (fishmod.features.garden.Visitors.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.garden.visitors.Visitors.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
@@ -204,7 +204,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                 return;
             }
 
-            if (fishmod.features.general.PetKeybinds.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.inventory.PetKeybinds.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (WardrobeHotkeys.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
 
             InvSearchBar.onMouseClick(click);
@@ -275,7 +275,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
             fishmod.features.hud.SkyItemList.onClosed();
             fishmod.features.hud.ScrollableTooltip.resetScroll();
             fishmod.features.dungeon.floor7.terminal.TerminalSolver.onScreenClosed();
-            fishmod.features.general.SlotBinds.onClose();
+            fishmod.features.inventory.SlotBinds.onClose();
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishScreenMixin.17", "container close hooks failed", t);
         }
