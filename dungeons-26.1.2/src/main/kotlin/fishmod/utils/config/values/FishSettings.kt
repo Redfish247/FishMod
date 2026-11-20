@@ -575,6 +575,7 @@ object FishSettings {
     @ConfigValue @JvmField var npcWarpHighlightColor: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var npcWarpHighlightBeam: Boolean = true
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
+    @ConfigValue @JvmField var focusMode: Boolean = false
 
     @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false
     @ConfigValue @JvmField var auctionAutofillPercent: Int = 5

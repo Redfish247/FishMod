@@ -1554,6 +1554,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("NPC Sell Price", "", "itemTooltipNpcSell"))
             f.sub.add(ToggleSetting("Dungeon Quality", "Stat-boost % + floor", "itemQualityTooltip"))
             f.sub.add(ToggleSetting("Exotic Armor", "Tags crystal/fairy/exotic dyed armor + hex", "exoticTooltip"))
+            f.sub.add(ToggleSetting("Focus Mode", "Hold Left Alt: tooltip shows only the item name", "focusMode"))
             f.sub.add(ToggleSetting("Original Name", "On items with a custom name, shows the original name", "originalNameTooltip"))
             f.sub.add(InputSetting("Original Name Text", "", "originalNameLabel").gatedBy { FishSettings.originalNameTooltip })
             f.sub.add(ColorPickerSetting("Original Name Color", "", "originalNameColor").gatedBy { FishSettings.originalNameTooltip })
