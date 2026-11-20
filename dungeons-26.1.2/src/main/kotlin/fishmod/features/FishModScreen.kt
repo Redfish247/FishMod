@@ -2853,9 +2853,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val on = f.hasMaster() && f.get!!()
                 val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + cardH()
                 val xf = x.toFloat(); val yf = y.toFloat()
-                if (f === selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, 0x1FFFFFFF)
+                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(if (f === selected) 0x24FFFFFF else 0x10FFFFFF, p))
                 val ha = hover("card" + f.name, hover)
-                if (ha > 0f && f !== selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(0x14FFFFFF, ha))
+                if (ha > 0f && f !== selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(0x10FFFFFF, ha))
                 if (f === selected) UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, 1f, 0, ACCENT)
                 val d = descFor(f.name)
                 if (listView) {
