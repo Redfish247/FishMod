@@ -2232,6 +2232,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(ToggleSetting("World Text", "Draw the cue as text above the boss", "slayerPhaseWorldText"))
             phases.sub.add(ToggleSetting("Title Warnings", "Big title for BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON", "slayerPhaseTitles"))
             phases.sub.add(ToggleSetting("Health Phase Split", "Show the 1/3 · 2/3 phase fraction (Voidgloom / Inferno)", "slayerPhaseHealthSplit"))
+            phases.sub.add(ToggleSetting("HP Label", "Big current/max HP over the boss, coloured by %", "slayerPhaseHpLabel"))
+            phases.sub.add(ToggleSetting("Time Label", "Time since the boss spawned, under the HP label", "slayerPhaseTimeLabel"))
+            phases.sub.add(ToggleSetting("Hide Boss Nametag", "Hide the vanilla HP nametag while the HP label shows", "slayerPhaseHideNametag"))
             slayer.features.add(phases)
         }
 

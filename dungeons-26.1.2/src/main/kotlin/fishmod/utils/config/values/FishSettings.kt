@@ -1097,6 +1097,9 @@ object FishSettings {
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
+    @ConfigValue @JvmField var slayerPhaseHpLabel: Boolean = false
+    @ConfigValue @JvmField var slayerPhaseTimeLabel: Boolean = false
+    @ConfigValue @JvmField var slayerPhaseHideNametag: Boolean = false
 
     @JvmStatic
     fun trophyRarityHidden(r: fishmod.features.fishing.FishingAlertText.TrophyRarity): Boolean = when (r) {

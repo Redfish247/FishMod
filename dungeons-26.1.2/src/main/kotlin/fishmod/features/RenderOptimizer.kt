@@ -78,6 +78,7 @@ object RenderOptimizer {
     // Called while building the nametag, so the raw number never gets a frame on screen; null hides it
     @JvmStatic
     fun damageNameTag(e: Entity, name: Component): Component? {
+        if (fishmod.features.slayers.SlayerBossPhases.hidesNametag(e.id)) return null
         if (!VisualSettings.renderOptimizer || !(VisualSettings.roRemoveDamageIndicator || VisualSettings.roFormatDamageIndicator)) return name
         if (e !is ArmorStand || !SkyblockLocation.inSkyblock()) return name
         val raw = name.string

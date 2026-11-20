@@ -44,6 +44,11 @@ object SlayerBossPhases {
     @Volatile private var ax = 0.0
     @Volatile private var ay = 0.0
     @Volatile private var az = 0.0
+    @Volatile private var hpLine = ""
+    @Volatile private var timeLine = ""
+    @Volatile private var hiddenStandId = -1
+    private var bossSeenId = 0
+    private var bossSeenNanos = 0L
 
     private var hatchlingsActive = false
     private var hatchlingsAnchor: Vec3? = null
@@ -53,6 +58,7 @@ object SlayerBossPhases {
 
     private var hpBossId = 0
     private var hpMaxSeen = 0.0
+    private var lastHp = 0.0
 
     private var lastHpFrac = 1.0
 
@@ -98,6 +104,7 @@ object SlayerBossPhases {
         lastHpFrac = 1.0
         steakTitleFired = false
         hpBossId = 0; hpMaxSeen = 0.0
+        hpLine = ""; timeLine = ""; hiddenStandId = -1; bossSeenId = 0; bossSeenNanos = 0L
         titleAt.clear()
         scanCounter = 0
     }
@@ -110,10 +117,10 @@ object SlayerBossPhases {
     }
 
     private fun tick() {
-        if (!enabled()) { show = false; line1 = ""; line2 = ""; return }
+        if (!enabled()) { show = false; line1 = ""; line2 = ""; hpLine = ""; timeLine = ""; hiddenStandId = -1; return }
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.level == null || mc.hudHidden || !SkyblockLocation.inSkyblock()) {
-            show = false; line1 = ""; line2 = ""; return
+            show = false; line1 = ""; line2 = ""; hpLine = ""; timeLine = ""; hiddenStandId = -1; return
         }
 
         if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return
@@ -138,7 +145,9 @@ object SlayerBossPhases {
             }
         }
 
-        if (boss != null && (l1.isNotEmpty() || l2.isNotEmpty())) {
+        hpLine = ""; timeLine = ""; hiddenStandId = -1
+        if (boss != null) buildLabels(mc, boss)
+        if (boss != null && (l1.isNotEmpty() || l2.isNotEmpty() || hpLine.isNotEmpty() || timeLine.isNotEmpty())) {
             val bb = boss.boundingBox
             ax = (bb.minX + bb.maxX) / 2.0
             ay = bb.maxY + 0.5
@@ -276,6 +285,40 @@ object SlayerBossPhases {
         return l1 to l2
     }
 
+    @JvmStatic fun hidesNametag(id: Int): Boolean = id >= 0 && id == hiddenStandId
+
+    // HP label (current/max, colour by %), time since spawn, optional nametag hide
+    private fun buildLabels(mc: Minecraft, boss: LivingEntity) {
+        if (boss.id != bossSeenId) { bossSeenId = boss.id; bossSeenNanos = System.nanoTime() }
+        val hp = if (hpBossId == boss.id) lastHp else 0.0
+        val maxHp = hpMaxSeen
+        if (FishSettings.slayerPhaseHpLabel && hp > 0.0 && maxHp > 0.0) {
+            val f = hp / maxHp
+            val c = when { f > 0.75 -> "§a"; f > 0.5 -> "§e"; f > 0.25 -> "§6"; else -> "§c" }
+            hpLine = "$c${short(hp)}§7/§a${short(maxHp)} §c❤"
+            if (FishSettings.slayerPhaseHideNametag) {
+                val level = mc.level
+                if (level != null) {
+                    val box = boss.boundingBox.inflate(3.0, 4.0, 3.0)
+                    hiddenStandId = level.getEntitiesOfClass(ArmorStand::class.java, box) { it.hasCustomName() }
+                        .firstOrNull { st -> NAMETAG_HP.containsMatchIn(st.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "") ?: "") }?.id ?: -1
+                }
+            }
+        }
+        if (FishSettings.slayerPhaseTimeLabel) {
+            val secs = if (SlayerManager.bossEntity === boss && SlayerTimer.running()) SlayerTimer.elapsedSeconds()
+                else (System.nanoTime() - bossSeenNanos) / 1_000_000_000.0
+            timeLine = "§7⏱ §f${fmt(secs)}s"
+        }
+    }
+
+    private fun short(v: Double): String = when {
+        v >= 1e9 -> "%.2fB".format(v / 1e9)
+        v >= 1e6 -> "%.2fM".format(v / 1e6)
+        v >= 1e4 -> "%.1fk".format(v / 1e3)
+        else -> v.toLong().toString()
+    }
+
     private fun nearbyStandNames(e: LivingEntity, radius: Double, up: Double): List<String> {
         val level = Minecraft.getInstance().level ?: return emptyList()
         val box = e.boundingBox.inflate(radius, up, radius)
@@ -299,6 +342,7 @@ object SlayerBossPhases {
             }
         } ?: 0.0
         if (cur > hpMaxSeen) hpMaxSeen = cur
+        lastHp = cur
         return cur
     }
 
@@ -332,7 +376,12 @@ object SlayerBossPhases {
     private fun fmt(v: Double): String = String.format("%.1f", v)
 
     private fun render() {
-        if (!show || !enabled() || !FishSettings.slayerPhaseWorldText) return
+        if (!show || !enabled()) return
+        var y = ay + 0.36
+        if (line2.isNotEmpty() || line1.isNotEmpty()) y += 0.4
+        if (hpLine.isNotEmpty()) { FishDraw.gizmoText(Component.literal(hpLine), Vec3(ax, y, az), 1.6f, -0x1); y += 0.45 }
+        if (timeLine.isNotEmpty()) FishDraw.gizmoText(Component.literal(timeLine), Vec3(ax, y, az), 0.9f, -0x1)
+        if (!FishSettings.slayerPhaseWorldText) return
         if (line1.isNotEmpty()) FishDraw.gizmoText(Component.literal(line1), Vec3(ax, ay, az), 1.4f, -0x1)
         if (line2.isNotEmpty()) FishDraw.gizmoText(Component.literal(line2), Vec3(ax, ay + 0.36, az), 0.95f, -0x1)
     }
