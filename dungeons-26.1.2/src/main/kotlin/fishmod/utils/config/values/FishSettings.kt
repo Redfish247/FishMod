@@ -35,7 +35,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var fmCompact: Boolean = false
 
-    @ConfigValue @JvmField var fmBgPreset: String = "Dark Glass"
+    @ConfigValue @JvmField var fmBgPreset: String = "Graphite"
     @ConfigValue @JvmField var fmBgCustomColor: Int = 0xFF14181D.toInt()
     @ConfigValue @JvmField var fmBgAlpha: Int = 100
     @ConfigValue @JvmField var fmDropDurationMs: Int = 450
