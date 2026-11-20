@@ -1,5 +1,6 @@
 package fishmod.features.fishing
 
+import fishmod.compat.speed
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents

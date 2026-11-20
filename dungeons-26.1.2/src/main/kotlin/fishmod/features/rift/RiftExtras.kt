@@ -1,5 +1,6 @@
 package fishmod.features.rift
 
+import fishmod.compat.center
 import fishmod.compat.curScreen
 import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds
@@ -122,9 +123,9 @@ object RiftExtras {
         val c = me.blockPosition(); val pos = BlockPos.MutableBlockPos(); val now = System.currentTimeMillis()
         for (x in c.x - 15..c.x + 15) for (y in c.y - 8..c.y + 8) for (z in c.z - 15..c.z + 15) {
             pos.set(x, y, z)
-            if (level.getBlockState(pos).block == Blocks.BLUE_STAINED_GLASS_PANE) timite.putIfAbsent(pos.asLong(), now)
+            if (level.getBlockState(pos).block == fishmod.compat.CB.BLUE_STAINED_GLASS_PANE) timite.putIfAbsent(pos.asLong(), now)
         }
-        timite.keys.removeIf { level.getBlockState(BlockPos.of(it)).block != Blocks.BLUE_STAINED_GLASS_PANE }
+        timite.keys.removeIf { level.getBlockState(BlockPos.of(it)).block != fishmod.compat.CB.BLUE_STAINED_GLASS_PANE }
     }
 
     // A defense block appears as stained glass or a diamond block near a hurt Auto* mob

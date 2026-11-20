@@ -1,4 +1,4 @@
-import fishmod.features.dungeon.f7.TerminalTrackerState
+import fishmod.features.dungeon.floor7.TerminalTrackerState
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 

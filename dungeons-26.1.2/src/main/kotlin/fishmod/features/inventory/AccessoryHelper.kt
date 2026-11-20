@@ -1,5 +1,6 @@
 package fishmod.features.inventory
 
+import fishmod.compat.curScreen
 import fishmod.features.extras.*
 
 import fishmod.features.diana.DianaTracker
@@ -27,7 +28,7 @@ object AccessoryHelper {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!S.accessoryHelper || ++tick % 5 != 0) return@register
             try {
-                val screen = mc.screen as? AbstractContainerScreen<*>
+                val screen = mc.curScreen as? AbstractContainerScreen<*>
                 if (screen != null && TITLE.matches(screen.title.string.trim())) {
                     if (!inBag) { owned.clear(); if (!ItemPricer.isReady()) ItemPricer.start(); HypixelItemsCache.requestIfEmpty() }
                     inBag = true

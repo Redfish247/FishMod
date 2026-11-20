@@ -58,7 +58,7 @@ class R3UtilFormatTest {
     }
 
     @Test fun recipeIngAndDuration() {
-        val c = "fishmod.features.item.RecipeViewer"
+        val c = "fishmod.features.hud.RecipeViewer"
         val ing = call(c, "ing", "ENCHANTED_COAL:2.5")!!
         assertEquals("ENCHANTED_COAL", ing.javaClass.getMethod("getId").invoke(ing))
         assertEquals(3, ing.javaClass.getMethod("getCount").invoke(ing))
@@ -72,7 +72,7 @@ class R3UtilFormatTest {
     }
 
     @Test fun recipeParseTypes() {
-        val c = "fishmod.features.item.RecipeViewer"
+        val c = "fishmod.features.hud.RecipeViewer"
         fun p(json: String): List<*> {
             val o = JsonParser.parseString("{}").asJsonObject
             return call(c, "parse", "ID", o, JsonParser.parseString(json).asJsonObject) as List<*>
@@ -85,7 +85,7 @@ class R3UtilFormatTest {
     }
 
     @Test fun compactTabShortTime() {
-        val c = "fishmod.features.CompactTab"
+        val c = "fishmod.features.general.CompactTab"
         assertEquals("3d 4h", call(c, "shortTime", "3 Days 4 Hours 5 Minutes"))
         assertEquals("1d 2h", call(c, "shortTime", "1d 2h 3m 4s"))
         assertEquals("30m", call(c, "shortTime", "30 minutes"))
@@ -93,7 +93,7 @@ class R3UtilFormatTest {
     }
 
     @Test fun critFormat() {
-        val c = "fishmod.features.CritTracker"
+        val c = "fishmod.features.dungeon.trackers.CritTracker"
         assertEquals("N/A", call(c, "formatDamage", 0.0))
         assertEquals("1,234", call(c, "formatDamage", 1234.0))
         assertEquals("1,234.5", call(c, "formatDamage", 1234.5))
@@ -101,7 +101,7 @@ class R3UtilFormatTest {
     }
 
     @Test fun bossBarHealth() {
-        val c = "fishmod.features.BossBarFeature"
+        val c = "fishmod.features.dungeon.BossBarFeature"
         assertEquals("999", call(c, "formatHealth", 999f))
         assertEquals("1k", call(c, "formatHealth", 1000f))
         assertEquals("2B", call(c, "formatHealth", 2e9f))

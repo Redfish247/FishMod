@@ -1,5 +1,6 @@
 package fishmod.features.events
 
+import fishmod.compat.curScreen
 import fishmod.features.extras.*
 
 import fishmod.utils.FishUtil
@@ -21,7 +22,7 @@ object StrayRabbitAlert {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!S.strayRabbitAlert || ++tick % 5 != 0) return@register
-            val screen = mc.screen as? AbstractContainerScreen<*> ?: run { shown = false; return@register }
+            val screen = mc.curScreen as? AbstractContainerScreen<*> ?: run { shown = false; return@register }
             try {
                 var golden: String? = null
                 val any = screen.menu.slots.any { slot ->
