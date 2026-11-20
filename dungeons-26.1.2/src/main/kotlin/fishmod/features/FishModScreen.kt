@@ -3244,13 +3244,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val h = getHeight()
-            roundRect(ctx, leftX, sy, rightX, sy + h, 3, 0xFF131313.toInt())
             val maxW = rightX - leftX - 12
             val lines = wrap(name, maxW)
             if (lines.size <= 1) {
-                stBold(ctx, tr, lines.getOrElse(0) { name }, leftX + 6, sy + (h - 8) / 2, ACCENT)
+                UiRecorder.text(lines.getOrElse(0) { name }.uppercase(), (leftX + 2).toFloat(), sy + (h - 6.6f) / 2f + 1f, 6.6f, SUBTEXT_COLOR)
             } else {
-                for ((i, l) in lines.withIndex()) stBold(ctx, tr, l, leftX + 6, sy + 4 + i * 9, ACCENT)
+                for ((i, l) in lines.withIndex()) UiRecorder.text(l.uppercase(), (leftX + 2).toFloat(), (sy + 4 + i * 9).toFloat(), 6.6f, SUBTEXT_COLOR)
             }
         }
 
@@ -3388,7 +3387,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             pillX = rightX - pillW - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
-            roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, if (hov) ACCENT_HOVER else ACCENT)
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) 0x24FFFFFF else 0x14FFFFFF, if (hov) 0x40FFFFFF else 0x26FFFFFF)
             if (sw != null) disc(ctx, pillX + 12, by + PILL_H / 2, 4, sw(currentValue))
             st(ctx, tr, current, pillX + (if (sw != null) 22 else 10), by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
 
@@ -3762,7 +3761,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            st(ctx, tr, name, leftX, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR)
+            st(ctx, tr, name, leftX + 2, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR)
             val cur = getter() or 0xFF000000.toInt()
             val idx = PRESET_ARGB.indexOf(cur)
             val label = if (idx >= 0) PRESET_NAMES[idx] else "#" + Integer.toHexString(cur and 0xFFFFFF).padStart(6, '0').uppercase()
@@ -3772,7 +3771,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             pillX = rightX - pillW - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
-            roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, if (hov) ACCENT_HOVER else ACCENT)
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) 0x24FFFFFF else 0x14FFFFFF, if (hov) 0x40FFFFFF else 0x26FFFFFF)
             disc(ctx, pillX + 12, by + PILL_H / 2, swatchD / 2, getter() or 0xFF000000.toInt())
             st(ctx, tr, label, pillX + 22, by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
 
@@ -3985,7 +3984,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val bx = rightX - bw - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + PILL_H
-            roundedRect(ctx, bx, by, bw, PILL_H, PILL_H / 2, if (hov) ACCENT_HOVER else ACCENT)
+            roundedRectRing(ctx, bx, by, bw, PILL_H, 6, 1, if (hov) 0x24FFFFFF else 0x14FFFFFF, if (hov) 0x40FFFFFF else 0x26FFFFFF)
             st(ctx, tr, text, bx + (bw - stw(tr, text)) / 2, by + (PILL_H - 8) / 2 - 1, -0x1)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
@@ -4017,7 +4016,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
             val ring = if (capturing) ACCENT_HOVER else (if (hov) ACCENT else 0xFF4B4B4B.toInt())
-            roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, ring)
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, 0x14FFFFFF, ring)
             st(ctx, tr, t, pillX + (pillW - textW) / 2, by + (PILL_H - 8) / 2 - 1, if (capturing) ACCENT_HOVER else TEXT_COLOR)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
@@ -4184,10 +4183,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val ITEM_HEIGHT get() = if (COMPACT) 18 else 22
         private val PILL_H get() = if (COMPACT) 15 else 18
         private const val OPTION_H = 16
-        private val SLIDER_BG = 0xFF303030.toInt()
-        private val SLIDER_FILL get() = ACCENT
+        private val SLIDER_BG = 0x26FFFFFF
+        private val SLIDER_FILL = 0xFFD6D6D6.toInt()
         private const val SLIDER_W = 56
-        private const val SLIDER_H = 5
+        private const val SLIDER_H = 3
         private const val INPUT_W = 62
         private const val INPUT_H = 14
         private const val SUBCAT_HEIGHT = 13
@@ -4342,13 +4341,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return ""
         }
 
+        fun lerpColor(a: Int, b: Int, t: Float): Int {
+            fun ch(s: Int) = (((a ushr s) and 0xFF) + (((b ushr s) and 0xFF) - ((a ushr s) and 0xFF)) * t).toInt() and 0xFF
+            return (ch(24) shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+        }
         fun drawTogglePill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, on: Boolean, knobProgress: Float, hover: Boolean) {
-            val track = if (on) (if (hover) ACCENT_HOVER else ACCENT) else TRACK_OFF
-            val ring = if (on) (if (hover) ACCENT_HOVER else ACCENT) else (if (hover) 0xFF5C5C5C.toInt() else 0xFF4B4B4B.toInt())
-            roundedRectRing(ctx, x, y, w, h, h / 2, 2, track, ring)
-            val knobR = h / 2 - 3
-            val knobX = x + knobR + 3 + Math.round(knobProgress * (w - 2 * (knobR + 3)))
-            disc(ctx, knobX, y + h / 2, knobR, 0xFFFFFFFF.toInt())
+            val off = if (hover) 0xFF6A6A6A.toInt() else 0xFF5A5A5A.toInt()
+            val onC = if (hover) 0xFF4ADB94.toInt() else 0xFF3CCF86.toInt()
+            val track = lerpColor(off, onC, knobProgress)
+            UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), h / 2f, track)
+            val r = h / 2f - 2f
+            val kx = x + 2f + r + knobProgress * (w - 4f - 2f * r)
+            UiRecorder.disc(kx, y + h / 2f, r, 0xFFFFFFFF.toInt())
         }
     }
 }
