@@ -2555,6 +2555,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun refreshButtonTheme() {
+        if (!FishSettings.fmThemeV2) {
+            FishSettings.fmThemeV2 = true
+            FishSettings.fmButtonColor = 0xFFD6D6D6.toInt(); FishSettings.fmButtonAlpha = 100
+            FishSettings.fmRowColor = 0xFFD6D6D6.toInt(); FishSettings.fmRowAlpha = 60; FishSettings.fmRowBgAlpha = 100
+            FishSettings.fmBgPreset = "Graphite"
+        }
         val rgb = FishSettings.fmButtonColor and 0xFFFFFF
         val alpha = Mth.clamp(Math.round(FishSettings.fmButtonAlpha * 2.55f), 0, 255)
         ACCENT = (alpha shl 24) or rgb
@@ -2847,10 +2853,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val on = f.hasMaster() && f.get!!()
                 val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + cardH()
                 val xf = x.toFloat(); val yf = y.toFloat()
-                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(0x12FFFFFF, p))
-                if (on) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(ROW_ENABLED, p))
+                if (f === selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, 0x1FFFFFFF)
                 val ha = hover("card" + f.name, hover)
-                if (ha > 0f) { UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(ROW_HOVER, ha)); UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, 1f, 0, fa(0x40FFFFFF, ha)) }
+                if (ha > 0f && f !== selected) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, fa(0x14FFFFFF, ha))
                 if (f === selected) UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, 1f, 0, ACCENT)
                 val d = descFor(f.name)
                 if (listView) {
@@ -2974,7 +2979,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (animating) UiRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), animatedH.toFloat())
 
         val subH = f.naturalSubHeight()
-        UiRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
+        if (selected !== f) UiRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
         val leftX = x0 + 14
         val rightX = x1 - 12
         var sy = top + 6

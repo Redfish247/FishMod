@@ -32,6 +32,7 @@ object FishSettings {
     @ConfigValue @JvmField var fmSidebarFolders: String = ""
     @ConfigValue @JvmField var fmPinned: String = "General"
     @ConfigValue @JvmField var fmUiAnimations: Boolean = true
+    @ConfigValue @JvmField var fmThemeV2: Boolean = false
 
     @ConfigValue @JvmField var fmAnimations: Boolean = true
 
