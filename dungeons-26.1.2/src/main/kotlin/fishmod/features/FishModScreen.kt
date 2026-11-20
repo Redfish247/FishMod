@@ -4203,7 +4203,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val CARD_MIN_W = 150
         private const val CARD_TALL = 44
         private const val CARD_GAP = 4
-        private const val DET_W = 230
+        private const val DET_W = 196
         private val COLUMN_SUBTITLES = mapOf(
             "General" to "Core mod options",
             "Dungeons" to "Run helpers & alerts",
