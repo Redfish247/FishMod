@@ -189,8 +189,9 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
 
         val by = btnY + dy
         val sHov = inside(mx, my, skipX, btnY, skipW, btnH)
-        ScreenTheme.nRoundedRectRing(skipX, by, skipW, btnH, btnH / 2, 1, fade(if (sHov) CARD_HOVER else CARD, p), fade(BORDER, p))
-        centered("Don't show again", skipX + skipW / 2, by, fade(if (sHov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR, p))
+        // plain text link, not a third pill
+        UiRecorder.text("Don't show again", skipX.toFloat(), by + (btnH - 6.5f) / 2f, 6.5f, fade(if (sHov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR, p))
+        if (sHov) UiRecorder.fillRect(skipX.toFloat(), by + btnH / 2f + 4f, UiRecorder.textWidth("Don't show again", 6.5f), 0.7f, fade(ScreenTheme.TEXT_COLOR, p))
 
         val lHov = inside(mx, my, laterX, btnY, laterW, btnH)
         ScreenTheme.nRoundedRectRing(laterX, by, laterW, btnH, btnH / 2, 1, fade(if (lHov) CARD_HOVER else CARD, p), fade(BORDER, p))
