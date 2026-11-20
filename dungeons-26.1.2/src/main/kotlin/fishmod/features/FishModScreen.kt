@@ -2396,7 +2396,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val a = hover("tab$i", hov)
             if (i != ti && a > 0f) UiRecorder.fillRoundedRect(x.toFloat(), (y + 2).toFloat(), w.toFloat(), (TAB_H - 6).toFloat(), 6f, fa(ROW_HOVER, a))
             val ts = 0.85f * NVG_BASE_TEXT_SIZE
-            UiRecorder.text(ellipsize(t, w - 26, 0.85f), (x + 10).toFloat(), y + (TAB_H - ts) / 2f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
+            UiRecorder.text(ellipsize(t, w - 26, 0.85f), (x + 10).toFloat(), y + (TAB_H - ts) / 2f + 1f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
             if (tabs.size > 1) icon("x", x + w - 11f, y + TAB_H / 2f, if (hov && mx >= x + w - 16) TEXT_COLOR else SUBTEXT_COLOR)
         }
         val p = r[tabs.size]
@@ -2672,7 +2672,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             UiRecorder.fillRoundedRectCorners(l, top().toFloat(), (at[0] - left()).toFloat(), 30f, wr, 0f, 0f, 0f, dk)
             UiRecorder.fillRect(at[0].toFloat(), top().toFloat(), at[1].toFloat(), (TAB_Y - top()).toFloat(), dk)
             UiRecorder.fillRoundedRectCorners((at[0] + at[1]).toFloat(), top().toFloat(), (right() - at[0] - at[1]).toFloat(), 30f, 0f, wr, 0f, 0f, dk)
+            // active tab and the toolbar share one lighter tone so the tab visibly joins the bar
+            UiRecorder.fillRoundedRectCorners(at[0].toFloat(), TAB_Y.toFloat(), at[1].toFloat(), (top() + 30 - TAB_Y).toFloat(), 7f, 7f, 0f, 0f, ScreenTheme.ink(0x12))
         }
+        UiRecorder.fillRect(l, (top() + 30).toFloat(), w, 28f, ScreenTheme.ink(0x12))
         UiRecorder.fillRect(l, (top() + 58).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
         UiRecorder.fillRect(l, (top() + 88).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
         UiRecorder.fillRect(l, (bottom() - STATUS_H).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
