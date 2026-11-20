@@ -122,6 +122,10 @@ object ExtrasMenu {
         val tt = Feature("Trick or Treat Chest Alert", S::class.java, "trickTreatAlert")
         tt.sub.add(InputSetting("Title", "& colour codes work", S::class.java, "trickTreatTitle"))
         col.features.add(tt)
+        col.features.add(Feature("Hide Sky Mall / Lottery Messages", S::class.java, "hideBuffMessages"))
+        val ob = Feature("Auction Outbid Alert", S::class.java, "outbidAlert")
+        ob.sub.add(SoundSearchSetting("Sound", "Type to search every game sound", { S.outbidSound }, { S.outbidSound = it }))
+        col.features.add(ob)
 
         return col
     }

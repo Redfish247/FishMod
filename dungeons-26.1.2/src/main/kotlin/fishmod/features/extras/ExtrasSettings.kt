@@ -116,4 +116,7 @@ object ExtrasSettings {
     @ConfigValue @JvmField var hoppitySummary: Boolean = false
     @ConfigValue @JvmField var trickTreatAlert: Boolean = false
     @ConfigValue @JvmField var trickTreatTitle: String = "§6TRICK OR TREAT CHEST"
+    @ConfigValue @JvmField var hideBuffMessages: Boolean = false
+    @ConfigValue @JvmField var outbidAlert: Boolean = false
+    @ConfigValue @JvmField var outbidSound: String = "Note: Bass"
 }
