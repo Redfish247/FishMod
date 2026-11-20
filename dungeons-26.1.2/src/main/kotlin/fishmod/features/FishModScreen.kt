@@ -2276,6 +2276,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(ToggleSetting("Time Label", "Time since the boss spawned, under the HP label", "slayerPhaseTimeLabel"))
             phases.sub.add(ToggleSetting("Hide Boss Nametag", "Hide the vanilla HP nametag while the HP label shows", "slayerPhaseHideNametag"))
             slayer.features.add(phases)
+
+            val bt = fishmod.features.other.BossToolsSettings::class.java
+            val bossInd = Feature("Boss Damage Indicator", bt, "bossIndicator")
+            bossInd.sub.add(SubcategoryHeader("Boss Phases-style HP label on non-slayer bosses"))
+            bossInd.sub.add(ToggleSetting("Dungeon Floor Bosses", "Bonzo, Scarf, Professor, Thorn, Livid, Sadan + giants", bt, "bossIndicatorDungeon"))
+            bossInd.sub.add(ToggleSetting("Crimson Isle Bosses", "Bladesoul, Magma Boss, Ashfang, Duke, Outlaw, Vanquisher", bt, "bossIndicatorNether"))
+            bossInd.sub.add(ToggleSetting("Other Bosses", "Endstone Protector, Horseman, Diana, Jawbus/Thunder, Arachne, Rift bosses", bt, "bossIndicatorOther"))
+            bossInd.sub.add(ToggleSetting("Time Label", "Time since the boss was first seen", bt, "bossIndicatorTime"))
+            slayer.features.add(bossInd)
         }
 
         columns.add(general)
