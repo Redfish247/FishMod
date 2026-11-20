@@ -659,6 +659,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         dungeon.features.add(Feature("Boss Health Numbers", DungeonSettings::class.java, "bossHpNumbers"))
+        dungeon.features.add(Feature("Death Counter", DungeonSettings::class.java, "deathCounterHud"))
         run {
             val f = Feature("Ice Spray Timer", "iceSprayTimerEnabled")
             f.sub.add(SubcategoryHeader("After your Ice Spray, one countdown above each group of frozen mobs"))
@@ -4697,6 +4698,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Auto Sprint" -> "Keep sprinting while holding forward"
                 "Sound Manager" -> "Master toggle & volume for FishMod cues"
                 "Boss Health Numbers" -> "Numeric HP on the M7 boss bar"
+                "Death Counter" -> "Deaths this run (disconnects count); move in the HUD editor"
                 "Blessing Display" -> "Active dungeon blessings from the tab footer"
                 "Mask & Phoenix Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
                 "Secret Clicked" -> "Box + chime when you click a dungeon secret"
