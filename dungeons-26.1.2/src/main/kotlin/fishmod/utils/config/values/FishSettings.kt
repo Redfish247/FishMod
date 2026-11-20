@@ -292,7 +292,6 @@ object FishSettings {
     @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
 
     @ConfigValue @JvmField var nametagStatsEnabled: Boolean = false
-    @ConfigValue @JvmField var nametagStatsShowSelf: Boolean = false
     @ConfigValue @JvmField var nametagStatsShowNetworth: Boolean = true
     @ConfigValue @JvmField var nametagStatsShowCataLevel: Boolean = true
     @ConfigValue @JvmField var nametagStatsShowSecretAvg: Boolean = true
@@ -1002,7 +1001,6 @@ object FishSettings {
     @ConfigValue @JvmField var secretClickedPitch: Double = 2.0
 
     @ConfigValue @JvmField var customScoreboardEnabled: Boolean = false
-    @ConfigValue @JvmField var customScoreboardCompactNumbers: Boolean = false
     @ConfigValue @JvmField var customScoreboardHideInDungeon: Boolean = false
     @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
     @ConfigValue @JvmField var customScoreboardHudY: Int = 2
@@ -1020,39 +1018,17 @@ object FishSettings {
     @ConfigValue @JvmField var sbSectionDate: Boolean = true
     @ConfigValue @JvmField var sbSectionTime: Boolean = true
     @ConfigValue @JvmField var sbSectionLocation: Boolean = true
-    @ConfigValue @JvmField var sbSectionPlayers: Boolean = true
-    @ConfigValue @JvmField var sbSectionGameMode: Boolean = true
     @ConfigValue @JvmField var sbSectionPurse: Boolean = true
-    @ConfigValue @JvmField var sbSectionBank: Boolean = true
     @ConfigValue @JvmField var sbSectionMotes: Boolean = true
     @ConfigValue @JvmField var sbSectionBits: Boolean = true
-    @ConfigValue @JvmField var sbSectionCopper: Boolean = true
-    @ConfigValue @JvmField var sbSectionSowdust: Boolean = true
     @ConfigValue @JvmField var sbSectionGems: Boolean = true
-    @ConfigValue @JvmField var sbSectionHeat: Boolean = true
-    @ConfigValue @JvmField var sbSectionCold: Boolean = true
-    @ConfigValue @JvmField var sbSectionNorthStars: Boolean = true
-    @ConfigValue @JvmField var sbSectionSoulflow: Boolean = true
-    @ConfigValue @JvmField var sbSectionGuild: Boolean = true
-    @ConfigValue @JvmField var sbSectionCookie: Boolean = true
-    @ConfigValue @JvmField var sbSectionSkillAverage: Boolean = true
-    @ConfigValue @JvmField var sbSectionObjective: Boolean = true
     @ConfigValue @JvmField var sbSectionSlayer: Boolean = true
     @ConfigValue @JvmField var sbSectionPowder: Boolean = true
-    @ConfigValue @JvmField var sbSectionDiana: Boolean = true
     @ConfigValue @JvmField var sbSectionParty: Boolean = true
-    @ConfigValue @JvmField var sbSectionEquipment: Boolean = true
-    @ConfigValue @JvmField var sbSectionDungeon: Boolean = true
-    @ConfigValue @JvmField var sbSectionPet: Boolean = true
     @ConfigValue @JvmField var sbSectionOther: Boolean = true
-    @ConfigValue @JvmField var sbSectionTps: Boolean = true
-    @ConfigValue @JvmField var sbSectionPing: Boolean = true
-    @ConfigValue @JvmField var sbSectionFps: Boolean = true
-    @ConfigValue @JvmField var sbSectionPetExtra: Boolean = false
     @ConfigValue @JvmField var sbSectionSkills: Boolean = false
     @ConfigValue @JvmField var sbSectionBestiary: Boolean = false
     @ConfigValue @JvmField var sbSectionCollections: Boolean = false
-    @ConfigValue @JvmField var sbSectionElection: Boolean = false
     @ConfigValue @JvmField var sbSectionFireSales: Boolean = false
 
     @ConfigValue @JvmField var slayerSpawnAlertEnabled: Boolean = false
@@ -1073,12 +1049,10 @@ object FishSettings {
     @ConfigValue @JvmField var slayerSpawnHudX: Int = 10
     @ConfigValue @JvmField var slayerSpawnHudY: Int = 140
     @ConfigValue @JvmField var slayerSpawnHudScale: Double = 1.0
-    @ConfigValue @JvmField var slayerSpawnOpacity: Int = 0
 
     @ConfigValue @JvmField var slayerStatsHudEnabled: Boolean = false
     @ConfigValue @JvmField var slayerStatsShowXp: Boolean = true
     @ConfigValue @JvmField var slayerStatsShowKills: Boolean = true
-    @ConfigValue @JvmField var slayerStatsOpacity: Int = 50
     @ConfigValue @JvmField var slayerStatsHudX: Int = 10
     @ConfigValue @JvmField var slayerStatsHudY: Int = 170
     @ConfigValue @JvmField var slayerStatsHudScale: Double = 1.0
@@ -1092,12 +1066,10 @@ object FishSettings {
     @ConfigValue @JvmField var slayerTimerHudX: Int = 10
     @ConfigValue @JvmField var slayerTimerHudY: Int = 255
     @ConfigValue @JvmField var slayerTimerHudScale: Double = 1.0
-    @ConfigValue @JvmField var slayerTimerOpacity: Int = 0
 
     @ConfigValue @JvmField var slayerProfitEnabled: Boolean = false
     @ConfigValue @JvmField var slayerProfitLines: Int = 10
     @ConfigValue @JvmField var slayerProfitIdleSeconds: Int = 60
-    @ConfigValue @JvmField var slayerProfitOpacity: Int = 56
     @ConfigValue @JvmField var slayerProfitHudX: Int = 10
     @ConfigValue @JvmField var slayerProfitHudY: Int = 300
     @ConfigValue @JvmField var slayerProfitHudScale: Double = 1.0
