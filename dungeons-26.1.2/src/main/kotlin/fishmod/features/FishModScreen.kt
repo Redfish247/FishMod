@@ -2895,8 +2895,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val dx0 = cx1() - DET_W + Math.round((1f - anim(selAt, 0, 220)) * 24f)
         UiRecorder.fillRoundedRect(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ink(0x0F))
         // same type sizes and baselines as the column header on the left
-        sst(ctx, this.font, ellipsize(f.name, DET_W - 80, 1.2f), dx0 + 12, ht + 6, TEXT_COLOR, 1.2f)
-        descFor(f.name).takeIf { it.isNotEmpty() }?.let { sst(ctx, this.font, ellipsize(it, DET_W - 24, 0.8f), dx0 + 12, ht + 22, SUBTEXT_COLOR, 0.8f) }
+        sst(ctx, this.font, ellipsize(f.name, DET_W - 80, 1.2f), dx0 + 10, ht + 6, TEXT_COLOR, 1.2f)
+        descFor(f.name).takeIf { it.isNotEmpty() }?.let { sst(ctx, this.font, ellipsize(it, DET_W - 20, 0.8f), dx0 + 10, ht + 22, SUBTEXT_COLOR, 0.8f) }
         if (f.hasMaster()) {
             val on = f.get!!()
             drawTogglePill(ctx, cx1() - 58, ht + 6, 26, 14, on, knobP(f.name, on), mouseX in cx1() - 60..cx1() - 30 && mouseY in ht + 4..ht + 22)
@@ -2911,8 +2911,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun subClick(f: Feature, x0: Int, x1: Int, top: Int, mx: Int, my: Int, btn: Int) {
-        val leftX = x0 + 14
-        val rightX = x1 - 12
+        val leftX = x0 + 8
+        val rightX = x1 - 8
         var ssy = top + 6
         for (s in f.sub) {
             if (s.hiddenByGate()) continue
@@ -2964,7 +2964,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         for (s in f.sub) {
             if (s.hiddenByGate()) continue
             val sh = s.getHeight()
-            if (my >= ssy && my <= ssy + sh && s.onScroll(mx, my, cx1() - DET_W + 14, cx1() - 12, ssy, dir)) return true
+            if (my >= ssy && my <= ssy + sh && s.onScroll(mx, my, cx1() - DET_W + 8, cx1() - 8, ssy, dir)) return true
             ssy += sh
         }
         return false
@@ -3008,8 +3008,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         val subH = f.naturalSubHeight()
         if (selected !== f) UiRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
-        val leftX = x0 + 14
-        val rightX = x1 - 12
+        val leftX = x0 + 8
+        val rightX = x1 - 8
         var sy = top + 6
         for (s in f.sub) {
             if (s.hiddenByGate()) continue
@@ -3276,7 +3276,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         // drawn bold, so measure bold or long lines overflow the column
         private fun w(t: String) = Math.ceil(UiRecorder.textWidthBold(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
-        private val minLines: Int = wrap(name, DET_W - 34).size
+        private val minLines: Int = wrap(name, DET_W - 22).size
 
         override fun getHeight(): Int = when {
             minLines <= 1 -> SUBCAT_HEIGHT
