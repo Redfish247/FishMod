@@ -23,5 +23,15 @@ object Extras {
         FishDiag.guard("Extras.16", "SkyblockXpChat.init failed") { SkyblockXpChat.init() }
         FishDiag.guard("Extras.17", "EventHelpers.init failed") { EventHelpers.init() }
         FishDiag.guard("Extras.18", "MiscChatAlerts.init failed") { MiscChatAlerts.init() }
+        FishDiag.guard("Extras.19", "TrevorHelper.init failed") { TrevorHelper.init() }
+        FishDiag.guard("Extras.20", "GiftTracker.init failed") { GiftTracker.init() }
+        FishDiag.guard("Extras.21", "TeleportPadNames.init failed") { TeleportPadNames.init() }
+        FishDiag.guard("Extras.22", "HoppityEggWaypoints.init failed") { HoppityEggWaypoints.init() }
+        FishDiag.guard("Extras.23", "PersonalCompactorTooltip.init failed") { PersonalCompactorTooltip.init() }
+        FishDiag.guard("Extras.24", "StackingEnchantTooltip.init failed") { StackingEnchantTooltip.init() }
+        FishDiag.guard("Extras.25", "JerryHighlight.init failed") { JerryHighlight.init() }
+        FishDiag.guard("Extras.26", "CarnivalShootout.init failed") { CarnivalShootout.init() }
+        FishDiag.guard("Extras.27", "StrayRabbitAlert.init failed") { StrayRabbitAlert.init() }
+        FishDiag.guard("Extras.28", "AccessoryHelper.init failed") { AccessoryHelper.init() }
     }
 }
