@@ -296,7 +296,10 @@ object SkyItemList {
 
     private fun on() = FishSettings.skyItemList
 
-    private fun hiddenFor(screen: AbstractContainerScreen<*>) = fishmod.features.storage.StorageOverlay.isActive(screen) || fishmod.features.dungeon.LeapMenu.isActive(screen)
+    private fun hiddenFor(screen: AbstractContainerScreen<*>) = fishmod.features.storage.StorageOverlay.isActive(screen) || fishmod.features.dungeon.LeapMenu.isActive(screen) || isTerminal(screen)
+
+    // F7 terminals: same title prefixes the terminal solver matches
+    private fun isTerminal(screen: AbstractContainerScreen<*>): Boolean { val t = screen.title.string; return fishmod.features.dungeon.f7.terminal.TerminalType.entries.any { t.startsWith(it.windowPrefix) } }
 
     @JvmStatic fun panelActive() = on() && System.currentTimeMillis() - fishmod.utils.rendering.FishHudLayer.panelSeenMs() < 150
 
