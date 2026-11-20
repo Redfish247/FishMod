@@ -44,7 +44,8 @@ object FishConfig {
             fishmod.features.slayers.EndAlertSettings::class.java,
             fishmod.features.dungeon.DungeonMilestoneSettings::class.java,
             fishmod.features.dungeon.DungeonExtraSettings::class.java,
-            fishmod.features.achievements.AchSettings::class.java
+            fishmod.features.achievements.AchSettings::class.java,
+            fishmod.features.other.BossToolsSettings::class.java
         )
 
     private const val PATH = "config/fishmod-settings.json"

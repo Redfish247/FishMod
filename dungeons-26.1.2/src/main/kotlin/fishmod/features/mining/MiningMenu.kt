@@ -116,6 +116,9 @@ object MiningMenu {
         col.features.add(md)
         col.features.add(Feature("Mute High Heat", S::class.java, "miningMuteHeat"))
         col.features.add(Feature("Gemstone Desync Fix", S::class.java, "miningGemDesyncFix"))
+        val ghost = Feature("Ghost Counter", fishmod.features.other.BossToolsSettings::class.java, "ghostCounter")
+        ghost.sub.add(ButtonSetting("Reset Counts", "", "Reset") { GhostCounter.reset() })
+        col.features.add(ghost)
         val hive = Feature("Honeyhive Reminder", S::class.java, "foragingHoneyhive")
         hive.sub.add(SliderIntSetting("Remind After (min)", "Minutes after you loot a honeyhive", S::class.java, "foragingHoneyhiveMin", 5, 180))
         hive.sub.add(ToggleSetting("Queen Bee Title", "Title when a Queen Bee refills the hive", S::class.java, "foragingQueenBee"))
@@ -147,6 +150,7 @@ object MiningMenu {
         "Mineshaft Timer" -> "HUD with time spent in the current mineshaft"
         "Ordered Waypoints" -> "Your own route of points, walked in order (works anywhere)"
         "Metal Detector Solver" -> "Mines of Divan: stand still with the detector to narrow down the treasure spot"
+        "Ghost Counter" -> "The Mist HUD: ghost kills (needs Bestiary tab widget), kills/h, sorrows, bags of cash, MF drops"
         "Mute High Heat" -> "Crystal Hollows: mute the panting sound at 90+ heat"
         "Gemstone Desync Fix" -> "Lone gemstone panes keep their full shape so mining them doesn't desync (restart world to apply)"
         "Honeyhive Reminder" -> "Torrhus Canyon: chat reminder when honeyhives can be looted again"

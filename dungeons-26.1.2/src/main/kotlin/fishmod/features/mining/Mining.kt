@@ -75,6 +75,7 @@ object Mining {
         OrderedWaypoints.init()
         MiningForagingMisc.init()
         MetalDetector.init()
+        GhostCounter.init()
     }
 
     private var sidebarVersion = -1
