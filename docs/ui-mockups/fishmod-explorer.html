@@ -164,7 +164,7 @@ $("pre").innerHTML=PRE.map(([n,c])=>'<button data-p="'+c+'"><i style="background
 $("look").addEventListener("click",e=>{e.stopPropagation();const p=e.target.closest("[data-p]");if(p){L.c=p.dataset.p;look()}if(e.target.id==="lg"){L.g=L.g?0:1;if(L.g&&L.a>70)L.a=60;look()}});
 $("look").addEventListener("input",e=>{const id=e.target.id,v=e.target.value;if(id==="lc")L.c=v;if((id==="la"||id==="lan")&&v!=="")L.a=Math.min(100,Math.max(20,+v));if((id==="lb"||id==="lbn")&&v!=="")L.b=Math.min(40,Math.max(0,+v));look()});
 document.addEventListener("click",e=>{if(e.target.id==="b-look"){$("look").hidden=!$("look").hidden;return}if(!e.target.closest("#look"))$("look").hidden=true;
- if(e.target.closest("#w-min")){W.classList.toggle("min");W.classList.remove("max")}
+ if(e.target.closest("#w-min")){look();W.hidden=true;$("reopen").hidden=false}
  if(e.target.closest("#w-max")){W.classList.toggle("max");W.classList.remove("min")}
  if(e.target.closest("#w-x")){look();W.hidden=true;$("reopen").hidden=false}
  if(e.target.closest("#reopen")){W.hidden=false;$("reopen").hidden=true}},true);
