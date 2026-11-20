@@ -86,6 +86,7 @@
     "NoRecipeBookMixin",
     "WitherEssenceSkullMixin",
     "HideEffectsMixin",
-    "HideArrowsMixin"
+    "HideArrowsMixin",
+    "GemstonePaneMixin"
   ]
 }
