@@ -108,6 +108,8 @@ object MiningMenu {
         shaft.sub.add(SliderIntSetting("Title Time (ms)", "", S::class.java, "miningShaftTitleMs", 500, 8000, 100))
         col.features.add(shaft)
 
+        col.features.add(Feature("Fallen Star Alert", S::class.java, "miningFallenStar"))
+
         return col
     }
 
@@ -121,6 +123,7 @@ object MiningMenu {
         "Commissions" -> "Commission HUD, completed title and menu highlight"
         "Powder Chest Overlay" -> "Boxes and lines to Crystal Hollows treasure chests"
         "Corpse Announcer" -> "Party chat once per corpse you see in a mineshaft"
+        "Fallen Star Alert" -> "Title with the location when a Fallen Star crashes"
         "Mineshaft Announce" -> "Title (and party message) with shaft type and corpses"
         else -> null
     }
