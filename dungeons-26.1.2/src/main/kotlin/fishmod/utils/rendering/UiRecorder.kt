@@ -1,5 +1,6 @@
 package fishmod.utils.rendering
 
+import fishmod.compat.curScreen
 import fishmod.utils.debug.FishDiag
 
 object UiRecorder {
@@ -31,6 +32,8 @@ object UiRecorder {
 
     @JvmStatic
     fun clear() {
+        val s = net.minecraft.client.Minecraft.getInstance().curScreen
+        themeOn = s is fishmod.features.HasUiOverlay && s !is fishmod.pv.gui.ProfileViewerScreen
         if (count > 0) java.util.Arrays.fill(strings, 0, count, null)
         count = 0
     }
@@ -110,14 +113,31 @@ object UiRecorder {
         }
     }
 
+    // While a FishMod screen draws, opaque neutral dark fills become overlays on the chosen window
+    // background, so section/card/field colours follow the /fm preset and opacity.
+    @JvmField var themeOn = false
+    @JvmStatic
+    fun remap(c: Int): Int {
+        if (!themeOn) return c
+        val a = c ushr 24; val r = (c shr 16) and 0xFF; val g = (c shr 8) and 0xFF; val b = c and 0xFF
+        val mx = Math.max(r, Math.max(g, b)); val mn = Math.min(r, Math.min(g, b))
+        if (c == fishmod.features.ScreenTheme.windowBg() || a < 0xB0 || mx - mn > 12 || mx > 0x48 || mx < 0x05) return c
+        val d = mx - 0x16
+        val wa = ((fishmod.features.ScreenTheme.windowBg() ushr 24) / 255f).coerceIn(0.15f, 1f)
+        val oa = Math.round((Math.abs(d) * 6).coerceIn(6, 0x70) * wa)
+        val light = fishmod.features.ScreenTheme.lightBg()
+        val raise = d >= 0
+        return (oa shl 24) or (if (raise != light) 0xFFFFFF else 0x000000)
+    }
+
     @JvmStatic
     fun fillRoundedRect(x: Float, y: Float, w: Float, h: Float, r: Float, color: Int) {
-        push(OP_FILL_ROUNDED_RECT, x, y, w, h, r, i0 = color)
+        push(OP_FILL_ROUNDED_RECT, x, y, w, h, r, i0 = remap(color))
     }
 
     @JvmStatic
     fun fillRoundedRectCorners(x: Float, y: Float, w: Float, h: Float, tl: Float, tr: Float, br: Float, bl: Float, color: Int) {
-        push(OP_FILL_ROUNDED_CORNERS, x, y, w, h, tl, tr, br, bl, i0 = color)
+        push(OP_FILL_ROUNDED_CORNERS, x, y, w, h, tl, tr, br, bl, i0 = remap(color))
     }
 
     @JvmStatic
@@ -127,7 +147,7 @@ object UiRecorder {
 
     @JvmStatic
     fun fillRectTopRounded(x: Float, y: Float, w: Float, h: Float, rTop: Float, color: Int) {
-        push(OP_FILL_RECT_TOP_ROUNDED, x, y, w, h, rTop, i0 = color)
+        push(OP_FILL_RECT_TOP_ROUNDED, x, y, w, h, rTop, i0 = remap(color))
     }
 
     @JvmStatic
@@ -137,7 +157,7 @@ object UiRecorder {
 
     @JvmStatic
     fun roundedRectRing(x: Float, y: Float, w: Float, h: Float, r: Float, strokeW: Float, fillColor: Int, ringColor: Int) {
-        push(OP_ROUNDED_RECT_RING, x, y, w, h, r, strokeW, i0 = fillColor, i1 = ringColor)
+        push(OP_ROUNDED_RECT_RING, x, y, w, h, r, strokeW, i0 = remap(fillColor), i1 = remap(ringColor))
     }
 
     @JvmStatic
