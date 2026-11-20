@@ -47,4 +47,11 @@ object GardenExtraSettings {
     @ConfigValue @JvmField var gardenPlotCommands: Boolean = false
 
     @ConfigValue @JvmField var gardenToolkitIcons: Boolean = false
+
+    @ConfigValue @JvmField var gardenAngles: Boolean = false
+    @ConfigValue @JvmField var gardenAnglesDecimals: Int = 2
+    @ConfigValue @JvmField var gardenAnglesColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var gardenAnglesHudX: Int = 5
+    @ConfigValue @JvmField var gardenAnglesHudY: Int = 160
+    @ConfigValue @JvmField var gardenAnglesHudScale: Double = 1.0
 }
