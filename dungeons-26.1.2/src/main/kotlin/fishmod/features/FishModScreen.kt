@@ -2840,7 +2840,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cardX(i: Int): Int = cx0() + (i % gridCols()) * (cardW() + CARD_GAP)
     private fun cardY(i: Int): Int = cyTop() + (i / gridCols()) * (cardH() + CARD_GAP) - gridScroll
     private fun gridMax(n: Int): Int = Math.max(0, ((n + gridCols() - 1) / gridCols()) * (cardH() + CARD_GAP) - (cyBot() - cyTop()))
-    private fun detTop(): Int = cyTop() - HEADER_H + 40
+    private fun detTop(): Int = cyTop() - HEADER_H + 34
     private fun detMax(f: Feature): Int = Math.max(0, f.naturalSubHeight() - (cyBot() - detTop()))
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
@@ -2890,8 +2890,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val dx0 = cx1() - DET_W + Math.round((1f - anim(selAt, 0, 220)) * 24f)
         UiRecorder.fillRoundedRect(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ink(0x0F))
         // same type sizes and baselines as the column header on the left
-        sst(ctx, this.font, ellipsize(f.name, DET_W - 40, 1.2f), dx0 + 12, ht + 6, TEXT_COLOR, 1.2f)
+        sst(ctx, this.font, ellipsize(f.name, DET_W - 80, 1.2f), dx0 + 12, ht + 6, TEXT_COLOR, 1.2f)
         descFor(f.name).takeIf { it.isNotEmpty() }?.let { sst(ctx, this.font, ellipsize(it, DET_W - 24, 0.8f), dx0 + 12, ht + 22, SUBTEXT_COLOR, 0.8f) }
+        if (f.hasMaster()) {
+            val on = f.get!!()
+            drawTogglePill(ctx, cx1() - 58, ht + 6, 26, 14, on, knobP(f.name, on), mouseX in cx1() - 60..cx1() - 30 && mouseY in ht + 4..ht + 22)
+        }
         val xh = mouseX >= cx1() - 20 && mouseY in ht..ht + 20
         icon("x", cx1() - 12f, ht + 11f, if (xh) TEXT_COLOR else SUBTEXT_COLOR)
         detScroll = Mth.clamp(detScroll, 0, detMax(f))
@@ -2930,6 +2934,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val f = selected
         if (f != null && mx >= cx1() - DET_W) {
             if (mx >= cx1() - 20 && my <= cyTop() - HEADER_H + 20) { selected = null; return true }
+            if (f.hasMaster() && mx in cx1() - 60..cx1() - 30 && my in cyTop() - HEADER_H + 4..cyTop() - HEADER_H + 22) {
+                try { f.set!!(!f.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${f.name}' failed", t) }
+                return true
+            }
             if (my >= detTop()) subClick(f, cx1() - DET_W, cx1(), detTop() - detScroll, mx, my, btn)
             return true
         }
@@ -4183,7 +4191,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val SUBTEXT_COLOR get() = ScreenTheme.SUBTEXT_COLOR
         private val CHEVRON_COLOR = 0xFF767676.toInt()
 
-        private const val TEXT_SCALE = ScreenTheme.TEXT_SCALE
+        private const val TEXT_SCALE = 0.86f
 
         private val COMPACT get() = FishSettings.fmCompact
         private val MARGIN get() = if (COMPACT) 10 else 16
