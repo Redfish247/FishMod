@@ -474,6 +474,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.37", "fishmod.features.LoadoutTitle.init() failed") { fishmod.features.LoadoutTitle.init() }
         FishDiag.guard("FishModInit.38", "fishmod.features.AutoSprint.init() failed") { fishmod.features.AutoSprint.init() }
         FishDiag.guard("FishModInit.39", "fishmod.features.PartyWarpTimer.init() failed") { fishmod.features.PartyWarpTimer.init() }
+        FishDiag.guard("FishModInit.40x", "DungeonExtras.init() failed") { fishmod.features.dungeon.DungeonExtras.init() }
         FishDiag.guard("FishModInit.40m", "DungeonMilestoneHud.init() failed") { fishmod.features.dungeon.DungeonMilestoneHud.init() }
         FishDiag.guard("FishModInit.40", "fishmod.features.dungeon.DungeonBreaker.init() failed") { fishmod.features.dungeon.DungeonBreaker.init() }
         FishDiag.guard("FishModInit.41", "fishmod.features.BlockOverlay.init() failed") { fishmod.features.BlockOverlay.init() }
