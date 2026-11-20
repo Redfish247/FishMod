@@ -2410,12 +2410,67 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun isFolded(c: Column): Boolean = c.name in foldedColumns
 
     // Explorer: one column open at a time
-    private fun toggleFold(c: Column) {
+    private fun toggleFold(c: Column, push: Boolean = true) {
         for (o in columns) if (o !== c) foldedColumns.add(o.name)
         foldedColumns.remove(c.name)
         saveFoldedColumns()
         frameVisibleColumns = null
         selected = null; gridScroll = 0; detScroll = 0
+        openedAt = System.currentTimeMillis()
+        if (tabs.isEmpty()) tabs.add(c.name) else tabs[ti] = c.name
+        if (push) { while (hist.size > hi + 1) hist.removeAt(hist.size - 1); hist.add(c.name); hi = hist.size - 1 }
+    }
+
+    // Tabs, back/forward history and card animation state
+    private val tabs = ArrayList<String>()
+    private var ti = 0
+    private val hist = ArrayList<String>()
+    private var hi = -1
+    private var openedAt = 0L
+    private var selAt = 0L
+    private fun colByName(n: String): Column? = columns.firstOrNull { it.name == n }
+    private fun anim(start: Long, delayMs: Int = 0, durMs: Int = 260): Float {
+        if (!FishSettings.fmAnimations) return 1f
+        val t = ((System.currentTimeMillis() - start - delayMs) / durMs.toFloat()).coerceIn(0f, 1f)
+        return 1f - (1f - t) * (1f - t) * (1f - t)
+    }
+    private fun fa(c: Int, a: Float): Int = (((c ushr 24) * a).toInt() shl 24) or (c and 0xFFFFFF)
+    private fun tabRects(): List<IntArray> {
+        var x = MARGIN + sw(this.font, "FishMod", 1.3f) + 16
+        val out = ArrayList<IntArray>()
+        for (t in tabs) { val w = Math.min(120, sw(this.font, t, 0.85f) + 30); out.add(intArrayOf(x, w)); x += w + 4 }
+        out.add(intArrayOf(x, 20))
+        return out
+    }
+    private fun renderTabs(mx: Int, my: Int) {
+        if (tabs.isEmpty()) visibleColumns().firstOrNull()?.let { tabs.add(it.name); hist.add(it.name); hi = 0 }
+        val r = tabRects()
+        val y = MARGIN - 2
+        for ((i, t) in tabs.withIndex()) {
+            val x = r[i][0]; val w = r[i][1]
+            val hov = mx in x..x + w && my in y..y + 20
+            UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), 20f, 6f, if (i == ti) 0x33FFFFFF else if (hov) ROW_HOVER else 0x14FFFFFF)
+            ScreenTheme.nst(ellipsize(t, w - 26, 0.85f), x + 8, y + 6, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR, 0.85f)
+            if (tabs.size > 1) ScreenTheme.nst("×", x + w - 13, y + 5, if (hov && mx >= x + w - 16) TEXT_COLOR else SUBTEXT_COLOR, 0.9f)
+        }
+        val p = r[tabs.size]
+        val ph = mx in p[0]..p[0] + 20 && my in y..y + 20
+        UiRecorder.fillRoundedRect(p[0].toFloat(), y.toFloat(), 20f, 20f, 6f, if (ph) ROW_HOVER else 0x14FFFFFF)
+        ScreenTheme.nst("+", p[0] + 7, y + 5, if (ph) TEXT_COLOR else SUBTEXT_COLOR, 1f)
+    }
+    private fun tabClick(mx: Int, my: Int): Boolean {
+        val y = MARGIN - 2
+        if (my !in y..y + 20) return false
+        for ((i, r) in tabRects().withIndex()) {
+            if (mx !in r[0]..r[0] + r[1]) continue
+            when {
+                i == tabs.size -> visibleColumns().firstOrNull()?.let { tabs.add(it.name); ti = tabs.size - 1 }
+                tabs.size > 1 && mx >= r[0] + r[1] - 16 -> { tabs.removeAt(i); if (ti >= i && ti > 0) ti--; colByName(tabs[ti])?.let { toggleFold(it) } }
+                else -> { ti = i; colByName(tabs[i])?.let { toggleFold(it) } }
+            }
+            return true
+        }
+        return false
     }
 
     private fun toggleFolderColumns(f: Folder) {
@@ -2622,6 +2677,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         sst(ctx, this.font, "Fish", MARGIN, MARGIN, TEXT_COLOR, ws)
         val fw = sw(this.font, "Fish", ws)
         sst(ctx, this.font, "Mod", MARGIN + fw, MARGIN, ACCENT, ws)
+        renderTabs(mouseX, mouseY)
 
         val labels = arrayOf("Report", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
         val filled = booleanArrayOf(false, false, false, true)
@@ -2721,25 +2777,35 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val col = visibleColumns().firstOrNull()
         val ht = cyTop() - HEADER_H
         val title = if (searchText.isNotEmpty()) "Search  ·  ${items.size} results" else col?.name ?: "Click a tab on the left to open a column"
-        sst(ctx, this.font, ellipsize("FishMod  ›  $title", gx1() - cx0()), cx0(), ht + 8, TEXT_COLOR, 1f)
-        if (searchText.isEmpty()) col?.sub()?.let { sst(ctx, this.font, ellipsize(it, gx1() - cx0(), 0.8f), cx0(), ht + 22, SUBTEXT_COLOR, 0.8f) }
+        for ((k, a) in arrayOf("‹", "›").withIndex()) {
+            val ax = cx0() + k * 18
+            val can = if (k == 0) hi > 0 else hi < hist.size - 1
+            val ah = can && mouseX in ax..ax + 16 && mouseY in ht + 4..ht + 20
+            if (ah) UiRecorder.fillRoundedRect(ax.toFloat(), (ht + 4).toFloat(), 16f, 16f, 4f, ROW_HOVER)
+            sst(ctx, this.font, a, ax + 5, ht + 7, if (ah) TEXT_COLOR else if (can) SUBTEXT_COLOR else 0xFF4A4A4A.toInt(), 1f)
+        }
+        val crumb = "FishMod  ›  $title" + (selected?.let { "  ›  " + it.name } ?: "")
+        sst(ctx, this.font, ellipsize(crumb, gx1() - cx0() - 40), cx0() + 40, ht + 8, TEXT_COLOR, 1f)
+        if (searchText.isEmpty()) col?.sub()?.let { sst(ctx, this.font, ellipsize(it, gx1() - cx0() - 40, 0.8f), cx0() + 40, ht + 22, SUBTEXT_COLOR, 0.8f) }
         gridScroll = Mth.clamp(gridScroll, 0, gridMax(items.size))
         val cw = cardW()
         UiRecorder.pushScissor(cx0().toFloat(), cyTop().toFloat(), (gx1() - cx0()).toFloat(), (cyBot() - cyTop()).toFloat())
         try {
             for ((i, f) in items.withIndex()) {
-                val x = cardX(i); val y = cardY(i)
+                val p = if (searchText.isEmpty()) anim(openedAt, Math.min(i, 24) * 25) else 1f
+                val x = cardX(i); val y = cardY(i) + Math.round((1f - p) * 10f)
                 if (y + CARD_H < cyTop() || y > cyBot()) continue
                 val on = f.hasMaster() && f.get!!()
                 val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + CARD_H
                 val xf = x.toFloat(); val yf = y.toFloat()
-                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, currentCardBg())
-                if (on) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, ROW_ENABLED)
+                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, fa(currentCardBg(), p))
+                if (on) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, fa(ROW_ENABLED, p))
                 if (hover) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, ROW_HOVER)
                 if (f === selected) UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, 1f, 0, ACCENT)
-                sst(ctx, this.font, ellipsize(f.name, cw - 44), x + 8, y + 8, if (on) TEXT_COLOR else SUBTEXT_COLOR, 1f)
+                sst(ctx, this.font, ellipsize(f.name, cw - 44), x + 8, y + 8, fa(if (on) TEXT_COLOR else SUBTEXT_COLOR, p), 1f)
                 val d = descFor(f.name)
-                if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 16, 0.75f), x + 8, y + 24, SUBTEXT_COLOR, 0.75f)
+                if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 16, 0.75f), x + 8, y + 24, fa(SUBTEXT_COLOR, p), 0.75f)
+                if (p < 0.6f) continue
                 if (f.hasMaster()) drawTogglePill(ctx, x + cw - 30, y + 7, 22, 12, on, if (on) 1f else 0f, hover && mouseX >= x + cw - 34)
                 else if (f.sub.isNotEmpty()) drawChevron(ctx, x + cw - 16, y + 12, false, CHEVRON_COLOR)
                 if (hover && (HudPreview.namesFor(f.name).isNotEmpty() || WorldPreview.has(f.name))) hoverPreview = f.name
@@ -2747,7 +2813,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         } finally { UiRecorder.popScissor() }
         if (items.isEmpty() && col != null) sst(ctx, this.font, "No features match", cx0(), cyTop() + 8, SUBTEXT_COLOR, 1f)
         val f = selected ?: return
-        val dx0 = cx1() - DET_W
+        val dx0 = cx1() - DET_W + Math.round((1f - anim(selAt, 0, 220)) * 24f)
         UiRecorder.dropShadow(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
         roundedRect(ctx, dx0, ht, DET_W, cyBot() - ht, CARD_RADIUS, currentCardBg())
         sst(ctx, this.font, ellipsize(f.name, DET_W - 40), dx0 + 12, ht + 9, TEXT_COLOR, 1f)
@@ -2786,6 +2852,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun exClick(mx: Int, my: Int, btn: Int): Boolean {
+        val ht = cyTop() - HEADER_H
+        if (my in ht + 4..ht + 20 && mx in cx0()..cx0() + 34) {
+            val k = if (mx < cx0() + 18) -1 else 1
+            if (hi + k in hist.indices) { hi += k; colByName(hist[hi])?.let { toggleFold(it, false) } }
+            return true
+        }
+        if (my < cyTop() && mx < gx1()) { selected = null; return true }
         val f = selected
         if (f != null && mx >= cx1() - DET_W) {
             if (mx >= cx1() - 20 && my <= cyTop() - HEADER_H + 20) { selected = null; return true }
@@ -2799,7 +2872,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (mx !in x..x + cw || my !in y..y + CARD_H) continue
             if (btn == 0 && ft.hasMaster() && (mx >= x + cw - 34 || ft.sub.isEmpty())) {
                 try { ft.set!!(!ft.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${ft.name}' failed", t) }
-            } else if (ft.sub.isNotEmpty()) { selected = ft; detScroll = 0 }
+            } else if (ft.sub.isNotEmpty()) { if (selected == null) selAt = System.currentTimeMillis(); selected = ft; detScroll = 0 }
             return true
         }
         return true
@@ -3129,6 +3202,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
 
+        if (tabClick(mx, my)) return true
         val e = editHudRect()
         if (hovBtn(mx, my, e[0], e[1], e[2], e[3])) { Minecraft.getInstance().showScreen(FishHudEditor(this)); return true }
         val rects = topBarButtonRects()
