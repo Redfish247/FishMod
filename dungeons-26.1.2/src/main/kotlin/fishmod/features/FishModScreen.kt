@@ -3276,7 +3276,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         // drawn bold, so measure bold or long lines overflow the column
         private fun w(t: String) = Math.ceil(UiRecorder.textWidthBold(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
-        private val minLines: Int = wrap(name, MIN_COLUMN_W - 38).size
+        private val minLines: Int = wrap(name, DET_W - 34).size
 
         override fun getHeight(): Int = when {
             minLines <= 1 -> SUBCAT_HEIGHT
@@ -3285,12 +3285,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val h = getHeight()
-            val maxW = rightX - leftX - 12
+            val maxW = rightX - leftX - 4
             val lines = wrap(name, maxW)
+            // short names are section labels; long ones are notes, drawn as readable sentence text
+            val note = name.length > 24
+            val c = if (note) (if (ScreenTheme.lightBg()) 0xFF3A3A3A.toInt() else 0xFFB4B4B4.toInt()) else SUBTEXT_COLOR
             if (lines.size <= 1) {
-                UiRecorder.text(lines.getOrElse(0) { name }.uppercase(), (leftX + 2).toFloat(), sy + (h - 6.6f) / 2f + 1f, 6.6f, SUBTEXT_COLOR)
+                UiRecorder.text(lines.getOrElse(0) { name }.let { if (note) it else it.uppercase() }, (leftX + 2).toFloat(), sy + (h - 6.6f) / 2f + 1f, if (note) 7.2f else 6.6f, c)
             } else {
-                for ((i, l) in lines.withIndex()) UiRecorder.text(l.uppercase(), (leftX + 2).toFloat(), (sy + 4 + i * 9).toFloat(), 6.6f, SUBTEXT_COLOR)
+                for ((i, l) in lines.withIndex()) UiRecorder.text(if (note) l else l.uppercase(), (leftX + 2).toFloat(), (sy + 4 + i * 9).toFloat(), if (note) 7.2f else 6.6f, c)
             }
         }
 
