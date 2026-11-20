@@ -17,10 +17,6 @@ object FishingMenu {
         col.features.add(core)
         col.features.add(Feature("Current Bait HUD", FishingWorldSettings::class.java, "baitHud"))
         col.features.add(Feature("Instant Underwater Fog Clear", FishingWorldSettings::class.java, "instantWaterFog"))
-        val shards = Feature("Shard Tracker", FishingWorldSettings::class.java, "shardTracker")
-        shards.sub.add(ToggleSetting("Reset On World Change", "Clear the counts when you change servers", FishingWorldSettings::class.java, "shardTrackerResetOnSwap"))
-        shards.sub.add(SliderIntSetting("Rows", "How many shard types to list", { FishingWorldSettings.shardTrackerRows }, { FishingWorldSettings.shardTrackerRows = it }, 1, 20))
-        col.features.add(shards)
         col.features.add(Feature("Golden Fish Timer", FishingWorldSettings::class.java, "goldenFishTimer"))
         val totem = Feature("Totem of Corruption Overlay", FishingWorldSettings::class.java, "totemOverlay")
         totem.sub.add(ToggleSetting("Range Ring", "Draw the 16-block effect radius", FishingWorldSettings::class.java, "totemRing"))
@@ -41,6 +37,19 @@ object FishingMenu {
         cap.sub.add(fishmod.features.FishModScreen.SoundSearchSetting("Sound", "", { FishingWorldSettings.scCapSound }, { v -> FishingWorldSettings.scCapSound = v }, { 100 }))
         col.features.add(cap)
         col.features.add(Feature("Trophy Fish HUD", FishingWorldSettings::class.java, "trophyHud"))
+
+        FishingAlerts.addMenu(col)
+        FishingTrackers.addMenu(col)
+        FishingWorld.addMenu(col)
+        return col
+    }
+
+    fun huntingColumn(): Column {
+        val col = Column("Hunting & Foraging")
+        val shards = Feature("Shard Tracker", FishingWorldSettings::class.java, "shardTracker")
+        shards.sub.add(ToggleSetting("Reset On World Change", "Clear the counts when you change servers", FishingWorldSettings::class.java, "shardTrackerResetOnSwap"))
+        shards.sub.add(SliderIntSetting("Rows", "How many shard types to list", { FishingWorldSettings.shardTrackerRows }, { FishingWorldSettings.shardTrackerRows = it }, 1, 20))
+        col.features.add(shards)
         val fk = Feature("Fusion Keybinds", FishingWorldSettings::class.java, "fusionKeys")
         fk.sub.add(fishmod.features.FishModScreen.KeybindSetting("Repeat Fusion", "Clicks Repeat Previous Fusion in the Fusion Box", { FusionKeys.repeat }))
         fk.sub.add(fishmod.features.FishModScreen.KeybindSetting("Confirm", "Clicks the green confirm button", { FusionKeys.confirm }))
@@ -57,10 +66,10 @@ object FishingMenu {
         la.sub.add(fishmod.features.FishModScreen.SoundSearchSetting("Sound", "", { FishingWorldSettings.lassoSound }, { v -> FishingWorldSettings.lassoSound = v }, { 100 }))
         col.features.add(la)
         col.features.add(Feature("Honeycomb Pot Timer", FishingWorldSettings::class.java, "honeycombTimer"))
-
-        FishingAlerts.addMenu(col)
-        FishingTrackers.addMenu(col)
-        FishingWorld.addMenu(col)
+        val hive = Feature("Honeyhive Reminder", fishmod.features.mining.MiningSettings::class.java, "foragingHoneyhive")
+        hive.sub.add(fishmod.features.FishModScreen.SliderIntSetting("Remind After (min)", "Minutes after you loot a honeyhive", fishmod.features.mining.MiningSettings::class.java, "foragingHoneyhiveMin", 5, 180))
+        hive.sub.add(ToggleSetting("Queen Bee Title", "Title when a Queen Bee refills the hive", fishmod.features.mining.MiningSettings::class.java, "foragingQueenBee"))
+        col.features.add(hive)
         return col
     }
 
