@@ -137,8 +137,8 @@ object MapHud {
             val textFactor = 1.0f / DungeonMapSettings.mapTextScaling.coerceAtLeast(0.01f)
             val legit = MapColors.legit()
 
-            val rooms: List<Room> = example?.rooms ?: ArrayList(Scan.rooms)
-            val doors: List<Door> = example?.doors ?: ArrayList(Scan.doors)
+            val rooms: List<Room> = example?.rooms ?: Scan.roomsSnapshot()
+            val doors: List<Door> = example?.doors ?: Scan.doorsSnapshot()
 
             for (room in rooms) {
                 try { room.render(g) } catch (e: Exception) { FishDiag.fail("MapHud.2", "room render failed '${room.data?.name}' type=${room.type} shape=${room.shape} tiles=${room.tiles.size}", e) }
