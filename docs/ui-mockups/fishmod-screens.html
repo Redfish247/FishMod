@@ -126,18 +126,29 @@ table.t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.t
 .rcard{display:flex;align-items:center;gap:14px;padding:12px;border-radius:8px;background:#ffffff0a;justify-content:center;min-height:84px}.rg{display:grid;grid-template-columns:repeat(3,26px);gap:2px}.rs{width:26px;height:26px;background:#0f0f10;border:1px solid #2c2c2e;border-radius:3px;display:grid;place-items:center;padding:0}button.rs:hover{border-color:#ececec}.rs i{width:16px;height:16px;border-radius:3px;display:block}.rs.out{width:36px;height:36px}.rs.out i{width:24px;height:24px}.arr{color:#9a9a9a;font-size:18px}
 .ic{display:grid;grid-template-columns:150px 1fr;gap:14px;max-width:760px}.icp{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border-radius:10px;background:#80808012;text-align:center}.icp i{width:72px;height:72px;border-radius:12px;background:var(--c);display:block;box-shadow:inset 0 0 0 1px #0003;transition:background .3s}.icp b{margin-top:6px}.icp small{color:var(--mut);font-size:11px}.icf{display:flex;flex-direction:column;gap:10px;min-width:0}.icf .swg{grid-template-columns:repeat(auto-fill,24px);align-items:center}.icf .sw2{width:24px;height:24px}.icf .swg .inp{grid-column:span 4}
 @media(max-width:860px){.ic{grid-template-columns:1fr}.ibg{grid-template-columns:1fr}.ocs{flex-wrap:wrap}}
+
+html,body{height:100%}body{padding:0!important;display:flex;flex-direction:column;background:#151515;color:#ececec}
+.pick{display:flex;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-left,0px));background:#1a1a1a;border-bottom:1px solid #2c2c2c;flex-wrap:wrap}.pt{font:600 14px var(--fd)}.chips{display:flex;flex-wrap:wrap;gap:4px;flex:1;align-items:center}.csep{width:1px;height:16px;background:#3a3a3a;margin:0 4px}
+.pick .chip{color:#bbb;background:#ffffff0d}.pick .chip.on{background:#ffffff26;color:#fff;box-shadow:inset 0 0 0 1px #ffffff40}.pick .toast{color:#aaa}
+.cap{margin:0;padding:6px max(16px,env(safe-area-inset-left,0px));font-size:12px;color:#9a9a9a;background:#1a1a1a}.cap:empty{display:none}
+.view{position:relative;flex:1;min-height:520px;overflow:hidden;--fg:#ececec;--mut:#9a9a9a;--line:#ffffff1f;--accs:#ffffff1a;--acc:#9a9a9a;--pane:#ffffff08;--win:#ffffff12;color:var(--fg)}
+.view>.game{position:absolute;inset:0;aspect-ratio:auto;max-width:none!important;border:0;border-radius:0;min-height:0}
+.view.enter>.panel,.view.enter .dlg,.view.enter .rp,.view.enter .sv{animation:pop .45s cubic-bezier(.2,.8,.2,1)}
+.panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(900px,calc(100% - 32px));max-height:calc(100% - 32px);display:flex;flex-direction:column;background:#1c1c1ef0;border:1px solid #ffffff1f;border-radius:12px;box-shadow:0 24px 60px #0009;overflow:hidden}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #ffffff14}.ph b{font:600 15px var(--fd)}.pb{padding:14px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.view .pbtn{background:#ffffff14}.view .tile,.view .ac,.view .card,.view .chip{background:#ffffff0d}.view .inp{background:#ffffff0d;color:#ececec}
+.hl.fl{position:absolute;right:12px;top:12px;width:250px;max-height:calc(100% - 24px);background:#1c1c1ef0;border:1px solid #ffffff1f;border-radius:10px;padding:6px;box-shadow:0 16px 40px #0008}
+.view>.card.set{position:absolute;right:16px;bottom:16px;z-index:5;background:#1c1c1ef0;border:1px solid #ffffff1f;width:min(340px,calc(100% - 32px))}
+.view .game .sv-wrap,.view>.game.sv-wrap{padding:16px}
+@keyframes pop{from{opacity:0;scale:.92}to{opacity:1;scale:1}}
 .ok{color:var(--on)}.bad{color:#e05a5a}
 .store{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
 @media(max-width:860px){.split{grid-template-columns:1fr}.sg{grid-template-columns:repeat(9,minmax(0,1fr))}.slot{width:auto;aspect-ratio:1}}
 </style>
-<div class="stage" aria-hidden="true"></div><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lgf" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage id="lgm" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="m"/><feDisplacementMap id="lgd" in="SourceGraphic" in2="m" scale="70" xChannelSelector="R" yChannelSelector="G" result="r"/><feTurbulence id="lgt" type="fractalNoise" baseFrequency="0.004 0.007" numOctaves="1" seed="7" result="n"/><feDisplacementMap id="lgw" in="r" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G"/></filter></svg><button class="reopen" id="reopen" hidden>Open FishMod</button>
-<div class="win" id="win">
- <div class="tabbar" id="bar"><div class="tabs" id="tabs"></div><div class="wc"><button id="w-min" aria-label="Minimize">&#8211;</button><button id="w-max" aria-label="Maximize">&#9633;</button><button id="w-x" class="wx" aria-label="Close">&#10005;</button></div></div>
- <div class="cmd"><span class="lh">FishMod screens</span><span class="sp"></span><span id="toast" class="toast"></span></div>
- <div class="addr"><div class="nav"><button id="nb" aria-label="Back">←</button><button id="nf" aria-label="Forward">→</button></div><div class="crumb" id="crumb"></div></div>
- <div class="main"><nav class="side" id="side"></nav><section class="items" id="items"></section></div>
- <div class="status" id="st"></div>
-</div>
+<header class="pick"><b class="pt">FishMod Screens</b><nav id="side" class="chips"></nav><span id="toast" class="toast"></span></header>
+<p class="cap" id="cap"></p>
+<main class="view" id="items"></main>
+<div id="win" hidden></div>
 <script>
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 const W=$("win");
@@ -153,7 +164,7 @@ const sw=(on,a,v)=>'<span class="sw'+(on?' on':'')+'" role="switch" aria-checked
 const tabs=(list,on,a)=>'<div class="tabs2">'+list.map(t=>'<button class="'+(t===on?'on':'')+'" data-a="'+a+'" data-v="'+esc(t)+'">'+esc(t)+'</button>').join("")+'</div>';
 const coins=n=>n>=1e9?(n/1e9).toFixed(2)+"b":n>=1e6?(n/1e6).toFixed(1)+"m":n>=1e3?(n/1e3).toFixed(0)+"k":String(n);
 const V={};
-V["Edit HUD"]=()=>{const S=ST.hud,sel=ST.hudSel,sc=ST.hudScale[sel]||100,off=ST.hudOff||(ST.hudOff={});return '<h2>Edit HUD</h2><p class="sub">Drag an element to move it. Pick one in the list to size it.</p><div class="split" style="grid-template-columns:1fr 250px"><div class="game" id="game">'+Object.keys(S).filter(k=>!off[k]).map(k=>'<div class="hud'+(k===sel?' on':'')+'" data-hud="'+esc(k)+'" style="left:'+S[k][0]+'%;top:'+S[k][1]+'%;transform:scale('+(ST.hudScale[k]||100)/100+');transform-origin:0 0">'+esc(k)+'<small>'+esc(S[k][2])+'</small></div>').join("")+'</div><div class="hl">'+Object.keys(S).map(k=>'<div class="hrow'+(k===sel?' sel':'')+'"><button class="hname" data-a="hsel" data-v="'+esc(k)+'">'+esc(k)+'</button>'+sw(!off[k],"hon",k)+(k===sel?'<div class="hx"><label for="hs">Scale <span class="sl"><input id="hs" type="range" min="50" max="200" value="'+sc+'"><input id="hsn" class="num" type="number" min="50" max="200" value="'+sc+'" aria-label="Scale"></span></label><label>Text shadow '+sw(1,"tg")+'</label><label>Background '+sw(1,"tg")+'</label><button class="pbtn" data-a="hudreset">Reset position</button></div>':'')+'</div>').join("")+'</div></div>'};
+V["Edit HUD"]=()=>{const S=ST.hud,sel=ST.hudSel,sc=ST.hudScale[sel]||100,off=ST.hudOff||(ST.hudOff={});return '<h2>Edit HUD</h2><p class="sub">Drag an element to move it. Pick one in the list to size it.</p><div class="game" id="game">'+Object.keys(S).filter(k=>!off[k]).map(k=>'<div class="hud'+(k===sel?' on':'')+'" data-hud="'+esc(k)+'" style="left:'+S[k][0]+'%;top:'+S[k][1]+'%;transform:scale('+(ST.hudScale[k]||100)/100+');transform-origin:0 0">'+esc(k)+'<small>'+esc(S[k][2])+'</small></div>').join("")+'<div class="hl fl">'+Object.keys(S).map(k=>'<div class="hrow'+(k===sel?' sel':'')+'"><button class="hname" data-a="hsel" data-v="'+esc(k)+'">'+esc(k)+'</button>'+sw(!off[k],"hon",k)+(k===sel?'<div class="hx"><label for="hs">Scale <span class="sl"><input id="hs" type="range" min="50" max="200" value="'+sc+'"><input id="hsn" class="num" type="number" min="50" max="200" value="'+sc+'" aria-label="Scale"></span></label><label>Text shadow '+sw(1,"tg")+'</label><label>Background '+sw(1,"tg")+'</label><button class="pbtn" data-a="hudreset">Reset position</button></div>':'')+'</div>').join("")+'</div></div>'};
 const ACH=[["First Blood","Finish a dungeon run",1,1],["Secret Hunter","Find 1,000 secrets",.64,0],["S+ Club","Get S+ on F7",1,1],["Sweaty","Run 100 M7s",.23,0],["Inquisitive","Dig 50 Inquisitors",.9,0],["Fishy","Catch a Thunder",1,1],["Speedrunner","F7 under 5:00",0,0],["Collector","Unlock 50 achievements",.42,0],["Night Owl","Play past 3 AM",1,1],["???","Secret achievement",0,0]];
 V["Achievements"]=()=>{const q=ST.achQ.toLowerCase(),t=ST.achTab;let body;
  if(t==="Leaderboard")body='<div class="split" style="grid-template-columns:1fr 1fr"><div class="card"><b>Top Achievement Points</b><table class="t">'+[["RedFish",1840],["BladeMasterGabe",1610],["22yrs",1395]].map((r,i)=>'<tr><td>'+(i+1)+'. '+r[0]+'</td><td class="r">'+r[1]+'</td></tr>').join("")+'</table></div><div class="card"><b>Top Secret Hunters</b><table class="t">'+[["Vyriv",44],["RedFish",39],["slowguy_42",12]].map((r,i)=>'<tr><td>'+(i+1)+'. '+r[0]+'</td><td class="r">'+r[1]+'</td></tr>').join("")+'</table></div></div>';
@@ -199,19 +210,18 @@ function bprev(){const B=ST.btn,p=$("bprev");if(!p)return;p.innerHTML='<span sty
 function parsePrice(v){const m=String(v).trim().toLowerCase().replace(/,/g,"").match(/^(\d+(?:\.\d+)?)([kmb]?)$/);if(!m)return null;return +m[1]*({k:1e3,m:1e6,b:1e9}[m[2]]||1)}
 V["Auction Price"]=()=>'<h2>Auction Price</h2><p class="sub">Asked before you list an item with no known value.</p><div class="game" style="max-width:720px"><div class="dlg"><b>Price</b><input class="inp" id="ap" value="'+esc(ST.price)+'" placeholder="e.g. 42.5m, 800k, 1.2b"><small id="apv"></small><div class="row2" style="justify-content:flex-end"><button class="pbtn" data-a="toast" data-v="Cancelled">Cancel</button><button class="pbtn" data-a="apok">Confirm</button></div></div></div>';
 function apv(){const e=$("apv");if(!e)return;const n=parsePrice($("ap").value);e.textContent=n==null?"Enter a number like 42.5m":"= "+Math.round(n).toLocaleString()+" coins";e.className=n==null?"bad":""}
-function nav(){$("side").innerHTML=SCR.map(([g,l])=>'<h4>'+esc(g)+'</h4>'+l.map(n=>'<button class="'+(n===cur?'act':'')+'" data-go="'+esc(n)+'">'+esc(n)+'</button>').join("")).join("");
- $("tabs").innerHTML='<button class="tab act">'+esc(cur)+'</button>';
- $("crumb").innerHTML='<span>FishMod</span><i>›</i><span>Screens</span><i>›</i><span>'+esc(cur)+'</span>';
- $("nb").disabled=hi<=0;$("nf").disabled=hi>=hist.length-1}
-function render(keepFocus){const a=document.activeElement,id=a&&a.id,pos=a&&a.selectionStart;const it=$("items"),top=it.scrollTop;
- it.innerHTML='<div class="scr">'+V[cur]()+'</div>';nav();bprev();apv();
- if(anim){it.classList.remove("enter");void it.offsetWidth;it.classList.add("enter");it.scrollTop=0;anim=0}else it.scrollTop=top;
- if(keepFocus&&id&&$(id)){$(id).focus();try{$(id).setSelectionRange(pos,pos)}catch(e){}}
- $("st").innerHTML='<span>'+esc(cur)+'</span><span class="sp"></span><span>Mockup: example data, nothing is saved to the game</span>'}
-function go(n){if(n===cur)return;cur=n;hist=hist.slice(0,hi+1);hist.push(n);hi=hist.length-1;anim=1;render()}
+function nav(){$("side").innerHTML=SCR.map(([g,l])=>l.map(n=>'<button class="chip'+(n===cur?' on':'')+'" data-go="'+esc(n)+'">'+esc(n)+'</button>').join("")).join('<span class="csep"></span>')}
+function render(keepFocus){const a=document.activeElement,id=a&&a.id,pos=a&&a.selectionStart;const it=$("items");
+ let out=V[cur]();out=out.replace(/^<h2>[\s\S]*?<\/h2>/,"");const cm=out.match(/^<p class="sub">([\s\S]*?)<\/p>/);if(cm)out=out.slice(cm[0].length);$("cap").innerHTML=cm?cm[1]:"";
+ const game=/class="game/.test(out);
+ it.innerHTML=game?out:'<div class="game"></div><div class="panel"><div class="ph"><b>'+esc(cur)+'</b><button class="dbtn pri" data-a="toast" data-v="Saved">Done</button></div><div class="pb">'+out+'</div></div>';
+ nav();bprev();apv();
+ if(anim){it.classList.remove("enter");void it.offsetWidth;it.classList.add("enter");anim=0}
+ if(keepFocus&&id&&$(id)){$(id).focus();try{$(id).setSelectionRange(pos,pos)}catch(e){}}}
+function go(n){if(n===cur)return;cur=n;anim=1;render()}
 function toast(m){$("toast").textContent=m;clearTimeout(toast.t);toast.t=setTimeout(()=>$("toast").textContent="",2500)}
 document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g){go(g.dataset.go);return}
- const n=e.target.closest("#nb,#nf");if(n&&!n.disabled){hi+=n.id==="nb"?-1:1;cur=hist[hi];anim=1;render();return}
+ 
  const t=e.target.closest("[data-a]");if(!t)return;const a=t.dataset.a,v=t.dataset.v,r=ST.rules[ST.rule];
  const flip=()=>{t.classList.toggle("on");t.setAttribute("aria-checked",t.classList.contains("on"))};
  if(a==="tg"){flip();return}
@@ -265,8 +275,4 @@ function lensMap(){const r=W.getBoundingClientRect(),w=Math.max(40,Math.round(r.
   if(ox>0||oy>0){const l=Math.hypot(ox,oy)||1;nx=ox/l;ny=oy/l}else if(qx>qy)nx=1;else ny=1;nx*=Math.sign(px)||1;ny*=Math.sign(py)||1;
   const t=dist<B?Math.pow(1-Math.max(0,dist)/B,2):0,o=(j*w+i)*4;d[o]=128+nx*127*t;d[o+1]=128+ny*127*t;d[o+2]=128;d[o+3]=255}
  x.putImageData(im,0,0);document.getElementById("lgm").setAttribute("href",cv.toDataURL())}
-document.addEventListener("click",e=>{if(e.target.closest("#w-min,#w-x")){W.classList.add("closing");setTimeout(()=>{W.hidden=true;W.classList.remove("closing");$("reopen").hidden=false},390)}if(e.target.closest("#reopen")){W.hidden=false;$("reopen").hidden=true;W.classList.remove("opening");void W.offsetWidth;W.classList.add("opening")}if(e.target.closest("#w-max"))W.classList.toggle("max")},true);
-let dr=null;$("bar").addEventListener("pointerdown",e=>{if(e.target.closest("button")||W.classList.contains("max")||innerWidth<=860)return;const r=W.getBoundingClientRect();dr=[e.clientX-r.left,e.clientY-r.top];W.classList.add("dragging");$("bar").setPointerCapture(e.pointerId)});
-$("bar").addEventListener("pointermove",e=>{if(!dr)return;W.style.left=Math.max(0,e.clientX-dr[0])+"px";W.style.top=Math.max(0,e.clientY-dr[1])+"px"});
-$("bar").addEventListener("pointerup",()=>{dr=null;W.classList.remove("dragging")});
-look();W.classList.add("opening");render();</script>
+render();</script>
