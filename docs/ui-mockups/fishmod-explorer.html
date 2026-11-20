@@ -18,7 +18,7 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 .tab.act{background:var(--win);color:var(--fg)}.tab .x{opacity:.5}.tab.add{font-size:16px}
 .cmd{display:flex;gap:2px;padding:6px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
 .cmd button{padding:6px 10px;border-radius:6px;font-size:13px;display:flex;gap:6px;align-items:center}.cmd button:hover{background:var(--pane)}
-.sep{width:1px;height:20px;background:var(--line);margin:0 4px}.sp{flex:1}
+.cmd .save{background:var(--acc);color:#fff;margin-left:6px}.cmd .save:hover{background:var(--acc);filter:brightness(1.2)}.cmd #b-reset.arm{color:#e05a5a}.toast{font-size:12px;color:var(--mut);margin-right:8px}.nav button:disabled{opacity:.35;cursor:default}.sep{width:1px;height:20px;background:var(--line);margin:0 4px}.sp{flex:1}
 .seg{display:flex;background:var(--pane);border-radius:6px;padding:2px}.seg button.on{background:var(--win);box-shadow:0 1px 2px #0002}
 .addr{display:flex;gap:8px;padding:8px 10px;align-items:center;border-bottom:1px solid var(--line)}
 .nav{display:flex;gap:2px}.nav button{width:28px;height:28px;border-radius:6px;color:var(--mut)}.nav button:hover{background:var(--pane)}
@@ -55,14 +55,13 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 <div class="win">
  <div class="tabs" id="tabs"></div>
  <div class="cmd">
-  <button>New profile</button><div class="sep"></div>
-  <button title="Copy settings">Copy</button><button title="Paste settings">Paste</button><button title="Reset column">Reset</button>
-  <div class="sep"></div><button>Sort</button><button>Pin</button><button>Menu style</button>
-  <span class="sp"></span>
-  <div class="seg"><button id="vg" class="on" title="Grid view">Grid</button><button id="vl" title="List view">List</button></div>
+  <button id="b-hud">Edit HUD</button><div class="sep"></div>
+  <button id="b-rep">Report</button><button id="b-cred">Credits</button><button id="b-reset">Reset</button>
+  <span class="sp"></span><span id="toast" class="toast"></span>
+  <div class="seg"><button id="vg" class="on" title="Grid view">Grid</button><button id="vl" title="List view">List</button></div><button id="b-save" class="save">Save &amp; Close</button>
  </div>
  <div class="addr">
-  <div class="nav"><button aria-label="Back">←</button><button aria-label="Forward">→</button><button aria-label="Up">↑</button></div>
+  <div class="nav"><button id="nb" aria-label="Back">←</button><button id="nf" aria-label="Forward">→</button><button id="nu" aria-label="Up">↑</button></div>
   <div class="crumb" id="crumb"></div>
   <input class="search" id="q" placeholder="Search features">
  </div>
@@ -88,29 +87,41 @@ const C={"General":["#5b8def",[["Compact GUI","Tighter rows and gaps so more fit
 "Alerts & Reminders":["#d6a12a",[["Limbo Alert","Ping when sent to limbo"],["Order Filled","Bazaar order done"],["Vanquisher Share","Post coords to party"]]],
 "Cosmetics":["#d65aa0",[["Fish Size","Scale your player"],["Custom Cape","Pick a cape"]]]};
 const S={};for(const k in C)C[k][1].forEach(f=>S[k+"/"+f[0]]=f[2]!==0);
-let col="Dungeon Solvers",sel="Ice Fill",view="grid",tabs=["Dungeon Solvers","Chat","Floor 7"],ai=0;
+let col="Dungeon Solvers",sel="Ice Fill",view="grid",tabs=["Dungeon Solvers","Chat","Floor 7"],ai=0,hist=[["Dungeon Solvers","Ice Fill"]],hi=0,armed=0;
+function go(c,f){col=c;sel=f;tabs[ai]=c;$("q").value="";hist=hist.slice(0,hi+1);const l=hist[hi];if(!l||l[0]!==c||l[1]!==f){hist.push([c,f]);hi=hist.length-1}}
+function toast(m){$("toast").textContent=m;clearTimeout(toast.t);toast.t=setTimeout(()=>$("toast").textContent="",2500)}
 const pinned=["General","Dungeon Solvers","Floor 7"],$=id=>document.getElementById(id),esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 function ini(s){return s.split(/\s+/).map(w=>w[0]).join("").slice(0,2)}
 function render(){const q=$("q").value.toLowerCase();
  $("tabs").innerHTML=tabs.map((t,i)=>'<button class="tab'+(i===ai?' act':'')+'" data-t="'+i+'">'+esc(t)+' <span class="x" data-x="'+i+'">✕</span></button>').join("")+'<button class="tab add" id="addtab" aria-label="New tab">＋</button>';
  const nb=k=>'<button class="'+(k===col?'act':'')+'" data-c="'+esc(k)+'">'+esc(k)+'<span class="n">'+C[k][1].filter(f=>S[k+"/"+f[0]]).length+'/'+C[k][1].length+'</span></button>';
  $("side").innerHTML="<h4>Pinned</h4>"+pinned.map(nb).join("")+"<h4>All columns</h4>"+Object.keys(C).map(nb).join("");
- $("crumb").innerHTML='<button data-c="General">FishMod</button><i>›</i><button>'+(q?'Search results':esc(col))+'</button>'+(sel&&!q?'<i>›</i><span>'+esc(sel)+'</span>':'');
+ $("crumb").innerHTML='<button data-c="General">FishMod</button><i>›</i><button data-c="'+esc(col)+'">'+(q?'Search results':esc(col))+'</button>'+(sel&&!q?'<i>›</i><span>'+esc(sel)+'</span>':'');
  let list=q?Object.keys(C).flatMap(k=>C[k][1].filter(f=>(f[0]+f[1]).toLowerCase().includes(q)).map(f=>[k,f])):C[col][1].map(f=>[col,f]);
  $("items").className="items"+(view==="list"?" list":"");
  $("items").innerHTML='<h2>'+(q?list.length+' results for “'+esc(q)+'”':esc(col))+'</h2>'+(list.length?'<div class="grid">'+list.map(([k,f])=>{const on=S[k+"/"+f[0]];return '<button class="it'+(f[0]===sel?' sel':'')+'" data-k="'+esc(k)+'" data-f="'+esc(f[0])+'"><div class="row"><span class="sw'+(on?' on':'')+'" data-sw="1" role="switch" aria-checked="'+on+'"></span></div><span class="t">'+esc(f[0])+'</span><span class="d">'+esc(q?k+' · '+f[1]:f[1])+'</span></button>'}).join("")+'</div>':'<p class="empty">No feature matches. Try a shorter word.</p>');
  const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel)),f=fk&&C[fk][1].find(f=>f[0]===sel);
  $("det").innerHTML=f?'<h3>'+esc(f[0])+'</h3><p>'+esc(f[1])+'. In '+esc(fk)+'.</p><div class="set"><label>Enabled <span class="sw'+(S[fk+"/"+f[0]]?' on':'')+'" id="dsw" role="switch"></span></label><label for="c1">Highlight color <input id="c1" type="color" value="#8a8a8a"></label><label for="o1">Opacity <span class="sl"><input id="o1" type="range" min="0" max="100" value="70"><input id="o1n" class="num" type="number" min="0" max="100" value="70" aria-label="Opacity value"></span></label><label for="w1">Line width <span class="sl"><input id="w1" type="range" min="1" max="10" step="0.5" value="2.5"><input id="w1n" class="num" type="number" min="1" max="10" step="0.5" value="2.5" aria-label="Line width value"></span></label><label>Text shadow <span class="sw on tg" role="switch" aria-checked="true" tabindex="0"></span></label></div>':'<p>Select a feature to see its settings.</p>';
  const all=Object.keys(S).length,en=Object.values(S).filter(Boolean).length;
+ $("nb").disabled=hi<=0;$("nf").disabled=hi>=hist.length-1;$("nu").disabled=!q&&!sel&&col==="General";
  $("st").innerHTML='<span>'+list.length+' items</span><span>'+(sel?'1 selected':'')+'</span><span class="sp"></span><span>'+en+' of '+all+' features on</span>';
 }
 document.addEventListener("click",e=>{const g=e.target.closest(".tg");if(g){g.classList.toggle("on");g.setAttribute("aria-checked",g.classList.contains("on"));return}
- const t=e.target.closest("[data-x],[data-t],[data-c],[data-k],#dsw,#vg,#vl,#addtab");if(!t)return;
+ const t=e.target.closest("[data-x],[data-t],[data-c],[data-k],#dsw,#vg,#vl,#addtab,#nb,#nf,#nu,#b-hud,#b-rep,#b-cred,#b-reset,#b-save");if(!t)return;
+ if(t.id!=="b-reset"&&armed){armed=0;$("b-reset").textContent="Reset";$("b-reset").classList.remove("arm")}
+ if(t.id==="nb"||t.id==="nf"){hi+=t.id==="nb"?-1:1;[col,sel]=hist[hi];tabs[ai]=col;$("q").value="";render();return}
+ if(t.id==="nu"){if($("q").value){$("q").value=""}else if(sel){go(col,null)}else go("General",null);render();return}
+ if(t.id==="b-hud"){toast("Opens the HUD editor");return}
+ if(t.id==="b-rep"){toast("Opens the bug report screen");return}
+ if(t.id==="b-cred"){toast("Opens credits");return}
+ if(t.id==="b-save"){toast("Saved. Menu closes");return}
+ if(t.id==="b-reset"){if(!armed){armed=1;t.textContent="Confirm?";t.classList.add("arm");setTimeout(()=>{if(armed){armed=0;t.textContent="Reset";t.classList.remove("arm")}},3000);return}
+  armed=0;t.textContent="Reset";t.classList.remove("arm");for(const k in C)C[k][1].forEach(f=>S[k+"/"+f[0]]=f[2]!==0);toast("All columns reset to defaults");render();return}
  if(t.id==="addtab"){tabs.push(col);ai=tabs.length-1}
  else if(t.dataset.x){if(tabs.length>1){const i=+t.dataset.x;tabs.splice(i,1);if(ai>=i&&ai>0)ai--;col=tabs[ai]}}
- else if(t.dataset.t){ai=+t.dataset.t;col=tabs[ai];$("q").value=""}
- else if(t.dataset.c){col=t.dataset.c;tabs[ai]=col;$("q").value="";sel=C[col][1][0][0]}
- else if(t.dataset.k){const k=t.dataset.k+"/"+t.dataset.f;if(e.target.dataset.sw)S[k]=!S[k];sel=t.dataset.f}
+ else if(t.dataset.t){ai=+t.dataset.t;go(tabs[ai],sel&&C[tabs[ai]][1].some(f=>f[0]===sel)?sel:null)}
+ else if(t.dataset.c)go(t.dataset.c,null)
+ else if(t.dataset.k){const k=t.dataset.k+"/"+t.dataset.f;if(e.target.dataset.sw)S[k]=!S[k];else{const q=$("q").value;go(t.dataset.k,t.dataset.f);$("q").value=q}}
  else if(t.id==="dsw"){const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel));S[fk+"/"+sel]=!S[fk+"/"+sel]}
  else{view=t.id==="vl"?"list":"grid";$("vg").classList.toggle("on",view==="grid");$("vl").classList.toggle("on",view==="list")}
  render()});
