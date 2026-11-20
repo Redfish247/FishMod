@@ -392,16 +392,24 @@ public class HypixelApi {
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.7", "decodeRawCompound failed", e); return null; }
     }
 
+    // Walks nested keys; null when any step is missing or JSON null (the API sends null toolkits)
+    private static JsonObject objAt(JsonObject o, String... keys) {
+        JsonElement e = o;
+        for (String k : keys) {
+            if (e == null || !e.isJsonObject()) return null;
+            e = e.getAsJsonObject().get(k);
+        }
+        return e != null && e.isJsonObject() ? e.getAsJsonObject() : null;
+    }
+
     private static double toolkitsValueNw(JsonObject member, Map<String, Double> prices) {
         double total = 0;
         JsonObject[] kits = new JsonObject[2];
         try {
-            if (member.has("garden_player_data") && member.getAsJsonObject("garden_player_data").has("farming_toolkit"))
-                kits[0] = member.getAsJsonObject("garden_player_data").getAsJsonObject("farming_toolkit");
+            kits[0] = objAt(member, "garden_player_data", "farming_toolkit");
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.8", "toolkitsValueNw failed", ignored);}
         try {
-            if (member.has("foraging") && member.getAsJsonObject("foraging").has("hunting_toolkit"))
-                kits[1] = member.getAsJsonObject("foraging").getAsJsonObject("hunting_toolkit");
+            kits[1] = objAt(member, "foraging", "hunting_toolkit");
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.9", "toolkitsValueNw failed", ignored);}
         for (JsonObject kit : kits) {
             if (kit == null) continue;
