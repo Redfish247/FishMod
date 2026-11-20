@@ -48,6 +48,10 @@ object GardenExtrasMenu {
         col.features.add(pl)
 
         col.features.add(Feature("Farming Toolkit Icons", X::class.java, "gardenToolkitIcons"))
+
+        val ang = Feature("Yaw / Pitch Display", X::class.java, "gardenAngles")
+        ang.sub.add(ColorPickerSetting("Label Colour", "Nearest chat colour is used", X::class.java, "gardenAnglesColor"))
+        col.features.add(ang)
     }
 
     fun describe(name: String): String? = when (name) {
@@ -60,6 +64,7 @@ object GardenExtrasMenu {
         "Anita Shop Extras" -> "Fortune per medal and coins per medal on Anita's shop"
         "Plot Icons" -> "Plot numbers, prices and /gp shortcut"
         "Farming Toolkit Icons" -> "Crop icons in the farming toolkit menu"
+        "Yaw / Pitch Display" -> "Your yaw and pitch as a HUD while in the Garden"
         else -> null
     }
 }
