@@ -38,6 +38,8 @@ object FishingWorld {
         world.sub.add(ToggleSetting("Hide Hook Timer Stand", "Hide Hypixel's own timer text", W::class.java, "hookTimerHideStand").gatedBy { W.hookTimer })
         world.sub.add(SliderDoubleSetting("Hook Timer Scale", "", W::class.java, "hookTimerScale", 0.5, 4.0).gatedBy { W.hookTimer })
         world.sub.add(InputSetting("Bite Text", "Shown when a fish bites", W::class.java, "hookBiteText").gatedBy { W.hookTimer })
+        world.sub.add(ToggleSetting("Bite Sound", "Play a sound the moment a fish bites", W::class.java, "hookBiteSound").gatedBy { W.hookTimer })
+        world.sub.add(fishmod.features.FishModScreen.SoundSearchSetting("Bite Sound Name", "", { W.hookBiteSoundName }, { v -> W.hookBiteSoundName = v }, { 100 }).gatedBy { W.hookTimer && W.hookBiteSound })
         world.sub.add(ToggleSetting("Highlight Rare Creatures", "Glow rare sea creatures", W::class.java, "rareHighlight"))
         world.sub.add(ColorPickerSetting("Highlight Color", "", W::class.java, "rareHighlightColor").gatedBy { W.rareHighlight })
         world.sub.add(ToggleSetting("Rare Creature HP", "Show HP above rare sea creatures", W::class.java, "rareHp"))
