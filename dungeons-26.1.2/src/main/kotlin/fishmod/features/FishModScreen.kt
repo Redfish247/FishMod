@@ -2478,7 +2478,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun vx(real: Number): Int = (real.toDouble() / fishmod.utils.rendering.UiScale.factor()).toInt()
 
-    private fun cx0(): Int = left() + MARGIN + STACK_W + 18
+    private fun cx0(): Int = stackX0() + STACK_W + 14
     private fun cx1(): Int = right() - MARGIN
     private fun cyTop(): Int = top() + 92 + HEADER_H
     private fun cyBot(): Int = bottom() - STATUS_H - 6
@@ -2790,13 +2790,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     if (allMode) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, ScreenTheme.ink(0x24))
                     else if (haA > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, fa(ROW_HOVER, haA))
                     val tsA = NVG_BASE_TEXT_SIZE
-                    UiRecorder.text("All features", (x + 10).toFloat(), y + (NAV_ROW - tsA) / 2f, tsA, if (allMode) TEXT_COLOR else 0xFFC8C8C8.toInt())
+                    UiRecorder.text("All features", (x + 8).toFloat(), y + (NAV_ROW - tsA) / 2f, tsA, if (allMode) TEXT_COLOR else 0xFFC8C8C8.toInt())
                     val tot = columns.sumOf { it.features.size }.toString()
                     val ns2 = 0.82f * NVG_BASE_TEXT_SIZE
-                    UiRecorder.text(tot, x + w - 10 - UiRecorder.textWidth(tot, ns2), y + (NAV_ROW - ns2) / 2f, ns2, SUBTEXT_COLOR)
+                    UiRecorder.text(tot, x + w - 8 - UiRecorder.textWidth(tot, ns2), y + (NAV_ROW - ns2) / 2f, ns2, SUBTEXT_COLOR)
                     continue
                 }
-                if (c == null) { UiRecorder.text(r.first, (x + 10).toFloat(), y + 6f, 7.4f, SUBTEXT_COLOR); continue }
+                if (c == null) { UiRecorder.text(r.first, (x + 8).toFloat(), y + 6f, 7.4f, SUBTEXT_COLOR); continue }
                 val open = !allMode && !isFolded(c)
                 val hv = mx in x..x + w && my in y until y + NAV_ROW && my in navTop()..navBot()
                 if (hv) statusHint = if (c.name in pinned) "Right-click to unpin ${c.name}" else "Right-click to pin ${c.name}"
@@ -2807,8 +2807,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val ns = 0.82f * NVG_BASE_TEXT_SIZE
                 val nw = UiRecorder.textWidth(n, ns)
                 val ts = 1.0f * NVG_BASE_TEXT_SIZE
-                UiRecorder.text(ellipsize(c.name, (w - nw - 26).toInt(), 1.0f), (x + 10).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
-                UiRecorder.text(n, x + w - 10 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
+                UiRecorder.text(ellipsize(c.name, (w - nw - 26).toInt(), 1.0f), (x + 8).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
+                UiRecorder.text(n, x + w - 8 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
             }
         } finally { UiRecorder.popScissor() }
     }
@@ -2842,7 +2842,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun detMax(f: Feature): Int = Math.max(0, f.naturalSubHeight() - (cyBot() - detTop()))
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        val sbx = stackX0() + STACK_W + 8
+        val sbx = stackX0() + STACK_W + 6
         UiRecorder.fillRect(left().toFloat(), (top() + 89).toFloat(), (sbx - left()).toFloat(), (bottom() - STATUS_H - top() - 89).toFloat(), 0x0D000000)
         UiRecorder.fillRect(sbx.toFloat(), (top() + 89).toFloat(), 1f, (bottom() - STATUS_H - top() - 89).toFloat(), ScreenTheme.ink(0x1F))
         renderNav(mouseX, mouseY)
@@ -2964,7 +2964,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
 
-    private fun stackX0(): Int = left() + MARGIN
+    private fun stackX0(): Int = left() + 6
     private fun ellipsize(text: String, maxW: Int, scale: Float = 1f): String {
         if (sw(this.font, text, scale) <= maxW) return text
         val n = fishmod.utils.rendering.TextFit.prefixLength(text, "…", maxW.toFloat(), 1) { sw(this.font, it, scale).toFloat() }
