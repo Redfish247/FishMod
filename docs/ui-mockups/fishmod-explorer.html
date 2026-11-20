@@ -41,7 +41,7 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 .badge{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font:600 14px var(--fd);color:#fff;background:var(--c)}
 .row{display:flex;justify-content:space-between;align-items:center}
 .sw{width:34px;height:18px;border-radius:9px;background:var(--off);position:relative;flex:none;transition:.15s}.sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.15s}
-.sw.on{background:var(--on)}.sw.on::after{left:18px}
+.tg{cursor:pointer}.sw.on{background:var(--on)}.sw.on::after{left:18px}
 .list .grid{display:flex;flex-direction:column;gap:0}.list .it{flex-direction:row;align-items:center;padding:6px 10px;gap:12px}.list .badge{width:24px;height:24px;font-size:11px;border-radius:6px}.list .it .d{flex:1}.list .it .t{width:200px}
 .det{border-left:1px solid var(--line);overflow:auto;padding:16px;font-size:13px}
 .det h3{font:600 18px var(--fd);margin:0 0 4px}.det p{color:var(--mut);margin:0 0 14px;line-height:1.45}
@@ -100,11 +100,12 @@ function render(){const q=$("q").value.toLowerCase();
  $("items").className="items"+(view==="list"?" list":"");
  $("items").innerHTML='<h2>'+(q?list.length+' results for “'+esc(q)+'”':esc(col))+'</h2>'+(list.length?'<div class="grid">'+list.map(([k,f])=>{const on=S[k+"/"+f[0]];return '<button class="it'+(f[0]===sel?' sel':'')+'" data-k="'+esc(k)+'" data-f="'+esc(f[0])+'"><div class="row"><span class="sw'+(on?' on':'')+'" data-sw="1" role="switch" aria-checked="'+on+'"></span></div><span class="t">'+esc(f[0])+'</span><span class="d">'+esc(q?k+' · '+f[1]:f[1])+'</span></button>'}).join("")+'</div>':'<p class="empty">No feature matches. Try a shorter word.</p>');
  const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel)),f=fk&&C[fk][1].find(f=>f[0]===sel);
- $("det").innerHTML=f?'<h3>'+esc(f[0])+'</h3><p>'+esc(f[1])+'. In '+esc(fk)+'.</p><div class="set"><label>Enabled <span class="sw'+(S[fk+"/"+f[0]]?' on':'')+'" id="dsw" role="switch"></span></label><label for="c1">Highlight color <input id="c1" type="color" value="#4ea1ff"></label><label for="o1">Opacity <span class="sl"><input id="o1" type="range" min="0" max="100" value="70"><input id="o1n" class="num" type="number" min="0" max="100" value="70" aria-label="Opacity value"></span></label><label for="w1">Line width <span class="sl"><input id="w1" type="range" min="1" max="10" step="0.5" value="2.5"><input id="w1n" class="num" type="number" min="1" max="10" step="0.5" value="2.5" aria-label="Line width value"></span></label><label for="t1">Text shadow <input id="t1" type="checkbox" checked></label></div>':'<p>Select a feature to see its settings.</p>';
+ $("det").innerHTML=f?'<h3>'+esc(f[0])+'</h3><p>'+esc(f[1])+'. In '+esc(fk)+'.</p><div class="set"><label>Enabled <span class="sw'+(S[fk+"/"+f[0]]?' on':'')+'" id="dsw" role="switch"></span></label><label for="c1">Highlight color <input id="c1" type="color" value="#4ea1ff"></label><label for="o1">Opacity <span class="sl"><input id="o1" type="range" min="0" max="100" value="70"><input id="o1n" class="num" type="number" min="0" max="100" value="70" aria-label="Opacity value"></span></label><label for="w1">Line width <span class="sl"><input id="w1" type="range" min="1" max="10" step="0.5" value="2.5"><input id="w1n" class="num" type="number" min="1" max="10" step="0.5" value="2.5" aria-label="Line width value"></span></label><label>Text shadow <span class="sw on tg" role="switch" aria-checked="true" tabindex="0"></span></label></div>':'<p>Select a feature to see its settings.</p>';
  const all=Object.keys(S).length,en=Object.values(S).filter(Boolean).length;
  $("st").innerHTML='<span>'+list.length+' items</span><span>'+(sel?'1 selected':'')+'</span><span class="sp"></span><span>'+en+' of '+all+' features on</span>';
 }
-document.addEventListener("click",e=>{const t=e.target.closest("[data-x],[data-t],[data-c],[data-k],#dsw,#vg,#vl,#addtab");if(!t)return;
+document.addEventListener("click",e=>{const g=e.target.closest(".tg");if(g){g.classList.toggle("on");g.setAttribute("aria-checked",g.classList.contains("on"));return}
+ const t=e.target.closest("[data-x],[data-t],[data-c],[data-k],#dsw,#vg,#vl,#addtab");if(!t)return;
  if(t.id==="addtab"){tabs.push(col);ai=tabs.length-1}
  else if(t.dataset.x){if(tabs.length>1){const i=+t.dataset.x;tabs.splice(i,1);if(ai>=i&&ai>0)ai--;col=tabs[ai]}}
  else if(t.dataset.t){ai=+t.dataset.t;col=tabs[ai];$("q").value=""}
