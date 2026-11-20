@@ -1,6 +1,6 @@
 package fishmod.features.extras
 
-import fishmod.features.general.ChatSearch
+import fishmod.features.chat.ChatSearch
 
 import net.minecraft.client.gui.ComponentPath
 import net.minecraft.client.gui.Font

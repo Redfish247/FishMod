@@ -1,7 +1,7 @@
 package fishmod.features.achievements
 
 import fishmod.features.diana.DianaTracker
-import fishmod.features.garden.Pests
+import fishmod.features.garden.visitors.Pests
 import fishmod.features.kuudra.KuudraSettings
 import fishmod.features.mining.MiningProfitTracker
 import fishmod.features.slayer.SlayerManager

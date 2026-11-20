@@ -1,5 +1,8 @@
 package fishmod.features.extras
 
+import fishmod.features.chat.PatcherWaypoints
+import fishmod.features.events.FairySouls
+
 import fishmod.features.FishModScreen.ButtonSetting
 import fishmod.features.FishModScreen.ColorPickerSetting
 import fishmod.features.FishModScreen.Column

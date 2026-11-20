@@ -13,7 +13,7 @@ public class SlotLockDropMixin {
     @Inject(method = "dropItem", at = @At("HEAD"), cancellable = true)
     private void fishmod$slotLockDrop(LocalPlayer player, boolean all, CallbackInfo ci) {
         try {
-            if (fishmod.features.general.SlotLocking.onDrop()) ci.cancel();
+            if (fishmod.features.inventory.SlotLocking.onDrop()) ci.cancel();
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("SlotLockDropMixin.1", "slot lock drop check failed", t);
         }

@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.general.ChatSearch;
+import fishmod.features.chat.ChatSearch;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.multiplayer.chat.GuiMessage;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,7 +16,7 @@ public class ChatHistoryMixin {
         try {
             if (ChatSearch.getActive() && !ChatSearch.matches(message.content())) {
                 ci.cancel();
-            } else if (fishmod.features.general.ChatTabs.getActive() && !fishmod.features.general.ChatTabs.matches(message.content())) {
+            } else if (fishmod.features.chat.ChatTabs.getActive() && !fishmod.features.chat.ChatTabs.matches(message.content())) {
                 ci.cancel();
             }
         } catch (Throwable t) {

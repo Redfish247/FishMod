@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import fishmod.features.general.ChatSearch;
+import fishmod.features.chat.ChatSearch;
 import fishmod.mixin.accessors.KeyBindingAccessor;
 import fishmod.utils.FishKeys;
 import fishmod.utils.config.values.FishSettings;
