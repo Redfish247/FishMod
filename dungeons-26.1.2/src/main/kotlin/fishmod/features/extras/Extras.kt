@@ -22,5 +22,6 @@ object Extras {
         FishDiag.guard("Extras.15", "OrderFilledAlert.init failed") { OrderFilledAlert.init() }
         FishDiag.guard("Extras.16", "SkyblockXpChat.init failed") { SkyblockXpChat.init() }
         FishDiag.guard("Extras.17", "EventHelpers.init failed") { EventHelpers.init() }
+        FishDiag.guard("Extras.18", "MiscChatAlerts.init failed") { MiscChatAlerts.init() }
     }
 }
