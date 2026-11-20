@@ -69,11 +69,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var hoverPreview: String? = null
     private var hoverDescX = 0
     private var hoverDescY = 0
-    private var hScroll = 0
-    private var hScrollAnim = 0.0
-    private var dragColumn: Column? = null
-    private var dragGrabDX = 0
-    private var dragMouseX = 0
 
     private var pressX = 0
     private var pressY = 0
@@ -84,7 +79,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var stackDragY = 0
     private var stackGrabDY = 0
     private val stackAnimY = HashMap<String, Double>()
-    private val unfoldStart = HashMap<String, Long>()
     private val folders = ArrayList<Folder>()
     private var stackDragFolder: Folder? = null
     private var renamingFolder: Folder? = null
@@ -2415,36 +2409,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun isFolded(c: Column): Boolean = c.name in foldedColumns
 
+    // Explorer: one column open at a time
     private fun toggleFold(c: Column) {
-        val unfolding = isFolded(c)
-        if (unfolding) foldedColumns.remove(c.name) else foldedColumns.add(c.name)
+        for (o in columns) if (o !== c) foldedColumns.add(o.name)
+        foldedColumns.remove(c.name)
         saveFoldedColumns()
         frameVisibleColumns = null
-        if (unfolding) {
-            if (FishSettings.fmAnimations) unfoldStart[c.name] = System.currentTimeMillis() else unfoldStart.remove(c.name)
-            val idx = visibleColumns().indexOf(c)
-            if (idx >= 0) hScroll = idx * (columnWidth() + COLUMN_GUTTER)
-        }
-        hScroll = Mth.clamp(hScroll, 0, maxHScroll())
+        selected = null; gridScroll = 0; detScroll = 0
     }
 
     private fun toggleFolderColumns(f: Folder) {
-        val cols = columns.filter { folderOf(it) === f }
-        if (cols.isEmpty()) return
-        val unfolding = cols.any { isFolded(it) }
-        for (c in cols) {
-            if (unfolding && isFolded(c)) {
-                foldedColumns.remove(c.name)
-                if (FishSettings.fmAnimations) unfoldStart[c.name] = System.currentTimeMillis() else unfoldStart.remove(c.name)
-            } else if (!unfolding) foldedColumns.add(c.name)
-        }
-        saveFoldedColumns()
-        frameVisibleColumns = null
-        if (unfolding) {
-            val idx = visibleColumns().indexOf(cols[0])
-            if (idx >= 0) hScroll = idx * (columnWidth() + COLUMN_GUTTER)
-        }
-        hScroll = Mth.clamp(hScroll, 0, maxHScroll())
+        columns.firstOrNull { folderOf(it) === f }?.let { toggleFold(it) }
     }
 
     private fun left(): Int = 0
@@ -2512,72 +2487,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         closeStartTime = System.currentTimeMillis()
     }
 
-    private fun openEase(index: Int): Float {
-        if (!FishSettings.fmAnimations) return 1f
-        val delay = index.toLong() * fmStagMs()
-        val elapsed = System.currentTimeMillis() - screenOpenTime - delay
-        if (elapsed <= 0L) return 0f
-        val dur = fmDropMs().toFloat()
-        val t = if (dur <= 0f) 1f else Mth.clamp(elapsed / dur, 0f, 1f)
-        return Easing.easeOutBack(t)
-    }
-
-    private fun closeEase(index: Int): Float {
-        if (!FishSettings.fmAnimations) return 1f
-        val n = visibleColumns().size
-        val order = n - 1 - index
-        val delay = order.toLong() * fmStagMs()
-        val elapsed = System.currentTimeMillis() - closeStartTime - delay
-        if (elapsed <= 0L) return 0f
-        val dur = fmDropMs().toFloat()
-        val t = if (dur <= 0f) 1f else Mth.clamp(elapsed / dur, 0f, 1f)
-        return Easing.easeInOutCubic(t)
-    }
-
-    private fun isColumnOpening(index: Int): Boolean {
-        if (!FishSettings.fmAnimations) return false
-        val delay = index.toLong() * fmStagMs()
-        val elapsed = System.currentTimeMillis() - screenOpenTime - delay
-        return elapsed < fmDropMs()
-    }
-
-    private fun isColumnClosing(index: Int): Boolean {
-        if (!closing || !FishSettings.fmAnimations) return false
-        val n = visibleColumns().size
-        val order = n - 1 - index
-        val delay = order.toLong() * fmStagMs()
-        val elapsed = System.currentTimeMillis() - closeStartTime - delay
-        return elapsed < fmDropMs()
-    }
-
-    private fun anyColumnAnimating(): Boolean {
-        val n = visibleColumns().size
-        for (i in 0 until n) {
-            if (isColumnOpening(i) || isColumnClosing(i)) return true
-        }
-        return false
-    }
-
-    private fun columnYOffset(index: Int, restTop: Int): Float {
-        if (closing) {
-            val ease = closeEase(index)
-            if (ease <= 0f) return 0f
-            val dist = (bottom() - top()).toFloat()
-            return if (FishSettings.fmExitStyle == "Reverse Curtain") -dist * ease else dist * ease
-        }
-        val ease = openEase(index)
-        return -restTop.toFloat() * (1f - ease)
-    }
-
-    private fun unfoldYOffset(c: Column, restTop: Int): Float {
-        val st = unfoldStart[c.name] ?: return 0f
-        val dur = fmDropMs().toFloat()
-        val elapsed = System.currentTimeMillis() - st
-        if (dur <= 0f || elapsed >= dur || closing) { unfoldStart.remove(c.name); return 0f }
-        val ease = Easing.easeOutBack(Mth.clamp(elapsed / dur, 0f, 1f))
-        return -(restTop + (bottom() - restTop) * 0.25f) * (1f - ease)
-    }
-
     private fun currentCardBg(): Int {
         val alpha = Mth.clamp(Math.round(FishSettings.fmBgAlpha * 2.55f), 0, 255)
         return (alpha shl 24) or cardBgRgb()
@@ -2616,72 +2525,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         ROW_ENABLED = (rowAlpha shl 24) or rowRgb
     }
 
-    private fun columnWidth(): Int {
-        val n = visibleColumns().size
-        if (n == 0) return 0
-        val avail = (cx1() - cx0()) - (n - 1) * COLUMN_GUTTER
-        return (avail / n).coerceIn(MIN_COLUMN_W, MAX_COLUMN_W)
-    }
-
-    private fun columnX0(visibleIndex: Int): Int {
-        return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER) - Math.round(hScrollAnim).toInt()
-    }
-
-    private fun totalColumnsWidth(): Int {
-        val n = visibleColumns().size
-        if (n == 0) return 0
-        return n * columnWidth() + (n - 1) * COLUMN_GUTTER
-    }
-
-    private fun maxHScroll(): Int = Math.max(0, totalColumnsWidth() - (cx1() - cx0()))
-
-    private fun clampHScroll() {
-        hScroll = Mth.clamp(hScroll, 0, maxHScroll())
-        hScrollAnim += (hScroll - hScrollAnim) * 0.35
-        if (Math.abs(hScroll - hScrollAnim) < 0.5) hScrollAnim = hScroll.toDouble()
-    }
-
-    private class RowLayout(
-        val feature: Feature,
-        val rowTop: Int, val rowBottom: Int,
-        val subTop: Int, val subBottom: Int
-    )
-
-    private fun layoutColumn(c: Column, scrollOffset: Int, topY: Int = cyTop()): List<RowLayout> {
-        if (!frameCaching) return computeLayout(c, scrollOffset, topY)
-        return frameLayouts.getOrPut(Triple(c, scrollOffset, topY)) { computeLayout(c, scrollOffset, topY) }
-    }
-
-    private fun computeLayout(c: Column, scrollOffset: Int, topY: Int): List<RowLayout> {
-        val out = ArrayList<RowLayout>()
-        var y = topY - scrollOffset
-        for (f in visibleFeatures(c)) {
-            val rowTop = y
-            val rowBottom = y + ROW_H
-            y = rowBottom
-            val subH = f.animatedSubHeight()
-            val subTop = y
-            val subBottom = y + subH
-            if (subH > 0) y = subBottom
-            y += ROW_GAP
-            out.add(RowLayout(f, rowTop, rowBottom, subTop, subBottom))
-        }
-        return out
-    }
-
-    private fun columnContentHeight(c: Column): Int {
-        val rows = layoutColumn(c, 0)
-        if (rows.isEmpty()) return 6
-        val last = rows[rows.size - 1]
-        return Math.max(last.rowBottom, last.subBottom) - cyTop() + ROW_GAP + 6
-    }
-    private fun maxScrollFor(c: Column, viewportH: Int): Int = Math.max(0, columnContentHeight(c) - viewportH)
-    private fun clampScroll(c: Column, viewportH: Int) { c.scroll = Mth.clamp(c.scroll, 0, maxScrollFor(c, viewportH)) }
-
-    private fun clampAllScrolls() {
-        val full = cyBot() - cyTop()
-        for (c in visibleColumns()) clampScroll(c, full)
-    }
 
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) { }
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) { }
@@ -2691,11 +2534,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private var frameCaching = false
     private var frameVisibleColumns: List<Column>? = null
-    private val frameLayouts = HashMap<Triple<Column, Int, Int>, List<RowLayout>>()
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         frameVisibleColumns = null
-        frameLayouts.clear()
         frameCaching = true
         try {
             extractRenderStateCached(ctx, mouseX, mouseY, delta)
@@ -2709,8 +2550,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun extractRenderStateCached(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         refreshButtonTheme()
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
-        clampAllScrolls()
-        clampHScroll()
 
         if (closing && !closeFinalized && System.currentTimeMillis() - closeStartTime >= exitTotalDurationMs()) {
             closeFinalized = true
@@ -2740,7 +2579,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             renderHoverTooltip(ctx)
             renderShiftPreview(ctx)
         } catch (t: Throwable) {
-            FishDiag.fail("FishModScreen.10", "widget rendering failed search='$searchText' hScroll=$hScroll", t)
+            FishDiag.fail("FishModScreen.10", "widget rendering failed search='$searchText'", t)
             if (!widgetRenderFailureLogged) {
                 widgetRenderFailureLogged = true
                 fishmod.utils.debug.FishDebug.LOGGER.error("[FishModScreen] widget rendering failed - screen will show blur only", t)
@@ -2859,78 +2698,122 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
     }
 
-    private fun renderColumnCard(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, headerTop: Int, cardBottom: Int) {
-        val hy = headerTop
-        val w = x1 - x0
-        UiRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
-        roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, currentCardBg())
-        UiRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ACCENT)
-        val titleClip = w - 20
-        sst(ctx, this.font, ellipsize(c.name, titleClip), x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
-        c.sub()?.let { sst(ctx, this.font, ellipsize(it, titleClip, 0.8f), x0 + 10, hy + HEADER_STRIP_H + 19, SUBTEXT_COLOR, 0.8f) }
-    }
 
-    private var sbCol: Column? = null
-    private var sbGrab = 0
-
-    private fun sbBar(c: Column): IntArray? {
-        val top = cyTop()
-        val vp = Math.min(columnContentHeight(c), cyBot() - top)
-        val ms = maxScrollFor(c, vp)
-        if (ms <= 0) return null
-        val barH = Math.max(20, (vp.toLong() * vp / columnContentHeight(c)).toInt())
-        val barY = top + ((vp - barH).toLong() * c.scroll / ms).toInt()
-        return intArrayOf(top, vp, ms, barH, barY)
-    }
-
-    private fun sbSet(c: Column, my: Int) {
-        val b = sbBar(c) ?: return
-        val room = b[1] - b[3]
-        if (room <= 0) return
-        c.scroll = Mth.clamp(((my - sbGrab - b[0]).toLong() * b[2] / room).toInt(), 0, b[2])
-    }
-
-    private fun renderColumnScrollbar(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, top: Int, bot: Int) {
-        val vp = bot - top
-        val ms = maxScrollFor(c, vp)
-        if (ms <= 0) return
-        val trackX = x1 - 3
-        val barH = Math.max(20, (vp.toLong() * vp / columnContentHeight(c)).toInt())
-        val barY = top + ((vp - barH).toLong() * c.scroll / ms).toInt()
-        UiRecorder.fillRect(trackX.toFloat(), top.toFloat(), 2f, (bot - top).toFloat(), 0xFF191919.toInt())
-        UiRecorder.fillRect(trackX.toFloat(), barY.toFloat(), 2f, barH.toFloat(), ACCENT)
-    }
+    // Explorer layout: open column as a card grid, selected feature's settings in a side pane
+    private var selected: Feature? = null
+    private var gridScroll = 0
+    private var detScroll = 0
+    private fun exItems(): List<Feature> =
+        if (searchText.isNotEmpty()) visibleColumns().flatMap { visibleFeatures(it) }
+        else visibleColumns().firstOrNull()?.let { visibleFeatures(it) } ?: emptyList()
+    private fun gx1(): Int = if (selected != null) cx1() - DET_W - COLUMN_GUTTER else cx1()
+    private fun gridCols(): Int = Math.max(1, (gx1() - cx0() + CARD_GAP) / (CARD_MIN_W + CARD_GAP))
+    private fun cardW(): Int { val n = gridCols(); return (gx1() - cx0() - (n - 1) * CARD_GAP) / n }
+    private fun cardX(i: Int): Int = cx0() + (i % gridCols()) * (cardW() + CARD_GAP)
+    private fun cardY(i: Int): Int = cyTop() + (i / gridCols()) * (CARD_H + CARD_GAP) - gridScroll
+    private fun gridMax(n: Int): Int = Math.max(0, ((n + gridCols() - 1) / gridCols()) * (CARD_H + CARD_GAP) - (cyBot() - cyTop()))
+    private fun detTop(): Int = cyTop() - HEADER_H + 40
+    private fun detMax(f: Feature): Int = Math.max(0, f.naturalSubHeight() - (cyBot() - detTop()))
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        val cols = visibleColumns()
-        val top = cyTop()
-        val bot = cyBot()
-        val colW = columnWidth()
-        val dc = dragColumn
-
         renderStack(ctx, mouseX, mouseY)
-        if (cols.isEmpty()) {
-            val msg = "Click a tab on the left to open a column"
-            sst(ctx, this.font, msg, cx0() + (cx1() - cx0() - sw(this.font, msg, 1f)) / 2, (top + bot) / 2, SUBTEXT_COLOR, 1f)
-            return
-        }
-        UiRecorder.pushScissor((cx0() - 2).toFloat(), 0f, (right() - cx0() + 2).toFloat(), bottom().toFloat())
+        val items = exItems()
+        val col = visibleColumns().firstOrNull()
+        val ht = cyTop() - HEADER_H
+        val title = if (searchText.isNotEmpty()) "Search  ·  ${items.size} results" else col?.name ?: "Click a tab on the left to open a column"
+        sst(ctx, this.font, ellipsize("FishMod  ›  $title", gx1() - cx0()), cx0(), ht + 8, TEXT_COLOR, 1f)
+        if (searchText.isEmpty()) col?.sub()?.let { sst(ctx, this.font, ellipsize(it, gx1() - cx0(), 0.8f), cx0(), ht + 22, SUBTEXT_COLOR, 0.8f) }
+        gridScroll = Mth.clamp(gridScroll, 0, gridMax(items.size))
+        val cw = cardW()
+        UiRecorder.pushScissor(cx0().toFloat(), cyTop().toFloat(), (gx1() - cx0()).toFloat(), (cyBot() - cyTop()).toFloat())
         try {
-        for (i in cols.indices) {
-            val c = cols[i]
-            if (c === dc) continue
-            val yOff = Math.round(columnYOffset(i, top - HEADER_H) + unfoldYOffset(c, top - HEADER_H))
-            try {
-                renderOneColumn(ctx, c, columnX0(i), colW, top, bot, if (dc != null) -10000 else mouseX, if (dc != null) -10000 else mouseY, yOff)
-            } catch (t: Throwable) {
-                FishDiag.fail("FishModScreen.23", "column '${c.name}' render failed", t)
+            for ((i, f) in items.withIndex()) {
+                val x = cardX(i); val y = cardY(i)
+                if (y + CARD_H < cyTop() || y > cyBot()) continue
+                val on = f.hasMaster() && f.get!!()
+                val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + CARD_H
+                val xf = x.toFloat(); val yf = y.toFloat()
+                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, currentCardBg())
+                if (on) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, ROW_ENABLED)
+                if (hover) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, ROW_HOVER)
+                if (f === selected) UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, 1f, 0, ACCENT)
+                sst(ctx, this.font, ellipsize(f.name, cw - 44), x + 8, y + 8, if (on) TEXT_COLOR else SUBTEXT_COLOR, 1f)
+                val d = descFor(f.name)
+                if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 16, 0.75f), x + 8, y + 24, SUBTEXT_COLOR, 0.75f)
+                if (f.hasMaster()) drawTogglePill(ctx, x + cw - 30, y + 7, 22, 12, on, if (on) 1f else 0f, hover && mouseX >= x + cw - 34)
+                else if (f.sub.isNotEmpty()) drawChevron(ctx, x + cw - 16, y + 12, false, CHEVRON_COLOR)
+                if (hover && (HudPreview.namesFor(f.name).isNotEmpty() || WorldPreview.has(f.name))) hoverPreview = f.name
             }
-        }
-
-        if (dc != null) {
-            renderOneColumn(ctx, dc, dragMouseX - dragGrabDX, colW, top, bot, mouseX, mouseY)
-        }
         } finally { UiRecorder.popScissor() }
+        if (items.isEmpty() && col != null) sst(ctx, this.font, "No features match", cx0(), cyTop() + 8, SUBTEXT_COLOR, 1f)
+        val f = selected ?: return
+        val dx0 = cx1() - DET_W
+        UiRecorder.dropShadow(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
+        roundedRect(ctx, dx0, ht, DET_W, cyBot() - ht, CARD_RADIUS, currentCardBg())
+        sst(ctx, this.font, ellipsize(f.name, DET_W - 40), dx0 + 12, ht + 9, TEXT_COLOR, 1f)
+        descFor(f.name).takeIf { it.isNotEmpty() }?.let { sst(ctx, this.font, ellipsize(it, DET_W - 24, 0.75f), dx0 + 12, ht + 24, SUBTEXT_COLOR, 0.75f) }
+        val xh = mouseX >= cx1() - 20 && mouseY in ht..ht + 20
+        sst(ctx, this.font, "✕", cx1() - 18, ht + 8, if (xh) TEXT_COLOR else SUBTEXT_COLOR, 1f)
+        detScroll = Mth.clamp(detScroll, 0, detMax(f))
+        if (f.sub.isEmpty()) { sst(ctx, this.font, "No settings", dx0 + 12, detTop() + 6, SUBTEXT_COLOR, 0.9f); return }
+        UiRecorder.pushScissor(dx0.toFloat(), detTop().toFloat(), DET_W.toFloat(), (cyBot() - detTop()).toFloat())
+        try { renderSubPanel(ctx, f, dx0, cx1(), detTop() - detScroll, f.naturalSubHeight(), mouseX, if (mouseY >= detTop()) mouseY else -10000) }
+        finally { UiRecorder.popScissor() }
+    }
+
+    private fun subClick(f: Feature, x0: Int, x1: Int, top: Int, mx: Int, my: Int, btn: Int) {
+        val leftX = x0 + 14
+        val rightX = x1 - 12
+        var ssy = top + 6
+        for (s in f.sub) {
+            if (s.hiddenByGate()) continue
+            val sh = s.getHeight()
+            if (my >= ssy && my <= ssy + sh && (s is InputSetting || s is InputIntSetting || s is InputDoubleSetting || s is ColorPickerSetting)) activeInput = s
+            val clicked = try { s.onClick(mx, my, leftX, rightX, ssy, btn) } catch (t: Throwable) {
+                FishDiag.fail("FishModScreen.14", "setting '${s.name}' (${s.javaClass.simpleName}) in '${f.name}' click failed", t); true
+            }
+            if (clicked) { if (s is KeybindSetting && s.capturing) capturingKeybind = s; return }
+            if (s is SliderIntSetting || s is SliderDoubleSetting) {
+                val slx = leftX + 2
+                val slw = rightX - leftX - 4
+                val sly = ssy + SLIDER_CTRL_Y
+                if (mx >= slx && mx <= slx + slw && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
+                    activeSlider = s; activeSliderX = slx; activeSliderW = slw; s.onDrag(mx, slx, slw); return
+                }
+            }
+            ssy += sh
+        }
+    }
+
+    private fun exClick(mx: Int, my: Int, btn: Int): Boolean {
+        val f = selected
+        if (f != null && mx >= cx1() - DET_W) {
+            if (mx >= cx1() - 20 && my <= cyTop() - HEADER_H + 20) { selected = null; return true }
+            if (my >= detTop()) subClick(f, cx1() - DET_W, cx1(), detTop() - detScroll, mx, my, btn)
+            return true
+        }
+        if (my < cyTop() || mx > gx1()) return true
+        val cw = cardW()
+        for ((i, ft) in exItems().withIndex()) {
+            val x = cardX(i); val y = cardY(i)
+            if (mx !in x..x + cw || my !in y..y + CARD_H) continue
+            if (btn == 0 && ft.hasMaster() && (mx >= x + cw - 34 || ft.sub.isEmpty())) {
+                try { ft.set!!(!ft.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${ft.name}' failed", t) }
+            } else if (ft.sub.isNotEmpty()) { selected = ft; detScroll = 0 }
+            return true
+        }
+        return true
+    }
+
+    private fun exScroll(f: Feature, mx: Int, my: Int, dir: Int): Boolean {
+        var ssy = detTop() - detScroll + 6
+        for (s in f.sub) {
+            if (s.hiddenByGate()) continue
+            val sh = s.getHeight()
+            if (my >= ssy && my <= ssy + sh && s.onScroll(mx, my, cx1() - DET_W + 14, cx1() - 12, ssy, dir)) return true
+            ssy += sh
+        }
+        return false
     }
 
     private fun stackListTop(): Int = cyTop() - HEADER_H
@@ -3145,69 +3028,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         sst(ctx, this.font, "+ New Folder", x + 18, y + (STACK_TAB_H - 10) / 2, TEXT_COLOR, 1.0f)
     }
 
-    private fun renderOneColumn(ctx: GuiGraphicsExtractor, c: Column, x0: Int, colW: Int, top: Int, bot: Int, mouseX: Int, mouseY: Int, yOffset: Int = 0) {
-        renderColumnBlock(ctx, c, x0, x0 + colW, top - HEADER_H + yOffset, bot + yOffset, mouseX, mouseY)
-    }
-
-    private fun renderColumnBlock(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, headerTop: Int, bandBot: Int, mouseX: Int, mouseY: Int) {
-        val bodyTop = headerTop + HEADER_H
-        val colBottom = Math.min(bodyTop + columnContentHeight(c), bandBot)
-
-        renderColumnCard(ctx, c, x0, x1, headerTop, colBottom)
-
-        UiRecorder.pushScissor(x0.toFloat(), bodyTop.toFloat(), (x1 - x0).toFloat(), (colBottom - bodyTop).toFloat())
-        for (rl in layoutColumn(c, c.scroll, bodyTop)) {
-            if (rl.rowBottom > bodyTop && rl.rowTop < colBottom) {
-                try {
-                    renderRow(ctx, rl.feature, x0, x1, rl.rowTop, mouseX, mouseY)
-                } catch (t: Throwable) {
-                    FishDiag.fail("FishModScreen.21", "row '${rl.feature.name}' in '${c.name}' render failed", t)
-                }
-            }
-            val animH = rl.subBottom - rl.subTop
-            if (animH > 0 && rl.subBottom > bodyTop && rl.subTop < colBottom) {
-                renderSubPanel(ctx, rl.feature, x0, x1, rl.subTop, animH, mouseX, mouseY)
-            }
-        }
-        UiRecorder.popScissor()
-
-        renderColumnScrollbar(ctx, c, x0, x1, bodyTop, colBottom)
-    }
-
     private fun ellipsize(text: String, maxW: Int, scale: Float = 1f): String {
         if (sw(this.font, text, scale) <= maxW) return text
         val n = fishmod.utils.rendering.TextFit.prefixLength(text, "…", maxW.toFloat(), 1) { sw(this.font, it, scale).toFloat() }
         return text.substring(0, n) + "…"
-    }
-
-    private fun renderRow(ctx: GuiGraphicsExtractor, f: Feature, x0: Int, x1: Int, top: Int, mouseX: Int, mouseY: Int) {
-        val on = f.hasMaster() && f.get!!()
-        val inView = mouseY >= cyTop() && mouseY <= cyBot()
-        val hover = inView && mouseX >= x0 && mouseX <= x1 && mouseY >= top && mouseY <= top + ROW_H
-
-        val bx = (x0 + 2).toFloat(); val bw = (x1 - x0 - 4).toFloat()
-        if ((ROW_BUTTON ushr 24) != 0) UiRecorder.fillRoundedRect(bx, top.toFloat(), bw, ROW_H.toFloat(), ROW_RADIUS, ROW_BUTTON)
-        if (on) UiRecorder.fillRoundedRect(bx, top.toFloat(), bw, ROW_H.toFloat(), ROW_RADIUS, ROW_ENABLED)
-        if (hover) UiRecorder.fillRoundedRect(bx, top.toFloat(), bw, ROW_H.toFloat(), ROW_RADIUS, ROW_HOVER)
-        if (on) UiRecorder.fillPillBar((x0 + 2).toFloat(), (top + 3).toFloat(), 2f, (ROW_H - 6).toFloat(), ACCENT)
-
-        var label = f.name
-        val maxTextW = x1 - x0 - 20
-        if (stw(this.font, label) > maxTextW) {
-            while (label.length > 1 && stw(this.font, "$label…") > maxTextW) label = label.substring(0, label.length - 1)
-            label = "$label…"
-        }
-        UiRecorder.text(label, (x0 + 10).toFloat(), (top + (ROW_H - 8) / 2).toFloat(), NVG_BASE_TEXT_SIZE, if (on) TEXT_COLOR else SUBTEXT_COLOR)
-        if (hover) {
-            val canPreview = HudPreview.namesFor(f.name).isNotEmpty() || WorldPreview.has(f.name)
-            val d = descFor(f.name).let { if (canPreview) (if (it.isEmpty()) "Hold Shift to preview" else "$it  -  Hold Shift to preview") else it }
-            if (d.isNotEmpty()) { hoverDesc = d; hoverDescX = x1 + 8; hoverDescY = top }
-            if (canPreview) hoverPreview = f.name
-        }
-
-        if (f.sub.isNotEmpty()) {
-            drawChevron(ctx, x1 - 14, top + ROW_H / 2 - 2, f.expanded(), if (f.expanded()) ACCENT else CHEVRON_COLOR)
-        }
     }
 
     // Shift over a HUD feature row: hide the panels and show its HUD example (current settings) where it sits in game.
@@ -3275,8 +3099,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
     private fun clickInner(click: MouseButtonEvent, bl: Boolean): Boolean {
-        if (anyColumnAnimating()) return true
-
         val mx = vx(click.x())
         val my = vx(click.y())
         val btn = fishmod.compat.GLFW.btn(click)
@@ -3345,146 +3167,26 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return true
         }
 
-        if (searchText.isEmpty() && my >= headerTop && my < cyTop()) {
-            val cols = visibleColumns()
-            val colW = columnWidth()
-            for (ci in cols.indices) {
-                val x0 = columnX0(ci)
-                val x1 = x0 + colW
-                if (mx < x0 || mx > x1) continue
-                if (btn != 0) return true
-                dragColumn = cols[ci]
-                dragGrabDX = mx - x0
-                dragMouseX = mx
-                pressX = mx; pressY = my; dragMoved = false
-                return true
-            }
-        }
-
-        if (btn == 0 && my >= cyTop() && my <= cyBot()) {
-            val cols = visibleColumns()
-            val colW = columnWidth()
-            for (ci in cols.indices) {
-                val x1 = columnX0(ci) + colW
-                if (mx < x1 - 7 || mx > x1) continue
-                val b = sbBar(cols[ci]) ?: continue
-                if (my > b[0] + b[1]) continue
-                sbCol = cols[ci]
-                sbGrab = if (my >= b[4] && my <= b[4] + b[3]) my - b[4] else b[3] / 2
-                sbSet(cols[ci], my)
-                return true
-            }
-        }
-
-        if (my >= cyTop() && my <= cyBot()) {
-            val cols = visibleColumns()
-            val colW = columnWidth()
-            for (ci in cols.indices) {
-                val x0 = columnX0(ci)
-                val x1 = x0 + colW
-                if (mx < x0 || mx > x1) continue
-                return handleRowClick(cols[ci], x0, x1, mx, my, btn, cyTop())
-            }
-            return true
-        }
+        if (my >= headerTop && my <= cyBot()) return exClick(mx, my, btn)
         return super.mouseClicked(click, bl)
-    }
-
-    private fun handleRowClick(col: Column, x0: Int, x1: Int, mx: Int, my: Int, btn: Int, topY: Int): Boolean {
-        for (rl in layoutColumn(col, col.scroll, topY)) {
-            val f = rl.feature
-            if (my >= rl.rowTop && my <= rl.rowBottom) {
-                if (f.hasMaster()) {
-                    if (btn == 1 && f.sub.isNotEmpty()) f.toggleExpanded()
-                    else try { f.set!!(!f.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${f.name}' failed", t) }
-                } else if (f.sub.isNotEmpty()) {
-                    f.toggleExpanded()
-                }
-                return true
-            }
-            val subH = rl.subBottom - rl.subTop
-            if (subH > 0 && my >= rl.subTop && my <= rl.subBottom) {
-                val leftX = x0 + 14
-                val rightX = x1 - 12
-                var ssy = rl.subTop + 6
-                for (s in f.sub) {
-                    if (s.hiddenByGate()) continue
-                    val sh = s.getHeight()
-                    if (my >= ssy && my <= ssy + sh) {
-                        if (s is InputSetting || s is InputIntSetting || s is InputDoubleSetting || s is ColorPickerSetting) {
-                            activeInput = s
-                        }
-                    }
-                    val clicked = try {
-                        s.onClick(mx, my, leftX, rightX, ssy, btn)
-                    } catch (t: Throwable) {
-                        FishDiag.fail("FishModScreen.14", "setting '${s.name}' (${s.javaClass.simpleName}) in '${f.name}' click failed", t)
-                        true
-                    }
-                    if (clicked) {
-                        if (s is KeybindSetting && s.capturing) capturingKeybind = s
-                        return true
-                    }
-                    if (s is SliderIntSetting || s is SliderDoubleSetting) {
-                        val slx = leftX + 2
-                        val slw = rightX - leftX - 4
-                        val sly = ssy + SLIDER_CTRL_Y
-                        if (mx >= slx && mx <= slx + slw && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
-                            activeSlider = s; activeSliderX = slx; activeSliderW = slw; s.onDrag(mx, slx, slw); return true
-                        }
-                    }
-                    ssy += sh
-                }
-                return true
-            }
-        }
-        return true
-    }
-
-    private fun handleRowScroll(col: Column, x0: Int, x1: Int, mx: Int, my: Int, dir: Int, topY: Int): Boolean {
-        for (rl in layoutColumn(col, col.scroll, topY)) {
-            val f = rl.feature
-            val subH = rl.subBottom - rl.subTop
-            if (subH > 0 && my >= rl.subTop && my <= rl.subBottom) {
-                val leftX = x0 + 14
-                val rightX = x1 - 12
-                var ssy = rl.subTop + 6
-                for (s in f.sub) {
-                    if (s.hiddenByGate()) continue
-                    val sh = s.getHeight()
-                    if (my >= ssy && my <= ssy + sh && s.onScroll(mx, my, leftX, rightX, ssy, dir)) return true
-                    ssy += sh
-                }
-                return false
-            }
-        }
-        return false
     }
 
     override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean =
         try {
             dragInner(click, deltaX, deltaY)
         } catch (t: Throwable) {
-            FishDiag.fail("FishModScreen.15", "drag failed slider=${activeSlider?.name} column=${dragColumn?.name}", t)
+            FishDiag.fail("FishModScreen.15", "drag failed slider=${activeSlider?.name}", t)
             true
         }
 
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
-        val sb = sbCol
-        if (sb != null) { sbSet(sb, vx(click.y())); return true }
         val slider = activeSlider
         if (slider != null) { slider.onDrag(vx(click.x()), activeSliderX, activeSliderW); return true }
-        if (!dragMoved && (dragColumn != null || !stackIdle())) {
+        if (!dragMoved && !stackIdle()) {
             if (Math.abs(vx(click.x()) - pressX) >= DRAG_THRESHOLD || Math.abs(vx(click.y()) - pressY) >= DRAG_THRESHOLD) dragMoved = true
         }
         if (!stackIdle()) {
             stackDragY = vx(click.y())
-            return true
-        }
-        val dc = dragColumn
-        if (dc != null) {
-            dragMouseX = vx(click.x())
-            if (dragMoved) updateDragReorder(dc)
             return true
         }
         return super.mouseDragged(click, deltaX, deltaY)
@@ -3494,14 +3196,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         try {
             releaseInner(click)
         } catch (t: Throwable) {
-            FishDiag.fail("FishModScreen.16", "release failed column=${dragColumn?.name}", t)
-            dragColumn = null
+            FishDiag.fail("FishModScreen.16", "release failed", t)
             true
         }
 
     private fun releaseInner(click: MouseButtonEvent): Boolean {
         activeSlider = null
-        if (sbCol != null) { sbCol = null; return true }
 
         val sc = stackDragCol
         val sf = stackDragFolder
@@ -3513,37 +3213,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             stackDragFolder = null
         }
 
-        val dc = dragColumn
-        if (dc != null && !dragMoved) {
-            toggleFold(dc)
-            dragColumn = null
-        }
-        if (dc != null && dragColumn != null) {
-            dragColumn = null
-            saveColumnOrder()
-        }
         dragMoved = false
 
         return super.mouseReleased(click)
-    }
-
-    private fun updateDragReorder(dc: Column) {
-        val cols = visibleColumns()
-        val colW = columnWidth()
-        val floatCenter = (dragMouseX - dragGrabDX) + colW / 2
-        val curIdx = columns.indexOf(dc)
-        if (!FishDiag.check(curIdx >= 0, "FishModScreen.25") { "dragged column '${dc.name}' not in columns" }) return
-        var targetIdx = curIdx
-        var bestDist = Int.MAX_VALUE
-        for (ci in cols.indices) {
-            val center = columnX0(ci) + colW / 2
-            val dist = Math.abs(center - floatCenter)
-            if (dist < bestDist) { bestDist = dist; targetIdx = columns.indexOf(cols[ci]) }
-        }
-        if (targetIdx != curIdx && targetIdx >= 0) {
-            columns.removeAt(curIdx)
-            columns.add(targetIdx, dc)
-        }
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean =
@@ -3555,43 +3227,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
     private fun scrollInner(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
-        if (anyColumnAnimating()) return true
-
-        val shiftDown = fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
-            fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
-
         val mouseX = vx(mouseX).toDouble()
         val mouseY = vx(mouseY).toDouble()
         if (mouseX >= stackX0() && mouseX <= stackX0() + STACK_W && mouseY >= cyTop() - HEADER_H && mouseY <= cyBot()) {
             stackScroll = Mth.clamp((stackScroll - verticalAmount * 18).toInt(), 0, stackMaxScroll())
             return true
         }
-        val cols = visibleColumns()
-        val colW = columnWidth()
-        if (horizontalAmount == 0.0 && !shiftDown && mouseY >= cyTop()) {
-            val dir = if (verticalAmount > 0) -1 else 1
-            for (i in cols.indices) {
-                val x0 = columnX0(i)
-                val x1 = x0 + colW
-                if (mouseX < x0 || mouseX > x1) continue
-                if (handleRowScroll(cols[i], x0, x1, mouseX.toInt(), mouseY.toInt(), dir, cyTop())) return true
-            }
-            for (i in cols.indices) {
-                val x0 = columnX0(i)
-                val x1 = x0 + colW
-                if (mouseX < x0 || mouseX > x1) continue
-                val slot = cols[i]
-                val colBottom = Math.min(cyTop() + columnContentHeight(slot), cyBot())
-                if (mouseY <= colBottom) {
-                    if (maxScrollFor(slot, colBottom - cyTop()) <= 0) break
-                    slot.scroll = Mth.clamp((slot.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(slot, colBottom - cyTop()))
-                    return true
-                }
-            }
+        val f = selected
+        val dir = if (verticalAmount > 0) -1 else 1
+        if (f != null && mouseX >= cx1() - DET_W) {
+            if (!exScroll(f, mouseX.toInt(), mouseY.toInt(), dir)) detScroll = Mth.clamp((detScroll - verticalAmount * 18).toInt(), 0, detMax(f))
+            return true
         }
-
-        val amount = if (horizontalAmount != 0.0) horizontalAmount else verticalAmount
-        hScroll = Mth.clamp((hScroll - amount * 24).toInt(), 0, maxHScroll())
+        gridScroll = Mth.clamp((gridScroll - verticalAmount * 18).toInt(), 0, gridMax(exItems().size))
         return true
     }
 
@@ -4651,6 +4299,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val COLUMN_GUTTER get() = if (COMPACT) 4 else 6
         private const val CARD_RADIUS = 7
         private const val HEADER_H = 36
+        private const val CARD_MIN_W = 150
+        private const val CARD_H = 40
+        private const val CARD_GAP = 6
+        private const val DET_W = 230
         private val COLUMN_SUBTITLES = mapOf(
             "General" to "Core mod options",
             "Dungeons" to "Run helpers & alerts",
@@ -4674,9 +4326,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "Farming" to "Garden farming tools",
             "Achievements" to "Goals & progress",
         )
-        private const val HEADER_STRIP_H = 3
         private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
-        private val MAX_COLUMN_W get() = if (COMPACT) 236 else 260
         private const val STACK_W = 176
         private val STACK_TAB_H get() = if (COMPACT) 20 else 24
         private const val STACK_SUB_INDENT = 10
