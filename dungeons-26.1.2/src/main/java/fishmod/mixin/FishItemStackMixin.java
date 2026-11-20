@@ -1,9 +1,9 @@
 package fishmod.mixin;
 
-import fishmod.features.item.ItemCustomDataHolder;
-import fishmod.features.item.ItemCustomizationStore;
-import fishmod.features.item.RarityTier;
-import fishmod.features.item.RarityTierCache;
+import fishmod.features.hud.ItemCustomDataHolder;
+import fishmod.features.hud.ItemCustomizationStore;
+import fishmod.features.hud.RarityTier;
+import fishmod.features.hud.RarityTierCache;
 import fishmod.utils.data.ItemTools;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;

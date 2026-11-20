@@ -76,7 +76,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             int dianaGlow = fishmod.features.diana.RareMobs.glowColor(entity);
             if (dianaGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dianaGlow;
 
-            int miniGlow = fishmod.features.slayers.SlayerMiniHighlight.glowColor(entity);
+            int miniGlow = fishmod.features.slayer.SlayerMiniHighlight.glowColor(entity);
             if (miniGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = miniGlow;
 
             int dgGlow = fishmod.features.dungeon.DungeonExtras.glowColor(entity);
@@ -106,7 +106,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             if (FishSettings.nametagStatsEnabled && state.nameTag != null && entity instanceof Player pl) {
                 if (EntityTools.isClientPlayer(pl)) {
                     String playerName = pl.getName().getString();
-                    statLines = fishmod.features.NametagStats.linesFor(playerName);
+                    statLines = fishmod.features.cosmetics.NametagStats.linesFor(playerName);
                 }
             }
             if (statLines != null && !statLines.isEmpty() && !FishSettings.nametagStatsAbove && state.nameTagAttachment != null) {
@@ -155,11 +155,11 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 cir.setReturnValue(false);
                 return;
             }
-            if (fishmod.features.mining.MiningBoxes.hideGhost(entity)) {
+            if (fishmod.features.visuals.MiningBoxes.hideGhost(entity)) {
                 cir.setReturnValue(false);
                 return;
             }
-            if (fishmod.features.dungeon.puzzles.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
+            if (fishmod.features.dungeon.solvers.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
                 cir.setReturnValue(false);
                 return;
             }
@@ -186,9 +186,9 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 return;
             }
 
-            if (fishmod.features.RenderOptimizer.hideDeathAnimation()) {
+            if (fishmod.features.visuals.RenderOptimizer.hideDeathAnimation()) {
                 if (entity instanceof net.minecraft.world.entity.decoration.ArmorStand) {
-                    if (fishmod.features.RenderOptimizer.hideDyingArmorStands()
+                    if (fishmod.features.visuals.RenderOptimizer.hideDyingArmorStands()
                             && entity.getVehicle() instanceof LivingEntity mount && mount.deathTime > 0) {
                         cir.setReturnValue(false);
                     }
@@ -212,7 +212,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
     private Component fishmod$cosmeticNameTag(Component original, Entity entity) {
         if (original == null || fishmod.utils.debug.FishDebug.skipName) return original;
         if (entity instanceof ArmorStand) {
-            Component dmg = fishmod.features.RenderOptimizer.damageNameTag(entity, original);
+            Component dmg = fishmod.features.visuals.RenderOptimizer.damageNameTag(entity, original);
             if (dmg != original) return dmg;
         }
         if (FishSettings.petNametagHideLevel && entity instanceof ArmorStand) {

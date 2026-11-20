@@ -1,6 +1,6 @@
 package fishmod.utils.data
 
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.utils.debug.FishDiag
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack

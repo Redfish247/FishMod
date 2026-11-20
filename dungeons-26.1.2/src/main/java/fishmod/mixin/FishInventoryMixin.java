@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.other.InvShortcutButtons;
+import fishmod.features.general.InvShortcutButtons;
 import fishmod.utils.config.values.InvButtonSettings;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen;
@@ -36,18 +36,18 @@ public abstract class FishInventoryMixin extends AbstractRecipeBookScreen<Invent
         stack.pushMatrix();
         stack.translate(this.leftPos, this.topPos);
         try {
-            if (InvButtonSettings.showEquipment) fishmod.features.other.EquipmentDisplay.render(context, mouseX - this.leftPos, mouseY - this.topPos, this.leftPos, this.topPos);
+            if (InvButtonSettings.showEquipment) fishmod.features.general.EquipmentDisplay.render(context, mouseX - this.leftPos, mouseY - this.topPos, this.leftPos, this.topPos);
             if (InvShortcutButtons.on()) InvShortcutButtons.renderAll(context, mouseX - this.leftPos, mouseY - this.topPos, deltaTicks);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishInventoryMixin.1", "inventory buttons render failed", t);
         }
         stack.popMatrix();
-        if (InvButtonSettings.showEquipment) fishmod.features.other.EquipmentDisplay.flushTooltip(context);
+        if (InvButtonSettings.showEquipment) fishmod.features.general.EquipmentDisplay.flushTooltip(context);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-        if (InvButtonSettings.showEquipment && fishmod.compat.GLFW.btn(click) == 0 && fishmod.features.other.EquipmentDisplay.click(click.x() - this.leftPos, click.y() - this.topPos)) return true;
+        if (InvButtonSettings.showEquipment && fishmod.compat.GLFW.btn(click) == 0 && fishmod.features.general.EquipmentDisplay.click(click.x() - this.leftPos, click.y() - this.topPos)) return true;
         if (InvShortcutButtons.on()) {
             try {
                 if (InvShortcutButtons.parseClicks(click.x() - this.leftPos, click.y() - this.topPos, fishmod.compat.GLFW.btn(click))) return true;

@@ -1,0 +1,56 @@
+package fishmod.features.dungeon.floor7
+
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.features.dungeon.floor7.terminal.MelodyHandler
+import fishmod.features.dungeon.floor7.terminal.TerminalSolver
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import fishmod.utils.debug.FishDiag
+
+object MelodyMessage {
+
+    private var wasOpen = false
+    private var lastPctSent = -1
+
+    @JvmStatic
+    fun init() {
+        ClientTickEvents.END_CLIENT_TICK.register {
+            try { tick() } catch (e: Exception) { FishDiag.fail("MelodyMessage.1", "melody message tick threw", e) }
+        }
+        FishEvents.worldChange.register { reset(); false }
+    }
+
+    private fun reset() { wasOpen = false; lastPctSent = -1 }
+
+    private fun tick() {
+        if (!FishSettings.melodyMessageEnabled) { reset(); return }
+        val melody = TerminalSolver.current as? MelodyHandler
+        val open = melody != null && BossPhase.inP3()
+
+        if (open && !wasOpen) {
+            wasOpen = true
+            lastPctSent = -1
+            if (FishSettings.melodyMessageOnOpen && FishSettings.melodyMessageText.isNotBlank()) {
+                fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.melodyMessageText}")
+            }
+        } else if (!open && wasOpen) {
+            reset()
+        }
+
+        if (open && FishSettings.melodyMessageProgress && melody != null) {
+            val lanes = melody.laneRows
+            val pct = when (melody.greenClayRow) {
+                in 2..lanes -> Math.round((melody.greenClayRow - 1) * 100.0 / lanes).toInt()
+                else -> {
+                    FishDiag.check(melody.greenClayRow in -1..5, "MelodyMessage.2") { "melody green clay row out of range: ${melody.greenClayRow}" }
+                    -1
+                }
+            }
+            if (pct > 0 && pct != lastPctSent) {
+                lastPctSent = pct
+                fishmod.utils.ChatQueue.enqueue("pc Melody $pct%")
+            }
+        }
+    }
+}

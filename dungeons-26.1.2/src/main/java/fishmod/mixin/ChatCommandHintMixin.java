@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.chat.PartyCommandHint;
+import fishmod.features.extras.PartyCommandHint;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;

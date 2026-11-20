@@ -1,0 +1,54 @@
+package fishmod.features.dungeon.floor7.dragons
+
+import fishmod.features.dungeon.Blessings
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.dungeon.DungeonRole
+import fishmod.utils.debug.FishDiag
+
+object DragonPriority {
+
+    private val FIXED = listOf(WitherDragon.RED, WitherDragon.ORANGE, WitherDragon.BLUE, WitherDragon.PURPLE, WitherDragon.GREEN)
+
+    fun findPriority(spawning: MutableList<WitherDragon>): WitherDragon {
+        if (spawning.isEmpty()) return WitherDragon.NONE
+        FishDiag.check(WitherDragon.NONE !in spawning, "DragonPriority.1") { "NONE dragon in spawning list $spawning" }
+        if (!FishSettings.witherDragonsPriority) {
+            spawning.sortBy { FIXED.indexOf(it) }
+            return spawning.first()
+        }
+        return sortPriority(spawning)
+    }
+
+    private fun sortPriority(spawning: MutableList<WitherDragon>): WitherDragon {
+        val totalPower = Blessings.Type.POWER.current + (if (Blessings.Type.TIME.current > 0) 2.5 else 0.0)
+        val clazz = DungeonRole.currentClass
+            ?: DungeonRole.getClass(net.minecraft.client.Minecraft.getInstance().player)
+            ?: run {
+                FishDiag.fail("DragonPriority.2", "own dungeon class unknown during dragon priority")
+                return spawning.sortedBy { FIXED.indexOf(it) }.first()
+            }
+
+        val order = listOf(WitherDragon.ORANGE, WitherDragon.GREEN, WitherDragon.RED, WitherDragon.BLUE, WitherDragon.PURPLE)
+        val priorityList = when {
+            totalPower >= FishSettings.witherDragonsNormalPower ||
+                (spawning.any { it == WitherDragon.PURPLE } && totalPower >= FishSettings.witherDragonsEasyPower) ->
+                if (clazz == DungeonRole.BERSERK || clazz == DungeonRole.MAGE) order else order.reversed()
+            else -> FIXED
+        }
+
+        spawning.sortBy { priorityList.indexOf(it) }
+        FishDiag.check(totalPower >= 0, "DragonPriority.3") { "negative blessing power $totalPower" }
+
+        if (totalPower >= FishSettings.witherDragonsEasyPower) {
+            val solo = FishSettings.witherDragonsSoloDebuff
+            val onAll = FishSettings.witherDragonsSoloDebuffAll
+            val hasPurple = spawning.any { it == WitherDragon.PURPLE }
+            if (solo == 1 && clazz == DungeonRole.TANK && (hasPurple || onAll))
+                spawning.sortByDescending { priorityList.indexOf(it) }
+            else if (solo == 0 && clazz == DungeonRole.HEALER && (hasPurple || onAll))
+                spawning.sortByDescending { priorityList.indexOf(it) }
+        }
+
+        return spawning.first()
+    }
+}

@@ -1,7 +1,7 @@
 package fishmod.features.fishing
 
 import fishmod.features.fishing.FishingWorldSettings as W
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.DrawHooks

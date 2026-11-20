@@ -4,8 +4,8 @@ import fishmod.features.diana.DianaTracker
 import fishmod.features.garden.Pests
 import fishmod.features.kuudra.KuudraSettings
 import fishmod.features.mining.MiningProfitTracker
-import fishmod.features.slayers.SlayerManager
-import fishmod.features.slayers.SlayerProfitTracker
+import fishmod.features.slayer.SlayerManager
+import fishmod.features.slayer.SlayerProfitTracker
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.MayorApi
 import fishmod.utils.TickScheduler
@@ -230,10 +230,10 @@ object AchTrackers {
 
     private fun dungeonLootValue(): Double {
         var v = 0.0
-        for (r in fishmod.features.croesus.LootTrackerStore.rows()) {
+        for (r in fishmod.features.dungeon.trackers.LootTrackerStore.rows()) {
             if (r.id.isEmpty() || r.count <= 0) continue
             val id = r.id
-            val p = fishmod.features.croesus.CroesusPrices.bazaarPrice(id, false)?.takeIf { it > 0 } ?: fishmod.features.croesus.CroesusPrices.price(id)
+            val p = fishmod.features.dungeon.trackers.CroesusPrices.bazaarPrice(id, false)?.takeIf { it > 0 } ?: fishmod.features.dungeon.trackers.CroesusPrices.price(id)
             if (p > 0) v += p * r.count
         }
         return v
@@ -293,16 +293,16 @@ object AchTrackers {
         }
         for ((name, n) in SlayerProfitTracker.totalDrops()) {
             if (name.endsWith("Coins")) continue
-            val unit = fishmod.utils.networth.ItemsDb.idFor(name)?.let { fishmod.features.croesus.CroesusPrices.price(it) } ?: 0.0
+            val unit = fishmod.utils.networth.ItemsDb.idFor(name)?.let { fishmod.features.dungeon.trackers.CroesusPrices.price(it) } ?: 0.0
             if (unit >= min) feedItem("Slayer", name, n, unit)
         }
         for ((name, n) in MiningProfitTracker.totalItems()) {
             val unit = MiningProfitTracker.priceOf(name)
             if (unit >= min) feedItem("Mining", name, n, unit)
         }
-        for (r in fishmod.features.croesus.LootTrackerStore.rows()) {
+        for (r in fishmod.features.dungeon.trackers.LootTrackerStore.rows()) {
             if (r.id.isEmpty() || r.count <= 0) continue
-            val unit = fishmod.features.croesus.CroesusPrices.bazaarPrice(r.id, false)?.takeIf { it > 0 } ?: fishmod.features.croesus.CroesusPrices.price(r.id)
+            val unit = fishmod.features.dungeon.trackers.CroesusPrices.bazaarPrice(r.id, false)?.takeIf { it > 0 } ?: fishmod.features.dungeon.trackers.CroesusPrices.price(r.id)
             if (unit >= min) feedItem("Dungeons", r.name, r.count.toLong(), unit)
         }
         st.max("rng.trk", total)

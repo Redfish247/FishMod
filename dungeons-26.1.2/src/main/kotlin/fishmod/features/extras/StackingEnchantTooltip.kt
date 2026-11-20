@@ -1,6 +1,6 @@
 package fishmod.features.extras
 
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.network.chat.Component

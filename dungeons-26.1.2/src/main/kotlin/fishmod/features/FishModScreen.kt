@@ -1,4 +1,14 @@
 package fishmod.features
+
+import fishmod.features.cosmetics.CrosshairImageLoader
+import fishmod.features.cosmetics.CustomCrosshair
+import fishmod.features.general.BridgeBot
+import fishmod.features.general.ExperimentProfitTracker
+import fishmod.features.general.Ragnarock
+import fishmod.features.general.SlotBinds
+import fishmod.features.hud.ChatCommandsScreen
+import fishmod.features.party.PartyLootScreen
+import fishmod.features.visuals.TimeChanger
 import fishmod.compat.reloadChunks
 import fishmod.compat.curScreen
 import fishmod.compat.showScreen
@@ -17,7 +27,7 @@ import fishmod.utils.config.values.Floor7Settings
 import fishmod.utils.config.values.VisualSettings
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.dungeon.GoldorSection
-import fishmod.features.dungeon.f7.TerminalTracker
+import fishmod.features.dungeon.floor7.TerminalTracker
 import fishmod.utils.dungeon.RunSplit
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
@@ -194,7 +204,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Inventory Buttons", InvButtonSettings::class.java, "enableInventoryButtons")
             f.sub.add(ButtonSetting("Edit Buttons", "Opens your inventory to add, move and edit buttons", "Edit",
-                Runnable { fishmod.features.other.InvShortcutButtons.openEditMode() }))
+                Runnable { fishmod.features.general.InvShortcutButtons.openEditMode() }))
             general.features.add(f)
         }
         run {
@@ -227,9 +237,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Auto-Close GUI", "", "petKeybindsAutoClose"))
             f.sub.add(ToggleSetting("Don't Despawn Active Pet", "Pressing the key for your current pet does nothing", "petKeybindsNoDespawn"))
             f.sub.add(SubcategoryHeader("Open /pets yourself, then press a key to select that pet"))
-            for (i in 0 until fishmod.features.other.PetKeybinds.COUNT) {
+            for (i in 0 until fishmod.features.general.PetKeybinds.COUNT) {
                 val idx = i
-                f.sub.add(KeybindSetting(fishmod.features.other.PetKeybinds.PETS[idx], "", { fishmod.utils.FishKeys.petKeybinds?.getOrNull(idx) }))
+                f.sub.add(KeybindSetting(fishmod.features.general.PetKeybinds.PETS[idx], "", { fishmod.utils.FishKeys.petKeybinds?.getOrNull(idx) }))
             }
             general.features.add(f)
         }
@@ -238,12 +248,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Hold the bind key + click a hotbar slot then an inv slot to link; shift-left-click to swap"))
             f.sub.add(KeybindSetting("Bind Key (hold)", "Default R", { fishmod.utils.FishKeys.slotBind }))
             f.sub.add(SubcategoryHeader("Profiles — separate bind sets you can switch between"))
-            val slotBindProfiles: Array<String> = fishmod.features.SlotBinds.profileNames().toTypedArray()
+            val slotBindProfiles: Array<String> = fishmod.features.general.SlotBinds.profileNames().toTypedArray()
             f.sub.add(DropdownSetting("Profile", "", slotBindProfiles,
                 { if (FishSettings.slotBindsProfile in slotBindProfiles) FishSettings.slotBindsProfile else slotBindProfiles[0] },
                 { v -> FishSettings.slotBindsProfile = v }))
-            f.sub.add(ButtonSetting("New Profile", "Fresh empty set", Runnable { fishmod.features.SlotBinds.newProfile() }))
-            f.sub.add(ButtonSetting("Delete Profile", "Remove the current set (Default is only cleared)", Runnable { fishmod.features.SlotBinds.deleteActiveProfile() }))
+            f.sub.add(ButtonSetting("New Profile", "Fresh empty set", Runnable { fishmod.features.general.SlotBinds.newProfile() }))
+            f.sub.add(ButtonSetting("Delete Profile", "Remove the current set (Default is only cleared)", Runnable { fishmod.features.general.SlotBinds.deleteActiveProfile() }))
             f.sub.add(KeybindSetting("Cycle Profile Key", "", { fishmod.utils.FishKeys.slotBindCycleProfile }))
             f.sub.add(ToggleSetting("Show Bound Slots", "", "slotBindsShow"))
             f.sub.add(ToggleSetting("Connecting Line", "Draw a line between a bound pair", "slotBindsLine").gatedBy { FishSettings.slotBindsShow })
@@ -450,7 +460,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Reformats \"Guild > Bot: Player » msg\" and hides the raw bot line"))
             f.sub.add(InputSetting("Bot Name", "The bridge bot's exact in-game name",
                 { FishSettings.bridgeBotName },
-                { v -> FishSettings.bridgeBotName = v; fishmod.features.BridgeBot.rebuildPattern() }))
+                { v -> FishSettings.bridgeBotName = v; fishmod.features.general.BridgeBot.rebuildPattern() }))
             general.features.add(f)
         }
         run {
@@ -995,7 +1005,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(DropdownSetting("Price", "",
                 FishSettings.PriceMode.values(),
                 { FishSettings.trackerPriceModeEnum },
-                { v -> FishSettings.trackerPriceModeEnum = v; fishmod.features.croesus.CroesusPrices.applyPriceMode() }))
+                { v -> FishSettings.trackerPriceModeEnum = v; fishmod.features.dungeon.trackers.CroesusPrices.applyPriceMode() }))
             dungeonTrackers.features.add(f)
         }
         run {
@@ -1181,20 +1191,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(DropdownSetting("Type", "", arrayOf("Preset", "Image"),
                 { FishSettings.crosshairMode },
                 { v -> FishSettings.crosshairMode = v }))
-            f.sub.add(DropdownSetting("Preset", "", fishmod.features.CustomCrosshair.PRESETS,
-                { if (FishSettings.crosshairPreset in fishmod.features.CustomCrosshair.PRESETS) FishSettings.crosshairPreset else fishmod.features.CustomCrosshair.PRESETS[0] },
+            f.sub.add(DropdownSetting("Preset", "", fishmod.features.cosmetics.CustomCrosshair.PRESETS,
+                { if (FishSettings.crosshairPreset in fishmod.features.cosmetics.CustomCrosshair.PRESETS) FishSettings.crosshairPreset else fishmod.features.cosmetics.CustomCrosshair.PRESETS[0] },
                 { v -> FishSettings.crosshairPreset = v })
                 .gatedBy { FishSettings.crosshairMode == "Preset" })
             f.sub.add(ButtonSetting("Open Crosshairs Folder", "") {
                 try {
-                    fishmod.features.CrosshairImageLoader.init()
-                    fishmod.compat.GLFW.openUri(fishmod.features.CrosshairImageLoader.getImagesPath().toUri())
+                    fishmod.features.cosmetics.CrosshairImageLoader.init()
+                    fishmod.compat.GLFW.openUri(fishmod.features.cosmetics.CrosshairImageLoader.getImagesPath().toUri())
                 } catch (e: Exception) {
                     FishDiag.fail("FishModScreen.4", "open crosshairs folder failed", e)
                 }
             }.gatedBy { FishSettings.crosshairMode == "Image" })
             val crosshairImageNames: Array<String> = run {
-                val names = fishmod.features.CrosshairImageLoader.getImageNames()
+                val names = fishmod.features.cosmetics.CrosshairImageLoader.getImageNames()
                 (if (names.isEmpty()) listOf("No image") else names).toTypedArray()
             }
             f.sub.add(DropdownSetting("Image", "", crosshairImageNames,
@@ -1282,10 +1292,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(DropdownSetting("Who Can Trigger", "", arrayOf("off", "self", "whitelist", "blacklist", "everyone"),
                 { FishSettings.pcPartyActionsMode }, { v -> FishSettings.pcPartyActionsMode = v }))
             f.sub.add(ButtonSetting("Whitelist", "Edit who may trigger party actions", "Open", Runnable {
-                Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST, Minecraft.getInstance().curScreen))
+                Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.WHITELIST, Minecraft.getInstance().curScreen))
             }))
             f.sub.add(ButtonSetting("Blacklist", "Edit who is always blocked", "Open", Runnable {
-                Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST, Minecraft.getInstance().curScreen))
+                Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.BLACKLIST, Minecraft.getInstance().curScreen))
             }))
             party.features.add(f)
         }
@@ -1293,7 +1303,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Kick List", { FishSettings.pcKickListEnabled }, { v -> FishSettings.pcKickListEnabled = v })
             f.sub.add(SubcategoryHeader("Anyone on this list is auto-kicked from your party whenever you're leader"))
             f.sub.add(ButtonSetting("Manage List", "Add/remove names, or /fm kicklist", "Open", Runnable {
-                Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK, Minecraft.getInstance().curScreen))
+                Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.KICK, Minecraft.getInstance().curScreen))
             }))
             party.features.add(f)
         }
@@ -1403,7 +1413,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Only On Private Island", "", "expProfitOnlyIsland"))
             f.sub.add(SliderIntSetting("Item Lines", "", "expProfitLines", 1, 30))
             f.sub.add(SliderDoubleSetting("Scale", "", "expProfitHudScale", 0.5, 3.0))
-            f.sub.add(ButtonSetting("Reset", "Clear all tracked experiments", Runnable { fishmod.features.ExperimentProfitTracker.reset() }))
+            f.sub.add(ButtonSetting("Reset", "Clear all tracked experiments", Runnable { fishmod.features.general.ExperimentProfitTracker.reset() }))
             general.features.add(f)
         }
         run {
@@ -1498,7 +1508,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         hud.features.add(Feature("Loadout Title", "loadoutTitleEnabled"))
         run {
             val f = Feature("Time Changer", "timeChangerEnabled")
-            f.sub.add(DropdownSetting("Time", "", fishmod.features.TimeChanger.modes(),
+            f.sub.add(DropdownSetting("Time", "", fishmod.features.visuals.TimeChanger.modes(),
                 { FishSettings.timeChangerMode }, { v -> FishSettings.timeChangerMode = v }))
             visuals.features.add(f)
         }
@@ -1662,9 +1672,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
-            val sw = fishmod.features.other.Stopwatch
-            val trig = fishmod.features.other.Stopwatch.Trigger.values()
-            fun textGate(t: () -> fishmod.features.other.Stopwatch.Trigger) = { t().name.let { it == "CHAT" || it == "CHAT_REGEX" || it == "GUI_OPEN" } }
+            val sw = fishmod.features.hud.Stopwatch
+            val trig = fishmod.features.hud.Stopwatch.Trigger.values()
+            fun textGate(t: () -> fishmod.features.hud.Stopwatch.Trigger) = { t().name.let { it == "CHAT" || it == "CHAT_REGEX" || it == "GUI_OPEN" } }
             val f = Feature("Stopwatch", sw.javaClass, "enabled")
             f.sub.add(SubcategoryHeader("Timer with custom start/stop/split/reset rules. Keybinds always work."))
             f.sub.add(DropdownSetting("Start On", "", trig, { sw.startTrigger }, { v -> sw.startTrigger = v }))
@@ -2175,22 +2185,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             cocoon.sub.add(SubcategoryHeader("Fires on \"YOU COCOONED YOUR SLAYER BOSS\""))
             cocoon.sub.add(SliderIntSetting("Alert Duration (ms)", "", "slayerCocoonAlertDurationMs", 250, 8000, 250))
             slayer.features.add(cocoon)
-            val endAlerts = Feature("Superior Dragon Alert", fishmod.features.slayers.EndAlertSettings::class.java, "superiorDragonAlert")
+            val endAlerts = Feature("Superior Dragon Alert", fishmod.features.slayer.EndAlertSettings::class.java, "superiorDragonAlert")
             endAlerts.sub.add(SubcategoryHeader("Title when a Superior Dragon spawns"))
-            endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayers.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayers.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
+            endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayer.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayer.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
             end.features.add(endAlerts)
-            end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayers.EndAlertSettings::class.java, "endstoneProtectorAlert"))
-            end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayers.EndAlertSettings::class.java, "zealotHud"))
-            slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayers.EndAlertSettings::class.java, "cocoonTimer"))
-            slayer.features.add(Feature("Summons Recall Alert", fishmod.features.slayers.EndAlertSettings::class.java, "summonsRecallAlert"))
-            val egg = Feature("Egg Sac Highlight", fishmod.features.slayers.EndAlertSettings::class.java, "eggSacHighlight")
-            egg.sub.add(ColorPickerSetting("Colour", "", { fishmod.features.slayers.EndAlertSettings.eggSacColor }, { v -> fishmod.features.slayers.EndAlertSettings.eggSacColor = v }))
+            end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayer.EndAlertSettings::class.java, "endstoneProtectorAlert"))
+            end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayer.EndAlertSettings::class.java, "zealotHud"))
+            slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
+            slayer.features.add(Feature("Summons Recall Alert", fishmod.features.slayer.EndAlertSettings::class.java, "summonsRecallAlert"))
+            val egg = Feature("Egg Sac Highlight", fishmod.features.slayer.EndAlertSettings::class.java, "eggSacHighlight")
+            egg.sub.add(ColorPickerSetting("Colour", "", { fishmod.features.slayer.EndAlertSettings.eggSacColor }, { v -> fishmod.features.slayer.EndAlertSettings.eggSacColor = v }))
             slayer.features.add(egg)
-            val yang = Feature("Yang Glyph Tracer", fishmod.features.slayers.EndAlertSettings::class.java, "yangGlyphTracer")
-            yang.sub.add(ColorPickerSetting("Colour", "", { fishmod.features.slayers.EndAlertSettings.yangGlyphColor }, { v -> fishmod.features.slayers.EndAlertSettings.yangGlyphColor = v }))
+            val yang = Feature("Yang Glyph Tracer", fishmod.features.slayer.EndAlertSettings::class.java, "yangGlyphTracer")
+            yang.sub.add(ColorPickerSetting("Colour", "", { fishmod.features.slayer.EndAlertSettings.yangGlyphColor }, { v -> fishmod.features.slayer.EndAlertSettings.yangGlyphColor = v }))
             slayer.features.add(yang)
-            slayer.features.add(Feature("Broodmother Countdown", fishmod.features.slayers.EndAlertSettings::class.java, "broodmotherHud"))
-            slayer.features.add(Feature("No Slayer Quest Warning", fishmod.features.slayers.EndAlertSettings::class.java, "noQuestWarning"))
+            slayer.features.add(Feature("Broodmother Countdown", fishmod.features.slayer.EndAlertSettings::class.java, "broodmotherHud"))
+            slayer.features.add(Feature("No Slayer Quest Warning", fishmod.features.slayer.EndAlertSettings::class.java, "noQuestWarning"))
             val dm = Feature("Deathmite Highlight", fishmod.features.dungeon.DungeonExtraSettings::class.java, "deathmiteHighlight")
             dm.sub.add(ColorPickerSetting("Colour", "", { fishmod.features.dungeon.DungeonExtraSettings.deathmiteColor }, { v -> fishmod.features.dungeon.DungeonExtraSettings.deathmiteColor = v }))
             dungeon.features.add(dm)
@@ -2204,12 +2214,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(Feature("Party HP HUD", fishmod.features.dungeon.DungeonExtraSettings::class.java, "partyHpHud"))
             dungeon.features.add(Feature("Coloured Class Level In Tab", fishmod.features.dungeon.DungeonExtraSettings::class.java, "classTabColor"))
             dungeon.features.add(Feature("Kismet Count On Reroll", fishmod.features.dungeon.DungeonExtraSettings::class.java, "kismetCount"))
-            val mini = Feature("Miniboss Highlight", fishmod.features.slayers.EndAlertSettings::class.java, "slayerMiniHighlight")
-            mini.sub.add(ColorPickerSetting("Outline Colour", "", { fishmod.features.slayers.EndAlertSettings.slayerMiniHighlightColor }, { v -> fishmod.features.slayers.EndAlertSettings.slayerMiniHighlightColor = v }))
+            val mini = Feature("Miniboss Highlight", fishmod.features.slayer.EndAlertSettings::class.java, "slayerMiniHighlight")
+            mini.sub.add(ColorPickerSetting("Outline Colour", "", { fishmod.features.slayer.EndAlertSettings.slayerMiniHighlightColor }, { v -> fishmod.features.slayer.EndAlertSettings.slayerMiniHighlightColor = v }))
             slayer.features.add(mini)
-            val gi = Feature("Items On Ground Names", fishmod.features.slayers.EndAlertSettings::class.java, "groundItemNames")
+            val gi = Feature("Items On Ground Names", fishmod.features.slayer.EndAlertSettings::class.java, "groundItemNames")
             gi.sub.add(SubcategoryHeader("Name and count above dropped items"))
-            gi.sub.add(SliderIntSetting("Range (blocks)", "", { fishmod.features.slayers.EndAlertSettings.groundItemRange }, { v -> fishmod.features.slayers.EndAlertSettings.groundItemRange = v }, 4, 64, 1))
+            gi.sub.add(SliderIntSetting("Range (blocks)", "", { fishmod.features.slayer.EndAlertSettings.groundItemRange }, { v -> fishmod.features.slayer.EndAlertSettings.groundItemRange = v }, 4, 64, 1))
             slayer.features.add(gi)
             val ms = Feature("Dungeon Milestone HUD", fishmod.features.dungeon.DungeonMilestoneSettings::class.java, "milestoneHud")
             ms.sub.add(ColorPickerSetting("Label Colour", "", { fishmod.features.dungeon.DungeonMilestoneSettings.milestoneColor }, { v -> fishmod.features.dungeon.DungeonMilestoneSettings.milestoneColor = v }))
@@ -2231,7 +2241,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             statsHud.sub.add(ToggleSetting("Show XP", "", "slayerStatsShowXp"))
             statsHud.sub.add(ToggleSetting("Show Kills", "", "slayerStatsShowKills"))
             statsHud.sub.add(SliderDoubleSetting("Scale", "", "slayerStatsHudScale", 0.5, 3.0))
-            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
+            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills counters", Runnable { fishmod.features.slayer.SlayerStatsTracker.reset() }))
             slayer.features.add(statsHud)
 
             val carry = Feature("Carry Tracker HUD", "slayerCarryHudEnabled")
@@ -2252,7 +2262,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             profit.sub.add(ToggleSetting("Always Show Hidden Rows", "Keep hidden rows on screen (dark + struck) even when chat is closed", "slayerProfitShowHidden"))
             profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", "slayerProfitIdleSeconds", 15, 600, 15))
             profit.sub.add(SliderDoubleSetting("Scale", "", "slayerProfitHudScale", 0.5, 3.0))
-            profit.sub.add(ButtonSetting("Reset This Mode", "Clear drops / bosses / time for the current Display mode, every slayer", Runnable { fishmod.features.slayers.SlayerProfitTracker.reset() }))
+            profit.sub.add(ButtonSetting("Reset This Mode", "Clear drops / bosses / time for the current Display mode, every slayer", Runnable { fishmod.features.slayer.SlayerProfitTracker.reset() }))
             slayer.features.add(profit)
 
             val timer = Feature("Boss Timer", "slayerTimerEnabled")
@@ -2278,7 +2288,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(ToggleSetting("Hide Boss Nametag", "Hide the vanilla HP nametag while the HP label shows", "slayerPhaseHideNametag"))
             slayer.features.add(phases)
 
-            val bt = fishmod.features.other.BossToolsSettings::class.java
+            val bt = fishmod.features.slayer.BossToolsSettings::class.java
             val bossInd = Feature("Boss Damage Indicator", bt, "bossIndicator")
             bossInd.sub.add(SubcategoryHeader("Boss Phases-style HP label on non-slayer bosses"))
             bossInd.sub.add(ToggleSetting("Dungeon Floor Bosses", "Bonzo, Scarf, Professor, Thorn, Livid, Sadan + giants", bt, "bossIndicatorDungeon"))

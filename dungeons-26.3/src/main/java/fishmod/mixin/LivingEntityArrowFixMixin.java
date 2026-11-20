@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import fishmod.features.ArrowFix;
+import fishmod.features.general.ArrowFix;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;

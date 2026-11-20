@@ -1,0 +1,205 @@
+package fishmod.features.inventory
+
+import fishmod.features.hud.ItemValue
+
+import fishmod.utils.TextStrip
+import fishmod.utils.debug.FishDiag
+import fishmod.features.visuals.ItemRarityHotbar
+import fishmod.features.dungeon.trackers.CroesusPrices
+import fishmod.features.inventory.StorageOverlay
+import fishmod.mixin.accessors.HandledScreenAccessor
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.FishUtil.abbr
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.data.ItemTools
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.gui.screens.inventory.InventoryScreen
+import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.player.Inventory
+import net.minecraft.world.item.ItemStack
+
+object ContainerValue {
+
+    private const val MAX_LINES = 32
+    private const val RECOMPUTE_MS = 500L
+    private const val NAME_MAX = 24
+    private const val GOLD = 0xFFAA00
+    private const val GREY = 0xAAAAAA
+    private const val DIM = 0x808080
+    private const val YELLOW = 0xFFFF55
+
+    private val STORAGE_TITLE =
+        Regex("^(Storage|Rift Storage|(?:Ender Chest|Rift Storage)(?: ✦)? \\([1-9]/[1-9]\\)|.+ Backpack(?: ✦)? \\(Slot #\\d+\\))$")
+    private val PLAIN_CHEST = setOf("Chest", "Large Chest", "Ender Chest", "Personal Vault")
+
+    private val MOTES = Regex("Motes Sell Price:?\\s*([0-9,]+)")
+    private fun inRift() = SkyblockLocation.`in`(SkyblockLocation.THE_RIFT)
+
+    private fun motesValue(stack: ItemStack): Double {
+        val lore = stack.get(net.minecraft.core.component.DataComponents.LORE) ?: return 0.0
+        for (l in lore.lines()) {
+            val m = MOTES.find(TextStrip.plain(l.string)) ?: continue
+            return m.groupValues[1].replace(",", "").toDoubleOrNull() ?: 0.0
+        }
+        return 0.0
+    }
+    private fun unitName() = if (inRift()) " Motes" else ""
+
+    private class Row(val name: String, var count: Int, var value: Double, val color: Int, val stack: ItemStack)
+
+    private var rows: List<Row> = emptyList()
+    private var total = 0.0
+    private var widthPx = 0
+    private var lastCompute = 0L
+    private var lastRefresh = 0L
+    private var cachedLines: List<Component> = emptyList()
+    private var cachedMoreLine: Component? = null
+    private var cachedTotalLine: Component? = null
+
+    @JvmStatic
+    fun init() {
+        ClientTickEvents.END_CLIENT_TICK.register {
+            if (!FishSettings.containerValueEnabled || !SkyblockLocation.inSkyblock()) return@register
+            val now = System.currentTimeMillis()
+            if (now - lastRefresh > 60_000L) {
+                lastRefresh = now
+                FishDiag.guard("ContainerValue.1", "price refresh for container value failed") { CroesusPrices.refreshIfStale() }
+            }
+        }
+    }
+
+    class SidebarRow(val name: String, val label: String, val value: String, val color: Int, val stack: ItemStack)
+
+    @JvmStatic
+    fun storageSidebarEnabled(): Boolean = FishSettings.containerValueEnabled && SkyblockLocation.inSkyblock()
+
+    // Storage overlay draws these in its own fixed sidebar
+    @JvmStatic
+    fun storageRows(screen: AbstractContainerScreen<*>): List<SidebarRow> {
+        try { recompute(screen) } catch (e: Exception) {
+            FishDiag.fail("ContainerValue.4", "storage container value recompute failed", e); return emptyList()
+        }
+        return rows.map { r ->
+            SidebarRow(r.name, if (r.count > 1) "${r.count}x ${r.name}" else r.name, abbr(r.value) + unitName(),
+                if (r.color != 0) r.color or 0xFF000000.toInt() else 0xFFAAAAAA.toInt(), r.stack)
+        }
+    }
+
+    @JvmStatic
+    fun plainName(stack: ItemStack): String = TextStrip.plain(stack.hoverName.string)
+
+    @JvmStatic
+    fun storageTotal(): String = abbr(total) + unitName()
+
+    @JvmStatic
+    fun render(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
+        if (!FishSettings.containerValueEnabled || !SkyblockLocation.inSkyblock() || !eligible(screen)) return
+        if (StorageOverlay.isActive(screen)) return
+        val font = Minecraft.getInstance().font
+
+        try { recompute(screen) } catch (e: Exception) {
+            FishDiag.fail("ContainerValue.2", "container value recompute failed on '${fishmod.utils.ScreenTitle.plain(screen)}' slots=${screen.menu.slots.size}", e)
+            return
+        }
+        if (rows.isEmpty()) return
+
+        val shown = rows.take(MAX_LINES)
+        val storageMode = StorageOverlay.isActive(screen)
+        val lineCount = 1 + shown.size + (if (rows.size > shown.size) 1 else 0) + 1
+        val (x, y) = anchor(screen, storageMode, widthPx, lineCount * (font.lineHeight + 1))
+
+        var cy = y
+        line(ctx, font, x, cy, Component.literal("Container Value").withStyle { it.withColor(YELLOW) }); cy += font.lineHeight + 1
+        for (c in cachedLines) {
+            line(ctx, font, x, cy, c); cy += font.lineHeight + 1
+        }
+        cachedMoreLine?.let {
+            line(ctx, font, x, cy, it)
+            cy += font.lineHeight + 1
+        }
+        cachedTotalLine?.let { line(ctx, font, x, cy, it) }
+    }
+
+    private fun line(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, x: Int, y: Int, c: Component) =
+        ctx.text(font, c, x, y, -1, true)
+
+    private fun eligible(screen: AbstractContainerScreen<*>): Boolean {
+        if (StorageOverlay.isActive(screen)) return true
+        if (screen is InventoryScreen) return true
+        val t = fishmod.utils.ScreenTitle.plain(screen).trim()
+        return t in PLAIN_CHEST || STORAGE_TITLE.containsMatchIn(t)
+    }
+
+    private fun anchor(screen: AbstractContainerScreen<*>, storageMode: Boolean, w: Int, h: Int): Pair<Int, Int> {
+        val win = Minecraft.getInstance().window
+        val sw = win.guiScaledWidth
+        val sh = win.guiScaledHeight
+        if (storageMode) {
+            val y = StorageOverlay.panelTopScreenY().coerceIn(2, (sh - h).coerceAtLeast(2))
+            return 3 to y
+        }
+        val acc = screen as HandledScreenAccessor
+        val y = acc.bgY.coerceIn(2, (sh - h).coerceAtLeast(2))
+        val left = acc.bgX - w - 6
+        if (left >= 2) return left to y
+        val right = acc.bgX + acc.bgWidth + 6
+        return (if (right + w <= sw) right else 2) to y
+    }
+
+    private fun recompute(screen: AbstractContainerScreen<*>) {
+        val now = System.currentTimeMillis()
+        if (now - lastCompute < RECOMPUTE_MS) return
+        lastCompute = now
+
+        val agg = LinkedHashMap<String, Row>()
+        var sum = 0.0
+        val skipPlayerInv = screen !is InventoryScreen
+        for (slot in screen.menu.slots) {
+            if (skipPlayerInv && slot.container is Inventory) continue
+            val stack: ItemStack = slot.item
+            if (stack.isEmpty) continue
+            if (ItemTools.getId(stack) == null) continue
+            val unit = if (inRift()) motesValue(stack) else ItemValue.estimate(stack)
+            if (!FishDiag.check(!unit.isNaN() && !unit.isInfinite(), "ContainerValue.3") { "item value not finite for ${stack.hoverName.string}: $unit" }) continue
+            if (unit <= 0.0) continue
+            val v = unit * stack.count
+            sum += v
+            val name = TextStrip.plain(stack.hoverName.string)
+            val ex = agg[name]
+            if (ex == null) agg[name] = Row(name, stack.count, v, ItemRarityHotbar.getRarity(stack).color, stack)
+            else { ex.count += stack.count; ex.value += v }
+        }
+
+        val list = agg.values.sortedByDescending { it.value }
+        rows = list
+        total = sum
+
+        val font = Minecraft.getInstance().font
+        var maxw = font.width("Container Value")
+        val shown = list.take(MAX_LINES)
+        val lines = ArrayList<Component>(shown.size)
+        for (r in shown) {
+            val label = if (r.count > 1) "${r.count}x ${trim(r.name)}" else trim(r.name)
+            maxw = maxOf(maxw, font.width("$label  ${abbr(r.value)}${unitName()}"))
+            val rgb = if (r.color != 0) r.color and 0xFFFFFF else GREY
+            lines.add(
+                Component.literal(label).withStyle { it.withColor(rgb) }
+                    .append(Component.literal("  ").withStyle { it.withColor(GREY) })
+                    .append(Component.literal(abbr(r.value) + unitName()).withStyle { it.withColor(if (inRift()) 0xAA00AA else GOLD) }),
+            )
+        }
+        cachedLines = lines
+        cachedMoreLine = if (list.size > shown.size)
+            Component.literal("… +${list.size - shown.size} more").withStyle { it.withColor(DIM) }
+        else null
+        cachedTotalLine = Component.literal("Total: ").withStyle { it.withColor(YELLOW) }
+            .append(Component.literal(abbr(sum) + unitName()).withStyle { it.withColor(if (inRift()) 0xAA00AA else GOLD) })
+        widthPx = maxOf(maxw, font.width("Total: ${abbr(total)}${unitName()}"))
+    }
+
+    private fun trim(s: String): String = if (s.length <= NAME_MAX) s else s.take(NAME_MAX - 1) + "…"
+
+}

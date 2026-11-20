@@ -1,0 +1,438 @@
+package fishmod.features.dungeon.trackers
+import fishmod.utils.events.chatPlain
+import fishmod.compat.curScreen
+
+import fishmod.features.FishHudEditor
+import fishmod.utils.FishConstants
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.events.FishEvents
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.minecraft.client.DeltaTracker
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.regex.Pattern
+import fishmod.utils.debug.FishDiag
+
+object SessionStats {
+
+
+    private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
+
+    private const val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
+
+    private const val IDLE_MS = 5 * 60_000L
+
+    private var autoPauseReason = 0
+
+    private var lastX = 0.0
+    private var lastY = 0.0
+    private var lastZ = 0.0
+    private var havePos = false
+
+    private var sessionStartMs: Long = -1
+    private var runs = 0
+    private var deaths = 0
+
+    private val SAVE_FILE: Path = Paths.get("config/fishmod/session_stats.json")
+    private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
+
+    private var btnX = 0
+    private var btnY = 0
+    private var btnW = 0
+    private var btnH = 0
+    private var btnVisible = false
+    private var pauseBtnX = 0
+    private var pauseBtnY = 0
+    private var pauseBtnW = 0
+    private var pauseBtnH = 0
+    private var paused = false
+    private var pauseStartedMs: Long = 0
+    private var lastActivityMs: Long = 0
+    private var autoPaused = false
+
+    private class SaveData {
+        var sessionStartMs: Long = 0
+        var runs = 0
+        var deaths = 0
+        var paused = false
+        var pauseStartedMs: Long = 0
+        var autoPaused = false
+        var lastActivityMs: Long = 0
+    }
+
+    private fun autoResume() {
+        val now = System.currentTimeMillis()
+        if (paused && autoPaused) {
+            // clock stepped back: clamp instead of logging
+            if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += maxOf(0L, now - pauseStartedMs)
+            pauseStartedMs = 0
+            paused = false
+            autoPaused = false
+            autoPauseReason = 0
+        }
+        lastActivityMs = now
+    }
+
+    private fun noteMovement() {
+        if (paused && autoPaused && autoPauseReason == 2) autoResume()
+        else lastActivityMs = System.currentTimeMillis()
+    }
+
+    private fun autoPause(reason: Int, freezeAtMs: Long) {
+        if (paused) return
+        paused = true
+        autoPaused = true
+        autoPauseReason = reason
+        pauseStartedMs = if (freezeAtMs > 0) minOf(freezeAtMs, System.currentTimeMillis()) else System.currentTimeMillis()
+        if (sessionStartMs > 0 && pauseStartedMs < sessionStartMs) pauseStartedMs = sessionStartMs
+    }
+
+    private fun tickAutoPause() {
+        if (paused || sessionStartMs <= 0 || lastActivityMs <= 0) return
+        if (System.currentTimeMillis() - lastActivityMs >= IDLE_MS) autoPause(2, lastActivityMs)
+    }
+
+    @JvmStatic
+    fun init() {
+        load()
+        registerPreview()
+
+        FishHudEditor.register("Session Stats",
+            { FishSettings.sessionStatsHudX }, { v -> FishSettings.sessionStatsHudX = v },
+            { FishSettings.sessionStatsHudY }, { v -> FishSettings.sessionStatsHudY = v },
+            80, 14 * 4,
+            { FishSettings.sessionStatsScale }, { v -> FishSettings.sessionStatsScale = v },
+            {
+                if (!FishSettings.sessionStatsEnabled) false
+                else {
+                    val loc = SkyblockLocation.getCurrentLocation()
+                    (loc == SkyblockLocation.DUNGEON && FishSettings.sessionStatsInDungeon)
+                        || (loc == SkyblockLocation.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
+                }
+            })
+
+        ClientPlayConnectionEvents.DISCONNECT.register(ClientPlayConnectionEvents.Disconnect { _, _ -> autoPause(1, System.currentTimeMillis()) })
+
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
+            if (!FishSettings.sessionStatsEnabled) return@EndTick
+            try { onTick(client) } catch (e: Exception) { FishDiag.fail("SessionStats.2", "session stats tick threw", e) }
+        })
+
+        registerRest()
+    }
+
+    private fun onTick(client: Minecraft) {
+        run {
+            val loc = SkyblockLocation.getCurrentLocation()
+            if (loc != SkyblockLocation.DUNGEON) {
+                havePos = false
+                autoPause(1, System.currentTimeMillis())
+                return
+            }
+            if (client.player != null) {
+                val x = client.player!!.x
+                val y = client.player!!.y
+                val z = client.player!!.z
+                if (!havePos) {
+                    lastX = x; lastY = y; lastZ = z; havePos = true
+                    if (lastActivityMs <= 0) lastActivityMs = System.currentTimeMillis()
+                } else if (Math.abs(x - lastX) + Math.abs(y - lastY) + Math.abs(z - lastZ) > 0.05) {
+                    lastX = x; lastY = y; lastZ = z
+                    noteMovement()
+                }
+            }
+            tickAutoPause()
+        }
+    }
+
+    private fun registerRest() {
+
+        FishEvents.worldChange.register {
+            havePos = false
+            autoPause(1, System.currentTimeMillis())
+            false
+        }
+
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+            if (FishSettings.sessionStatsResetOnRelog) FishDiag.guard("SessionStats.11", "session stats reset on join failed") { reset() }
+        }
+
+        FishEvents.locationChange.register { _ ->
+            havePos = false
+            false
+        }
+
+        FishEvents.runEnd.register {
+            if (!FishSettings.sessionStatsEnabled) return@register false
+            if (paused && !autoPaused) return@register false
+            val now = System.currentTimeMillis()
+            if (sessionStartMs < 0) sessionStartMs = now
+            lastActivityMs = now
+            runs++
+            save()
+            false
+        }
+
+        FishEvents.chat.register { message ->
+            if (!FishSettings.sessionStatsEnabled) return@register false
+            val s = message.chatPlain
+            if (s.startsWith("☠ ") && !DEATH_PAT.matcher(s).find() && (s.contains(" killed") || s.contains(" died"))) FishDiag.fail("SessionStats.3", "death line not matched: '$s'")
+
+            if (s == MORT_START) {
+                if (sessionStartMs < 0) sessionStartMs = System.currentTimeMillis()
+                autoResume()
+                havePos = false
+                save()
+                return@register false
+            }
+
+            if (paused && !autoPaused) return@register false
+            val loc = SkyblockLocation.getCurrentLocation()
+            val track = (loc == SkyblockLocation.DUNGEON && FishSettings.sessionStatsInDungeon)
+                || (loc == SkyblockLocation.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
+            if (!track) return@register false
+            if (DEATH_PAT.matcher(s).find()) {
+                if (sessionStartMs < 0) sessionStartMs = System.currentTimeMillis()
+                lastActivityMs = System.currentTimeMillis()
+                deaths++
+                save()
+            }
+            false
+        }
+    }
+
+    @JvmStatic
+    fun reset() {
+        sessionStartMs = -1
+        runs = 0
+        deaths = 0
+        paused = false
+        pauseStartedMs = 0
+        autoPaused = false
+        autoPauseReason = 0
+        lastActivityMs = 0
+        havePos = false
+        save()
+    }
+
+    @Synchronized
+    private fun load() {
+        try {
+            if (!Files.exists(SAVE_FILE)) return
+            val json = Files.readString(SAVE_FILE)
+            val d = GSON.fromJson(json, SaveData::class.java) ?: return
+            sessionStartMs = d.sessionStartMs
+            runs = d.runs
+            deaths = d.deaths
+            paused = d.paused
+            pauseStartedMs = d.pauseStartedMs
+            autoPaused = d.autoPaused
+            lastActivityMs = d.lastActivityMs
+            val nowMs = System.currentTimeMillis()
+            if (pauseStartedMs > nowMs) pauseStartedMs = nowMs
+            if (lastActivityMs > nowMs) lastActivityMs = nowMs
+            if (paused && sessionStartMs > 0 && pauseStartedMs in 1 until sessionStartMs) pauseStartedMs = sessionStartMs
+            if (!paused && sessionStartMs > 0) {
+                autoPause(1, if (lastActivityMs > 0) lastActivityMs else sessionStartMs)
+            }
+        } catch (e: IOException) {
+            FishDiag.fail("SessionStats.4", "reading session_stats.json failed", e)
+        } catch (e: RuntimeException) {
+            // corrupt file (e.g. NUL bytes after a crash mid-write): move aside and start fresh, no error report
+            fishmod.utils.SafeFiles.quarantine(SAVE_FILE, e)
+        }
+    }
+
+    @Synchronized
+    private fun save() {
+        val d = SaveData()
+        d.sessionStartMs = sessionStartMs
+        d.runs = runs
+        d.deaths = deaths
+        d.paused = paused
+        d.pauseStartedMs = pauseStartedMs
+        d.autoPaused = autoPaused
+        d.lastActivityMs = lastActivityMs
+        val json = GSON.toJson(d)
+        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(SAVE_FILE, json) }
+    }
+
+    private fun runsPerHour(): Double {
+        if (runs <= 0 || sessionStartMs <= 0) return 0.0
+        val now = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
+        if (now < sessionStartMs) { sessionStartMs = now; return 0.0 }
+        val elapsed = now - sessionStartMs
+        if (elapsed < 1000) return 0.0
+        return runs * 3_600_000.0 / elapsed
+    }
+
+    private fun formatTime(ms: Long): String {
+        var s = ms / 1000
+        var m = s / 60; s %= 60
+        val h = m / 60; m %= 60
+        if (h > 0) return "${h}h ${m}m"
+        if (m > 0) return "${m}m ${s}s"
+        return "${s}s"
+    }
+
+    private const val LINES_CACHE_TTL_MS = 200L
+    private var linesCacheAt = 0L
+    private var linesCache: Array<String> = arrayOf("", "", "", "")
+
+    @JvmStatic
+    fun printToChat() {
+        linesCacheAt = 0L
+        buildLines().filter { it.isNotBlank() }.forEach { fishmod.utils.FishMsg.send(it) }
+        fishmod.features.achievements.AchStore.inc("fm.statsOpened")
+    }
+
+    private fun buildLines(): Array<String> {
+        val now = System.currentTimeMillis()
+        if (now - linesCacheAt < LINES_CACHE_TTL_MS) return linesCache
+        linesCacheAt = now
+        val rhr = runsPerHour()
+        val ref = if (paused && pauseStartedMs > 0) pauseStartedMs else now
+        val timeStr = if (sessionStartMs > 0)
+            formatTime(Math.max(0, ref - sessionStartMs))
+        else "—"
+        linesCache = linesFor(runs, deaths, rhr, timeStr, paused)
+        return linesCache
+    }
+
+    private fun linesFor(runs: Int, deaths: Int, rhr: Double, timeStr: String, paused: Boolean): Array<String> = arrayOf(
+        "§7Runs: §a" + runs + (if (paused) " §e§l(PAUSED)" else ""),
+        "§7Deaths: §c" + deaths,
+        "§7R/hr: §e" + (if (rhr == 0.0) "§8—" else String.format("%.1f", rhr)),
+        "§7Time: §f" + timeStr
+    )
+
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register("Session Stats") {
+            fishmod.features.HudPreview.text(linesFor(14, 3, 9.2, formatTime(91 * 60_000L), false).toList(), FishConstants.TEXT_HEIGHT + 2)
+        }
+    }
+
+    @JvmStatic
+    fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        btnVisible = false
+        if (!FishSettings.sessionStatsEnabled) return
+        try { renderHudInner(ctx) } catch (e: Exception) { FishDiag.fail("SessionStats.8", "session stats HUD render threw", e) }
+    }
+
+    private fun renderHudInner(ctx: GuiGraphicsExtractor) {
+        val mc = Minecraft.getInstance()
+        if (mc.player == null) return
+        if (mc.curScreen != null && mc.curScreen !is net.minecraft.client.gui.screens.ChatScreen) return
+        val loc = SkyblockLocation.getCurrentLocation()
+        val show = (loc == SkyblockLocation.DUNGEON && FishSettings.sessionStatsInDungeon)
+            || (loc == SkyblockLocation.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
+        if (!show) return
+        if (mc.curScreen !== lastCountedScreen) { lastCountedScreen = mc.curScreen; fishmod.features.achievements.AchStore.inc("fm.statsOpened") }
+
+        val x = FishSettings.sessionStatsHudX
+        val y = FishSettings.sessionStatsHudY
+        val lh = FishConstants.TEXT_HEIGHT + 2
+        val lines = buildLines()
+        val sc = FishSettings.sessionStatsScale.toFloat()
+        ctx.pose().pushMatrix()
+        ctx.pose().translate(x.toFloat(), y.toFloat())
+        ctx.pose().scale(sc, sc)
+        for (i in lines.indices)
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
+        ctx.pose().popMatrix()
+    }
+
+    private var lastCountedScreen: Any? = null
+
+    @JvmStatic
+    fun renderInScreen(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
+        btnVisible = false
+        if (!FishSettings.sessionStatsEnabled) return
+        try { renderInScreenInner(ctx, mouseX, mouseY) } catch (e: Exception) { FishDiag.fail("SessionStats.9", "session stats in-screen render threw", e) }
+    }
+
+    private fun renderInScreenInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
+        val mc = Minecraft.getInstance()
+        if (mc.curScreen !is AbstractContainerScreen<*>) return
+        val loc = SkyblockLocation.getCurrentLocation()
+        val show = (loc == SkyblockLocation.DUNGEON && FishSettings.sessionStatsInDungeon)
+            || (loc == SkyblockLocation.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
+        if (!show) return
+
+        val x = FishSettings.sessionStatsHudX
+        val y = FishSettings.sessionStatsHudY
+        val lh = FishConstants.TEXT_HEIGHT + 2
+        val lines = buildLines()
+        val sc = FishSettings.sessionStatsScale.toFloat()
+
+        val resetLabel = "§l[ Reset ]"
+        val pauseLabel = if (paused) "§l[ Resume ]" else "§l[ Pause ]"
+        val resetW = mc.font.width(resetLabel)
+        val pauseW = mc.font.width(pauseLabel)
+        val padX = 4
+        val padY = 3
+        val localBtnY = lh * lines.size - 2
+        val localResetW = resetW + padX * 2
+        val localPauseW = pauseW + padX * 2
+        val localBtnH = FishConstants.TEXT_HEIGHT + padY * 2 + 1
+        val gap = 4
+        btnX = x
+        btnY = y + (localBtnY * sc).toInt()
+        btnW = (localResetW * sc).toInt()
+        btnH = (localBtnH * sc).toInt()
+        val localPauseX = localResetW + gap
+        pauseBtnX = x + (localPauseX * sc).toInt()
+        pauseBtnY = btnY
+        pauseBtnW = (localPauseW * sc).toInt()
+        pauseBtnH = btnH
+        val resetHover = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH
+        val pauseHover = mouseX >= pauseBtnX && mouseX <= pauseBtnX + pauseBtnW && mouseY >= pauseBtnY && mouseY <= pauseBtnY + pauseBtnH
+        val shownReset = if (resetHover) "§c§l[ Reset ]" else resetLabel
+        val shownPause = if (pauseHover) (if (paused) "§a§l[ Resume ]" else "§e§l[ Pause ]") else pauseLabel
+
+        ctx.pose().pushMatrix()
+        ctx.pose().translate(x.toFloat(), y.toFloat())
+        ctx.pose().scale(sc, sc)
+        for (i in lines.indices)
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
+        ctx.text(mc.font, shownReset, padX, localBtnY + padY, 0xFFFFFFFF.toInt(), true)
+        ctx.text(mc.font, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF.toInt(), true)
+        ctx.pose().popMatrix()
+        btnVisible = true
+    }
+
+    @JvmStatic
+    fun handleScreenClick(mx: Double, my: Double): Boolean {
+        if (!btnVisible) return false
+        if (mx >= btnX && mx <= btnX + btnW && my >= btnY && my <= btnY + btnH) {
+            reset()
+            return true
+        }
+        if (mx >= pauseBtnX && mx <= pauseBtnX + pauseBtnW && my >= pauseBtnY && my <= pauseBtnY + pauseBtnH) {
+            val now = System.currentTimeMillis()
+            if (!paused) {
+                paused = true
+                autoPaused = false
+                pauseStartedMs = now
+            } else {
+                if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += maxOf(0L, now - pauseStartedMs)
+                pauseStartedMs = 0
+                paused = false
+                autoPaused = false
+                lastActivityMs = now
+            }
+            save()
+            return true
+        }
+        return false
+    }
+}

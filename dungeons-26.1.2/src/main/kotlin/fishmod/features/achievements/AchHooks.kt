@@ -2,7 +2,7 @@ package fishmod.features.achievements
 import fishmod.utils.events.chatPlain
 import fishmod.compat.curScreen
 
-import fishmod.features.croesus.CroesusPrices
+import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.features.dungeon.map.DungeonScore
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.features.mining.Mining
@@ -151,7 +151,7 @@ object AchHooks {
         when {
             s.startsWith("PUZZLE SOLVED!") && SkyblockLocation.inDungeon() -> {
                 if (s.contains("Water Board") && s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) {
-                    val t = fishmod.features.dungeon.puzzles.odin.WaterSolver.secondsSinceOpen()
+                    val t = fishmod.features.dungeon.solvers.odin.WaterSolver.secondsSinceOpen()
                     if (t in 0.0..5.0) AchStore.inc("puzzle.waterSub5")
                 }
                 if (s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) AchBus.post(AchEvent.PuzzleDone(false))

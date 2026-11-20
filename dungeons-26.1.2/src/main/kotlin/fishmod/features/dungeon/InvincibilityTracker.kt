@@ -7,7 +7,7 @@ import fishmod.compat.hudHidden
 import fishmod.features.FishHudEditor
 import fishmod.features.HudExample
 import fishmod.features.HudPreview
-import fishmod.features.PetHud
+import fishmod.features.hud.PetHud
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.DungeonSettings
 import fishmod.utils.config.values.FishSettings

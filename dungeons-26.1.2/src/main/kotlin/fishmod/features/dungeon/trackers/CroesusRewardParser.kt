@@ -1,0 +1,168 @@
+package fishmod.features.dungeon.trackers
+
+import fishmod.utils.HypixelApi
+import fishmod.utils.networth.ItemsDb
+import fishmod.utils.debug.FishDiag
+import java.util.regex.Pattern
+
+object CroesusRewardParser {
+
+    private val ULTIMATE_ENCHANTS: Set<String> = setOf(
+        "Bank", "Bobbin Time", "Chimera", "Combo", "Duplex", "Fatal Tempo", "Flash",
+        "Habanero Tactics", "Inferno", "Last Stand", "Legion", "No Pain No Gain", "One For All",
+        "Rend", "Soul Eater", "Swarm", "The One", "Ultimate Jerry", "Ultimate Wise", "Wisdom"
+    )
+    private val ITEM_REPLACEMENTS: MutableMap<String, String> = HashMap()
+    private val BOOK_PATTERN: Pattern = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)")
+    private val PET_PATTERN: Pattern = Pattern.compile("\\[Lvl \\d+\\]\\s*(?:§([0-9a-f]))?([\\w' §0-9a-fk-or]+)")
+    @JvmField val TRAILING_QTY = Regex("""\s+x[\d,]+$""")
+    private val ESSENCE_PATTERN: Pattern = Pattern.compile("^(\\w+) Essence(?: x(\\d+))?$")
+
+    init {
+        ITEM_REPLACEMENTS["Shiny Wither Boots"] = "WITHER_BOOTS"
+        ITEM_REPLACEMENTS["Shiny Wither Leggings"] = "WITHER_LEGGINGS"
+        ITEM_REPLACEMENTS["Shiny Wither Chestplate"] = "WITHER_CHESTPLATE"
+        ITEM_REPLACEMENTS["Shiny Wither Helmet"] = "WITHER_HELMET"
+        ITEM_REPLACEMENTS["Necron's Handle"] = "NECRON_HANDLE"
+        ITEM_REPLACEMENTS["Shiny Necron's Handle"] = "NECRON_HANDLE"
+        ITEM_REPLACEMENTS["Wither Shard"] = "SHARD_WITHER"
+        ITEM_REPLACEMENTS["Thorn Shard"] = "SHARD_THORN"
+        ITEM_REPLACEMENTS["Apex Dragon Shard"] = "SHARD_APEX_DRAGON"
+        ITEM_REPLACEMENTS["Power Dragon Shard"] = "SHARD_POWER_DRAGON"
+        ITEM_REPLACEMENTS["Scarf Shard"] = "SHARD_SCARF"
+        ITEM_REPLACEMENTS["Bonzo Shard"] = "SHARD_BONZO"
+        ITEM_REPLACEMENTS["Necron Dye"] = "DYE_NECRON"
+        ITEM_REPLACEMENTS["Livid Dye"] = "DYE_LIVID"
+    }
+
+    private fun strip(s: String): String = fishmod.utils.TextStrip.plain(s)
+
+    private val LEGACY_RGB = listOf(
+        0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
+        0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
+    )
+
+    @JvmStatic
+    fun coded(c: net.minecraft.network.chat.Component): String {
+        val sb = StringBuilder()
+        c.visit({ style, text ->
+            val rgb = style.color?.value
+            val code = if (rgb == null) -1 else LEGACY_RGB.indexOf(rgb)
+            if (code >= 0 && text.isNotEmpty()) sb.append('§').append("0123456789abcdef"[code])
+            sb.append(text)
+            java.util.Optional.empty<Unit>()
+        }, net.minecraft.network.chat.Style.EMPTY)
+        return sb.toString()
+    }
+
+    private fun tryParseBook(line: String): Array<String>? {
+        val m = BOOK_PATTERN.matcher(line)
+        if (!m.find()) return null
+        val bookName = strip(m.group(1).trim()).trim()
+        val tierStr = m.group(2).trim()
+        val isUltimate = ULTIMATE_ENCHANTS.contains(bookName)
+
+        val tier: Int = try {
+            tierStr.toInt()
+        } catch (e: NumberFormatException) {
+            fishmod.utils.data.Roman.toInt(tierStr)
+        }
+        if (!FishDiag.check(tier > 0, "CroesusRewardParser.1") { "book tier unparsed: '$tierStr' in '$line'" }) return null
+        if (!FishDiag.check(bookName.isNotEmpty(), "CroesusRewardParser.2") { "book name empty in '$line'" }) return null
+
+        val enchantPart = bookName.uppercase().replace(" ", "_").replace("'", "")
+        var sbId = "ENCHANTMENT_" + (if (isUltimate) "ULTIMATE_" else "") + enchantPart + "_" + tier
+        sbId = sbId.replace("ULTIMATE_ULTIMATE_", "ULTIMATE_")
+        return arrayOf(sbId, "1")
+    }
+
+    private fun tryParseEssence(line: String): Array<String>? {
+        val m = ESSENCE_PATTERN.matcher(line)
+        return if (!m.matches()) null else arrayOf("ESSENCE_" + m.group(1).uppercase(), m.group(2) ?: "1")
+    }
+
+    private fun tryParsePet(line: String): Array<String>? {
+        val m = PET_PATTERN.matcher(line)
+        if (!m.find()) return null
+        val rarity = when (m.group(1)) { "f" -> 0; "a" -> 1; "9" -> 2; "5" -> 3; "6" -> 4; "d" -> 5; null -> 4; else -> return null }
+        val name = strip(m.group(2)).trim().uppercase().replace(" ", "_")
+        return arrayOf("$name;$rarity", "1")
+    }
+
+    @JvmStatic
+    fun parseLine(line: String): Array<String> {
+        val book = tryParseBook(line)
+        if (book != null) return book
+        val pet = tryParsePet(line)
+        if (pet != null) return pet
+
+        val clean = strip(line).trim()
+        val essence = tryParseEssence(clean)
+        if (essence != null) return essence
+        if (ITEM_REPLACEMENTS.containsKey(clean)) return arrayOf(ITEM_REPLACEMENTS[clean]!!, "1")
+
+        val id = ItemsDb.idFor(clean)
+        if (id != null && !id.startsWith("STARRED_")) return arrayOf(id, "1")
+        val base = id?.removePrefix("STARRED_")
+        if (base != null && base != id && ItemsDb.get(base) != null) return arrayOf(base, "1")
+
+        val guess = clean.uppercase().replace(Regex("[^A-Z0-9 ]"), "").trim().replace(Regex("\\s+"), "_")
+        if (guess.isNotEmpty() && ItemsDb.get(guess) != null) return arrayOf(guess, "1")
+
+        return arrayOf("false", "Could not find item ID for line \"$clean\"")
+    }
+
+    @JvmStatic
+    fun parseRewards(fullTooltip: List<String>, errorOut: Array<String?>?): ChestInfo? {
+        var costIdx = -1
+        for (i in fullTooltip.indices) {
+            if (strip(fullTooltip[i]).contains("Cost")) {
+                costIdx = i
+                break
+            }
+        }
+        if (costIdx < 0) {
+            if (errorOut != null) errorOut[0] = "Could not find Cost line"
+            return null
+        }
+
+        val info = ChestInfo()
+        val lootEnd = costIdx - 1
+        if (lootEnd > fullTooltip.size) FishDiag.fail("CroesusRewardParser.5", "loot end $lootEnd beyond tooltip size ${fullTooltip.size}")
+        for (ix in 2 until lootEnd) {
+            val line = fullTooltip[ix]
+            val clean = strip(line).trim()
+            if (clean.isEmpty()) continue
+
+            val result = parseLine(line)
+            if (result[0] == "false") {
+                if (errorOut != null) errorOut[0] = result[1]
+                fishmod.utils.debug.FishDebug.LOGGER.debug("[Loot] unresolved reward line: '{}'", clean)
+                FishDiag.fail("CroesusRewardParser.3", "unresolved croesus reward line: '$clean'")
+                continue
+            }
+
+            val ri = RewardItem()
+            ri.id = result[0]
+            ri.qty = FishDiag.notNull(result[1].toIntOrNull(), "CroesusRewardParser.4") { "reward qty not int: '${result[1]}' for ${result[0]}" }?.coerceAtLeast(1) ?: 1
+            ri.displayName = clean.replace(TRAILING_QTY, "")
+            fishmod.utils.debug.FishDebug.LOGGER.debug("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
+            info.items.add(ri)
+        }
+        return info
+    }
+
+    class ChestInfo {
+        @JvmField
+        val items: MutableList<RewardItem> = ArrayList()
+    }
+
+    class RewardItem {
+        @JvmField
+        var id: String? = null
+        @JvmField
+        var qty: Int = 0
+        @JvmField
+        var displayName: String? = null
+    }
+}

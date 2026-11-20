@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import fishmod.features.mining.MiningForagingMisc;
+import fishmod.features.hunting.MiningForagingMisc;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;

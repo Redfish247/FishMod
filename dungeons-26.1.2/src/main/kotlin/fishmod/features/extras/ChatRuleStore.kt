@@ -1,0 +1,108 @@
+package fishmod.features.extras
+
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
+import java.io.File
+import java.io.FileReader
+import java.util.regex.Pattern
+import java.util.regex.PatternSyntaxException
+import fishmod.utils.debug.FishDiag
+
+data class ChatRule(
+    var name: String = "New Rule",
+    var enabled: Boolean = true,
+    var filter: String = "",
+    var regex: Boolean = false,
+    var partialMatch: Boolean = true,
+    var ignoreCase: Boolean = true,
+    var hideMessage: Boolean = false,
+    var chatMessage: String = "",
+    var actionBarMessage: String = "",
+    var titleMessage: String = "",
+    var titleDurationMs: Long = 3000L,
+    var soundEnabled: Boolean = false
+) {
+    @Transient private var patternCache: Pattern? = null
+    @Transient private var patternKey: String? = null
+
+    fun compiledPattern(): Pattern? {
+        val key = (if (ignoreCase) "i:" else "s:") + filter
+        if (key != patternKey) {
+            patternKey = key
+            patternCache = try {
+                if (ignoreCase) Pattern.compile(filter, Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
+                else Pattern.compile(filter)
+            } catch (e: PatternSyntaxException) {
+                null
+            }
+        }
+        return patternCache
+    }
+}
+
+object ChatRuleStore {
+
+    private const val FILE_PATH = "config/fishmod-chat-rules.json"
+    private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
+
+    private data class Data(
+        var masterEnabled: Boolean = false,
+        var hudX: Int = 10,
+        var hudY: Int = 400,
+        var hudScale: Double = 1.0,
+        val rules: MutableList<ChatRule> = ArrayList()
+    )
+
+    private var data = Data()
+
+    init { load() }
+
+    @JvmStatic fun isMasterEnabled(): Boolean = data.masterEnabled
+    @JvmStatic fun setMasterEnabled(v: Boolean) { data.masterEnabled = v; save() }
+
+    @JvmStatic fun hudX(): Int = data.hudX
+    @JvmStatic fun setHudX(v: Int) { data.hudX = v }
+    @JvmStatic fun hudY(): Int = data.hudY
+    @JvmStatic fun setHudY(v: Int) { data.hudY = v }
+    @JvmStatic fun hudScale(): Double = data.hudScale
+    @JvmStatic fun setHudScale(v: Double) { data.hudScale = v }
+
+    @JvmStatic fun rules(): MutableList<ChatRule> = data.rules
+
+    @JvmStatic
+    fun addRule(after: ChatRule? = null): ChatRule {
+        val rule = ChatRule()
+        if (after != null && data.rules.none { it === after }) FishDiag.fail("ChatRuleStore.3", "addRule anchor '${after.name}' not in rule list (${data.rules.size} rules)")
+        val idx = if (after != null) data.rules.indexOfFirst { it === after } + 1 else data.rules.size
+        data.rules.add(idx, rule)
+        save()
+        return rule
+    }
+
+    @JvmStatic
+    fun removeRule(rule: ChatRule) {
+        data.rules.removeIf { it === rule }
+        save()
+    }
+
+    @JvmStatic
+    fun save() {
+        FishDiag.guard("ChatRuleStore.1", "chat rules save failed") { fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), GSON.toJson(data)) }
+    }
+
+    private fun load() {
+        val file = File(FILE_PATH)
+        if (!file.exists()) return
+        try {
+            FileReader(file).use { reader ->
+                val type = object : TypeToken<Data>() {}.type
+                val loaded: Data? = GSON.fromJson(reader, type)
+                if (loaded != null) data = loaded
+            }
+        } catch (e: Exception) {
+            FishDiag.fail("ChatRuleStore.2", "chat rules load failed, file quarantined", e)
+            fishmod.utils.SafeFiles.quarantine(file, e)
+        }
+    }
+}

@@ -1,0 +1,110 @@
+package fishmod.features.hud
+
+import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
+import fishmod.compat.hudHidden
+
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import fishmod.utils.SkyblockLocation
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
+import fishmod.utils.data.ItemTools
+import fishmod.utils.events.FishEvents
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
+import net.minecraft.client.DeltaTracker
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.core.BlockPos
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.phys.AABB
+import kotlin.math.abs
+
+object TacTimer {
+
+    private const val NAME = "Tac Timer"
+    private const val CAST_PITCH = 0.74603176f
+    private val FLINT = SoundEvents.FLINTANDSTEEL_USE.location
+
+    @Volatile private var ticks = 0
+    @Volatile private var pos: BlockPos? = null
+
+    @JvmStatic
+    fun init() {
+        FishHudEditor.register(
+            NAME,
+            { FishSettings.tacTimerHudX }, { v -> FishSettings.tacTimerHudX = v },
+            { FishSettings.tacTimerHudY }, { v -> FishSettings.tacTimerHudY = v },
+            70, 12,
+            { FishSettings.tacTimerScale }, { v -> FishSettings.tacTimerScale = v }
+        )
+        HudPreview.register(NAME) { HudPreview.text(listOf(label(45))) }
+
+        FishEvents.sound.register { event, _, pitch ->
+            if (!FishSettings.tacTimerEnabled || !SkyblockLocation.inSkyblock()) return@register false
+            if (event.location != FLINT || abs(pitch - CAST_PITCH) > 1e-4f) return@register false
+            val p = Minecraft.getInstance().player ?: return@register false
+            val held = FishDiag.guard("TacTimer.1", "tac held item id lookup failed") { ItemTools.getId(p.mainHandItem) }
+            if (held != "TACTICAL_INSERTION") return@register false
+            ticks = 60
+            pos = if (FishSettings.tacTimerWaypoint) p.blockPosition() else null
+            false
+        }
+
+        FishEvents.serverTick.register {
+            if (ticks > 0) ticks-- else pos = null
+            false
+        }
+
+        FishEvents.worldChange.register { ticks = 0; pos = null; false }
+
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc -> renderWaypoint(m, vc, fill = true) }
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc -> renderWaypoint(m, vc, fill = false) }
+    }
+
+    private fun renderWaypoint(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
+        if (!FishSettings.tacTimerEnabled || !FishSettings.tacTimerWaypoint || ticks <= 0) return
+        val bp = pos ?: return
+        val box = AABB(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble(), bp.x + 1.0, bp.y + 1.0, bp.z + 1.0)
+        try {
+            val col = FishDraw.toFloats(FishSettings.tacTimerColor)
+            if (fill) FishDraw.renderFilled(matrices, vc, box, floatArrayOf(col[0], col[1], col[2], col[3] * 0.25f))
+            else FishDraw.renderOutline(matrices, vc, box, col)
+        } catch (e: Exception) {
+            FishDiag.fail("TacTimer.2", "tac waypoint render failed at $bp", e)
+        }
+    }
+
+    private fun label(t: Int): String {
+        val left = (if (FishSettings.tacTimerReverse) 60 - t else t) / 20.0
+        val color = when {
+            t > 40 -> "§a"; t > 20 -> "§e"; else -> "§c"
+        }
+        val pre = if (FishSettings.tacTimerPrefix) "§5Tac: " else ""
+        val suf = if (FishSettings.tacTimerSuffix) "s" else ""
+        if (left != lastLeft) { lastLeft = left; lastLeftText = "%.1f".format(left) }
+        return "$pre$color$lastLeftText$suf"
+    }
+
+    private var lastLeft = Double.NaN
+    private var lastLeftText = ""
+
+    @JvmStatic
+    fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        if (!FishSettings.tacTimerEnabled || ticks <= 0) return
+        val mc = Minecraft.getInstance()
+        if (mc.player == null || mc.hudHidden) return
+        val sc = FishSettings.tacTimerScale.toFloat()
+        ctx.pose().pushMatrix()
+        try {
+            ctx.pose().translate(FishSettings.tacTimerHudX.toFloat(), FishSettings.tacTimerHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, label(ticks), 0, 0, -1, true)
+        } catch (e: Exception) {
+            FishDiag.fail("TacTimer.3", "tac timer hud render failed (ticks=$ticks)", e)
+        } finally {
+            ctx.pose().popMatrix()
+        }
+    }
+}

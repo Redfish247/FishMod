@@ -53,10 +53,10 @@ public class FishDrawContextMixin {
     private void fishmod$tooltipScrollPush(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
                                           ClientTooltipPositioner positioner, Identifier style, CallbackInfo ci,
                                           @Share("fishmod$ttShift") LocalBooleanRef shifted) {
-        float scale = fishmod.features.ScrollableTooltip.effectiveScale();
-        float ox = fishmod.features.ScrollableTooltip.offsetX;
-        float oy = fishmod.features.ScrollableTooltip.offsetY;
-        boolean on = fishmod.features.ScrollableTooltip.isEnabled() && (scale != 1f || ox != 0f || oy != 0f);
+        float scale = fishmod.features.hud.ScrollableTooltip.effectiveScale();
+        float ox = fishmod.features.hud.ScrollableTooltip.offsetX;
+        float oy = fishmod.features.hud.ScrollableTooltip.offsetY;
+        boolean on = fishmod.features.hud.ScrollableTooltip.isEnabled() && (scale != 1f || ox != 0f || oy != 0f);
         shifted.set(on);
         if (!on) return;
         pose.pushMatrix();
@@ -75,7 +75,7 @@ public class FishDrawContextMixin {
 
     @ModifyVariable(method = "itemCooldown", at=@At("STORE"), ordinal = 0)
     private float noCooldown(float f) {
-        return fishmod.features.CooldownOverlay.shouldHideVanillaCooldown() ? 0 : f;
+        return fishmod.features.hud.CooldownOverlay.shouldHideVanillaCooldown() ? 0 : f;
     }
 
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("HEAD"))
@@ -83,7 +83,7 @@ public class FishDrawContextMixin {
                          @Share("fishmod$headScaled") LocalBooleanRef scaled) {
         if (entity != null) {
             try {
-                fishmod.features.ItemRarityHotbar.drawRarity((GuiGraphicsExtractor) (Object) this, stack, x, y);
+                fishmod.features.visuals.ItemRarityHotbar.drawRarity((GuiGraphicsExtractor) (Object) this, stack, x, y);
             } catch (Throwable t) {
                 fishmod.utils.debug.FishDiag.fail("FishDrawContextMixin.1", "hotbar rarity draw failed item=" + stack.getItem(), t);
             }

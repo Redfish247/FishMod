@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import fishmod.features.chat.ChatSearch;
+import fishmod.features.general.ChatSearch;
 import fishmod.mixin.accessors.KeyBindingAccessor;
 import fishmod.utils.FishKeys;
 import fishmod.utils.config.values.FishSettings;
@@ -56,7 +56,7 @@ public abstract class ChatSearchMixin extends Screen {
         int x = 4;
         int w = Math.max(40, (int) (acc.invokeWidth() * acc.invokeChatScale()));
 
-        fishmod$searchBox = new fishmod.features.chat.ChatSearchBox(this.font, x, y, w, h,
+        fishmod$searchBox = new fishmod.features.extras.ChatSearchBox(this.font, x, y, w, h,
                 Component.translatable("fishmod.chatSearch"));
         fishmod$searchBox.setMaxLength(128);
         fishmod$searchBox.setBordered(false);

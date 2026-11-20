@@ -1,8 +1,8 @@
 package fishmod.mixin;
 
-import fishmod.features.dungeon.SessionStats;
-import fishmod.features.other.InvSearchBar;
-import fishmod.features.other.WardrobeHotkeys;
+import fishmod.features.dungeon.trackers.SessionStats;
+import fishmod.features.general.InvSearchBar;
+import fishmod.features.general.WardrobeHotkeys;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.debug.FishDiag;
 import fishmod.utils.rendering.DrawHooks;
@@ -33,7 +33,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
         AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
         try {
             Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
-            fishmod.features.ScrollableTooltip.trackHoveredSlot(hs != null && !hs.getItem().isEmpty() ? hs.index : -1);
+            fishmod.features.hud.ScrollableTooltip.trackHoveredSlot(hs != null && !hs.getItem().isEmpty() ? hs.index : -1);
         } catch (Throwable t) { FishDiag.fail("FishScreenMixin.9", "hovered slot tracking failed", t); }
         if (FishSettings.inventorySearchEnabled) {
             try { InvSearchBar.render(context, mouseX, mouseY, deltaTicks); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.1", "InvSearchBar.render failed", t); }
@@ -41,39 +41,39 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
         if (FishSettings.leapMenuEnabled) {
             try { fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.2", "LeapMenu.render failed", t); }
         }
-        try { fishmod.features.dungeon.PartyFinderPanel.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.3", "PartyFinderPanel.render failed", t); }
+        try { fishmod.features.party.PartyFinderPanel.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.3", "PartyFinderPanel.render failed", t); }
         if (FishSettings.storageOverlayEnabled) {
-            try { fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.4", "StorageOverlay.render failed", t); }
+            try { fishmod.features.inventory.StorageOverlay.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.4", "StorageOverlay.render failed", t); }
         }
         if (FishSettings.croesusProfitEnabled || FishSettings.croesusHighlightEnabled) {
-            try { fishmod.features.croesus.CroesusProfit.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.5", "CroesusProfit.render failed", t); }
+            try { fishmod.features.dungeon.trackers.CroesusProfit.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.5", "CroesusProfit.render failed", t); }
         }
         if (FishSettings.anitaProfitEnabled) {
-            try { fishmod.features.item.AnitaShop.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.20", "AnitaShop.render failed", t); }
+            try { fishmod.features.hud.AnitaShop.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.20", "AnitaShop.render failed", t); }
         }
         if (FishSettings.containerValueEnabled) {
-            try { fishmod.features.item.ContainerValue.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.6", "ContainerValue.render failed", t); }
+            try { fishmod.features.inventory.ContainerValue.render(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.6", "ContainerValue.render failed", t); }
         }
         try { fishmod.features.garden.Visitors.renderShopping(context, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.16", "Visitors.renderShopping failed", t); }
         if (FishSettings.auctionPriceAutofillEnabled) {
-            try { fishmod.features.item.AuctionPriceAutofill.trackScreen(self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.7", "AuctionPriceAutofill.trackScreen failed", t); }
+            try { fishmod.features.hud.AuctionPriceAutofill.trackScreen(self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.7", "AuctionPriceAutofill.trackScreen failed", t); }
         }
         if (FishSettings.terminalRenderMode == 1) {
             try {
-                if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(self)) {
-                    fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
+                if (fishmod.features.dungeon.floor7.terminal.TermCustomGui.suppressVanilla(self)) {
+                    fishmod.features.dungeon.floor7.terminal.TermCustomGui.render(context, this.width, this.height);
                 }
             } catch (Throwable t) { FishDiag.fail("FishScreenMixin.8", "TermCustomGui.render failed", t); }
         }
-        if (self instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) {
+        if (self instanceof fishmod.features.dungeon.floor7.terminal.TermSimScreen ts) {
             try { ts.overlay(context); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.10", "term sim overlay failed", t); }
         }
     }
 
     @Inject(method = "extractSlots", at = @At("HEAD"), cancellable = true)
     private void fishmod$customTermHideSlots(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
-        if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
-        if (fishmod.features.storage.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) { ci.cancel(); return; }
+        if (fishmod.features.dungeon.floor7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
+        if (fishmod.features.inventory.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) { ci.cancel(); return; }
         if (fishmod.features.dungeon.LeapMenu.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
     }
 
@@ -84,8 +84,8 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
 
     @Inject(method = "extractTooltip", at = @At("HEAD"), cancellable = true)
     private void fishmod$hideTooltipInCustomTermGui(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
-        if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
-        if (fishmod.features.storage.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
+        if (fishmod.features.dungeon.floor7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
+        if (fishmod.features.inventory.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
@@ -104,7 +104,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @com.llamalad7.mixinextras.injector.WrapWithCondition(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;itemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;IILjava/lang/String;)V"))
     private boolean fishmod$hideClickedNumbers(GuiGraphicsExtractor context, net.minecraft.client.gui.Font font, ItemStack stack, int x, int y, String text, GuiGraphicsExtractor ctx, Slot slot, int mouseX, int mouseY) {
         try {
-            return !fishmod.features.dungeon.f7.terminal.TerminalSolver.hideSlotCount(slot);
+            return !fishmod.features.dungeon.floor7.terminal.TerminalSolver.hideSlotCount(slot);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishScreenMixin.18", "terminal slot count hide check failed", t);
             return true;
@@ -127,8 +127,8 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V", at = @At("HEAD"), cancellable = true)
     private void fishmod$slotLock(Slot slot, int slotId, int button, net.minecraft.world.inventory.ContainerInput input, CallbackInfo ci) {
         try {
-            fishmod.features.ExperimentSolver.onSlotClicked(slotId);
-            if (fishmod.features.SlotLocking.onSlotClicked(slot, slotId, input)) ci.cancel();
+            fishmod.features.general.ExperimentSolver.onSlotClicked(slotId);
+            if (fishmod.features.general.SlotLocking.onSlotClicked(slot, slotId, input)) ci.cancel();
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishScreenMixin.13", "slot lock click check failed slotId=" + slotId, t);
         }
@@ -137,13 +137,13 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void fishmod$screenKey(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         try {
-            if (fishmod.features.item.SkyItemList.keyPressed(input)) { cir.setReturnValue(true); return; }
-            if (fishmod.features.storage.StorageOverlay.searchKeyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.hud.SkyItemList.keyPressed(input)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.inventory.StorageOverlay.searchKeyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (InvSearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
-            if (fishmod.features.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-            if (fishmod.features.storage.StorageOverlay.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.general.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.inventory.StorageOverlay.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-            if (fishmod.features.other.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.general.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishScreenMixin.14", "container keyPressed hooks failed key=" + input.key(), t);
@@ -155,31 +155,31 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
         try {
             double cx = click.x(), cy = click.y();
 
-            if (fishmod.features.item.SkyItemList.onClick(click, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.hud.SkyItemList.onClick(click, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
 
-            if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
-                int idx = fishmod.features.dungeon.f7.terminal.TermCustomGui.slotAt((int) cx, (int) cy);
-                fishmod.features.dungeon.f7.terminal.TermCustomGui.handleClick(
+            if (fishmod.features.dungeon.floor7.terminal.TermCustomGui.suppressVanilla(this)) {
+                int idx = fishmod.features.dungeon.floor7.terminal.TermCustomGui.slotAt((int) cx, (int) cy);
+                fishmod.features.dungeon.floor7.terminal.TermCustomGui.handleClick(
                         (AbstractContainerScreen<?>) (Object) this, idx, fishmod.compat.GLFW.btn(click));
                 cir.setReturnValue(true);
                 return;
             }
 
-            if (fishmod.features.dungeon.f7.terminal.TerminalSolver.onMouseClick(
+            if (fishmod.features.dungeon.floor7.terminal.TerminalSolver.onMouseClick(
                     fishmod.compat.GLFW.btn(click), (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
 
-            if (fishmod.features.storage.StorageOverlay.onOverlayClick(click, doubled, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.inventory.StorageOverlay.onOverlayClick(click, doubled, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
 
-            if (fishmod.features.SlotBinds.onMouseClick(click, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.general.SlotBinds.onMouseClick(click, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
@@ -189,7 +189,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                 return;
             }
 
-            if (fishmod.features.dungeon.PartyFinderPanel.mouseClicked(fishmod.compat.GLFW.btn(click), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.party.PartyFinderPanel.mouseClicked(fishmod.compat.GLFW.btn(click), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
@@ -204,7 +204,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                 return;
             }
 
-            if (fishmod.features.other.PetKeybinds.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.general.PetKeybinds.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
             if (WardrobeHotkeys.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
 
             InvSearchBar.onMouseClick(click);
@@ -216,19 +216,19 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageScroll(double mx, double my, double hz, double vt, CallbackInfoReturnable<Boolean> cir) {
         try {
-            if (fishmod.features.item.SkyItemList.onScroll(mx, my, vt, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.hud.SkyItemList.onScroll(mx, my, vt, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
-            if (fishmod.features.storage.StorageOverlay.mouseScrolled(vt, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.inventory.StorageOverlay.mouseScrolled(vt, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
-            if (fishmod.features.dungeon.PartyFinderPanel.mouseScrolled(mx, my, vt, (AbstractContainerScreen<?>) (Object) this)) {
+            if (fishmod.features.party.PartyFinderPanel.mouseScrolled(mx, my, vt, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
-            if (fishmod.features.ScrollableTooltip.isEnabled()) {
+            if (fishmod.features.hud.ScrollableTooltip.isEnabled()) {
                 Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
                 if (hs != null && !hs.getItem().isEmpty()) {
                     long win = net.minecraft.client.Minecraft.getInstance().getWindow().handle();
@@ -236,7 +236,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                             || fishmod.compat.GLFW.glfwGetKey(win, fishmod.compat.GLFW.GLFW_KEY_RIGHT_SHIFT) == fishmod.compat.GLFW.GLFW_PRESS;
                     boolean ctrl = fishmod.compat.GLFW.glfwGetKey(win, fishmod.compat.GLFW.GLFW_KEY_LEFT_CONTROL) == fishmod.compat.GLFW.GLFW_PRESS
                             || fishmod.compat.GLFW.glfwGetKey(win, fishmod.compat.GLFW.GLFW_KEY_RIGHT_CONTROL) == fishmod.compat.GLFW.GLFW_PRESS;
-                    if (fishmod.features.ScrollableTooltip.onScroll(vt, hs.index, shift, ctrl)) {
+                    if (fishmod.features.hud.ScrollableTooltip.onScroll(vt, hs.index, shift, ctrl)) {
                         cir.setReturnValue(true);
                     }
                 }
@@ -248,22 +248,22 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
 
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageRelease(MouseButtonEvent click, CallbackInfoReturnable<Boolean> cir) {
-        if (fishmod.features.item.SkyItemList.onRelease()) {
+        if (fishmod.features.hud.SkyItemList.onRelease()) {
             cir.setReturnValue(true);
             return;
         }
-        if (fishmod.features.storage.StorageOverlay.mouseReleased((AbstractContainerScreen<?>) (Object) this)) {
+        if (fishmod.features.inventory.StorageOverlay.mouseReleased((AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
         }
     }
 
     @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageDrag(MouseButtonEvent click, double dx, double dy, CallbackInfoReturnable<Boolean> cir) {
-        if (fishmod.features.item.SkyItemList.onDrag(click.y())) {
+        if (fishmod.features.hud.SkyItemList.onDrag(click.y())) {
             cir.setReturnValue(true);
             return;
         }
-        if (fishmod.features.storage.StorageOverlay.mouseDragged(click.x(), click.y(), (AbstractContainerScreen<?>) (Object) this)) {
+        if (fishmod.features.inventory.StorageOverlay.mouseDragged(click.x(), click.y(), (AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
         }
     }
@@ -271,11 +271,11 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
     @Inject(method = "removed", at = @At("HEAD"))
     private void fishmod$storageClosed(CallbackInfo ci) {
         try {
-            fishmod.features.storage.StorageOverlay.onClosed();
-            fishmod.features.item.SkyItemList.onClosed();
-            fishmod.features.ScrollableTooltip.resetScroll();
-            fishmod.features.dungeon.f7.terminal.TerminalSolver.onScreenClosed();
-            fishmod.features.SlotBinds.onClose();
+            fishmod.features.inventory.StorageOverlay.onClosed();
+            fishmod.features.hud.SkyItemList.onClosed();
+            fishmod.features.hud.ScrollableTooltip.resetScroll();
+            fishmod.features.dungeon.floor7.terminal.TerminalSolver.onScreenClosed();
+            fishmod.features.general.SlotBinds.onClose();
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishScreenMixin.17", "container close hooks failed", t);
         }

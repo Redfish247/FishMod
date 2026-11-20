@@ -5,7 +5,7 @@ import fishmod.utils.TabListCache
 import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import fishmod.features.other.BossToolsSettings as S
+import fishmod.features.slayer.BossToolsSettings as S
 
 // Ghost HUD in The Mist: kills, sorrows, bags of cash, magic find drops, kills/h
 object GhostCounter {

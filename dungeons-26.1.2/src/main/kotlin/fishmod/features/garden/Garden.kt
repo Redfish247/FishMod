@@ -1,6 +1,6 @@
 package fishmod.features.garden
 
-import fishmod.features.croesus.CroesusPrices
+import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.SkyblockLocation
