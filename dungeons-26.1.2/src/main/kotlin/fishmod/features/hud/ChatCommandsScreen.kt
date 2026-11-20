@@ -40,8 +40,8 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
     private companion object {
         val ACCENT get() = ScreenTheme.ACCENT
         val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
-        val TEXT = ScreenTheme.TEXT_COLOR
-        val SUB = ScreenTheme.SUBTEXT_COLOR
+        val TEXT get() = ScreenTheme.TEXT_COLOR
+        val SUB get() = ScreenTheme.SUBTEXT_COLOR
         val DANGER = ScreenTheme.DANGER
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
         val CARD_BG = ScreenTheme.CARD_BG

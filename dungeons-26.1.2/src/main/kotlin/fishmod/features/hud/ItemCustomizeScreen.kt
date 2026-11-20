@@ -43,8 +43,8 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val ACCENT get() = ScreenTheme.ACCENT
         val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         val ACCENT_INK = 0xFF232323.toInt()
-        val TEXT_PRIM = ScreenTheme.TEXT_COLOR
-        val TEXT_HINT = ScreenTheme.SUBTEXT_COLOR
+        val TEXT_PRIM get() = ScreenTheme.TEXT_COLOR
+        val TEXT_HINT get() = ScreenTheme.SUBTEXT_COLOR
         val ROW_HOVER = 0xFF2D2D2D.toInt()
         val LIST_BG = 0xFF161616.toInt()
         val DANGER = ScreenTheme.DANGER
@@ -56,7 +56,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val MC_SLOT = 0xFF212121.toInt()
         val MC_SLOT_HOVER = 0xFF303030.toInt()
         val MC_SLOT_EDGE = 0xFF333333.toInt()
-        val MC_TAG = ScreenTheme.SUBTEXT_COLOR
+        val MC_TAG get() = ScreenTheme.SUBTEXT_COLOR
 
         val ARMOR_SLOTS = intArrayOf(39, 38, 37, 36)
         val ARMOR_TAGS = arrayOf("H", "C", "L", "B")

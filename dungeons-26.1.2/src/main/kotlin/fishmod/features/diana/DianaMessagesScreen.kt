@@ -31,8 +31,8 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         }
 
         private val ACCENT get() = ScreenTheme.ACCENT
-        private val TEXT = ScreenTheme.TEXT_COLOR
-        private val SUB = ScreenTheme.SUBTEXT_COLOR
+        private val TEXT get() = ScreenTheme.TEXT_COLOR
+        private val SUB get() = ScreenTheme.SUBTEXT_COLOR
         private val CARD_BG = ScreenTheme.CARD_BG
         private val BG_PANEL = 0xF2101010.toInt()
         private val BG_SECTION = 0xFF1A1A1A.toInt()

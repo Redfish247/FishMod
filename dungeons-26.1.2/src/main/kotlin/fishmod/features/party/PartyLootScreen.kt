@@ -125,7 +125,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val winX = (vw - winW) / 2
         val winY = (vh - winH) / 2
         for (i in 8 downTo 2 step 2) ScreenTheme.roundedRect(ctx, winX - i, winY - i + 4, winW + i * 2, winH + i * 2, 12 + i, 0x12000000)
-        ScreenTheme.roundedRect(ctx, winX, winY, winW, winH, 12, PANEL)
+        ScreenTheme.roundedRect(ctx, winX, winY, winW, winH, 12, ScreenTheme.windowBg())
         UiRecorder.roundedRectRing(winX.toFloat(), winY.toFloat(), winW.toFloat(), winH.toFloat(), 12f, 1f, 0, LINE)
 
         val hdrH = renderHeader(winX, winY, winW)
