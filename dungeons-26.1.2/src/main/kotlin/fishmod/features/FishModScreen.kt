@@ -2382,7 +2382,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun tabRects(): List<IntArray> {
         var x = left() + 8
         val out = ArrayList<IntArray>()
-        for (t in tabs) { val w = Math.min(120, sw(this.font, t, 0.85f) + 30); out.add(intArrayOf(x, w)); x += w + 4 }
+        for (t in tabs) { val w = Math.min(150, sw(this.font, t, 0.85f) + 40); out.add(intArrayOf(x, w)); x += w + 4 }
         out.add(intArrayOf(x, 20))
         return out
     }
@@ -2392,23 +2392,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val y = TAB_Y
         for ((i, t) in tabs.withIndex()) {
             val x = r[i][0]; val w = r[i][1]
-            val hov = mx in x..x + w && my in y..y + 20
+            val hov = mx in x..x + w && my in y..y + TAB_H
             val a = hover("tab$i", hov)
-            UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), 20f, 6f, if (i == ti) ScreenTheme.ink(0x33) else ScreenTheme.ink(0x14))
-            if (i != ti && a > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), 20f, 6f, fa(ROW_HOVER, a))
+            if (i != ti && a > 0f) UiRecorder.fillRoundedRect(x.toFloat(), (y + 2).toFloat(), w.toFloat(), (TAB_H - 6).toFloat(), 6f, fa(ROW_HOVER, a))
             val ts = 0.85f * NVG_BASE_TEXT_SIZE
-            UiRecorder.text(ellipsize(t, w - 26, 0.85f), (x + 8).toFloat(), y + (20 - ts) / 2f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
-            if (tabs.size > 1) icon("x", x + w - 10f, y + 10f, if (hov && mx >= x + w - 16) TEXT_COLOR else SUBTEXT_COLOR)
+            UiRecorder.text(ellipsize(t, w - 26, 0.85f), (x + 10).toFloat(), y + (TAB_H - ts) / 2f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
+            if (tabs.size > 1) icon("x", x + w - 11f, y + TAB_H / 2f, if (hov && mx >= x + w - 16) TEXT_COLOR else SUBTEXT_COLOR)
         }
         val p = r[tabs.size]
-        val ph = mx in p[0]..p[0] + 20 && my in y..y + 20
-        UiRecorder.fillRoundedRect(p[0].toFloat(), y.toFloat(), 20f, 20f, 6f, ScreenTheme.ink(0x14))
-        UiRecorder.fillRoundedRect(p[0].toFloat(), y.toFloat(), 20f, 20f, 6f, fa(ROW_HOVER, hover("tab+", ph)))
-        icon("plus", p[0] + 10f, y + 10f, if (ph) TEXT_COLOR else SUBTEXT_COLOR)
+        val ph = mx in p[0]..p[0] + 20 && my in y..y + TAB_H
+        UiRecorder.fillRoundedRect(p[0].toFloat(), (y + 2).toFloat(), 20f, 20f, 6f, fa(ROW_HOVER, hover("tab+", ph)))
+        icon("plus", p[0] + 10f, y + 12f, if (ph) TEXT_COLOR else SUBTEXT_COLOR)
     }
     private fun tabClick(mx: Int, my: Int): Boolean {
         val y = TAB_Y
-        if (my !in y..y + 20) return false
+        if (my !in y..y + TAB_H) return false
         for ((i, r) in tabRects().withIndex()) {
             if (mx !in r[0]..r[0] + r[1]) continue
             when {
@@ -2639,6 +2637,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     // Window chrome, laid out like docs/ui-mockups/fishmod-explorer.html:
     // title bar (tabs, – □ ✕), command bar, address bar (← → ↑, breadcrumb, search), status bar
     private val TAB_Y get() = top() + 5
+    private val TAB_H = 25
     private val CMD_Y get() = top() + 32
     private val ADDR_Y get() = top() + 60
     private var listView = false
@@ -2665,7 +2664,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun renderChrome(ctx: GuiGraphicsExtractor, mx: Int, my: Int) {
         val l = left().toFloat(); val w = winW().toFloat()
-        UiRecorder.fillRect(l, (top() + 30).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
+        // darker title strip; the active tab is cut out of it so it joins the bar below (like Explorer)
+        val tr = tabRects(); val at = tr.getOrNull(ti)
+        val dk = 0x33000000; val wr = if (winMax) 0f else 12f
+        if (at == null) UiRecorder.fillRoundedRectCorners(l, top().toFloat(), w, 30f, wr, wr, 0f, 0f, dk)
+        else {
+            UiRecorder.fillRoundedRectCorners(l, top().toFloat(), (at[0] - left()).toFloat(), 30f, wr, 0f, 0f, 0f, dk)
+            UiRecorder.fillRect(at[0].toFloat(), top().toFloat(), at[1].toFloat(), (TAB_Y - top()).toFloat(), dk)
+            UiRecorder.fillRoundedRectCorners((at[0] + at[1]).toFloat(), top().toFloat(), (right() - at[0] - at[1]).toFloat(), 30f, 0f, wr, 0f, 0f, dk)
+        }
         UiRecorder.fillRect(l, (top() + 58).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
         UiRecorder.fillRect(l, (top() + 88).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
         UiRecorder.fillRect(l, (bottom() - STATUS_H).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
