@@ -61,4 +61,21 @@ object GardenExtraSettings {
     @ConfigValue @JvmField var gardenBpsHudX: Int = 5
     @ConfigValue @JvmField var gardenBpsHudY: Int = 185
     @ConfigValue @JvmField var gardenBpsHudScale: Double = 1.0
+
+    @ConfigValue @JvmField var gardenMantid: Boolean = false
+    @ConfigValue @JvmField var gardenMantidColor: Int = 0xFF00AA00.toInt()
+    @ConfigValue @JvmField var gardenMantidHudX: Int = 5
+    @ConfigValue @JvmField var gardenMantidHudY: Int = 210
+    @ConfigValue @JvmField var gardenMantidHudScale: Double = 1.0
+
+    @ConfigValue @JvmField var gardenSprayAlert: Boolean = false
+    @ConfigValue @JvmField var gardenSprayAlertSeconds: Int = 30
+    @ConfigValue @JvmField var gardenSprayAlertColor: Int = 0xFFFF5555.toInt()
+
+    @ConfigValue @JvmField var gardenPhantomleaf: Boolean = false
+    @ConfigValue @JvmField var gardenDna: Boolean = false
+    @ConfigValue @JvmField var gardenDnaColor: Int = 0x8055FF55.toInt()
+    @ConfigValue @JvmField var gardenSkyMart: Boolean = false
+    @ConfigValue @JvmField var gardenSkyMartColor: Int = 0xFFAAAAAA.toInt()
+    @ConfigValue @JvmField var gardenWatering: Boolean = false
 }

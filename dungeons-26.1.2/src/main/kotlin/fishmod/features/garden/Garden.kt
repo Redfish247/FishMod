@@ -31,6 +31,7 @@ object Garden {
         GardenCarrolyn.init()
         SpeedSignHelper.init()
         GardenExtras.init()
+        GardenAddons.init()
     }
 
     fun strip(s: String) = Mining.strip(s)
