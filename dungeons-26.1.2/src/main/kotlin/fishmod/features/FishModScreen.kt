@@ -2479,7 +2479,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun vx(real: Number): Int = (real.toDouble() / fishmod.utils.rendering.UiScale.factor()).toInt()
 
-    private fun cx0(): Int = left() + MARGIN + STACK_W + COLUMN_GUTTER
+    private fun cx0(): Int = left() + MARGIN + STACK_W + 18
     private fun cx1(): Int = right() - MARGIN
     private fun cyTop(): Int = top() + 92 + HEADER_H
     private fun cyBot(): Int = bottom() - STATUS_H - 6
@@ -2799,8 +2799,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val ns = 0.72f * NVG_BASE_TEXT_SIZE
                 val nw = UiRecorder.textWidth(n, ns)
                 val ts = 0.84f * NVG_BASE_TEXT_SIZE
-                UiRecorder.text(ellipsize(c.name, (w - nw - 16).toInt(), 0.84f), (x + 6).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
-                UiRecorder.text(n, x + w - 6 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
+                UiRecorder.text(ellipsize(c.name, (w - nw - 22).toInt(), 0.84f), (x + 6).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
+                UiRecorder.text(n, x + w - 10 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
             }
         } finally { UiRecorder.popScissor() }
     }
@@ -2831,7 +2831,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun detMax(f: Feature): Int = Math.max(0, f.naturalSubHeight() - (cyBot() - detTop()))
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        val sbx = stackX0() + STACK_W + COLUMN_GUTTER / 2
+        val sbx = stackX0() + STACK_W + 8
         UiRecorder.fillRect(left().toFloat(), (top() + 89).toFloat(), (sbx - left()).toFloat(), (bottom() - STATUS_H - top() - 89).toFloat(), 0x0D000000)
         UiRecorder.fillRect(sbx.toFloat(), (top() + 89).toFloat(), 1f, (bottom() - STATUS_H - top() - 89).toFloat(), 0x1FFFFFFF)
         renderNav(mouseX, mouseY)
