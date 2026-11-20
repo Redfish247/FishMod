@@ -29,7 +29,7 @@ object Mimic {
                 val mc = Minecraft.getInstance()
                 if (mc.level == null) return@EndLevelTick
 
-                for (room in ArrayList(Scan.rooms)) {
+                for (room in Scan.roomsSnapshot()) {
                     val data = room.data
                     val rot = room.rotation != Room.Rotation.NONE
                     val chestPositions: List<BlockPos>? = data?.secretDetails?.get("chest")

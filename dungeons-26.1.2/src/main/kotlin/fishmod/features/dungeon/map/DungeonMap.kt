@@ -359,7 +359,7 @@ object DungeonMap {
             found.doors.addAll(stray.doors)
         }
 
-        for (door in ArrayList(Scan.doors)) {
+        for (door in Scan.doorsSnapshot()) {
             var refers = false
             for (dt in door.rooms) {
                 if (strays.contains(dt.owner)) {
@@ -391,7 +391,7 @@ object DungeonMap {
         val sc = startSc.add(rs / 2, rs / 2)
         val tile = rs + 4
 
-        for (room in ArrayList(Scan.rooms)) {
+        for (room in Scan.roomsSnapshot()) {
             if (room.places.isEmpty()) continue
 
             var topLeft = room.places[0]

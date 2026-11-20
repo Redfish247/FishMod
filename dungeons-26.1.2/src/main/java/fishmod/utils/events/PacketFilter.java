@@ -22,6 +22,7 @@ public final class PacketFilter {
         net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket.class,
         net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket.class,
         net.minecraft.network.protocol.game.ClientboundSystemChatPacket.class,
+        net.minecraft.network.protocol.game.ClientboundContainerClosePacket.class,
     };
     private static final ClassValue<Boolean> WANTED = new ClassValue<>() {
         @Override protected Boolean computeValue(Class<?> c) {
