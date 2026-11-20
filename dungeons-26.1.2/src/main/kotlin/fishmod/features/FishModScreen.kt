@@ -4228,8 +4228,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "Achievements" to "Goals & progress",
         )
         private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
-        private const val STACK_W = 176
-        private const val NAV_ROW = 15
+        private const val STACK_W = 150
+        private const val NAV_ROW = 17
         private val STACK_TAB_H get() = if (COMPACT) 20 else 24
         private const val STACK_SUB_INDENT = 10
         private const val DRAG_THRESHOLD = 4
