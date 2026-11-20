@@ -14,6 +14,7 @@ object FishingMenu {
         core.sub.add(ToggleSetting("Any Area", "Detect catches in every world, not just fishing worlds", S::class.java, "fishingAnyArea"))
         core.sub.add(ToggleSetting("Debug Catch Log", "Print each detected catch or drop to chat", S::class.java, "fishingDebug"))
         col.features.add(core)
+        col.features.add(Feature("Current Bait HUD", FishingWorldSettings::class.java, "baitHud"))
 
         FishingAlerts.addMenu(col)
         FishingTrackers.addMenu(col)
@@ -22,6 +23,7 @@ object FishingMenu {
     }
 
     fun describe(name: String): String? = FishingAlerts.describe(name) ?: FishingTrackers.describe(name) ?: FishingWorld.describe(name) ?: when (name) {
+        "Current Bait HUD" -> "Bait in your last hotbar slot and how much is left"
         "Fishing" -> "Master switch for all fishing features (all off by default)"
         else -> null
     }

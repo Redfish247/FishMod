@@ -109,6 +109,17 @@ object MiningMenu {
         col.features.add(shaft)
 
         col.features.add(Feature("Fallen Star Alert", S::class.java, "miningFallenStar"))
+        col.features.add(Feature("Mineshaft Timer", S::class.java, "miningShaftTimer"))
+
+        val route = Feature("Ordered Waypoints", S::class.java, "route")
+        route.sub.add(ButtonSetting("Add Point Here", "Adds the block under you", "Add") { OrderedWaypoints.addHere() })
+        route.sub.add(ButtonSetting("Remove Last Point", "", "Remove") { OrderedWaypoints.removeLast() })
+        route.sub.add(ButtonSetting("Restart Route", "", "Restart") { OrderedWaypoints.index = 0 })
+        route.sub.add(ButtonSetting("Clear Route", "", "Clear") { OrderedWaypoints.clear() })
+        route.sub.add(SliderIntSetting("Reach Radius", "", S::class.java, "routeRadius", 1, 10))
+        route.sub.add(ToggleSetting("Show Next Point", "", S::class.java, "routeShowNext"))
+        route.sub.add(ColorPickerSetting("Color", "", S::class.java, "routeColor"))
+        col.features.add(route)
 
         return col
     }
@@ -123,6 +134,8 @@ object MiningMenu {
         "Commissions" -> "Commission HUD, completed title and menu highlight"
         "Powder Chest Overlay" -> "Boxes and lines to Crystal Hollows treasure chests"
         "Corpse Announcer" -> "Party chat once per corpse you see in a mineshaft"
+        "Mineshaft Timer" -> "HUD with time spent in the current mineshaft"
+        "Ordered Waypoints" -> "Your own route of points, walked in order (works anywhere)"
         "Fallen Star Alert" -> "Title with the location when a Fallen Star crashes"
         "Mineshaft Announce" -> "Title (and party message) with shaft type and corpses"
         else -> null
