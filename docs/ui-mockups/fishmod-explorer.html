@@ -13,9 +13,9 @@
 html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(--fb);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;box-sizing:border-box}
 *{box-sizing:border-box}button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 .win{height:100%;min-height:560px;display:grid;grid-template-rows:auto auto auto 1fr auto;background:var(--win);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 12px 40px #0002}
-.tabs{display:flex;align-items:end;gap:2px;padding:8px 8px 0;background:var(--pane);overflow-x:auto}
-.tab{display:flex;gap:8px;align-items:center;padding:7px 12px;border-radius:8px 8px 0 0;font-size:13px;color:var(--mut);white-space:nowrap}
-.tab.act{background:var(--win);color:var(--fg)}.tab .x{opacity:.5}.tab.add{font-size:16px}
+.tabs{display:flex;align-items:stretch;gap:2px;padding:10px 10px 0;min-height:46px;background:var(--pane);overflow-x:auto}
+.tab{display:flex;gap:10px;align-items:center;padding:0 14px;height:36px;margin-top:auto;border-radius:8px 8px 0 0;font-size:13px;color:var(--mut);white-space:nowrap}
+.tab.act{background:var(--win);color:var(--fg)}.tab .x{opacity:.5}.tab.add{font-size:18px;line-height:1;width:36px;padding:0;justify-content:center;border-radius:8px;margin-bottom:0}.tab.add:hover{background:var(--win)}
 .cmd{display:flex;gap:2px;padding:6px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
 .cmd button{padding:6px 10px;border-radius:6px;font-size:13px;display:flex;gap:6px;align-items:center}.cmd button:hover{background:var(--pane)}
 .cmd .save{background:var(--acc);color:#fff;margin-left:6px}.cmd .save:hover{background:var(--acc);filter:brightness(1.2)}.cmd #b-reset.arm{color:#e05a5a}.toast{font-size:12px;color:var(--mut);margin-right:8px}.nav button:disabled{opacity:.35;cursor:default}.sep{width:1px;height:20px;background:var(--line);margin:0 4px}.sp{flex:1}
