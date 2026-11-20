@@ -126,8 +126,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Button Opacity %", "Feature row fill, separate from the background", "fmRowBgAlpha", 0, 100))
             f.sub.add(ColorPickerSetting("Enabled Tint Color", "Tint on an enabled row, e.g. Door Colors", "fmRowColor"))
             f.sub.add(SliderIntSetting("Enabled Tint %", "0% invisible - 100% solid", "fmRowAlpha", 0, 100))
-            f.sub.add(SubcategoryHeader("Layout"))
-            f.sub.add(ToggleSetting("Compact GUI", "Tighter rows, gaps and columns so more fits on screen", "fmCompact"))
             f.sub.add(SubcategoryHeader("Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
             general.features.add(f)
@@ -4193,7 +4191,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private const val TEXT_SCALE = 0.86f
 
-        private val COMPACT get() = FishSettings.fmCompact
+        private const val COMPACT = true
         private val MARGIN get() = if (COMPACT) 10 else 16
         private const val TOP_BAR_H = 26
         private const val BOTTOM_RESERVE = 46
