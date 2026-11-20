@@ -17,6 +17,7 @@ object SlayerAlerts {
     fun init() {
         EndAlerts.init()
         SlayerMiniHighlight.init()
+        SlayerExtras.init()
         GroundItemNames.init()
         FishEvents.worldChange.register { reset(); seenMinis.clear(); false }
         FishEvents.chat.register { text ->

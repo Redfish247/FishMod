@@ -2179,6 +2179,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayers.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayers.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
             slayer.features.add(endAlerts)
             slayer.features.add(Feature("Endstone Protector Alert", fishmod.features.slayers.EndAlertSettings::class.java, "endstoneProtectorAlert"))
+            slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayers.EndAlertSettings::class.java, "cocoonTimer"))
+            slayer.features.add(Feature("Summons Recall Alert", fishmod.features.slayers.EndAlertSettings::class.java, "summonsRecallAlert"))
             val mini = Feature("Miniboss Highlight", fishmod.features.slayers.EndAlertSettings::class.java, "slayerMiniHighlight")
             mini.sub.add(ColorPickerSetting("Outline Colour", "", { fishmod.features.slayers.EndAlertSettings.slayerMiniHighlightColor }, { v -> fishmod.features.slayers.EndAlertSettings.slayerMiniHighlightColor = v }))
             slayer.features.add(mini)

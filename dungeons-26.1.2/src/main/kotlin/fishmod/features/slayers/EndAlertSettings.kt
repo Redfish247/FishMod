@@ -11,6 +11,9 @@ object EndAlertSettings {
     @ConfigValue @JvmField var slayerMiniHighlight: Boolean = false
     @ConfigValue @JvmField var slayerMiniHighlightColor: Int = 0xFFFF5555.toInt()
 
+    @ConfigValue @JvmField var cocoonTimer: Boolean = false
+    @ConfigValue @JvmField var summonsRecallAlert: Boolean = false
+
     @ConfigValue @JvmField var groundItemNames: Boolean = false
     @ConfigValue @JvmField var groundItemRange: Int = 16
     @ConfigValue @JvmField var groundItemScale: Double = 1.0
