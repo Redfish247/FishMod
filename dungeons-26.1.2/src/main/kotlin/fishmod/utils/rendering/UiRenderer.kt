@@ -19,6 +19,7 @@ object UiRenderer {
     private var failedAt = 0L
     private var failLogged = false
     private var consecutiveFailures = 0
+    private var backoffMs = 5000L
 
     private var buf: FloatBuffer = MemoryUtil.memAllocFloat(FLOATS * 6 * 512)
     private var verts = 0
@@ -44,7 +45,7 @@ object UiRenderer {
         if (noUi) return
         // After repeated failures, back off for 5s then retry instead of killing every menu for the session
         if (failed) {
-            if (System.currentTimeMillis() - failedAt < 5000L) return
+            if (System.currentTimeMillis() - failedAt < backoffMs) return
             failed = false; consecutiveFailures = 0
         }
         try {
@@ -66,13 +67,16 @@ object UiRenderer {
                 buf.flip()
                 UiGpu.paint(lastPassView, MemoryUtil.memByteBuffer(buf), verts, viewW, viewH, UiFont.takeDirtyAtlas(), segs, nSeg)
             }
-            consecutiveFailures = 0
+            consecutiveFailures = 0; backoffMs = 5000L
         } catch (t: Throwable) {
             UiFont.markAtlasLost()
-            FishDiag.fail("UiRenderer.9", "UI paint failed (attempt ${consecutiveFailures + 1})", t)
+            // Report only the first failure of each backoff round so a broken driver can't spam the board
+            if (consecutiveFailures == 0 && backoffMs == 5000L) FishDiag.fail("UiRenderer.9", "UI paint failed", t)
             if (++consecutiveFailures >= 3) {
                 failed = true; failedAt = System.currentTimeMillis()
-                FishDiag.fail("UiRenderer.10", "UI renderer paused 5s after 3 consecutive paint failures")
+                if (backoffMs == 5000L) FishDiag.fail("UiRenderer.10", "UI renderer paused after 3 consecutive paint failures")
+                // Double the pause each round (max 5 min) when the failure keeps recurring
+                backoffMs = Math.min(backoffMs * 2, 300_000L)
             }
             if (!failLogged) {
                 failLogged = true
