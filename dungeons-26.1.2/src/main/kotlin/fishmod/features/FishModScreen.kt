@@ -2360,6 +2360,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         foldedColumns.remove(c.name)
         saveFoldedColumns()
         frameVisibleColumns = null
+        allMode = false
         selected = null; gridScroll = 0; detScroll = 0
         openedAt = System.currentTimeMillis()
         if (tabs.isEmpty()) tabs.add(c.name) else tabs[ti] = c.name
@@ -2616,8 +2617,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         hoverDesc = null
         hoverPreview = null
         try {
-            renderChrome(ctx, vmx, vmy)
             renderContent(ctx, vmx, vmy)
+            renderChrome(ctx, vmx, vmy)
+            statusHint = null
             renderHoverTooltip(ctx)
             renderShiftPreview(ctx)
         } catch (t: Throwable) {
@@ -2702,7 +2704,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val cx = left() + 92; val cw = s[0] - 8 - cx
         UiRecorder.roundedRectRing(cx.toFloat(), s[1].toFloat(), cw.toFloat(), s[3].toFloat(), 6f, 1f, 0, ScreenTheme.ink(0x2E))
         val col = visibleColumns().firstOrNull()
-        val crumb = "FishMod  ›  " + (if (searchText.isNotEmpty()) "Search results" else col?.name ?: "") + (selected?.let { "  ›  " + it.name } ?: "")
+        val crumb = "FishMod  ›  " + (if (searchText.isNotEmpty()) "Search results" else if (allMode) "All features" else col?.name ?: "") + (selected?.let { "  ›  " + it.name } ?: "")
         UiRecorder.text(ellipsize(crumb, cw - 16, 0.85f), (cx + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, TEXT_COLOR)
         UiRecorder.roundedRectRing(s[0].toFloat(), s[1].toFloat(), s[2].toFloat(), s[3].toFloat(), 6f, 1f, ScreenTheme.ink(0x0F), if (searchFocused) ACCENT else ScreenTheme.ink(0x2E))
         var field = searchField
@@ -2718,7 +2720,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val all = columns.sumOf { it.features.count { f -> f.hasMaster() } }
         val on = columns.sumOf { it.features.count { f -> f.hasMaster() && f.get!!() } }
         val sy = bottom() - STATUS_H + 7
-        sst(ctx, this.font, "${exItems().size} items" + (if (selected != null) "    1 selected" else ""), left() + 12, sy, SUBTEXT_COLOR, 0.8f)
+        sst(ctx, this.font, statusHint ?: ("${exItems().size} items" + (if (selected != null) "    1 selected" else "")), left() + 12, sy, if (statusHint != null) TEXT_COLOR else SUBTEXT_COLOR, 0.8f)
         val st = "$on of $all features on"
         sst(ctx, this.font, st, right() - 12 - sw(this.font, st, 0.8f), sy, SUBTEXT_COLOR, 0.8f)
     }
@@ -2759,10 +2761,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     // Sidebar like the mockup: PINNED + OTHER COLUMNS, tight rows; right-click pins/unpins
+    private var allMode = false
+    private var statusHint: String? = null
     private val pinned by lazy { LinkedHashSet(FishSettings.fmPinned.split(",").filter { it.isNotBlank() }) }
     private var navScroll = 0
     private fun navRows(): List<Pair<String, Column?>> {
         val out = ArrayList<Pair<String, Column?>>()
+        out.add("All features" to null)
         val p = columns.filter { it.name in pinned }
         if (p.isNotEmpty()) { out.add("PINNED" to null); p.forEach { out.add(it.name to it) } }
         out.add((if (p.isEmpty()) "COLUMNS" else "OTHER COLUMNS") to null)
@@ -2781,9 +2786,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val y = navTop() + 4 + i * NAV_ROW - navScroll
                 if (y + NAV_ROW < navTop() || y > navBot()) continue
                 val c = r.second
+                if (c == null && r.first == "All features") {
+                    val hvA = mx in x..x + w && my in y until y + NAV_ROW && my in navTop()..navBot()
+                    val haA = hover("navAll", hvA)
+                    if (allMode) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, ScreenTheme.ink(0x24))
+                    else if (haA > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, fa(ROW_HOVER, haA))
+                    val tsA = NVG_BASE_TEXT_SIZE
+                    UiRecorder.text("All features", (x + 10).toFloat(), y + (NAV_ROW - tsA) / 2f, tsA, if (allMode) TEXT_COLOR else 0xFFC8C8C8.toInt())
+                    val tot = columns.sumOf { it.features.size }.toString()
+                    val ns2 = 0.82f * NVG_BASE_TEXT_SIZE
+                    UiRecorder.text(tot, x + w - 10 - UiRecorder.textWidth(tot, ns2), y + (NAV_ROW - ns2) / 2f, ns2, SUBTEXT_COLOR)
+                    continue
+                }
                 if (c == null) { UiRecorder.text(r.first, (x + 10).toFloat(), y + 6f, 7.4f, SUBTEXT_COLOR); continue }
-                val open = !isFolded(c)
+                val open = !allMode && !isFolded(c)
                 val hv = mx in x..x + w && my in y until y + NAV_ROW && my in navTop()..navBot()
+                if (hv) statusHint = if (c.name in pinned) "Right-click to unpin ${c.name}" else "Right-click to pin ${c.name}"
                 val ha = hover("nav" + c.name, hv)
                 if (open) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, ScreenTheme.ink(0x24))
                 else if (ha > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, fa(ROW_HOVER, ha))
@@ -2799,7 +2817,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun navClick(mx: Int, my: Int, btn: Int): Boolean {
         if (mx !in left()..stackX0() + STACK_W || my !in navTop()..navBot()) return false
         val i = (my - navTop() - 4 + navScroll) / NAV_ROW
-        val c = navRows().getOrNull(i)?.second ?: return true
+        val row = navRows().getOrNull(i) ?: return true
+        if (row.first == "All features" && row.second == null) { allMode = true; selected = null; gridScroll = 0; openedAt = System.currentTimeMillis(); return true }
+        val c = row.second ?: return true
         if (btn == 1) { if (!pinned.remove(c.name)) pinned.add(c.name); FishSettings.fmPinned = pinned.joinToString(",") }
         else toggleFold(c)
         return true
@@ -2811,6 +2831,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var detScroll = 0
     private fun exItems(): List<Feature> =
         if (searchText.isNotEmpty()) visibleColumns().flatMap { visibleFeatures(it) }
+        else if (allMode) columns.flatMap { visibleFeatures(it) }
         else visibleColumns().firstOrNull()?.let { visibleFeatures(it) } ?: emptyList()
     private fun gx1(): Int = if (selected != null) cx1() - DET_W - COLUMN_GUTTER else cx1()
     private fun cardH(): Int = if (listView) 26 else CARD_TALL
@@ -2830,10 +2851,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val items = exItems()
         val col = visibleColumns().firstOrNull()
         val ht = cyTop() - HEADER_H
-        val title = if (searchText.isNotEmpty()) "Search  ·  ${items.size} results" else col?.name ?: "Click a tab on the left to open a column"
+        val title = if (searchText.isNotEmpty()) "Search  ·  ${items.size} results" else if (allMode) "All features" else col?.name ?: "Click a tab on the left to open a column"
         sst(ctx, this.font, ellipsize(title, gx1() - cx0() - 80, 1.2f), cx0(), ht + 6, TEXT_COLOR, 1.2f)
-        if (col != null || searchText.isNotEmpty()) sst(ctx, this.font, "${items.size} features", cx0() + Math.min(sw(this.font, title, 1.2f), gx1() - cx0() - 80) + 8, ht + 9, SUBTEXT_COLOR, 0.8f)
-        if (searchText.isEmpty()) col?.sub()?.let { sst(ctx, this.font, ellipsize(it, gx1() - cx0(), 0.8f), cx0(), ht + 22, SUBTEXT_COLOR, 0.8f) }
+        if (col != null || searchText.isNotEmpty() || allMode) sst(ctx, this.font, "${items.size} features", cx0() + Math.min(sw(this.font, title, 1.2f), gx1() - cx0() - 80) + 8, ht + 9, SUBTEXT_COLOR, 0.8f)
+        if (searchText.isEmpty() && !allMode) col?.sub()?.let { sst(ctx, this.font, ellipsize(it, gx1() - cx0(), 0.8f), cx0(), ht + 22, SUBTEXT_COLOR, 0.8f) }
         gridScroll = Mth.clamp(gridScroll, 0, gridMax(items.size))
         val cw = cardW()
         UiRecorder.pushScissor(cx0().toFloat(), cyTop().toFloat(), (gx1() - cx0()).toFloat(), (cyBot() - cyTop()).toFloat())
@@ -2860,6 +2881,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (p < 0.6f) continue
                 if (f.hasMaster()) drawTogglePill(ctx, x + cw - 32, y + (if (listView) (cardH() - 13) / 2 else 6), 24, 13, on, knobP(f.name, on), hover && mouseX >= x + cw - 38)
                 else if (f.sub.isNotEmpty()) drawChevron(ctx, x + cw - 16, y + 12, false, CHEVRON_COLOR)
+                if (hover) statusHint = "Left-click: settings   ·   Right-click: turn " + (if (on) "off" else "on")
                 if (hover && (HudPreview.namesFor(f.name).isNotEmpty() || WorldPreview.has(f.name))) hoverPreview = f.name
             }
         } finally { UiRecorder.popScissor() }
