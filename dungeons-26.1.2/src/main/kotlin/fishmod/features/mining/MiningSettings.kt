@@ -102,4 +102,6 @@ object MiningSettings {
     @ConfigValue @JvmField var miningShaftParty: Boolean = false
     @ConfigValue @JvmField var miningShaftFormat: String = "{type} | {corpses}"
     @ConfigValue @JvmField var miningShaftTitleMs: Int = 3000
+
+    @ConfigValue @JvmField var miningFallenStar: Boolean = false
 }

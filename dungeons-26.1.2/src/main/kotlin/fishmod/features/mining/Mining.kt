@@ -70,6 +70,7 @@ object Mining {
         Commissions.init()
         PowderChests.init()
         Corpses.init()
+        FallenStar.init()
     }
 
     private var sidebarVersion = -1
