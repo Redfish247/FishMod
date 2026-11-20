@@ -74,8 +74,8 @@ object PartyFinderStats {
             if (data.failed) {
                 val reason = data.failReason ?: "error"
                 if (reason == HypixelApi.FAIL_NOT_FOUND) { FishMsg.send("§cPlayer not found: $sender"); return }
-                fishmod.utils.debug.FishDebug.LOGGER.info("[PartyFinderStats] PF stats lookup failed for {} ({})", sender, reason)
-                FishMsg.send("§cCouldn't look up $sender's stats")
+                fishmod.utils.debug.FishDebug.LOGGER.debug("[PartyFinderStats] PF stats lookup failed for {} ({})", sender, reason)
+                FishMsg.send("§7$sender: stats unavailable")
                 return
             }
             val mp = if (data.magicalPower >= 0) data.magicalPower.toString() else "N/A"

@@ -347,8 +347,11 @@ object PartyFinder {
 
     private fun statsFor(name: String, floor: Int, master: Boolean): String {
         val key = name.lowercase()
-        val d = cache[key] ?: run { request(name); return " §7(…)" }
-        if (d.failed) return " §c(lookup failed)"
+        val d = cache[key] ?: run {
+            request(name)
+            return if (failedAt.containsKey(key)) " §7(stats unavailable)" else " §7(…)"
+        }
+        if (d.failed) return " §7(stats unavailable)"
         val sb = StringBuilder(" §b(§6${d.cataLevel}§b)")
         if (FishSettings.pfShowSecrets && d.secretAverage != null) {
             sb.append(" §8[§a${d.totalSecrets}§8/§b${d.secretAverage}§8]")
@@ -377,7 +380,7 @@ object PartyFinder {
             if (g != gen) return@getByNameSilent
             pending.remove(key)
             if (data.failed) {
-                fishmod.utils.debug.FishDebug.LOGGER.info("PF stats lookup failed for {}", name)
+                fishmod.utils.debug.FishDebug.LOGGER.debug("PF stats lookup failed for {} ({})", name, data.failReason)
                 failedAt[key] = System.currentTimeMillis()
             } else { failedAt.remove(key); cache[key] = data }
         }
