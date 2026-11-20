@@ -10,7 +10,7 @@ import java.util.regex.Pattern
 object DungeonState {
 
     private val SIDEBAR_FLOOR = Pattern.compile("The Catacombs \\(([FM])?(\\d|E)\\)")
-    private val ENTERED_FLOOR = Pattern.compile("entered The Catacombs, (?:Floor )?(\\w+)!")
+    private val ENTERED_FLOOR = Pattern.compile("entered (?:§.)*(MM )?(?:§.)*The Catacombs, (?:Floor )?(?:§.)*(\\w+)!")
 
     private var chatFloor = -1
     private var inBoss = false
@@ -29,6 +29,7 @@ object DungeonState {
     private val WITHER_DOOR_OPEN = Pattern.compile("([A-Za-z0-9_]+) opened a WITHER door!")
     private val BLOOD_KEY_CLAIM = Pattern.compile("(?:\\[[A-Za-z+]+] )?([A-Za-z0-9_]+) has obtained Blood Key!")
 
+    private var chatMaster = false
     private var witherKeys = 0
     private var bloodKey = false
     @JvmStatic
@@ -50,9 +51,9 @@ object DungeonState {
 
         val fm = ENTERED_FLOOR.matcher(msg)
         if (fm.find()) {
-            val f = parseRomanFloor(fm.group(1))
-            if (f >= 0) chatFloor = f
-            else FishDiag.fail("DungeonState.1", "couldn't parse floor from entered message: '${fm.group(1)}'")
+            val f = parseRomanFloor(fm.group(2))
+            if (f >= 0) { chatFloor = f; chatMaster = fm.group(1) != null }
+            else FishDiag.fail("DungeonState.1", "couldn't parse floor from entered message: '${fm.group(2)}'")
         }
 
         for (b in BOSS_ENTRY) {
@@ -101,6 +102,7 @@ object DungeonState {
     fun reset() {
         inBoss = false
         chatFloor = -1
+        chatMaster = false
         witherKeys = 0
         bloodKey = false
         bloodOpened = false
@@ -182,6 +184,7 @@ object DungeonState {
 
     @JvmStatic
     fun isMasterMode(): Boolean {
+        if (chatFloor >= 0) return chatMaster
         refreshSidebar()
         return sidebarMaster
     }
