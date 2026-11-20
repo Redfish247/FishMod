@@ -163,7 +163,7 @@ object RiftMenu {
         "Kloon Hacking Solver" -> "Colours the right buttons in Kloon's Hacking menu"
         "Timite Expiry Timer" -> "Countdown on blue Timite panes in their last 6 seconds"
         "Sun Gecko Helper" -> "Time Chamber HUD: Sun Gecko HP (with Revival phase), combo hits, combo timer, modifiers"
-        "Living Cave Defense Blocks" ->"Box, line and Break! on Auto* mob defense blocks"
+        "Living Cave Defense Blocks" -> "Box, line and Break! on Auto* mob defense blocks"
         else -> null
     }
 }
