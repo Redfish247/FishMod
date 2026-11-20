@@ -70,19 +70,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var hoverDescX = 0
     private var hoverDescY = 0
 
-    private var pressX = 0
-    private var pressY = 0
-    private var dragMoved = false
     private val foldedColumns = HashSet<String>()
-    private var stackScroll = 0
-    private var stackDragCol: Column? = null
-    private var stackDragY = 0
-    private var stackGrabDY = 0
-    private val stackAnimY = HashMap<String, Double>()
-    private val folders = ArrayList<Folder>()
-    private var stackDragFolder: Folder? = null
-    private var renamingFolder: Folder? = null
-    private var renameField: EditBox? = null
 
     private var closing = false
     private var closeFinalized = false
@@ -90,7 +78,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     init {
         try { buildCategories() } catch (t: Throwable) { FishDiag.fail("FishModScreen.2", "buildCategories failed after ${columns.size} columns", t) }
         try { applySavedColumnOrder() } catch (t: Throwable) { FishDiag.fail("FishModScreen.3", "applySavedColumnOrder failed for '${FishSettings.fmColumnOrder}'", t) }
-        try { loadFolders() } catch (t: Throwable) { FishDiag.fail("FishModScreen.29", "loadFolders failed for '${FishSettings.fmSidebarFolders}'", t) }
         loadFoldedColumns()
         fishmod.utils.TickScheduler.scheduleTask({
             if (paintCount == 0 && Minecraft.getInstance().curScreen === this) {
@@ -2350,42 +2337,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.addAll(reordered)
     }
 
-    private fun loadFolders() {
-        folders.clear()
-        for (entry in FishSettings.fmSidebarFolders.split(";")) {
-            val parts = entry.split("|")
-            if (parts.size < 3 || parts[0].isBlank()) continue
-            folders.add(Folder(parts[0], parts[1] == "1", LinkedHashSet(parts[2].split(",").filter { it.isNotBlank() })))
-        }
-        normalizeFolders()
-    }
-
-    private fun saveFolders() {
-        FishSettings.fmSidebarFolders = folders.joinToString(";") { f ->
-            f.name + "|" + (if (f.open) "1" else "0") + "|" + f.members.joinToString(",")
-        }
-    }
-
-    private fun folderOf(c: Column): Folder? = folders.firstOrNull { c.name in it.members }
-
-    // drop stale members and keep each folder's columns contiguous
-    private fun normalizeFolders() {
-        val top = columns.map { it.name }.toHashSet()
-        for (f in folders) f.members.retainAll(top)
-        val out = ArrayList<Column>(columns.size)
-        val done = HashSet<Folder>()
-        for (c in columns) {
-            val f = folderOf(c)
-            if (f == null) { out.add(c); continue }
-            if (done.add(f)) columns.filterTo(out) { folderOf(it) === f }
-        }
-        columns.clear()
-        columns.addAll(out)
-    }
-
     private fun saveColumnOrder() {
-        normalizeFolders()
-        saveFolders()
         FishSettings.fmColumnOrder = columns.joinToString(",") { top ->
             top.name
         }
@@ -2470,9 +2422,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return false
     }
 
-    private fun toggleFolderColumns(f: Folder) {
-        columns.firstOrNull { folderOf(it) === f }?.let { toggleFold(it) }
-    }
 
     // The menu is a centered, draggable window; double-click its top bar to maximize
     private var winDX = 0
@@ -2806,6 +2755,53 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return my < top() + 88
     }
 
+    // Sidebar like the mockup: PINNED + OTHER COLUMNS, tight rows; right-click pins/unpins
+    private val pinned by lazy { LinkedHashSet(FishSettings.fmPinned.split(",").filter { it.isNotBlank() }) }
+    private var navScroll = 0
+    private fun navRows(): List<Pair<String, Column?>> {
+        val out = ArrayList<Pair<String, Column?>>()
+        val p = columns.filter { it.name in pinned }
+        if (p.isNotEmpty()) { out.add("PINNED" to null); p.forEach { out.add(it.name to it) } }
+        out.add((if (p.isEmpty()) "COLUMNS" else "OTHER COLUMNS") to null)
+        columns.filter { it.name !in pinned }.forEach { out.add(it.name to it) }
+        return out
+    }
+    private fun navTop(): Int = top() + 92
+    private fun navBot(): Int = bottom() - STATUS_H
+    private fun navMax(): Int = Math.max(0, navRows().size * NAV_ROW + 8 - (navBot() - navTop()))
+    private fun renderNav(mx: Int, my: Int) {
+        navScroll = Mth.clamp(navScroll, 0, navMax())
+        val x = stackX0(); val w = STACK_W
+        UiRecorder.pushScissor(left().toFloat(), navTop().toFloat(), (w + MARGIN).toFloat(), (navBot() - navTop()).toFloat())
+        try {
+            for ((i, r) in navRows().withIndex()) {
+                val y = navTop() + 4 + i * NAV_ROW - navScroll
+                if (y + NAV_ROW < navTop() || y > navBot()) continue
+                val c = r.second
+                if (c == null) { UiRecorder.text(r.first, (x + 6).toFloat(), y + 7f, 6.6f, SUBTEXT_COLOR); continue }
+                val open = !isFolded(c)
+                val hv = mx in x..x + w && my in y until y + NAV_ROW && my in navTop()..navBot()
+                val ha = hover("nav" + c.name, hv)
+                if (open) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, 0x24FFFFFF)
+                else if (ha > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, fa(ROW_HOVER, ha))
+                val n = "${c.features.count { it.hasMaster() && it.get!!() }}/${c.features.size}"
+                val ns = 0.72f * NVG_BASE_TEXT_SIZE
+                val nw = UiRecorder.textWidth(n, ns)
+                val ts = 0.88f * NVG_BASE_TEXT_SIZE
+                UiRecorder.text(ellipsize(c.name, (w - nw - 18).toInt(), 0.88f), (x + 6).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
+                UiRecorder.text(n, x + w - 6 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
+            }
+        } finally { UiRecorder.popScissor() }
+    }
+    private fun navClick(mx: Int, my: Int, btn: Int): Boolean {
+        if (mx !in left()..stackX0() + STACK_W || my !in navTop()..navBot()) return false
+        val i = (my - navTop() - 4 + navScroll) / NAV_ROW
+        val c = navRows().getOrNull(i)?.second ?: return true
+        if (btn == 1) { if (!pinned.remove(c.name)) pinned.add(c.name); FishSettings.fmPinned = pinned.joinToString(",") }
+        else toggleFold(c)
+        return true
+    }
+
     // Explorer layout: open column as a card grid, selected feature's settings in a side pane
     private var selected: Feature? = null
     private var gridScroll = 0
@@ -2827,7 +2823,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val sbx = stackX0() + STACK_W + COLUMN_GUTTER / 2
         UiRecorder.fillRect(left().toFloat(), (top() + 89).toFloat(), (sbx - left()).toFloat(), (bottom() - STATUS_H - top() - 89).toFloat(), 0x0D000000)
         UiRecorder.fillRect(sbx.toFloat(), (top() + 89).toFloat(), 1f, (bottom() - STATUS_H - top() - 89).toFloat(), 0x1FFFFFFF)
-        renderStack(ctx, mouseX, mouseY)
+        renderNav(mouseX, mouseY)
         val items = exItems()
         val col = visibleColumns().firstOrNull()
         val ht = cyTop() - HEADER_H
@@ -2856,11 +2852,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     sst(ctx, this.font, ellipsize(f.name, 180), x + 10, y + (cardH() - 10) / 2, fa(if (on) TEXT_COLOR else SUBTEXT_COLOR, p), 1f)
                     if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 250, 0.8f), x + 200, y + (cardH() - 8) / 2, fa(SUBTEXT_COLOR, p), 0.8f)
                 } else {
-                    sst(ctx, this.font, ellipsize(f.name, cw - 44), x + 10, y + 10, fa(if (on) TEXT_COLOR else SUBTEXT_COLOR, p), 1f)
-                    if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 20, 0.8f), x + 10, y + 28, fa(SUBTEXT_COLOR, p), 0.8f)
+                    sst(ctx, this.font, ellipsize(f.name, cw - 44), x + 8, y + 7, fa(if (on) TEXT_COLOR else SUBTEXT_COLOR, p), 1f)
+                    if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 20, 0.8f), x + 8, y + 24, fa(SUBTEXT_COLOR, p), 0.8f)
                 }
                 if (p < 0.6f) continue
-                if (f.hasMaster()) drawTogglePill(ctx, x + cw - 34, y + (if (listView) (cardH() - 13) / 2 else 8), 24, 13, on, knobP(f.name, on), hover && mouseX >= x + cw - 38)
+                if (f.hasMaster()) drawTogglePill(ctx, x + cw - 32, y + (if (listView) (cardH() - 13) / 2 else 6), 24, 13, on, knobP(f.name, on), hover && mouseX >= x + cw - 38)
                 else if (f.sub.isNotEmpty()) drawChevron(ctx, x + cw - 16, y + 12, false, CHEVRON_COLOR)
                 if (hover && (HudPreview.namesFor(f.name).isNotEmpty() || WorldPreview.has(f.name))) hoverPreview = f.name
             }
@@ -2936,214 +2932,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return false
     }
 
-    private fun stackListTop(): Int = cyTop() - HEADER_H
-    private fun stackListBot(): Int = cyBot()
-    private fun stackPitch(): Int = STACK_TAB_H + ROW_GAP
-    private class StackRow(val folder: Folder?, val col: Column?, val indent: Int) {
-        fun isAdd(): Boolean = folder == null && col == null
-    }
-    private class StackDrop(val gap: Int, val into: Folder?)
 
-    private fun stackRowList(skipCol: Column? = null, skipFolder: Folder? = null): List<StackRow> {
-        val out = ArrayList<StackRow>()
-        fun addCol(c: Column, ind: Int) {
-            if (c === skipCol) return
-            out.add(StackRow(null, c, ind))
-        }
-        val done = HashSet<Folder>()
-        for (c in columns) {
-            val f = folderOf(c)
-            if (f == null) { addCol(c, 0); continue }
-            if (!done.add(f) || f === skipFolder) continue
-            out.add(StackRow(f, null, 0))
-            if (f.open) for (m in columns) if (folderOf(m) === f) addCol(m, STACK_SUB_INDENT)
-        }
-        for (f in folders) if (f !in done && f !== skipFolder) out.add(StackRow(f, null, 0))
-        out.add(StackRow(null, null, 0))
-        return out
-    }
-    private fun stackMaxScroll(): Int = Math.max(0, stackRowList().size * stackPitch() - ROW_GAP - (stackListBot() - stackListTop()))
     private fun stackX0(): Int = left() + MARGIN
-    private fun stackRowY(row: Int): Int = stackListTop() + row * stackPitch() - stackScroll
-    private fun stackIdle(): Boolean = stackDragCol == null && stackDragFolder == null
-
-    private fun stackDrop(rows: List<StackRow>): StackDrop {
-        val pos = stackDragY - stackGrabDY + STACK_TAB_H / 2 - stackListTop() + stackScroll
-        val h = Math.floorDiv(pos, stackPitch())
-        val over = rows.getOrNull(h)
-        if (stackDragCol != null && over?.folder != null && pos - h * stackPitch() in 6 until STACK_TAB_H - 6) return StackDrop(-1, over.folder)
-        return StackDrop(Math.floorDiv(pos + stackPitch() / 2, stackPitch()).coerceIn(0, rows.size - 1), null)
-    }
-
-    private fun applyStackDrop() {
-        val sc = stackDragCol
-        val sf = stackDragFolder
-        val rows = stackRowList(sc, sf)
-        val d = stackDrop(rows)
-        val into = d.into
-        if (sc != null && into != null) {
-            folderOf(sc)?.members?.remove(sc.name)
-            if (into.members.isEmpty()) { columns.remove(sc); columns.add(sc) }
-            into.members.add(sc.name)
-            into.open = true
-        } else {
-            val anchor = rows.subList(d.gap, rows.size).firstOrNull()?.takeIf { !it.isAdd() }
-            val block = if (sc != null) listOf(sc) else columns.filter { folderOf(it) === sf }
-            if (sc != null) folderOf(sc)?.members?.remove(sc.name)
-            columns.removeAll(block)
-            val af = anchor?.folder ?: anchor?.col?.let { folderOf(it) }
-            var idx = when {
-                anchor == null -> columns.size
-                af != null && (sf != null || anchor.folder != null) -> columns.indexOfFirst { folderOf(it) === af }
-                else -> columns.indexOf(anchor.col)
-            }
-            if (idx < 0) idx = columns.size
-            columns.addAll(idx, block)
-            if (sc != null && anchor?.col != null) af?.members?.add(sc.name)
-            if (sf != null && af != null && af !== sf) { folders.remove(sf); folders.add(folders.indexOf(af), sf) }
-        }
-        saveColumnOrder()
-        frameVisibleColumns = null
-    }
-
-    private fun createFolder() {
-        var n = folders.size + 1
-        while (folders.any { it.name == "Folder $n" }) n++
-        val f = Folder("Folder $n", true, LinkedHashSet())
-        folders.add(f)
-        saveFolders()
-        startRename(f)
-        stackScroll = stackMaxScroll()
-    }
-
-    private fun startRename(f: Folder) {
-        commitRename()
-        val tf = EditBox(this.font, 0, 0, 100, 14, Component.empty())
-        tf.setMaxLength(32)
-        tf.setBordered(false)
-        tf.value = f.name
-        tf.setFocused(true)
-        renameField = tf
-        renamingFolder = f
-    }
-
-    private fun commitRename() {
-        val f = renamingFolder ?: return
-        val name = renameField?.value?.filter { it !in ";|," }?.trim() ?: f.name
-        if (name.isEmpty()) folders.remove(f) else f.name = name
-        renamingFolder = null
-        renameField = null
-        saveColumnOrder()
-    }
-
-    private fun stackHitAt(mx: Int, my: Int): Pair<StackRow, Int>? {
-        if (mx < stackX0() || mx > stackX0() + STACK_W) return null
-        if (my < stackListTop() || my > stackListBot()) return null
-        val i = Math.floorDiv(my - stackListTop() + stackScroll, stackPitch())
-        val r = stackRowList().getOrNull(i) ?: return null
-        return if (my < stackRowY(i) + STACK_TAB_H && mx >= stackX0() + r.indent) r to i else null
-    }
-
-    private fun renderStack(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        stackScroll = Mth.clamp(stackScroll, 0, stackMaxScroll())
-        val x0 = stackX0()
-        val lt = stackListTop()
-        val lb = stackListBot()
-        val ms = stackMaxScroll()
-        val tx0 = x0
-        val tw = STACK_W - (if (ms > 0) 6 else 0)
-        val dragCol = stackDragCol
-        val dragFolder = stackDragFolder
-        UiRecorder.pushScissor(x0.toFloat(), lt.toFloat(), STACK_W.toFloat(), (lb - lt).toFloat())
-        try {
-            val live = !stackIdle() && dragMoved
-            val rows = if (live) stackRowList(dragCol, dragFolder) else stackRowList()
-            val d = if (live) stackDrop(rows) else null
-            var slot = 0
-            var anchorY = 0
-            fun ease(key: String, target: Double, from: Double = target): Int {
-                val cur = stackAnimY[key] ?: from
-                var ny = cur + (target - cur) * 0.35
-                if (Math.abs(target - ny) < 0.5) ny = target
-                stackAnimY[key] = ny
-                return Math.round(ny).toInt()
-            }
-            for ((i, r) in rows.withIndex()) {
-                if (d != null && d.gap == i) slot++
-                val f = r.folder
-                val c = r.col
-                val key = when {
-                    f != null -> "\u0001" + f.name
-                    c == null -> "\u0002"
-                    else -> c.name
-                }
-                val target = stackRowY(slot++).toDouble()
-                val y = ease(key, target, if (r.indent > 0) anchorY.toDouble() else target)
-                if (r.indent == 0) anchorY = y
-                val x = tx0 + r.indent
-                val w = tw - r.indent
-                when {
-                    f != null -> drawStackFolder(ctx, f, x, y, w, mouseX, mouseY, d?.into === f)
-                    c == null -> drawStackAddRow(ctx, x, y, w, mouseX, mouseY)
-                    else -> drawStackTab(ctx, c, x, y, w, mouseX, mouseY)
-                }
-            }
-            if (live) {
-                val dy = stackDragY - stackGrabDY
-                if (dragCol != null) {
-                    stackAnimY[dragCol.name] = dy.toDouble()
-                    drawStackTab(ctx, dragCol, tx0, dy, tw, mouseX, mouseY)
-                } else if (dragFolder != null) {
-                    stackAnimY["\u0001" + dragFolder.name] = dy.toDouble()
-                    drawStackFolder(ctx, dragFolder, tx0, dy, tw, mouseX, mouseY, false)
-                }
-            }
-        } finally { UiRecorder.popScissor() }
-
-        if (ms > 0) {
-            val vp = lb - lt
-            val barH = Math.max(20, (vp.toLong() * vp / (vp + ms)).toInt())
-            val barY = lt + ((vp - barH).toLong() * stackScroll / ms).toInt()
-            val trackX = x0 + STACK_W - 2
-            UiRecorder.fillRect(trackX.toFloat(), lt.toFloat(), 2f, vp.toFloat(), 0xFF191919.toInt())
-            UiRecorder.fillRect(trackX.toFloat(), barY.toFloat(), 2f, barH.toFloat(), ACCENT)
-        }
-    }
-
-    private fun drawStackTab(ctx: GuiGraphicsExtractor, c: Column, x: Int, y: Int, w: Int, mouseX: Int, mouseY: Int) {
-        // nav-pane row: name, on/total count, active row highlighted
-        val open = !isFolded(c)
-        val hov = stackIdle() && mouseX in x..x + w && mouseY >= y && mouseY < y + STACK_TAB_H
-        val ha = hover("nav" + c.name, hov)
-        if (open) roundedRect(ctx, x, y, w, STACK_TAB_H, 6, 0x24FFFFFF)
-        else if (ha > 0f) roundedRect(ctx, x, y, w, STACK_TAB_H, 6, fa(ROW_HOVER, ha))
-        if (ha > 0f) UiRecorder.fillRect(x.toFloat(), (y + 4).toFloat(), 2f, (STACK_TAB_H - 8).toFloat(), fa(TEXT_COLOR, ha))
-        val n = "${c.features.count { it.hasMaster() && it.get!!() }}/${c.features.size}"
-        val nw = sw(this.font, n, 0.75f)
-        UiRecorder.text(ellipsize(c.name, w - nw - 22, 0.9f), (x + 8).toFloat(), y + (STACK_TAB_H - 0.9f * NVG_BASE_TEXT_SIZE) / 2f, 0.9f * NVG_BASE_TEXT_SIZE, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
-        UiRecorder.text(n, (x + w - 8 - nw).toFloat(), y + (STACK_TAB_H - 0.75f * NVG_BASE_TEXT_SIZE) / 2f, 0.75f * NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
-    }
-
-    private fun drawStackFolder(ctx: GuiGraphicsExtractor, f: Folder, x: Int, y: Int, w: Int, mouseX: Int, mouseY: Int, dropTarget: Boolean) {
-        if (dropTarget) roundedRectRing(ctx, x, y, w, STACK_TAB_H, 4, 1, 0, ACCENT)
-        else if (stackIdle() && mouseX in x..x + w && mouseY >= y && mouseY < y + STACK_TAB_H) roundedRect(ctx, x, y, w, STACK_TAB_H, 4, ROW_HOVER)
-        val cy = y + STACK_TAB_H / 2
-        val tf = renameField
-        if (renamingFolder === f && tf != null) {
-            roundedRect(ctx, x + 16, y + 4, w - 34, STACK_TAB_H - 8, 3, 0xFF171717.toInt())
-            nvgTextFieldContent(tf, x + 16, y + 4, w - 34, STACK_TAB_H - 8)
-        } else {
-            sst(ctx, this.font, ellipsize(f.name.uppercase(), w - 30, 0.7f), x + 8, y + (STACK_TAB_H - 6) / 2, SUBTEXT_COLOR, 0.7f)
-        }
-        drawChevron(ctx, x + w - 12, cy, f.open, SUBTEXT_COLOR)
-    }
-
-    private fun drawStackAddRow(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, mouseX: Int, mouseY: Int) {
-        val hover = stackIdle() && mouseX in x..x + w && mouseY >= y && mouseY < y + STACK_TAB_H
-        if (hover) roundedRect(ctx, x, y, w, STACK_TAB_H, 6, ROW_HOVER)
-        sst(ctx, this.font, "+ New folder", x + 8, y + (STACK_TAB_H - 8) / 2, SUBTEXT_COLOR, 0.85f)
-    }
-
     private fun ellipsize(text: String, maxW: Int, scale: Float = 1f): String {
         if (sw(this.font, text, scale) <= maxW) return text
         val n = fishmod.utils.rendering.TextFit.prefixLength(text, "…", maxW.toFloat(), 1) { sw(this.font, it, scale).toFloat() }
@@ -3219,12 +3009,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val my = vx(click.y())
         val btn = fishmod.compat.GLFW.btn(click)
 
-        val rnf = renamingFolder
-        if (rnf != null) {
-            if (stackHitAt(mx, my)?.first?.folder === rnf) return true
-            commitRename()
-        }
-
         val cap = capturingKeybind
         if (cap != null) {
             cap.applyKey(InputConstants.Type.MOUSE.getOrCreate(click.button()))
@@ -3241,29 +3025,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         val headerTop = cyTop() - HEADER_H
 
-        if (mx >= stackX0() && mx <= stackX0() + STACK_W && my >= headerTop && my <= cyBot()) {
-            val hit = stackHitAt(mx, my) ?: return true
-            val r = hit.first
-            val f = r.folder
-            val c = r.col
-            fun startDrag() {
-                stackGrabDY = my - stackRowY(hit.second)
-                stackDragY = my
-                pressX = mx; pressY = my; dragMoved = false
-            }
-            when {
-                r.isAdd() -> if (btn == 0) createFolder()
-                f != null && btn == 1 -> {
-                    val shift = fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
-                        fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
-                    if (shift) startRename(f)
-                    else { f.open = !f.open; saveFolders(); stackScroll = Mth.clamp(stackScroll, 0, stackMaxScroll()) }
-                }
-                f != null && btn == 0 -> { stackDragFolder = f; startDrag() }
-                c != null && btn == 0 -> { stackDragCol = c; startDrag() }
-            }
-            return true
-        }
+        if (navClick(mx, my, btn)) return true
 
         if (my >= headerTop && my <= cyBot()) return exClick(mx, my, btn)
         return super.mouseClicked(click, bl)
@@ -3281,13 +3043,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         winDrag?.let { winDX = vx(click.x()) - it[0]; winDY = vx(click.y()) - it[1]; return true }
         val slider = activeSlider
         if (slider != null) { slider.onDrag(vx(click.x()), activeSliderX, activeSliderW); return true }
-        if (!dragMoved && !stackIdle()) {
-            if (Math.abs(vx(click.x()) - pressX) >= DRAG_THRESHOLD || Math.abs(vx(click.y()) - pressY) >= DRAG_THRESHOLD) dragMoved = true
-        }
-        if (!stackIdle()) {
-            stackDragY = vx(click.y())
-            return true
-        }
         return super.mouseDragged(click, deltaX, deltaY)
     }
 
@@ -3303,17 +3058,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (winDrag != null) { winDrag = null; return true }
         activeSlider = null
 
-        val sc = stackDragCol
-        val sf = stackDragFolder
-        if (sc != null || sf != null) {
-            if (dragMoved) applyStackDrop()
-            else if (sc != null) toggleFold(sc)
-            else if (sf != null) toggleFolderColumns(sf)
-            stackDragCol = null
-            stackDragFolder = null
-        }
-
-        dragMoved = false
 
         return super.mouseReleased(click)
     }
@@ -3329,8 +3073,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun scrollInner(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         val mouseX = vx(mouseX).toDouble()
         val mouseY = vx(mouseY).toDouble()
-        if (mouseX >= stackX0() && mouseX <= stackX0() + STACK_W && mouseY >= cyTop() - HEADER_H && mouseY <= cyBot()) {
-            stackScroll = Mth.clamp((stackScroll - verticalAmount * 18).toInt(), 0, stackMaxScroll())
+        if (mouseX <= stackX0() + STACK_W && mouseY >= navTop()) {
+            navScroll = Mth.clamp((navScroll - verticalAmount * NAV_ROW).toInt(), 0, navMax())
             return true
         }
         val f = selected
@@ -3374,15 +3118,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             capturingKeybind = null
             return true
         }
-        val rf = renameField
-        if (renamingFolder != null && rf != null) {
-            when (input.key()) {
-                GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> commitRename()
-                GLFW.GLFW_KEY_ESCAPE -> { renamingFolder = null; renameField = null }
-                else -> rf.keyPressed(input)
-            }
-            return true
-        }
         val ai = activeInput
         if (ai is InputSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
         if (ai is InputIntSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
@@ -3401,8 +3136,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
     private fun charInner(input: CharacterEvent): Boolean {
-        val rf = renameField
-        if (renamingFolder != null && rf != null) { rf.charTyped(input); return true }
         val ai = activeInput
         if (ai is InputSetting && ai.textField != null) {
             ai.textField!!.charTyped(input); ai.setter(ai.textField!!.value); return true
@@ -4401,8 +4134,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val HEADER_H = 36
         private const val STATUS_H = 22
         private const val CARD_MIN_W = 150
-        private const val CARD_TALL = 52
-        private const val CARD_GAP = 6
+        private const val CARD_TALL = 44
+        private const val CARD_GAP = 4
         private const val DET_W = 230
         private val COLUMN_SUBTITLES = mapOf(
             "General" to "Core mod options",
@@ -4428,7 +4161,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "Achievements" to "Goals & progress",
         )
         private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
-        private const val STACK_W = 176
+        private const val STACK_W = 150
+        private const val NAV_ROW = 18
         private val STACK_TAB_H get() = if (COMPACT) 20 else 24
         private const val STACK_SUB_INDENT = 10
         private const val DRAG_THRESHOLD = 4
