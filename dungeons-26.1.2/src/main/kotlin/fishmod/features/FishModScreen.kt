@@ -129,7 +129,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Layout"))
             f.sub.add(ToggleSetting("Compact GUI", "Tighter rows, gaps and columns so more fits on screen", "fmCompact"))
             f.sub.add(SubcategoryHeader("Animation"))
-            f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmAnimations"))
+            f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
             general.features.add(f)
         }
         run {
@@ -2375,7 +2375,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var selAt = 0L
     private fun colByName(n: String): Column? = columns.firstOrNull { it.name == n }
     private fun anim(start: Long, delayMs: Int = 0, durMs: Int = 260): Float {
-        if (!FishSettings.fmAnimations) return 1f
+        if (!FishSettings.fmUiAnimations) return 1f
         val t = ((System.currentTimeMillis() - start - delayMs) / durMs.toFloat()).coerceIn(0f, 1f)
         return 1f - (1f - t) * (1f - t) * (1f - t)
     }
@@ -2434,23 +2434,27 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun winW(): Int = if (winMax) scrW() else Math.min(860, (scrW() * 0.78f).toInt())
     private fun winH(): Int = if (winMax) scrH() else Math.min(520, (scrH() * 0.8f).toInt())
     private fun left(): Int = if (winMax) 0 else Mth.clamp((scrW() - winW()) / 2 + winDX, 0, scrW() - winW())
-    private fun top(): Int = (if (winMax) 0 else Mth.clamp((scrH() - winH()) / 2 + winDY, 0, scrH() - winH())) + Math.round((1f - winP()) * 16f)
+    private fun top(): Int = (if (winMax) 0 else Mth.clamp((scrH() - winH()) / 2 + winDY, 0, scrH() - winH())) + Math.round((1f - winP()) * 28f)
     private val winOpenAt = System.currentTimeMillis()
     private var closeAt = 0L
     private fun winP(): Float = anim(winOpenAt, 0, 220) * (if (closing) 1f - anim(closeAt, 0, 160) else 1f)
 
     // Smooth hover: each control eases its highlight in and out
     private val hv = HashMap<String, Float>()
+    private var lastHoverNs = System.nanoTime()
+    private var frameNs = System.nanoTime()
     private fun hover(key: String, on: Boolean): Float {
         val cur = hv[key] ?: 0f
-        val n = if (!FishSettings.fmAnimations) (if (on) 1f else 0f) else cur + ((if (on) 1f else 0f) - cur) * 0.3f
+        val dt = ((frameNs - lastHoverNs).coerceIn(0L, 100_000_000L)) / 1_000_000f
+        val n = if (!FishSettings.fmUiAnimations) (if (on) 1f else 0f) else cur + ((if (on) 1f else 0f) - cur) * (1f - Math.exp(-dt / 60.0).toFloat())
         hv[key] = if (Math.abs(n - (if (on) 1f else 0f)) < 0.02f) (if (on) 1f else 0f) else n
         return hv[key]!!
     }
     private val knob = HashMap<String, Float>()
     private fun knobP(key: String, on: Boolean): Float {
         val t = if (on) 1f else 0f
-        val n = if (!FishSettings.fmAnimations) t else (knob[key] ?: t).let { it + (t - it) * 0.3f }
+        val k = 1f - Math.exp(-((frameNs - lastHoverNs).coerceIn(0L, 100_000_000L) / 1_000_000.0) / 50.0).toFloat()
+        val n = if (!FishSettings.fmUiAnimations) t else (knob[key] ?: t).let { it + (t - it) * k }
         knob[key] = n
         return n
     }
@@ -2591,7 +2595,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         refreshButtonTheme()
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
 
-        if (closing && !closeFinalized && (!FishSettings.fmAnimations || System.currentTimeMillis() - closeAt >= 170)) {
+        if (closing && !closeFinalized && (!FishSettings.fmUiAnimations || System.currentTimeMillis() - closeAt >= 170)) {
             closeFinalized = true
             try { ConfigRoot.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.8", "Config save on /fm close failed", t) }
             try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.9", "FishConfig save on /fm close failed", t) }
@@ -2602,6 +2606,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         UiRecorder.clear()
+        lastHoverNs = frameNs; frameNs = System.nanoTime()
 
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
@@ -2670,7 +2675,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         for (b in winButtons()) {
             val h = hov(b, mx, my)
             val a = hover("w" + b.id, h)
-            if (a > 0f) UiRecorder.fillRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), fa(if (b.id == "close") 0xFFC42B1C.toInt() else 0x33808080, a))
+            if (a > 0f) UiRecorder.fillRoundedRectCorners(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 0f, if (b.id == "close" && !winMax) 12f else 0f, 0f, 0f, fa(if (b.id == "close") 0xFFC42B1C.toInt() else 0x33808080, a))
             icon(b.id, b.x + b.w / 2f, b.y + b.h / 2f, if (h) 0xFFFFFFFF.toInt() else TEXT_COLOR)
         }
         for (b in cmdButtons()) {
@@ -2787,8 +2792,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val n = "${c.features.count { it.hasMaster() && it.get!!() }}/${c.features.size}"
                 val ns = 0.72f * NVG_BASE_TEXT_SIZE
                 val nw = UiRecorder.textWidth(n, ns)
-                val ts = 0.88f * NVG_BASE_TEXT_SIZE
-                UiRecorder.text(ellipsize(c.name, (w - nw - 18).toInt(), 0.88f), (x + 6).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
+                val ts = 0.84f * NVG_BASE_TEXT_SIZE
+                UiRecorder.text(ellipsize(c.name, (w - nw - 16).toInt(), 0.84f), (x + 6).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else 0xFFC8C8C8.toInt())
                 UiRecorder.text(n, x + w - 6 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
             }
         } finally { UiRecorder.popScissor() }
@@ -4161,7 +4166,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "Achievements" to "Goals & progress",
         )
         private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
-        private const val STACK_W = 150
+        private const val STACK_W = 176
         private const val NAV_ROW = 18
         private val STACK_TAB_H get() = if (COMPACT) 20 else 24
         private const val STACK_SUB_INDENT = 10
