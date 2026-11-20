@@ -89,4 +89,24 @@ object RiftSettings {
     @ConfigValue @JvmField var riftGuideX: Int = 5
     @ConfigValue @JvmField var riftGuideY: Int = 80
     @ConfigValue @JvmField var riftGuideScale: Double = 1.0
+
+    @ConfigValue @JvmField var riftTimer: Boolean = false
+    @ConfigValue @JvmField var riftTimerColor: Int = 0xFFFFFF55.toInt()
+    @ConfigValue @JvmField var riftTimerX: Int = 5
+    @ConfigValue @JvmField var riftTimerY: Int = 60
+    @ConfigValue @JvmField var riftTimerScale: Double = 1.0
+
+    @ConfigValue @JvmField var riftVermin: Boolean = false
+    @ConfigValue @JvmField var riftVerminFly: Int = 0
+    @ConfigValue @JvmField var riftVerminSpider: Int = 0
+    @ConfigValue @JvmField var riftVerminSilverfish: Int = 0
+    @ConfigValue @JvmField var riftVerminX: Int = 5
+    @ConfigValue @JvmField var riftVerminY: Int = 100
+    @ConfigValue @JvmField var riftVerminScale: Double = 1.0
+
+    @ConfigValue @JvmField var riftHacking: Boolean = false
+    @ConfigValue @JvmField var riftHackingColor: Int = 0x8055FF55.toInt()
+    @ConfigValue @JvmField var riftTimite: Boolean = false
+    @ConfigValue @JvmField var riftDefense: Boolean = false
+    @ConfigValue @JvmField var riftDefenseColor: Int = 0xFF55FFFF.toInt()
 }

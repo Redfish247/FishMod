@@ -116,6 +116,24 @@ object RiftMenu {
         guide.sub.add(ColorPickerSetting("Task Colour", "", S::class.java, "riftGuideColor"))
         col.features.add(guide)
 
+        val timer = Feature("Rift Timer", S::class.java, "riftTimer")
+        timer.sub.add(ColorPickerSetting("Label Colour", "Nearest chat colour is used", S::class.java, "riftTimerColor"))
+        col.features.add(timer)
+
+        val vermin = Feature("Vermin Tracker", S::class.java, "riftVermin")
+        vermin.sub.add(fishmod.features.FishModScreen.ButtonSetting("Reset Counts", "", "Reset", Runnable { RiftExtras.resetVermin() }))
+        col.features.add(vermin)
+
+        val hack = Feature("Kloon Hacking Solver", S::class.java, "riftHacking")
+        hack.sub.add(ColorPickerSetting("Correct Colour", "", S::class.java, "riftHackingColor"))
+        col.features.add(hack)
+
+        col.features.add(Feature("Timite Expiry Timer", S::class.java, "riftTimite"))
+
+        val def = Feature("Living Cave Defense Blocks", S::class.java, "riftDefense")
+        def.sub.add(ColorPickerSetting("Colour", "", S::class.java, "riftDefenseColor"))
+        col.features.add(def)
+
         return col
     }
 
@@ -136,6 +154,11 @@ object RiftMenu {
         "Vampire Slayer Helper" -> "Boss highlight, STEAK alert, Twinclaws warning"
         "Burger Warning" -> "Warn when the Motes Grubber menu opens with Highlite in your inventory and under 5/5 McGrubber burgers"
         "Leech Supreme Helper" -> "Laser phase: box + line to the safe spot and a go-there title"
+        "Rift Timer" -> "Rift time left (with max and %) as a HUD (move it in Edit HUD)"
+        "Vermin Tracker" -> "Flies, spiders and silverfish you vacuumed in West Village"
+        "Kloon Hacking Solver" -> "Colours the right buttons in Kloon's Hacking menu"
+        "Timite Expiry Timer" -> "Countdown on blue Timite panes in their last 6 seconds"
+        "Living Cave Defense Blocks" -> "Box, line and Break! on Auto* mob defense blocks"
         else -> null
     }
 }

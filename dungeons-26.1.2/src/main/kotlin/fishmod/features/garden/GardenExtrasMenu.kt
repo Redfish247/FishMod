@@ -57,6 +57,27 @@ object GardenExtrasMenu {
         bps.sub.add(ToggleSetting("Crop Speed Meter", "Crops broken per minute by crop type", X::class.java, "gardenCropSpeed"))
         bps.sub.add(ColorPickerSetting("Label Colour", "Nearest chat colour is used", X::class.java, "gardenBpsColor"))
         col.features.add(bps)
+
+        val man = Feature("Mantid Bonus HUD", X::class.java, "gardenMantid")
+        man.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", X::class.java, "gardenMantidColor"))
+        col.features.add(man)
+
+        val spr = Feature("Spray Expiry Alert", X::class.java, "gardenSprayAlert")
+        spr.sub.add(fishmod.features.FishModScreen.SliderIntSetting("Warn Seconds Before", "", X::class.java, "gardenSprayAlertSeconds", 5, 300))
+        spr.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", X::class.java, "gardenSprayAlertColor"))
+        col.features.add(spr)
+
+        col.features.add(Feature("Phantomleaf Solver", X::class.java, "gardenPhantomleaf"))
+
+        val dna = Feature("DNA Analyzer Solver", X::class.java, "gardenDna")
+        dna.sub.add(ColorPickerSetting("Swap Colour", "", X::class.java, "gardenDnaColor"))
+        col.features.add(dna)
+
+        val sm = Feature("SkyMart Copper Value", X::class.java, "gardenSkyMart")
+        sm.sub.add(ColorPickerSetting("Label Colour", "Nearest chat colour is used", X::class.java, "gardenSkyMartColor"))
+        col.features.add(sm)
+
+        col.features.add(Feature("Watering Helper", X::class.java, "gardenWatering"))
     }
 
     fun describe(name: String): String? = when (name) {
@@ -71,6 +92,12 @@ object GardenExtrasMenu {
         "Farming Toolkit Icons" -> "Crop icons in the farming toolkit menu"
         "Yaw / Pitch Display" -> "Your yaw and pitch as a HUD while in the Garden"
         "BPS Tracker" -> "Crop blocks you break per second (last 5s), optional crops/min per type"
+        "Mantid Bonus HUD" -> "Mantid reforge pest-kill stacks (max 20) and next expiry"
+        "Spray Expiry Alert" -> "Title when the current plot's spray is about to run out or expires"
+        "Phantomleaf Solver" -> "Close / Found title from the hint sound after a hit"
+        "DNA Analyzer Solver" -> "Highlights the next two cells to swap in the DNA Analyzer"
+        "SkyMart Copper Value" -> "Coins per copper on SkyMart item tooltips"
+        "Watering Helper" -> "Bigger, through-wall greenhouse water level bars"
         else -> null
     }
 }
