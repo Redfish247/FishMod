@@ -2889,10 +2889,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val f = selected ?: return
         val dx0 = cx1() - DET_W + Math.round((1f - anim(selAt, 0, 220)) * 24f)
         UiRecorder.fillRoundedRect(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ink(0x0F))
-        sst(ctx, this.font, ellipsize(f.name, DET_W - 40), dx0 + 12, ht + 9, TEXT_COLOR, 1f)
-        descFor(f.name).takeIf { it.isNotEmpty() }?.let { sst(ctx, this.font, ellipsize(it, DET_W - 24, 0.75f), dx0 + 12, ht + 24, SUBTEXT_COLOR, 0.75f) }
+        // same type sizes and baselines as the column header on the left
+        sst(ctx, this.font, ellipsize(f.name, DET_W - 40, 1.2f), dx0 + 12, ht + 6, TEXT_COLOR, 1.2f)
+        descFor(f.name).takeIf { it.isNotEmpty() }?.let { sst(ctx, this.font, ellipsize(it, DET_W - 24, 0.8f), dx0 + 12, ht + 22, SUBTEXT_COLOR, 0.8f) }
         val xh = mouseX >= cx1() - 20 && mouseY in ht..ht + 20
-        sst(ctx, this.font, "✕", cx1() - 18, ht + 8, if (xh) TEXT_COLOR else SUBTEXT_COLOR, 1f)
+        icon("x", cx1() - 12f, ht + 11f, if (xh) TEXT_COLOR else SUBTEXT_COLOR)
         detScroll = Mth.clamp(detScroll, 0, detMax(f))
         if (f.sub.isEmpty()) { sst(ctx, this.font, "No settings", dx0 + 12, detTop() + 6, SUBTEXT_COLOR, 0.9f); return }
         UiRecorder.pushScissor(dx0.toFloat(), detTop().toFloat(), DET_W.toFloat(), (cyBot() - detTop()).toFloat())
