@@ -80,6 +80,15 @@ object ExtrasMenu {
         lvl.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "overlayTextColor"))
         col.features.add(lvl)
 
+        col.features.add(Feature("Booster Cookie Warning", S::class.java, "cookieWarning"))
+        col.features.add(Feature("Kick Cooldown Timer", S::class.java, "kickTimer"))
+
+        val date = Feature("SkyBlock Date HUD", S::class.java, "sbDateHud")
+        date.sub.add(ToggleSetting("Real Time", "Your local clock after the SkyBlock date", S::class.java, "sbDateHudRealTime"))
+        col.features.add(date)
+
+        col.features.add(Feature("Vanquisher Party Share", S::class.java, "vanquisherShare"))
+
         return col
     }
 
@@ -92,6 +101,10 @@ object ExtrasMenu {
         "Server Restart Alert" -> "Title and sound when Hypixel says your server will restart soon"
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
+        "Booster Cookie Warning" -> "Chat warning on joining SkyBlock when your Cookie Buff is not active"
+        "Kick Cooldown Timer" -> "Title one minute after a kick/limbo, when you can rejoin SkyBlock"
+        "SkyBlock Date HUD" -> "Current SkyBlock date and hour, optionally with real time; move in the HUD editor"
+        "Vanquisher Party Share" -> "Sends your coords to party chat when a Vanquisher spawns nearby"
         "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
         else -> null
     }

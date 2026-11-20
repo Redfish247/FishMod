@@ -202,6 +202,7 @@ object ChatFilter {
         if (FishSettings.cfGuildMotd && s.contains("Guild: Message Of The Day")) return "Guild Message Of The Day"
         if (FishSettings.cfBazaar && s.startsWith("[Bazaar] Executing instant buy")) return "Bazaar"
         if (FishSettings.cfWarping && s == "Warping...") return "Warping"
+        if (fishmod.features.extras.ExtrasSettings.cfJacobSpam && s.startsWith("[NPC] Jacob: Your Anita's Artifact is giving you")) return "Jacob Contest"
         if (FishSettings.cfNoammSpam && SPAM_LIST.any { it.matcher(s).matches() }) return "Skyblock/Dungeon Spam"
         if (FishSettings.cfCommonSpam && COMMON_SPAM.any { (p, on) -> on() && p.matcher(s).matches() }) return "Common Hypixel Spam"
         if (FishSettings.cfCustom && customHides(s)) return "Custom Messages"
