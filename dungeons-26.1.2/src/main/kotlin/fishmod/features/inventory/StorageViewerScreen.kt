@@ -29,17 +29,17 @@ private const val CARD_HEAD = 16
 private const val PANEL_R = 8
 private const val CARD_R = 4
 
-private const val BASE_TINT = 0x22_0A0A12
-private val PANEL_BG = 0xFF0E1016.toInt()
-private val PANEL_BORDER = 0xFF2A2D38.toInt()
+private const val BASE_TINT = 0x22_0B0B0B
+private val PANEL_BG = 0xFF101010.toInt()
+private val PANEL_BORDER = 0xFF2D2D2D.toInt()
 private val CARD_BG = ScreenTheme.CARD_BG
-private val CARD_BORDER = 0xFF252932.toInt()
+private val CARD_BORDER = 0xFF292929.toInt()
 private val CELL_BG = 0x14_FFFFFF
-private val FIELD_BG = 0xFF1A1E26.toInt()
-private val FIELD_BORDER = 0xFF2E333D.toInt()
+private val FIELD_BG = 0xFF1E1E1E.toInt()
+private val FIELD_BORDER = 0xFF333333.toInt()
 private val GOLD = 0xFFF2C14E.toInt()
 private val GOLD_SOFT = 0x40_F2C14E
-private val DIM = 0xC00E1016.toInt()
+private val DIM = 0xC0101010.toInt()
 private val KNOB = 0x55_C8D2E6
 
 class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOverlay {

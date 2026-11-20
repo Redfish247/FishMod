@@ -34,14 +34,14 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         private val TEXT = ScreenTheme.TEXT_COLOR
         private val SUB = ScreenTheme.SUBTEXT_COLOR
         private val CARD_BG = ScreenTheme.CARD_BG
-        private val BG_PANEL = 0xF20E1016.toInt()
-        private val BG_SECTION = 0xFF171A22.toInt()
-        private val BORDER = 0xFF2A2D38.toInt()
-        private val FIELD_BG = 0xFF1A1E26.toInt()
-        private val FIELD_BORDER = 0xFF2E333D.toInt()
-        private val ROW_HOVER = 0xFF1F232D.toInt()
-        private val DIM = 0xFF5C6673.toInt()
-        private val DARK_TEXT = 0xFF06110F.toInt()
+        private val BG_PANEL = 0xF2101010.toInt()
+        private val BG_SECTION = 0xFF1A1A1A.toInt()
+        private val BORDER = 0xFF2D2D2D.toInt()
+        private val FIELD_BG = 0xFF1E1E1E.toInt()
+        private val FIELD_BORDER = 0xFF333333.toInt()
+        private val ROW_HOVER = 0xFF232323.toInt()
+        private val DIM = 0xFF646464.toInt()
+        private val DARK_TEXT = 0xFF0D0D0D.toInt()
         private val PREVIEW_BG = 0xCC000000.toInt()
 
         private const val HEADER_H = 44

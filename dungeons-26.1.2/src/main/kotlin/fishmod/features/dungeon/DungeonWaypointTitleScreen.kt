@@ -20,12 +20,12 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
 
     private companion object {
         private const val SCRIM = 0x99000000.toInt()
-        private const val BG = 0xFF12151B.toInt()
-        private const val BORDER = 0xFF2A2D38.toInt()
-        private const val CARD = 0xFF181C23.toInt()
-        private const val CARD_HOVER = 0xFF1E232C.toInt()
-        private const val PREVIEW_BG = 0xFF0B0E12.toInt()
-        private const val ON_ACCENT = 0xFF06302F.toInt()
+        private const val BG = 0xFF151515.toInt()
+        private const val BORDER = 0xFF2D2D2D.toInt()
+        private const val CARD = 0xFF1C1C1C.toInt()
+        private const val CARD_HOVER = 0xFF232323.toInt()
+        private const val PREVIEW_BG = 0xFF0E0E0E.toInt()
+        private const val ON_ACCENT = 0xFF232323.toInt()
     }
 
     private lateinit var field: EditBox
@@ -116,7 +116,7 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
         ScreenTheme.nPanel(x, y, x + panelW, y + panelH, 10, BG, BORDER)
         UiRecorder.fillRect((x + 10).toFloat(), y.toFloat(), (panelW - 20).toFloat(), 2f, ScreenTheme.ACCENT)
 
-        ScreenTheme.nRoundedRect(x + pad, y + 12, 24, 24, 6, 0x2424B6B0)
+        ScreenTheme.nRoundedRect(x + pad, y + 12, 24, 24, 6, 0x24D6D6D6)
         UiRecorder.disc((x + pad + 12).toFloat(), (y + 22).toFloat(), 4.5f, ScreenTheme.ACCENT)
         UiRecorder.fillRect((x + pad + 11).toFloat(), (y + 25).toFloat(), 2f, 6f, ScreenTheme.ACCENT)
         val tx = (x + pad + 32).toFloat()
@@ -127,7 +127,7 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
         UiRecorder.text("Title", (x + pad).toFloat(), (y + 50).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
         ScreenTheme.nTextField(field, true, field.x, field.y, field.width, field.height)
         if (field.value.isEmpty()) {
-            UiRecorder.text("Waypoint title (optional)", (field.x + 3).toFloat(), field.y + 5.5f, 7f, 0xFF5A6470.toInt())
+            UiRecorder.text("Waypoint title (optional)", (field.x + 3).toFloat(), field.y + 5.5f, 7f, 0xFF626262.toInt())
         }
 
         val py = y + 86

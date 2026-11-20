@@ -33,14 +33,14 @@ class AuctionPriceScreen(
 
     private companion object {
         private const val SCRIM = 0xB3000000.toInt()
-        private const val BG = 0xFF12151B.toInt()
-        private const val BORDER = 0xFF2A2D38.toInt()
-        private const val CARD = 0xFF181C23.toInt()
-        private const val CARD_HOVER = 0xFF1E232C.toInt()
+        private const val BG = 0xFF151515.toInt()
+        private const val BORDER = 0xFF2D2D2D.toInt()
+        private const val CARD = 0xFF1C1C1C.toInt()
+        private const val CARD_HOVER = 0xFF232323.toInt()
         private const val GOLD = 0xFFF2C14E.toInt()
         private const val GOLD_SOFT = 0x24F2C14E
         private const val GOOD = 0xFF5BD68A.toInt()
-        private const val ON_ACCENT = 0xFF06302F.toInt()
+        private const val ON_ACCENT = 0xFF232323.toInt()
         private const val ALLOWED = "0123456789,. kKmMbB"
         private val MAX_PRICE = BigDecimal("999999999999999")
     }
@@ -134,7 +134,7 @@ class AuctionPriceScreen(
         UiRecorder.text("Price", (x + pad).toFloat(), (y + 51).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
         ScreenTheme.nTextField(priceField, true, priceField.x, priceField.y, priceField.width, priceField.height)
         if (priceField.value.isEmpty()) {
-            UiRecorder.text("e.g. 42.5m, 800k, 1.2b", (priceField.x + 3).toFloat(), (priceField.y + 5.5f), 7f, 0xFF5A6470.toInt())
+            UiRecorder.text("e.g. 42.5m, 800k, 1.2b", (priceField.x + 3).toFloat(), (priceField.y + 5.5f), 7f, 0xFF626262.toInt())
         }
 
         val parsed = FishDiag.guard("AuctionPriceScreen.2", "parsing auction price '${priceField.value}' failed") { parsePrice(priceField.value) }
@@ -171,12 +171,12 @@ class AuctionPriceScreen(
         val enabled = parsed != null
         val okHov = enabled && inside(mouseX, mouseY, confirmX, btnY, confirmW, btnH)
         val okColor = when {
-            !enabled -> 0x6624B6B0
+            !enabled -> 0x66D6D6D6
             okHov -> ScreenTheme.ACCENT_HOVER
             else -> ScreenTheme.ACCENT
         }
         ScreenTheme.nRoundedRect(confirmX, btnY, confirmW, btnH, btnH / 2, okColor)
-        centered("Confirm", confirmX + confirmW / 2, btnY, btnH, if (enabled) ON_ACCENT else 0x9906302F.toInt())
+        centered("Confirm", confirmX + confirmW / 2, btnY, btnH, if (enabled) ON_ACCENT else 0x99232323.toInt())
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }

@@ -41,9 +41,9 @@ object FishSettings {
     @ConfigValue @JvmField var fmDropDurationMs: Int = 450
     @ConfigValue @JvmField var fmStaggerDelayMs: Int = 60
     @ConfigValue @JvmField var fmExitStyle: String = "Floor Fall"
-    @ConfigValue @JvmField var fmButtonColor: Int = 0xFF24B6B0.toInt()
+    @ConfigValue @JvmField var fmButtonColor: Int = 0xFFD6D6D6.toInt()
     @ConfigValue @JvmField var fmButtonAlpha: Int = 100
-    @ConfigValue @JvmField var fmRowColor: Int = 0xFF24B6B0.toInt()
+    @ConfigValue @JvmField var fmRowColor: Int = 0xFFD6D6D6.toInt()
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
     @ConfigValue @JvmField var fmRowBgAlpha: Int = 100
     @ConfigValue @JvmField var guiSettings: Boolean = false

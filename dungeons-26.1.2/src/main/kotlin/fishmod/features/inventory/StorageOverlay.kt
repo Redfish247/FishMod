@@ -46,16 +46,16 @@ object StorageOverlay {
     private const val TEXT_SIZE = 7.5f
 
     private const val MENU_BG = 0xFF18181B.toInt()
-    private const val MENU_BORDER = 0xFF3C3C41.toInt()
-    private const val CARD_BG = 0xFF222227.toInt()
-    private const val CARD_BORDER = 0xFF303036.toInt()
-    private const val CARD_BORDER_HOVER = 0xFF4A4A52.toInt()
-    private const val SLOT_BG = 0xC8323237.toInt()
-    private const val SLOT_CELL_BG = 0xFF1E1E22.toInt()
-    private const val SLOT_CELL_BORDER = 0xFF37373C.toInt()
+    private const val MENU_BORDER = 0xFF3D3D3D.toInt()
+    private const val CARD_BG = 0xFF232323.toInt()
+    private const val CARD_BORDER = 0xFF313131.toInt()
+    private const val CARD_BORDER_HOVER = 0xFF4B4B4B.toInt()
+    private const val SLOT_BG = 0xC8333333.toInt()
+    private const val SLOT_CELL_BG = 0xFF1E1E1E.toInt()
+    private const val SLOT_CELL_BORDER = 0xFF383838.toInt()
     private const val FIELD_BG = 0xFF121215.toInt()
-    private const val SCROLL_BG = 0xB41E1E23.toInt()
-    private const val SCROLL_KNOB = 0xFF787882.toInt()
+    private const val SCROLL_BG = 0xB41F1F1F.toInt()
+    private const val SCROLL_KNOB = 0xFF797979.toInt()
     private const val HOVER_WHITE = 0x32FFFFFF
     private const val TEXT_DIM = 0xFFB4B4B4.toInt()
     private const val SEARCH_MATCH = 0x5533C9C0
@@ -317,7 +317,7 @@ object StorageOverlay {
 
         runCatching { ctx.blurBeforeThisStratum() }.onFailure { if (it !is IllegalStateException) FishDiag.fail("StorageOverlay.1", "blurBeforeThisStratum failed", it) }
         runCatching { ctx.nextStratum() }.onFailure { FishDiag.fail("StorageOverlay.2", "nextStratum failed", it) }
-        rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0A0A12)
+        rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0B0B0B)
 
         val menu = screen.menu
         val chestEnd = rowCountOf(menu) * 9

@@ -297,21 +297,21 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         private val TEXT = ScreenTheme.TEXT_COLOR
         private val SUBTEXT = ScreenTheme.SUBTEXT_COLOR
-        private val ON_ACCENT = 0xFF06302F.toInt()
+        private val ON_ACCENT = 0xFF232323.toInt()
         private val GUIDE = 0xFFFF4FB0.toInt()
         private val GRID_LINE = 0x14FFFFFF
-        private val SIDE_BG = 0xFF101418.toInt()
+        private val SIDE_BG = 0xFF131313.toInt()
         private val ROW_HOV = 0x1AFFFFFF
-        private val ROW_PICKED = 0x2624B6B0
-        private val HOVER_OUTLINE = 0xB33AD8D1.toInt()
-        private val PILL_BG = 0xE00E1115.toInt()
-        private val PILL_BORDER = 0xFF2B333C.toInt()
+        private val ROW_PICKED = 0x26D6D6D6
+        private val HOVER_OUTLINE = 0xB3FFFFFF.toInt()
+        private val PILL_BG = 0xE0111111.toInt()
+        private val PILL_BORDER = 0xFF323232.toInt()
         private val PILL_TEXT = 0xFFCFD6DD.toInt()
         private val LABEL = 0xFFAEB8C2.toInt()
-        private val FAINT = 0xFF5A636D.toInt()
-        private val CAP_BG = 0xFF1B2027.toInt()
-        private val CAP_BORDER = 0xFF3A3F48.toInt()
-        private val OFF_BG = 0xFF262B33.toInt()
+        private val FAINT = 0xFF616161.toInt()
+        private val CAP_BG = 0xFF1F1F1F.toInt()
+        private val CAP_BORDER = 0xFF3F3F3F.toInt()
+        private val OFF_BG = 0xFF2A2A2A.toInt()
 
         private val CONTROLS = listOf(
             "Hover left edge" to "Pick HUDs",
@@ -638,8 +638,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val x = eyeX(e); val y = eyeY(e)
         val off = frozen(e)
         val hov = mx in x..(x + EYE_W) && my in y..(y + EYE_H)
-        ctx.fill(x, y, x + EYE_W, y + EYE_H, if (hov) 0xE0203A40.toInt() else 0xB0101C20.toInt())
-        val c = if (off) 0xFF8A9A9C.toInt() else 0xFFFFFFFF.toInt()
+        ctx.fill(x, y, x + EYE_W, y + EYE_H, if (hov) 0xE0333333.toInt() else 0xB0191919.toInt())
+        val c = if (off) 0xFF959595.toInt() else 0xFFFFFFFF.toInt()
         ctx.fill(x + 3, y + 2, x + 8, y + 3, c)
         ctx.fill(x + 1, y + 3, x + 3, y + 4, c); ctx.fill(x + 8, y + 3, x + 10, y + 4, c)
         ctx.fill(x + 1, y + 4, x + 3, y + 5, c); ctx.fill(x + 8, y + 4, x + 10, y + 5, c)
@@ -723,12 +723,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     val ts = 6.5f
                     val ty = if (y - 2 - 10f * k >= 1f) (y - 2) / k - 10f else (y + h + 2) / k
                     val tx = (x - 1) / k
-                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, 0xE6101C20.toInt())
+                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, 0xE6191919.toInt())
                     UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, 0xFFFFFFFF.toInt())
                     if (e.setScale() != null && !e.locked()) {
                         UiRecorder.roundedRectRing(
                             (x + w - GRIP) / k, (y + h - GRIP) / k, GRIP * 2f / k, GRIP * 2f / k,
-                            2f / k, 1f / k, ACCENT_HOVER, 0xFF0B1417.toInt()
+                            2f / k, 1f / k, ACCENT_HOVER, 0xFF121212.toInt()
                         )
                     }
                 }
@@ -803,7 +803,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         val dx = doneX().toFloat()
         val dHov = inRect(mouseX, mouseY, doneX(), btnY(), BTN_W, BTN_H)
-        UiRecorder.roundedRectRing(dx, by, bw, bh, bh / 2f, 1.5f, if (dHov) 0xF2231A1D.toInt() else 0xE614181D.toInt(), if (dHov) ACCENT_HOVER else ACCENT)
+        UiRecorder.roundedRectRing(dx, by, bw, bh, bh / 2f, 1.5f, if (dHov) 0xF2231A1D.toInt() else 0xE6171717.toInt(), if (dHov) ACCENT_HOVER else ACCENT)
         centerText("Done", dx + bw / 2f, ty, ts, 0xFFFFFFFF.toInt())
 
         val rx = resetX().toFloat()
@@ -813,7 +813,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             centerText("Sure?", rx + bw / 2f, ty, ts, 0xFF2A0B0B.toInt())
         } else {
             UiRecorder.roundedRectRing(
-                rx, by, bw, bh, bh / 2f, 1f, if (rHov) 0xF2231A1D.toInt() else 0xE614181D.toInt(),
+                rx, by, bw, bh, bh / 2f, 1f, if (rHov) 0xF2231A1D.toInt() else 0xE6171717.toInt(),
                 if (rHov) ScreenTheme.DANGER_HOVER else 0x80E05A5A.toInt()
             )
             centerText("Reset shown", rx + bw / 2f, ty, ts, if (rHov) ScreenTheme.DANGER_HOVER else ScreenTheme.DANGER)
@@ -838,8 +838,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         val sw = sideW - 13
         val sHov = onSearch(mouseX, mouseY)
-        val border = if (searchFocused) ACCENT else if (sHov) 0xFF5A606A.toInt() else CAP_BORDER
-        UiRecorder.roundedRectRing(6f, SEARCH_Y.toFloat(), sw.toFloat(), SEARCH_H.toFloat(), 4f, 1f, 0xFF0B0F12.toInt(), border)
+        val border = if (searchFocused) ACCENT else if (sHov) 0xFF5F5F5F.toInt() else CAP_BORDER
+        UiRecorder.roundedRectRing(6f, SEARCH_Y.toFloat(), sw.toFloat(), SEARCH_H.toFloat(), 4f, 1f, 0xFF0E0E0E.toInt(), border)
         if (search.value.isEmpty() && !searchFocused) {
             UiRecorder.text("Search HUDs…", 9f, SEARCH_Y + (SEARCH_H - 6.5f) / 2f, 6.5f, FAINT)
         } else {
@@ -865,7 +865,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                             UiRecorder.text(tag, sideW - 9f - UiRecorder.textWidth(tag, 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
                         }
                         val all = clickable && row.items.all { it.name() in picked }
-                        val c = if (!clickable) 0xFF555B63.toInt() else if (all) ACCENT_HOVER else ACCENT
+                        val c = if (!clickable) 0xFF5A5A5A.toInt() else if (all) ACCENT_HOVER else ACCENT
                         UiRecorder.textBold(row.text.uppercase(), 8f, yf + (SIDE_ROW - 6f) / 2f, 6f, c)
                     }
                     is Row.Action -> {
@@ -878,7 +878,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         if (hov) rowBg(yf, ROW_HOV)
                         if (on) UiRecorder.fillRoundedRect(4f, yf + 2.5f, 2f, SIDE_ROW - 5f, 1f, ACCENT)
                         val off = !row.e.isEnabledInList()
-                        val col = if (off) 0xFF666B72.toInt() else if (on) TEXT else LABEL
+                        val col = if (off) 0xFF6A6A6A.toInt() else if (on) TEXT else LABEL
                         val tw = UiRecorder.textWidth("off", 5.5f)
                         val ox = sideW - 10f - tw - 6f
                         UiRecorder.text(ellipsize(row.e.name(), ox - 4f - 12f, 6.5f), 12f, ty, 6.5f, col)
