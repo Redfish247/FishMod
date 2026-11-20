@@ -78,6 +78,9 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             int dianaGlow = fishmod.features.diana.RareMobs.glowColor(entity);
             if (dianaGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dianaGlow;
 
+            int miniGlow = fishmod.features.slayers.SlayerMiniHighlight.glowColor(entity);
+            if (miniGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = miniGlow;
+
             if (VisualSettings.hideMobFire) {
                 state.displayFireAnimation = false;
             } else if (entity instanceof Player player && VisualSettings.hideBurningInf5) {
