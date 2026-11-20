@@ -4337,7 +4337,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         fun drawTogglePill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, on: Boolean, knobProgress: Float, hover: Boolean) {
             val off = if (hover) 0xFF6A6A6A.toInt() else 0xFF5A5A5A.toInt()
-            val onC = if (hover) 0xFF4ADB94.toInt() else 0xFF3CCF86.toInt()
+            val onC = if (hover) ACCENT_HOVER else ACCENT
             val track = lerpColor(off, onC, knobProgress)
             UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), h / 2f, track)
             val r = h / 2f - 2f
