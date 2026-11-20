@@ -2889,10 +2889,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val clicked = try { s.onClick(mx, my, leftX, rightX, ssy, btn) } catch (t: Throwable) {
                 FishDiag.fail("FishModScreen.14", "setting '${s.name}' (${s.javaClass.simpleName}) in '${f.name}' click failed", t); true
             }
-            if (clicked) { if (s is KeybindSetting && s.capturing) capturingKeybind = s; return }
+            if (clicked) { if (s is KeybindSetting && s.capturing) capturingKeybind = s; if (s is SliderIntSetting || s is SliderDoubleSetting) activeInput = s; return }
             if (s is SliderIntSetting || s is SliderDoubleSetting) {
                 val slx = leftX + 2
-                val slw = rightX - leftX - 4
+                val slw = rightX - leftX - 4 - SLIDER_BOX
                 val sly = ssy + SLIDER_CTRL_Y
                 if (mx >= slx && mx <= slx + slw && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
                     activeSlider = s; activeSliderX = slx; activeSliderW = slw; s.onDrag(mx, slx, slw); return
@@ -2915,9 +2915,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         for ((i, ft) in exItems().withIndex()) {
             val x = cardX(i); val y = cardY(i)
             if (mx !in x..x + cw || my !in y..y + cardH()) continue
-            if (btn == 0 && ft.hasMaster() && (mx >= x + cw - 34 || ft.sub.isEmpty())) {
-                try { ft.set!!(!ft.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${ft.name}' failed", t) }
-            } else if (ft.sub.isNotEmpty()) { if (selected == null) selAt = System.currentTimeMillis(); selected = ft; detScroll = 0 }
+            // left click opens settings, right click toggles
+            if (btn == 1) { if (ft.hasMaster()) try { ft.set!!(!ft.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${ft.name}' failed", t) } }
+            else if (btn == 0) { if (selected == null) selAt = System.currentTimeMillis(); selected = ft; detScroll = 0 }
             return true
         }
         return true
@@ -2981,7 +2981,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (s !is SubcategoryHeader && s !is LabelSetting && s !is InputSetting && s !is SliderIntSetting && s !is SliderDoubleSetting &&
                 s !is InputIntSetting && s !is InputDoubleSetting && s !is ColorPickerSetting) {
                 val labelH = if (s is DropdownSetting<*>) ITEM_HEIGHT else sh
-                st(ctx, this.font, s.name, leftX + 2, sy + (labelH - 8) / 2, TEXT_COLOR)
+                st(ctx, this.font, s.name, leftX + 2, sy + (labelH - 7) / 2, TEXT_COLOR)
             }
             try {
                 s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
@@ -3019,6 +3019,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         val prevInput = activeInput
+        if (prevInput is SliderIntSetting) prevInput.commitTyping()
+        if (prevInput is SliderDoubleSetting) prevInput.commitTyping()
         if (prevInput is InputSetting && prevInput.textField != null) prevInput.textField!!.setFocused(false)
         if (prevInput is ColorPickerSetting) prevInput.hexField?.setFocused(false)
         activeInput = null
@@ -3121,6 +3123,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return true
         }
         val ai = activeInput
+        if ((ai is SliderIntSetting && ai.typing != null) || (ai is SliderDoubleSetting && ai.typing != null)) {
+            val k = input.key()
+            fun t(f: (String) -> String) { if (ai is SliderIntSetting) ai.typing = f(ai.typing!!) else if (ai is SliderDoubleSetting) ai.typing = f(ai.typing!!) }
+            when (k) {
+                GLFW.GLFW_KEY_BACKSPACE -> t { it.dropLast(1) }
+                GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> { if (ai is SliderIntSetting) ai.commitTyping() else if (ai is SliderDoubleSetting) ai.commitTyping(); activeInput = null }
+                GLFW.GLFW_KEY_ESCAPE -> { if (ai is SliderIntSetting) ai.typing = null else if (ai is SliderDoubleSetting) ai.typing = null; activeInput = null }
+            }
+            return true
+        }
         if (ai is InputSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
         if (ai is InputIntSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
         if (ai is InputDoubleSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
@@ -3139,6 +3151,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun charInner(input: CharacterEvent): Boolean {
         val ai = activeInput
+        val ch = input.codepointAsString()
+        if (ai is SliderIntSetting && ai.typing != null) { if (ch.all { it.isDigit() || it == '-' } && ai.typing!!.length < 9) ai.typing += ch; return true }
+        if (ai is SliderDoubleSetting && ai.typing != null) { if (ch.all { it.isDigit() || it == '-' || it == '.' } && ai.typing!!.length < 9) ai.typing += ch; return true }
         if (ai is InputSetting && ai.textField != null) {
             ai.textField!!.charTyped(input); ai.setter(ai.textField!!.value); return true
         }
@@ -3301,16 +3316,27 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             val slx = leftX + 2
-            val slw = rightX - leftX - 4
+            val slw = rightX - leftX - 4 - SLIDER_BOX
             val sly = sy + SLIDER_CTRL_Y
             val pct = if (max > min) Mth.clamp((getter() - min).toFloat() / (max - min), 0f, 1f) else 0f
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
-            disc(ctx, slx + fillW.coerceIn(3, slw - 3), sly + SLIDER_H / 2, 4, 0xFFFFFFFF.toInt())
-            val v = format?.invoke(getter()) ?: getter().toString()
-            st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
+            disc(ctx, slx + fillW.coerceIn(4, slw - 4), sly + SLIDER_H / 2, 4, 0xFFFFFFFF.toInt())
+            val bx = slx + slw + 6
+            val by = sly + SLIDER_H / 2 - 6
+            roundedRectRing(ctx, bx, by, SLIDER_BOX - 6, 12, 3, 1, 0x14FFFFFF, if (typing != null) ACCENT else 0x26FFFFFF)
+            val v = typing ?: getter().toString()
+            val vs = NVG_BASE_TEXT_SIZE * 0.72f
+            UiRecorder.text(v + (if (typing != null && (System.currentTimeMillis() / 500) % 2 == 0L) "|" else ""), bx + (SLIDER_BOX - 6 - UiRecorder.textWidth(v, vs)) / 2f, by + (12 - vs) / 2f, vs, TEXT_COLOR)
         }
+        var typing: String? = null
+        override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
+            val bx = rightX - 2 - SLIDER_BOX + 6; val by = sy + SLIDER_CTRL_Y + SLIDER_H / 2 - 6
+            if (mx in bx..bx + SLIDER_BOX - 6 && my in by..by + 12) { typing = ""; return true }
+            return false
+        }
+        fun commitTyping() { typing?.toIntOrNull()?.let { setter(snap(it)) }; typing = null }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
             setter(snap(min + (pct * (max - min)).toInt()))
@@ -3330,16 +3356,27 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             val slx = leftX + 2
-            val slw = rightX - leftX - 4
+            val slw = rightX - leftX - 4 - SLIDER_BOX
             val sly = sy + SLIDER_CTRL_Y
             val pct = if (max > min) Mth.clamp(((getter() - min) / (max - min)).toFloat(), 0f, 1f) else 0f
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
-            disc(ctx, slx + fillW.coerceIn(3, slw - 3), sly + SLIDER_H / 2, 4, 0xFFFFFFFF.toInt())
-            val v = String.format("%.1f", getter())
-            st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
+            disc(ctx, slx + fillW.coerceIn(4, slw - 4), sly + SLIDER_H / 2, 4, 0xFFFFFFFF.toInt())
+            val bx = slx + slw + 6
+            val by = sly + SLIDER_H / 2 - 6
+            roundedRectRing(ctx, bx, by, SLIDER_BOX - 6, 12, 3, 1, 0x14FFFFFF, if (typing != null) ACCENT else 0x26FFFFFF)
+            val v = typing ?: String.format("%.1f", getter())
+            val vs = NVG_BASE_TEXT_SIZE * 0.72f
+            UiRecorder.text(v + (if (typing != null && (System.currentTimeMillis() / 500) % 2 == 0L) "|" else ""), bx + (SLIDER_BOX - 6 - UiRecorder.textWidth(v, vs)) / 2f, by + (12 - vs) / 2f, vs, TEXT_COLOR)
         }
+        var typing: String? = null
+        override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
+            val bx = rightX - 2 - SLIDER_BOX + 6; val by = sy + SLIDER_CTRL_Y + SLIDER_H / 2 - 6
+            if (mx in bx..bx + SLIDER_BOX - 6 && my in by..by + 12) { typing = ""; return true }
+            return false
+        }
+        fun commitTyping() { typing?.toDoubleOrNull()?.let { setter(it.coerceIn(min, max)) }; typing = null }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
             setter(min + pct * (max - min))
@@ -3379,7 +3416,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
             roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x14), if (hov) ScreenTheme.ink(0x40) else ScreenTheme.ink(0x26))
             if (sw != null) disc(ctx, pillX + 12, by + PILL_H / 2, 4, sw(currentValue))
-            st(ctx, tr, current, pillX + (if (sw != null) 22 else 10), by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
+            st(ctx, tr, current, pillX + (if (sw != null) 22 else 10), by + (PILL_H - 7) / 2, TEXT_COLOR)
 
             val animating = expandAnim.isAnimating()
             if (expanded || animating) {
@@ -3751,7 +3788,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            st(ctx, tr, name, leftX + 2, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR)
+            st(ctx, tr, name, leftX + 2, sy + (ITEM_HEIGHT - 7) / 2, TEXT_COLOR)
             val cur = getter() or 0xFF000000.toInt()
             val idx = PRESET_ARGB.indexOf(cur)
             val label = if (idx >= 0) PRESET_NAMES[idx] else "#" + Integer.toHexString(cur and 0xFFFFFF).padStart(6, '0').uppercase()
@@ -3763,7 +3800,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
             roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x14), if (hov) ScreenTheme.ink(0x40) else ScreenTheme.ink(0x26))
             disc(ctx, pillX + 12, by + PILL_H / 2, swatchD / 2, getter() or 0xFF000000.toInt())
-            st(ctx, tr, label, pillX + 22, by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
+            st(ctx, tr, label, pillX + 22, by + (PILL_H - 7) / 2, TEXT_COLOR)
 
             val animating = expandAnim.isAnimating()
             if (expanded || animating) {
@@ -3975,7 +4012,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + PILL_H
             roundedRectRing(ctx, bx, by, bw, PILL_H, 6, 1, if (hov) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x14), if (hov) ScreenTheme.ink(0x40) else ScreenTheme.ink(0x26))
-            st(ctx, tr, text, bx + (bw - stw(tr, text)) / 2, by + (PILL_H - 8) / 2 - 1, -0x1)
+            st(ctx, tr, text, bx + (bw - stw(tr, text)) / 2, by + (PILL_H - 7) / 2, -0x1)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
             val tr = Minecraft.getInstance().font ?: return false
@@ -4007,7 +4044,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
             val ring = if (capturing) ACCENT_HOVER else (if (hov) ACCENT else 0xFF4B4B4B.toInt())
             roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, ScreenTheme.ink(0x14), ring)
-            st(ctx, tr, t, pillX + (pillW - textW) / 2, by + (PILL_H - 8) / 2 - 1, if (capturing) ACCENT_HOVER else TEXT_COLOR)
+            st(ctx, tr, t, pillX + (pillW - textW) / 2, by + (PILL_H - 7) / 2, if (capturing) ACCENT_HOVER else TEXT_COLOR)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
@@ -4177,6 +4214,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val SLIDER_FILL = 0xFFD6D6D6.toInt()
         private const val SLIDER_W = 56
         private const val SLIDER_H = 3
+        private const val SLIDER_BOX = 40
         private const val INPUT_W = 62
         private const val INPUT_H = 14
         private const val SUBCAT_HEIGHT = 13
