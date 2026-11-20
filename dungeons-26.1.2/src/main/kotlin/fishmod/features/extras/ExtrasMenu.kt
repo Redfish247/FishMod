@@ -149,6 +149,13 @@ object ExtrasMenu {
         val ah = Feature("Accessory Bag Upgrade List", S::class.java, "accessoryHelper")
         ah.sub.add(SliderIntSetting("Entries", "", S::class.java, "accessoryHelperCount", 3, 30, 1))
         col.features.add(ah)
+        val hx = Feature("HotM / HotF Helper", S::class.java, "hotxHelper")
+        hx.sub.add(ColorPickerSetting("Levelling Colour", "", S::class.java, "hotxLevelColor"))
+        hx.sub.add(ColorPickerSetting("Maxed Colour", "", S::class.java, "hotxMaxedColor"))
+        col.features.add(hx)
+        val bs = Feature("Moonglade Beacon Solver", S::class.java, "beaconSolver")
+        bs.sub.add(ColorPickerSetting("Match Colour", "", S::class.java, "beaconSolverColor"))
+        col.features.add(bs)
 
         return col
     }

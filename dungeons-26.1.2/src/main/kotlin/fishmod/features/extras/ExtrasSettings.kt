@@ -140,4 +140,9 @@ object ExtrasSettings {
     @ConfigValue @JvmField var giftHudY: Int = 230
     @ConfigValue @JvmField var giftHudScale: Double = 1.0
     @ConfigValue @JvmField var giftHudColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var hotxHelper: Boolean = false
+    @ConfigValue @JvmField var hotxLevelColor: Int = 0x6055FF55
+    @ConfigValue @JvmField var hotxMaxedColor: Int = 0x60FFAA00
+    @ConfigValue @JvmField var beaconSolver: Boolean = false
+    @ConfigValue @JvmField var beaconSolverColor: Int = 0xC855FF55.toInt()
 }
