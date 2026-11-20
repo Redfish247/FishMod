@@ -73,6 +73,8 @@ object Mining {
         FallenStar.init()
         MineshaftTimer.init()
         OrderedWaypoints.init()
+        MiningForagingMisc.init()
+        MetalDetector.init()
     }
 
     private var sidebarVersion = -1

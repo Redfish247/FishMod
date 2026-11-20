@@ -26,6 +26,45 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var hookBiteSound: Boolean = false
     @ConfigValue @JvmField var hookBiteSoundName: String = "pling"
 
+    @ConfigValue @JvmField var cinderbatHighlight: Boolean = false
+    @ConfigValue @JvmField var cinderbatColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var invisibugHighlight: Boolean = false
+    @ConfigValue @JvmField var invisibugColor: Int = 0x80FF5555.toInt()
+    @ConfigValue @JvmField var lassoAlert: Boolean = false
+    @ConfigValue @JvmField var lassoSound: String = "pling"
+    @ConfigValue @JvmField var honeycombTimer: Boolean = false
+
+    @ConfigValue @JvmField var geyserBox: Boolean = false
+    @ConfigValue @JvmField var geyserColor: Int = 0x60FF5555.toInt()
+    @ConfigValue @JvmField var skitterBox: Boolean = false
+    @ConfigValue @JvmField var skitterFilled: Boolean = false
+    @ConfigValue @JvmField var skitterColor: Int = 0x40FFFF55.toInt()
+
+    @ConfigValue @JvmField var scKillTimer: Boolean = false
+    @ConfigValue @JvmField var scCap: Boolean = false
+    @ConfigValue @JvmField var scCapMax: Int = 10
+    @ConfigValue @JvmField var scCapSound: String = "pling"
+    @ConfigValue @JvmField var scCapHud: Boolean = true
+    @ConfigValue @JvmField var scCapX: Int = 5
+    @ConfigValue @JvmField var scCapY: Int = 200
+    @ConfigValue @JvmField var scCapScale: Double = 1.0
+
+    @ConfigValue @JvmField var trophyHud: Boolean = false
+    @ConfigValue @JvmField var trophyHudX: Int = 5
+    @ConfigValue @JvmField var trophyHudY: Int = 215
+    @ConfigValue @JvmField var trophyHudScale: Double = 1.0
+
+    @ConfigValue @JvmField var fusionKeys: Boolean = false
+    @ConfigValue @JvmField var mutePhantoms: Boolean = false
+
+    @ConfigValue @JvmField var totemOverlay: Boolean = false
+    @ConfigValue @JvmField var totemRing: Boolean = true
+    @ConfigValue @JvmField var totemDistance: Int = 20
+    @ConfigValue @JvmField var totemColor: Int = 0xFFAA00AA.toInt()
+    @ConfigValue @JvmField var totemX: Int = 5
+    @ConfigValue @JvmField var totemY: Int = 240
+    @ConfigValue @JvmField var totemScale: Double = 1.0
+
     @ConfigValue @JvmField var goldenFishTimer: Boolean = false
     @ConfigValue @JvmField var goldenFishX: Int = 5
     @ConfigValue @JvmField var goldenFishY: Int = 170
