@@ -6,10 +6,10 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
 <style>
 /* Explorer-style window: tabs, command bar, address bar, nav pane, item grid, details pane, status bar */
-:root{--bg:#e9eef3;--win:#f7f9fb;--pane:#eef2f6;--line:#d6dde5;--fg:#1b232c;--mut:#5b6876;--acc:#1f7ae0;--accs:#d7e8fb;--on:#1a9b5a;--off:#9aa6b2;
+:root{--bg:#e9eef3;--win:#f7f9fb;--pane:#eef2f6;--line:#d6dde5;--fg:#1b232c;--mut:#5b6876;--acc:#3a3f45;--accs:#d9dcdf;--on:#1a9b5a;--off:#9aa6b2;
 --fd:'Space Grotesk',system-ui,sans-serif;--fb:'Inter',system-ui,sans-serif}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141a;--win:#18202a;--pane:#131a22;--line:#2a3542;--fg:#e4eaf0;--mut:#8f9cab;--acc:#4ea1ff;--accs:#1d3550;--on:#3ccf86;--off:#5a6673;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e141a;--win:#18202a;--pane:#131a22;--line:#2a3542;--fg:#e4eaf0;--mut:#8f9cab;--acc:#4ea1ff;--accs:#1d3550;--on:#3ccf86;--off:#5a6673;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141a;--win:#18202a;--pane:#131a22;--line:#2a3542;--fg:#e4eaf0;--mut:#8f9cab;--acc:#4a4f56;--accs:#22262a;--on:#3ccf86;--off:#5a6673;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e141a;--win:#18202a;--pane:#131a22;--line:#2a3542;--fg:#e4eaf0;--mut:#8f9cab;--acc:#4a4f56;--accs:#22262a;--on:#3ccf86;--off:#5a6673;color-scheme:dark}
 html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(--fb);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;box-sizing:border-box}
 *{box-sizing:border-box}button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 .win{height:100%;min-height:560px;display:grid;grid-template-rows:auto auto auto 1fr auto;background:var(--win);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 12px 40px #0002}
@@ -44,7 +44,7 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 .sw.on{background:var(--on)}.sw.on::after{left:18px}
 .list .grid{display:flex;flex-direction:column;gap:0}.list .it{flex-direction:row;align-items:center;padding:6px 10px;gap:12px}.list .badge{width:24px;height:24px;font-size:11px;border-radius:6px}.list .it .d{flex:1}.list .it .t{width:200px}
 .det{border-left:1px solid var(--line);overflow:auto;padding:16px;font-size:13px}
-.det h3{font:600 18px var(--fd);margin:10px 0 4px}.det p{color:var(--mut);margin:0 0 14px;line-height:1.45}
+.det h3{font:600 18px var(--fd);margin:0 0 4px}.det p{color:var(--mut);margin:0 0 14px;line-height:1.45}
 .set{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:12px}
 .set label{display:flex;justify-content:space-between;align-items:center;gap:8px}.set input[type=range]{width:120px}
 .status{display:flex;gap:16px;padding:5px 12px;font-size:12px;color:var(--mut);border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
@@ -55,11 +55,11 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 <div class="win">
  <div class="tabs" id="tabs"></div>
  <div class="cmd">
-  <button>＋ New profile</button><div class="sep"></div>
-  <button title="Copy settings">⧉ Copy</button><button title="Paste settings">📋 Paste</button><button title="Reset column">↺ Reset</button>
-  <div class="sep"></div><button>⇅ Sort</button><button>☆ Pin</button><button>⚙ Menu style</button>
+  <button>New profile</button><div class="sep"></div>
+  <button title="Copy settings">Copy</button><button title="Paste settings">Paste</button><button title="Reset column">Reset</button>
+  <div class="sep"></div><button>Sort</button><button>Pin</button><button>Menu style</button>
   <span class="sp"></span>
-  <div class="seg"><button id="vg" class="on" title="Grid view">▦</button><button id="vl" title="List view">☰</button></div>
+  <div class="seg"><button id="vg" class="on" title="Grid view">Grid</button><button id="vl" title="List view">List</button></div>
  </div>
  <div class="addr">
   <div class="nav"><button aria-label="Back">←</button><button aria-label="Forward">→</button><button aria-label="Up">↑</button></div>
@@ -92,15 +92,15 @@ let col="Dungeon Solvers",sel="Ice Fill",view="grid",tabs=["Dungeon Solvers","Ch
 const pinned=["General","Dungeon Solvers","Floor 7"],$=id=>document.getElementById(id),esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 function ini(s){return s.split(/\s+/).map(w=>w[0]).join("").slice(0,2)}
 function render(){const q=$("q").value.toLowerCase();
- $("tabs").innerHTML=tabs.map(t=>'<button class="tab'+(t===col?' act':'')+'" data-t="'+esc(t)+'"><span class="ico" style="--c:'+C[t][0]+'"></span>'+esc(t)+' <span class="x" data-x="'+esc(t)+'">✕</span></button>').join("")+'<button class="tab add" aria-label="New tab">＋</button>';
- const nb=k=>'<button class="'+(k===col?'act':'')+'" data-c="'+esc(k)+'"><span class="ico" style="--c:'+C[k][0]+'"></span>'+esc(k)+'<span class="n">'+C[k][1].filter(f=>S[k+"/"+f[0]]).length+'/'+C[k][1].length+'</span></button>';
+ $("tabs").innerHTML=tabs.map(t=>'<button class="tab'+(t===col?' act':'')+'" data-t="'+esc(t)+'">'+esc(t)+' <span class="x" data-x="'+esc(t)+'">✕</span></button>').join("")+'<button class="tab add" aria-label="New tab">＋</button>';
+ const nb=k=>'<button class="'+(k===col?'act':'')+'" data-c="'+esc(k)+'">'+esc(k)+'<span class="n">'+C[k][1].filter(f=>S[k+"/"+f[0]]).length+'/'+C[k][1].length+'</span></button>';
  $("side").innerHTML="<h4>Pinned</h4>"+pinned.map(nb).join("")+"<h4>All columns</h4>"+Object.keys(C).map(nb).join("");
  $("crumb").innerHTML='<button data-c="General">FishMod</button><i>›</i><button>'+(q?'Search results':esc(col))+'</button>'+(sel&&!q?'<i>›</i><span>'+esc(sel)+'</span>':'');
  let list=q?Object.keys(C).flatMap(k=>C[k][1].filter(f=>(f[0]+f[1]).toLowerCase().includes(q)).map(f=>[k,f])):C[col][1].map(f=>[col,f]);
  $("items").className="items"+(view==="list"?" list":"");
- $("items").innerHTML='<h2>'+(q?list.length+' results for “'+esc(q)+'”':esc(col))+'</h2>'+(list.length?'<div class="grid">'+list.map(([k,f])=>{const on=S[k+"/"+f[0]];return '<button class="it'+(f[0]===sel?' sel':'')+'" data-k="'+esc(k)+'" data-f="'+esc(f[0])+'"><div class="row"><span class="badge" style="--c:'+C[k][0]+'">'+ini(f[0])+'</span><span class="sw'+(on?' on':'')+'" data-sw="1" role="switch" aria-checked="'+on+'"></span></div><span class="t">'+esc(f[0])+'</span><span class="d">'+esc(q?k+' · '+f[1]:f[1])+'</span></button>'}).join("")+'</div>':'<p class="empty">No feature matches. Try a shorter word.</p>');
+ $("items").innerHTML='<h2>'+(q?list.length+' results for “'+esc(q)+'”':esc(col))+'</h2>'+(list.length?'<div class="grid">'+list.map(([k,f])=>{const on=S[k+"/"+f[0]];return '<button class="it'+(f[0]===sel?' sel':'')+'" data-k="'+esc(k)+'" data-f="'+esc(f[0])+'"><div class="row"><span class="sw'+(on?' on':'')+'" data-sw="1" role="switch" aria-checked="'+on+'"></span></div><span class="t">'+esc(f[0])+'</span><span class="d">'+esc(q?k+' · '+f[1]:f[1])+'</span></button>'}).join("")+'</div>':'<p class="empty">No feature matches. Try a shorter word.</p>');
  const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel)),f=fk&&C[fk][1].find(f=>f[0]===sel);
- $("det").innerHTML=f?'<span class="badge" style="--c:'+C[fk][0]+'">'+ini(f[0])+'</span><h3>'+esc(f[0])+'</h3><p>'+esc(f[1])+'. In '+esc(fk)+'.</p><div class="set"><label>Enabled <span class="sw'+(S[fk+"/"+f[0]]?' on':'')+'" id="dsw" role="switch"></span></label><label for="c1">Highlight color <input id="c1" type="color" value="#4ea1ff"></label><label for="o1">Opacity <input id="o1" type="range" min="0" max="100" value="70"></label><label for="t1">Text shadow <input id="t1" type="checkbox" checked></label></div>':'<p>Select a feature to see its settings.</p>';
+ $("det").innerHTML=f?'<h3>'+esc(f[0])+'</h3><p>'+esc(f[1])+'. In '+esc(fk)+'.</p><div class="set"><label>Enabled <span class="sw'+(S[fk+"/"+f[0]]?' on':'')+'" id="dsw" role="switch"></span></label><label for="c1">Highlight color <input id="c1" type="color" value="#4ea1ff"></label><label for="o1">Opacity <input id="o1" type="range" min="0" max="100" value="70"></label><label for="t1">Text shadow <input id="t1" type="checkbox" checked></label></div>':'<p>Select a feature to see its settings.</p>';
  const all=Object.keys(S).length,en=Object.values(S).filter(Boolean).length;
  $("st").innerHTML='<span>'+list.length+' items</span><span>'+(sel?'1 selected':'')+'</span><span class="sp"></span><span>'+en+' of '+all+' features on</span>';
 }
