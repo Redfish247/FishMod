@@ -16,8 +16,20 @@ object LimboAlert {
                 if (s.startsWith("You were spawned in Limbo") || s.startsWith("You are AFK. Move around to return from AFK")
                     || s == "You are currently in Limbo") fire()
             }
+            // Hypixel's line, seen in Eli's logs; party echoes start with "Party >" so they never match
+            if (S.restartAlert && text.chatPlain.trim().startsWith("[Important] This server will restart soon")) restart()
             false
         }
+    }
+
+    private var restartMs = 0L
+
+    private fun restart() {
+        val now = System.currentTimeMillis()
+        if (now - restartMs < 10_000) return
+        restartMs = now
+        FishUtil.forceTitle(Component.literal(S.restartTitle.replace('&', '§')), Component.literal("§7Warp out before you get moved"), 3000)
+        ExtrasSounds.play(S.restartSound, S.restartVolume, "fm_restart")
     }
 
     private fun fire() {

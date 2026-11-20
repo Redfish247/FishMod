@@ -23,6 +23,10 @@ object ExtrasSettings {
     @ConfigValue @JvmField var limboTitle: String = "§cIN LIMBO"
     @ConfigValue @JvmField var limboSound: String = "Anvil Land"
     @ConfigValue @JvmField var limboVolume: Int = 100
+    @ConfigValue @JvmField var restartAlert: Boolean = true
+    @ConfigValue @JvmField var restartTitle: String = "§cSERVER RESTARTING"
+    @ConfigValue @JvmField var restartSound: String = "Note: Pling"
+    @ConfigValue @JvmField var restartVolume: Int = 100
 
     @ConfigValue @JvmField var partyJoinSound: Boolean = false
     @ConfigValue @JvmField var partyJoinSoundName: String = "Note: Pling"

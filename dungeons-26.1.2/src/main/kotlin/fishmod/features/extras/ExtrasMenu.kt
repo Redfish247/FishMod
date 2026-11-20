@@ -43,6 +43,12 @@ object ExtrasMenu {
         limbo.sub.add(SliderIntSetting("Volume %", "", S::class.java, "limboVolume", 0, 500, 5))
         col.features.add(limbo)
 
+        val restart = Feature("Server Restart Alert", S::class.java, "restartAlert")
+        restart.sub.add(InputSetting("Title", "& colour codes work", S::class.java, "restartTitle"))
+        restart.sub.add(SoundSearchSetting("Sound", "Type to search every game sound", { S.restartSound }, { S.restartSound = it }, { S.restartVolume }))
+        restart.sub.add(SliderIntSetting("Volume %", "", S::class.java, "restartVolume", 0, 500, 5))
+        col.features.add(restart)
+
         val party = Feature("Party Join Sound", S::class.java, "partyJoinSound")
         party.sub.add(SoundSearchSetting("Sound", "Type to search every game sound", { S.partyJoinSoundName }, { S.partyJoinSoundName = it }, { S.partyJoinVolume }))
         party.sub.add(SliderIntSetting("Volume %", "", S::class.java, "partyJoinVolume", 0, 500, 5))
@@ -83,6 +89,7 @@ object ExtrasMenu {
         "Calendar Real Times" -> "Real date + time next to every countdown in the /calendar menu"
         "Status Bars" -> "Defense + health/mana bars above the hotbar (replaces vanilla hearts); move in the HUD editor"
         "Limbo Alert" -> "Title and sound when you get sent to Limbo"
+        "Server Restart Alert" -> "Title and sound when Hypixel says your server will restart soon"
         "Party Join Sound" -> "Plays a sound when someone joins your party"
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
         "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
