@@ -14,6 +14,7 @@ object HideHooks {
         val me = mc.player ?: return false
         if (e === me) return false
         if (e.id == HookTimer.hiddenStandId) return true
+        if (CommonSeaCreatureHider.shouldHide(e)) return true
         if (W.hideOtherHooks && e is FishingHook && e.playerOwner !== me) return true
         if (W.hidePlayersNearBobber && e is Player) {
             val hook = me.fishing ?: return false

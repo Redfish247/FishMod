@@ -20,6 +20,7 @@ object FishingWorld {
         WormholeFinder.init()
         HotspotFinder.init()
         RareMobHighlight.init()
+        CommonSeaCreatureHider.init()
         FishingItemOverlays.init()
         ClientTickEvents.END_CLIENT_TICK.register { refresh() }
     }
@@ -28,7 +29,7 @@ object FishingWorld {
         val on = FishingSettings.fishing && W.fishingWorld
         anyHookTimer = on && W.hookTimer
         anyRare = on && (W.rareHighlight || W.rareHp || W.rareImmunity)
-        anyOn = on && (W.hookTimer || W.rareHighlight || W.hideOtherHooks || W.hidePlayersNearBobber)
+        anyOn = on && (W.hookTimer || W.rareHighlight || W.hideOtherHooks || W.hidePlayersNearBobber || W.hideCommonCreatures)
     }
 
     fun addMenu(col: Column) {
@@ -44,6 +45,7 @@ object FishingWorld {
         world.sub.add(ToggleSetting("Hide Other Hooks", "Do not render other players' fishing hooks", W::class.java, "hideOtherHooks"))
         world.sub.add(ToggleSetting("Hide Players Near Bobber", "Do not render players close to your hook", W::class.java, "hidePlayersNearBobber"))
         world.sub.add(SliderDoubleSetting("Hide Radius", "Blocks around your hook", W::class.java, "hidePlayersNearBobberRadius", 2.0, 30.0).gatedBy { W.hidePlayersNearBobber })
+        world.sub.add(ToggleSetting("Hide Common Sea Creatures", "Do not render non-rare sea creatures while fishing", W::class.java, "hideCommonCreatures"))
         col.features.add(world)
 
         val wh = Feature("Wormhole Finder", W::class.java, "wormholeFinder")

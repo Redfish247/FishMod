@@ -79,4 +79,7 @@ object ExtrasSettings {
     @ConfigValue @JvmField var sbDateHudRealTime: Boolean = true
     @ConfigValue @JvmField var cfJacobSpam: Boolean = false
     @ConfigValue @JvmField var vanquisherShare: Boolean = false
+    @ConfigValue @JvmField var fixDoubleClicks: Boolean = false
+    @ConfigValue @JvmField var middleClickFix: Boolean = false
+    @ConfigValue @JvmField var tabComplete: Boolean = false
 }

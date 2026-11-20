@@ -23,6 +23,7 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var hideOtherHooks: Boolean = false
     @ConfigValue @JvmField var hidePlayersNearBobber: Boolean = false
     @ConfigValue @JvmField var hidePlayersNearBobberRadius: Double = 8.0
+    @ConfigValue @JvmField var hideCommonCreatures: Boolean = false
 
     @ConfigValue @JvmField var wormholeFinder: Boolean = false
     @ConfigValue @JvmField var wormholeDeparture: Boolean = true
