@@ -119,4 +119,23 @@ object ExtrasSettings {
     @ConfigValue @JvmField var hideBuffMessages: Boolean = false
     @ConfigValue @JvmField var outbidAlert: Boolean = false
     @ConfigValue @JvmField var outbidSound: String = "Note: Bass"
+    @ConfigValue @JvmField var trevorHelper: Boolean = false
+    @ConfigValue @JvmField var trevorGlowColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var giftTracker: Boolean = false
+    @ConfigValue @JvmField var teleportPadNames: Boolean = false
+    @ConfigValue @JvmField var hoppityEggWaypoints: Boolean = false
+    @ConfigValue @JvmField var compactorTooltip: Boolean = false
+    @ConfigValue @JvmField var stackingEnchantTooltip: Boolean = false
+    @ConfigValue @JvmField var jerryHighlight: Boolean = false
+    @ConfigValue @JvmField var reindrakeAlert: Boolean = false
+    @ConfigValue @JvmField var carnivalShootout: Boolean = false
+    @ConfigValue @JvmField var strayRabbitAlert: Boolean = false
+    @ConfigValue @JvmField var strayRabbitSound: String = "Note: Pling"
+    @ConfigValue @JvmField var accessoryHelper: Boolean = false
+    @ConfigValue @JvmField var accessoryHelperCount: Int = 10
+    @ConfigValue @JvmField var hoppityEggColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var giftHudX: Int = 10
+    @ConfigValue @JvmField var giftHudY: Int = 230
+    @ConfigValue @JvmField var giftHudScale: Double = 1.0
+    @ConfigValue @JvmField var giftHudColor: Int = 0xFFFFFFFF.toInt()
 }
