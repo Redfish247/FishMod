@@ -3,8 +3,8 @@ import fishmod.compat.showScreen
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
-import fishmod.features.croesus.CroesusPrices
-import fishmod.features.croesus.LootIcons
+import fishmod.features.dungeon.trackers.CroesusPrices
+import fishmod.features.dungeon.trackers.LootIcons
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiScale

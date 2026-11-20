@@ -1,9 +1,9 @@
 package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import fishmod.features.item.ArmorTrimCache;
-import fishmod.features.item.ItemCustomizationStore;
-import fishmod.features.item.NeuItems;
+import fishmod.features.hud.ArmorTrimCache;
+import fishmod.features.hud.ItemCustomizationStore;
+import fishmod.features.hud.NeuItems;
 import fishmod.utils.data.ItemTools;
 import net.minecraft.core.component.DataComponentHolder;
 import net.minecraft.core.component.DataComponentType;

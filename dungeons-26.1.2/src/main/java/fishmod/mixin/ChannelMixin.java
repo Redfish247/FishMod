@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.MonoAudio;
+import fishmod.features.general.MonoAudio;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.sound.IMonoAudioChannel;
 import com.mojang.blaze3d.audio.Channel;

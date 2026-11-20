@@ -2,8 +2,8 @@ package fishmod.features.kuudra
 import fishmod.utils.events.chatRaw
 import fishmod.compat.curScreen
 
-import fishmod.features.croesus.CroesusPrices
-import fishmod.features.croesus.CroesusRewardParser
+import fishmod.features.dungeon.trackers.CroesusPrices
+import fishmod.features.dungeon.trackers.CroesusRewardParser
 import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds
 import fishmod.mixin.accessors.HandledScreenAccessor

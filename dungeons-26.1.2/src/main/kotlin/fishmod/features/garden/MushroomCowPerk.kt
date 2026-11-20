@@ -1,8 +1,8 @@
 package fishmod.features.garden
 
 import fishmod.compat.curScreen
-import fishmod.features.PetHud
-import fishmod.features.item.RarityTier
+import fishmod.features.hud.PetHud
+import fishmod.features.hud.RarityTier
 import fishmod.utils.config.FishConfig
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents

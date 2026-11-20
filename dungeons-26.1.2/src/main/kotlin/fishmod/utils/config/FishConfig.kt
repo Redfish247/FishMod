@@ -2,8 +2,8 @@ package fishmod.utils.config
 
 import fishmod.shaded.practicalconfig.manager.ConfigManager
 import fishmod.features.dungeon.FishEstTotal
-import fishmod.features.dungeon.FishPuzzleDisplay
-import fishmod.features.dungeon.f7.F7Huds
+import fishmod.features.dungeon.solvers.FishPuzzleDisplay
+import fishmod.features.dungeon.floor7.F7Huds
 import fishmod.utils.config.values.InvButtonSettings
 import fishmod.utils.config.values.DungeonSettings
 import fishmod.utils.config.values.DungeonMapSettings
@@ -20,8 +20,8 @@ object FishConfig {
             FishSettings::class.java, FishPuzzleDisplay::class.java, FishEstTotal::class.java,
             BossPhase::class.java,
             GoldorSection::class.java,
-            fishmod.features.dungeon.f7.TerminalTracker::class.java,
-            fishmod.features.other.Stopwatch::class.java,
+            fishmod.features.dungeon.floor7.TerminalTracker::class.java,
+            fishmod.features.hud.Stopwatch::class.java,
             RunSplit::class.java,
             DungeonSettings::class.java,
             Floor7Settings::class.java,
@@ -41,11 +41,11 @@ object FishConfig {
             fishmod.features.garden.GardenSettings::class.java,
             fishmod.features.garden.GardenExtraSettings::class.java,
             fishmod.features.garden.GardenMilestoneSettings::class.java,
-            fishmod.features.slayers.EndAlertSettings::class.java,
+            fishmod.features.slayer.EndAlertSettings::class.java,
             fishmod.features.dungeon.DungeonMilestoneSettings::class.java,
             fishmod.features.dungeon.DungeonExtraSettings::class.java,
             fishmod.features.achievements.AchSettings::class.java,
-            fishmod.features.other.BossToolsSettings::class.java
+            fishmod.features.slayer.BossToolsSettings::class.java
         )
 
     private const val PATH = "config/fishmod-settings.json"

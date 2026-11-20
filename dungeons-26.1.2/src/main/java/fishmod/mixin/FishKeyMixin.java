@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.other.InvSearchBar;
+import fishmod.features.general.InvSearchBar;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.gui.screens.Screen;
@@ -19,8 +19,8 @@ public class FishKeyMixin {
     private void fishmod$charToSearch(long window, CharacterEvent input, CallbackInfo ci, @Local Screen screen) {
         try {
             if (screen instanceof AbstractContainerScreen<?> container) {
-                if (fishmod.features.item.SkyItemList.charTyped(input)) return;
-                if (fishmod.features.storage.StorageOverlay.charTyped(input, container)) return;
+                if (fishmod.features.hud.SkyItemList.charTyped(input)) return;
+                if (fishmod.features.inventory.StorageOverlay.charTyped(input, container)) return;
                 if (FishSettings.inventorySearchEnabled) InvSearchBar.charTyped(input);
             }
         } catch (Throwable t) {

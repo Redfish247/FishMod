@@ -5,8 +5,8 @@ import fishmod.compat.showScreen
 
 import com.google.gson.GsonBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import fishmod.features.croesus.CroesusPrices
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.dungeon.trackers.CroesusPrices
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.utils.FishConstants
 import fishmod.utils.FishMsg
 import fishmod.utils.FishUtil

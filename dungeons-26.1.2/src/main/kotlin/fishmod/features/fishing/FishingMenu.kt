@@ -1,5 +1,7 @@
 package fishmod.features.fishing
 
+import fishmod.features.hunting.FusionKeys
+
 import fishmod.features.FishModScreen.Column
 import fishmod.features.FishModScreen.Feature
 import fishmod.features.FishModScreen.SliderIntSetting

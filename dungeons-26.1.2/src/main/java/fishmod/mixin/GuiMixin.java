@@ -2,8 +2,8 @@ package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import fishmod.features.ActionBarCleaner;
-import fishmod.features.DarkMode;
+import fishmod.features.hud.ActionBarCleaner;
+import fishmod.features.visuals.DarkMode;
 import fishmod.utils.FishKeys;
 import fishmod.utils.SkyblockLocation;
 import fishmod.utils.config.values.FishSettings;
@@ -75,7 +75,7 @@ public class GuiMixin {
     @Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
     private void fishmod$hideUnderStorage(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
         if (fishmod.compat.McCompatKt.getCurScreen(net.minecraft.client.Minecraft.getInstance()) instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> c
-            && fishmod.features.storage.StorageOverlay.isActive(c)) ci.cancel();
+            && fishmod.features.inventory.StorageOverlay.isActive(c)) ci.cancel();
     }
 
     @Inject(method = "extractRenderState", at = @At("HEAD"))

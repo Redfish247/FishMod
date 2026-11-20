@@ -1,5 +1,10 @@
 package fishmod.features.fishing
 
+import fishmod.features.hunting.FusionKeys
+import fishmod.features.hunting.HuntingHelpers
+import fishmod.features.hunting.MutePhantoms
+import fishmod.features.hunting.ShardTracker
+
 import fishmod.utils.SkyblockLocation
 import net.minecraft.client.Minecraft
 import net.minecraft.world.item.FishingRodItem

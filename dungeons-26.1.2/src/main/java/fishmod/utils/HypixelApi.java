@@ -1738,7 +1738,7 @@ public class HypixelApi {
                 }
 
                 int maxLevel = fishmod.utils.networth.NwConstants.PET_SPECIAL_MAX.getOrDefault(type, 100);
-                int level = Math.min(maxLevel, fishmod.features.OverflowPetLevels.calcLevel(exp, petRarity(effTier)));
+                int level = Math.min(maxLevel, fishmod.features.hud.OverflowPetLevels.calcLevel(exp, petRarity(effTier)));
                 String basePetId = effTier + "_" + type;
                 String petId = skin != null ? basePetId + "_SKINNED_" + skin : basePetId;
 
@@ -1867,10 +1867,10 @@ public class HypixelApi {
         }
     }
 
-    private static fishmod.features.OverflowPetLevels.Rarity petRarity(String tier) {
-        if ("SPECIAL".equals(tier) || "VERY_SPECIAL".equals(tier) || "DIVINE".equals(tier)) return fishmod.features.OverflowPetLevels.Rarity.MYTHIC;
-        try { return fishmod.features.OverflowPetLevels.Rarity.valueOf(tier); }
-        catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.93", "petRarity failed", e); return fishmod.features.OverflowPetLevels.Rarity.LEGENDARY; }
+    private static fishmod.features.hud.OverflowPetLevels.Rarity petRarity(String tier) {
+        if ("SPECIAL".equals(tier) || "VERY_SPECIAL".equals(tier) || "DIVINE".equals(tier)) return fishmod.features.hud.OverflowPetLevels.Rarity.MYTHIC;
+        try { return fishmod.features.hud.OverflowPetLevels.Rarity.valueOf(tier); }
+        catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.93", "petRarity failed", e); return fishmod.features.hud.OverflowPetLevels.Rarity.LEGENDARY; }
     }
 
     private static String resolveUuidBlocking(String ign) {
@@ -2475,14 +2475,14 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                             String type = active.get("type").getAsString();
                             String tier = active.has("tier") ? active.get("tier").getAsString() : "LEGENDARY";
                             double exp  = active.has("exp") ? active.get("exp").getAsDouble() : 0;
-                            fishmod.features.OverflowPetLevels.Rarity rar = petRarity(tier);
+                            fishmod.features.hud.OverflowPetLevels.Rarity rar = petRarity(tier);
                             int maxLevel = "GOLDEN_DRAGON".equals(type) ? 200 : 100;
                             double remaining = exp;
                             int level = 1;
-                            double cost = fishmod.features.OverflowPetLevels.getXpForLevel(0, rar);
+                            double cost = fishmod.features.hud.OverflowPetLevels.getXpForLevel(0, rar);
                             while (remaining >= cost && level < 1000) {
                                 remaining -= cost; level++;
-                                cost = fishmod.features.OverflowPetLevels.getXpForLevel(level - 1, rar);
+                                cost = fishmod.features.hud.OverflowPetLevels.getXpForLevel(level - 1, rar);
                             }
                             info.name = petTypeToName(type);
                             info.tier = tier;

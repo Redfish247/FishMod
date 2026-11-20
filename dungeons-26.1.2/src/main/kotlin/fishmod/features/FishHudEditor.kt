@@ -5,7 +5,7 @@ import fishmod.compat.showScreen
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.shaded.practicalconfig.hud.HUDComponent
-import fishmod.features.chat.ChatRuleStore
+import fishmod.features.extras.ChatRuleStore
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.config.values.FishSettings
@@ -1138,7 +1138,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     override fun onClose() {
         try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.9", "config save on HUD editor close failed", t) }
         fishmod.features.achievements.AchUsage.onHudSaved()
-        try { fishmod.features.chat.ChatRuleStore.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.10", "chat rule save on HUD editor close failed", t) }
+        try { fishmod.features.extras.ChatRuleStore.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.10", "chat rule save on HUD editor close failed", t) }
         Minecraft.getInstance().showScreen(parent)
     }
 }

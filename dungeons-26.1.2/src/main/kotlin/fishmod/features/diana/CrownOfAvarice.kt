@@ -7,7 +7,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.utils.FishConstants
 import fishmod.utils.FishMsg
 import fishmod.utils.IoExecutor
@@ -89,7 +89,7 @@ object CrownOfAvarice {
                 val n = drawHud(ctx)
                 if (n > 0) {
                     val sc = DianaSettings.dianaCrownHudScale
-                    fishmod.features.other.TrackerResetButton.draw(ctx, "crown", DianaSettings.dianaCrownHudX, DianaSettings.dianaCrownHudY + (n * 10 * sc).toInt() + 2, sc, mx, my) {
+                    fishmod.features.general.TrackerResetButton.draw(ctx, "crown", DianaSettings.dianaCrownHudX, DianaSettings.dianaCrownHudY + (n * 10 * sc).toInt() + 2, sc, mx, my) {
                         resetSessions(); FishMsg.send("§aCrown of Avarice session reset.")
                     }
                 }
