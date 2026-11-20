@@ -641,8 +641,18 @@ public class HypixelApi {
         return d;
     }
 
-    public static void getByNameSilent(String ign, DungeonDataCallback rawCallback) {
-        DungeonDataCallback callback = d -> Minecraft.getInstance().execute(() -> rawCallback.onData(d));
+    public static boolean isServerError(DungeonData d) {
+        return d != null && d.failed && d.failReason != null && d.failReason.startsWith("proxy HTTP 5");
+    }
+
+    public static void getByNameSilent(String ign, DungeonDataCallback rawCallback) { getByNameSilent(ign, rawCallback, true); }
+
+    private static void getByNameSilent(String ign, DungeonDataCallback rawCallback, boolean retry) {
+        // proxy 5xx is transient: retry once after 2s before reporting failure
+        DungeonDataCallback callback = d -> {
+            if (retry && isServerError(d)) CompletableFuture.delayedExecutor(2, java.util.concurrent.TimeUnit.SECONDS).execute(() -> getByNameSilent(ign, rawCallback, false));
+            else Minecraft.getInstance().execute(() -> rawCallback.onData(d));
+        };
         String cachedUuid = getCachedUuid(ign);
         if (cachedUuid != null) { fetchProfilesSilent(cachedUuid, callback); return; }
         resolveUuid(ign, 0, uuid -> {
