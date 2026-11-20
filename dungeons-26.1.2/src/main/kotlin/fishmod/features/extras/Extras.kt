@@ -34,5 +34,6 @@ object Extras {
         FishDiag.guard("Extras.27", "StrayRabbitAlert.init failed") { StrayRabbitAlert.init() }
         FishDiag.guard("Extras.28", "AccessoryHelper.init failed") { AccessoryHelper.init() }
         FishDiag.guard("Extras.40", "BitsWarning.init failed") { BitsWarning.init() }
+        FishDiag.guard("Extras.41", "BazaarSearch.init failed") { BazaarSearch.init() }
     }
 }
