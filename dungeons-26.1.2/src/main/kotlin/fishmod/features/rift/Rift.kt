@@ -103,5 +103,6 @@ object Rift {
         FishDiag.guard("Rift.H", "RiftHay init failed") { RiftHay.init() }
         FishDiag.guard("Rift.L", "RiftLeech init failed") { RiftLeech.init() }
         FishDiag.guard("Rift.B", "RiftBurger init failed") { RiftBurger.init() }
-        FishDiag.guard("Rift.7","RiftCaducousStem init failed") { RiftCaducousStem.init() }    }
+        FishDiag.guard("Rift.7","RiftCaducousStem init failed") { RiftCaducousStem.init() }
+        FishDiag.guard("Rift.X", "RiftExtras init failed") { RiftExtras.init() }    }
 }
