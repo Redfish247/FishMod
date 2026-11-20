@@ -10,6 +10,13 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var baitHudY: Int = 100
     @ConfigValue @JvmField var baitHudScale: Double = 1.0
 
+    @ConfigValue @JvmField var shardTracker: Boolean = false
+    @ConfigValue @JvmField var shardTrackerResetOnSwap: Boolean = false
+    @ConfigValue @JvmField var shardTrackerRows: Int = 8
+    @ConfigValue @JvmField var shardTrackerX: Int = 5
+    @ConfigValue @JvmField var shardTrackerY: Int = 115
+    @ConfigValue @JvmField var shardTrackerScale: Double = 1.0
+
     @ConfigValue @JvmField var hookTimer: Boolean = false
     @ConfigValue @JvmField var hookTimerHideStand: Boolean = true
     @ConfigValue @JvmField var hookTimerScale: Double = 1.5
