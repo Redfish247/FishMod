@@ -3,11 +3,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FishMod Explorer</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
 <style>
 /* Explorer-style window: tabs, command bar, address bar, nav pane, item grid, details pane, status bar */
 :root{--bg:#ececec;--win:#f8f8f8;--pane:#efefef;--line:#d9d9d9;--fg:#1e1e1e;--mut:#666666;--acc:#3c3c3c;--accs:#dadada;--on:#1a9b5a;--off:#a3a3a3;
---fd:'Space Grotesk',system-ui,sans-serif;--fb:'Inter',system-ui,sans-serif}
+--fd:'Space Grotesk',system-ui,sans-serif;--fb:'Open Sans',system-ui,sans-serif}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--win:#1e1e1e;--pane:#181818;--line:#303030;--fg:#e6e6e6;--mut:#9a9a9a;--acc:#4d4d4d;--accs:#262626;--on:#3ccf86;--off:#5c5c5c;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#121212;--win:#1e1e1e;--pane:#181818;--line:#303030;--fg:#e6e6e6;--mut:#9a9a9a;--acc:#4d4d4d;--accs:#262626;--on:#3ccf86;--off:#5c5c5c;color-scheme:dark}
 html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(--fb);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px;box-sizing:border-box}
@@ -67,9 +67,24 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 .status{display:flex;gap:16px;padding:5px 12px;font-size:12px;color:var(--mut);border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 .empty{color:var(--mut);padding:30px 0}
 @media(max-width:860px){.main.nodet{grid-template-columns:1fr}.win{left:16px!important;top:16px!important}.main{grid-template-columns:1fr}.side{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:6px}.side h4{display:none}.side button{width:auto;white-space:nowrap}.side .n{display:none}.det{border-left:0;border-top:1px solid var(--line)}.search{width:130px}.list .it .t{width:auto}.list .it .d{display:none}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+button,.tab,.it,.sw,.sw::after,.crumb button,.side button{transition:background-color .18s,color .18s,border-color .18s,box-shadow .18s,transform .12s,filter .18s}
+button:active{transform:scale(.97)}
+.win{transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1),border-radius .28s,background-color .3s,box-shadow .3s,border-color .3s}
+.win.dragging{transition:background-color .3s}
+@keyframes wIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes wOut{to{opacity:0;transform:scale(.95)}}
+@keyframes wMin{to{opacity:0;transform:translateY(40%) scale(.6)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.win.opening{animation:wIn .32s cubic-bezier(.2,.8,.2,1)}.win.closing{animation:wOut .22s ease-in forwards}.win.minning{animation:wMin .22s ease-in forwards;transform-origin:50% 100%}
+.items.enter>*{animation:fadeUp .26s cubic-bezier(.2,.8,.2,1) both}.items.enter .grid>*{animation:fadeUp .3s cubic-bezier(.2,.8,.2,1) both}
+.items.enter .grid>*:nth-child(2){animation-delay:.03s}.items.enter .grid>*:nth-child(3){animation-delay:.06s}.items.enter .grid>*:nth-child(4){animation-delay:.09s}.items.enter .grid>*:nth-child(n+5){animation-delay:.12s}
+.det.enter{animation:slideIn .26s cubic-bezier(.2,.8,.2,1)}.tab.pop{animation:pop .22s cubic-bezier(.2,.8,.2,1)}.reopen{animation:pop .25s}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
-<div class="stage" aria-hidden="true"></div><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lgf" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.005 0.008" numOctaves="2" seed="7" result="n"/><feGaussianBlur in="n" stdDeviation="2.5" result="nb"/><feDisplacementMap id="lgd" in="SourceGraphic" in2="nb" scale="70" xChannelSelector="R" yChannelSelector="G"/></filter></svg><button class="reopen" id="reopen" hidden>Open FishMod</button>
+<div class="stage" aria-hidden="true"></div><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lgf" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage id="lgm" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="m"/><feDisplacementMap id="lgd" in="SourceGraphic" in2="m" scale="70" xChannelSelector="R" yChannelSelector="G" result="r"/><feTurbulence id="lgt" type="fractalNoise" baseFrequency="0.004 0.007" numOctaves="1" seed="7" result="n"/><feDisplacementMap id="lgw" in="r" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G"/></filter></svg><button class="reopen" id="reopen" hidden>Open FishMod</button>
 <div class="win" id="win">
  <div class="tabbar" id="bar"><div class="tabs" id="tabs"></div><div class="wc"><button id="w-min" aria-label="Minimize">&#8211;</button><button id="w-max" aria-label="Maximize">&#9633;</button><button id="w-x" class="wx" aria-label="Close">&#10005;</button></div></div>
  <div class="look" id="look" hidden>
@@ -78,7 +93,7 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
   <label for="la">Transparency <span class="sl"><input id="la" type="range" min="0" max="80" value="8"><input id="lan" class="num" type="number" min="0" max="80" value="8" aria-label="Transparency value"></span></label>
   <label>Liquid glass <span class="sw" id="lg" role="switch"></span></label>
   <label for="lb">Refraction <span class="sl"><input id="lb" type="range" min="0" max="150" value="70"><input id="lbn" class="num" type="number" min="0" max="150" value="70" aria-label="Refraction value"></span></label>
-  <div class="lnote">Liquid glass bends the picture behind the window like a lens, with a bright rim. The bending shows in Chrome and Edge. Changes save automatically.</div>
+  <div class="lnote">Liquid glass bends the picture behind the window like a curved lens, strongest at the edges, and slowly ripples. Drag the window to see it refract in real time. The bending shows in Chrome and Edge. Changes save automatically.</div>
  </div>
  <div class="cmd">
   <button id="b-hud">Edit HUD</button><div class="sep"></div>
@@ -114,7 +129,7 @@ const C={"General":["#5b8def",[["Compact GUI","Tighter rows and gaps so more fit
 "Cosmetics":["#d65aa0",[["Fish Size","Scale your player"],["Custom Cape","Pick a cape"]]]};
 const S={};for(const k in C)C[k][1].forEach(f=>S[k+"/"+f[0]]=f[2]!==0);
 let col="Dungeon Solvers",sel="Ice Fill",view="grid",tabs=["Dungeon Solvers","Chat","Floor 7"],ai=0,hist=[["Dungeon Solvers","Ice Fill"]],hi=0,armed=0;
-function go(c,f){col=c;sel=f;tabs[ai]=c;$("q").value="";hist=hist.slice(0,hi+1);const l=hist[hi];if(!l||l[0]!==c||l[1]!==f){hist.push([c,f]);hi=hist.length-1}}
+let navA=1,newTab=0;function go(c,f){navA=1;col=c;sel=f;tabs[ai]=c;$("q").value="";hist=hist.slice(0,hi+1);const l=hist[hi];if(!l||l[0]!==c||l[1]!==f){hist.push([c,f]);hi=hist.length-1}}
 function toast(m){$("toast").textContent=m;clearTimeout(toast.t);toast.t=setTimeout(()=>$("toast").textContent="",2500)}
 const pinned=["General","Dungeon Solvers","Floor 7"],$=id=>document.getElementById(id),esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 function ini(s){return s.split(/\s+/).map(w=>w[0]).join("").slice(0,2)}
@@ -130,7 +145,7 @@ function render(){const q=$("q").value.toLowerCase();const LK=$("look");W.append
   else if(col==="@report")it.innerHTML='<div class="page"><h2>Report to RedFish</h2><div class="seg"><button data-bt="bug" class="'+(bug?'on':'')+'">Bug</button><button data-bt="feat" class="'+(bug?'':'on')+'">Feature Request</button></div><label class="fld" for="rt"><span>Title</span><input id="rt" maxlength="80" placeholder="'+(bug?'What broke?':'What should it do?')+'"></label><label class="fld" for="rd"><span>Details</span><textarea id="rd" rows="6" maxlength="500" placeholder="'+(bug?'Where, when, what you expected':'Any details')+'"></textarea></label><button class="pbtn" id="send">Send</button><p id="rs"></p></div>';
   else it.innerHTML='<div class="page"><h2>Credits</h2><p>Discord: <b>discord.gg/3mSuQUB8kk</b> <button class="pbtn" id="cpd" style="padding:3px 10px;margin-left:6px">Copy</button></p>'+CR.map(c=>'<div class="cr"><b>'+esc(c[0])+'</b><em>'+esc(c[1])+'</em>'+(c[2]?'<small>'+esc(c[2])+'</small>':'')+'</div>').join("")+'<p>Data: NEU-REPO, Athen & SkyHelper prices, EliteBot, SkyCofl. Font: Inter (SIL OFL 1.1).</p></div>';
   $("det").hidden=true;document.querySelector(".main").classList.add("nodet");
-  $("nb").disabled=hi<=0;$("nf").disabled=hi>=hist.length-1;$("nu").disabled=false;$("st").innerHTML='<span>'+esc(nm(col))+'</span>';return}
+  $("nb").disabled=hi<=0;$("nf").disabled=hi>=hist.length-1;$("nu").disabled=false;$("st").innerHTML='<span>'+esc(nm(col))+'</span>';if(navA){it.classList.remove("enter");void it.offsetWidth;it.classList.add("enter");navA=0}return}
  let list=q?Object.keys(C).flatMap(k=>C[k][1].filter(f=>(f[0]+f[1]).toLowerCase().includes(q)).map(f=>[k,f])):C[col][1].map(f=>[col,f]);
  $("items").className="items"+(view==="list"?" list":"");
  $("items").innerHTML='<h2>'+(q?list.length+' results for “'+esc(q)+'”':esc(col))+'</h2>'+(list.length?'<div class="grid">'+list.map(([k,f])=>{const on=S[k+"/"+f[0]];return '<button class="it'+(f[0]===sel?' sel':'')+'" data-k="'+esc(k)+'" data-f="'+esc(f[0])+'"><div class="row"><span class="sw'+(on?' on':'')+'" data-sw="1" role="switch" aria-checked="'+on+'"></span></div><span class="t">'+esc(f[0])+'</span><span class="d">'+esc(q?k+' · '+f[1]:f[1])+'</span></button>'}).join("")+'</div>':'<p class="empty">No feature matches. Try a shorter word.</p>');
@@ -138,15 +153,17 @@ function render(){const q=$("q").value.toLowerCase();const LK=$("look");W.append
  $("det").innerHTML=f?'<h3>'+esc(f[0])+'</h3><p>'+esc(f[1])+'. In '+esc(fk)+'.</p><div class="set"><label>Enabled <span class="sw'+(S[fk+"/"+f[0]]?' on':'')+'" id="dsw" role="switch"></span></label><label for="c1">Highlight color <input id="c1" type="color" value="#8a8a8a"></label><label for="o1">Opacity <span class="sl"><input id="o1" type="range" min="0" max="100" value="70"><input id="o1n" class="num" type="number" min="0" max="100" value="70" aria-label="Opacity value"></span></label><label for="w1">Line width <span class="sl"><input id="w1" type="range" min="1" max="10" step="0.5" value="2.5"><input id="w1n" class="num" type="number" min="1" max="10" step="0.5" value="2.5" aria-label="Line width value"></span></label><label>Text shadow <span class="sw on tg" role="switch" aria-checked="true" tabindex="0"></span></label></div>':'';$("det").hidden=!f;document.querySelector(".main").classList.toggle("nodet",!f);
  const all=Object.keys(S).length,en=Object.values(S).filter(Boolean).length;
  $("nb").disabled=hi<=0;$("nf").disabled=hi>=hist.length-1;$("nu").disabled=!q&&!sel&&col==="General";
+ if(navA){[$("items"),$("det")].forEach(x=>{x.classList.remove("enter");void x.offsetWidth;x.classList.add("enter")});navA=0}
+ if(newTab){const tb=$("tabs").querySelectorAll(".tab:not(.add)");tb[tb.length-1].classList.add("pop");newTab=0}
  $("st").innerHTML='<span>'+list.length+' items</span><span>'+(sel?'1 selected':'')+'</span><span class="sp"></span><span>'+en+' of '+all+' features on</span>';
 }
 document.addEventListener("click",e=>{const g=e.target.closest(".tg");if(g){g.classList.toggle("on");g.setAttribute("aria-checked",g.classList.contains("on"));return}
  const t=e.target.closest("[data-x],[data-t],[data-c],[data-k],#dsw,#vg,#vl,#addtab,#nb,#nf,#nu,#b-hud,#b-rep,#b-cred,#b-reset,#b-look,[data-bt],#send,#cpd");if(!t)return;
- if(t.dataset.bt){bug=t.dataset.bt==="bug";render();return}
+ if(t.dataset.bt){bug=t.dataset.bt==="bug";const rt=$("rt").value,rd=$("rd").value;render();$("rt").value=rt;$("rd").value=rd;return}
  if(t.id==="send"){const ti=$("rt").value.trim();$("rs").textContent=ti?"Sent, thanks!":"Add a title first.";if(ti){$("rt").value="";$("rd").value=""}return}
  if(t.id==="cpd"){navigator.clipboard.writeText("discord.gg/3mSuQUB8kk").then(()=>toast("Copied"),()=>toast("Copy failed, select the text instead"));return}
  if(t.id!=="b-reset"&&armed){armed=0;$("b-reset").textContent="Reset";$("b-reset").classList.remove("arm")}
- if(t.id==="nb"||t.id==="nf"){hi+=t.id==="nb"?-1:1;[col,sel]=hist[hi];tabs[ai]=col;$("q").value="";render();return}
+ if(t.id==="nb"||t.id==="nf"){navA=1;hi+=t.id==="nb"?-1:1;[col,sel]=hist[hi];tabs[ai]=col;$("q").value="";render();return}
  if(t.id==="nu"){if($("q").value){$("q").value=""}else if(sel){go(col,null)}else go("General",null);render();return}
  if(t.id==="b-hud"){toast("Opens the HUD editor");return}
  if(t.id==="b-rep"){go("@report",null);render();return}
@@ -155,13 +172,13 @@ document.addEventListener("click",e=>{const g=e.target.closest(".tg");if(g){g.cl
  
  if(t.id==="b-reset"){if(!armed){armed=1;t.textContent="Confirm?";t.classList.add("arm");setTimeout(()=>{if(armed){armed=0;t.textContent="Reset";t.classList.remove("arm")}},3000);return}
   armed=0;t.textContent="Reset";t.classList.remove("arm");for(const k in C)C[k][1].forEach(f=>S[k+"/"+f[0]]=f[2]!==0);toast("All columns reset to defaults");render();return}
- if(t.id==="addtab"){tabs.push(col);ai=tabs.length-1}
+ if(t.id==="addtab"){tabs.push(col);ai=tabs.length-1;newTab=1}
  else if(t.dataset.x){if(tabs.length>1){const i=+t.dataset.x;tabs.splice(i,1);if(ai>=i&&ai>0)ai--;col=tabs[ai]}}
  else if(t.dataset.t){ai=+t.dataset.t;go(tabs[ai],sel&&C[tabs[ai]]&&C[tabs[ai]][1].some(f=>f[0]===sel)?sel:null)}
  else if(t.dataset.c)go(t.dataset.c,null)
- else if(t.dataset.k){const k=t.dataset.k+"/"+t.dataset.f;if(e.target.dataset.sw)S[k]=!S[k];else{const q=$("q").value;go(t.dataset.k,t.dataset.f);$("q").value=q}}
- else if(t.id==="dsw"){const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel));S[fk+"/"+sel]=!S[fk+"/"+sel]}
- else{view=t.id==="vl"?"list":"grid";$("vg").classList.toggle("on",view==="grid");$("vl").classList.toggle("on",view==="list")}
+ else if(t.dataset.k){const k=t.dataset.k+"/"+t.dataset.f;if(e.target.dataset.sw){S[k]=!S[k];e.target.classList.toggle("on");setTimeout(render,180);return}{const q=$("q").value;go(t.dataset.k,t.dataset.f);$("q").value=q}}
+ else if(t.id==="dsw"){const fk=Object.keys(C).find(k=>C[k][1].some(f=>f[0]===sel));S[fk+"/"+sel]=!S[fk+"/"+sel];t.classList.toggle("on");setTimeout(render,180);return}
+ else{view=t.id==="vl"?"list":"grid";navA=1;$("vg").classList.toggle("on",view==="grid");$("vl").classList.toggle("on",view==="list")}
  render()});
 $("q").addEventListener("input",render);
 const PRE=[["Graphite","#1e1e1e"],["Charcoal","#2b2b2b"],["Obsidian","#0b0b0d"],["Moss","#24311f"],["Wine","#3a1c24"],["Deep Sea","#13262e"],["Sand","#e6dccb"],["Snow","#f4f4f4"]];
@@ -173,22 +190,35 @@ function look(){const c=hex(L.c),a=L.a/100,dk=(.299*c[0]+.587*c[1]+.114*c[2])/25
  const p=W.style;p.background=rgba(c,a);p.setProperty("--win",dk?"#ffffff12":"#ffffff59");p.setProperty("--pane",dk?"#ffffff08":"#0000000a");
  p.setProperty("--fg",dk?"#ececec":"#1c1c1c");p.setProperty("--mut",dk?"#a0a0a0":"#5e5e5e");p.setProperty("--line",dk?"#ffffff1f":"#0000001f");
  p.setProperty("--accs",dk?"#ffffff1a":"#0000001a");p.setProperty("--acc",dk?"#9a9a9a":"#444");document.getElementById("lgd").setAttribute("scale",L.b);
- W.classList.toggle("glass",!!L.g);$("lg").classList.toggle("on",!!L.g);$("lc").value=L.c;$("la").value=$("lan").value=100-L.a;$("lb").value=$("lbn").value=L.b;
+ if(L.g&&!W.classList.contains("glass"))setTimeout(lensMap,0);W.classList.toggle("glass",!!L.g);$("lg").classList.toggle("on",!!L.g);$("lc").value=L.c;$("la").value=$("lan").value=100-L.a;$("lb").value=$("lbn").value=L.b;
  if(L.x!=null&&innerWidth>860){W.style.left=L.x+"px";W.style.top=L.y+"px"}
  try{localStorage.setItem("fmx",JSON.stringify(L))}catch(e){}}
 $("pre").innerHTML=PRE.map(([n,c])=>'<button data-p="'+c+'"><i style="background:'+c+'"></i>'+n+'</button>').join("");
 $("look").addEventListener("click",e=>{e.stopPropagation();const p=e.target.closest("[data-p]");if(p){L.c=p.dataset.p;look()}if(e.target.id==="lg"){L.g=L.g?0:1;if(L.g&&L.a>45)L.a=35;look()}});
 $("look").addEventListener("input",e=>{const id=e.target.id,v=e.target.value;if(id==="lc")L.c=v;if((id==="la"||id==="lan")&&v!=="")L.a=100-Math.min(80,Math.max(0,+v));if((id==="lb"||id==="lbn")&&v!=="")L.b=Math.min(150,Math.max(0,+v));look()});
 document.addEventListener("click",e=>{
- if(e.target.closest("#w-min")){look();W.hidden=true;$("reopen").hidden=false}
+ if(e.target.closest("#w-min"))closeWin("minning");
  if(e.target.closest("#w-max")){W.classList.toggle("max");W.classList.remove("min")}
- if(e.target.closest("#w-x")){look();W.hidden=true;$("reopen").hidden=false}
- if(e.target.closest("#reopen")){W.hidden=false;$("reopen").hidden=true}},true);
-let dr=null;$("bar").addEventListener("pointerdown",e=>{if(e.target.closest("button")||W.classList.contains("max")||innerWidth<=860)return;const r=W.getBoundingClientRect();dr=[e.clientX-r.left,e.clientY-r.top];$("bar").classList.add("drag");$("bar").setPointerCapture(e.pointerId)});
+ if(e.target.closest("#w-x"))closeWin("closing");
+ if(e.target.closest("#reopen"))openWin();},true);
+let dr=null;$("bar").addEventListener("pointerdown",e=>{if(e.target.closest("button")||W.classList.contains("max")||innerWidth<=860)return;const r=W.getBoundingClientRect();dr=[e.clientX-r.left,e.clientY-r.top];W.classList.add("dragging");$("bar").classList.add("drag");$("bar").setPointerCapture(e.pointerId)});
 $("bar").addEventListener("pointermove",e=>{if(!dr)return;L.x=Math.max(0,Math.min(innerWidth-120,e.clientX-dr[0]));L.y=Math.max(0,Math.min(innerHeight-40,e.clientY-dr[1]));W.style.left=L.x+"px";W.style.top=L.y+"px"});
-$("bar").addEventListener("pointerup",()=>{if(dr){dr=null;$("bar").classList.remove("drag");look()}});
+$("bar").addEventListener("pointerup",()=>{if(dr){dr=null;W.classList.remove("dragging");$("bar").classList.remove("drag");look()}});
 $("bar").addEventListener("dblclick",e=>{if(!e.target.closest("button")){W.classList.toggle("max");W.classList.remove("min")}});
-look();
+function lensMap(){const r=W.getBoundingClientRect(),w=Math.max(40,Math.round(r.width/2)),h=Math.max(40,Math.round(r.height/2)),B=26,R=9;
+ const cv=document.createElement("canvas");cv.width=w;cv.height=h;const x=cv.getContext("2d"),im=x.createImageData(w,h),d=im.data;
+ for(let j=0;j<h;j++)for(let i=0;i<w;i++){const px=i+.5-w/2,py=j+.5-h/2,qx=Math.abs(px)-(w/2-R),qy=Math.abs(py)-(h/2-R);
+  const ox=Math.max(qx,0),oy=Math.max(qy,0),dist=R-(Math.hypot(ox,oy)+Math.min(Math.max(qx,qy),0));let nx=0,ny=0;
+  if(ox>0||oy>0){const l=Math.hypot(ox,oy)||1;nx=ox/l;ny=oy/l}else if(qx>qy)nx=1;else ny=1;nx*=Math.sign(px)||1;ny*=Math.sign(py)||1;
+  const t=dist<B?Math.pow(1-Math.max(0,dist)/B,2):0,o=(j*w+i)*4;d[o]=128+nx*127*t;d[o+1]=128+ny*127*t;d[o+2]=128;d[o+3]=255}
+ x.putImageData(im,0,0);document.getElementById("lgm").setAttribute("href",cv.toDataURL())}
+let lmT;new ResizeObserver(()=>{clearTimeout(lmT);lmT=setTimeout(()=>{if(L.g)lensMap()},120)}).observe(W);
+const RM=matchMedia("(prefers-reduced-motion: reduce)");let ph=0;
+(function wob(){if(L.g&&!W.hidden&&!RM.matches){ph+=.012;document.getElementById("lgt").setAttribute("baseFrequency",(0.004+0.0015*Math.sin(ph)).toFixed(5)+" "+(0.007+0.0015*Math.cos(ph*.8)).toFixed(5))}requestAnimationFrame(wob)})();
+function openWin(){W.hidden=false;$("reopen").hidden=true;W.classList.remove("closing","minning","opening");void W.offsetWidth;W.classList.add("opening")}
+function closeWin(cls){look();W.classList.add(cls);setTimeout(()=>{W.hidden=true;W.classList.remove(cls);$("reopen").hidden=false},RM.matches?0:220)}
+
+look();openWin();
 document.addEventListener("input",e=>{const t=e.target,id=t.id;if(!id||id==="q")return;
  if(t.type==="range"){const n=$(id+"n");if(n)n.value=t.value}
  else if(t.classList.contains("num")){const r=$(id.slice(0,-1));if(r&&t.value!==""){const v=Math.min(+r.max,Math.max(+r.min,+t.value));r.value=v}}});
