@@ -57,6 +57,7 @@ object HookTimer {
             if (text != lastText) {
                 lastText = text
                 val bite = text == "!!!"
+                if (bite && W.hookBiteSound) fishmod.utils.sound.SoundManager.play(fishmod.utils.sound.SoundManager.preset(W.hookBiteSoundName), 1f)
                 label = Component.literal(if (bite) W.hookBiteText else "§e$text")
                 biteScale = W.hookTimerScale.toFloat() * if (bite) 1.4f else 1f
             }

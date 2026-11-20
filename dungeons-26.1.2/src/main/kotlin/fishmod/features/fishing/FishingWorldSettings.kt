@@ -23,6 +23,13 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var hookTimerHideStand: Boolean = true
     @ConfigValue @JvmField var hookTimerScale: Double = 1.5
     @ConfigValue @JvmField var hookBiteText: String = "§c§l!!!"
+    @ConfigValue @JvmField var hookBiteSound: Boolean = false
+    @ConfigValue @JvmField var hookBiteSoundName: String = "pling"
+
+    @ConfigValue @JvmField var goldenFishTimer: Boolean = false
+    @ConfigValue @JvmField var goldenFishX: Int = 5
+    @ConfigValue @JvmField var goldenFishY: Int = 170
+    @ConfigValue @JvmField var goldenFishScale: Double = 1.0
 
     @ConfigValue @JvmField var rareHighlight: Boolean = false
     @ConfigValue @JvmField var rareHighlightColor: Int = 0xFFFF5555.toInt()

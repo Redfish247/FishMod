@@ -21,6 +21,7 @@ object FishingMenu {
         shards.sub.add(ToggleSetting("Reset On World Change", "Clear the counts when you change servers", FishingWorldSettings::class.java, "shardTrackerResetOnSwap"))
         shards.sub.add(SliderIntSetting("Rows", "How many shard types to list", { FishingWorldSettings.shardTrackerRows }, { FishingWorldSettings.shardTrackerRows = it }, 1, 20))
         col.features.add(shards)
+        col.features.add(Feature("Golden Fish Timer", FishingWorldSettings::class.java, "goldenFishTimer"))
 
         FishingAlerts.addMenu(col)
         FishingTrackers.addMenu(col)
@@ -32,6 +33,7 @@ object FishingMenu {
         "Current Bait HUD" -> "Bait in your last hotbar slot and how much is left"
         "Instant Underwater Fog Clear" -> "Skip the slow fade when your view clears underwater"
         "Shard Tracker" -> "HUD counting shards caught or found this session"
+        "Golden Fish Timer" -> "Lava fishing HUD: spawn window, hits and despawn countdown for the Golden Fish"
         "Fishing" -> "Master switch for all fishing features (all off by default)"
         else -> null
     }
