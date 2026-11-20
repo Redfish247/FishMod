@@ -134,6 +134,10 @@ object RiftMenu {
         def.sub.add(ColorPickerSetting("Colour", "", S::class.java, "riftDefenseColor"))
         col.features.add(def)
 
+        val gecko = Feature("Sun Gecko Helper", fishmod.features.other.BossToolsSettings::class.java, "sunGecko")
+        gecko.sub.add(ToggleSetting("Show Modifiers", "", fishmod.features.other.BossToolsSettings::class.java, "sunGeckoModifiers"))
+        col.features.add(gecko)
+
         return col
     }
 
@@ -158,7 +162,8 @@ object RiftMenu {
         "Vermin Tracker" -> "Flies, spiders and silverfish you vacuumed in West Village"
         "Kloon Hacking Solver" -> "Colours the right buttons in Kloon's Hacking menu"
         "Timite Expiry Timer" -> "Countdown on blue Timite panes in their last 6 seconds"
-        "Living Cave Defense Blocks" -> "Box, line and Break! on Auto* mob defense blocks"
+        "Sun Gecko Helper" -> "Time Chamber HUD: Sun Gecko HP (with Revival phase), combo hits, combo timer, modifiers"
+        "Living Cave Defense Blocks" ->"Box, line and Break! on Auto* mob defense blocks"
         else -> null
     }
 }
