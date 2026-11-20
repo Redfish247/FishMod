@@ -70,6 +70,11 @@ html,body{height:100%}body{background:var(--bg);color:var(--fg);font-family:var(
 
 button,.tab,.it,.sw,.sw::after,.crumb button,.side button{transition:background-color 0.32s,color 0.32s,border-color 0.32s,box-shadow 0.32s,transform 0.22s,filter 0.32s}
 button:active{transform:scale(.97)}
+.cmd button:hover,.side button:hover,.crumb button:hover,.nav button:not(:disabled):hover,.tab:not(.act):hover,.seg button:hover,.pre button:hover{background:#8080802e;color:var(--fg)}
+.side button:hover{box-shadow:inset 2px 0 0 var(--fg)}
+.it:hover{background:#80808024;border-color:#80808059;transform:translateY(-2px);box-shadow:0 6px 16px #0000002e}
+.it.sel:hover{transform:translateY(-2px)}.sw:hover{filter:brightness(1.15);box-shadow:0 0 0 3px #80808040}
+.pbtn:hover,.reopen:hover{box-shadow:0 0 0 2px #80808066}
 .win{transition:left 0.5s cubic-bezier(.2,.8,.2,1),top 0.5s cubic-bezier(.2,.8,.2,1),width 0.5s cubic-bezier(.2,.8,.2,1),height 0.5s cubic-bezier(.2,.8,.2,1),border-radius 0.5s,background-color 0.54s,box-shadow 0.54s,border-color 0.54s}
 .win.dragging{transition:background-color 0.54s}
 @keyframes wIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
