@@ -119,10 +119,6 @@ object MiningMenu {
         val ghost = Feature("Ghost Counter", fishmod.features.other.BossToolsSettings::class.java, "ghostCounter")
         ghost.sub.add(ButtonSetting("Reset Counts", "", "Reset") { GhostCounter.reset() })
         col.features.add(ghost)
-        val hive = Feature("Honeyhive Reminder", S::class.java, "foragingHoneyhive")
-        hive.sub.add(SliderIntSetting("Remind After (min)", "Minutes after you loot a honeyhive", S::class.java, "foragingHoneyhiveMin", 5, 180))
-        hive.sub.add(ToggleSetting("Queen Bee Title", "Title when a Queen Bee refills the hive", S::class.java, "foragingQueenBee"))
-        col.features.add(hive)
 
         val route = Feature("Ordered Waypoints", S::class.java, "route")
         route.sub.add(ButtonSetting("Add Point Here", "Adds the block under you", "Add") { OrderedWaypoints.addHere() })

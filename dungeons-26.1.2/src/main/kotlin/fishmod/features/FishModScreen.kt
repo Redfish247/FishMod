@@ -2163,6 +2163,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         val slayer = Column("Slayer")
+        val end = Column("The End")
         run {
             val spawnAlert = Feature("Mini/Boss Spawn Alert", "slayerSpawnAlertEnabled")
             spawnAlert.sub.add(ToggleSetting("Mini-Boss Alerts", "Alert when a slayer miniboss spawns", "slayerMiniBossAlert"))
@@ -2177,8 +2178,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val endAlerts = Feature("Superior Dragon Alert", fishmod.features.slayers.EndAlertSettings::class.java, "superiorDragonAlert")
             endAlerts.sub.add(SubcategoryHeader("Title when a Superior Dragon spawns"))
             endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayers.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayers.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
-            slayer.features.add(endAlerts)
-            slayer.features.add(Feature("Endstone Protector Alert", fishmod.features.slayers.EndAlertSettings::class.java, "endstoneProtectorAlert"))
+            end.features.add(endAlerts)
+            end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayers.EndAlertSettings::class.java, "endstoneProtectorAlert"))
+            end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayers.EndAlertSettings::class.java, "zealotHud"))
             slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayers.EndAlertSettings::class.java, "cocoonTimer"))
             slayer.features.add(Feature("Summons Recall Alert", fishmod.features.slayers.EndAlertSettings::class.java, "summonsRecallAlert"))
             val egg = Feature("Egg Sac Highlight", fishmod.features.slayers.EndAlertSettings::class.java, "eggSacHighlight")
@@ -2189,7 +2191,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             slayer.features.add(yang)
             slayer.features.add(Feature("Broodmother Countdown", fishmod.features.slayers.EndAlertSettings::class.java, "broodmotherHud"))
             slayer.features.add(Feature("No Slayer Quest Warning", fishmod.features.slayers.EndAlertSettings::class.java, "noQuestWarning"))
-            slayer.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayers.EndAlertSettings::class.java, "zealotHud"))
             val dm = Feature("Deathmite Highlight", fishmod.features.dungeon.DungeonExtraSettings::class.java, "deathmiteHighlight")
             dm.sub.add(ColorPickerSetting("Colour", "", { fishmod.features.dungeon.DungeonExtraSettings.deathmiteColor }, { v -> fishmod.features.dungeon.DungeonExtraSettings.deathmiteColor = v }))
             dungeon.features.add(dm)
@@ -2297,6 +2298,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(floor7)
         columns.add(hud)
         columns.add(slayer)
+        columns.add(end)
+        columns.add(fishmod.features.fishing.FishingMenu.huntingColumn())
         columns.add(fishmod.features.diana.DianaMenu.column())
         columns.add(fishmod.features.fishing.FishingMenu.column())
         columns.add(fishmod.features.mining.MiningMenu.column())
