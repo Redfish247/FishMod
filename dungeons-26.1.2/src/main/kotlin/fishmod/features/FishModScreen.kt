@@ -2840,7 +2840,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cardX(i: Int): Int = cx0() + (i % gridCols()) * (cardW() + CARD_GAP)
     private fun cardY(i: Int): Int = cyTop() + (i / gridCols()) * (cardH() + CARD_GAP) - gridScroll
     private fun gridMax(n: Int): Int = Math.max(0, ((n + gridCols() - 1) / gridCols()) * (cardH() + CARD_GAP) - (cyBot() - cyTop()))
-    private fun detTop(): Int = cyTop() - HEADER_H + 34
+    private fun detTop(): Int = cyTop() - HEADER_H + (if (selected?.let { descFor(it.name).isNotEmpty() } == true) 32 else 22)
     private fun detMax(f: Feature): Int = Math.max(0, f.naturalSubHeight() - (cyBot() - detTop()))
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
@@ -4231,7 +4231,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         )
         private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
         private const val STACK_W = 176
-        private const val NAV_ROW = 18
+        private const val NAV_ROW = 15
         private val STACK_TAB_H get() = if (COMPACT) 20 else 24
         private const val STACK_SUB_INDENT = 10
         private const val DRAG_THRESHOLD = 4
