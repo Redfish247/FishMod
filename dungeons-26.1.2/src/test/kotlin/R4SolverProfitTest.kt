@@ -1,5 +1,5 @@
-import fishmod.features.croesus.CroesusProfit
-import fishmod.features.dungeon.f7.dragons.DragonCheck
+import fishmod.features.dungeon.trackers.CroesusProfit
+import fishmod.features.dungeon.floor7.dragons.DragonCheck
 import fishmod.features.garden.FarmingProfitTracker
 import fishmod.features.garden.visitors.Pests
 import fishmod.features.mining.MiningProfitTracker

@@ -100,7 +100,7 @@ object BeaconSolver {
         if (gap <= 0 || gap > 80) return
         gaps.add(gap); if (gaps.size > 10) gaps.removeAt(0)
         val med = gaps.sorted()[gaps.size / 2]
-        val avg = gaps.filter { it in (med * 0.8)..(med * 1.2) }.average()
+        val avg = gaps.filter { it.toDouble() in (med * 0.8)..(med * 1.2) }.average()
         refSpeed = SPEED_TICKS.indices.minBy { kotlin.math.abs(SPEED_TICKS[it] - avg) }
     }
 

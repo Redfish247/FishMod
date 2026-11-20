@@ -42,7 +42,7 @@ object CarnivalShootout {
             try {
                 val out = HashMap<Int, Int>()
                 for (e in level.entitiesForRendering()) {
-                    if (e !is LivingEntity || !e.isAlive || e.type != net.minecraft.world.entity.EntityType.ZOMBIE) continue
+                    if (e !is LivingEntity || !e.isAlive || net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.type).path != "zombie") continue
                     HELMETS[e.getItemBySlot(EquipmentSlot.HEAD).item]?.let { out[e.id] = it }
                 }
                 glow = out

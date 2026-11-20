@@ -1,5 +1,6 @@
 package fishmod.features.alerts
 
+import fishmod.compat.curScreen
 import fishmod.features.extras.*
 
 import fishmod.features.garden.Garden
@@ -33,7 +34,7 @@ object BitsWarning {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!S.bitsWarning || ++tick % 10 != 0) return@register
             try {
-                (mc.screen as? AbstractContainerScreen<*>)?.let { scan(it) }
+                (mc.curScreen as? AbstractContainerScreen<*>)?.let { scan(it) }
                 val bits = SidebarCache.entries.firstNotNullOfOrNull { SCOREBOARD.find(it.plain.trim())?.groupValues?.get(1) }
                     ?.replace(",", "")?.substringBefore('.')?.toLongOrNull() ?: return@register
                 if (lastBits in 0 until bits && available > 0) {
