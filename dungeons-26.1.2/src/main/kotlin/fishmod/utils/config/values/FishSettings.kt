@@ -1111,6 +1111,7 @@ object FishSettings {
 
     fun slayerAnyEnabled(): Boolean =
         slayerSpawnAlertEnabled || slayerCocoonAlertEnabled || slayerSpawnHudEnabled ||
-            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled || slayerRngTitleEnabled
+            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled || slayerRngTitleEnabled ||
+            fishmod.features.slayers.EndAlertSettings.slayerMiniHighlight
 
 }
