@@ -2838,7 +2838,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cardX(i: Int): Int = cx0() + (i % gridCols()) * (cardW() + CARD_GAP)
     private fun cardY(i: Int): Int = cyTop() + (i / gridCols()) * (cardH() + CARD_GAP) - gridScroll
     private fun gridMax(n: Int): Int = Math.max(0, ((n + gridCols() - 1) / gridCols()) * (cardH() + CARD_GAP) - (cyBot() - cyTop()))
-    private fun detTop(): Int = cyTop() - HEADER_H + (if (selected?.let { descFor(it.name).isNotEmpty() } == true) 32 else 22)
+    private fun detTop(): Int = cyTop() - 6
     private fun detMax(f: Feature): Int = Math.max(0, f.naturalSubHeight() - (cyBot() - detTop()))
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
