@@ -2429,7 +2429,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
     private fun fa(c: Int, a: Float): Int = (((c ushr 24) * a).toInt() shl 24) or (c and 0xFFFFFF)
     private fun tabRects(): List<IntArray> {
-        var x = MARGIN + sw(this.font, "FishMod", 1.3f) + 16
+        var x = left() + MARGIN + sw(this.font, "FishMod", 1.3f) + 16
         val out = ArrayList<IntArray>()
         for (t in tabs) { val w = Math.min(120, sw(this.font, t, 0.85f) + 30); out.add(intArrayOf(x, w)); x += w + 4 }
         out.add(intArrayOf(x, 20))
@@ -2438,7 +2438,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun renderTabs(mx: Int, my: Int) {
         if (tabs.isEmpty()) visibleColumns().firstOrNull()?.let { tabs.add(it.name); hist.add(it.name); hi = 0 }
         val r = tabRects()
-        val y = MARGIN - 2
+        val y = top() + MARGIN - 2
         for ((i, t) in tabs.withIndex()) {
             val x = r[i][0]; val w = r[i][1]
             val hov = mx in x..x + w && my in y..y + 20
@@ -2452,7 +2452,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         ScreenTheme.nst("+", p[0] + 7, y + 5, if (ph) TEXT_COLOR else SUBTEXT_COLOR, 1f)
     }
     private fun tabClick(mx: Int, my: Int): Boolean {
-        val y = MARGIN - 2
+        val y = top() + MARGIN - 2
         if (my !in y..y + 20) return false
         for ((i, r) in tabRects().withIndex()) {
             if (mx !in r[0]..r[0] + r[1]) continue
@@ -2470,10 +2470,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.firstOrNull { folderOf(it) === f }?.let { toggleFold(it) }
     }
 
-    private fun left(): Int = 0
-    private fun top(): Int = 0
-    private fun right(): Int = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
-    private fun bottom(): Int = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
+    // The menu is a centered, draggable window; double-click its top bar to maximize
+    private var winDX = 0
+    private var winDY = 0
+    private var winMax = false
+    private var winDrag: IntArray? = null
+    private var lastBarClick = 0L
+    private fun scrW(): Int = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
+    private fun scrH(): Int = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
+    private fun winW(): Int = if (winMax) scrW() else Math.min(1100, scrW() - 40)
+    private fun winH(): Int = if (winMax) scrH() else Math.min(660, scrH() - 40)
+    private fun left(): Int = if (winMax) 0 else Mth.clamp((scrW() - winW()) / 2 + winDX, 0, scrW() - winW())
+    private fun top(): Int = if (winMax) 0 else Mth.clamp((scrH() - winH()) / 2 + winDY, 0, scrH() - winH())
+    private fun right(): Int = left() + winW()
+    private fun bottom(): Int = top() + winH()
 
     private fun vx(real: Number): Int = (real.toDouble() / fishmod.utils.rendering.UiScale.factor()).toInt()
 
@@ -2606,6 +2616,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
+        val wr = if (winMax) 0f else 12f
+        UiRecorder.dropShadow(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 18f, 0x80000000.toInt())
+        UiRecorder.roundedRectRing(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 1f, currentCardBg(), 0x33FFFFFF)
+        UiRecorder.fillRect(left().toFloat(), (top() + TOP_BAR_H + MARGIN - 4).toFloat(), winW().toFloat(), 1f, 0x1FFFFFFF)
 
         val vmx = vx(mouseX)
         val vmy = vx(mouseY)
@@ -2637,7 +2651,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun editHudRect(): IntArray {
         val bh = 28
-        val x = (right() - 220) / 2 + 220 + 8
+        val x = left() + (winW() - 220) / 2 + 220 + 8
         val y = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
         return intArrayOf(x, y, sw(this.font, "Edit HUD", 0.95f) + 28, bh)
     }
@@ -2646,7 +2660,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val labels = arrayOf("Report", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
         val bh = 20
         val gap = 8
-        val y = MARGIN - 2
+        val y = top() + MARGIN - 2
         val rects = Array(4) { IntArray(0) }
         var x = right() - MARGIN
         for (i in 3 downTo 0) {
@@ -2660,9 +2674,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun renderTopBar(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val ws = 1.3f
-        sst(ctx, this.font, "Fish", MARGIN, MARGIN, TEXT_COLOR, ws)
+        sst(ctx, this.font, "Fish", left() + MARGIN, top() + MARGIN, TEXT_COLOR, ws)
         val fw = sw(this.font, "Fish", ws)
-        sst(ctx, this.font, "Mod", MARGIN + fw, MARGIN, ACCENT, ws)
+        sst(ctx, this.font, "Mod", left() + MARGIN + fw, top() + MARGIN, ACCENT, ws)
         renderTabs(mouseX, mouseY)
 
         val labels = arrayOf("Report", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
@@ -2690,7 +2704,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun renderSearchBar(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val bw = 220
         val bh = 28
-        val bx = (right() - bw) / 2
+        val bx = left() + (winW() - bw) / 2
         val by = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
         roundedRectRing(ctx, bx, by, bw, bh, bh / 2, 1, 0xFF171717.toInt(), if (searchFocused) ACCENT else 0xFF3F3F3F.toInt())
 
@@ -2784,7 +2798,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val on = f.hasMaster() && f.get!!()
                 val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + CARD_H
                 val xf = x.toFloat(); val yf = y.toFloat()
-                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, fa(currentCardBg(), p))
+                UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, fa(0x12FFFFFF, p))
                 if (on) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, fa(ROW_ENABLED, p))
                 if (hover) UiRecorder.fillRoundedRect(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, ROW_HOVER)
                 if (f === selected) UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), CARD_H.toFloat(), 6f, 1f, 0, ACCENT)
@@ -2800,8 +2814,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (items.isEmpty() && col != null) sst(ctx, this.font, "No features match", cx0(), cyTop() + 8, SUBTEXT_COLOR, 1f)
         val f = selected ?: return
         val dx0 = cx1() - DET_W + Math.round((1f - anim(selAt, 0, 220)) * 24f)
-        UiRecorder.dropShadow(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
-        roundedRect(ctx, dx0, ht, DET_W, cyBot() - ht, CARD_RADIUS, currentCardBg())
+        UiRecorder.fillRoundedRect(dx0.toFloat(), ht.toFloat(), DET_W.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), 0x0FFFFFFF)
         sst(ctx, this.font, ellipsize(f.name, DET_W - 40), dx0 + 12, ht + 9, TEXT_COLOR, 1f)
         descFor(f.name).takeIf { it.isNotEmpty() }?.let { sst(ctx, this.font, ellipsize(it, DET_W - 24, 0.75f), dx0 + 12, ht + 24, SUBTEXT_COLOR, 0.75f) }
         val xh = mouseX >= cx1() - 20 && mouseY in ht..ht + 20
@@ -3182,13 +3195,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         val swW = 220
         val swH = 28
-        val sx = (right() - swW) / 2
+        val sx = left() + (winW() - swW) / 2
         val sy0 = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - swH) / 2 - 8
         searchFocused = mx >= sx && mx <= sx + swW && my >= sy0 && my <= sy0 + swH
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
 
         if (tabClick(mx, my)) return true
+        if (my in top()..top() + TOP_BAR_H + MARGIN - 4 && mx in left()..right() && topBarButtonRects().none { hovBtn(mx, my, it[0], it[1], it[2], it[3]) }) {
+            val now = System.currentTimeMillis()
+            if (now - lastBarClick < 300) { winMax = !winMax; winDrag = null } else if (!winMax) winDrag = intArrayOf(mx - winDX, my - winDY)
+            lastBarClick = now
+            return true
+        }
         val e = editHudRect()
         if (hovBtn(mx, my, e[0], e[1], e[2], e[3])) { Minecraft.getInstance().showScreen(FishHudEditor(this)); return true }
         val rects = topBarButtonRects()
@@ -3240,6 +3259,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
+        winDrag?.let { winDX = vx(click.x()) - it[0]; winDY = vx(click.y()) - it[1]; return true }
         val slider = activeSlider
         if (slider != null) { slider.onDrag(vx(click.x()), activeSliderX, activeSliderW); return true }
         if (!dragMoved && !stackIdle()) {
@@ -3261,6 +3281,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
     private fun releaseInner(click: MouseButtonEvent): Boolean {
+        if (winDrag != null) { winDrag = null; return true }
         activeSlider = null
 
         val sc = stackDragCol
