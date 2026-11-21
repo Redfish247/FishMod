@@ -15,6 +15,8 @@ object PartyCommandHint {
         RegexOption.IGNORE_CASE
     )
 
+    private val WHITESPACE = Regex("\\s+")
+
     private var lastInput: String? = null
     private var lastGhost: String? = null
 
@@ -56,7 +58,7 @@ object PartyCommandHint {
         }
         if (usage == null) return null
         val argStr = rest.substring(sp + 1)
-        val typed = argStr.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        val typed = argStr.trim().split(WHITESPACE).filter { it.isNotEmpty() }
         val used = if (typed.isEmpty()) 0 else typed.size - 1 + PartyCommandHandler.hintSlotsForFirstArg(cmd, typed[0])
         return join(usage, used, if (typed.isEmpty() || argStr.endsWith(" ")) "" else " ")
     }

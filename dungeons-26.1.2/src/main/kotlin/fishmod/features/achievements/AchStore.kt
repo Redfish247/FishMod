@@ -53,9 +53,14 @@ object AchStore {
 
     fun ownedBy(uuid: String): Boolean = uuid.isNotEmpty() && data.owner == uuid
 
+    // Last player UUID seen by bind(); skips the string work on every tick
+    private var lastBoundUuid: java.util.UUID? = null
+
     fun bind() {
-        val uuid = Minecraft.getInstance().player?.uuid?.toString()?.replace("-", "")?.lowercase() ?: return
-        if (data.owner == uuid) return
+        val playerUuid = Minecraft.getInstance().player?.uuid ?: return
+        if (playerUuid == lastBoundUuid) return
+        val uuid = playerUuid.toString().replace("-", "").lowercase()
+        if (data.owner == uuid) { lastBoundUuid = playerUuid; return }
         saveNow()
         data = read(uuid)
         dirty = false
@@ -63,6 +68,7 @@ object AchStore {
         changed()
         AchUsage.onBind()
         saveNow()
+        lastBoundUuid = playerUuid
     }
 
     private fun read(uuid: String): Data {

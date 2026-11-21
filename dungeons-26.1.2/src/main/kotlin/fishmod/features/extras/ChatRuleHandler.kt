@@ -19,7 +19,7 @@ object ChatRuleHandler {
 
     private class ActiveTitle(val text: String, val untilMs: Long)
     private val activeTitles = ArrayList<ActiveTitle>()
-
+    private val badRegexWarned: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
 
     @JvmStatic
     fun init() {
@@ -72,7 +72,11 @@ object ChatRuleHandler {
         if (filter.isBlank()) return false
 
         return if (rule.regex) {
-            val pattern = rule.compiledPattern() ?: run { FishDiag.fail("ChatRuleHandler.2", "chat rule regex does not compile: '$filter'"); return false }
+            val pattern = rule.compiledPattern() ?: run {
+                // Warn once per bad filter, not on every chat line
+                if (badRegexWarned.add(filter)) FishDiag.fail("ChatRuleHandler.2", "chat rule regex does not compile: '$filter'")
+                return false
+            }
             val m = pattern.matcher(raw)
             if (rule.partialMatch) m.find() else m.matches()
         } else {

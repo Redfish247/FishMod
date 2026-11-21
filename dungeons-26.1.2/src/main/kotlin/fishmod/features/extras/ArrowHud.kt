@@ -47,6 +47,13 @@ object ArrowHud {
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register { if ((S.arrowHud || S.quiverWarning) && ++tickN % 10 == 0) scan() }
+        FishEvents.worldChange.register { reset(); false }
+    }
+
+    // Drop the last quiver state so a new world does not show the old count
+    private fun reset() {
+        type = "Unknown"; count = -1L; rarityRgb = 0; extra = 0L
+        warnedLow = false; warnedOut = false
     }
 
     private fun onChat(s: String) {
