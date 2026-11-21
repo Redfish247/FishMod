@@ -17,9 +17,9 @@ object BossDamageIndicator {
     // from SkyHanni (BossType names)
     private val DUNGEON = listOf("Bonzo", "Scarf", "Professor", "Thorn", "Livid", "Sadan",
         "Boulder Tosser", "Sword Thrower", "Bigfoot Jumper", "Laser Shooter")
-    private val NETHER = listOf("Bladesoul", "Magma Boss", "Ashfang", "Barbarian Duke", "Mage Outlaw", "Vanquisher")
+    private val NETHER = listOf("Bladesoul", "Magma Boss", "Ashfang", "Barbarian Duke", "Mage Outlaw")
     private val OTHER = listOf("Endstone Protector", "Headless Horseman", "Minos Inquisitor", "Minos Champion", "Gaia Construct",
-        "Minotaur", "Thunder", "Lord Jawbus", "Ragnarok", "Arachne", "Broodmother", "Leech Supreme", "Bacte", "Sun Gecko")
+        "Minotaur", "Thunder", "Lord Jawbus", "Ragnarok", "Broodmother", "Leech Supreme", "Bacte", "Sun Gecko")
     private val HP = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*/?\\s*(?:[\\d,.]+\\s*[kKmMbB]?)?\\s*❤")
 
     private class Boss(val name: String, var hp: Double, var max: Double, val since: Long, var pos: Vec3, var seen: Long)

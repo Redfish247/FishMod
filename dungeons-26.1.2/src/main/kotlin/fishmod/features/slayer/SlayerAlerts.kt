@@ -22,6 +22,8 @@ object SlayerAlerts {
         SlayerExtras.init()
         SlayerMore.init()
         GroundItemNames.init()
+        SummonsHud.init()
+        fishmod.features.end.DragonProfitTracker.init()
         FishEvents.worldChange.register { reset(); seenMinis.clear(); false }
         FishEvents.chat.register { text ->
             if (FishSettings.slayerAnyEnabled()) {
