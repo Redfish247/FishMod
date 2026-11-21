@@ -19,13 +19,15 @@ object GoldenFishTimer {
     private var since = 0L
     private var spawnedAt = 0L
     private var hits = 0
+    private var lavaAt = 0L
 
     fun init() {
         FishEvents.chat.register { text ->
             if (W.goldenFishTimer) onChat(text.chatPlain.trim())
             false
         }
-        FishEvents.worldChange.register { since = 0L; spawnedAt = 0L; hits = 0; false }
+        FishingEvents.seaCreature.register(SeaCreatureHook { caught() })
+        FishEvents.worldChange.register { since = 0L; spawnedAt = 0L; hits = 0; lavaAt = 0L; false }
         MiningHuds.reg("Golden Fish Timer", "fishing_golden_fish", 140, 30,
             { W.goldenFishX }, { W.goldenFishX = it }, { W.goldenFishY }, { W.goldenFishY = it },
             { W.goldenFishScale }, { W.goldenFishScale = it },
@@ -35,12 +37,16 @@ object GoldenFishTimer {
 
     private fun active(): Boolean {
         if (!Fishing.active()) return false
-        if (since == 0L && FishingTrackerStore.hookLanded()) since = System.currentTimeMillis()
+        if (net.minecraft.client.Minecraft.getInstance().player?.fishing?.isInLava == true) lavaAt = System.currentTimeMillis()
         return since != 0L
     }
 
+    // starts only on the first catch (sea creature or trophy fish) made from lava
+    private fun caught() { val now = System.currentTimeMillis(); if (since == 0L && W.goldenFishTimer && lavaAt != 0L && now - lavaAt < 5_000L) since = now }
+
     private fun onChat(s: String) {
         val now = System.currentTimeMillis()
+        if (s.startsWith("TROPHY FISH!")) caught()
         when (s) {
             SPAWN -> { spawnedAt = now; hits = 0 }
             INTERACT -> { hits++; spawnedAt = now }
