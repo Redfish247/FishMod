@@ -40,7 +40,7 @@ class AuctionPriceScreen(
         private const val GOLD = 0xFFF2C14E.toInt()
         private const val GOLD_SOFT = 0x24F2C14E
         private const val GOOD = 0xFF5BD68A.toInt()
-        private const val ON_ACCENT = 0xFF232323.toInt()
+        private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private const val ALLOWED = "0123456789,. kKmMbB"
         private val MAX_PRICE = BigDecimal("999999999999999")
     }

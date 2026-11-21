@@ -26,7 +26,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         private const val CARD = 0xFF1C1C1C.toInt()
         private const val CARD_HOVER = 0xFF232323.toInt()
         private const val LOG_BG = 0xFF0E0E0E.toInt()
-        private const val ON_ACCENT = 0xFF232323.toInt()
+        private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private const val SUCCESS = 0xFF4FD08A.toInt()
         private const val LOG_SIZE = 6.5f
         private const val LOG_LINE = 9
