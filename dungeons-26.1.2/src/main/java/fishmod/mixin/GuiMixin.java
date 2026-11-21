@@ -33,6 +33,7 @@ public class GuiMixin {
     private Component fishmod$cleanActionBar(Component message) {
         try {
             fishmod.features.dungeon.map.RoomSecrets.onActionBar(message);
+            fishmod.features.mining.MetalDetector.onActionBar(message);
             return ActionBarCleaner.filter(message);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("GuiMixin.1", "action bar hook failed", t);

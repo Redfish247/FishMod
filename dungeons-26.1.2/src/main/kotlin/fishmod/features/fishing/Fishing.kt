@@ -50,6 +50,7 @@ object Fishing {
         ShardTracker.init()
         GoldenFishTimer.init()
         HuntingHelpers.init()
+        fishmod.features.hunting.Foraging.init()
         TrophyBoxes.init()
         OwnSeaCreatures.init()
         TrophyHud.init()
