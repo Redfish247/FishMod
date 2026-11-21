@@ -1,5 +1,6 @@
 package fishmod.features.hunting
 
+import fishmod.compat.limiterOverridden
 import fishmod.compat.speed
 import fishmod.features.AlertTitles
 import fishmod.utils.SkyblockLocation
@@ -37,7 +38,7 @@ object HuntingHelpers {
         // from NoFrills: invisibug trail = single CRIT particle, no spread, forced
         FishEvents.particle.register { p ->
             if (W.invisibugHighlight && p.particle.type === ParticleTypes.CRIT && p.count == 1 && p.speed == 0f &&
-                p.xDist == 0f && p.yDist == 0f && p.zDist == 0f && p.isOverrideLimiter) bugParticles.add(Vec3(p.x, p.y, p.z))
+                p.xDist == 0f && p.yDist == 0f && p.zDist == 0f && p.limiterOverridden) bugParticles.add(Vec3(p.x, p.y, p.z))
             false
         }
         FishEvents.worldChange.register { bugs.clear(); shownBugs = emptyList(); bats = emptyList(); false }

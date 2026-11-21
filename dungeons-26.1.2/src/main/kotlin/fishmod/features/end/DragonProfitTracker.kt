@@ -1,5 +1,6 @@
 package fishmod.features.end
 
+import fishmod.compat.curScreen
 import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.features.mining.MiningHuds
 import fishmod.features.slayer.EndAlertSettings as S
@@ -93,7 +94,7 @@ object DragonProfitTracker {
         val now = inventoryCounts(p)
         val before = lastInv
         lastInv = now
-        if (before == null || mc.screen != null) return
+        if (before == null || mc.curScreen != null) return
         for ((id, n) in now) {
             val d = n - (before[id] ?: 0)
             if (d <= 0) continue
