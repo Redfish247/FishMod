@@ -1,5 +1,6 @@
 package fishmod.features.visuals
 
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.VisualSettings
 import fishmod.utils.debug.FishDiag
@@ -112,6 +113,32 @@ object RenderOptimizer {
     @JvmStatic fun shouldDisableFireOverlay(): Boolean = VisualSettings.renderOptimizer && VisualSettings.roHideFireOverlay
     @JvmStatic fun hideDeathAnimation(): Boolean = VisualSettings.renderOptimizer && VisualSettings.roHideDeathAnimation
     @JvmStatic fun hideDyingArmorStands(): Boolean = VisualSettings.renderOptimizer && VisualSettings.roHideDyingArmorStands
+
+    // Skip the terrain screen on server warps; level != null keeps first join and the title screen untouched
+    @JvmStatic
+    fun skipLoadingScreen(mc: Minecraft): Boolean {
+        if (!VisualSettings.renderOptimizer || !VisualSettings.roNoLoadingScreen || mc.level == null) return false
+        val server = mc.currentServer ?: return false
+        return !server.isLan
+    }
+
+    // from NoFrills (NoGhostPlace): block items with abilities are not placed client side
+    private val NO_PLACE_IDS = setOf("ABINGOPHONE", "SUPERBOOM_TNT", "INFINITE_SUPERBOOM_TNT", "ARROW_SWAPPER", "PUMPKIN_LAUNCHER",
+        "RED_KING_RELIC", "ORANGE_KING_RELIC", "BLUE_KING_RELIC", "PURPLE_KING_RELIC", "GREEN_KING_RELIC")
+
+    @JvmStatic
+    fun noGhostPlace(stack: ItemStack): Boolean {
+        if (!VisualSettings.renderOptimizer || !VisualSettings.roNoGhostPlace || !SkyblockLocation.inSkyblock()) return false
+        return FishDiag.guard("RenderOptimizer.5", "ghost place check failed") {
+            val id = stack.fishmodCustomDataTag()?.getString("id")?.orElse("") ?: ""
+            if (id.isEmpty()) false
+            else id in NO_PLACE_IDS || id.startsWith("ABIPHONE") ||
+                (stack.get(DataComponents.LORE)?.lines()?.any {
+                    val l = it.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()
+                    l.contains("Ability: ") && l.endsWith("RIGHT CLICK")
+                } ?: false)
+        } ?: false
+    }
 
     @JvmStatic
     fun filterBossBars(bars: Collection<LerpingBossEvent>): Collection<LerpingBossEvent> {
