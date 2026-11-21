@@ -13,6 +13,18 @@ object EndAlertSettings {
 
     @ConfigValue @JvmField var cocoonTimer: Boolean = false
     @ConfigValue @JvmField var summonsRecallAlert: Boolean = false
+    @ConfigValue @JvmField var summonsHud: Boolean = false
+    @ConfigValue @JvmField var summonsHudX: Int = 5
+    @ConfigValue @JvmField var summonsHudY: Int = 245
+    @ConfigValue @JvmField var summonsHudScale: Double = 1.0
+
+    @ConfigValue @JvmField var dragonTracker: Boolean = false
+    @ConfigValue @JvmField var dragonTrackerX: Int = 5
+    @ConfigValue @JvmField var dragonTrackerY: Int = 120
+    @ConfigValue @JvmField var dragonTrackerScale: Double = 1.0
+
+    @ConfigValue @JvmField var phaseEggHits: Boolean = true
+    @ConfigValue @JvmField var phaseFirePillar: Boolean = true
 
     @ConfigValue @JvmField var eggSacHighlight: Boolean = false
     @ConfigValue @JvmField var eggSacColor: Int = 0xFFFFFF55.toInt()

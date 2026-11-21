@@ -23,6 +23,11 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.EquipmentSlot
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.animal.wolf.Wolf
+import net.minecraft.world.entity.monster.Blaze
+import net.minecraft.world.entity.monster.spider.Spider
+import net.minecraft.world.entity.monster.zombie.Zombie
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.monster.EnderMan
 import net.minecraft.world.item.Items
@@ -49,9 +54,11 @@ object SlayerMore {
     private var broodStage: String? = null
     private var broodAt = 0L
     private var tabVersion = -1
-    private var islandSince = 0L
     private var warned = false
-    private val hitZealots = HashMap<Int, EnderMan>()
+    private val noQuestKills = ArrayDeque<Long>()
+    private val deadSeen = HashSet<Int>()
+    private val zealotIds = HashSet<Int>()
+    private val hitIds = HashSet<Int>()
     private var zealots = 0
     private var sinceEye = 0
     private var eyes = 0
@@ -66,19 +73,19 @@ object SlayerMore {
             try { render3d() } catch (t: Throwable) { FishDiag.fail("SlayerMore.2", "slayer extras render failed", t) }
         }
         FishEvents.worldChange.register {
-            eggs = emptyList(); glyph = null; glyphStand = null; broodStage = null; hitZealots.clear()
-            islandSince = System.currentTimeMillis(); warned = false; false
+            eggs = emptyList(); glyph = null; glyphStand = null; broodStage = null; zealotIds.clear(); hitIds.clear(); deadSeen.clear()
+            noQuestKills.clear(); warned = false; false
         }
         FishEvents.chat.register { text ->
             if (S.zealotHud) {
-                val s = text.chatPlain.trim()
+                val s = TextStrip.plain(text.chatPlain).trim()
                 if (s == SPECIAL_ZEALOT) { eyes++; sinceEye = 0 }
                 else DRAGON_SPAWN.find(s)?.let { dragons++; lastDragon = it.groupValues[1] }
             }
             false
         }
         AttackEntityCallback.EVENT.register { _, _, _, entity, _ ->
-            if (S.zealotHud && entity is EnderMan && isZealot(entity)) hitZealots[entity.id] = entity
+            if ((S.zealotHud || S.noQuestWarning) && entity is LivingEntity) hitIds.add(entity.id)
             InteractionResult.PASS
         }
         hud("Broodmother", { S.broodmotherHudX }, { S.broodmotherHudX = it }, { S.broodmotherHudY }, { S.broodmotherHudY = it },
@@ -101,16 +108,7 @@ object SlayerMore {
     private fun onTick(mc: Minecraft) {
         val level = mc.level ?: return
         val player = mc.player ?: return
-        if (hitZealots.isNotEmpty()) {
-            val it = hitZealots.values.iterator()
-            while (it.hasNext()) {
-                val z = it.next()
-                if (z.isRemoved || !z.isAlive) {
-                    it.remove()
-                    if (!z.isAlive) { zealots++; sinceEye++ }
-                }
-            }
-        }
+        if ((S.zealotHud || S.noQuestWarning) && tick % 2 == 0) scanDeaths(level, player)
         if (++tick % 5 != 0) return
         val type = SlayerManager.type
         val boss = SlayerManager.bossEntity
@@ -151,14 +149,46 @@ object SlayerMore {
             }
         }
 
-        if (S.noQuestWarning && !warned) {
-            val loc = SkyblockLocation.getCurrentLocation()
-            val slayerIsland = loc == SkyblockLocation.SPIDERS_DEN || loc == SkyblockLocation.THE_END || loc == SkyblockLocation.CRIMSON_ISLE
-            if (slayerIsland && type == null && islandSince > 0 && System.currentTimeMillis() - islandSince > 10_000L) {
-                warned = true
-                FishUtil.forceTitle(Component.literal("§c§lNO SLAYER QUEST"), Component.literal("§7Start one before grinding"), 2500)
-            } else if (type != null) warned = true
+        if (type != null) { warned = false; noQuestKills.clear() }
+    }
+
+    // Counts kills from the death state, so ranged/AOE kills and special zealots all count
+    private fun scanDeaths(level: net.minecraft.client.multiplayer.ClientLevel, player: net.minecraft.world.entity.player.Player) {
+        val loc = SkyblockLocation.getCurrentLocation()
+        val inEnd = loc == SkyblockLocation.THE_END
+        val noQuest = S.noQuestWarning && SlayerManager.type == null && !warned
+        if (!(S.zealotHud && inEnd) && !noQuest) return
+        val now = System.currentTimeMillis()
+        for (e in level.getEntitiesOfClass(LivingEntity::class.java, player.boundingBox.inflate(24.0)) { it !== player }) {
+            val id = e.id
+            if (!e.isDeadOrDying) {
+                if (S.zealotHud && inEnd && e is EnderMan && id !in zealotIds && isZealot(e)) zealotIds.add(id)
+                continue
+            }
+            if (!deadSeen.add(id)) continue
+            val mine = id in hitIds || e.distanceToSqr(player) <= 100.0
+            if (!mine) continue
+            if (id in zealotIds) { zealots++; sinceEye++ }
+            if (noQuest && isSlayerAreaMob(e, loc)) {
+                noQuestKills.addLast(now)
+                while (noQuestKills.isNotEmpty() && now - noQuestKills.first() > 60_000L) noQuestKills.removeFirst()
+                if (noQuestKills.size >= 3) {
+                    warned = true; noQuestKills.clear()
+                    FishUtil.forceTitle(Component.literal("§c§lNO SLAYER QUEST"), Component.literal("§7You're killing slayer mobs with no quest"), 2500)
+                }
+            }
         }
+        if (deadSeen.size > 400) { deadSeen.retainAll { level.getEntity(it) != null }; zealotIds.retainAll { level.getEntity(it) != null }; hitIds.retainAll { level.getEntity(it) != null } }
+    }
+
+    // Mob families each slayer quest counts, by island (SlayerManager area rules)
+    private fun isSlayerAreaMob(e: LivingEntity, loc: SkyblockLocation?): Boolean = when (loc) {
+        SkyblockLocation.HUB -> e is Zombie || e is Wolf
+        SkyblockLocation.THE_PARK -> e is Wolf
+        SkyblockLocation.SPIDERS_DEN -> e is Spider
+        SkyblockLocation.THE_END -> e is EnderMan
+        SkyblockLocation.CRIMSON_ISLE -> e is Blaze
+        else -> false
     }
 
     private fun render3d() {

@@ -186,7 +186,7 @@ object SlayerBossPhases {
                     }
                 }
                 val egg = stands.firstOrNull { EGG_SAC.matches(it) }
-                if (egg != null && stands.any { it.equals("SHOOT ME!", true) }) l2 = "§eEgg sac: §f$egg"
+                if (EndAlertSettings.phaseEggHits && egg != null && stands.any { it.equals("SHOOT ME!", true) }) l2 = "§eEgg sac: §f$egg"
             }
 
             SlayerType.VOIDGLOOM -> {
@@ -215,7 +215,7 @@ object SlayerBossPhases {
 
             SlayerType.INFERNO -> {
                 val pillar = stands.firstNotNullOfOrNull { FIRE_PILLAR.find(it)?.groupValues?.get(1) }
-                if (pillar != null) l1 = "§cFIRE PILLAR §f${pillar}s"
+                if (EndAlertSettings.phaseFirePillar && pillar != null) { l1 = "§cFIRE PILLAR §f${pillar}s"; title("pillar", "§c§lFIRE PILLAR") }
 
                 if (l1.isEmpty()) {
                     val shield = HELLION.entries.firstOrNull { sh -> stands.any { it.contains(sh.tag, true) } }
