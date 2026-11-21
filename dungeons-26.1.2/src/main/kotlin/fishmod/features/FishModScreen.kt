@@ -2953,7 +2953,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (searchText.isNotEmpty()) visibleColumns().flatMap { visibleFeatures(it) }
         else if (allMode) columns.flatMap { visibleFeatures(it) }
         else visibleColumns().firstOrNull()?.let { visibleFeatures(it) } ?: emptyList()
-    private fun detW(): Int = Mth.clamp((winW() * 0.32f).toInt(), DET_W, 340)
+    private fun detW(): Int = Mth.clamp((winW() * 0.26f).toInt(), DET_W, 260)
     private fun gx1(): Int = if (selected != null) cx1() - detW() - COLUMN_GUTTER else cx1()
     private fun cardFill(): Int = (Math.round(FishSettings.fmCardAlpha.coerceIn(0, 100) * 2.55f) shl 24) or (FishSettings.fmCardColor and 0xFFFFFF)
     private fun cardH(): Int = if (listView) 26 else CARD_TALL
@@ -3103,7 +3103,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (mx !in x..x + cw || my !in y..y + cardH()) continue
             // left click opens settings, right click toggles
             if (btn == 1) { if (ft.hasMaster()) try { ft.set!!(!ft.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${ft.name}' failed", t) } }
-            else if (btn == 0) { if (selected == null) selAt = System.currentTimeMillis(); selected = ft; detScroll = 0 }
+            else if (btn == 0) { if (selected === ft) selected = null else { if (selected == null) selAt = System.currentTimeMillis(); selected = ft; detScroll = 0 } }
             return true
         }
         return true
