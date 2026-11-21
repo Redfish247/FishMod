@@ -35,6 +35,8 @@ object CarnivalShootout {
             }
             false
         }
+        // a warp mid-game would otherwise keep outlining helmeted zombies elsewhere
+        FishEvents.worldChange.register { active = false; glow = emptyMap(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (++tick % 2 != 0) return@register
             val level = mc.level

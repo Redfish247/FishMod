@@ -19,6 +19,7 @@ object ShardTracker {
     private val CONTRIB = Regex("^SHARD! Your contribution earned you the (.+?) Shard!$")
     // a lone "sent to Hunting Box" line is a drop with no other message; skip it after a counted gain or bazaar buy
     private val SENT = Regex("^You sent an? (.+?) Shard to your Hunting Box\\.$")
+    private val COUNT_SUFFIX = Regex(" \\(\\d+\\)$")
     private const val BAZAAR_BUY = "[Bazaar] Bought "
 
     // from NoFrills (ShardData.parseId): shard names whose bazaar id differs
@@ -37,7 +38,7 @@ object ShardTracker {
 
     fun init() {
         FishEvents.chat.register { text ->
-            if (W.shardTracker) parse(text.chatPlain.trim().replace(Regex(" \\(\\d+\\)$"), ""))
+            if (W.shardTracker) parse(text.chatPlain.trim().replace(COUNT_SUFFIX, ""))
             false
         }
         FishEvents.worldChange.register { if (W.shardTrackerResetOnSwap) reset(); false }
@@ -49,7 +50,7 @@ object ShardTracker {
                 "§7Profit\t§61.2M §7(5.9M/h)", "§fTepid\t§a8 §7(§6400k§7)", "§fHoneybuzz\t§a5 §7(§6800k§7)") }, lines = ::lines)
     }
 
-    fun reset() { counts.clear(); captured = 0; startMs = 0L; activeMs = 0L; lastGainMs = 0L }
+    fun reset() { counts.clear(); captured = 0; startMs = 0L; activeMs = 0L; lastGainMs = 0L; lastOtherMs = 0L }
 
     private fun parse(s: String) {
         val now = System.currentTimeMillis()
@@ -85,10 +86,12 @@ object ShardTracker {
         val total = counts.values.sum()
         val out = arrayListOf("§dShard Tracker", "§7Time\t§f" + time(activeMs),
             "§7Shards\t§a$total §7(" + perHour(total.toDouble()) + "/h)", "§7Captured\t§a$captured")
-        val profit = counts.entries.sumOf { price(it.key) * it.value }
+        // price each shard once per render, not per sort comparison
+        val rows = counts.map { (name, n) -> Triple(name, n, if (W.shardTrackerProfit) price(name) * n else n.toDouble()) }
+        val profit = rows.sumOf { it.third }
         if (W.shardTrackerProfit) out += "§7Profit\t§6" + FishingAlertText.fmtCoins(profit) + " §7(" + perHour(profit) + "/h)"
-        counts.entries.sortedByDescending { if (W.shardTrackerProfit) price(it.key) * it.value else it.value.toDouble() }.take(W.shardTrackerRows).forEach {
-            out += "§f${it.key}\t§a${it.value}" + if (W.shardTrackerProfit) " §7(§6" + FishingAlertText.fmtCoins(price(it.key) * it.value) + "§7)" else ""
+        rows.sortedByDescending { it.third }.take(W.shardTrackerRows).forEach { (name, n, value) ->
+            out += "§f$name\t§a$n" + if (W.shardTrackerProfit) " §7(§6" + FishingAlertText.fmtCoins(value) + "§7)" else ""
         }
         return out
     }

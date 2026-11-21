@@ -36,12 +36,18 @@ object FairySouls {
         RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.fairySoulWaypoints && SkyblockLocation.inSkyblock()) render(ctx, ps, vc) }
     }
 
+    // parsed once per island; render calls this every frame
+    private val soulCache = ConcurrentHashMap<String, List<Pair<String, Vec3>>>()
+
     private fun souls(mode: String): List<Pair<String, Vec3>> {
+        soulCache[mode]?.let { return it }
         val arr = NeuRepo.fairySouls?.getAsJsonArray(mode) ?: run { NeuRepo.ensureLoaded(); return emptyList() }
-        return arr.mapNotNull { e ->
+        val parsed = arr.mapNotNull { e ->
             val p = e.asString.split(',').mapNotNull { it.trim().toIntOrNull() }
             if (p.size == 3) e.asString to Vec3(p[0] + 0.5, p[1].toDouble(), p[2] + 0.5) else null
         }
+        soulCache[mode] = parsed
+        return parsed
     }
 
     private fun onChat(s: String) {
