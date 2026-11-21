@@ -164,7 +164,8 @@ object GardenAddons {
     private fun renderWater() {
         if (!X.gardenWatering || !Garden.inGarden()) return
         val mc = Minecraft.getInstance(); val me = mc.player ?: return; val level = mc.level ?: return
-        for (s in level.getEntitiesOfClass(ArmorStand::class.java, AABB(me.blockPosition()).inflate(24.0))) {
+        // Named-only predicate: this runs every render frame, so keep the returned list small
+        for (s in level.getEntitiesOfClass(ArmorStand::class.java, AABB(me.blockPosition()).inflate(24.0)) { it.hasCustomName() }) {
             val name = s.customName ?: continue
             if (!WATER_BARS.matches(Garden.strip(name.string).trim())) continue
             FishDraw.gizmoText(name, Vec3(s.x, s.y + 0.5 + s.bbHeight, s.z), 2.0f, -1, true)

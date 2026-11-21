@@ -148,7 +148,10 @@ object FarmingProfitTracker {
     private fun credit(cat: Cat, name: String, n: Long, now: Long) {
         if (name.isEmpty() || n <= 0 || idOf(name) == null) return
         add(cat, name, n)
-        pending.getOrPut(norm(name)) { ArrayList() } += longArrayOf(n, now)
+        // Entries for items the Sacks summary never repeats would pile up; drop the stale ones on every credit
+        val q = pending.getOrPut(norm(name)) { ArrayList() }
+        q.removeAll { now - it[1] > 90_000 }
+        q += longArrayOf(n, now)
     }
 
     private fun num(s: String) = s.replace(",", "").toLongOrNull() ?: 0L

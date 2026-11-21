@@ -139,7 +139,14 @@ object MiningProfitTracker {
         add(cat, name, n)
         val early = consume(sackMined, norm(name), n, now)
         if (early > 0) add(Cat.MINING, name, -early)
-        lootPending.getOrPut(norm(name)) { ArrayList() } += longArrayOf(n - early, now)
+        queuePending(lootPending, norm(name), longArrayOf(n - early, now), now)
+    }
+
+    // Prunes expired entries on insert so keys that never match a sack summary do not grow forever
+    private fun queuePending(map: HashMap<String, MutableList<LongArray>>, key: String, e: LongArray, now: Long) {
+        val q = map.getOrPut(key) { ArrayList() }
+        q.removeAll { now - it[1] > PENDING_MS }
+        q += e
     }
 
     private val lootPending = HashMap<String, MutableList<LongArray>>()
@@ -212,7 +219,7 @@ object MiningProfitTracker {
             val rest = consumePending(item, n, now)
             if (rest > 0) {
                 add(Cat.MINING, item, rest)
-                sackMined.getOrPut(norm(item)) { ArrayList() } += longArrayOf(rest, now)
+                queuePending(sackMined, norm(item), longArrayOf(rest, now), now)
             }
         }
     }
