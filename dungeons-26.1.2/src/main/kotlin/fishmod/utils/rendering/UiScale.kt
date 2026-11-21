@@ -31,7 +31,6 @@ object UiScale {
             is fishmod.features.inventory.StorageViewerScreen -> FishSettings.guiScaleStorage
             is fishmod.features.hud.AuctionPriceScreen -> FishSettings.guiScaleAuction
             is fishmod.features.dungeon.DungeonWaypointTitleScreen -> FishSettings.guiScaleWaypoint
-            is fishmod.features.CreditsScreen -> FishSettings.guiScaleCredits
             is fishmod.features.diana.DianaPastEventsScreen -> FishSettings.guiScaleDianaProfit
             else -> 100
         }
