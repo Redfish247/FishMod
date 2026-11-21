@@ -66,7 +66,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var resetArmed = false
     private var resetArmedAt = 0L
     private var hoverDesc: String? = null
-    private var hoverPreview: String? = null
     private var hoverDescX = 0
     private var hoverDescY = 0
 
@@ -2680,13 +2679,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val vmy = vx(mouseY)
 
         hoverDesc = null
-        hoverPreview = null
         try {
             renderContent(ctx, vmx, vmy)
             renderChrome(ctx, vmx, vmy)
             statusHint = null
             renderHoverTooltip(ctx)
-            renderShiftPreview(ctx)
         } catch (t: Throwable) {
             FishDiag.fail("FishModScreen.10", "widget rendering failed search='$searchText'", t)
             if (!widgetRenderFailureLogged) {
@@ -3023,7 +3020,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (f.hasMaster()) drawTogglePill(ctx, x + cw - 32, y + (if (listView) (cardH() - 13) / 2 else 6), 24, 13, on, knobP(f.name, on), hover && mouseX >= x + cw - 38, p)
                 else if (f.sub.isNotEmpty()) drawChevron(ctx, x + cw - 16, y + 12, false, fa(cSub, p))
                 if (hover) statusHint = "Left-click: settings   ·   Right-click: turn " + (if (on) "off" else "on")
-                if (hover && (HudPreview.namesFor(f.name).isNotEmpty() || WorldPreview.has(f.name))) hoverPreview = f.name
             }
         } finally { UiRecorder.popScissor() }
         if (items.isEmpty() && col != null) sst(ctx, this.font, "No features match", cx0(), cyTop() + 8, SUBTEXT_COLOR, 1f)
@@ -3128,19 +3124,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (sw(this.font, text, scale) <= maxW) return text
         val n = fishmod.utils.rendering.TextFit.prefixLength(text, "…", maxW.toFloat(), 1) { sw(this.font, it, scale).toFloat() }
         return text.substring(0, n) + "…"
-    }
-
-    // Shift over a HUD feature row: hide the panels and show its HUD example (current settings) where it sits in game.
-    private fun renderShiftPreview(ctx: GuiGraphicsExtractor) {
-        val name = hoverPreview ?: return
-        val w = Minecraft.getInstance().window
-        if (!(fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT))) return
-        var drawn = false
-        for (n in HudPreview.namesFor(name)) if (FishHudEditor.drawPreview(ctx, n)) drawn = true
-        if (WorldPreview.draw(ctx, name, this.width, this.height)) drawn = true
-        if (!drawn) return
-        UiRecorder.clear()
-        ctx.centeredText(this.font, "§7Preview: $name (release Shift to return)", this.width / 2, 6, 0xFFFFFFFF.toInt())
     }
 
     private fun renderHoverTooltip(ctx: GuiGraphicsExtractor) {
