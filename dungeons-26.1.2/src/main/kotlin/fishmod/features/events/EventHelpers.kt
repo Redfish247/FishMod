@@ -17,6 +17,7 @@ object EventHelpers {
 
     fun init() {
         FishEvents.chat.register { text ->
+            if (!S.hoppitySummary && !S.trickTreatAlert) return@register false
             val s = text.chatPlain.trim()
             if (S.hoppitySummary) hoppity(s)
             if (S.trickTreatAlert && s == "SPOOKY! A Trick or Treat Chest has appeared!")

@@ -152,7 +152,7 @@ object BurrowDetector {
             prune(); chains.pollFirst()
             refresh(death = false, expected = 2, type = null)
             val me = Diana.player()?.position()
-            DianaTest.log("chain end: title=${DianaSettings.dianaChainEndTitle} near=${me?.let { p -> DianaWaypoints.targets().count { it.distTo(p) <= 90 } }}")
+            if (Diana.testMode) DianaTest.log("chain end: title=${DianaSettings.dianaChainEndTitle} near=${me?.let { p -> DianaWaypoints.targets().count { it.distTo(p) <= 90 } }}")
             if (DianaSettings.dianaChainEndTitle && me != null && DianaWaypoints.targets().none { it.distTo(me) <= 90 })
                 FishUtil.forceTitle(Component.literal("§eUse Spade!"), Component.empty(), 2000)
             return

@@ -18,6 +18,7 @@ object MiscChatAlerts {
 
     fun init() {
         FishEvents.chat.register { text ->
+            if (!S.outbidAlert && !S.reindrakeAlert) return@register false
             val s = text.chatPlain.trim()
             if (S.outbidAlert) OUTBID.find(s)?.let {
                 ExtrasSounds.play(S.outbidSound, 100, "fm_outbid")
