@@ -2401,6 +2401,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val hov = mx in x..x + w && my in y..y + TAB_H
             val a = hover("tab$i", hov)
             if (i != ti && a > 0f) UiRecorder.fillRoundedRect(x.toFloat(), (y + 2).toFloat(), w.toFloat(), (TAB_H - 6).toFloat(), 6f, fa(ROW_HOVER, a))
+            // active tab: accent tint + underline so it reads on dark themes
+            if (i == ti) {
+                UiRecorder.fillRoundedRectCorners(x.toFloat(), y.toFloat(), w.toFloat(), (TAB_H).toFloat(), 6f, 6f, 0f, 0f, fa(ACCENT, 0.28f))
+                UiRecorder.fillRect((x + 4).toFloat(), (y + TAB_H - 2).toFloat(), (w - 8).toFloat(), 2f, ACCENT)
+            }
             val ts = 0.85f * NVG_BASE_TEXT_SIZE
             UiRecorder.text(ellipsize(t, w - 26, 0.85f), (x + 10).toFloat(), y + (TAB_H - ts) / 2f + 1f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
             if (tabs.size > 1) icon("x", x + w - 11f, y + TAB_H / 2f, if (hov && mx >= x + w - 16) TEXT_COLOR else SUBTEXT_COLOR)
@@ -2836,9 +2841,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "credits" -> openPage("credits")
                 "reset" -> if (resetArmed) { resetAllColumns(); resetArmed = false } else { resetArmed = true; resetArmedAt = System.currentTimeMillis() }
                 "look" -> columns.firstOrNull { c -> c.features.any { it.name == "UI Customization" } }?.let { c -> toggleFold(c); selected = c.features.first { it.name == "UI Customization" }; selAt = System.currentTimeMillis() }
-                "grid", "list" -> page = null
-                "grid" -> { listView = false; openedAt = System.currentTimeMillis() }
-                "list" -> { listView = true; openedAt = System.currentTimeMillis() }
+                "grid" -> { page = null; listView = false; openedAt = System.currentTimeMillis() }
+                "list" -> { page = null; listView = true; openedAt = System.currentTimeMillis() }
             }
             return true
         }
