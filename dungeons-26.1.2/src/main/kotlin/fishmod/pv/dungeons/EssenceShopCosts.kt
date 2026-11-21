@@ -49,7 +49,7 @@ object EssenceShopCosts {
 	@Synchronized
 	private fun load(): Map<String, IntArray> {
 		costs?.let { return it }
-		val path = ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "essenceshops.json")
+		val path = ProfileViewer.NEU_DIR.resolve("repo", "constants", "essenceshops.json")
 		if (!Files.isRegularFile(path)) return emptyMap()
 		val out = HashMap<String, IntArray>()
 		try {

@@ -263,10 +263,10 @@ object NeuRepoCache {
 	}
 
 	private fun constantsPath(fileName: String): Path? {
-		var path = ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", fileName)
+		var path = ProfileViewer.NEU_DIR.resolve("repo", "constants", fileName)
 		if (Files.isRegularFile(path)) return path
 		start()
-		path = ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", fileName)
+		path = ProfileViewer.NEU_DIR.resolve("repo", "constants", fileName)
 		return if (Files.isRegularFile(path)) path else null
 	}
 
@@ -374,7 +374,7 @@ object NeuRepoCache {
 	}
 
 	private fun loadFullRepo() {
-		val base = ProfileViewer.DIR.resolve("neu-repo")
+		val base = ProfileViewer.NEU_DIR
 		Files.createDirectories(base)
 		val repoRoot = base.resolve("repo")
 		val diskOk = Files.isDirectory(repoRoot) && Files.isDirectory(repoRoot.resolve("items"))
@@ -393,7 +393,7 @@ object NeuRepoCache {
 
 	private fun refreshIfStaleSafely() {
 		try {
-			val base = ProfileViewer.DIR.resolve("neu-repo")
+			val base = ProfileViewer.NEU_DIR
 			val repoRoot = base.resolve("repo")
 			if (!Files.isDirectory(repoRoot.resolve("items")) || !needsRefresh(base)) return
 			refreshInBackground(base, repoRoot)

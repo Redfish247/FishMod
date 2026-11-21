@@ -93,7 +93,7 @@ object TrophyFishData {
     }
 
     private fun loadFromDisk() {
-        val path = ProfileViewer.DIR.resolve("neu-repo").resolve("repo").resolve("constants").resolve("trophyfish.json")
+        val path = ProfileViewer.NEU_DIR.resolve("repo").resolve("constants").resolve("trophyfish.json")
         val map = LinkedHashMap<String, Def>()
         if (Files.isRegularFile(path)) {
             try {
