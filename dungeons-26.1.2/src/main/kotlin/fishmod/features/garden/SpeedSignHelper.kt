@@ -20,6 +20,7 @@ object SpeedSignHelper {
 
     private class Hit(val y0: Int, val y1: Int, val x1: Int, val speed: String)
     private val hits = ArrayList<Hit>()
+    private val WS = Regex("\\s+")
 
     fun init() {
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, h ->
@@ -61,7 +62,7 @@ object SpeedSignHelper {
 
     private fun isSpeedSign(screen: AbstractSignEditScreen): Boolean {
         val msgs = (screen as? AbstractSignEditScreenAccessor)?.`fishmod$getMessages`() ?: return false
-        return msgs.joinToString(" ").replace(Regex("\\s+"), " ").contains("crop speed cap", ignoreCase = true)
+        return msgs.joinToString(" ").replace(WS, " ").contains("crop speed cap", ignoreCase = true)
     }
 
     private fun fmt(d: Double) = if (d == Math.rint(d)) d.toInt().toString() else "%.1f".format(d)

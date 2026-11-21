@@ -48,7 +48,7 @@ object FishingTrackers {
         FishingEvents.rareDrop.register(RareDropHook { d ->
             if (on()) {
                 FishingTrackerStore.onDrop(d.itemName, d.price)
-                pendingDrops.getOrPut(sackKey(d.itemName)) { ArrayList() } += longArrayOf(1L, System.currentTimeMillis())
+                queueDrop(sackKey(d.itemName), System.currentTimeMillis())
             }
         })
         FishEvents.chat.register { c ->
@@ -58,7 +58,7 @@ object FishingTrackers {
             }
             false
         }
-        FishEvents.worldChange.register(WorldHook { if (on()) FishingTrackerStore.onWorldChange(); false })
+        FishEvents.worldChange.register(WorldHook { pendingDrops.clear(); if (on()) FishingTrackerStore.onWorldChange(); false })
 
         ClientTickEvents.END_CLIENT_TICK.register {
             while (pauseKey.consumeClick()) {
@@ -85,6 +85,13 @@ object FishingTrackers {
     // Rare drops already counted from their own chat line; the [Sacks] summary must not count them again
     private val pendingDrops = HashMap<String, MutableList<LongArray>>()
     private fun sackKey(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase().replace(WS, " ")
+
+    // Drops older than the sack window can never match a summary; prune them on insert so queues stay small
+    private fun queueDrop(key: String, now: Long) {
+        val q = pendingDrops.getOrPut(key) { ArrayList() }
+        q.removeAll { now - it[1] > PENDING_MS }
+        q += longArrayOf(1L, now)
+    }
 
     private fun onSacks(c: net.minecraft.network.chat.Component) {
         val hovers = LinkedHashSet<String>()

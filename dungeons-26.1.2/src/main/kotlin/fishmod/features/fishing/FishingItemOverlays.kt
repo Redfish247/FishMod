@@ -18,7 +18,10 @@ object FishingItemOverlays {
     private val PART = Regex("^(ථ|ꨃ|࿉) (Hook NONE|Line NONE|Sinker NONE|.+ Hook|.+ Line|.+ Sinker)$")
     private val BOTTLES = mapOf("Empty Thunder Bottle" to 50_000.0, "Empty Storm Bottle" to 500_000.0, "Empty Hurricane Bottle" to 5_000_000.0)
     private val cache = WeakHashMap<ItemStack, Info>()
-    private var cacheKey = ""
+    private var cacheBooks = false
+    private var cacheParts = false
+    private var cacheBottle = false
+    private var cacheList: String? = null
     private var books: Set<String> = emptySet()
 
     fun init() {
@@ -31,9 +34,10 @@ object FishingItemOverlays {
     }
 
     private fun draw(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
-        val key = "${W.trashBooks}|${W.rodParts}|${W.thunderBottle}|${W.trashBooksList}"
-        if (key != cacheKey) {
-            cacheKey = key; cache.clear()
+        // Compare settings directly: a joined string key would allocate for every slot every frame
+        if (W.trashBooks != cacheBooks || W.rodParts != cacheParts || W.thunderBottle != cacheBottle || W.trashBooksList != cacheList) {
+            cacheBooks = W.trashBooks; cacheParts = W.rodParts; cacheBottle = W.thunderBottle; cacheList = W.trashBooksList
+            cache.clear()
             books = W.trashBooksList.split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
         }
         val info = cache.getOrPut(stack) { compute(stack) }
