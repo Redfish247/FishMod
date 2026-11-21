@@ -3,6 +3,8 @@ package fishmod.features.hunting
 import fishmod.utils.FishKeys
 import fishmod.utils.ScreenTitle
 import fishmod.utils.TextStrip
+import com.mojang.blaze3d.platform.InputConstants
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents
@@ -21,6 +23,7 @@ object FusionKeys {
 
     fun init() {
         repeat = reg("Fusion: Repeat"); confirm = reg("Fusion: Confirm"); cancel = reg("Fusion: Cancel")
+        ClientLifecycleEvents.CLIENT_STARTED.register { mc -> fixNegativeKeys(mc) }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (screen !is AbstractContainerScreen<*>) return@register
             ScreenKeyboardEvents.allowKeyPress(screen).register { s, key -> !(W.fusionKeys && press(s as AbstractContainerScreen<*>, key)) }
@@ -28,7 +31,14 @@ object FusionKeys {
     }
 
     private fun reg(id: String): KeyMapping = KeyMappingHelper.registerKeyMapping(
-        KeyMapping(id, fishmod.compat.GLFW.KEYSYM, -1, FishKeys.category()))
+        KeyMapping(id, fishmod.compat.GLFW.KEYSYM, InputConstants.UNKNOWN.value, FishKeys.category()))
+
+    // Old saves hold "key.keyboard.-1"; 26.3 crashes reading key -1 on world load, so reset those to unbound
+    private fun fixNegativeKeys(mc: Minecraft) {
+        var changed = false
+        for (km in mc.options.keyMappings) if (km.saveString().startsWith("key.keyboard.-")) { km.setKey(InputConstants.UNKNOWN); changed = true }
+        if (changed) { KeyMapping.resetMapping(); mc.options.save() }
+    }
 
     private fun press(screen: AbstractContainerScreen<*>, key: net.minecraft.client.input.KeyEvent): Boolean {
         // from NoFrills: menu titles and button names
