@@ -37,6 +37,7 @@ object SlayerCarryTracker {
     private val carries = LinkedHashMap<String, Carry>()
     private val watched = HashMap<Int, Watched>()
     private val seen = HashSet<Int>()
+    private val tries = HashMap<Int, Int>()
     private var level: Any? = null
     private var tick = 0
 
@@ -58,7 +59,7 @@ object SlayerCarryTracker {
 
     private fun tick(mc: Minecraft) {
         val lvl = mc.level
-        if (lvl !== level) { level = lvl; watched.clear(); seen.clear() }
+        if (lvl !== level) { level = lvl; watched.clear(); seen.clear(); tries.clear() }
         val player = mc.player ?: return
         if (lvl == null || carries.isEmpty() || !FishSettings.slayerCarryHudEnabled) return
 
@@ -75,19 +76,26 @@ object SlayerCarryTracker {
             if (e.id in seen || !e.hasCustomName()) continue
             val name = e.customName?.string ?: continue
             val boss = bossLabel(name) ?: continue
-            seen.add(e.id)
-            val ign = owner(lvl, e) ?: continue
+            // "Spawned by" stand can load after the boss name: retry ~5s, nearest-player guess only on the last try
+            val n = (tries[e.id] ?: 0) + 1
+            val o = owner(lvl, e, n >= 20)
+            if (o == null && n < 20) { tries[e.id] = n; continue }
+            seen.add(e.id); tries.remove(e.id)
+            val ign = o?.takeIf { it.isNotEmpty() } ?: continue
             watched[e.id] = Watched(ign, e, e.position(), boss)
         }
         if (seen.size > 4096) seen.retainAll(lvl.entitiesForRendering().map { it.id }.toSet())
+        if (tries.size > 256) tries.clear()
     }
 
-    private fun owner(lvl: net.minecraft.client.multiplayer.ClientLevel, boss: net.minecraft.world.entity.Entity): String? {
+    // Tracked ign, "" = someone else's boss (final), null = owner not known yet
+    private fun owner(lvl: net.minecraft.client.multiplayer.ClientLevel, boss: net.minecraft.world.entity.Entity, last: Boolean): String? {
         for (o in lvl.getEntities(boss, boss.boundingBox.inflate(1.5, 4.0, 1.5))) {
             val n = o.customName?.string ?: continue
             val ign = SPAWNED_BY_RE.find(n)?.groupValues?.get(1)?.lowercase() ?: continue
-            return if (carries.containsKey(ign)) ign else null
+            return if (carries.containsKey(ign)) ign else ""
         }
+        if (!last) return null
         var best: String? = null
         var bestD = OWNER_RANGE_SQ
         for (p in lvl.players()) {
