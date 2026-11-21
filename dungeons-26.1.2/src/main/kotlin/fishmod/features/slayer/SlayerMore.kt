@@ -26,7 +26,6 @@ import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.animal.wolf.Wolf
 import net.minecraft.world.entity.monster.Blaze
-import net.minecraft.world.entity.monster.EnderMan
 import net.minecraft.world.entity.monster.spider.Spider
 import net.minecraft.world.entity.monster.zombie.Zombie
 import net.minecraft.world.entity.decoration.ArmorStand
@@ -166,7 +165,7 @@ object SlayerMore {
         for (e in level.getEntitiesOfClass(LivingEntity::class.java, player.boundingBox.inflate(24.0)) { it !== player }) {
             val id = e.id
             if (!e.isDeadOrDying) {
-                if (S.zealotHud && inEnd && e is EnderMan && id !in zealotIds && isZealot(e)) zealotIds.add(id)
+                if (S.zealotHud && inEnd && net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.type).path == "enderman" && id !in zealotIds && isZealot(e)) zealotIds.add(id)
                 continue
             }
             if (!deadSeen.add(id)) continue
@@ -190,7 +189,7 @@ object SlayerMore {
         SkyblockLocation.HUB -> e is Zombie || e is Wolf
         SkyblockLocation.THE_PARK -> e is Wolf
         SkyblockLocation.SPIDERS_DEN -> e is Spider
-        SkyblockLocation.THE_END -> e is EnderMan
+        SkyblockLocation.THE_END -> net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.type).path == "enderman"
         SkyblockLocation.CRIMSON_ISLE -> e is Blaze
         else -> false
     }
