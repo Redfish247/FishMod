@@ -38,6 +38,18 @@ object KuudraRender {
         Supply.Triangle to BlockPos(-149, 104, -70), Supply.Equals to BlockPos(-168, 124, -118), Supply.Slash to BlockPos(-65, 109, -162)
     )
 
+    // Lineups sorted by distance, re-sorted only when the player's block changes (pearls() runs twice a frame)
+    private var sortedFor: BlockPos? = null
+    private var sortedLineups: List<Lineup> = LINEUPS
+
+    private fun lineupsNear(me: BlockPos): List<Lineup> {
+        if (me != sortedFor) {
+            sortedFor = me
+            sortedLineups = LINEUPS.sortedBy { l -> l.start.minOf { it.distSqr(me) } }
+        }
+        return sortedLineups
+    }
+
     fun init() {
         RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraRender.1", "kuudra fill render failed") { fills(ps, vc) }
@@ -109,8 +121,7 @@ object KuudraRender {
 
     private inline fun pearls(draw: (AABB, Int, Boolean) -> Unit) {
         val me = Minecraft.getInstance().player?.blockPosition() ?: return
-        val sorted = LINEUPS.sortedBy { l -> l.start.minOf { it.distSqr(me) } }
-        for ((i, l) in sorted.withIndex()) {
+        for ((i, l) in lineupsNear(me).withIndex()) {
             for (s in l.start) draw(AABB(s), l.color, false)
             if (S.kuudraPearlHideFar && i > 0) continue
             val miss = Kuudra.missing
