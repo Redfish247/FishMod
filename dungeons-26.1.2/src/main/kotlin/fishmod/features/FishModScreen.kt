@@ -2439,8 +2439,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var resizeMask = 0
     private var resizeFrom: IntArray? = null
     private var maxP = 0f
-    private fun scrW(): Int = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
-    private fun scrH(): Int = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
+    private fun scrW(): Int = Math.ceil((this.width / fishmod.utils.rendering.UiScale.factor()).toDouble()).toInt()
+    private fun scrH(): Int = Math.ceil((this.height / fishmod.utils.rendering.UiScale.factor()).toDouble()).toInt()
     // restored (non-maximized) rect, clamped to the screen
     private fun baseRect(): IntArray {
         val r = winRect ?: run {
@@ -2674,7 +2674,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         ctx.fillGradient(0, 0, this.width, this.height, fa(DIM_TOP, e), fa(DIM_BOT, e))
         val wr = winR()
         UiRecorder.dropShadow(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 18f, 0x80000000.toInt())
-        UiRecorder.roundedRectRing(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 1f, currentCardBg(), ScreenTheme.ink(0x33))
+        // outline fades out when maximized so full screen has no border
+        UiRecorder.roundedRectRing(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 1f, currentCardBg(), fa(ScreenTheme.ink(0x33), 1f - maxP))
 
         val vmx = vx(mouseX)
         val vmy = vx(mouseY)
