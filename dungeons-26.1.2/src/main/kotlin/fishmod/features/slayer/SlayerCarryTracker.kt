@@ -33,6 +33,7 @@ object SlayerCarryTracker {
     private const val OWNER_RANGE_SQ = 8.0 * 8.0
     private const val COUNT_RANGE_SQ = 32.0 * 32.0
     private val FILE = File("config/fishmod/slayer_carries.json")
+    private val GSON = Gson()
     private val TIER_RE = Regex("""\b(I|II|III|IV|V)\b""")
 
     private val carries = LinkedHashMap<String, Carry>()
@@ -224,7 +225,7 @@ object SlayerCarryTracker {
         if (!FILE.exists()) return
         try {
             FILE.reader().use { r ->
-                val list: List<Carry>? = Gson().fromJson(r, object : TypeToken<List<Carry>>() {}.type)
+                val list: List<Carry>? = GSON.fromJson(r, object : TypeToken<List<Carry>>() {}.type)
                 list?.forEach { carries[it.ign.lowercase()] = it }
             }
         } catch (e: Exception) {
@@ -234,7 +235,7 @@ object SlayerCarryTracker {
     }
 
     private fun save() {
-        val json = Gson().toJson(carries.values.toList())
+        val json = GSON.toJson(carries.values.toList())
         fishmod.utils.IoExecutor.execute {
             FishDiag.guard("SlayerCarryTracker.3", "carry file write failed") { fishmod.utils.SafeFiles.writeAtomic(FILE, json) }
         }
