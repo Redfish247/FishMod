@@ -2349,6 +2349,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun loadFoldedColumns() {
         foldedColumns.clear()
         for (n in FishSettings.fmFoldedColumns.split(",")) if (n.isNotBlank()) foldedColumns.add(n)
+        // Explorer shows one column: stale saves (new columns missing from the list) left several highlighted as open
+        val open = columns.filter { it.name !in foldedColumns }
+        if (open.size > 1) { for (c in open.drop(1)) foldedColumns.add(c.name); saveFoldedColumns() }
     }
 
     private fun saveFoldedColumns() {
