@@ -6,7 +6,6 @@ import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.resources.Identifier
-import org.lwjgl.glfw.GLFW
 
 // Hold Left Alt to see only the item name in tooltips.
 object FocusMode {
@@ -21,7 +20,7 @@ object FocusMode {
         ItemTooltipCallback.EVENT.register(PHASE, ItemTooltipCallback { _, _, _, lines ->
             if (!FishSettings.focusMode || !SkyblockLocation.inSkyblock() || lines.size <= 1) return@ItemTooltipCallback
             try {
-                if (!fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_ALT)) return@ItemTooltipCallback
+                if (!fishmod.compat.GLFW.keyDown(Minecraft.getInstance().window, fishmod.compat.GLFW.GLFW_KEY_LEFT_ALT)) return@ItemTooltipCallback
                 val name = lines[0]
                 lines.clear()
                 lines.add(name)
