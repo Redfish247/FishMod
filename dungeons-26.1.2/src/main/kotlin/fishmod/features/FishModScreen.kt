@@ -2781,7 +2781,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         val s = searchRect()
         val cx = left() + 92; val cw = s[0] - 8 - cx
-        UiRecorder.roundedRectRing(cx.toFloat(), s[1].toFloat(), cw.toFloat(), s[3].toFloat(), 6f, 1f, 0, ScreenTheme.ink(0x2E))
+        UiRecorder.roundedRectRing(cx.toFloat(), s[1].toFloat(), cw.toFloat(), s[3].toFloat(), 6f, 1f, ScreenTheme.ink(0x16), ScreenTheme.ink(0x2E))
         // clickable breadcrumb: each segment but the last jumps back to that level
         crumbRects.clear()
         val cs = 0.85f * NVG_BASE_TEXT_SIZE
@@ -2801,7 +2801,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (!last) { UiRecorder.text("›", (bx + 6).toFloat(), cty, cs, SUBTEXT_COLOR); bx += 18 }
             if (bx > cx + cw - 16) break
         }
-        UiRecorder.roundedRectRing(s[0].toFloat(), s[1].toFloat(), s[2].toFloat(), s[3].toFloat(), 6f, 1f, ScreenTheme.ink(0x0F), if (searchFocused) ACCENT else ScreenTheme.ink(0x2E))
+        UiRecorder.roundedRectRing(s[0].toFloat(), s[1].toFloat(), s[2].toFloat(), s[3].toFloat(), 6f, 1f, ScreenTheme.ink(0x16), if (searchFocused) ACCENT else ScreenTheme.ink(0x2E))
         var field = searchField
         if (field == null) {
             field = EditBox(this.font, s[0] + 8, s[1] + 4, s[2] - 16, s[3] - 8, Component.empty())
