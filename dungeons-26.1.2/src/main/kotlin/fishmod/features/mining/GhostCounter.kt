@@ -51,8 +51,12 @@ object GhostCounter {
             example = { listOf("§9Ghosts", "§7Kills: §e1,204", "§7Kills/h: §e2,410", "§7Sorrows: §91", "§7Since Sorrow: §e312") }, lines = ::lines)
     }
 
+    private var wasInMist = false
+
     private fun scanTab() {
-        if (!inMist()) { lastBestiary = -1; tabMissing = false; return }
+        val mist = inMist()
+        if (mist != wasInMist) { wasInMist = mist; fishmod.utils.debug.FishDebug.LOGGER.info("[GhostCounter] inMist={} area='{}'", mist, Mining.area) }
+        if (!mist) { lastBestiary = -1; tabMissing = false; return }
         val n = TabListCache.entries.firstNotNullOfOrNull { BESTIARY.matchEntire(it.stripped)?.groupValues?.get(2) }
             ?.replace(",", "")?.replace(".", "")?.toLongOrNull()
         tabMissing = n == null
@@ -71,7 +75,7 @@ object GhostCounter {
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
         val p = mc.player ?: return
-        for (e in level.getEntitiesOfClass(Creeper::class.java, p.boundingBox.inflate(10.0)) { it.isDeadOrDying && fishmod.features.visuals.MiningBoxes.isGhost(it) }) {
+        for (e in level.getEntitiesOfClass(Creeper::class.java, p.boundingBox.inflate(16.0)) { it.isDeadOrDying && fishmod.features.visuals.MiningBoxes.isGhost(it) }) {
             if (!deadGhosts.add(e.id)) continue
             val now = System.currentTimeMillis()
             if (startMs == 0L) startMs = now
