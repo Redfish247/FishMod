@@ -12,10 +12,14 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.renderer.RenderPipelines
+import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as X
 
 // Hover a page in the Storage menu to see its cached contents (only when the storage overlay is off)
 object BackpackPreview {
+    private val CHEST: Identifier = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png")
+
     fun init() {
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (screen !is AbstractContainerScreen<*>) return@register
@@ -33,20 +37,25 @@ object BackpackPreview {
         val inv = StorageCache.view()[idx] ?: return
         val stacks = inv.stacks
         if (stacks.isEmpty()) return
-        val rows = (stacks.size + 8) / 9
-        val w = 9 * 18 + 6
-        val h = rows * 18 + 6
-        val x = (mx - w - 12).coerceAtLeast(2)
-        val y = (my - h / 2).coerceIn(2, (screen.height - h - 2).coerceAtLeast(2))
+        val rows = ((stacks.size + 8) / 9).coerceIn(1, 6)
+        // Vanilla chest panel: header, one strip per row, bottom border
+        val w = 176
+        val h = 17 + rows * 18 + 7
+        val x = (if (mx + 12 + w <= screen.width) mx + 12 else mx - 12 - w).coerceIn(2, (screen.width - w - 2).coerceAtLeast(2))
+        val y = (my - 12).coerceIn(2, (screen.height - h - 2).coerceAtLeast(2))
         val font = Minecraft.getInstance().font
+        val tint = X.backpackPreviewTint or 0xFF000000.toInt()
         ctx.pose().pushMatrix()
         try {
             ctx.nextStratum()
-            ctx.fill(x, y, x + w, y + h, X.backpackPreviewBg)
-            stacks.forEachIndexed { i, st ->
-                if (st.isEmpty) return@forEachIndexed
-                val sx = x + 3 + (i % 9) * 18 + 1
-                val sy = y + 3 + (i / 9) * 18 + 1
+            ctx.blit(RenderPipelines.GUI_TEXTURED, CHEST, x, y, 0f, 0f, w, 17 + rows * 18, 256, 256, tint)
+            ctx.blit(RenderPipelines.GUI_TEXTURED, CHEST, x, y + 17 + rows * 18, 0f, 215f, w, 7, 256, 256, tint)
+            ctx.text(font, StoragePage(idx).name, x + 8, y + 6, 0xFF404040.toInt(), false)
+            for (i in 0 until minOf(stacks.size, rows * 9)) {
+                val st = stacks[i]
+                if (st.isEmpty) continue
+                val sx = x + 8 + (i % 9) * 18
+                val sy = y + 18 + (i / 9) * 18
                 ctx.item(st, sx, sy)
                 ctx.itemDecorations(font, st, sx, sy)
             }

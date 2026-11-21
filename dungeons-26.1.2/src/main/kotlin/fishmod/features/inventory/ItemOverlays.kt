@@ -26,7 +26,7 @@ object ItemOverlays {
     @JvmStatic
     fun init() {
         DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
-            if (!S.overlayItemLevels || !SkyblockLocation.inSkyblock()) return@register
+            if (!(S.overlayItemLevels || S.overlayItemStars) || !SkyblockLocation.inSkyblock()) return@register
             try { draw(ctx, stack, x, y) } catch (t: Throwable) { FishDiag.fail("ItemOverlays.1", "item overlay draw failed", t) }
         }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
@@ -39,7 +39,8 @@ object ItemOverlays {
     private fun overlayText(stack: ItemStack): String? {
         val tag = stack.fishmodCustomDataTag() ?: return null
         val id = tag.getString("id").orElse("")
-        if (S.overlayBookLevel && (id == "ENCHANTED_BOOK" || stack.`is`(Items.ENCHANTED_BOOK))) {
+        val lv = S.overlayItemLevels
+        if (lv && S.overlayBookLevel && (id == "ENCHANTED_BOOK" || stack.`is`(Items.ENCHANTED_BOOK))) {
             val ench = tag.getCompound("enchantments").orElse(null) ?: return null
             val keys = ench.keySet()
             if (keys.size != 1) return null
@@ -47,7 +48,7 @@ object ItemOverlays {
             val lvl = ench.getInt(key).orElse(0).takeIf { it > 0 } ?: ench.getString(key).orElse("").toIntOrNull() ?: return null
             return lvl.toString()
         }
-        if (S.overlayPetLevel && id == "PET") {
+        if (lv && S.overlayPetLevel && id == "PET") {
             val name = stack.hoverName.string
             val lvl = PET_LVL.find(name)?.groupValues?.get(1) ?: return null
             val max = if (name.contains("Dragon")) 200 else 100
@@ -58,8 +59,8 @@ object ItemOverlays {
             val stars = maxOf(tag.getIntOr("upgrade_level", 0), tag.getIntOr("dungeon_item_level", 0))
             if (stars > 0) return stars.toString()
         }
-        if (S.overlayMinionTier) MINION_TIER.find(id)?.let { return it.groupValues[1] }
-        if (S.overlayCakeYear && id == "NEW_YEAR_CAKE") {
+        if (lv && S.overlayMinionTier) MINION_TIER.find(id)?.let { return it.groupValues[1] }
+        if (lv && S.overlayCakeYear && id == "NEW_YEAR_CAKE") {
             return tag.getInt("new_years_cake").orElse(0).takeIf { it > 0 }?.toString()
         }
         return null

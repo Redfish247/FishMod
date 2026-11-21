@@ -17,6 +17,14 @@ object ChatFilter {
 
     private val FRIEND_JOIN_LEAVE: Pattern = Pattern.compile("Friend > \\S+ (?:joined|left)\\.")
 
+    // from SkyHanni (ChatFilter skymall/lottery lists)
+    private val BUFF_LINES = setOf(
+        "New day! Your Sky Mall buff changed!",
+        "You can disable this messaging by toggling Sky Mall in your /hotm!",
+        "New day! Your Lottery buff changed!",
+        "You can disable this messaging by toggling Lottery in your /hotf!",
+    )
+
     private val SPAM_LIST: List<Pattern> by lazy { load("chatSpam.json") }
     private val COMMON_GROUPS: List<Pair<IntArray, () -> Boolean>> = listOf(
         intArrayOf(0, 1, 2, 3, 46) to { FishSettings.cfSpamEventRewards },
@@ -205,6 +213,7 @@ object ChatFilter {
         if (FishSettings.cfBazaar && s.startsWith("[Bazaar] Executing instant buy")) return "Bazaar"
         if (FishSettings.cfWarping && s == "Warping...") return "Warping"
         if (fishmod.features.extras.ExtrasSettings.cfJacobSpam && s.startsWith("[NPC] Jacob: Your Anita's Artifact is giving you")) return "Jacob Contest"
+        if (fishmod.features.extras.ExtrasSettings.hideBuffMessages && s in BUFF_LINES) return "Sky Mall / Lottery"
         if (FishSettings.cfNoammSpam && SPAM_LIST.any { it.matcher(s).matches() }) return "Skyblock/Dungeon Spam"
         if (FishSettings.cfCommonSpam && COMMON_SPAM.any { (p, on) -> on() && p.matcher(s).matches() }) return "Common Hypixel Spam"
         if (FishSettings.cfCustom && customHides(s)) return "Custom Messages"
