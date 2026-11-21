@@ -260,8 +260,8 @@ object PetLoreResolver {
 
     private fun loadPetnums(): JsonObject {
         val candidates = listOf(
-            ProfileViewer.DIR.resolve("neu-repo").resolve("repo").resolve("constants").resolve("petnums.json"),
-            ProfileViewer.DIR.resolve("neu-repo").resolve("constants").resolve("petnums.json"),
+            ProfileViewer.NEU_DIR.resolve("repo").resolve("constants").resolve("petnums.json"),
+            ProfileViewer.NEU_DIR.resolve("constants").resolve("petnums.json"),
         )
         for (path in candidates) {
             try {

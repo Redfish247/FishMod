@@ -86,7 +86,7 @@ object NeuItems {
 
     // Reuse the NEU repo the profile viewer already extracted; zip only as fallback
     private fun fromDisk(): List<Entry>? = try {
-        val dir = fishmod.pv.ProfileViewer.DIR.resolve("neu-repo").resolve("repo").resolve("items").toFile()
+        val dir = fishmod.pv.ProfileViewer.NEU_DIR.resolve("repo").resolve("items").toFile()
         dir.listFiles { f -> f.name.endsWith(".json") }?.mapNotNull { parse(it.name.removeSuffix(".json"), it.readText()) }?.takeIf { it.isNotEmpty() }
     } catch (e: Exception) { null }
 

@@ -146,7 +146,7 @@ object AttributeShardsData {
 	}
 
 	private fun loadFromDisk() {
-		val path = ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "attribute_shards.json")
+		val path = ProfileViewer.NEU_DIR.resolve("repo", "constants", "attribute_shards.json")
 		if (!Files.isRegularFile(path)) {
 			ProfileViewer.LOGGER.debug("Attribute shards missing at {}", path)
 			clear()

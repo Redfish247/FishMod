@@ -56,7 +56,7 @@ object HoppityRabbitsData {
 	}
 
 	private fun loadFromDisk() {
-		val path = ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "hoppity.json")
+		val path = ProfileViewer.NEU_DIR.resolve("repo", "constants", "hoppity.json")
 		if (!Files.isRegularFile(path)) {
 			ProfileViewer.LOGGER.warn("hoppity.json missing at {}", path)
 			rarityById = mapOf()

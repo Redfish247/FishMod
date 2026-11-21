@@ -129,7 +129,7 @@ object BestiaryData {
 	}
 
 	private fun loadFromDisk() {
-		val path = ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "bestiary.json")
+		val path = ProfileViewer.NEU_DIR.resolve("repo", "constants", "bestiary.json")
 		if (!Files.isRegularFile(path)) {
 			ProfileViewer.LOGGER.warn("Missing NEU bestiary.json at {}", path)
 			clear()

@@ -103,7 +103,7 @@ object MiningHotmData {
         perk(layoutId(apiOrLayoutId))?.name ?: titleCase(apiOrLayoutId ?: "")
 
     private fun loadFromDisk() {
-        val path = ProfileViewer.DIR.resolve("neu-repo").resolve("repo").resolve("constants").resolve("hotmlayout.json")
+        val path = ProfileViewer.NEU_DIR.resolve("repo").resolve("constants").resolve("hotmlayout.json")
         if (!Files.isRegularFile(path)) {
             ProfileViewer.LOGGER.debug("HOTM layout missing at {}", path)
             perks = emptyList()
