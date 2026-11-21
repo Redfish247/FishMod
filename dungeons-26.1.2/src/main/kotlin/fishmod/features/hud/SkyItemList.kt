@@ -439,9 +439,10 @@ object SkyItemList {
             val id = ids[shown[hover]]
             val stack = RecipeViewer.stackFor(id)
             val tip = tooltipLines(id, stack)
-            // Sit the tooltip against the panel's left edge instead of letting it flip around the cursor
+            // Sit the tooltip right against the hovered cell's left edge
             val tw = tip.maxOfOrNull { font.width(it) } ?: 0
-            val tx = if (mx - tw - 24 < 0 || px - tw - 18 < 0) mx else px - tw - 18
+            val cellX = px + PAD + ((hover - first) % cols) * CELL
+            val tx = if (cellX - tw - 18 < 0) mx else cellX - tw - 18
             ctx.setTooltipForNextFrame(font, tip, stack.tooltipImage, tx, my)
             ctx.extractDeferredElements(mx, my, 0f)
         }
@@ -466,7 +467,7 @@ object SkyItemList {
         val x0 = gridRight()
         tabScroll = tabScroll.coerceIn(0, tabMaxScroll())
         // dark strip behind the whole sidebar, top to bottom
-        ctx.fill(x0, py + 1, px + pw, py + ph, 0xE0000000.toInt())
+        ctx.fill(x0, py + 1, px + pw, py + ph, argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListOpacity / 2))
         for ((slot, i) in TAB_ORDER.withIndex()) {
             val row = slot - tabScroll
             if (row < 0 || row >= tabRows()) continue

@@ -69,6 +69,8 @@
     "FishKeyMixin",
     "LightmapMixin",
     "FishClientMixin",
+    "NoLoadingScreenMixin",
+    "NoGhostPlaceMixin",
     "OptionsSaveMixin",
     "PerspectiveToggleMixin",
     "FishMouseMixin",
