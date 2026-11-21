@@ -474,7 +474,8 @@ object SkyItemList {
             val tx = x0
             val y0 = py + HEAD_H + row * TAB_H
             val sel = i == selCat
-            ctx.fill(tx, y0, tx + TAB_CELL - 1, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else if (i == hov) 0x40FFFFFF else 0x30000000)
+            // no per-cell fill on idle tabs so the sidebar is one even see-through strip top to bottom
+            if (sel || i == hov) ctx.fill(tx, y0, tx + TAB_CELL - 1, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else 0x40FFFFFF)
             if (sel) ctx.fill(tx, y0 + TAB_H - 2, tx + TAB_CELL - 1, y0 + TAB_H - 1, accent)
             fishmod.features.visuals.ItemRarityHotbar.suppress = true
             try { ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[i]), tx + 1, y0 + 1) } finally { fishmod.features.visuals.ItemRarityHotbar.suppress = false }
