@@ -96,7 +96,8 @@ object FireFreezeTimer {
 
     private fun registerRender() {
         RenderHooks.NO_DEPTH_LINE.register { ctx, matrices, _ ->
-            if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty()) return@register
+            if (!FishSettings.fireFreezeTimerEnabled) { frozen.clear(); return@register }
+            if (frozen.isEmpty()) return@register
             val mc = Minecraft.getInstance()
             val me = mc.player ?: return@register
             try {

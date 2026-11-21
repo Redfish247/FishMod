@@ -25,7 +25,6 @@ object SkyItemList {
     private const val PAD = 6
     private const val HEAD_H = 26
     private const val FOOT_H = 2
-    private const val GAP = 8
     private const val SEARCH_H = 14
     private const val TAB_COLS = 1
     private const val TAB_CELL = 18

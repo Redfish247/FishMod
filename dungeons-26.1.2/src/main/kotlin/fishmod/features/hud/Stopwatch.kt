@@ -235,11 +235,13 @@ object Stopwatch {
 
     private fun current(): Long = if (running) System.nanoTime() - startNs else elapsedNs
 
+    private val DEC_FMT = Array(4) { "%.${it}f" }
+
     private fun fmt(ns: Long): String {
         val d = decimals.coerceIn(0, 3)
         val secs = ns / 1e9
         val m = (secs / 60).toInt()
-        val s = "%.${d}f".format(secs - m * 60)
+        val s = DEC_FMT[d].format(secs - m * 60)
         return if (m > 0) "$m:" + (if (s.substringBefore('.').length < 2) "0$s" else s) else s
     }
 

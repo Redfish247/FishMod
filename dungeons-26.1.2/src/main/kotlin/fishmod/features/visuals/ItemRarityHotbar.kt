@@ -38,6 +38,7 @@ object ItemRarityHotbar {
     }
 
     @JvmField var suppress = false
+    private var warnedNoMixin = false
 
     @JvmStatic
     fun drawRarity(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
@@ -45,7 +46,11 @@ object ItemRarityHotbar {
 
         val holder = stack as? RarityTierCache
         if (holder == null) {
-            FishDiag.fail("ItemRarityHotbar.1", "ItemStack missing RarityTierCache mixin: ${stack.javaClass.name}")
+            // Logged once, not per slot per frame
+            if (!warnedNoMixin) {
+                warnedNoMixin = true
+                FishDiag.fail("ItemRarityHotbar.1", "ItemStack missing RarityTierCache mixin: ${stack.javaClass.name}")
+            }
             return
         }
         try {
