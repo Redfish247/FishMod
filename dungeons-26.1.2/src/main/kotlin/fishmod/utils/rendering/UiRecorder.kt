@@ -34,12 +34,24 @@ object UiRecorder {
     fun clear() {
         val s = net.minecraft.client.Minecraft.getInstance().curScreen
         themeOn = s is fishmod.features.HasUiOverlay && s !is fishmod.pv.gui.ProfileViewerScreen
+        xs = 1f; xox = 0f; xoy = 0f; xa = 1f
         if (count > 0) java.util.Arrays.fill(strings, 0, count, null)
         count = 0
     }
 
     @JvmStatic
     fun size(): Int = count
+
+    // Whole-frame transform applied on replay (scale about origin, offset in virtual px, alpha)
+    private var xs = 1f
+    private var xox = 0f
+    private var xoy = 0f
+    private var xa = 1f
+    @JvmStatic
+    fun setTransform(scale: Float, offX: Float, offY: Float, alpha: Float) {
+        xs = scale; xox = offX; xoy = offY; xa = alpha.coerceIn(0f, 1f)
+    }
+    private fun ca(c: Int): Int = if (xa >= 1f) c else (Math.round((c ushr 24) * xa) shl 24) or (c and 0xFFFFFF)
 
     private fun ensureCapacity() {
         if (count < ops.size) return
@@ -74,41 +86,43 @@ object UiRecorder {
         for (idx in 0 until count) exec(idx, scale)
     }
 
-    private fun exec(idx: Int, k: Float) {
+    private fun exec(idx: Int, k0: Float) {
         val op = ops[idx].toInt()
         val fb = idx * FLOATS_PER_CMD
         val ib = idx * INTS_PER_CMD
-        val x = floats[fb] * k; val y = floats[fb + 1] * k; val w = floats[fb + 2] * k; val h = floats[fb + 3] * k
+        val k = k0 * xs; val ox = xox * k0; val oy = xoy * k0
+        val x = floats[fb] * k + ox; val y = floats[fb + 1] * k + oy; val w = floats[fb + 2] * k; val h = floats[fb + 3] * k
         val f4 = floats[fb + 4] * k; val f5 = floats[fb + 5] * k
+        val c0 = ca(ints[ib]); val c1 = ca(ints[ib + 1])
         when (op) {
-            OP_FILL_ROUNDED_RECT -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, ints[ib])
-            OP_FILL_RECT_TOP_ROUNDED -> UiRenderer.shape(x, y, w, h, f4, f4, 0f, 0f, ints[ib])
-            OP_ROUNDED_RECT_RING -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, ints[ib], ints[ib + 1], stroke = f5)
-            OP_DISC -> UiRenderer.shape(x - w, y - w, w * 2, w * 2, w, w, w, w, ints[ib])
-            OP_DROP_SHADOW -> UiRenderer.shadow(x, y, w, h, f4, f5, ints[ib])
-            OP_FILL_RECT_VGRADIENT -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, ints[ib], ints[ib + 1], grad = 1f)
-            OP_FILL_RECT_HGRADIENT -> UiRenderer.shape(x, y, w, h, 0f, 0f, 0f, 0f, ints[ib], ints[ib + 1], grad = 2f)
+            OP_FILL_ROUNDED_RECT -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, c0)
+            OP_FILL_RECT_TOP_ROUNDED -> UiRenderer.shape(x, y, w, h, f4, f4, 0f, 0f, c0)
+            OP_ROUNDED_RECT_RING -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, c0, c1, stroke = f5)
+            OP_DISC -> UiRenderer.shape(x - w, y - w, w * 2, w * 2, w, w, w, w, c0)
+            OP_DROP_SHADOW -> UiRenderer.shadow(x, y, w, h, f4, f5, c0)
+            OP_FILL_RECT_VGRADIENT -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, c0, c1, grad = 1f)
+            OP_FILL_RECT_HGRADIENT -> UiRenderer.shape(x, y, w, h, 0f, 0f, 0f, 0f, c0, c1, grad = 2f)
             OP_CHEVRON -> {
-                val c = ints[ib + 1]
+                val c = c1
                 val lw = 1.5f * k
                 if (ints[ib] != 0) { UiRenderer.line(x + 0.5f * k, y - 1.5f * k, x + 3.5f * k, y + 1.5f * k, lw, c); UiRenderer.line(x + 3.5f * k, y + 1.5f * k, x + 6.5f * k, y - 1.5f * k, lw, c) }
                 else { UiRenderer.line(x + 1.5f * k, y - 3f * k, x + 4.5f * k, y, lw, c); UiRenderer.line(x + 4.5f * k, y, x + 1.5f * k, y + 3f * k, lw, c) }
             }
             OP_POP_OUT_ICON -> {
-                val c = ints[ib]; val sz = w; val lw = 1.4f * k
+                val c = c0; val sz = w; val lw = 1.4f * k
                 UiRenderer.line(x, y + sz, x + sz, y, lw, c)
                 UiRenderer.line(x + sz * 0.5f, y, x + sz, y, lw, c)
                 UiRenderer.line(x + sz, y, x + sz, y + sz * 0.5f, lw, c)
             }
-            OP_TEXT -> UiRenderer.text(strings[idx] ?: "", x, y, w, ints[ib])
+            OP_TEXT -> UiRenderer.text(strings[idx] ?: "", x, y, w, c0)
             OP_TEXT_BOLD -> {
                 val s = strings[idx] ?: ""
-                UiRenderer.text(s, x, y, w, ints[ib], bold = true)
+                UiRenderer.text(s, x, y, w, c0, bold = true)
             }
             OP_PUSH_SCISSOR -> UiRenderer.pushScissor(x, y, w, h)
             OP_POP_SCISSOR -> UiRenderer.popScissor()
-            OP_LINE -> UiRenderer.line(x, y, w, h, f4, ints[ib])
-            OP_FILL_ROUNDED_CORNERS -> UiRenderer.shape(x, y, w, h, f4, f5, floats[fb + 6] * k, floats[fb + 7] * k, ints[ib])
+            OP_LINE -> UiRenderer.line(x, y, w + ox, h + oy, f4, c0)
+            OP_FILL_ROUNDED_CORNERS -> UiRenderer.shape(x, y, w, h, f4, f5, floats[fb + 6] * k, floats[fb + 7] * k, c0)
             else -> FishDiag.fail("UiRecorder.3", "unknown UI op $op at index $idx")
         }
     }
@@ -121,10 +135,11 @@ object UiRecorder {
         if (!themeOn) return c
         val a = c ushr 24; val r = (c shr 16) and 0xFF; val g = (c shr 8) and 0xFF; val b = c and 0xFF
         val mx = Math.max(r, Math.max(g, b)); val mn = Math.min(r, Math.min(g, b))
-        if (c == fishmod.features.ScreenTheme.windowBg() || a < 0xB0 || mx - mn > 12 || mx > 0x48 || mx < 0x05) return c
+        if (c == fishmod.features.ScreenTheme.windowBg() || a < 0xB0 || mx - mn > 12 || mx > 0xA0 || mx < 0x05) return c
         val d = mx - 0x16
         val wa = ((fishmod.features.ScreenTheme.windowBg() ushr 24) / 255f).coerceIn(0.15f, 1f)
-        val oa = Math.round((Math.abs(d) * 6).coerceIn(6, 0x70) * wa)
+        // mid greys (borders, tracks, buttons) become lighter/darker tints of the theme, not fixed grey
+        val oa = Math.round((Math.abs(d) * (if (mx > 0x48) 2 else 6)).coerceIn(6, if (mx > 0x48) 0x90 else 0x70) * wa)
         val light = fishmod.features.ScreenTheme.lightBg()
         val raise = d >= 0
         return (oa shl 24) or (if (raise != light) 0xFFFFFF else 0x000000)
