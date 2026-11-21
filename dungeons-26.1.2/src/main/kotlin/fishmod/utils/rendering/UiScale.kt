@@ -14,7 +14,8 @@ object UiScale {
     fun factor(): Float {
         val guiScale = Minecraft.getInstance().window.guiScale
         if (guiScale <= 0) FishDiag.fail("UiScale.1", "window guiScale is $guiScale, UI scale will be infinite")
-        val compensation = (REFERENCE_GUI_SCALE / guiScale).coerceAtMost(1.0)
+        // no cap at 1: GUI scale 1 got half-size menus (0.77x physical vs 1.54x at every other scale)
+        val compensation = REFERENCE_GUI_SCALE / guiScale
         val base = (compensation * FLAT_SHRINK).toFloat()
         return (if (isSiblingScreen()) base * SIBLING_ENLARGE else base) * userScale()
     }
