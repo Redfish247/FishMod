@@ -92,7 +92,8 @@ object ScreenTheme {
             "Custom" -> s.fmBgCustomColor and 0xFFFFFF
             else -> 0x1E1E1E
         }
-        return (Math.round(s.fmBgAlpha.coerceIn(0, 100) * 2.55f) shl 24) or rgb
+        // below ~20% the window is unreadable over the world
+        return (Math.round(s.fmBgAlpha.coerceIn(20, 100) * 2.55f) shl 24) or rgb
     }
     // Dark opaque panel fills follow the chosen window background
     private fun themed(fill: Int): Int {
