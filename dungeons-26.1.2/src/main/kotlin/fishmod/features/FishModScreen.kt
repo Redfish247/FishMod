@@ -2953,7 +2953,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (searchText.isNotEmpty()) visibleColumns().flatMap { visibleFeatures(it) }
         else if (allMode) columns.flatMap { visibleFeatures(it) }
         else visibleColumns().firstOrNull()?.let { visibleFeatures(it) } ?: emptyList()
-    private fun detW(): Int = Mth.clamp((winW() * 0.26f).toInt(), DET_W, 260)
+    private fun detW(): Int = Mth.clamp((winW() * 0.22f).toInt(), DET_W, 215)
     private fun gx1(): Int = if (selected != null) cx1() - detW() - COLUMN_GUTTER else cx1()
     private fun cardFill(): Int = (Math.round(FishSettings.fmCardAlpha.coerceIn(0, 100) * 2.55f) shl 24) or (FishSettings.fmCardColor and 0xFFFFFF)
     private fun cardH(): Int = if (listView) 26 else CARD_TALL
