@@ -58,12 +58,21 @@ object SoundManager {
         val norm = name.trim().lowercase().replace(' ', '_')
         val id = FishDiag.notNull(Identifier.tryParse(if (':' in norm) norm else "minecraft:$norm"), "SoundManager.2") { "invalid sound id '$name'" }
         val fromRegistry: SoundEvent? =
-            id?.let { BuiltInRegistries.SOUND_EVENT.getOptional(it).orElse(null) }
-        if (id != null && fromRegistry == null) FishDiag.fail("SoundManager.3", "sound '$id' not in registry, using pling")
+            id?.let { BuiltInRegistries.SOUND_EVENT.getOptional(it).orElse(null) ?: shortName(it.path) }
+        if (id != null && fromRegistry == null && warned.add(id.toString())) FishDiag.fail("SoundManager.3", "sound '$id' not in registry, using pling")
         return fromRegistry ?: SoundEvents.NOTE_BLOCK_PLING.value()
     }
 
-    private val lastPlayed = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val warned = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    // Short names like "pling" -> block.note_block.pling (any vanilla id ending in ".pling")
+    private fun shortName(path: String): SoundEvent? {
+        if ('.' in path) return null
+        val key = BuiltInRegistries.SOUND_EVENT.keySet().firstOrNull { it.namespace == "minecraft" && it.path.endsWith(".$path") } ?: return null
+        return BuiltInRegistries.SOUND_EVENT.getOptional(key).orElse(null)
+    }
+
+    private val lastPlayed =java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     @JvmStatic
     @JvmOverloads
