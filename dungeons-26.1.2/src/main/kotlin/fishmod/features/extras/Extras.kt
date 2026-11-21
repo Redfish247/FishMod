@@ -17,9 +17,7 @@ import fishmod.features.events.FairySouls
 import fishmod.features.events.HoppityEggWaypoints
 import fishmod.features.events.JerryHighlight
 import fishmod.features.events.StrayRabbitAlert
-import fishmod.features.inventory.AccessoryHelper
 import fishmod.features.inventory.BackpackPreview
-import fishmod.features.inventory.PersonalCompactorTooltip
 import fishmod.features.inventory.StackingEnchantTooltip
 
 import fishmod.utils.debug.FishDiag
@@ -49,14 +47,13 @@ object Extras {
         FishDiag.guard("Extras.20", "GiftTracker.init failed") { GiftTracker.init() }
         FishDiag.guard("Extras.21", "TeleportPadNames.init failed") { TeleportPadNames.init() }
         FishDiag.guard("Extras.22", "HoppityEggWaypoints.init failed") { HoppityEggWaypoints.init() }
-        FishDiag.guard("Extras.23", "PersonalCompactorTooltip.init failed") { PersonalCompactorTooltip.init() }
         FishDiag.guard("Extras.24", "StackingEnchantTooltip.init failed") { StackingEnchantTooltip.init() }
         FishDiag.guard("Extras.25", "JerryHighlight.init failed") { JerryHighlight.init() }
         FishDiag.guard("Extras.26", "CarnivalShootout.init failed") { CarnivalShootout.init() }
         FishDiag.guard("Extras.27", "StrayRabbitAlert.init failed") { StrayRabbitAlert.init() }
-        FishDiag.guard("Extras.28", "AccessoryHelper.init failed") { AccessoryHelper.init() }
         FishDiag.guard("Extras.40", "BitsWarning.init failed") { BitsWarning.init() }
         FishDiag.guard("Extras.41", "BazaarSearch.init failed") { BazaarSearch.init() }
+        FishDiag.guard("Extras.42", "AhPriceCheck.init failed") { AhPriceCheck.init() }
         FishDiag.guard("Extras.29", "HotxHelper.init failed") { fishmod.features.hunting.HotxHelper.init() }
         FishDiag.guard("Extras.30", "BeaconSolver.init failed") { fishmod.features.hunting.BeaconSolver.init() }
     }

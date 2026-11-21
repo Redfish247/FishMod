@@ -74,6 +74,8 @@ object ExtrasSettings {
     @ConfigValue @JvmField var cookieWarning: Boolean = false
     @ConfigValue @JvmField var bitsWarning: Boolean = false
     @ConfigValue @JvmField var bazaarSearch: Boolean = false
+    @ConfigValue @JvmField var ahPriceCheck: Boolean = false
+    @ConfigValue @JvmField var ahPriceCheckWarnPct: Int = 20
     @ConfigValue @JvmField var kickTimer: Boolean = false
     @ConfigValue @JvmField var sbDateHud: Boolean = false
     @ConfigValue @JvmField var sbDateHudX: Int = 10
@@ -114,7 +116,7 @@ object ExtrasSettings {
     @ConfigValue @JvmField var skillHudScale: Double = 1.0
     @ConfigValue @JvmField var skillHudHideSeconds: Int = 60
     @ConfigValue @JvmField var skillHudColor: Int = 0xFFFFFFFF.toInt()
-    @ConfigValue @JvmField var backpackPreviewBg: Int = 0xE0101014.toInt()
+    @ConfigValue @JvmField var backpackPreviewTint: Int = 0xFFFFFFFF.toInt()
     @ConfigValue @JvmField var hoppitySummary: Boolean = false
     @ConfigValue @JvmField var trickTreatAlert: Boolean = false
     @ConfigValue @JvmField var trickTreatTitle: String = "§6TRICK OR TREAT CHEST"
@@ -126,15 +128,12 @@ object ExtrasSettings {
     @ConfigValue @JvmField var giftTracker: Boolean = false
     @ConfigValue @JvmField var teleportPadNames: Boolean = false
     @ConfigValue @JvmField var hoppityEggWaypoints: Boolean = false
-    @ConfigValue @JvmField var compactorTooltip: Boolean = false
     @ConfigValue @JvmField var stackingEnchantTooltip: Boolean = false
     @ConfigValue @JvmField var jerryHighlight: Boolean = false
     @ConfigValue @JvmField var reindrakeAlert: Boolean = false
     @ConfigValue @JvmField var carnivalShootout: Boolean = false
     @ConfigValue @JvmField var strayRabbitAlert: Boolean = false
     @ConfigValue @JvmField var strayRabbitSound: String = "Note: Pling"
-    @ConfigValue @JvmField var accessoryHelper: Boolean = false
-    @ConfigValue @JvmField var accessoryHelperCount: Int = 10
     @ConfigValue @JvmField var hoppityEggColor: Int = 0xFFFFAA00.toInt()
     @ConfigValue @JvmField var giftHudX: Int = 10
     @ConfigValue @JvmField var giftHudY: Int = 230
