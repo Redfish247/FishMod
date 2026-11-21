@@ -79,14 +79,19 @@ object ExtrasMenu {
         lvl.sub.add(ToggleSetting("Pet Level", "", S::class.java, "overlayPetLevel"))
         lvl.sub.add(ToggleSetting("Hide Max Pet Level", "Skip the overlay on max-level pets", S::class.java, "overlayPetHideMax"))
         lvl.sub.add(ToggleSetting("Minion Tier", "", S::class.java, "overlayMinionTier"))
-        lvl.sub.add(ToggleSetting("Item Stars", "Dungeon star count on starred items", S::class.java, "overlayItemStars"))
         lvl.sub.add(ToggleSetting("Cake Year", "New Year Cakes", S::class.java, "overlayCakeYear"))
         lvl.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "overlayTextColor"))
         col.features.add(lvl)
+        val stars = Feature("Item Star Count", S::class.java, "overlayItemStars")
+        stars.sub.add(ColorPickerSetting("Text Color", "Shared with Item Level Overlay", S::class.java, "overlayTextColor"))
+        col.features.add(stars)
 
         col.features.add(Feature("Booster Cookie Warning", S::class.java, "cookieWarning"))
         col.features.add(Feature("No Bits Available Warning", S::class.java, "bitsWarning"))
         col.features.add(Feature("Bazaar Search + Price Graph", S::class.java, "bazaarSearch"))
+        val ahc = Feature("AH Buy Price Check", S::class.java, "ahPriceCheck")
+        ahc.sub.add(SliderIntSetting("Warn Above %", "Red warning when the cost is this much over lowest BIN", S::class.java, "ahPriceCheckWarnPct", 0, 200, 5))
+        col.features.add(ahc)
         col.features.add(Feature("Kick Cooldown Timer", S::class.java, "kickTimer"))
 
         val date = Feature("SkyBlock Date HUD", S::class.java, "sbDateHud")
@@ -106,7 +111,7 @@ object ExtrasMenu {
         todo.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "todoHudColor"))
         col.features.add(todo)
         val bp = Feature("Backpack Preview", S::class.java, "backpackPreview")
-        bp.sub.add(ColorPickerSetting("Background", "", S::class.java, "backpackPreviewBg"))
+        bp.sub.add(ColorPickerSetting("Panel Tint", "Tints the chest-style panel; white = vanilla", S::class.java, "backpackPreviewTint"))
         col.features.add(bp)
         val skill = Feature("Skill Progress HUD", S::class.java, "skillHud")
         skill.sub.add(SliderIntSetting("Hide After (s)", "Hide when no skill XP for this long", S::class.java, "skillHudHideSeconds", 10, 600, 10))
@@ -127,12 +132,11 @@ object ExtrasMenu {
         val tt = Feature("Trick or Treat Chest Alert", S::class.java, "trickTreatAlert")
         tt.sub.add(InputSetting("Title", "& colour codes work", S::class.java, "trickTreatTitle"))
         col.features.add(tt)
-        col.features.add(Feature("Hide Sky Mall / Lottery Messages", S::class.java, "hideBuffMessages"))
         val ob = Feature("Auction Outbid Alert", S::class.java, "outbidAlert")
         ob.sub.add(SoundSearchSetting("Sound", "Type to search every game sound", { S.outbidSound }, { S.outbidSound = it }))
         col.features.add(ob)
         val tr = Feature("Trevor the Trapper Helper", S::class.java, "trevorHelper")
-        tr.sub.add(ColorPickerSetting("Outline Colour", "", { S.trevorGlowColor }, { S.trevorGlowColor = it }))
+        tr.sub.add(ColorPickerSetting("Line Colour", "", { S.trevorGlowColor }, { S.trevorGlowColor = it }))
         col.features.add(tr)
         val gt = Feature("Gift Tracker HUD", S::class.java, "giftTracker")
         gt.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "giftHudColor"))
@@ -141,7 +145,6 @@ object ExtrasMenu {
         val he = Feature("Hoppity Egg Waypoints", S::class.java, "hoppityEggWaypoints")
         he.sub.add(ColorPickerSetting("Colour", "", S::class.java, "hoppityEggColor"))
         col.features.add(he)
-        col.features.add(Feature("Personal Compactor Contents", S::class.java, "compactorTooltip"))
         col.features.add(Feature("Stacking Enchant Progress", S::class.java, "stackingEnchantTooltip"))
         col.features.add(Feature("Hidden Jerry Highlight", S::class.java, "jerryHighlight"))
         col.features.add(Feature("Reindrake Alert + Warp Link", S::class.java, "reindrakeAlert"))
@@ -149,9 +152,6 @@ object ExtrasMenu {
         val sr = Feature("Stray Rabbit Alert", S::class.java, "strayRabbitAlert")
         sr.sub.add(SoundSearchSetting("Sound", "Type to search every game sound", { S.strayRabbitSound }, { S.strayRabbitSound = it }))
         col.features.add(sr)
-        val ah = Feature("Accessory Bag Upgrade List", S::class.java, "accessoryHelper")
-        ah.sub.add(SliderIntSetting("Entries", "", S::class.java, "accessoryHelperCount", 3, 30, 1))
-        col.features.add(ah)
         val hx = Feature("HotM / HotF Helper", S::class.java, "hotxHelper")
         hx.sub.add(ColorPickerSetting("Levelling Colour", "", S::class.java, "hotxLevelColor"))
         hx.sub.add(ColorPickerSetting("Maxed Colour", "", S::class.java, "hotxMaxedColor"))
@@ -175,7 +175,8 @@ object ExtrasMenu {
         "Booster Cookie Warning" -> "Chat warning on joining SkyBlock when your Cookie Buff is not active"
         "No Bits Available Warning" -> "Title + chat when your cookie's Bits Available run out (open the Booster Cookie menu once to sync)"
         "Bazaar Search + Price Graph" -> "/fmbz <item>: buy/sell prices and a 7-day price graph in chat"
-        "Command Tab Complete" -> "Tab suggests /warp names, lobby players for /p kick|transfer|promote, /msg etc., and /viewrecipe item ids"
+        "AH Buy Price Check" -> "Confirm Purchase menu: hover Confirm to compare the cost with the item's lowest BIN"
+        "Command Tab Complete" -> "Tab suggests /warp names, lobby players for /p, /msg, /ah etc., bazaar items for /bz, item names for /ahs, and /viewrecipe ids"
         "Unfocused FPS Saver" -> "Caps FPS while Minecraft is not the focused window"
         "Custom Todos" -> "Todo list HUD; /fmtodo add <text>, /fmtodo done <n>, /fmtodo clear"
         "Backpack Preview" -> "Storage menu: hover an ender chest page or backpack to see its contents (open each once; only when Storage Overlay is off)"
@@ -185,13 +186,14 @@ object ExtrasMenu {
         "Compact Bestiary" -> "Folds the multi-line BESTIARY level-up message into one line"
         "Order Filled Alert" -> "Title + sound when a Bazaar buy order or sell offer is filled"
         "SkyBlock XP in Chat" -> "Copies the action bar SkyBlock XP popup (amount, reason, n/100) into chat"
-        "Wiki Lookup" -> "/wiki [item name] posts a clickable Hypixel wiki link; no name = held item"
+        "Wiki Lookup" -> "/wiki [item name] posts a clickable SkyBlock wiki (hypixelskyblock.minecraft.wiki) link; no name = held item"
         "Kick Cooldown Timer" -> "Title one minute after a kick/limbo, when you can rejoin SkyBlock"
         "SkyBlock Date HUD" -> "Current SkyBlock date and hour, optionally with real time; move in the HUD editor"
         "Vanquisher Party Share" -> "Sends your coords to party chat when a Vanquisher spawns nearby"
         "Fix Double Clicks" -> "SkyBlock menus: a double click counts as a normal click, not collect-all"
         "Middle Click Fix" -> "SkyBlock menus: middle click on a menu item acts as a left click"
         "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
+        "Item Star Count" -> "Dungeon star count (1-10) in the slot corner of starred items"
         else -> null
     }
 }
