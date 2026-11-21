@@ -29,7 +29,6 @@ import net.minecraft.world.entity.monster.Blaze
 import net.minecraft.world.entity.monster.spider.Spider
 import net.minecraft.world.entity.monster.zombie.Zombie
 import net.minecraft.world.entity.decoration.ArmorStand
-import net.minecraft.world.entity.monster.EnderMan
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
@@ -96,7 +95,7 @@ object SlayerMore {
             listOf("§5Zealots: §f412 §7(§f87 §7since eye)", "§5Eyes: §f3", "§5Dragons: §f2 §7(Young)"))
     }
 
-    private fun isZealot(e: EnderMan): Boolean {
+    private fun isZealot(e: LivingEntity): Boolean {
         // from Skyblocker (TheEnd.isZealot: nametag stand containing "zealot")
         if (e.name.string.contains("zealot", true)) return true
         val level = Minecraft.getInstance().level ?: return false
@@ -162,7 +161,7 @@ object SlayerMore {
         for (e in level.getEntitiesOfClass(LivingEntity::class.java, player.boundingBox.inflate(24.0)) { it !== player }) {
             val id = e.id
             if (!e.isDeadOrDying) {
-                if (S.zealotHud && inEnd && e is EnderMan && id !in zealotIds && isZealot(e)) zealotIds.add(id)
+                if (S.zealotHud && inEnd && e is LivingEntity && net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.type).path == "enderman" && id !in zealotIds && isZealot(e)) zealotIds.add(id)
                 continue
             }
             if (!deadSeen.add(id)) continue
@@ -186,7 +185,7 @@ object SlayerMore {
         SkyblockLocation.HUB -> e is Zombie || e is Wolf
         SkyblockLocation.THE_PARK -> e is Wolf
         SkyblockLocation.SPIDERS_DEN -> e is Spider
-        SkyblockLocation.THE_END -> e is EnderMan
+        SkyblockLocation.THE_END -> net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.type).path == "enderman"
         SkyblockLocation.CRIMSON_ISLE -> e is Blaze
         else -> false
     }
