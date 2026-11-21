@@ -51,7 +51,8 @@ object SoundManager {
 
     @JvmStatic
     fun preset(name: String?): SoundEvent {
-        if (name.isNullOrBlank()) return SoundEvents.NOTE_BLOCK_PLING.value()
+        // "Ping" is the old default of three alert sounds and always meant pling
+        if (name.isNullOrBlank() || name.trim().equals("Ping", ignoreCase = true)) return SoundEvents.NOTE_BLOCK_PLING.value()
         PRESETS[name]?.let { return resolve(it) }
         PRESETS.entries.firstOrNull { it.key.equals(name.trim(), ignoreCase = true) }?.let { return resolve(it.value) }
         // ids are lowercase; hand-typed names like "Ping" or "Note Pling" must not hit the invalid-id path
