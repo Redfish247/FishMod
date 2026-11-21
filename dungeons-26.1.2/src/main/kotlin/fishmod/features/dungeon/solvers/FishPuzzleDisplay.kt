@@ -45,6 +45,7 @@ object FishPuzzleDisplay {
         })
         FishEvents.locationChange.register { _ ->
             bossReached = false
+            tickCounter = 0
             puzzles.clear()
             false
         }
