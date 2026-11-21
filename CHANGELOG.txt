@@ -1,3 +1,31 @@
+FishMod Changelog - 2026-11-21 (daily bugfix run, build 1.7.130)
+==================================
+Fixed:
+- Sound settings typed as a short name (like "pling") now play the right sound instead of falling back and spamming error reports.
+- Croesus/kismet prices no longer send an error report when the Hypixel bazaar download gets cut off; it just retries later.
+- Ghost Counter now counts ghost kills up to 16 blocks away when the Ghost bestiary tab widget is off.
+Reported bugs fixed (from fishmod.dev):
+- #634 Sound 'pling' not found
+- #633 Bazaar price download failed to parse
+- #635 Ghost counter not working (hardened + diagnostic log, needs a retest)
+Known issues (not fixed yet):
+- #629 Hiding the item list in every non-NPC menu: terminals are already hidden; hiding it in all other chest menus is a design change, left as a suggestion.
+Test in game:
+1. Set any FishMod sound to "pling" and trigger it: you should hear a note block pling.
+2. Open Croesus with Croesus Profit on: prices load, no error toast.
+3. Go to The Mist in Dwarven Mines with Ghost Counter on, kill ghosts with and without the Ghost bestiary tab widget: kills go up.
+Run notes:
+- Start commit 3e13ac22, fix commits 9e91499e b5ff6d7d 6a7fc05a. Build :dungeons-26.1.2:build :dungeons-26.2:build OK (1.7.130). 26.3 not built.
+- Jar NOT copied: C:\Users\Eli\AppData\Roaming\ModrinthApp\profiles\Skyblock 1.21.8\mods does not exist on this machine. Jars stay in dungeons-26.*/build/libs.
+- #634 utils/sound/SoundManager.kt: unknown short id falls back to a vanilla id ending in ".<name>", SoundManager.3 reported once per id.
+- #633 trackers/CroesusPrices.kt: JsonParseException (truncated body) now logs + failStamp backoff, no FishDiag report.
+- #635 mining/GhostCounter.kt: death-scan radius 10 -> 16, logs inMist/area on change. Card text is vague ("ghost thing aint work"); next report will show Mist detection in the log.
+- #631 #632 UiRenderer shader compile: reported from 1.7.18; current UiRenderer no longer compiles shaders (UiGpu path). Already fixed.
+- #630 PartyFinderStats.3 proxy HTTP 500: from 1.7.18, code path no longer exists; server-side 500 anyway. Already fixed.
+- #629 item list: terminals already excluded (SkyItemList.hiddenFor). Rest is a suggestion, not moved.
+- All other open Bug cards were already in testing from earlier runs; not touched.
+- Board: #633 #634 #635 #630 #631 #632 moved to testing.
+- Notes for Obsidian: SoundManager accepts short names via suffix match; bazaar malformed JSON is network truncation, not a bug; Ghost Counter logs [GhostCounter] inMist lines.
 FishMod Changelog - 2026-11-18 (daily bugfix run, build 1.7.109)
 ==================================
 Fixed:
