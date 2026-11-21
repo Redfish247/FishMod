@@ -125,7 +125,7 @@ object RareMobs {
     }
 
     private fun reset() {
-        defeated.clear(); missingTicks.clear(); glow.clear()
+        defeated.clear(); missingTicks.clear(); glow.clear(); pendingSends.clear()
         hpLines = emptyList(); noShuriken = false
     }
 

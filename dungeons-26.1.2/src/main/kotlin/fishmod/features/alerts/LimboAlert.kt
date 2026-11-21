@@ -13,6 +13,7 @@ object LimboAlert {
 
     fun init() {
         FishEvents.chat.register { text ->
+            if (!S.limboAlert && !S.restartAlert) return@register false
             if (S.limboAlert) {
                 val s = text.chatPlain.trim()
                 if (s.startsWith("You were spawned in Limbo") || s.startsWith("You are AFK. Move around to return from AFK")

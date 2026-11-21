@@ -174,7 +174,8 @@ object DianaWaypoints {
             if (better != null) { DianaTest.log("wp: drop GUESS ${g.pos} merged into ${better.type} ${better.pos}"); better.carryFrom(g); list.remove(g); continue }
             if (spadeDisproved(g)) { DianaTest.log("wp: drop GUESS ${g.pos} spadeDisproved"); list.remove(g); markRemoved(g.pos); continue }
             if (isValidBlock(g.pos) || !chunkLoaded(g.pos)) continue
-            DianaTest.log("wp: drop GUESS ${g.pos} invalidBlock ${Minecraft.getInstance().level?.getBlockState(g.pos)} snap=${snapToGround(g.pos)}")
+            // args are built before DianaTest.log's own check, so gate here (snapToGround is a block scan)
+            if (Diana.testMode) DianaTest.log("wp: drop GUESS ${g.pos} invalidBlock ${Minecraft.getInstance().level?.getBlockState(g.pos)} snap=${snapToGround(g.pos)}")
             list.remove(g)
             // Far guesses have a rough Y; move onto the nearest grass instead of dropping
             snapToGround(g.pos)?.takeIf { at(it, WpType.GUESS, WpType.BURROW) == null }?.let { add(Waypoint(it, WpType.GUESS, g.label)) }

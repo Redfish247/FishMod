@@ -65,6 +65,8 @@ object HuntingHelpers {
         val player = mc.player ?: return
         if (W.invisibugHighlight) bugTick(level) else bugParticles.clear()
         if (tick++ % 5 != 0) return
+        // no entity scan while both Cinderbat and lasso are off
+        if (!W.cinderbatHighlight && !W.lassoAlert) { bats = emptyList(); return }
         val crimson = W.cinderbatHighlight && SkyblockLocation.`in`(SkyblockLocation.CRIMSON_ISLE)
         val b = ArrayList<Entity>()
         val leashed = if (W.lassoAlert) Leashable.leashableLeashedTo(player).filterIsInstance<LivingEntity>() else emptyList()

@@ -113,7 +113,8 @@ object Foraging {
             if (st.isEmpty) continue
             val id = ItemTools.getId(st) ?: continue
             cur[id] = (cur[id] ?: 0) + st.count
-            names.putIfAbsent(id, TextStrip.plain(st.hoverName.string))
+            // hoverName string work only once per item id, not every tick
+            if (id !in names) names[id] = TextStrip.plain(st.hoverName.string)
         }
         val prev = snap
         snap = cur
@@ -165,9 +166,11 @@ object Foraging {
         val out = arrayListOf("§2Foraging Tracker", "§7Time\t§f" + time(activeMs),
             "§7Logs\t§a" + "%,d".format(logs) + " §7(" + perHour(logs.toDouble()) + "/h)", "§7Drops\t§a" + "%,d".format(drops),
             "§7Coins\t§6" + FishingAlertText.fmtCoins(coins) + " §7(" + perHour(coins) + "/h)")
-        items.entries.sortedByDescending { price(it.key) * it.value }.take(W.foragingTrackerRows).forEach {
-            out += "§f" + (names[it.key] ?: it.key) + "\t§a" + "%,d".format(it.value) + " §7(§6" + FishingAlertText.fmtCoins(price(it.key) * it.value) + "§7)"
-        }
+        // price each item once per render, not per sort comparison
+        items.entries.map { Triple(it.key, it.value, price(it.key) * it.value) }.sortedByDescending { it.third }
+            .take(W.foragingTrackerRows).forEach { (id, n, v) ->
+                out += "§f" + (names[id] ?: id) + "\t§a" + "%,d".format(n) + " §7(§6" + FishingAlertText.fmtCoins(v) + "§7)"
+            }
         return out
     }
 }
