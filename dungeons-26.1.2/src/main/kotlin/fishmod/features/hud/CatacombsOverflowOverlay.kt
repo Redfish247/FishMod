@@ -40,7 +40,13 @@ object CatacombsOverflowOverlay {
 
     @JvmStatic
     fun init() {
-        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ -> lastDumpAt.clear() }
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+            lastDumpAt.clear()
+            selfCataXp = -1
+            selfClassXp.clear()
+            fetchInFlight = false
+            lastFetchAt = 0
+        }
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             if (!FishSettings.catacombsOverflowEnabled || client.player == null || !SkyblockLocation.inSkyblock()) {
                 return@register

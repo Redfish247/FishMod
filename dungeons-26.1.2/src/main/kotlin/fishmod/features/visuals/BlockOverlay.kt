@@ -24,7 +24,7 @@ object BlockOverlay {
         }
         RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
             if (FishSettings.blockOverlayPhase) {
-                try { renderNoDepth(m, vc, fill = true); renderNoDepth(m, vc, fill = false) } catch (t: Throwable) { FishDiag.fail("BlockOverlay.2", "block overlay no-depth render failed (mode ${FishSettings.blockOverlayMode})", t) }
+                try { renderNoDepth(m, vc) } catch (t: Throwable) { FishDiag.fail("BlockOverlay.2", "block overlay no-depth render failed (mode ${FishSettings.blockOverlayMode})", t) }
             }
         }
     }
@@ -54,13 +54,11 @@ object BlockOverlay {
         if (mode != 1) FishDraw.gizmoThickOutline(box, FishSettings.blockOverlayOutlineColor, FishSettings.blockOverlayOutlineThickness)
     }
 
-    private fun renderNoDepth(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
+    // One target lookup per frame; fill first, then outline
+    private fun renderNoDepth(matrices: PoseStack, vc: VertexConsumer) {
         val box = targetBox() ?: return
         val mode = FishSettings.blockOverlayMode
-        if (fill) {
-            if (mode != 0) FishDraw.renderFilled(matrices, vc, box, FishDraw.toFloats(fillArgb()))
-        } else {
-            if (mode != 1) FishDraw.renderThickOutline(matrices, vc, box, FishDraw.toFloats(FishSettings.blockOverlayOutlineColor), FishSettings.blockOverlayOutlineThickness)
-        }
+        if (mode != 0) FishDraw.renderFilled(matrices, vc, box, FishDraw.toFloats(fillArgb()))
+        if (mode != 1) FishDraw.renderThickOutline(matrices, vc, box, FishDraw.toFloats(FishSettings.blockOverlayOutlineColor), FishSettings.blockOverlayOutlineThickness)
     }
 }

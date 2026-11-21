@@ -115,17 +115,28 @@ object EtherwarpHelper {
         val bp = target ?: return null
         if (!valid && !FishSettings.etherwarpShowFail) return null
         val lvl = Minecraft.getInstance().level ?: return null
+        val full = FishSettings.etherwarpFullBlock
+        val st = lvl.getBlockState(bp)
+        // Same target, block state, shape mode and level: reuse the boxes
+        if (bp == guessBp && st === guessState && full == guessFull && lvl === guessLevel) return guessCache
 
-        val local: List<AABB> = if (FishSettings.etherwarpFullBlock) {
+        val local: List<AABB> = if (full) {
             listOf(FULL)
         } else {
-            val st = lvl.getBlockState(bp)
             var shape = st.getShape(lvl, bp)
             if (shape.isEmpty) shape = st.getCollisionShape(lvl, bp)
             if (shape.isEmpty) listOf(FULL) else shape.toAabbs()
         }
-        return local.map { it.move(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble()).inflate(0.002) }
+        val boxes = local.map { it.move(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble()).inflate(0.002) }
+        guessBp = bp; guessState = st; guessFull = full; guessLevel = lvl; guessCache = boxes
+        return boxes
     }
+
+    private var guessBp: BlockPos? = null
+    private var guessState: Any? = null
+    private var guessFull = false
+    private var guessLevel: Any? = null
+    private var guessCache: List<AABB>? = null
 
     private fun guessColor(): Int = if (valid) FishSettings.etherwarpColor else FishSettings.etherwarpFailColor
 

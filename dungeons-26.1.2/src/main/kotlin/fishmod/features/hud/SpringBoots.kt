@@ -76,8 +76,10 @@ object SpringBoots {
             false
         }
 
+        FishEvents.worldChange.register { reset(); false }
+
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (!FishSettings.springBootsEnabled) return@register
+            if (!FishSettings.springBootsEnabled) { reset(); return@register }
             val p = mc.player ?: return@register
             if (!p.isCrouching || !wearingSpringBoots() || !SkyblockLocation.inSkyblock()) reset()
         }

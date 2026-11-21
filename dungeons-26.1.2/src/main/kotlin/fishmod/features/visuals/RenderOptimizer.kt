@@ -51,7 +51,8 @@ object RenderOptimizer {
                     }
                 }
                 is ClientboundSetEquipmentPacket -> {
-                    if (SkyblockLocation.inDungeon()) {
+                    val hideAny = VisualSettings.roHideHealerFairy || VisualSettings.roHideSoulWeaver || VisualSettings.roHideTentacleHead
+                    if (hideAny && SkyblockLocation.inDungeon()) {
                         for (pair in packet.slots) {
                             val slot = pair.first ?: continue
                             val stack = pair.second ?: continue
@@ -75,18 +76,27 @@ object RenderOptimizer {
 
     private val DAMAGE = Regex("""^(\D{0,2})([\d,]+)(\D{0,2})$""")
     private val formatted = HashMap<Int, Pair<String, Component>>()
+    // Raw tags that are not damage numbers, so the regex is skipped on later frames
+    private val notDamage = HashMap<Int, String>()
 
     // Called while building the nametag, so the raw number never gets a frame on screen; null hides it
     @JvmStatic
     fun damageNameTag(e: Entity, name: Component): Component? {
+        // Slayer-owned hide, independent of renderOptimizer (one int compare)
         if (fishmod.features.slayer.SlayerBossPhases.hidesNametag(e.id)) return null
         if (!VisualSettings.renderOptimizer || !(VisualSettings.roRemoveDamageIndicator || VisualSettings.roFormatDamageIndicator)) return name
         if (e !is ArmorStand || !SkyblockLocation.inSkyblock()) return name
         val raw = name.string
         if (raw.length > 40) return name
-        val m = DAMAGE.matchEntire(raw.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim()) ?: return name
+        if (notDamage[e.id] == raw) return name
+        if (!VisualSettings.roRemoveDamageIndicator) formatted[e.id]?.let { (k, c) -> if (k == raw) return c }
+        val m = DAMAGE.matchEntire(raw.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim())
+        if (m == null) {
+            if (notDamage.size > 512) notDamage.clear()
+            notDamage[e.id] = raw
+            return name
+        }
         if (VisualSettings.roRemoveDamageIndicator) return null
-        formatted[e.id]?.let { (k, c) -> if (k == raw) return c }
         val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: return name
         val color = name.toFlatList().firstOrNull { it.string.any(Char::isDigit) }?.style ?: Style.EMPTY
         val text = Component.literal(shorten(n)).withStyle(color)
