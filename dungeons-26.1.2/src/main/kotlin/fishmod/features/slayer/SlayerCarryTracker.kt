@@ -28,7 +28,8 @@ object SlayerCarryTracker {
 
     private class Watched(val ign: String, val stand: net.minecraft.world.entity.Entity, var pos: Vec3, var boss: String)
 
-    private val SPAWNED_BY_RE = Regex("""Spawned by: (\w+)""")
+    // Owner tag: "Spawned by: X" (old) or "X's SLAYER BOSS" / "Xs' SLAYER BOSS" (seen 2026-11-20)
+    private val SPAWNED_BY_RE = Regex("""Spawned by: (\w+)|^\W*(\w+)'s? SLAYER BOSS""")
     private const val OWNER_RANGE_SQ = 8.0 * 8.0
     private const val COUNT_RANGE_SQ = 32.0 * 32.0
     private val FILE = File("config/fishmod/slayer_carries.json")
@@ -92,7 +93,8 @@ object SlayerCarryTracker {
     private fun owner(lvl: net.minecraft.client.multiplayer.ClientLevel, boss: net.minecraft.world.entity.Entity, last: Boolean): String? {
         for (o in lvl.getEntities(boss, boss.boundingBox.inflate(1.5, 4.0, 1.5))) {
             val n = o.customName?.string ?: continue
-            val ign = SPAWNED_BY_RE.find(n)?.groupValues?.get(1)?.lowercase() ?: continue
+            val m = SPAWNED_BY_RE.find(n) ?: continue
+            val ign = m.groupValues[1].ifEmpty { m.groupValues[2] }.lowercase()
             return if (carries.containsKey(ign)) ign else ""
         }
         if (!last) return null
