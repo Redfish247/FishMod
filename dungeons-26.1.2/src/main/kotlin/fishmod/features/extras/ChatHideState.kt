@@ -31,10 +31,11 @@ object ChatHideState {
     @JvmStatic
     fun shouldSwallowBlank(message: Component?): Boolean {
         if (message == null) return false
+        // Cheap window check first: runs for every chat message
+        if (System.nanoTime() - suppressedAtNanos > 40_000_000L) return false
         val s = message.string?.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")?.trim() ?: return false
         if (s.isNotEmpty()) return false
-        val hit = (System.nanoTime() - suppressedAtNanos) <= 40_000_000L
-        if (hit) suppressedAtNanos = System.nanoTime()
-        return hit
+        suppressedAtNanos = System.nanoTime()
+        return true
     }
 }
