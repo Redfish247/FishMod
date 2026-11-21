@@ -13,6 +13,9 @@ object ProfileViewer {
 	val LOGGER: Logger = LoggerFactory.getLogger("FishPV")
 	@JvmField
 	val DIR: Path = configDir().resolve("fishmod").resolve("pv")
+	// NEU repo folder; -Dfishmod.neuRepoDir lets the test kit share one copy instead of downloading per run
+	@JvmField
+	val NEU_DIR: Path = System.getProperty("fishmod.neuRepoDir")?.let { Path.of(it) } ?: DIR.resolve("neu-repo")
 
 	private fun configDir(): Path =
 		try {

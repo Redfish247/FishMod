@@ -718,8 +718,8 @@ object PlayerStatsCalculator {
         attributeShardsCache ?: loadConstant("attribute_shards.json").also { attributeShardsCache = it }
 
     private fun loadConstant(fileName: String): JsonObject? {
-        var path = ProfileViewer.DIR.resolve("neu-repo").resolve("repo").resolve("constants").resolve(fileName)
-        if (!Files.isRegularFile(path)) path = ProfileViewer.DIR.resolve("neu-repo").resolve("constants").resolve(fileName)
+        var path = ProfileViewer.NEU_DIR.resolve("repo").resolve("constants").resolve(fileName)
+        if (!Files.isRegularFile(path)) path = ProfileViewer.NEU_DIR.resolve("constants").resolve(fileName)
         if (!Files.isRegularFile(path)) return null
         return try {
             Files.newBufferedReader(path, StandardCharsets.UTF_8).use { reader ->

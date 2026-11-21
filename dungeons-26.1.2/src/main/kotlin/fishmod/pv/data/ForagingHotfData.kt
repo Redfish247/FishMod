@@ -101,7 +101,7 @@ object ForagingHotfData {
 	}
 
 	private fun loadFromDisk() {
-		val path = ProfileViewer.DIR.resolve("neu-repo", "repo", "constants", "hotflayout.json")
+		val path = ProfileViewer.NEU_DIR.resolve("repo", "constants", "hotflayout.json")
 		if (!Files.isRegularFile(path)) {
 			ProfileViewer.LOGGER.debug("HOTF layout missing at {}", path)
 			clear()
