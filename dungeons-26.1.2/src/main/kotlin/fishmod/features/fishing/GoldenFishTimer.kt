@@ -35,7 +35,7 @@ object GoldenFishTimer {
 
     private fun active(): Boolean {
         if (!Fishing.active()) return false
-        if (since == 0L && net.minecraft.client.Minecraft.getInstance().player?.fishing != null) since = System.currentTimeMillis()
+        if (since == 0L && FishingTrackerStore.hookLanded()) since = System.currentTimeMillis()
         return since != 0L
     }
 
