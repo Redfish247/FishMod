@@ -30,7 +30,8 @@ object DungeonExtras {
     // from SkyHanni (ScoreboardPattern.teammatesPattern)
     private val TEAMMATE = Regex("(?:§.)*\\[(\\w)] (?:§.)*(\\w{2,16}) (?:§.)*?§(.)(?:§.)*([\\d,.]+[kM]?|DEAD)")
     // from SkyHanni (DungeonApi.playerDungeonTeamPattern)
-    private val TAB_TEAM = Regex("^(\\[\\d+]) (\\[[^]]+])? ?(\\S+)\\s?[^(]* \\((\\S+) ([CLXVI0-9]+)\\)$")
+    private val classTabCache = HashMap<String, Component>()
+    private val TAB_TEAM =Regex("^(\\[\\d+]) (\\[[^]]+])? ?(\\S+)\\s?[^(]* \\((\\S+) ([CLXVI0-9]+)\\)$")
 
     class Mate(val cls: String, val name: String, val color: Char, val hp: String)
 
@@ -90,10 +91,16 @@ object DungeonExtras {
     @JvmStatic
     fun classTab(original: Component): Component {
         if (!S.classTabColor || !SkyblockLocation.inDungeon()) return original
-        val m = TAB_TEAM.find(fishmod.utils.TextStrip.plain(original.string).trim()) ?: return original
+        val plain = fishmod.utils.TextStrip.plain(original.string).trim()
+        classTabCache[plain]?.let { return it }
+        val m = TAB_TEAM.find(plain) ?: return original
         val (sb, rank, name, cls, lvl) = m.destructured
         val n = lvl.toIntOrNull() ?: roman(lvl)
-        return Component.literal("§8$sb ${if (rank.isEmpty()) "" else "$rank "}§f$name §f(§d$cls ${color(n)}$lvl§f)")
+        val built = Component.literal("§8$sb ${if (rank.isEmpty()) "" else "$rank "}§f$name §f(§d$cls ${color(n)}$lvl§f)")
+        // Tab names repeat every frame; output depends only on the plain text.
+        if (classTabCache.size >= 256) classTabCache.clear()
+        classTabCache[plain] = built
+        return built
     }
 
     private fun onTick(mc: Minecraft) {
@@ -184,12 +191,13 @@ object DungeonExtras {
         l >= 25 -> "§b"; l >= 20 -> "§2"; l >= 15 -> "§a"; l >= 10 -> "§e"; l >= 5 -> "§f"; else -> "§7"
     }
 
+    private val ROMAN = mapOf('I' to 1, 'V' to 5, 'X' to 10, 'L' to 50, 'C' to 100)
+
     private fun roman(s: String): Int {
-        val v = mapOf('I' to 1, 'V' to 5, 'X' to 10, 'L' to 50, 'C' to 100)
         var total = 0
         for (i in s.indices) {
-            val c = v[s[i]] ?: return 0
-            val next = if (i + 1 < s.length) v[s[i + 1]] ?: 0 else 0
+            val c = ROMAN[s[i]] ?: return 0
+            val next = if (i + 1 < s.length) ROMAN[s[i + 1]] ?: 0 else 0
             total += if (c < next) -c else c
         }
         return total
