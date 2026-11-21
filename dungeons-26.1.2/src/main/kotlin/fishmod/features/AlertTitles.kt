@@ -52,6 +52,8 @@ object AlertTitles {
         Def("GoldorSection", "Alert: Goldor Section", "", "§aSection cleared"),
         Def("ExplosiveShotHud", "Alert: Explosive Shot", "§c1.2M", "§7Explosive Shot §8• §f3 enemies"),
         Def("LoadoutTitle", "Alert: Loadout Equipped", "§fLoadout 1", "§7Loadout equipped"),
+        Def("MiscChatAlerts", "Alert: Outbid / Reindrake", "§cOutbid!", "§fItem §7by §61,000"),
+        Def("OrderFilledAlert", "Alert: Order Filled", "§6Sell Offer filled", "§a64x §fItem"),
         Def("Other", "Alert: Other", "§eAlert!", "§7Example"),
     )
 
