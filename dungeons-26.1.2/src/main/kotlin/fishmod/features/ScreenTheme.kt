@@ -21,6 +21,8 @@ object ScreenTheme {
     }
     // Black text beats white when contrast vs black is higher (luminance above ~0.18)
     fun isLight(c: Int): Boolean = luma(c) > 0.18f
+    // text on an accent fill, judged on the accent as it shows over the window
+    fun onAccent(): Int = if (isLight(over(ACCENT, windowBg() or 0xFF000000.toInt()))) 0xFF141414.toInt() else 0xFFEDEDED.toInt()
     fun textOn(bg: Int): Int = if (isLight(bg)) 0xFF141414.toInt() else 0xFFF2F2F2.toInt()
     fun subtextOn(bg: Int): Int = if (isLight(bg)) 0xFF4A4A4A.toInt() else 0xFFA8A8A8.toInt()
     // Source-over blend of fg on bg (opaque result alpha kept from bg)

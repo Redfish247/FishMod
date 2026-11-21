@@ -26,7 +26,7 @@ class InventoryButtonEditScreen(private val b: InvButton, private val parent: Sc
         const val BORDER = 0xFF2D2D2D.toInt()
         const val CARD = 0xFF1C1C1C.toInt()
         const val CARD_HOVER = 0xFF232323.toInt()
-        const val ON_ACCENT = 0xFF232323.toInt()
+        val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         const val HINT = 0xFF626262.toInt()
         const val OFF = 0xFF333333.toInt()
     }
