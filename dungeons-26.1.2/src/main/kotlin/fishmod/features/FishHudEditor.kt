@@ -286,7 +286,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         private const val SIDE_W_MIN = 110
         private const val SIDE_W_MAX = 200
-        private const val SIDE_ROW = 12
+        private const val SIDE_ROW = 14
         private const val SIDE_TOP = 58
         private const val SEARCH_Y = 20
         private const val SEARCH_H = 14
@@ -373,11 +373,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             var w = 8f + UiRecorder.textWidth("Pick HUDs to move", 7.5f) + 1f
             w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to pick it all", 6f))
             w = Math.max(w, 8f + UiRecorder.textWidth("Shift/Ctrl-click to add more", 6f))
-            for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 6.5f))
+            for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 7.5f))
             for (g in GROUPS.map { it.first } + listOf("Other", "No HUDs match")) {
                 w = Math.max(w, 8f + UiRecorder.textWidth(g.uppercase(), 6f) + 1f + 6f + pickW)
             }
-            for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 6.5f) + 4f + offW)
+            for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 7.5f) + 4f + offW)
             sideWCache = Math.max(SIDE_W_MIN, Math.min(SIDE_W_MAX, Math.ceil(w + 10.0).toInt()))
             sideWFor = ENTRIES.size
             return sideWCache
@@ -774,9 +774,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun drawControls() {
         val rows = if (showControls) CONTROLS else listOf("F1" to "Show controls")
-        val ts = 6f
-        val ks = 5.5f
-        val rowH = 10f
+        val ts = 7f
+        val ks = 6.5f
+        val rowH = 12f
         val capH = rowH - 2f
         val pad = 5f
         val capCol = rows.maxOf { UiRecorder.textWidth(it.first, ks) } + 6f
@@ -854,7 +854,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         for (row in sidebarRows()) {
             if (y + SIDE_ROW >= SIDE_TOP && y < cH()) {
                 val yf = y.toFloat()
-                val ty = yf + (SIDE_ROW - 6.5f) / 2f
+                val ty = yf + (SIDE_ROW - 7.5f) / 2f
                 val hov = row === hovRow
                 when (row) {
                     is Row.Header -> {
@@ -870,7 +870,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     }
                     is Row.Action -> {
                         if (hov) rowBg(yf, ROW_HOV)
-                        UiRecorder.text(row.text, 8f, ty, 6.5f, if (hov) TEXT else SUBTEXT)
+                        UiRecorder.text(row.text, 8f, ty, 7.5f, if (hov) TEXT else SUBTEXT)
                     }
                     is Row.Hud -> {
                         val on = row.e.name() in picked
@@ -881,7 +881,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         val col = if (off) 0xFF6A6A6A.toInt() else if (on) TEXT else LABEL
                         val tw = UiRecorder.textWidth("off", 5.5f)
                         val ox = sideW - 10f - tw - 6f
-                        UiRecorder.text(ellipsize(row.e.name(), ox - 4f - 12f, 6.5f), 12f, ty, 6.5f, col)
+                        UiRecorder.text(ellipsize(row.e.name(), ox - 4f - 12f, 7.5f), 12f, ty, 7.5f, col)
                         if (off) {
                             UiRecorder.fillRoundedRect(ox, yf + 2.5f, tw + 6f, SIDE_ROW - 5f, 2.5f, OFF_BG)
                             UiRecorder.text("off", ox + 3f, yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
