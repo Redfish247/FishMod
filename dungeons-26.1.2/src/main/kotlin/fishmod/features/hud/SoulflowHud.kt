@@ -18,6 +18,9 @@ object SoulflowHud {
     private val SF_PATTERN: Pattern = Pattern.compile("Soulflow:\\s*([\\d,]+)")
 
     private var soulflow = -1
+    private var labelSf = Int.MIN_VALUE
+    private var labelThr = Int.MIN_VALUE
+    private var labelText = ""
     private var tickCount = 0
 
     private var missCount = 0
@@ -37,7 +40,10 @@ object SoulflowHud {
         HudPreview.register("Soulflow") { HudPreview.text(listOf(label(12345))) }
 
         ClientTickEvents.END_CLIENT_TICK.register { client ->
-            if (!FishSettings.soulflowHudEnabled) return@register
+            if (!FishSettings.soulflowHudEnabled) {
+                soulflow = -1
+                return@register
+            }
             if (client.player == null || client.getConnection() == null) {
                 soulflow = -1
                 return@register
@@ -104,7 +110,11 @@ object SoulflowHud {
         try {
             ctx.pose().translate(FishSettings.soulflowHudX.toFloat(), FishSettings.soulflowHudY.toFloat())
             ctx.pose().scale(sc, sc)
-            HudPreview.drawText(ctx, listOf(label(soulflow)))
+            val thr = FishSettings.soulflowWarningThreshold
+            if (soulflow != labelSf || thr != labelThr) {
+                labelSf = soulflow; labelThr = thr; labelText = label(soulflow)
+            }
+            HudPreview.drawText(ctx, listOf(labelText))
         } catch (e: Exception) {
             FishDiag.fail("SoulflowHud.3", "soulflow hud render failed", e)
         } finally {

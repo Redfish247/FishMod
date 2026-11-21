@@ -34,9 +34,16 @@ object PetIcons {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick >= 10) { tick = 0; FishDiag.guard("PetIcons.1", "pet icon learn failed") { learn(mc) } } }
     }
 
+    private val keyCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     @JvmStatic
-    fun key(name: String): String =
-        name.replace(BRACKET_RE, "").replace("✦", "").replace("★", "").trim().lowercase()
+    fun key(name: String): String {
+        keyCache[name]?.let { return it }
+        if (keyCache.size >= 256) keyCache.clear()
+        val k = name.replace(BRACKET_RE, "").replace("✦", "").replace("★", "").trim().lowercase()
+        keyCache[name] = k
+        return k
+    }
 
     @JvmStatic
     fun icon(petName: String?): ItemStack? {

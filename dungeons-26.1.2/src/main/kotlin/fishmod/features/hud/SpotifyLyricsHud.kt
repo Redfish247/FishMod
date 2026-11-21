@@ -132,6 +132,7 @@ object SpotifyLyricsHud {
     private fun parseSynced(s: String): List<Line> {
         return s.lineSequence().mapNotNull { SYNCED_LINE.matchEntire(it.trim()) }
             .map { Line(((it.groupValues[1].toLong() * 60 + it.groupValues[2].toDouble()) * 1000).toLong(), it.groupValues[3]) }
+            .sortedBy { it.ms }
             .toList()
     }
 
@@ -155,9 +156,15 @@ object SpotifyLyricsHud {
     private fun currentLyric(): String {
         val l = lyrics ?: return ""
         val at = playMs + FishSettings.spotifyLyricsLyricOffset
-        var out = ""
-        for (ln in l) { if (ln.ms <= at) out = ln.text else break }
-        return out
+        // Lines are sorted by ms in parseSynced; find the last line at or before 'at'
+        var lo = 0
+        var hi = l.size - 1
+        var idx = -1
+        while (lo <= hi) {
+            val mid = (lo + hi) ushr 1
+            if (l[mid].ms <= at) { idx = mid; lo = mid + 1 } else hi = mid - 1
+        }
+        return if (idx >= 0) l[idx].text else ""
     }
 
     private fun pill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) {

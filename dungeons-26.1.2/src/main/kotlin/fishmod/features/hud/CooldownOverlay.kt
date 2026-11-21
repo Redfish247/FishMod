@@ -148,6 +148,8 @@ object CooldownOverlay {
             lastMana = mana
         }
 
+        FishEvents.worldChange.register { active.clear(); pendingId = null; false }
+
         UseItemCallback.EVENT.register(UseItemCallback { player, world, hand ->
             if (!FishSettings.cooldownOverlayEnabled) return@UseItemCallback InteractionResult.PASS
             if (hand != InteractionHand.MAIN_HAND) return@UseItemCallback InteractionResult.PASS
@@ -327,7 +329,7 @@ object CooldownOverlay {
     }
 
     private fun drawOverlay(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
-        if (stack == null || stack.isEmpty) return
+        if (active.isEmpty() || stack == null || stack.isEmpty) return
         val id = ItemTools.getId(stack) ?: return
         val endAt = active[id] ?: return
         val now = System.currentTimeMillis()
