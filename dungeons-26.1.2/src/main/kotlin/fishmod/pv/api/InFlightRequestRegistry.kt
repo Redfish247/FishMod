@@ -31,8 +31,6 @@ internal class InFlightRequestRegistry<K : Any, V> {
         return Shared(entry.source.thenApply { it }, entry.correlationId, !created)
     }
 
-    fun size(): Int = requests.size
-
     @JvmRecord
     data class Shared<V>(val future: CompletableFuture<V>, val correlationId: String, val reused: Boolean)
 
