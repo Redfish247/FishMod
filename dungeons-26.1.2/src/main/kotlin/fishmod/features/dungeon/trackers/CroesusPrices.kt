@@ -398,6 +398,10 @@ object CroesusPrices {
                     applyPriceMode()
                     lastBazaar = System.currentTimeMillis()
                     FishDebug.LOGGER.debug("[CroesusPrices] bazaar loaded {} entries", bazaar.size)
+                } catch (ex: com.google.gson.JsonParseException) {
+                    // truncated/garbled download (connection cut mid-body): back off, no auto-report
+                    FishDebug.LOGGER.warn("[CroesusPrices] bazaar body malformed ({} chars): {}", r.body().length, ex.message)
+                    lastBazaar = failStamp()
                 } catch (ex: Exception) {
                     FishDebug.LOGGER.warn("[CroesusPrices] bazaar parse error: {}", ex.message)
                     FishDiag.fail("CroesusPrices.15", "bazaar parse failed", ex)
