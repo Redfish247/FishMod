@@ -82,11 +82,22 @@ object ContainerValue {
         try { recompute(screen) } catch (e: Exception) {
             FishDiag.fail("ContainerValue.4", "storage container value recompute failed", e); return emptyList()
         }
-        return rows.map { r ->
-            SidebarRow(r.name, if (r.count > 1) "${r.count}x ${r.name}" else r.name, abbr(r.value) + unitName(),
-                if (r.color != 0) r.color or 0xFF000000.toInt() else 0xFFAAAAAA.toInt(), r.stack)
+        // Rebuilt only when recompute() swaps in a new row list (or the unit changes), not every frame
+        val unit = unitName()
+        if (rows !== storageRowsFor || unit != storageRowsUnit) {
+            storageRowsFor = rows
+            storageRowsUnit = unit
+            storageRowsCache = rows.map { r ->
+                SidebarRow(r.name, if (r.count > 1) "${r.count}x ${r.name}" else r.name, abbr(r.value) + unit,
+                    if (r.color != 0) r.color or 0xFF000000.toInt() else 0xFFAAAAAA.toInt(), r.stack)
+            }
         }
+        return storageRowsCache
     }
+
+    private var storageRowsFor: List<Row>? = null
+    private var storageRowsUnit = ""
+    private var storageRowsCache: List<SidebarRow> = emptyList()
 
     @JvmStatic
     fun plainName(stack: ItemStack): String = TextStrip.plain(stack.hoverName.string)
