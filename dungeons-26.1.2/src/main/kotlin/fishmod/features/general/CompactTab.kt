@@ -115,20 +115,27 @@ object CompactTab {
         val rest = entries.subList(1, entries.size)
         val mode = FishSettings.compactTabSortMode
         val sortedRest = if (mode == "Random") rest.sortedBy { (it.profile.id.hashCode() xor shuffleSeed).toLong() } else {
-            fun stripped(e: PlayerInfo) = BLANK_COLOR.matcher(e.tabListDisplayName?.string ?: "").replaceAll("")
-            fun raw(e: PlayerInfo) = legacyOf(e.tabListDisplayName)
+            // Memoized per entry: the comparator would otherwise re-run the regexes on every compare
+            val strippedMemo = HashMap<PlayerInfo, String>()
+            val rawMemo = HashMap<PlayerInfo, String>()
+            val levelMemo = HashMap<PlayerInfo, Int>()
+            val tierMemo = HashMap<PlayerInfo, Int>()
+            fun stripped(e: PlayerInfo) = strippedMemo.getOrPut(e) { BLANK_COLOR.matcher(e.tabListDisplayName?.string ?: "").replaceAll("") }
+            fun raw(e: PlayerInfo) = rawMemo.getOrPut(e) { legacyOf(e.tabListDisplayName) }
+            fun level(e: PlayerInfo) = levelMemo.getOrPut(e) { sortLevelOf(stripped(e)) }
+            fun tier(e: PlayerInfo) = tierMemo.getOrPut(e) { sortRankTierOf(stripped(e), raw(e)) }
             val cmp: Comparator<PlayerInfo> = when (mode) {
-                "SB Level" -> compareByDescending { sortLevelOf(stripped(it)) }
+                "SB Level" -> compareByDescending { level(it) }
                 "Name (Abc)" -> compareBy<PlayerInfo> { sortNameOf(stripped(it)) }
-                    .thenByDescending { sortLevelOf(stripped(it)) }
+                    .thenByDescending { level(it) }
                 "Ironman/Bingo" -> compareBy<PlayerInfo> { if (sortIsIronmanBingo(raw(it))) 0 else 1 }
-                    .thenByDescending { sortLevelOf(stripped(it)) }
-                else -> compareBy<PlayerInfo> { sortRankTierOf(stripped(it), raw(it)) }
-                    .thenByDescending { sortLevelOf(stripped(it)) }
+                    .thenByDescending { level(it) }
+                else -> compareBy<PlayerInfo> { tier(it) }
+                    .thenByDescending { level(it) }
             }
             if (FishSettings.compactTabPinStaff && mode != "Rank (Default)") {
-                val (staff, others) = rest.partition { sortRankTierOf(stripped(it), raw(it)) <= 3 }
-                staff.sortedBy { sortRankTierOf(stripped(it), raw(it)) } + others.sortedWith(cmp)
+                val (staff, others) = rest.partition { tier(it) <= 3 }
+                staff.sortedBy { tier(it) } + others.sortedWith(cmp)
             } else rest.sortedWith(cmp)
         }
         val out = ArrayList<PlayerInfo>(entries.size)

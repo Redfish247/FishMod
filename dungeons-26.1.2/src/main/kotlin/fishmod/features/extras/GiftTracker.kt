@@ -30,10 +30,10 @@ object GiftTracker {
             GIFT.find(s)?.let {
                 val t = it.groupValues[1].removeSuffix(" TIER")
                 tiers[t] = (tiers[t] ?: 0) + 1
-                COINS.find(it.groupValues[2])?.let { c -> coins += c.groupValues[1].replace(",", "").toLong() }
+                COINS.find(it.groupValues[2])?.let { c -> coins += c.groupValues[1].replace(",", "").toLongOrNull() ?: 0L }
                 lastSeen = System.currentTimeMillis()
             }
-            STARS.find(s)?.let { stars += it.groupValues[1].replace(",", "").toLong(); lastSeen = System.currentTimeMillis() }
+            STARS.find(s)?.let { stars += it.groupValues[1].replace(",", "").toLongOrNull() ?: 0L; lastSeen = System.currentTimeMillis() }
             false
         }
         FishHudEditor.register("Gift Tracker", { S.giftHudX }, { S.giftHudX = it }, { S.giftHudY }, { S.giftHudY = it }, 140, 40,
