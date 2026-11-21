@@ -31,7 +31,8 @@ object GhostCounter {
 
     fun reset() { kills = 0; sorrows = 0; bags = 0; mfDrops = 0; mfTotal = 0; sinceSorrow = 0; startMs = 0; lastKillMs = 0 }
 
-    private fun inMist(): Boolean = SkyblockLocation.`in`(SkyblockLocation.DWARVEN_MINES) && Mining.area.contains("The Mist", true)
+    private fun inMist(): Boolean = SkyblockLocation.`in`(SkyblockLocation.DWARVEN_MINES) &&
+        (Mining.area.contains("The Mist", true) || fishmod.utils.SidebarCache.entries.any { it.plain.contains("The Mist") })
 
     fun init() {
         FishEvents.chat.register { text ->
