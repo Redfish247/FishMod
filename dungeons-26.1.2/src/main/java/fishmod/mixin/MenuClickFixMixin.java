@@ -23,10 +23,10 @@ public abstract class MenuClickFixMixin {
     private void fishmod$fixClick(Slot slot, int slotId, int button, ContainerInput input, CallbackInfo ci) {
         if (fishmod$reissue || slot == null || slot.container instanceof Inventory) return;
         try {
-            if (!fishmod.utils.SkyblockLocation.inSkyblock()) return;
             boolean dbl = ExtrasSettings.fixDoubleClicks && input == ContainerInput.PICKUP_ALL;
             boolean mid = ExtrasSettings.middleClickFix && input == ContainerInput.CLONE && slot.hasItem();
             if (!dbl && !mid) return;
+            if (!fishmod.utils.SkyblockLocation.inSkyblock()) return;
             ci.cancel();
             fishmod$reissue = true;
             try { slotClicked(slot, slotId, 0, ContainerInput.PICKUP); } finally { fishmod$reissue = false; }
