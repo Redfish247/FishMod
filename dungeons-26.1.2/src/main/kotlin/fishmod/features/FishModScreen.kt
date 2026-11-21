@@ -2810,7 +2810,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             field.setResponder { t -> searchText = t; gridScroll = 0; if (t.isNotEmpty()) page = null; openedAt = System.currentTimeMillis() }
             searchField = field
         } else { field.setX(s[0] + 8); field.setY(s[1] + 4); field.setWidth(s[2] - 16) }
-        if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search features", (s[0] + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
+        if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search columns and features", (s[0] + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
         else nvgTextFieldContent(field, s[0] + 8, s[1] + 4, s[2] - 16, s[3] - 8, 8f)
         val all = columns.sumOf { it.features.count { f -> f.hasMaster() } }
         val on = columns.sumOf { it.features.count { f -> f.hasMaster() && f.get!!() } }
