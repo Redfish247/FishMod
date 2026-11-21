@@ -79,6 +79,8 @@ object FishingTrackerStore {
     const val CAST_WINDOW_MS = 60_000L
     @JvmField @Volatile var lastCastAt = 0L
     @JvmStatic fun noteCast(now: Long) { lastCastAt = now }
+    // true once the bobber has landed in water or lava, not just when the rod is cast
+    @JvmStatic fun hookLanded(): Boolean = net.minecraft.client.Minecraft.getInstance().player?.fishing?.let { it.isInWater || it.isInLava } == true
     @JvmStatic fun castRecent(now: Long): Boolean = lastCastAt != 0L && now - lastCastAt <= CAST_WINDOW_MS
     @JvmStatic @JvmOverloads fun shouldDraw(active: Boolean, now: Long, either: Boolean = false): Boolean =
         if (either) active || castRecent(now) else active && castRecent(now)

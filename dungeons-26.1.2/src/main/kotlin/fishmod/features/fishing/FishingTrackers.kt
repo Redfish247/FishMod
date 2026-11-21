@@ -69,7 +69,7 @@ object FishingTrackers {
             }
             if (++castTicks >= CAST_POLL_TICKS) {
                 castTicks = 0
-                if (on() && net.minecraft.client.Minecraft.getInstance().player?.fishing != null) FishingTrackerStore.noteCast(System.currentTimeMillis())
+                if (on() && FishingTrackerStore.hookLanded()) FishingTrackerStore.noteCast(System.currentTimeMillis())
             }
             if (++ticks >= SAVE_EVERY_TICKS) { ticks = 0; if (FishingTrackerStore.dirty) save() }
         }
