@@ -3107,8 +3107,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         for ((i, ft) in exItems().withIndex()) {
             val x = cardX(i); val y = cardY(i)
             if (mx !in x..x + cw || my !in y..y + cardH()) continue
-            // left click opens settings, right click toggles
-            if (btn == 1) { if (ft.hasMaster()) try { ft.set!!(!ft.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${ft.name}' failed", t) } }
+            // left click on the switch toggles, elsewhere opens settings; right click toggles
+            val onSwitch = ft.hasMaster() && mx >= x + cw - 38 && my <= y + (if (listView) cardH() else 22)
+            if (btn == 1 || (btn == 0 && onSwitch)) { if (ft.hasMaster()) try { ft.set!!(!ft.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${ft.name}' failed", t) } }
             else if (btn == 0) { if (selected === ft) selected = null else { if (selected == null) selAt = System.currentTimeMillis(); selected = ft; detScroll = 0 } }
             return true
         }
