@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack
  * One owner only: do not allocate parallel maps in NEU / Hypixel helpers.
  */
 object ItemStackCache {
+	private const val MAX_BASE_ENTRIES = 4096
 	private val BASE_CACHE = ConcurrentHashMap<String, ItemStack>()
 	private val ITEM_MODEL_BY_ID = ConcurrentHashMap<String, String>()
 
@@ -33,6 +34,7 @@ object ItemStackCache {
 		if (candidate == null || stack == null) {
 			return
 		}
+		if (BASE_CACHE.size >= MAX_BASE_ENTRIES) BASE_CACHE.clear()
 		BASE_CACHE[candidate] = stack
 	}
 

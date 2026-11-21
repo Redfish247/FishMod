@@ -9,6 +9,7 @@ package fishmod.pv.gui.inventories
 
 import com.mojang.blaze3d.platform.NativeImage
 import fishmod.pv.ProfileViewer
+import fishmod.pv.api.PvExecutors
 import fishmod.pv.neu.SkyBlockPackCache
 import java.io.IOException
 import java.nio.charset.StandardCharsets
@@ -82,22 +83,29 @@ object SkyBlockItemIconCache {
 			state.requested.set(false)
 			return
 		}
-		val layers = SkyBlockPackCache.resolveTextureLayers(state.model)
-		if (layers.isEmpty()) {
-			state.failed = true
-			return
+		// Pack lookup and PNG decode run off the render thread; only the texture register is on it.
+		PvExecutors.IO.execute {
+			val layers = SkyBlockPackCache.resolveTextureLayers(state.model)
+			if (layers.isEmpty()) {
+				state.failed = true
+				return@execute
+			}
+			val image = try {
+				composeLayers(layers)
+			} catch (exception: Exception) {
+				state.failed = true
+				ProfileViewer.LOGGER.warn("[FishPV] Failed reading item icon {}: {}", state.model, exception.toString())
+				return@execute
+			}
+			if (image == null) {
+				state.failed = true
+				return@execute
+			}
+			registerAsync(state, image)
 		}
-		val image = try {
-			composeLayers(layers)
-		} catch (exception: IOException) {
-			state.failed = true
-			ProfileViewer.LOGGER.warn("[FishPV] Failed reading item icon {}: {}", state.model, exception.toString())
-			return
-		}
-		if (image == null) {
-			state.failed = true
-			return
-		}
+	}
+
+	private fun registerAsync(state: IconState, image: NativeImage) {
 		val client: Minecraft? = Minecraft.getInstance()
 		if (client == null) {
 			image.close()
@@ -105,6 +113,11 @@ object SkyBlockItemIconCache {
 			return
 		}
 		client.execute {
+			// Dropped by clear() (world change) while decoding: free the image, do not register.
+			if (BY_MODEL[state.model] !== state) {
+				image.close()
+				return@execute
+			}
 			try {
 				val size = maxOf(image.width, image.height)
 				val id = ProfileViewer.id(

@@ -121,6 +121,7 @@ class GardenUi {
 		const val ORB_GAP = 3
 
 		private val COST_ICONS = HashMap<String, ItemStack>()
+		private val TITLE_SEPARATORS = Regex("[\\s_]+")
 
 		@JvmStatic
 		fun barRowH(font: Font): Int = font.lineHeight + BAR_LABEL_GAP + PvDraw.BAR_HEIGHT + BAR_AFTER
@@ -267,7 +268,7 @@ class GardenUi {
 			if (raw.isNullOrBlank()) {
 				return "?"
 			}
-			return raw.lowercase(Locale.ROOT).split(Regex("[\\s_]+"))
+			return raw.lowercase(Locale.ROOT).split(TITLE_SEPARATORS)
 				.filter { it.isNotEmpty() }
 				.joinToString(" ") { it[0].uppercaseChar() + it.substring(1) }
 		}

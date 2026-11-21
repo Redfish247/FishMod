@@ -270,12 +270,14 @@ class CrimsonOverviewPage {
 			return out.toString()
 		}
 
+		private val WHITESPACE_RUN = Regex("\\s+")
+
 		fun prettyDailyQuest(id: String?): String {
 			if (id.isNullOrBlank()) {
 				return "?"
 			}
 			var raw = id.trim().lowercase(Locale.ROOT).removePrefix("crimson_isle_")
-			raw = raw.replace('_', ' ').replace(Regex("\\s+"), " ").trim()
+			raw = raw.replace('_', ' ').replace(WHITESPACE_RUN, " ").trim()
 			if (raw.length > 2 && raw[raw.length - 2] == ' ' && raw[raw.length - 1].isLetter()) {
 				val grade = raw[raw.length - 1].lowercaseChar()
 				if (grade in 'a'..'d') {
