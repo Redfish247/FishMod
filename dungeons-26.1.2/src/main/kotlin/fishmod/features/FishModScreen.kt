@@ -2401,11 +2401,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val hov = mx in x..x + w && my in y..y + TAB_H
             val a = hover("tab$i", hov)
             if (i != ti && a > 0f) UiRecorder.fillRoundedRect(x.toFloat(), (y + 2).toFloat(), w.toFloat(), (TAB_H - 6).toFloat(), 6f, fa(ROW_HOVER, a))
-            // active tab: accent tint + underline so it reads on dark themes
-            if (i == ti) {
-                UiRecorder.fillRoundedRectCorners(x.toFloat(), y.toFloat(), w.toFloat(), (TAB_H).toFloat(), 6f, 6f, 0f, 0f, fa(ACCENT, 0.28f))
-                UiRecorder.fillRect((x + 4).toFloat(), (y + TAB_H - 2).toFloat(), (w - 8).toFloat(), 2f, ACCENT)
-            }
+            // active tab: solid chrome tone joined to the toolbar below (Explorer style)
+            if (i == ti) UiRecorder.fillRoundedRectCorners(x.toFloat(), y.toFloat(), w.toFloat(), (top() + 30 - y).toFloat(), 8f, 8f, 0f, 0f, chromeColor())
             val ts = 0.85f * NVG_BASE_TEXT_SIZE
             UiRecorder.text(ellipsize(t, w - 26, 0.85f), (x + 10).toFloat(), y + (TAB_H - ts) / 2f + 1f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
             if (tabs.size > 1) icon("x", x + w - 11f, y + TAB_H / 2f, if (hov && mx >= x + w - 16) TEXT_COLOR else SUBTEXT_COLOR)
@@ -2595,6 +2592,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return (a shl 24) or (r shl 16) or (g shl 8) or b
     }
 
+    // opaque, lighter than the window: active tab + toolbar band (like Explorer's grey vs its dark title strip)
+    private fun chromeColor(): Int = ScreenTheme.over(ScreenTheme.ink(0x1C), ScreenTheme.windowBg() or 0xFF000000.toInt())
     // title strip: the window colour pushed a step toward black (dark themes) or white (light themes)
     private fun titleBarColor(): Int = if (ScreenTheme.lightBg()) 0x16000000 else 0x2A000000
 
@@ -2742,6 +2741,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             UiRecorder.fillRoundedRectCorners((at[0] + at[1]).toFloat(), top().toFloat(), (right() - at[0] - at[1]).toFloat(), 30f, 0f, wr, 0f, 0f, dk)
             // active tab is the window colour, so it joins the toolbar below (one tone, no overlay mix)
         }
+        UiRecorder.fillRect(l, (top() + 30).toFloat(), w, 58f, chromeColor())
         UiRecorder.fillRect(l, (top() + 58).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
         UiRecorder.fillRect(l, (top() + 88).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
         UiRecorder.fillRect(l, (bottom() - STATUS_H).toFloat(), w, 1f, ScreenTheme.ink(0x1F))
