@@ -117,7 +117,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { FishSettings.fmBgPreset },
                 { v -> FishSettings.fmBgPreset = v }))
             f.sub.add(ColorPickerSetting("Custom Color", "", "fmBgCustomColor").gatedBy { FishSettings.fmBgPreset == "Custom" })
-            f.sub.add(SliderIntSetting("Background Alpha %", "0% invisible - 100% solid", "fmBgAlpha", 0, 100))
+            f.sub.add(SliderIntSetting("Background Alpha %", "20% see-through - 100% solid", "fmBgAlpha", 20, 100))
             f.sub.add(SubcategoryHeader("Accent"))
             f.sub.add(ColorPickerSetting("Accent Color", "", "fmButtonColor"))
             f.sub.add(SliderIntSetting("Accent Opacity %", "0% invisible - 100% solid", "fmButtonAlpha", 0, 100))
@@ -2581,7 +2581,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun currentCardBg(): Int {
-        val alpha = Mth.clamp(Math.round(FishSettings.fmBgAlpha * 2.55f), 0, 255)
+        val alpha = Mth.clamp(Math.round(FishSettings.fmBgAlpha.coerceIn(20, 100) * 2.55f), 0, 255)
         return (alpha shl 24) or cardBgRgb()
     }
 
@@ -2596,7 +2596,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     // opaque, lighter than the window: active tab + toolbar band (like Explorer's grey vs its dark title strip)
-    private fun chromeColor(): Int = ScreenTheme.over(ScreenTheme.ink(0x1C), ScreenTheme.windowBg() or 0xFF000000.toInt())
+    // overlay, not a pre-blended opaque grey: UiRecorder.remap turned that into a bright 0x70 white band
+    private fun chromeColor(): Int = ScreenTheme.ink(0x1C)
     // title strip: the window colour pushed a step toward black (dark themes) or white (light themes)
     private fun titleBarColor(): Int = if (ScreenTheme.lightBg()) 0x16000000 else 0x2A000000
 
@@ -2916,7 +2917,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     else if (haA > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, fa(ROW_HOVER, haA))
                     val tsA = NVG_BASE_TEXT_SIZE
                     UiRecorder.text("All features", (x + 8).toFloat(), y + (NAV_ROW - tsA) / 2f, tsA, if (allMode) TEXT_COLOR else SUBTEXT_COLOR)
-                    val tot = columns.sumOf { it.features.size }.toString()
+                    val tot = columns.sumOf { it.features.count { f -> f.hasMaster() } }.toString()
                     val ns2 = 0.82f * NVG_BASE_TEXT_SIZE
                     UiRecorder.text(tot, x + w - 8 - UiRecorder.textWidth(tot, ns2), y + (NAV_ROW - ns2) / 2f, ns2, SUBTEXT_COLOR)
                     continue
@@ -3016,10 +3017,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (f === selected) UiRecorder.roundedRectRing(xf, yf, cw.toFloat(), cardH().toFloat(), 6f, 1f, 0, ACCENT)
                 val d = descFor(f.name)
                 if (listView) {
-                    sst(ctx, this.font, ellipsize(f.name, 200), x + 10, y + (cardH() - 11) / 2, fa(if (on) cText else cSub, p), 1f)
+                    sst(ctx, this.font, ellipsize(f.name, 200), x + 10, y + (cardH() - 11) / 2, fa(if (on || !f.hasMaster()) cText else cSub, p), 1f)
                     if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 270, 0.8f), x + 220, y + (cardH() - 8) / 2, fa(cSub, p), 0.8f)
                 } else {
-                    sst(ctx, this.font, ellipsize(f.name, cw - 44), x + 8, y + 7, fa(if (on) cText else cSub, p), 1f)
+                    sst(ctx, this.font, ellipsize(f.name, cw - 44), x + 8, y + 7, fa(if (on || !f.hasMaster()) cText else cSub, p), 1f)
                     if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 20, 0.8f), x + 8, y + 25, fa(cSub, p), 0.8f)
                 }
                 if (f.hasMaster()) drawTogglePill(ctx, x + cw - 32, y + (if (listView) (cardH() - 13) / 2 else 6), 24, 13, on, knobP(f.name, on), hover && mouseX >= x + cw - 38, p)
@@ -3027,6 +3028,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (hover) statusHint = "Left-click: settings   ·   Right-click: turn " + (if (on) "off" else "on")
             }
         } finally { UiRecorder.popScissor() }
+        // fade the bottom edge so a cut-off card row reads as "scroll for more"
+        if (gridMax(items.size) > gridScroll) { val bg = ScreenTheme.windowBg(); UiRecorder.fillRectVGradient(cx0().toFloat(), (cyBot() - 18).toFloat(), (gx1() - cx0()).toFloat(), 18f, bg and 0xFFFFFF, bg) }
         if (items.isEmpty() && col != null) sst(ctx, this.font, "No features match", cx0(), cyTop() + 8, SUBTEXT_COLOR, 1f)
         val f = selected ?: return
         // the whole pane (header, pill, close, settings) slides and fades as one
@@ -4745,7 +4748,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), h / 2f, al(track))
             val r = h / 2f - 2f
             val kx = x + 2f + r + knobProgress * (w - 4f - 2f * r)
-            UiRecorder.disc(kx, y + h / 2f, r, al(0xFFFFFFFF.toInt()))
+            // light accents: dark knob when on, so on/off differ by more than a grey shade
+            val knob = if (knobProgress > 0.5f && ScreenTheme.isLight(onC)) 0xFF1A1A1A.toInt() else 0xFFFFFFFF.toInt()
+            UiRecorder.disc(kx, y + h / 2f, r, al(knob))
         }
     }
 }
