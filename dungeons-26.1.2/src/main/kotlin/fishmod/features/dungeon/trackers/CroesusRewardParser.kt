@@ -16,6 +16,8 @@ object CroesusRewardParser {
     private val BOOK_PATTERN: Pattern = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)")
     private val PET_PATTERN: Pattern = Pattern.compile("\\[Lvl \\d+\\]\\s*(?:§([0-9a-f]))?([\\w' §0-9a-fk-or]+)")
     @JvmField val TRAILING_QTY = Regex("""\s+x[\d,]+$""")
+    private val NON_ID_CHARS = Regex("[^A-Z0-9 ]")
+    private val WHITESPACE = Regex("\\s+")
     private val ESSENCE_PATTERN: Pattern = Pattern.compile("^(\\w+) Essence(?: x(\\d+))?$")
 
     init {
@@ -106,7 +108,7 @@ object CroesusRewardParser {
         val base = id?.removePrefix("STARRED_")
         if (base != null && base != id && ItemsDb.get(base) != null) return arrayOf(base, "1")
 
-        val guess = clean.uppercase().replace(Regex("[^A-Z0-9 ]"), "").trim().replace(Regex("\\s+"), "_")
+        val guess = clean.uppercase().replace(NON_ID_CHARS, "").trim().replace(WHITESPACE, "_")
         if (guess.isNotEmpty() && ItemsDb.get(guess) != null) return arrayOf(guess, "1")
 
         return arrayOf("false", "Could not find item ID for line \"$clean\"")

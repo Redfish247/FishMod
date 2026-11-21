@@ -46,12 +46,13 @@ object BoulderSolver {
 
     private fun scan(room: ORoom) {
         val level = Minecraft.getInstance().level ?: return
-        var str = ""
+        val sb = StringBuilder(42) // 6 rows x 7 columns
         for (z in 24 downTo 9 step 3) {
             for (x in 24 downTo 6 step 3) {
-                str += if (level.getBlockState(room.getRealCoords(BlockPos(x, 66, z))).isAir) "0" else "1"
+                sb.append(if (level.getBlockState(room.getRealCoords(BlockPos(x, 66, z))).isAir) '0' else '1')
             }
         }
+        val str = sb.toString()
         val sol = solutions[str] ?: return
         currentPositions = sol.filter {
             FishDiag.check(it.size >= 4, "BoulderSolver.2") { "boulder solution step has ${it.size} values for layout $str" }
