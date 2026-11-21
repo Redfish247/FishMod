@@ -116,7 +116,7 @@ object KuudraExtras {
         if (!Kuudra.inKuudra()) return
         if (msg.contains("Sending to server") || (msg.contains("Starting in ") && msg.contains(" seconds"))) pools.clear()
         if (S.kuudraBossMaster && S.kuudraAnnounce) for (sp in SPELLS) if (sp.on() && msg == sp.line) {
-            val p = Minecraft.getInstance().player?.blockPosition() ?: return
+            val p = Minecraft.getInstance().player?.blockPosition() ?: break
             val t = if (Kuudra.phase == 4 && Kuudra.phaseStart[3] > 0) " in %.2fs".format((Kuudra.now() - Kuudra.phaseStart[3]) / 1000.0) else ""
             if (PartyTools.isInParty()) Kuudra.party("${sp.name} Casted at ${p.x}, ${p.y}, ${p.z}$t!")
             break

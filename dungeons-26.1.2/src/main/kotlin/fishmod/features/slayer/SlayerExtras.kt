@@ -30,7 +30,7 @@ object SlayerExtras {
     }
 
     private fun onTick() {
-        if (!S.cocoonTimer) return
+        if (!S.cocoonTimer) { cocoonAt = 0L; lastShown = -1; return } // stale start time would skew the next cocoon
         val cocooned = SlayerManager.state == SlayerManager.State.COCOONED
         if (!cocooned) { cocoonAt = 0L; lastShown = -1; return }
         val now = System.currentTimeMillis()

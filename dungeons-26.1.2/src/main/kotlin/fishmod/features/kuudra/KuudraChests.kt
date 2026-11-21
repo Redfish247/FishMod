@@ -37,9 +37,10 @@ object KuudraChests {
         }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, scr, _, _ ->
             if (scr !is AbstractContainerScreen<*>) return@AfterInit
-            parsed = null; claimed = false; pending = null
             val title = scr.title.string
+            // only a new chest resets the claim state; other menus opening must not drop a pending buy
             if (CHEST_TITLE.matches(title)) {
+                parsed = null; claimed = false; pending = null
                 ScreenEvents.afterExtract(scr).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
                     if (!(S.kuudraChestsMaster && S.kuudraChestValue)) return@AfterExtract
                     FishDiag.guard("KuudraChests.1", "chest value failed") {

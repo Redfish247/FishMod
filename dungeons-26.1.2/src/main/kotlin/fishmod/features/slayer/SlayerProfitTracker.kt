@@ -241,6 +241,7 @@ object SlayerProfitTracker {
     fun cycleMode() {
         FishSettings.slayerProfitDisplayMode = if (sessionMode()) "Total" else "This Session"
         resetArmedAt = 0L
+        displayCache = null // cache key has no mode, so drop it or the old mode shows for up to 1s
     }
 
     @JvmStatic fun modeLabel(): String = if (sessionMode()) "This Session" else "Total"
