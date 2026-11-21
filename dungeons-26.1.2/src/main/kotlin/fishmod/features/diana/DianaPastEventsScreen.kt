@@ -243,8 +243,13 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
     private fun tile(x: Int, y: Int, w: Int, h: Int, label: String, value: String, color: Int, side: String?) {
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 8f, 1f, PANEL2, LINE)
         UiRecorder.textBold(label, (x + 10).toFloat(), (y + 7).toFloat(), S_XS, ScreenTheme.SUBTEXT_COLOR)
-        if (side != null) UiRecorder.text(side, (x + w - 10 - tw(side, S_XS)).toFloat(), (y + 7).toFloat(), S_XS, DIM)
-        UiRecorder.textBold(clip(value, w - 20, S_VAL), (x + 10).toFloat(), y + 18f, S_VAL, color)
+        // side text shares the label row only if both fit; else bottom-right (overlapped "TOTAL PROFIT" on narrow tiles)
+        val sw = if (side != null) tw(side, S_XS) else 0
+        val sideTop = side != null && 10 + tw(label, S_XS) * 1.1f + 8 + sw <= w - 10
+        var valW = w - 20
+        if (side != null && sideTop) UiRecorder.text(side, (x + w - 10 - sw).toFloat(), (y + 7).toFloat(), S_XS, DIM)
+        else if (side != null) { UiRecorder.text(side, (x + w - 10 - sw).toFloat(), y + h - 6 - S_XS, S_XS, DIM); valW = w - 26 - sw }
+        UiRecorder.textBold(clip(value, valW, S_VAL), (x + 10).toFloat(), y + 18f, S_VAL, color)
     }
 
     private fun button(x: Int, y: Int, w: Int, h: Int, label: String, action: () -> Unit) {
