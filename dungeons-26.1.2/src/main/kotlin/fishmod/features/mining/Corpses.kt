@@ -67,6 +67,7 @@ object Corpses {
         val p = mc.player ?: return
         val level = mc.level ?: return
         val eye = p.eyePosition
+        val inView = HashSet<java.util.UUID>()
         for (e in level.entitiesForRendering()) {
             if (e !is ArmorStand || e.uuid in announced) continue
             val type = typeOf(e) ?: continue
@@ -74,7 +75,8 @@ object Corpses {
             val target = e.position().add(0.0, 1.5, 0.0)
             if (target.distanceToSqr(eye) > 64.0 * 64.0) continue
             val hit = level.clip(ClipContext(eye, target, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
-            if (hit.type == HitResult.Type.BLOCK && hit.location.distanceToSqr(eye) < target.distanceToSqr(eye) - 1.0) { seenTicks.remove(e.uuid); continue }
+            if (hit.type == HitResult.Type.BLOCK && hit.location.distanceToSqr(eye) < target.distanceToSqr(eye) - 1.0) continue
+            inView += e.uuid
             // ~10 ticks of continuous sight, like SkyHanni
             val n = (seenTicks[e.uuid] ?: 0) + 1
             seenTicks[e.uuid] = n
@@ -84,6 +86,8 @@ object Corpses {
                 .replace("{z}", e.z.roundToInt().toString()).replace("{type}", type.display)
             announce(msg)
         }
+        // Sight must be continuous: a corpse that left view (range, wall, despawn) starts over
+        seenTicks.keys.retainAll(inView)
     }
 
     private fun announce(msg: String) {
