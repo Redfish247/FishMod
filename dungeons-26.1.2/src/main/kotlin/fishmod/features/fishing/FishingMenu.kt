@@ -51,7 +51,15 @@ object FishingMenu {
         val shards = Feature("Shard Tracker", FishingWorldSettings::class.java, "shardTracker")
         shards.sub.add(ToggleSetting("Reset On World Change", "Clear the counts when you change servers", FishingWorldSettings::class.java, "shardTrackerResetOnSwap"))
         shards.sub.add(SliderIntSetting("Rows", "How many shard types to list", { FishingWorldSettings.shardTrackerRows }, { FishingWorldSettings.shardTrackerRows = it }, 1, 20))
+        shards.sub.add(ToggleSetting("Show Profit", "Bazaar value of the shards and coins per hour", FishingWorldSettings::class.java, "shardTrackerProfit"))
         col.features.add(shards)
+        val ft = Feature("Foraging Tracker", FishingWorldSettings::class.java, "foragingTracker")
+        ft.sub.add(ToggleSetting("Reset On World Change", "Clear the session when you change servers", FishingWorldSettings::class.java, "foragingTrackerResetOnSwap"))
+        ft.sub.add(SliderIntSetting("Rows", "How many items to list", { FishingWorldSettings.foragingTrackerRows }, { FishingWorldSettings.foragingTrackerRows = it }, 1, 20))
+        col.features.add(ft)
+        val tc = Feature("Treecapitator Cooldown", FishingWorldSettings::class.java, "treecapTimer")
+        tc.sub.add(SliderIntSetting("Cooldown (ms)", "Length of the axe cooldown", { FishingWorldSettings.treecapCooldownMs }, { FishingWorldSettings.treecapCooldownMs = it }, 200, 3000, 100))
+        col.features.add(tc)
         val fk = Feature("Fusion Keybinds", FishingWorldSettings::class.java, "fusionKeys")
         fk.sub.add(fishmod.features.FishModScreen.KeybindSetting("Repeat Fusion", "Clicks Repeat Previous Fusion in the Fusion Box", { FusionKeys.repeat }))
         fk.sub.add(fishmod.features.FishModScreen.KeybindSetting("Confirm", "Clicks the green confirm button", { FusionKeys.confirm }))
@@ -67,7 +75,6 @@ object FishingMenu {
         val la = Feature("Lasso Reel Alert", FishingWorldSettings::class.java, "lassoAlert")
         la.sub.add(fishmod.features.FishModScreen.SoundSearchSetting("Sound", "", { FishingWorldSettings.lassoSound }, { v -> FishingWorldSettings.lassoSound = v }, { 100 }))
         col.features.add(la)
-        col.features.add(Feature("Honeycomb Pot Timer", FishingWorldSettings::class.java, "honeycombTimer"))
         val hive = Feature("Honeyhive Reminder", fishmod.features.mining.MiningSettings::class.java, "foragingHoneyhive")
         hive.sub.add(fishmod.features.FishModScreen.SliderIntSetting("Remind After (min)", "Minutes after you loot a honeyhive", fishmod.features.mining.MiningSettings::class.java, "foragingHoneyhiveMin", 5, 180))
         hive.sub.add(ToggleSetting("Queen Bee Title", "Title when a Queen Bee refills the hive", fishmod.features.mining.MiningSettings::class.java, "foragingQueenBee"))
@@ -78,7 +85,9 @@ object FishingMenu {
     fun describe(name: String): String? = FishingAlerts.describe(name) ?: FishingTrackers.describe(name) ?: FishingWorld.describe(name) ?: when (name) {
         "Current Bait HUD" -> "Bait in your last hotbar slot and how much is left"
         "Instant Underwater Fog Clear" -> "Skip the slow fade when your view clears underwater"
-        "Shard Tracker" -> "HUD counting shards caught or found this session"
+        "Shard Tracker" -> "Shard profit HUD: time, shards/hour, captures and bazaar value; shows for 60s after a shard"
+        "Foraging Tracker" -> "Logs and drops per hour plus coin value while chopping trees"
+        "Treecapitator Cooldown" -> "HUD with the Treecapitator / foraging axe cooldown while you hold one"
         "Totem of Corruption Overlay" -> "HUD with the nearest totem's time left and owner, plus its range ring"
         "Geyser Box" -> "Blazing Volcano: box the active geyser area for Sulphur trophy fish"
         "Sulphur Skitter Box" -> "Crimson Isle: box the 4-block range around the nearest sponge"
@@ -90,7 +99,6 @@ object FishingMenu {
         "Cinderbat Highlight" -> "Box the Cinderbats on the Crimson Isle"
         "Invisibug Highlight" -> "Box Invisibugs on Moonglade Marsh from their particle trail"
         "Lasso Reel Alert" -> "Title and sound when your lassoed mob shows REEL"
-        "Honeycomb Pot Timer" -> "Galatea: timer over each Pot of Honeycomb tree and a chat line when ready (this session)"
         "Golden Fish Timer" -> "Lava fishing HUD: spawn window, hits and despawn countdown for the Golden Fish"
         "Fishing" -> "Master switch for all fishing features (all off by default)"
         else -> null

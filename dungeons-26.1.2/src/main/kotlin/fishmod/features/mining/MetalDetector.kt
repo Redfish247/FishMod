@@ -40,26 +40,34 @@ object MetalDetector {
 
     fun init() {
         ClientReceiveMessageEvents.GAME.register { text, overlay ->
-            FishDiag.guard("MetalDetector.1", "metal detector message threw") { onMessage(text, overlay) }
+            if (!overlay && S.miningMetalDetector && inDivan() && TextStrip.plain(text.string).startsWith("You found")) { fresh = true; spots = emptyList() }
         }
-        fishmod.utils.events.FishEvents.worldChange.register { center = null; spots = emptyList(); fresh = true; false }
+        fishmod.utils.events.FishEvents.worldChange.register { center = null; spots = emptyList(); fresh = true; prevDist = -1.0; prevPos = null; false }
         RenderHooks.GIZMO.register { _ ->
             val s = spots
-            if (!S.miningMetalDetector || s.isEmpty() || s.size > 8) return@register
+            if (!S.miningMetalDetector || s.isEmpty() || s.size > 8 || !inDivan()) return@register
             FishDiag.guard("MetalDetector.2", "metal detector render threw") {
-                val c = if (s.size == 1) S.miningMetalDetectorColor else (S.miningMetalDetectorColor and 0x00FFFFFF) or 0x60000000
-                for (p in s) FishDraw.gizmoBox(AABB(p.below()), 0, c or 0xFF000000.toInt(), true)
+                val c = S.miningMetalDetectorColor or 0xFF000000.toInt()
+                // from Skyblocker: the single answer is drawn one block down with a line to it
+                if (s.size == 1) {
+                    val b = s[0].below()
+                    FishDraw.gizmoBox(AABB(b), (c and 0x00FFFFFF) or 0x50000000, c, true)
+                    FishDraw.gizmoLine(FishDraw.cameraLineStart(1.0), Vec3.atCenterOf(b), c, 2f, true)
+                } else for (p in s) FishDraw.gizmoBox(AABB(p), 0, (c and 0x00FFFFFF) or 0xA0000000.toInt(), true)
             }
         }
     }
 
     private fun inDivan() = SkyblockLocation.`in`(SkyblockLocation.CRYSTAL_HOLLOWS) && Mining.area.contains("Mines of Divan")
 
-    private fun onMessage(text: Component, overlay: Boolean) {
+    // called from GuiMixin.setOverlayMessage, which sees every action bar source
+    @JvmStatic
+    fun onActionBar(text: Component) { FishDiag.guard("MetalDetector.1", "metal detector action bar threw") { onOverlay(text) } }
+
+    private fun onOverlay(text: Component) {
         if (!S.miningMetalDetector || !inDivan()) return
         val pl = Minecraft.getInstance().player ?: return
         val plain = TextStrip.plain(text.string)
-        if (!overlay) { if (plain.startsWith("You found")) { fresh = true; spots = emptyList() }; return }
         val dist = TREASURE.find(plain)?.groupValues?.get(1)?.toDoubleOrNull() ?: return
         if (center == null) findCenter()
         val pos = pl.position()
