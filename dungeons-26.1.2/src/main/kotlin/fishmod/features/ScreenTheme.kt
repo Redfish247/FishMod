@@ -10,10 +10,24 @@ object ScreenTheme {
     var ACCENT_HOVER = 0xFFFFFFFF.toInt()
     val CARD_BG = 0xFF171717.toInt()
     // Text follows the window background: dark text on light backgrounds, light text on dark ones
-    fun lightBg(): Boolean {
-        val c = windowBg(); val a = (c ushr 24) / 255f
-        val l = (0.299f * ((c shr 16) and 0xFF) + 0.587f * ((c shr 8) and 0xFF) + 0.114f * (c and 0xFF)) / 255f
-        return a > 0.45f && l > 0.55f
+    private var lbC = 0; private var lbV = false
+    fun lightBg(): Boolean { val c = windowBg(); if (c != lbC) { lbC = c; lbV = isLight(c) }; return lbV }
+    // Relative luminance of a colour composited over the dimmed (dark) world behind the screen
+    fun luma(c: Int): Float {
+        fun ch(v: Int): Float { val s = v / 255f; return if (s <= 0.03928f) s / 12.92f else Math.pow(((s + 0.055f) / 1.055f).toDouble(), 2.4).toFloat() }
+        val a = (c ushr 24) / 255f
+        val l = 0.2126f * ch((c shr 16) and 0xFF) + 0.7152f * ch((c shr 8) and 0xFF) + 0.0722f * ch(c and 0xFF)
+        return l * a + 0.02f * (1f - a)
+    }
+    // Black text beats white when contrast vs black is higher (luminance above ~0.18)
+    fun isLight(c: Int): Boolean = luma(c) > 0.18f
+    fun textOn(bg: Int): Int = if (isLight(bg)) 0xFF141414.toInt() else 0xFFF2F2F2.toInt()
+    fun subtextOn(bg: Int): Int = if (isLight(bg)) 0xFF4A4A4A.toInt() else 0xFFA8A8A8.toInt()
+    // Source-over blend of fg on bg (opaque result alpha kept from bg)
+    fun over(fg: Int, bg: Int): Int {
+        val a = (fg ushr 24) / 255f
+        fun m(s: Int) = Math.round(((fg shr s) and 0xFF) * a + ((bg shr s) and 0xFF) * (1f - a))
+        return (Math.max(fg ushr 24, bg ushr 24) shl 24) or (m(16) shl 16) or (m(8) shl 8) or m(0)
     }
     val TEXT_COLOR: Int get() = if (lightBg()) 0xFF141414.toInt() else 0xFFEDEDED.toInt()
     val SUBTEXT_COLOR: Int get() = if (lightBg()) 0xFF5A5A5A.toInt() else 0xFF949494.toInt()
