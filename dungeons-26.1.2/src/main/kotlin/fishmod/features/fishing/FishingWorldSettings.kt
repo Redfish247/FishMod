@@ -18,6 +18,19 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var shardTrackerX: Int = 5
     @ConfigValue @JvmField var shardTrackerY: Int = 115
     @ConfigValue @JvmField var shardTrackerScale: Double = 1.0
+    @ConfigValue @JvmField var shardTrackerProfit: Boolean = true
+
+    @ConfigValue @JvmField var foragingTracker: Boolean = false
+    @ConfigValue @JvmField var foragingTrackerResetOnSwap: Boolean = false
+    @ConfigValue @JvmField var foragingTrackerRows: Int = 6
+    @ConfigValue @JvmField var foragingTrackerX: Int = 5
+    @ConfigValue @JvmField var foragingTrackerY: Int = 130
+    @ConfigValue @JvmField var foragingTrackerScale: Double = 1.0
+    @ConfigValue @JvmField var treecapTimer: Boolean = false
+    @ConfigValue @JvmField var treecapCooldownMs: Int = 1000
+    @ConfigValue @JvmField var treecapX: Int = 5
+    @ConfigValue @JvmField var treecapY: Int = 260
+    @ConfigValue @JvmField var treecapScale: Double = 1.0
 
     @ConfigValue @JvmField var hookTimer: Boolean = false
     @ConfigValue @JvmField var hookTimerHideStand: Boolean = true
@@ -32,7 +45,6 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var invisibugColor: Int = 0x80FF5555.toInt()
     @ConfigValue @JvmField var lassoAlert: Boolean = false
     @ConfigValue @JvmField var lassoSound: String = "pling"
-    @ConfigValue @JvmField var honeycombTimer: Boolean = false
 
     @ConfigValue @JvmField var geyserBox: Boolean = false
     @ConfigValue @JvmField var geyserColor: Int = 0x60FF5555.toInt()
