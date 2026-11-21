@@ -81,13 +81,15 @@ object Mining {
     }
 
     private var sidebarVersion = -1
+    // Location line: icon may be ⏣, ф or a custom-font glyph (same set as CustomScoreboard), with stray leading chars
+    private val AREA_LINE = Regex("""^\W*?[⏣фൠ]\s*(.+)$""")
 
     private fun onTick(mc: Minecraft) {
         if (mc.player == null) return
         if (tick++ % 20 == 0 && fishmod.utils.SidebarCache.version != sidebarVersion) {
             sidebarVersion = fishmod.utils.SidebarCache.version
             sidebar = sidebarLines(mc)
-            area = sidebar.firstOrNull { it.startsWith("⏣") || it.startsWith("ф") }?.drop(1)?.trim() ?: ""
+            area = sidebar.firstNotNullOfOrNull { AREA_LINE.find(it)?.groupValues?.get(1) }?.trim() ?: ""
         }
         if (!inMiningIsland()) return
         if (mc.options.keyAttack.isDown) {
