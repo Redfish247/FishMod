@@ -578,8 +578,20 @@ object FishDraw {
         return formatNumber(num, Floor7Settings.bossHpCapitalized)
     }
 
+    // Last result, reused because the inventory search bar asks for the same value every frame.
+    private class FormatMemo(val num: Float, val caps: Boolean, val out: String)
+    @Volatile private var lastFormat: FormatMemo? = null
+
     // thresholds avoid "1000.0K" rollover
     internal fun formatNumber(num: Float, caps: Boolean): String {
+        val memo = lastFormat
+        if (memo != null && memo.num == num && memo.caps == caps) return memo.out
+        val out = formatNumberUncached(num, caps)
+        lastFormat = FormatMemo(num, caps, out)
+        return out
+    }
+
+    private fun formatNumberUncached(num: Float, caps: Boolean): String {
         val (b, m, k) = if (caps) Triple("B", "M", "K") else Triple("b", "m", "k")
         return if (num >= 999_950_000f) String.format(java.util.Locale.ROOT, "%.1f$b", num / 1e9f)
         else if (num >= 999_950f) String.format(java.util.Locale.ROOT, "%.1f$m", num / 1e6f)

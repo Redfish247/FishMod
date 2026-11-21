@@ -30,6 +30,6 @@ public class PlayerEntityRendererScaleMixin {
     @ModifyReturnValue(method = "shouldShowName(Lnet/minecraft/world/entity/Avatar;D)Z", at = @At("RETURN"))
     private boolean fishmod$showOwnLabel(boolean original, Avatar entity, double dist) {
         if (original) return true;
-        return entity instanceof Player p && EntityTools.isClientPlayer(p) && FishSettings.nickPreviewEnabled;
+        return FishSettings.nickPreviewEnabled && entity instanceof Player p && EntityTools.isClientPlayer(p);
     }
 }
