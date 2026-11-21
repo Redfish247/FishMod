@@ -81,6 +81,7 @@ object HypixelApiClient {
 
     /** Mojang names do not change during this client session often enough to justify repeat lookups. */
     private val UUID_NAME_CACHE = ConcurrentHashMap<String, UuidName>()
+    private const val UUID_NAME_CACHE_MAX = 2048
 
     private val EXECUTOR: ExecutorService = Executors.newFixedThreadPool(4, PvExecutors.daemon("FishPV-HypixelApi"))
 
@@ -105,9 +106,6 @@ object HypixelApiClient {
     private var electionFetchedAtMillis = 0L
 
     private val NEXT_REQUEST_AT_MILLIS = AtomicLong()
-
-    @JvmStatic
-    fun canFetch(): Boolean = true
 
     private enum class LookupStatus { FOUND, MISSING, FAILED }
 
@@ -262,6 +260,8 @@ object HypixelApiClient {
 
     private fun rememberUuid(uuidName: UuidName, savedAtMs: Long) {
         val key = uuidName.name.lowercase(Locale.ROOT)
+        // Session-only memory cache; disk NameUuidStore keeps the long-term copy.
+        if (UUID_NAME_CACHE.size >= UUID_NAME_CACHE_MAX && !UUID_NAME_CACHE.containsKey(key)) UUID_NAME_CACHE.clear()
         UUID_NAME_CACHE[key] = uuidName
         UUID_NAME_CACHE.entries.removeIf { it.value.uuid == uuidName.uuid && it.key != key }
         if (savedAtMs >= 0L) NameUuidStore.put(uuidName.name, uuidName.uuid, uuidName.name, savedAtMs)
@@ -905,17 +905,18 @@ object HypixelApiClient {
         val laby = source("Laby", ::fetchLabyNameHistory)
         val crafty = source("Crafty", ::fetchCraftyNameHistory)
         val namemc = source("NameMC", ::fetchNameMcNameHistory)
-        return CompletableFuture.allOf(laby, crafty, namemc).thenApply {
+        // Async: the Ashcon fallback is blocking HTTP and must not run on the caller (render) thread
+        return CompletableFuture.allOf(laby, crafty, namemc).thenApplyAsync({
             val merged = JsonArray()
             mergeNameHistory(merged, laby.join())
             mergeNameHistory(merged, crafty.join())
             mergeNameHistory(merged, namemc.join())
             if (merged.size() == 0) mergeNameHistory(merged, fetchAshconNameHistory(id))
-            if (merged.size() == 0) return@thenApply Optional.empty()
+            if (merged.size() == 0) return@thenApplyAsync Optional.empty<JsonArray>()
             val cleaned = collapseConsecutiveNameDupes(sortNameHistoryOldestFirst(merged))
             ProfileViewer.LOGGER.info("Username history for {}: {} name(s)", id, cleaned.size())
             Optional.of(cleaned)
-        }
+        }, EXECUTOR)
     }
 
     private inline fun nameHistoryRequest(

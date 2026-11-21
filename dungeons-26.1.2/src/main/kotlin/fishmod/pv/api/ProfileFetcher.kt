@@ -243,9 +243,6 @@ object ProfileFetcher {
         MiningHotmData.ensureLoaded()
         val startedNanos = if (requestStartedNanos > 0L) requestStartedNanos else System.nanoTime()
         val correlation = normalizeCorrelationId(correlationId)
-        if (!HypixelApiClient.canFetch()) {
-            return CompletableFuture.completedFuture(failed(playerName, "API unavailable"))
-        }
         val cleaned = playerName?.trim() ?: ""
         val preferred = if (preferredProfileId.isNullOrBlank()) null else preferredProfileId
         getCached(nameKey(cleaned))?.let { cached ->
