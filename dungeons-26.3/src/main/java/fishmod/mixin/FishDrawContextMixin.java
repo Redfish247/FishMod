@@ -37,7 +37,6 @@ public class FishDrawContextMixin {
     @Shadow
     private Matrix3x2fStack pose;
 
-    private static long fishmod$ttLog;
     private static final int FISHMOD$TOOLTIP_PULL = 6;
     private static final ClientTooltipPositioner FISHMOD$CLOSER = (sw, sh, x, y, w, h) -> {
         Vector2ic p = DefaultTooltipPositioner.INSTANCE.positionTooltip(sw, sh, x, y, w, h);
@@ -72,7 +71,6 @@ public class FishDrawContextMixin {
             if (top0 < 4) liftY = 4 - top0;
         }
         shifted.set(on || fit || liftY != 0);
-        if ((lines.size() >= 12 || est > shh - 40) && System.currentTimeMillis() - fishmod$ttLog > 1000) { fishmod$ttLog = System.currentTimeMillis(); fishmod.utils.debug.FishDiag.fail("FishDrawContextMixin.fit", "tooltip lines=" + lines.size() + " est=" + est + " screenH=" + shh + " fit=" + fit + " on=" + on + " xo=" + xo + " yo=" + yo); }
         if (!on && !fit && liftY == 0) return;
         pose.pushMatrix();
         if (liftY != 0) pose.translate(0f, (float) liftY);
