@@ -12,10 +12,10 @@ class CreditsPage {
         private const val DISCORD = "discord.gg/3mSuQUB8kk"
         private const val DISCORD_URL = "https://discord.gg/3mSuQUB8kk"
 
-        private const val NAME_SIZE = 9f
-        private const val ROLE_SIZE = 7.4f
-        private const val BULLET_SIZE = 7.2f
-        private const val LINE_H = 10
+        private const val NAME_SIZE = 11f
+        private const val ROLE_SIZE = 9f
+        private const val BULLET_SIZE = 9f
+        private const val LINE_H = 12
 
         private data class Credit(
             val name: String,
@@ -75,8 +75,8 @@ class CreditsPage {
         )
     }
 
-    private val copyW = 44
-    private val copyH = 17
+    private val copyW = 54
+    private val copyH = 21
     private var copyX = 0
     private var copyY = 0
     private var linkX = 0
@@ -90,7 +90,7 @@ class CreditsPage {
     private var copiedAt = 0L
 
     private val GAP = 8
-    private val CREATOR_H = 46
+    private val CREATOR_H = 58
 
     private val wrapCache = HashMap<String, List<String>>()
 
@@ -110,9 +110,9 @@ class CreditsPage {
 
     private fun cols(w: Int): Int = if (w >= 460) 2 else 1
     private fun colW(w: Int): Int = (w - (cols(w) - 1) * GAP) / cols(w)
-    private fun roleLines(c: Credit, cardW: Int): List<String> = wrap(c.role, (cardW - 48).toFloat(), ROLE_SIZE)
-    private fun headH(c: Credit, cardW: Int): Int = max(24, 11 + roleLines(c, cardW).size * LINE_H)
-    private fun bulletLines(c: Credit, cardW: Int): List<List<String>> = c.details.map { wrap(it, (cardW - 28).toFloat(), BULLET_SIZE) }
+    private fun roleLines(c: Credit, cardW: Int): List<String> = wrap(c.role, (cardW - 58).toFloat(), ROLE_SIZE)
+    private fun headH(c: Credit, cardW: Int): Int = max(30, 13 + roleLines(c, cardW).size * LINE_H)
+    private fun bulletLines(c: Credit, cardW: Int): List<List<String>> = c.details.map { wrap(it, (cardW - 32).toFloat(), BULLET_SIZE) }
 
     private fun cardHeight(c: Credit, cardW: Int): Int {
         var h = 10 + headH(c, cardW) + 10
@@ -165,25 +165,26 @@ class CreditsPage {
     private fun drawCreator(x: Int, y: Int, w: Int, mx: Int, my: Int) {
         val accent = ScreenTheme.ACCENT
         UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), CREATOR_H.toFloat(), 8f, ScreenTheme.ink(0x0C))
-        UiRecorder.fillRectHGradient((x + 8).toFloat(), (y + 1).toFloat(), w * 0.7f, (CREATOR_H - 2).toFloat(), (0x30 shl 24) or (accent and 0xFFFFFF), accent and 0xFFFFFF)
+        // flat rounded tint: the old square gradient poked past the rounded corners
+        UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), CREATOR_H.toFloat(), 8f, (0x1A shl 24) or (accent and 0xFFFFFF))
         ScreenTheme.nRoundedRectRing(x, y, w, CREATOR_H, 8, 1, 0, (0x59 shl 24) or (accent and 0xFFFFFF))
 
-        val hs = 28
+        val hs = 34
         val hx = x + 10
         val hy = y + (CREATOR_H - hs) / 2
-        headBadge(hx, hy, hs, CREATOR.name, accent)
+        headBadge(hx, hy, hs, CREATOR.name, accent or 0xFF000000.toInt())
         val tx = hx + hs + 10
-        UiRecorder.textBold(CREATOR.name, tx.toFloat(), (y + 10).toFloat(), 10f, ScreenTheme.TEXT_COLOR)
-        UiRecorder.text(CREATOR.role, tx.toFloat(), (y + 25).toFloat(), 7.6f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.textBold(CREATOR.name, tx.toFloat(), (y + 11).toFloat(), 12.5f, ScreenTheme.TEXT_COLOR)
+        UiRecorder.text(CREATOR.role, tx.toFloat(), (y + 30).toFloat(), 9.5f, ScreenTheme.SUBTEXT_COLOR)
 
         copyX = x + w - 10 - copyW
         copyY = y + (CREATOR_H - copyH) / 2
         val copied = System.currentTimeMillis() - copiedAt < 1500
         val cHov = inside(mx, my, copyX, copyY, copyW, copyH) && visible(copyY, copyH)
         ScreenTheme.nRoundedRectRing(copyX, copyY, copyW, copyH, copyH / 2, 1, ScreenTheme.ink(if (cHov) 0x1C else 0x10), if (copied) accent else ScreenTheme.ink(0x26))
-        centered(if (copied) "Copied" else "Copy", copyX + copyW / 2, copyY, copyH, if (copied) accent else ScreenTheme.TEXT_COLOR, 7.4f)
+        centered(if (copied) "Copied" else "Copy", copyX + copyW / 2, copyY, copyH, if (copied) accent else ScreenTheme.TEXT_COLOR, 9f)
 
-        val ls = 7.4f
+        val ls = 9f
         linkW = UiRecorder.textWidth(DISCORD, ls).toInt()
         linkH = copyH
         linkX = copyX - 8 - linkW
@@ -197,10 +198,10 @@ class CreditsPage {
     private fun drawCard(x: Int, y: Int, w: Int, h: Int, c: Credit) {
         UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 8f, ScreenTheme.ink(0x0C))
         ScreenTheme.nRoundedRectRing(x, y, w, h, 8, 1, 0, ScreenTheme.ink(0x1F))
-        headBadge(x + 10, y + 10, 22, c.name, c.badgeColor)
-        val tx = x + 40
+        headBadge(x + 10, y + 10, 28, c.name, c.badgeColor)
+        val tx = x + 46
         UiRecorder.textBold(c.name, tx.toFloat(), (y + 10).toFloat(), NAME_SIZE, ScreenTheme.TEXT_COLOR)
-        var ly = y + 21
+        var ly = y + 25
         for (line in roleLines(c, w)) {
             UiRecorder.text(line, tx.toFloat(), ly.toFloat(), ROLE_SIZE, ScreenTheme.SUBTEXT_COLOR)
             ly += LINE_H
@@ -210,9 +211,9 @@ class CreditsPage {
         var by = y + 20 + headH(c, w)
         ScreenTheme.nRect(x + 10, by - 5, w - 20, 1, ScreenTheme.ink(0x1F))
         for (lines in bullets) {
-            UiRecorder.disc((x + 13).toFloat(), by + BULLET_SIZE / 2f + 0.5f, 1.3f, ScreenTheme.SUBTEXT_COLOR)
+            UiRecorder.disc((x + 14).toFloat(), by + BULLET_SIZE / 2f + 0.5f, 1.6f, ScreenTheme.SUBTEXT_COLOR)
             for (line in lines) {
-                UiRecorder.text(line, (x + 20).toFloat(), by.toFloat(), BULLET_SIZE, ScreenTheme.SUBTEXT_COLOR)
+                UiRecorder.text(line, (x + 22).toFloat(), by.toFloat(), BULLET_SIZE, ScreenTheme.SUBTEXT_COLOR)
                 by += LINE_H
             }
         }
