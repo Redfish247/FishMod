@@ -69,7 +69,7 @@ object GroundItemNames {
             if (e.isNoGravity || e.isInvisible) continue
             if (!e.onGround() && e.tickCount < 40) continue
             if (ItemTools.getId(st) == null) continue
-            if (inGlassCase(level, e)) continue
+            if (inGlassCase(level, e) || blockCentered(e)) continue
             val en = Entry(e, st.count, label(e))
             cache[e.id] = en
             seen.add(e.id); out.add(en)
@@ -85,6 +85,12 @@ object GroundItemNames {
             if (BuiltInRegistries.BLOCK.getKey(level.getBlockState(n).block).path.contains("glass")) return true
         }
         return false
+    }
+
+    // Showcase items are server-placed at the exact block centre; real drops scatter
+    private fun blockCentered(e: ItemEntity): Boolean {
+        fun c(v: Double) = Math.abs(v - Math.floor(v) - 0.5) < 0.01
+        return c(e.x) && c(e.z)
     }
 
     private fun label(e: ItemEntity): Component {
