@@ -43,13 +43,32 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         class Ready(val bins: List<Bin>) : BinState()
     }
 
-    private companion object {
+    companion object {
         private const val ROW_H = 11
         private const val ROWS = 9
         private val PET_RE = Regex("^([A-Z0-9_]+);([0-5])$")
         private val RARITIES = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC")
         private val LVL_RE = Regex("\\[Lvl [^\\]]*]\\s*")
         private val BINS = ConcurrentHashMap<String, BinState>()
+        private val PROBE = ConcurrentHashMap<String, Boolean>()
+
+        /** Whether the item has price history (bazaar, or any AH history in the last month). Starts one cached lookup on first ask; false until it answers. */
+        @JvmStatic
+        fun hasHistory(id: String): Boolean {
+            val pet = PET_RE.matchEntire(id)?.takeIf { NeuRepo.get(id)?.get("displayname")?.asString?.contains("[Lvl") == true }
+            val semi = id.indexOf(';')
+            val tag = if (pet != null) "PET_${pet.groupValues[1]}"
+                else if (semi > 0 && NeuRepo.get(id)?.get("itemid")?.asString == "minecraft:enchanted_book") "ENCHANTMENT_${id.substring(0, semi)}_${id.substring(semi + 1)}" else id
+            if (CroesusPrices.bazaarPrice(tag, true) != null || CroesusPrices.bazaarPrice(tag, false) != null) return true
+            val rarity = pet?.let { RARITIES.getOrNull(it.groupValues[2].toInt()) }
+            val k = "$tag|$rarity"
+            PROBE[k]?.let { return it }
+            if (PROBE.putIfAbsent(k + "|busy", false) != null) return false
+            CoflnetApiClient.auctionHistory(tag, "month", rarity).whenComplete { res, err ->
+                PROBE[k] = err == null && res != null && res.isPresent && res.get().size() > 0
+            }
+            return false
+        }
         private const val W = 360
         private const val H = 290
         private const val PAD = 12
