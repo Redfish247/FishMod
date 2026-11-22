@@ -234,9 +234,13 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
         )
 
-        // Same names and order as the FishModScreen columns
+        // Same names and order as the FishModScreen columns (categories without HUDs are listed too, greyed out)
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
-            "Extras" to listOf("Item Pickup Log", "Skill Progress", "Todos"),
+            "General" to emptyList(),
+            "Chat" to emptyList(),
+            "Inventory & Storage" to emptyList(),
+            "Items & Tooltips" to emptyList(),
+            "Pets" to emptyList(),
             "HUD & Overlays" to listOf(
                 "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
                 "Spotify", "Stopwatch", "Achievement Popup", "Arrow HUD",
@@ -246,7 +250,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Run Splits", "Est. Total (follows Splits)", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
                 "Spirit Bear", "Mask & Phoenix Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
             ),
+            "Dungeon Trackers" to emptyList(),
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
+            "Dungeon Solvers" to emptyList(),
             "Floor 7" to listOf(
                 "Boss Tick Clock", "Wither Dragon Timer", "Crystal Respawn", "Crystal Not Placed",
                 "Storm Kill Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crush Banner", "Pillar Blast Timer", "Terminals Open In",
@@ -267,12 +273,17 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
                 "Log Book", "Sensitivity", "Mooshroom Cow Perk", "Farming Speed", "Mantid Bonus", "Wheat", "Yaw / Pitch",
             ),
+            "Visitors & Pests" to emptyList(),
             "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
             "Rift" to listOf("Rift Guide", "Rift Timer", "Vermin Tracker", "Agaricus Cap Timer", "Bacte Helper", "Berberis Highlighter", "Blood Effigy Spots", "Burger Warning",
                 "Caducous Stem Highlighter", "Colosseum Kill Zone Warning", "Crux Helper", "Fleespook Tracker", "Half-Eaten Cave Hay Warning", "Leech Supreme Helper",
                 "Mirrorverse Parkour", "Punchcard Marker", "Rift Nametag Stats", "Snake Helper", "Sun Gecko Helper", "Vampire Slayer Helper"),
             "Events" to listOf("SkyBlock Date", "Gift Tracker"),
             "Alerts & Reminders" to AlertTitles.NAMES,
+            "Extras" to listOf("Item Pickup Log", "Skill Progress", "Todos"),
+            "Achievements" to emptyList(),
+            "Visuals & Rendering" to emptyList(),
+            "Cosmetics" to emptyList(),
         )
 
         const val SCOREBOARD_W = 118
@@ -308,7 +319,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private val GUIDE = 0xFFFF4FB0.toInt()
         private val GRID_LINE = 0x14FFFFFF
-        private val SIDE_BG = 0xFF131313.toInt()
+        private val SIDE_BG = 0xFF11121F.toInt() // tinted on purpose: UiRecorder.remap turns pure greys see-through
         private val ROW_HOV = 0x1AFFFFFF
         private val ROW_PICKED = 0x26D6D6D6
         private val HOVER_OUTLINE = 0xB3FFFFFF.toInt()
@@ -383,7 +394,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             w = Math.max(w, 8f + UiRecorder.textWidth("Shift/Ctrl-click to add more", 6f))
             for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 7.5f))
             for (g in GROUPS.map { it.first } + listOf("Other", "No HUDs match")) {
-                w = Math.max(w, 8f + UiRecorder.textWidth(g.uppercase(), 6f) + 10f + 6f + pickW)
+                w = Math.max(w, 8f + UiRecorder.textWidth(g, 7f) + 10f + 6f + pickW)
             }
             for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 7.5f) + 4f + offW)
             sideWCache = Math.max(SIDE_W_MIN, Math.min(SIDE_W_MAX, Math.ceil(w + 10.0).toInt()))
@@ -447,7 +458,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val grouped = HashSet<HudEntry>()
         fun addGroup(g: String, items: List<HudEntry>) {
             val hit = if (q.isEmpty() || g.lowercase().contains(q)) items else items.filter { it.name().lowercase().contains(q) }
-            if (hit.isEmpty()) return
+            if (hit.isEmpty() && (q.isNotEmpty() || items.isNotEmpty())) return
             body += Row.Header(g, hit)
             // groups start collapsed; searching opens every match
             if (q.isNotEmpty() || g in expandedGroups) hit.forEach { body += Row.Hud(it) }
@@ -876,9 +887,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                             UiRecorder.text(tag, sideW - 9f - UiRecorder.textWidth(tag, 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
                         }
                         val all = clickable && row.items.all { it.name() in picked }
-                        val c = if (!clickable) 0xFF5A5A5A.toInt() else if (all) ACCENT_HOVER else ACCENT
+                        val c = if (!clickable) 0xFF7C828A.toInt() else if (all) TEXT else LABEL
                         if (clickable) UiRecorder.chevron(7f, yf + SIDE_ROW / 2f, sideQ().isNotEmpty() || row.text in expandedGroups, c)
-                        UiRecorder.textBold(row.text.uppercase(), 17f, yf + (SIDE_ROW - 6f) / 2f, 6f, c)
+                        else UiRecorder.text("no HUDs", sideW - 9f - UiRecorder.textWidth("no HUDs", 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, 0xFF5F656C.toInt())
+                        UiRecorder.textBold(row.text, 17f, yf + (SIDE_ROW - 7f) / 2f, 7f, c)
                     }
                     is Row.Action -> {
                         if (hov) rowBg(yf, ROW_HOV)
