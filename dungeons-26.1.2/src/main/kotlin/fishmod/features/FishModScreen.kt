@@ -3701,15 +3701,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val currentValue = values.getOrElse(indexOfCurrent()) { getter() }
             val current = label(currentValue)
-            val textW = stw(tr, current)
+            val textW = sw(tr, current, 0.9f)
             val sw = swatch
             pillW = textW + 22 + (if (sw != null) 12 else 0)
             pillX = rightX - pillW - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
-            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (hov) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x14), if (hov) ScreenTheme.ink(0x40) else ScreenTheme.ink(0x26))
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, 6, 1, if (ScreenTheme.lightBg()) (if (hov) ScreenTheme.ink(0x24) else ScreenTheme.ink(0x14)) else (if (hov) 0x80000000.toInt() else 0x66000000), if (hov) ScreenTheme.ink(0x40) else ScreenTheme.ink(0x26))
             if (sw != null) disc(ctx, pillX + 12, by + PILL_H / 2, 4, sw(currentValue))
-            st(ctx, tr, current, pillX + (if (sw != null) 22 else 10), by + (PILL_H - 9) / 2, TEXT_COLOR)
+            sst(ctx, tr, current, pillX + (if (sw != null) 22 else 10), by + (PILL_H - 9) / 2, TEXT_COLOR, 0.9f)
 
             val animating = expandAnim.isAnimating()
             if (expanded || animating) {
