@@ -56,6 +56,11 @@ object PartyMemberTracker {
     @Synchronized
     private fun clear() = seen.clear()
 
+    // true once the party roster is known (anyone seen); then lobby players must not stand in for party members
+    @JvmStatic
+    @Synchronized
+    fun hasMembers(): Boolean = seen.isNotEmpty()
+
     @JvmStatic
     @Synchronized
     fun resolve(fragment: String?): String? {
