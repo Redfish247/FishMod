@@ -10,6 +10,8 @@ class NameDecorCache {
 
     private val entries = HashMap<Any, Entry>()
 
+    init { fishmod.utils.events.FishEvents.worldChange.register { entries.clear(); false } }
+
     fun get(key: Any, input: Component, compute: Supplier<Component>): Component {
         val now = Util.getMillis()
         val ttl = if (FishSettings.prestigeColorsAnimated) 100L else 500L
