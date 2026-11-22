@@ -123,6 +123,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Accent"))
             f.sub.add(ColorPickerSetting("Accent Color", "", "fmButtonColor"))
             f.sub.add(SliderIntSetting("Accent Opacity %", "0% invisible - 100% solid", "fmButtonAlpha", 0, 100))
+            f.sub.add(DropdownSetting("Switch Colors", "Accent = on switches use the accent colour, off is a theme grey. Custom = pick your own on and off colours", arrayOf("Accent", "Custom"),
+                { FishSettings.fmSwitchColorMode },
+                { v -> FishSettings.fmSwitchColorMode = v }))
+            f.sub.add(ColorPickerSetting("Switch On Color", "", "fmSwitchOnColor").gatedBy { FishSettings.fmSwitchColorMode == "Custom" })
+            f.sub.add(ColorPickerSetting("Switch Off Color", "", "fmSwitchOffColor").gatedBy { FishSettings.fmSwitchColorMode == "Custom" })
             f.sub.add(SubcategoryHeader("Features"))
             f.sub.add(ColorPickerSetting("Feature Background", "Colour behind each feature card", "fmCardColor"))
             f.sub.add(SliderIntSetting("Feature Opacity %", "0% invisible - 100% solid", "fmCardAlpha", 0, 100))
@@ -4832,8 +4837,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         fun drawTogglePill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, on: Boolean, knobProgress: Float, hover: Boolean, alpha: Float = 1f) {
             fun al(c: Int) = if (alpha >= 1f) c else (Math.round((c ushr 24) * alpha.coerceIn(0f, 1f)) shl 24) or (c and 0xFFFFFF)
             // off track is a theme tint, not a fixed grey
-            val off = ScreenTheme.over(ScreenTheme.ink(if (hover) 0x50 else 0x3C), ScreenTheme.windowBg() or 0xFF000000.toInt())
-            val onC = if (hover) ACCENT_HOVER else ACCENT
+            val custom = FishSettings.fmSwitchColorMode == "Custom"
+            val off = if (custom) FishSettings.fmSwitchOffColor or 0xFF000000.toInt()
+                else ScreenTheme.over(ScreenTheme.ink(if (hover) 0x50 else 0x3C), ScreenTheme.windowBg() or 0xFF000000.toInt())
+            val onBase = if (custom) FishSettings.fmSwitchOnColor or 0xFF000000.toInt() else ACCENT
+            val onC = if (hover) (if (custom) lerpColor(onBase, 0xFFFFFFFF.toInt(), 0.11f) else ACCENT_HOVER) else onBase
             val track = lerpColor(off, onC, knobProgress)
             UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), h / 2f, al(track))
             val r = h / 2f - 2f
