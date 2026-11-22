@@ -31,13 +31,14 @@ object StackingEnchantTooltip {
                 val key = ench.keySet().firstOrNull { it in INFO } ?: return@ItemTooltipCallback
                 val info = INFO.getValue(key)
                 val level = ench.getIntOr(key, 0)
-                if (level !in 1..9) return@ItemTooltipCallback
+                if (level < 1) return@ItemTooltipCallback
                 val have = tag.getLongOr(info.field, 0L)
-                val need = info.ladder[level].toLong()
-                val line = Component.literal("§7" + info.name + " " + (level + 1) + ": §c" + "%,d".format(have) + "§7/§c" + "%,d".format(need) + " §7" + info.unit)
-                // Right under the enchant's own lore line, else at the end
-                val at = lines.indexOfFirst { it.string.contains(info.name + " ") }
-                if (at in 1 until lines.size) lines.add(at + 1, line) else lines.add(line)
+                // maxed: no next level, so show the running total only
+                val line = if (level >= info.ladder.size) Component.literal("§7" + info.name + " " + level + ": §6" + "%,d".format(have) + " §7" + info.unit)
+                else Component.literal("§7" + info.name + " " + (level + 1) + ": §c" + "%,d".format(have) + "§7/§c" + "%,d".format(info.ladder[level].toLong()) + " §7" + info.unit)
+                // Bottom of the tooltip, just above the Obtained line when it is already there
+                val ob = lines.indexOfLast { it.string.startsWith("Obtained:") }
+                if (ob >= 1) lines.add(ob, line) else lines.add(line)
             } catch (e: Exception) {
                 FishDiag.fail("StackingEnchantTooltip.1", "stacking enchant tooltip failed", e)
             }
