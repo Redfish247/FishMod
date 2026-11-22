@@ -15,7 +15,6 @@ import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
-import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.nio.file.Files
@@ -70,17 +69,25 @@ object FairySouls {
         val eye = Minecraft.getInstance().cam.position()
         val argb = S.fairySoulColor
         val rgb = argb and 0xFFFFFF
+        val look = FishDraw.lookDir()
+        val beam = S.fairySoulBeam
+        val text = S.fairySoulText
+        val boxArgb = (0x66 shl 24) or rgb
         for ((key, pos) in souls(mode)) {
             if (key in done) continue
-            val center = pos.add(0.0, 0.5, 0.0)
+            val cy = pos.y + 0.5
+            val behind = FishDraw.behindCamera(pos.x, cy, pos.z, eye, look, 2.0)
+            // A tall beam can still cross the view when the base is behind the camera
+            if (behind && !beam) continue
+            val center = Vec3(pos.x, cy, pos.z)
             val d = center.distanceTo(eye)
             val (c, k) = FishDraw.pullIn(center, eye)
-            FishDraw.fillBox(ps, vc, AABB.ofSize(c, k, k, k), (0x66 shl 24) or rgb)
-            if (S.fairySoulBeam) FishDraw.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
-            if (S.fairySoulText) {
+            if (!behind) FishDraw.fillBox(ps, vc, AABB.ofSize(c, k, k, k), boxArgb)
+            if (beam) FishDraw.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
+            if (text && !behind) {
                 val (tp, pk) = FishDraw.pullIn(Vec3(pos.x, pos.y + 1.5 + d / 25.0, pos.z), eye)
                 val px = (maxOf(0.035, d * 0.0035) * pk).toFloat()
-                FishDraw.renderSeeThroughText(ctx, ps, Component.literal("Fairy Soul §7(${d.toInt()}m)"), tp, px, argb or (0xFF shl 24), true)
+                FishDraw.renderSeeThroughText(ctx, ps, FishDraw.distLabel("Fairy Soul", d.toInt()), tp, px, argb or (0xFF shl 24), true)
             }
         }
     }
