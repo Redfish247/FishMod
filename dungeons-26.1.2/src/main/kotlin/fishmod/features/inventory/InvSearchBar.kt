@@ -6,6 +6,7 @@ import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.Window
 import fishmod.mixin.accessors.KeyBindingAccessor
 import fishmod.utils.ExprParser
+import fishmod.features.ScreenTheme
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemTools
 import fishmod.utils.rendering.DrawHooks
@@ -89,7 +90,10 @@ object InvSearchBar {
     fun render(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
         if (!on() || !exists() || !shouldDisplay()) return
         val bar = searchBar!!
-        bar.x = posX(); bar.y = posY()
+        val ox = posX(); val oy = posY()
+        bar.x = ox + 20; bar.y = oy; bar.width = SEARCH_WIDTH - 26
+        drawFrame(context, ox, oy, bar)
+        bar.setTextColor(ScreenTheme.TEXT_COLOR)
         try {
             bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
         } catch (e: Exception) {
@@ -104,6 +108,22 @@ object InvSearchBar {
             val textX = bar.x + textRenderer.width(searchTerm) + 4
             val textY = bar.y + (bar.height - 8) / 2
             context.text(textRenderer, expression, textX, textY, 0xffffffff.toInt(), true)
+        }
+    }
+
+    // Rounded themed box with a search icon; accent ring while focused
+    private fun drawFrame(ctx: GuiGraphicsExtractor, x: Int, y: Int, bar: EditBox) {
+        val fill = (0xCC shl 24) or (ScreenTheme.surface(0x0C) and 0xFFFFFF)
+        val ring = if (bar.isFocused) ScreenTheme.ACCENT else ScreenTheme.surface(0x2E)
+        ScreenTheme.roundedRectRing(ctx, x, y, SEARCH_WIDTH, SEARCH_HEIGHT, 5, 1, fill, ring)
+        val ic = ScreenTheme.SUBTEXT_COLOR
+        val ix = x + 7; val iy = y + (SEARCH_HEIGHT - 9) / 2
+        ctx.fill(ix + 1, iy, ix + 5, iy + 1, ic); ctx.fill(ix + 1, iy + 5, ix + 5, iy + 6, ic)
+        ctx.fill(ix, iy + 1, ix + 1, iy + 5, ic); ctx.fill(ix + 5, iy + 1, ix + 6, iy + 5, ic)
+        ctx.fill(ix + 5, iy + 6, ix + 6, iy + 7, ic); ctx.fill(ix + 6, iy + 7, ix + 7, iy + 8, ic); ctx.fill(ix + 7, iy + 8, ix + 8, iy + 9, ic)
+        if (bar.value.isEmpty() && !bar.isFocused) {
+            val font = Minecraft.getInstance().font
+            ctx.text(font, "Search...", ix + 13, y + (SEARCH_HEIGHT - 8) / 2, ic, false)
         }
     }
 
@@ -167,8 +187,9 @@ object InvSearchBar {
         if (window == null || textRenderer == null) return false
 
         val bar = EditBox(
-            textRenderer, posX(), posY(), SEARCH_WIDTH, SEARCH_HEIGHT, Component.literal("")
+            textRenderer, posX() + 20, posY(), SEARCH_WIDTH - 26, SEARCH_HEIGHT, Component.literal("")
         )
+        bar.setBordered(false)
         bar.setResponder { string ->
             searchTerm = string.lowercase()
             parsedValue = try {
@@ -183,11 +204,10 @@ object InvSearchBar {
     }
 
     private fun inBounds(x: Double, y: Double): Boolean {
-        val bar = searchBar!!
-        val sx = bar.x
-        val sy = bar.y
-        val sw = bar.width
-        val sh = bar.height
+        val sx = posX()
+        val sy = posY()
+        val sw = SEARCH_WIDTH
+        val sh = SEARCH_HEIGHT
 
         return x >= sx && x <= sx + sw && y >= sy && y <= sy + sh
     }
