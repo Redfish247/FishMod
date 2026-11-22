@@ -31,7 +31,13 @@ object InvSearchBar {
     private var searchTerm = ""
     private var parsedValue = Double.NaN
 
-    private fun on() = FishSettings.inventorySearchEnabled && !fishmod.compat.BladeCompat.active
+    // Hidden while the storage overlay is open; it has its own search
+    private fun on() = FishSettings.inventorySearchEnabled && !fishmod.compat.BladeCompat.active && !storageOpen()
+
+    private fun storageOpen(): Boolean {
+        val screen = Minecraft.getInstance().screen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return false
+        return fishmod.features.storage.StorageOverlay.isActive(screen)
+    }
 
     private fun defX(): Int = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
     private fun defY(): Int = Minecraft.getInstance().window.guiScaledHeight - 62

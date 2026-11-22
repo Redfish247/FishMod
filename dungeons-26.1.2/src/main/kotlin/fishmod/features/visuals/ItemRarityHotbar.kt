@@ -54,7 +54,7 @@ object ItemRarityHotbar {
             return
         }
         try {
-            if (!holder.`fishmod$hasScanned`()) holder.`fishmod$setItemRarity`(getRarity(stack))
+            if (!holder.`fishmod$hasScanned`()) holder.`fishmod$setItemRarity`(scanRarity(stack))
             if (!holder.`fishmod$hasItemRarity`()) return
 
             val sprite = if (VisualSettings.rarityBgCircle) CIRCLE else SQUARE
@@ -62,6 +62,18 @@ object ItemRarityHotbar {
         } catch (t: Throwable) {
             FishDiag.fail("ItemRarityHotbar.2", "rarity background draw failed at $x,$y", t)
         }
+    }
+
+    // last known rarity per skyblock uuid, for re-sent stacks (animated dyes) whose lore is briefly missing
+    private val rarityByUuid = HashMap<String, RarityTier>()
+
+    private fun scanRarity(stack: ItemStack): RarityTier {
+        val rarity = getRarity(stack)
+        val uuid = fishmod.utils.data.ItemTools.getUuid(stack) ?: return rarity
+        if (rarity == RarityTier.NONE) return rarityByUuid[uuid] ?: rarity
+        if (rarityByUuid.size > 1024) rarityByUuid.clear()
+        rarityByUuid[uuid] = rarity
+        return rarity
     }
 
     private fun getTintColor(rarity: RarityTier): Int {
