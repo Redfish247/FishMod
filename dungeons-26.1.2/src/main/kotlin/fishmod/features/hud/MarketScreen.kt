@@ -44,17 +44,17 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     }
 
     private companion object {
-        private const val ROW_H = 9
-        private const val ROWS = 8
+        private const val ROW_H = 11
+        private const val ROWS = 9
         private val BINS = ConcurrentHashMap<String, BinState>()
-        private const val W = 300
-        private const val H = 232
+        private const val W = 360
+        private const val H = 290
         private const val PAD = 12
         private const val TAB_H = 15
-        private const val GX = 12
-        private const val GY = 124
-        private const val GW = 276
-        private const val GH = 74
+        private const val GX = 14
+        private const val GY = 140
+        private const val GW = 332
+        private const val GH = 104
         private val CYAN = 0xFF55FFFF.toInt()
         private val GOLD = 0xFFFFAA00.toInt()
         private val GREEN = 0xFF55FF55.toInt()
@@ -139,7 +139,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     }
 
     private fun rowY(i: Int): Int = py + GY + 3 + i * ROW_H
-    private fun viewX(): Int = px + GX
+    private fun viewX(): Int = px + PAD
     private fun listingsView(): Boolean = !bazaar && view == 1
 
     private fun epoch(s: String?): Long = try { LocalDateTime.parse(s).toInstant(ZoneOffset.UTC).toEpochMilli() } catch (_: Exception) { 0L }
@@ -167,10 +167,10 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     }
 
     private fun name(): String = RecipeViewer.displayName(id)
-    private fun rangeX(): Int = px + W - PAD - 70
-    private fun rangeY(): Int = py + GY + GH + 8
-    private fun openX(): Int = px + W - PAD - 70
-    private fun openY(): Int = py + H - 24
+    private fun barY(): Int = py + H - 32
+    private fun openW(): Int = if (bazaar) 80 else 110
+    private fun openX(): Int = px + W - PAD - openW()
+    private fun rangeX(): Int = openX() - 4 - 76
 
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val scale = UiScale.factor()
@@ -178,6 +178,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         ctx.pose().scale(scale, scale)
         ctx.fill(0, 0, vw(), vh(), 0xB3000000.toInt())
         ScreenTheme.panel(ctx, px, py, px + W, py + H, 10, ScreenTheme.surface(10), ScreenTheme.surface(40))
+        ScreenTheme.panel(ctx, px + PAD, py + 50, px + W - PAD, py + 112, 8, ScreenTheme.surface(18), ScreenTheme.surface(40))
         ScreenTheme.panel(ctx, px + GX, py + GY, px + GX + GW, py + GY + GH, 6, ScreenTheme.surface(22), ScreenTheme.surface(40))
         try { ctx.item(RecipeViewer.stackFor(id), px + PAD + 4, py + 15) } catch (e: Exception) { FishDiag.fail("MarketScreen.2", "item render failed for $id", e) }
         ctx.pose().popMatrix()
@@ -188,12 +189,13 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         val my = UiScale.vx(rawY)
         UiRecorder.clear()
         val title = name()
-        UiRecorder.textBold(RecipeViewer.clean(title), (px + PAD + 28).toFloat(), (py + 14).toFloat(), 9f, RecipeViewer.colorOf(title))
-        UiRecorder.text(if (bazaar) "Bazaar" else "Auction House", (px + PAD + 28).toFloat(), (py + 27).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.textBold(RecipeViewer.clean(title), (px + PAD + 28).toFloat(), (py + 14).toFloat(), 10f, RecipeViewer.colorOf(title))
+        UiRecorder.text(if (bazaar) "Bazaar" else "Auction House", (px + PAD + 28).toFloat(), (py + 28).toFloat(), 7.5f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.fillRect((px + 10).toFloat(), py.toFloat(), (W - 20).toFloat(), 2f, ScreenTheme.ACCENT)
         ScreenTheme.nRect(px + PAD, py + 44, W - PAD * 2, 1, ScreenTheme.surface(40))
 
         drawStats()
-        UiRecorder.textBold("Price History", (px + GX).toFloat(), (py + GY - 12).toFloat(), 7.5f, ScreenTheme.TEXT_COLOR)
+        UiRecorder.textBold("Price History", (px + GX).toFloat(), (py + GY - 13).toFloat(), 8.5f, ScreenTheme.TEXT_COLOR)
         val state = CACHE[key()]
         val data = (state as? State.Ready)?.data
         if (listingsView()) { drawBins(mx, my) } else when {
@@ -201,10 +203,10 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
             data == null -> centered("Loading...", py + GY + GH / 2f - 4)
             else -> drawGraph(data, mx, my)
         }
-        if (!listingsView()) button("Range: ${ranges()[range]}", rangeX(), rangeY(), 70, mx, my)
-        if (!bazaar) button(if (view == 0) "View: History" else "View: Lowest BINs", viewX(), rangeY(), 84, mx, my)
-        button(if (bazaar) "Open Bazaar" else "Open Auction House", openX() - (if (bazaar) 0 else 30), openY(), if (bazaar) 70 else 100, mx, my)
-        UiRecorder.text("Data: SkyCofl  ·  Esc: close", (px + PAD).toFloat(), (py + H - 20).toFloat(), 6f, ScreenTheme.SUBTEXT_COLOR)
+        if (!listingsView()) button("Range: ${ranges()[range]}", rangeX(), barY(), 76, mx, my, false)
+        if (!bazaar) button(if (view == 0) "View: History" else "View: Lowest BINs", viewX(), barY(), 104, mx, my, view == 1)
+        button(if (bazaar) "Open Bazaar" else "Open Auction House", openX(), barY(), openW(), mx, my, false)
+        UiRecorder.text("Data: SkyCofl  ·  Esc: close", (px + PAD).toFloat(), (py + H - 12).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
 
         super.extractRenderState(ctx, rawX, rawY, delta)
         if (data != null && !listingsView()) tooltip(data, mx, my)
@@ -222,30 +224,30 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
             val b = bins.getOrNull(scroll + r) ?: break
             val y = rowY(r)
             if (inside(mx, my, px + GX + 2, y - 1, GW - 4, ROW_H)) UiRecorder.fillRect((px + GX + 2).toFloat(), (y - 1).toFloat(), (GW - 4).toFloat(), ROW_H.toFloat(), ScreenTheme.ink(40))
-            UiRecorder.text("#${scroll + r + 1}", x, y.toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
-            UiRecorder.textBold("%,d".format(b.price), x + 22, y.toFloat(), 6.5f, GOLD)
+            UiRecorder.text("#${scroll + r + 1}", x, y.toFloat(), 7.5f, ScreenTheme.SUBTEXT_COLOR)
+            UiRecorder.textBold("%,d".format(b.price), x + 24, y.toFloat(), 7.5f, GOLD)
             val info = listOf(if (b.count > 1) "x${b.count}" else "", b.reforge, b.tier.lowercase().replaceFirstChar { it.uppercase() }).filter { it.isNotEmpty() }.joinToString(" · ")
-            UiRecorder.text(info, x + 100, y.toFloat(), 6.5f, ScreenTheme.TEXT_COLOR)
+            UiRecorder.text(info, x + 120, y.toFloat(), 7.5f, ScreenTheme.TEXT_COLOR)
             val t = timeLeft(b.endMs)
-            UiRecorder.text(t, px + GX + GW - 8 - UiRecorder.textWidth(t, 6.5f), y.toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
+            UiRecorder.text(t, px + GX + GW - 8 - UiRecorder.textWidth(t, 7.5f), y.toFloat(), 7.5f, ScreenTheme.SUBTEXT_COLOR)
         }
         val hint = "${bins.size} listings · scroll · click to view"
-        UiRecorder.text(hint, px + GX + GW - UiRecorder.textWidth(hint, 5.5f), (py + GY + GH + 3).toFloat(), 5.5f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.text(hint, px + GX + GW - UiRecorder.textWidth(hint, 6.5f), (py + GY + GH + 4).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
     }
 
     private fun centered(s: String, y: Float) =
         UiRecorder.text(s, px + GX + GW / 2f - UiRecorder.textWidth(s, 7f) / 2f, y, 7f, ScreenTheme.SUBTEXT_COLOR)
 
     private fun stat(label: String, value: String, color: Int, x: Int, y: Int) {
-        UiRecorder.text(label, x.toFloat(), y.toFloat(), 7f, ScreenTheme.SUBTEXT_COLOR)
-        UiRecorder.textBold(value, x.toFloat(), (y + 10).toFloat(), 8f, color)
+        UiRecorder.text(label, x.toFloat(), y.toFloat(), 7.5f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.textBold(value, x.toFloat(), (y + 11).toFloat(), 9.5f, color)
     }
 
     private fun drawStats() {
-        val x1 = px + PAD
-        val x2 = px + W / 2 + 6
-        val y1 = py + 52
-        val y2 = py + 80
+        val x1 = px + PAD + 8
+        val x2 = px + W / 2 + 8
+        val y1 = py + 54
+        val y2 = py + 86
         if (bazaar) {
             val buy = CroesusPrices.bazaarPrice(tag, true) ?: 0.0
             val sell = CroesusPrices.bazaarPrice(tag, false) ?: 0.0
@@ -300,16 +302,16 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         val hov = hoverIndex(d, mx, my, from, to)
         if (hov >= 0) UiRecorder.fillRect(xAt(hov, from, to), (py + GY + 1).toFloat(), 1f, (GH - 2).toFloat(), ScreenTheme.ink(150))
         UiRecorder.popScissor()
-        UiRecorder.text(FishUtil.abbr(hi), (px + GX + 4).toFloat(), (py + GY + 2).toFloat(), 5.5f, ScreenTheme.SUBTEXT_COLOR)
-        UiRecorder.text(FishUtil.abbr(lo), (px + GX + 4).toFloat(), (py + GY + GH - 9).toFloat(), 5.5f, ScreenTheme.SUBTEXT_COLOR)
-        UiRecorder.text(fmtAxis(d.times[from]), (px + GX).toFloat(), (py + GY + GH + 3).toFloat(), 5.5f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.text(FishUtil.abbr(hi), (px + GX + 4).toFloat(), (py + GY + 2).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.text(FishUtil.abbr(lo), (px + GX + 4).toFloat(), (py + GY + GH - 10).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.text(fmtAxis(d.times[from]), (px + GX).toFloat(), (py + GY + GH + 4).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
         val end = fmtAxis(d.times[to - 1])
-        UiRecorder.text(end, px + GX + GW - UiRecorder.textWidth(end, 5.5f), (py + GY + GH + 3).toFloat(), 5.5f, ScreenTheme.SUBTEXT_COLOR)
-        var lx = px + GX + 80f
+        UiRecorder.text(end, px + GX + GW - UiRecorder.textWidth(end, 6.5f), (py + GY + GH + 4).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
+        var lx = px + GX + 100f
         for (s in d.series) {
-            UiRecorder.fillRect(lx, (py + GY - 9).toFloat(), 5f, 5f, s.color)
-            UiRecorder.text(s.label, lx + 8, (py + GY - 11).toFloat(), 6.5f, s.color)
-            lx += 14 + UiRecorder.textWidth(s.label, 6.5f)
+            UiRecorder.fillRect(lx, (py + GY - 10).toFloat(), 6f, 6f, s.color)
+            UiRecorder.text(s.label, lx + 8, (py + GY - 12).toFloat(), 7.5f, s.color)
+            lx += 14 + UiRecorder.textWidth(s.label, 7.5f)
         }
     }
 
@@ -337,10 +339,12 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         ScreenTheme.nItemTooltip(lines, mx, my, vw(), vh(), paintScale = UiScale.factor())
     }
 
-    private fun button(label: String, x: Int, y: Int, w: Int, mx: Int, my: Int) {
+    private fun button(label: String, x: Int, y: Int, w: Int, mx: Int, my: Int, selected: Boolean) {
         val hov = inside(mx, my, x, y, w, TAB_H)
-        ScreenTheme.nRoundedRectRing(x, y, w, TAB_H, TAB_H / 2, 1, if (hov) ScreenTheme.surface(34) else ScreenTheme.surface(22), ScreenTheme.surface(44))
-        UiRecorder.text(label, x + w / 2f - UiRecorder.textWidth(label, 6.5f) / 2f, y + 4f, 6.5f, if (hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR)
+        val fill = when { selected -> ScreenTheme.ACCENT; hov -> ScreenTheme.surface(34); else -> ScreenTheme.surface(22) }
+        ScreenTheme.nRoundedRectRing(x, y, w, TAB_H, TAB_H / 2, 1, fill, if (selected) ScreenTheme.ACCENT else ScreenTheme.surface(44))
+        val color = when { selected -> ScreenTheme.onAccent(); hov -> ScreenTheme.TEXT_COLOR; else -> ScreenTheme.SUBTEXT_COLOR }
+        UiRecorder.text(label, x + w / 2f - UiRecorder.textWidth(label, 7f) / 2f, y + 4f, 7f, color)
     }
 
     private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx < x + w && my >= y && my < y + h
@@ -348,7 +352,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val mx = UiScale.vx(click.x())
         val my = UiScale.vx(click.y())
-        if (!bazaar && inside(mx, my, viewX(), rangeY(), 84, TAB_H)) {
+        if (!bazaar && inside(mx, my, viewX(), barY(), 104, TAB_H)) {
             view = 1 - view
             scroll = 0
             if (view == 1) loadBins()
@@ -365,13 +369,12 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
                 }
             }
         }
-        if (!listingsView() && inside(mx, my, rangeX(), rangeY(), 70, TAB_H)) {
+        if (!listingsView() && inside(mx, my, rangeX(), barY(), 76, TAB_H)) {
             range = (range + 1) % ranges().size
             load()
             return true
         }
-        val ow = if (bazaar) 70 else 100
-        if (inside(mx, my, openX() - (if (bazaar) 0 else 30), openY(), ow, TAB_H)) {
+        if (inside(mx, my, openX(), barY(), openW(), TAB_H)) {
             val q = RecipeViewer.clean(name()).trim()
             Minecraft.getInstance().connection?.sendCommand(if (bazaar) "bz $q" else "ahs $q")
             return true
