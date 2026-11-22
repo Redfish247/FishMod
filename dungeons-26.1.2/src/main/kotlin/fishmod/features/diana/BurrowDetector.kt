@@ -33,7 +33,7 @@ object BurrowDetector {
             if (Diana.inHub() && DianaSettings.dianaGuessing && DianaSettings.dianaBurrowDetection) onParticle(p)
             false
         }
-        FishEvents.sound.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
+        FishEvents.sound.register { snd, _, pitch -> if (Diana.inHub()) onServerSound(snd.location.toString(), pitch) else false }
         FishEvents.chat.register { text ->
             if (Diana.inHub()) {
                 val s = text.chatPlain
