@@ -104,6 +104,15 @@ object CompactTab {
         return sb.toString()
     }
 
+    private fun hasBold(c: net.minecraft.network.chat.Component?): Boolean {
+        var bold = false
+        c?.visit({ style, text ->
+            if (style.isBold && text.isNotBlank()) bold = true
+            java.util.Optional.empty<Unit>()
+        }, net.minecraft.network.chat.Style.EMPTY)
+        return bold
+    }
+
     private fun sortIsIronmanBingo(raw: String): Boolean = IRONMAN_BINGO_MARKERS.containsMatchIn(raw)
 
     private val shuffleSeed = java.util.concurrent.ThreadLocalRandom.current().nextInt()
@@ -114,30 +123,41 @@ object CompactTab {
         val header = entries[0]
         val rest = entries.subList(1, entries.size)
         val mode = FishSettings.compactTabSortMode
-        val sortedRest = if (mode == "Random") rest.sortedBy { (it.profile.id.hashCode() xor shuffleSeed).toLong() } else {
-            // Memoized per entry: the comparator would otherwise re-run the regexes on every compare
-            val strippedMemo = HashMap<PlayerInfo, String>()
-            val rawMemo = HashMap<PlayerInfo, String>()
-            val levelMemo = HashMap<PlayerInfo, Int>()
-            val tierMemo = HashMap<PlayerInfo, Int>()
-            fun stripped(e: PlayerInfo) = strippedMemo.getOrPut(e) { BLANK_COLOR.matcher(e.tabListDisplayName?.string ?: "").replaceAll("") }
-            fun raw(e: PlayerInfo) = rawMemo.getOrPut(e) { legacyOf(e.tabListDisplayName) }
-            fun level(e: PlayerInfo) = levelMemo.getOrPut(e) { sortLevelOf(stripped(e)) }
-            fun tier(e: PlayerInfo) = tierMemo.getOrPut(e) { sortRankTierOf(stripped(e), raw(e)) }
-            val cmp: Comparator<PlayerInfo> = when (mode) {
-                "SB Level" -> compareByDescending { level(it) }
-                "Name (Abc)" -> compareBy<PlayerInfo> { sortNameOf(stripped(it)) }
-                    .thenByDescending { level(it) }
-                "Ironman/Bingo" -> compareBy<PlayerInfo> { if (sortIsIronmanBingo(raw(it))) 0 else 1 }
-                    .thenByDescending { level(it) }
-                else -> compareBy<PlayerInfo> { tier(it) }
-                    .thenByDescending { level(it) }
-            }
-            if (FishSettings.compactTabPinStaff && mode != "Rank (Default)") {
-                val (staff, others) = rest.partition { tier(it) <= 3 }
-                staff.sortedBy { tier(it) } + others.sortedWith(cmp)
-            } else rest.sortedWith(cmp)
+        // Memoized per entry: the comparator would otherwise re-run the regexes on every compare
+        val strippedMemo = HashMap<PlayerInfo, String>()
+        val rawMemo = HashMap<PlayerInfo, String>()
+        val levelMemo = HashMap<PlayerInfo, Int>()
+        val tierMemo = HashMap<PlayerInfo, Int>()
+        fun stripped(e: PlayerInfo) = strippedMemo.getOrPut(e) { BLANK_COLOR.matcher(e.tabListDisplayName?.string ?: "").replaceAll("") }
+        fun raw(e: PlayerInfo) = rawMemo.getOrPut(e) { legacyOf(e.tabListDisplayName) }
+        fun level(e: PlayerInfo) = levelMemo.getOrPut(e) { sortLevelOf(stripped(e)) }
+        fun tier(e: PlayerInfo) = tierMemo.getOrPut(e) { sortRankTierOf(stripped(e), raw(e)) }
+        val cmp: Comparator<PlayerInfo> = when (mode) {
+            "SB Level" -> compareByDescending { level(it) }
+            "Name (Abc)" -> compareBy<PlayerInfo> { sortNameOf(stripped(it)) }
+                .thenByDescending { level(it) }
+            "Ironman/Bingo" -> compareBy<PlayerInfo> { if (sortIsIronmanBingo(raw(it))) 0 else 1 }
+                .thenByDescending { level(it) }
+            else -> compareBy<PlayerInfo> { tier(it) }
+                .thenByDescending { level(it) }
         }
+        fun sortSeg(seg: List<PlayerInfo>): List<PlayerInfo> {
+            if (seg.size <= 1) return seg
+            if (mode == "Random") return seg.sortedBy { (it.profile.id.hashCode() xor shuffleSeed).toLong() }
+            if (FishSettings.compactTabPinStaff && mode != "Rank (Default)") {
+                val (staff, others) = seg.partition { tier(it) <= 3 }
+                return staff.sortedBy { tier(it) } + others.sortedWith(cmp)
+            }
+            return seg.sortedWith(cmp)
+        }
+        // Bold lines (Coop / Guests / Island headers) and blank rows split the column into sections; sort inside each one so
+        // guests stay under "Guests" instead of mixing in with the coop members
+        val sortedRest = ArrayList<PlayerInfo>(rest.size)
+        val seg = ArrayList<PlayerInfo>()
+        for (e in rest) {
+            if (blank(e) || hasBold(e.tabListDisplayName)) { sortedRest.addAll(sortSeg(seg)); seg.clear(); sortedRest.add(e) } else seg.add(e)
+        }
+        sortedRest.addAll(sortSeg(seg))
         val out = ArrayList<PlayerInfo>(entries.size)
         out.add(header)
         out.addAll(sortedRest)
