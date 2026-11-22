@@ -46,6 +46,9 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     private companion object {
         private const val ROW_H = 11
         private const val ROWS = 9
+        private val PET_RE = Regex("^([A-Z0-9_]+);([0-5])$")
+        private val RARITIES = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC")
+        private val LVL_RE = Regex("\\[Lvl [^\\]]*]\\s*")
         private val BINS = ConcurrentHashMap<String, BinState>()
         private const val W = 360
         private const val H = 290
@@ -67,7 +70,9 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         private val HOUR_FMT = DateTimeFormatter.ofPattern("d HH:mm")
     }
 
-    private val tag = bazaarTag(id)
+    private val pet = PET_RE.matchEntire(id)?.takeIf { NeuRepo.get(id)?.get("displayname")?.asString?.contains("[Lvl") == true }
+    private val rarity: String? = pet?.let { RARITIES.getOrNull(it.groupValues[2].toInt()) }
+    private val tag = if (pet != null) "PET_${pet.groupValues[1]}" else bazaarTag(id)
     private val bazaar = CroesusPrices.bazaarPrice(tag, true) != null || CroesusPrices.bazaarPrice(tag, false) != null
     private var range = 1
     private var view = 0
@@ -87,7 +92,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     }
 
     private fun ranges(): List<String> = if (bazaar) BZ_RANGES.map { it.first } else AH_RANGES.map { it.first }
-    private fun key(): String = if (bazaar) "bz|$tag" else "ah|$tag|${AH_RANGES[range].second}"
+    private fun key(): String = if (bazaar) "bz|$tag" else "ah|$tag|$rarity|${AH_RANGES[range].second}"
 
     override fun init() {
         px = (vw() - W) / 2
@@ -100,7 +105,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         if (CACHE[k] is State.Ready) return
         if (CACHE.putIfAbsent(k, State.Loading) != null && CACHE[k] !is State.Failed) return
         CACHE[k] = State.Loading
-        val fut = if (bazaar) CoflnetApiClient.bazaarHistory(tag) else CoflnetApiClient.auctionHistory(tag, AH_RANGES[range].second)
+        val fut = if (bazaar) CoflnetApiClient.bazaarHistory(tag) else CoflnetApiClient.auctionHistory(tag, AH_RANGES[range].second, rarity)
         fut.whenComplete { res, err ->
             try {
                 if (err != null || res == null || !res.isPresent || res.get().size() == 0) { CACHE[k] = State.Failed; return@whenComplete }
@@ -113,25 +118,27 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     }
 
     private fun loadBins() {
-        val cur = BINS[tag]
+        val cur = BINS[binKey()]
         if (cur is BinState.Ready || cur is BinState.Loading) return
-        BINS[tag] = BinState.Loading
-        CoflnetApiClient.activeBins(tag).whenComplete { res, err ->
+        BINS[binKey()] = BinState.Loading
+        CoflnetApiClient.activeBins(tag, rarity).whenComplete { res, err ->
             try {
-                if (err != null || res == null || !res.isPresent) { BINS[tag] = BinState.Failed; return@whenComplete }
+                if (err != null || res == null || !res.isPresent) { BINS[binKey()] = BinState.Failed; return@whenComplete }
                 val bins = CoflnetApiClient.objects(res.get()).map {
                     Bin(it.get("uuid")?.asString ?: "", it.get("startingBid")?.asLong ?: 0L, it.get("count")?.asInt ?: 1,
                         it.get("reforge")?.asString?.takeIf { r -> r != "None" } ?: "", it.get("tier")?.asString ?: "", epoch(it.get("end")?.asString))
                 }.filter { it.uuid.isNotEmpty() && it.price > 0 }.sortedBy { it.price }
-                BINS[tag] = BinState.Ready(bins)
+                BINS[binKey()] = BinState.Ready(bins)
             } catch (e: Exception) {
                 FishDiag.fail("MarketScreen.3", "active BIN parse failed for $tag", e)
-                BINS[tag] = BinState.Failed
+                BINS[binKey()] = BinState.Failed
             }
         }
     }
 
-    private fun binsReady(): List<Bin>? = (BINS[tag] as? BinState.Ready)?.bins
+    private fun binKey(): String = "$tag|$rarity"
+
+    private fun binsReady(): List<Bin>? = (BINS[binKey()] as? BinState.Ready)?.bins
 
     private fun timeLeft(endMs: Long): String {
         val s = ((endMs - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
@@ -166,7 +173,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         return (n - keep).coerceAtLeast(0) to n
     }
 
-    private fun name(): String = RecipeViewer.displayName(id)
+    private fun name(): String = LVL_RE.replace(RecipeViewer.displayName(id), "")
     private fun barY(): Int = py + H - 32
     private fun openW(): Int = if (bazaar) 80 else 110
     private fun openX(): Int = px + W - PAD - openW()
@@ -190,7 +197,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         UiRecorder.clear()
         val title = name()
         UiRecorder.textBold(RecipeViewer.clean(title), (px + PAD + 28).toFloat(), (py + 14).toFloat(), 10f, RecipeViewer.colorOf(title))
-        UiRecorder.text(if (bazaar) "Bazaar" else "Auction House", (px + PAD + 28).toFloat(), (py + 28).toFloat(), 7.5f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.text(if (bazaar) "Bazaar" else if (rarity != null) "${rarity.lowercase().replaceFirstChar { it.uppercase() }} Pet · Auction House" else "Auction House", (px + PAD + 28).toFloat(), (py + 28).toFloat(), 7.5f, ScreenTheme.SUBTEXT_COLOR)
         UiRecorder.fillRect((px + 10).toFloat(), py.toFloat(), (W - 20).toFloat(), 2f, ScreenTheme.ACCENT)
         ScreenTheme.nRect(px + PAD, py + 44, W - PAD * 2, 1, ScreenTheme.surface(40))
 
@@ -199,7 +206,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         val state = CACHE[key()]
         val data = (state as? State.Ready)?.data
         if (listingsView()) { drawBins(mx, my) } else when {
-            data == null && state is State.Failed -> centered(if (tag.contains(';')) "No history for this item" else "No price history found", py + GY + GH / 2f - 4)
+            data == null && state is State.Failed -> centered("No price history found", py + GY + GH / 2f - 4)
             data == null -> centered("Loading...", py + GY + GH / 2f - 4)
             else -> drawGraph(data, mx, my)
         }
@@ -215,7 +222,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     private fun drawBins(mx: Int, my: Int) {
         val bins = binsReady()
         if (bins == null) {
-            centered(if (BINS[tag] is BinState.Failed) "Could not load auctions" else "Loading...", py + GY + GH / 2f - 4)
+            centered(if (BINS[binKey()] is BinState.Failed) "Could not load auctions" else "Loading...", py + GY + GH / 2f - 4)
             return
         }
         if (bins.isEmpty()) { centered("No active BIN listings", py + GY + GH / 2f - 4); return }

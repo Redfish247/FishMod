@@ -56,17 +56,19 @@ object CoflnetApiClient {
 
     /** AH price history (min/avg/max/volume per hour or day). range = day | week | month | full. */
     @JvmStatic
-    fun auctionHistory(tag: String, range: String): CompletableFuture<Optional<JsonArray>> {
+    fun auctionHistory(tag: String, range: String, rarity: String? = null): CompletableFuture<Optional<JsonArray>> {
         val queuedNanos = System.nanoTime()
-        return CompletableFuture.supplyAsync({ getArray("$BASE/item/price/${enc(tag)}/history/$range", queuedNanos) }, EXECUTOR)
+        return CompletableFuture.supplyAsync({ getArray("$BASE/item/price/${enc(tag)}/history/$range${rarityQuery(rarity)}", queuedNanos) }, EXECUTOR)
     }
 
     /** Active BIN auctions for an item tag, cheapest first. */
     @JvmStatic
-    fun activeBins(tag: String): CompletableFuture<Optional<JsonArray>> {
+    fun activeBins(tag: String, rarity: String? = null): CompletableFuture<Optional<JsonArray>> {
         val queuedNanos = System.nanoTime()
-        return CompletableFuture.supplyAsync({ getArray("$BASE/auctions/tag/${enc(tag)}/active/bin", queuedNanos) }, EXECUTOR)
+        return CompletableFuture.supplyAsync({ getArray("$BASE/auctions/tag/${enc(tag)}/active/bin${rarityQuery(rarity)}", queuedNanos) }, EXECUTOR)
     }
+
+    private fun rarityQuery(rarity: String?): String = if (rarity.isNullOrEmpty()) "" else "?Rarity=${enc(rarity)}"
 
     private fun enc(s: String): String = java.net.URLEncoder.encode(s, Charsets.UTF_8).replace("+", "%20")
 
