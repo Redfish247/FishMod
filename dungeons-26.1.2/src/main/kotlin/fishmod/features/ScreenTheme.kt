@@ -58,6 +58,28 @@ object ScreenTheme {
         return (newA shl 24) or (color and 0x00FFFFFF)
     }
 
+    private class Corner(val inset: IntArray, val coverage: DoubleArray)
+    private val cornerTables = arrayOfNulls<Corner>(65)
+
+    // Per-radius corner insets and edge coverage, computed once instead of a sqrt per row per call
+    private fun cornerTable(rr: Int): Corner {
+        if (rr >= cornerTables.size) return buildCorner(rr)
+        return cornerTables[rr] ?: buildCorner(rr).also { cornerTables[rr] = it }
+    }
+
+    private fun buildCorner(rr: Int): Corner {
+        val inset = IntArray(rr)
+        val coverage = DoubleArray(rr)
+        for (i in 0 until rr) {
+            val dy = (rr - i).toDouble() - 0.5
+            val dxExact = Math.sqrt(Math.max(0.0, rr.toDouble() * rr - dy * dy))
+            val dxFloor = Math.floor(dxExact).toInt()
+            coverage[i] = dxExact - dxFloor
+            inset[i] = rr - dxFloor
+        }
+        return Corner(inset, coverage)
+    }
+
     fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
         if (w <= 0 || h <= 0) return
         val rr = Math.max(0, Math.min(r, Math.min(w, h) / 2))
@@ -65,12 +87,10 @@ object ScreenTheme {
         ctx.fill(x + rr, y, x + w - rr, y + h, color)
         ctx.fill(x, y + rr, x + rr, y + h - rr, color)
         ctx.fill(x + w - rr, y + rr, x + w, y + h - rr, color)
+        val corner = cornerTable(rr)
         for (i in 0 until rr) {
-            val dy = (rr - i).toDouble() - 0.5
-            val dxExact = Math.sqrt(Math.max(0.0, rr.toDouble() * rr - dy * dy))
-            val dxFloor = Math.floor(dxExact).toInt()
-            val coverage = dxExact - dxFloor
-            val inset = rr - dxFloor
+            val coverage = corner.coverage[i]
+            val inset = corner.inset[i]
             val topY = y + i
             val botY = y + h - 1 - i
             ctx.fill(x + inset, topY, x + rr, topY + 1, color)
