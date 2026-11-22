@@ -21,7 +21,6 @@ import fishmod.utils.config.SettingRef
 import kotlin.math.max
 import kotlin.math.min
 
-// Popup editor for Diana drop announcements and rare-mob spawn party text, with live coloured previews
 class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.literal("Diana Messages")), HasUiOverlay {
 
     companion object {
@@ -32,24 +31,23 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         }
 
         private val ACCENT get() = ScreenTheme.ACCENT
-        private val TEXT = ScreenTheme.TEXT_COLOR
-        private val SUB = ScreenTheme.SUBTEXT_COLOR
+        private val TEXT get() = ScreenTheme.TEXT_COLOR
+        private val SUB get() = ScreenTheme.SUBTEXT_COLOR
         private val CARD_BG = ScreenTheme.CARD_BG
-        private val BG_PANEL = 0xF20E1016.toInt()
-        private val BG_SECTION = 0xFF171A22.toInt()
-        private val BORDER = 0xFF2A2D38.toInt()
-        private val FIELD_BG = 0xFF1A1E26.toInt()
-        private val FIELD_BORDER = 0xFF2E333D.toInt()
-        private val ROW_HOVER = 0xFF1F232D.toInt()
-        private val DIM = 0xFF5C6673.toInt()
-        private val DARK_TEXT = 0xFF06110F.toInt()
+        private val BG_PANEL = 0xF2101010.toInt()
+        private val BG_SECTION = 0xFF1A1A1A.toInt()
+        private val BORDER = 0xFF2D2D2D.toInt()
+        private val FIELD_BG = 0xFF1E1E1E.toInt()
+        private val FIELD_BORDER = 0xFF333333.toInt()
+        private val ROW_HOVER = 0xFF232323.toInt()
+        private val DIM = 0xFF646464.toInt()
+        private val DARK_TEXT get() = ScreenTheme.onAccent()
         private val PREVIEW_BG = 0xCC000000.toInt()
 
         private const val HEADER_H = 44
         private const val FOOTER_H = 32
         private const val ROW_H = 50
 
-        // Minecraft's 16 chat colours, index = hex digit
         private val MC_COLORS = intArrayOf(
             0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
             0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF,
@@ -114,7 +112,6 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
     private fun save() {
         if (saved) return
         saved = true
-        // Drops: storing blank keeps following the built-in default
         for (e in drops) e.prop.set(if (e.field.value == e.default) "" else e.field.value)
         for (e in spawns) e.prop.set(e.field.value.trim())
         FishConfig.manager.save()
@@ -136,7 +133,6 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         UiRenderer.paint(width, height, UiScale.factor())
     }
 
-    // ---- drawing ----
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         mx = UiScale.vx(mouseX); my = UiScale.vx(mouseY)
@@ -166,7 +162,6 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         val top = py + HEADER_H + 8
         val bh = py + ph - FOOTER_H - 6 - top
 
-        // Colour palette stays pinned above the scrolling list
         text("COLOURS", bx.toFloat(), top + 4f, 7f, ACCENT)
         var sx = bx + 50
         for (i in 0 until 16) {
@@ -227,7 +222,6 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         else colored(preview, x + 5f, y + 34f, 7f, w - 10)
     }
 
-    // Draws §-formatted text; colours and bold only
     private fun colored(s: String, x0: Float, y: Float, size: Float, maxW: Int) {
         var x = x0
         var color = 0xFFFFFFFF.toInt()
@@ -268,7 +262,6 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         f.insertText(s)
     }
 
-    // ---- widgets ----
 
     private fun text(s: String, x: Float, y: Float, size: Float, color: Int) = UiRecorder.text(s, x, y, size, color)
     private fun tw(s: String, size: Float): Float = UiRecorder.textWidth(s, size)
@@ -328,7 +321,6 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         hit(x, y, w, h, action)
     }
 
-    // ---- input ----
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val x = UiScale.vx(click.x()); val y = UiScale.vx(click.y())

@@ -69,7 +69,6 @@ object TunnelGraph {
 
     fun closest(p: Vec3): Node? = nodes.minByOrNull { it.pos.distanceToSqr(p) }
 
-    // Dijkstra from start; returns (distance, previous) for every reachable node
     fun search(start: Node): Pair<Map<Node, Double>, Map<Node, Node>> {
         val dist = HashMap<Node, Double>().apply { put(start, 0.0) }
         val prev = HashMap<Node, Node>()

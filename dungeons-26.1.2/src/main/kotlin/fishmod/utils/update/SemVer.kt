@@ -2,7 +2,6 @@ package fishmod.utils.update
 
 import fishmod.utils.debug.FishDiag
 
-// SemVer 2.0 ordering; a trailing "-<mc version>" / "-dungeons" build tag is not treated as a prerelease.
 class SemVer private constructor(
     private val core: IntArray,
     private val pre: List<String>,

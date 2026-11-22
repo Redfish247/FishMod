@@ -1,14 +1,8 @@
 package fishmod.utils.rendering
-import fishmod.compat.mainTarget
 
+import fishmod.compat.UiGpu
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
-import org.lwjgl.opengl.GL11
-import org.lwjgl.opengl.GL13
-import org.lwjgl.opengl.GL14
-import org.lwjgl.opengl.GL15
-import org.lwjgl.opengl.GL20
-import org.lwjgl.opengl.GL30
 import org.lwjgl.system.MemoryUtil
 import java.nio.FloatBuffer
 
@@ -17,20 +11,15 @@ object UiRenderer {
     private const val MODE_TEXT = 1f
     private const val MODE_SOLID = 2f
 
-    private const val FLOATS = 24
-    private const val STRIDE = FLOATS * 4
+    const val FLOATS = 24
+    const val STRIDE = FLOATS * 4
 
-    private var program = 0
-    private var vao = 0
-    private var vbo = 0
-    private var uView = -1
-    private var uAtlas = -1
     private val noUi = System.getProperty("fishmod.noui") != null
     private var failed = false
-    // Vulkan backend has no GL context; raw GL calls there crash the client
-    private val noGl by lazy { runCatching { org.lwjgl.opengl.GL.getCapabilities() }.isFailure.also { if (it) fishmod.utils.debug.FishDebug.LOGGER.warn("[UiRenderer] no OpenGL context (Vulkan?), custom UI painting disabled") } }
+    private var failedAt = 0L
     private var failLogged = false
     private var consecutiveFailures = 0
+    private var backoffMs = 5000L
 
     private var buf: FloatBuffer = MemoryUtil.memAllocFloat(FLOATS * 6 * 512)
     private var verts = 0
@@ -39,216 +28,75 @@ object UiRenderer {
     private var viewH = 1f
     private var pixelRatio = 1f
     private var fbH = 1
+    private var fbW = 1
     private val scissors = ArrayDeque<FloatArray>()
-    private val guard = GlStateGuard()
 
-    private const val VSH = """
-#version 330 core
-layout(location=0) in vec2 aPos;
-layout(location=1) in vec2 aLocal;
-layout(location=2) in vec2 aHalf;
-layout(location=3) in vec4 aRad;
-layout(location=4) in vec4 aColA;
-layout(location=5) in vec4 aColB;
-layout(location=6) in vec4 aParams;
-layout(location=7) in vec2 aUv;
-uniform vec2 uView;
-out vec2 vLocal; flat out vec2 vHalf; flat out vec4 vRad; flat out vec4 vColA; flat out vec4 vColB; flat out vec4 vParams; out vec2 vUv;
-void main(){
-    gl_Position = vec4(aPos.x / uView.x * 2.0 - 1.0, 1.0 - aPos.y / uView.y * 2.0, 0.0, 1.0);
-    vLocal = aLocal; vHalf = aHalf; vRad = aRad; vColA = aColA; vColB = aColB; vParams = aParams; vUv = aUv;
-}
-"""
+    // Draw segments split at scissor changes: first vertex, count, scissor x/y/w/h (w < 0 = none)
+    private var segs = IntArray(6 * 64)
+    private var nSeg = 0
+    private var segStart = 0
+    private val curScissor = intArrayOf(0, 0, -1, 0)
 
-    private const val FSH = """
-#version 330 core
-in vec2 vLocal; flat in vec2 vHalf; flat in vec4 vRad; flat in vec4 vColA; flat in vec4 vColB; flat in vec4 vParams; in vec2 vUv;
-uniform sampler2D uAtlas;
-out vec4 fragColor;
-float sdBox(vec2 p, vec2 b, vec4 r){
-    // r = (tl, tr, br, bl), y grows downward
-    float rr = p.x > 0.0 ? (p.y > 0.0 ? r.z : r.y) : (p.y > 0.0 ? r.w : r.x);
-    rr = min(rr, min(b.x, b.y));
-    vec2 q = abs(p) - b + rr;
-    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - rr;
-}
-vec4 pm(vec4 c){ return vec4(c.rgb * c.a, c.a); }
-void main(){
-    float mode = vParams.x;
-    if (mode > 1.5) { fragColor = pm(vColA); return; }
-    if (mode > 0.5) {
-        fragColor = pm(vColA) * texture(uAtlas, vUv).r;
-        return;
-    }
-    float d = sdBox(vLocal, vHalf, vRad);
-    float feather = vParams.z;
-    if (feather > 0.0) {
-        float t = clamp((d + feather * 0.5) / feather, 0.0, 1.0);
-        fragColor = pm(vColA) * (1.0 - t);
-        return;
-    }
-    float aa = max(fwidth(d), 1e-4);
-    float cov = clamp(0.5 - d / aa, 0.0, 1.0);
-    vec4 fill = vColA;
-    float g = vParams.w;
-    if (g > 0.5) {
-        float t = g > 1.5 ? (vLocal.x / (2.0 * vHalf.x) + 0.5) : (vLocal.y / (2.0 * vHalf.y) + 0.5);
-        fill = mix(vColA, vColB, clamp(t, 0.0, 1.0));
-    }
-    float stroke = vParams.y;
-    if (stroke > 0.0) {
-        float inner = clamp(0.5 - (d + stroke) / aa, 0.0, 1.0);
-        fragColor = pm(fill) * inner + pm(vColB) * max(cov - inner, 0.0);
-        return;
-    }
-    fragColor = pm(fill) * cov;
-}
-"""
-
-    private fun compile(type: Int, src: String): Int {
-        val s = GL20.glCreateShader(type)
-        GL20.glShaderSource(s, src)
-        GL20.glCompileShader(s)
-        if (GL20.glGetShaderi(s, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-            val log = GL20.glGetShaderInfoLog(s)
-            FishDiag.fail("UiRenderer.1", "UI shader type $type compile failed: $log")
-            GL20.glDeleteShader(s)
-            throw IllegalStateException("UI shader compile failed: $log")
-        }
-        return s
-    }
-
-    private fun init() {
-        if (program != 0) return
-        val vs = compile(GL20.GL_VERTEX_SHADER, VSH)
-        val fs = compile(GL20.GL_FRAGMENT_SHADER, FSH)
-        val p = GL20.glCreateProgram()
-        GL20.glAttachShader(p, vs); GL20.glAttachShader(p, fs)
-        GL20.glLinkProgram(p)
-        GL20.glDeleteShader(vs); GL20.glDeleteShader(fs)
-        if (GL20.glGetProgrami(p, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
-            val log = GL20.glGetProgramInfoLog(p)
-            FishDiag.fail("UiRenderer.2", "UI shader link failed: $log")
-            throw IllegalStateException("UI shader link failed: $log")
-        }
-        program = p
-        uView = GL20.glGetUniformLocation(p, "uView")
-        uAtlas = GL20.glGetUniformLocation(p, "uAtlas")
-        if (uView < 0 || uAtlas < 0) FishDiag.fail("UiRenderer.3", "UI shader uniforms missing uView=$uView uAtlas=$uAtlas")
-        vao = GL30.glGenVertexArrays()
-        vbo = GL15.glGenBuffers()
-        if (vao == 0 || vbo == 0) FishDiag.fail("UiRenderer.4", "UI VAO/VBO allocation failed vao=$vao vbo=$vbo")
-        GL30.glBindVertexArray(vao)
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo)
-        val sizes = intArrayOf(2, 2, 2, 4, 4, 4, 4, 2)
-        var off = 0L
-        for ((i, n) in sizes.withIndex()) {
-            GL20.glEnableVertexAttribArray(i)
-            GL20.glVertexAttribPointer(i, n, GL11.GL_FLOAT, false, STRIDE, off)
-            off += n * 4L
-        }
-    }
+    // Colour view of the last full-size pass (the GUI's own target); set by the render pass mixin
+    @JvmField @Volatile var lastPassView: Any? = null
 
     @JvmStatic
     fun paint(screenW: Int, screenH: Int, scale: Float) {
-        if (failed || noUi || noGl) return
-        guard.capture()
+        if (noUi) return
+        // After repeated failures, back off for 5s then retry instead of killing every menu for the session
+        if (failed) {
+            if (System.currentTimeMillis() - failedAt < backoffMs) return
+            failed = false; consecutiveFailures = 0
+        }
         try {
-            init()
             val win = Minecraft.getInstance().window
             pixelRatio = win.guiScale.toFloat()
             if (!(pixelRatio > 0f)) FishDiag.fail("UiRenderer.5", "window guiScale invalid: ${win.guiScale}")
             if (win.width <= 0 || win.height <= 0) FishDiag.fail("UiRenderer.6", "painting UI into empty window ${win.width}x${win.height}")
-            // Map from the real framebuffer, not the rounded-up GUI size, or odd window sizes stretch text off the pixel grid.
             viewW = win.width / pixelRatio; viewH = win.height / pixelRatio
-            fbH = win.height
-            bindMainTarget()
-            GL11.glViewport(0, 0, win.width, win.height)
-            GL20.glUseProgram(program)
-            GL20.glUniform2f(uView, viewW, viewH)
-            GL20.glUniform1i(uAtlas, 0)
-            GL30.glBindVertexArray(vao)
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo)
-            GL13.glActiveTexture(GL13.GL_TEXTURE0)
-            GL11.glEnable(GL11.GL_BLEND)
-            GL14.glBlendFuncSeparate(GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA)
-            GL14.glBlendEquation(GL14.GL_FUNC_ADD)
-            GL11.glDisable(GL11.GL_DEPTH_TEST)
-            GL11.glDisable(GL11.GL_CULL_FACE)
-            GL11.glDisable(GL11.GL_STENCIL_TEST)
-            GL11.glDisable(GL11.GL_SCISSOR_TEST)
-            GL11.glDepthMask(false)
+            fbH = win.height; fbW = win.width
             scissors.clear()
             // A paint that threw mid-replay leaves stale floats behind; drop them or they draw in place of this frame's.
             buf.clear()
-            verts = 0
+            verts = 0; nSeg = 0; segStart = 0; curScissor[2] = -1
             if (!(scale > 0f)) FishDiag.fail("UiRenderer.7", "UI paint with invalid scale $scale")
             UiRecorder.replay(scale)
-            flush()
+            cut()
             if (scissors.isNotEmpty()) FishDiag.fail("UiRenderer.8", "unbalanced pushScissor: ${scissors.size} left open after paint")
-            consecutiveFailures = 0
+            if (verts > 0) {
+                buf.flip()
+                UiGpu.paint(lastPassView, MemoryUtil.memByteBuffer(buf), verts, viewW, viewH, UiFont.takeDirtyAtlas(), segs, nSeg)
+            }
+            consecutiveFailures = 0; backoffMs = 5000L
         } catch (t: Throwable) {
-            FishDiag.fail("UiRenderer.9", "UI paint failed (attempt ${consecutiveFailures + 1})", t)
+            UiFont.markAtlasLost()
+            // Report only the first failure of each backoff round so a broken driver can't spam the board
+            if (consecutiveFailures == 0 && backoffMs == 5000L) FishDiag.fail("UiRenderer.9", "UI paint failed", t)
             if (++consecutiveFailures >= 3) {
-                failed = true
-                FishDiag.fail("UiRenderer.10", "UI renderer disabled after 3 consecutive paint failures")
+                failed = true; failedAt = System.currentTimeMillis()
+                if (backoffMs == 5000L) FishDiag.fail("UiRenderer.10", "UI renderer paused after 3 consecutive paint failures")
+                // Double the pause each round (max 5 min) when the failure keeps recurring
+                backoffMs = Math.min(backoffMs * 2, 300_000L)
             }
             if (!failLogged) {
                 failLogged = true
                 fishmod.utils.debug.FishDebug.LOGGER.error("[UiRenderer] paint failed - FishMod screens will render without their UI layer", t)
             }
         } finally {
-            guard.restore()
+            buf.clear()
+            verts = 0
         }
     }
 
-    private var targetFbo = 0
-    private var targetTex = -1
-    private var targetLogged = false
-
-    // Set by GlCommandEncoderUiTargetMixin: colour texture of the last render pass, i.e. what GuiRenderer just drew into.
-    @JvmField @Volatile var lastPassColorTex = 0
-
-    // Draw into the GUI's own target, not whatever FBO is left bound (vanilla unbinds to 0, ImmediatelyFast doesn't) or a guess at the main target (other mods redirect GUI output).
-    private fun bindMainTarget() {
-        val mainTex = fishmod.compat.glTextureId(Minecraft.getInstance().mainTarget.colorTexture)
-        val passTex = lastPassColorTex
-        if (!targetLogged) {
-            targetLogged = true
-            fishmod.utils.debug.FishDebug.LOGGER.info("[UiRenderer] UI target: lastPass={} main={}", passTex, mainTex)
-        }
-        if (passTex != 0 && GL11.glIsTexture(passTex) && attach(passTex)) return
-        if (mainTex == 0) {
-            FishDiag.fail("UiRenderer.11", "main render target colour texture is not a GlTexture: ${Minecraft.getInstance().mainTarget.colorTexture?.javaClass?.name}")
-            return
-        }
-        attach(mainTex)
-    }
-
-    private fun attach(tex: Int): Boolean {
-        if (targetFbo == 0) targetFbo = GL30.glGenFramebuffers()
-        if (targetFbo == 0) { FishDiag.fail("UiRenderer.12", "glGenFramebuffers returned 0"); return false }
-        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
-        // Re-attach every paint: a resized/recreated target can reuse the same id, leaving the old attachment dead
-        GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0)
-        val status = GL30.glCheckFramebufferStatus(GL30.GL_FRAMEBUFFER)
-        if (status != GL30.GL_FRAMEBUFFER_COMPLETE) {
-            FishDiag.fail("UiRenderer.13", "UI framebuffer incomplete status=0x${Integer.toHexString(status)} tex=$tex")
-            targetTex = -1
-            return false
-        }
-        targetTex = tex
-        return true
-    }
-
-    private fun flush() {
-        if (verts == 0) return
-        UiFont.texture()
-        buf.flip()
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, buf, GL15.GL_STREAM_DRAW)
-        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, verts)
-        buf.clear()
-        verts = 0
+    // Close the current segment so later vertices can use a different scissor
+    private fun cut() {
+        if (verts == segStart) return
+        if (segs.size < (nSeg + 1) * 6) segs = segs.copyOf(segs.size * 2)
+        val o = nSeg * 6
+        segs[o] = segStart; segs[o + 1] = verts - segStart
+        segs[o + 2] = curScissor[0]; segs[o + 3] = curScissor[1]; segs[o + 4] = curScissor[2]; segs[o + 5] = curScissor[3]
+        nSeg++
+        segStart = verts
     }
 
     private fun ensure(n: Int) {
@@ -259,9 +107,9 @@ void main(){
     }
 
     private fun vert(x: Float, y: Float, lx: Float, ly: Float, hx: Float, hy: Float, r: FloatArray, a: Int, b: Int, mode: Float, stroke: Float, feather: Float, grad: Float, u: Float, v: Float) {
-        buf.put(x).put(y).put(lx).put(ly).put(hx).put(hy).put(r[0]).put(r[1]).put(r[2]).put(r[3])
+        buf.put(x).put(y).put(lx).put(ly).put(hx).put(hy).put(u).put(v).put(r[0]).put(r[1]).put(r[2]).put(r[3])
         color(a); color(b)
-        buf.put(mode).put(stroke).put(feather).put(grad).put(u).put(v)
+        buf.put(mode).put(stroke).put(feather).put(grad)
         verts++
     }
 
@@ -366,7 +214,7 @@ void main(){
         scissors.lastOrNull()?.let { p ->
             x0 = Math.max(x0, p[0]); y0 = Math.max(y0, p[1]); x1 = Math.min(x1, p[2]); y1 = Math.min(y1, p[3])
         }
-        flush()
+        cut()
         scissors.addLast(floatArrayOf(x0, y0, Math.max(x0, x1), Math.max(y0, y1)))
         applyScissor()
     }
@@ -376,19 +224,20 @@ void main(){
             FishDiag.fail("UiRenderer.20", "popScissor with empty scissor stack")
             return
         }
-        flush()
+        cut()
         scissors.removeLast()
         applyScissor()
     }
 
     private fun applyScissor() {
         val s = scissors.lastOrNull()
-        if (s == null) { GL11.glDisable(GL11.GL_SCISSOR_TEST); return }
-        GL11.glEnable(GL11.GL_SCISSOR_TEST)
-        val x0 = Math.floor((s[0] * pixelRatio).toDouble()).toInt()
-        val x1 = Math.ceil((s[2] * pixelRatio).toDouble()).toInt()
-        val y0 = Math.floor((s[1] * pixelRatio).toDouble()).toInt()
-        val y1 = Math.ceil((s[3] * pixelRatio).toDouble()).toInt()
-        GL11.glScissor(x0, fbH - y1, Math.max(0, x1 - x0), Math.max(0, y1 - y0))
+        if (s == null) { curScissor[2] = -1; return }
+        // GPU API rejects scissors outside the target (GL clipped silently), so clamp to the framebuffer
+        val x0 = Math.floor((s[0] * pixelRatio).toDouble()).toInt().coerceIn(0, fbW)
+        val x1 = Math.ceil((s[2] * pixelRatio).toDouble()).toInt().coerceIn(0, fbW)
+        val y0 = Math.floor((s[1] * pixelRatio).toDouble()).toInt().coerceIn(0, fbH)
+        val y1 = Math.ceil((s[3] * pixelRatio).toDouble()).toInt().coerceIn(0, fbH)
+        curScissor[0] = x0; curScissor[1] = fbH - y1
+        curScissor[2] = Math.max(0, x1 - x0); curScissor[3] = Math.max(0, y1 - y0)
     }
 }

@@ -10,7 +10,6 @@ package fishmod.pv.data
 import java.util.Collections
 import net.minecraft.nbt.CompoundTag
 
-/** Decoded SkyBlock inventories for the Inventories tab. */
 class InventorySnapshot @JvmOverloads constructor(
 	inventory: Page?,
 	enderChest: List<Page>?,
@@ -30,11 +29,8 @@ class InventorySnapshot @JvmOverloads constructor(
 	@get:JvmName("carnivalPresent") val carnivalPresent: Boolean,
 	candyBag: Page?,
 	@get:JvmName("candyPresent") val candyPresent: Boolean,
-	/** False when the member's inventory API is off ({@code inv_contents} missing). */
 	@get:JvmName("inventoryApi") val inventoryApi: Boolean = true,
-	/** False when {@code personal_vault_contents} is absent (vault not unlocked). */
 	@get:JvmName("personalVaultPresent") val personalVaultPresent: Boolean = true,
-	/** False when no Time Pocket field was found in the API data. */
 	@get:JvmName("timePocketPresent") val timePocketPresent: Boolean = true
 ) {
 	@JvmRecord
@@ -49,7 +45,6 @@ class InventorySnapshot @JvmOverloads constructor(
 		val extraAttributes: CompoundTag?,
 		val soulbound: Boolean
 	) {
-		/** UI-only slots (icons, placeholders) without NBT. */
 		constructor(
 			id: String?,
 			count: Int,
@@ -70,7 +65,6 @@ class InventorySnapshot @JvmOverloads constructor(
 
 	class Page @JvmOverloads constructor(title: String?, slots: List<Slot?>?, columns: Int, equippedColumn: Int = -1) {
 		@get:JvmName("title") val title: String = title ?: ""
-		// Empty inventory slots are intentionally null; List.copyOf forbids nulls.
 		@get:JvmName("slots") val slots: List<Slot?> = if (slots == null) listOf() else Collections.unmodifiableList(ArrayList(slots))
 		@get:JvmName("columns") val columns: Int = maxOf(1, columns)
 		@get:JvmName("equippedColumn") val equippedColumn: Int = equippedColumn
@@ -84,7 +78,6 @@ class InventorySnapshot @JvmOverloads constructor(
 	@JvmRecord
 	data class StatPoint(val id: String, val label: String, val value: Int)
 
-	/** Magical power / power stone / tuning for the Accessory Bag pane. */
 	class AccessoryInfo(
 		magicalPower: Int,
 		highestMagicalPower: Int,
@@ -107,10 +100,6 @@ class InventorySnapshot @JvmOverloads constructor(
 		}
 	}
 
-	/**
-	 * Named loadout preset: equipment column + armor column + metadata.
-	 * hotmPreset/hotfPreset are the skill tree preset slots (1-5) the loadout switches to, null when unset.
-	 */
 	class Loadout(
 		name: String?,
 		equipment: List<Slot?>?,

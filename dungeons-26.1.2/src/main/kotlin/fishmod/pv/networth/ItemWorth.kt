@@ -47,7 +47,6 @@ object ItemWorth {
     fun value(stack: InventoryDecoder.Stack?, includeCosmetics: Boolean = true): Double =
         breakdown(stack, includeCosmetics).total
 
-    /** Labeled coin breakdown for one item (base + priced modifiers); same math as [value], zero amounts omitted. */
     @JvmStatic
     @JvmOverloads
     fun breakdown(stack: InventoryDecoder.Stack?, includeCosmetics: Boolean = true): Breakdown {
@@ -154,20 +153,15 @@ object ItemWorth {
     }
 
     enum class Role {
-        /** Catalog base item name. */
         ITEM,
 
-        /** Summary upgrade line (HPB's 10/10, Stars 5/5). */
         UPGRADE,
 
-        /** Nested contributor under a section. */
         DETAIL,
 
-        /** Collapsed remainder note. */
         NOTE,
     }
 
-    /** One priced row in an item breakdown. */
     class Part(
         section: Section?,
         role: Role?,
@@ -421,7 +415,6 @@ object ItemWorth {
         return sb.toString()
     }
 
-    /** Standalone cosmetic items (skins, dyes, furniture, etc.) - zeroed when cosmetics off. */
     private fun isCosmeticItem(stack: InventoryDecoder.Stack): Boolean {
         val id = stack.id.uppercase(Locale.ROOT)
         if (id.contains("_SKIN") || id.startsWith("PET_SKIN_") || id.endsWith("_DYE") || id.contains("DYE_")) return true

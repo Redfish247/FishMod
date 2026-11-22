@@ -16,7 +16,6 @@ import fishmod.utils.TextStrip
 import java.util.Locale
 import java.util.function.Function
 
-/** {@code dungeons.treasures}: Hypixel only keeps the most recent runs and their reward chests. */
 @JvmRecord
 data class DungeonChestHistory(val runs: List<Run>) {
 	@JvmRecord
@@ -45,12 +44,9 @@ data class DungeonChestHistory(val runs: List<Run>) {
 	companion object {
 		const val EXPIRY_MS = 72L * 60L * 60L * 1000L
 
-		private val FORMAT_CODE = Regex("§.")
 
-		// Ultimate enchants whose in-game name keeps the "Ultimate" word (NEU ULTIMATE_WISE / ULTIMATE_JERRY lore).
 		private val NAMED_ULTIMATES = setOf("wise", "jerry")
 
-		// Croesus reward ids that aren't the item's SkyBlock id. Dyes are handled by itemIdFor.
 		private val REWARD_ITEM_IDS: Map<String, String> = mapOf(
 			"shadow_helmet" to "SHADOW_ASSASSIN_HELMET",
 			"shadow_chestplate" to "SHADOW_ASSASSIN_CHESTPLATE",
@@ -95,7 +91,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 							}
 						}
 					}
-					// Kuudra chests use chest_type / is_opened / is_rerolled and carry no reward list.
 					val type = str(c.get("treasure_type")).ifBlank { str(c.get("chest_type")) }
 					var rerolls = num(c.get("rerolls")).toInt()
 					if (rerolls == 0 && bool(c.get("is_rerolled"))) {
@@ -119,7 +114,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 					if (participants != null && participants.isJsonArray) {
 						for (p in participants.asJsonArray) {
 							val po = Leveling.obj(p)
-							// Keeps Hypixel's § codes so the UI can show rank colours.
 							val name = if (po == null) "" else str(po.get("display_name")).trim()
 							if (TextStrip.plain(name).isNotBlank()) {
 								party.add(name)
@@ -153,7 +147,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			else -> 0
 		}
 
-		/** {@code ESSENCE:UNDEAD:22} → "22x Undead Essence", {@code ultimate_wise_1} → "Ultimate Wise I". */
 		@JvmStatic
 		fun prettyReward(raw: String?): String =
 			prettyReward(raw, { HypixelItemsCache.get(it) }, { NeuRepoCache.get(it) })
@@ -186,7 +179,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			return InventoryDecoder.prettyWords(id)
 		}
 
-		// Matches Java's split(":"), which drops trailing empty parts.
 		private fun splitColon(raw: String): List<String> = raw.split(":").dropLastWhile { it.isEmpty() }
 
 		private fun enchantCore(base: String): String {
@@ -196,7 +188,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			return base.removePrefix("ultimate_")
 		}
 
-		/** NEU enchanted book ({@code ULTIMATE_WISE;1} / {@code FEATHER_FALLING;6}) for a Croesus book id. */
 		private fun bookDef(id: String, neu: Function<String, JsonObject?>): JsonObject? {
 			val us = id.lastIndexOf('_')
 			val level = id.substring(us + 1)
@@ -208,14 +199,13 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			def != null && def.has("internalname") && def.get("internalname").isJsonPrimitive &&
 				def.get("internalname").asString.uppercase(Locale.ROOT).startsWith("ULTIMATE_")
 
-		/** The enchant line of a NEU book's lore, e.g. "Ultimate Wise I", with formatting stripped. */
 		private fun bookLoreName(def: JsonObject?, level: Int): String? {
 			if (def == null || !def.has("lore") || !def.get("lore").isJsonArray) {
 				return null
 			}
 			val suffix = " " + roman(level)
 			for (line in def.getAsJsonArray("lore")) {
-				val text = FORMAT_CODE.replace(str(line), "").trim()
+				val text = TextStrip.plain(str(line)).trim()
 				if (text.endsWith(suffix)) {
 					return text
 				}
@@ -226,7 +216,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 		@JvmStatic
 		fun isEssence(raw: String?): Boolean = raw != null && raw.startsWith("ESSENCE:")
 
-		/** Enchanted-book style rewards end in a level, e.g. {@code feather_falling_6}. */
 		@JvmStatic
 		fun isBook(raw: String?): Boolean {
 			if (raw == null || isEssence(raw) || raw.contains("tier")) {
@@ -236,14 +225,9 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			if (us <= 0 || us >= raw.length - 1 || !raw.substring(us + 1).all { Character.isDigit(it) }) {
 				return false
 			}
-			// Enchant levels stop at 10; keeps items like recombobulator_3000 out.
 			return parseLongOr(raw.substring(us + 1), 0L) <= 10L
 		}
 
-		/**
-		 * SkyBlock rarity for a reward ({@code EPIC}, {@code LEGENDARY}, ...), or {@code ESSENCE},
-		 * {@code ULTIMATE} / {@code BOOK} for enchanted books. Empty when unknown.
-		 */
 		@JvmStatic
 		fun rewardTier(raw: String?): String = rewardTier(raw, { HypixelItemsCache.get(it) }, { NeuRepoCache.get(it) })
 
@@ -276,13 +260,12 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			return neuRarity(neu.apply(itemId))
 		}
 
-		/** Rarity from the last NEU lore line, e.g. "EPIC DYE" → EPIC. */
 		private fun neuRarity(def: JsonObject?): String {
 			if (def == null || !def.has("lore") || !def.get("lore").isJsonArray || def.getAsJsonArray("lore").isEmpty) {
 				return ""
 			}
 			val lore = def.getAsJsonArray("lore")
-			val last = FORMAT_CODE.replace(str(lore.get(lore.size() - 1)), "").trim().uppercase(Locale.ROOT)
+			val last = TextStrip.plain(str(lore.get(lore.size() - 1))).trim().uppercase(Locale.ROOT)
 			var rarity = ""
 			for (r in RARITIES) {
 				val spaced = r.replace('_', ' ')
@@ -293,7 +276,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			return rarity
 		}
 
-		/** SkyBlock item id for a Croesus reward id: {@code necron_dye} → {@code DYE_NECRON}. */
 		internal fun itemIdFor(id: String): String {
 			REWARD_ITEM_IDS[id]?.let { return it }
 			if (id.endsWith("_dye") && id.length > 4) {
@@ -306,14 +288,14 @@ data class DungeonChestHistory(val runs: List<Run>) {
 			val itemId = itemIdFor(id)
 			val def = hypixel.apply(itemId)
 			if (def != null && def.has("name") && def.get("name").isJsonPrimitive) {
-				val name = FORMAT_CODE.replace(def.get("name").asString, "").trim()
+				val name = TextStrip.plain(def.get("name").asString).trim()
 				if (name.isNotBlank()) {
 					return name
 				}
 			}
 			val neuDef = neu.apply(itemId)
 			if (neuDef != null && neuDef.has("displayname") && neuDef.get("displayname").isJsonPrimitive) {
-				val name = FORMAT_CODE.replace(neuDef.get("displayname").asString, "").trim()
+				val name = TextStrip.plain(neuDef.get("displayname").asString).trim()
 				if (name.isNotBlank()) {
 					return name
 				}

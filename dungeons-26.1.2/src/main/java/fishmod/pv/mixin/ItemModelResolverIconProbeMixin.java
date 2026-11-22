@@ -24,11 +24,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Captures the model id actually used by {@link ItemModelResolver#appendItemLayers}
- * (after remapper mixins) so Auto icon mode can detect {@link MissingItemModel}
- * without bypassing remappers via raw {@code ModelManager.getItemModel(hypixelId)}.
- */
 @Mixin(ItemModelResolver.class)
 public abstract class ItemModelResolverIconProbeMixin {
 	@Inject(

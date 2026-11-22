@@ -11,7 +11,6 @@ import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.mining.MiningSettings as S
 
-// The Mining tab in /fm
 object MiningMenu {
 
     fun column(): Column {
@@ -109,6 +108,28 @@ object MiningMenu {
         shaft.sub.add(SliderIntSetting("Title Time (ms)", "", S::class.java, "miningShaftTitleMs", 500, 8000, 100))
         col.features.add(shaft)
 
+        col.features.add(Feature("Fallen Star Alert", S::class.java, "miningFallenStar"))
+        col.features.add(Feature("Mineshaft Timer", S::class.java, "miningShaftTimer"))
+
+        val md = Feature("Metal Detector Solver", S::class.java, "miningMetalDetector")
+        md.sub.add(ColorPickerSetting("Color", "", S::class.java, "miningMetalDetectorColor"))
+        col.features.add(md)
+        col.features.add(Feature("Mute High Heat", S::class.java, "miningMuteHeat"))
+        col.features.add(Feature("Gemstone Desync Fix", S::class.java, "miningGemDesyncFix"))
+        val ghost = Feature("Ghost Counter", fishmod.features.slayer.BossToolsSettings::class.java, "ghostCounter")
+        ghost.sub.add(ButtonSetting("Reset Counts", "", "Reset") { GhostCounter.reset() })
+        col.features.add(ghost)
+
+        val route = Feature("Ordered Waypoints", S::class.java, "route")
+        route.sub.add(ButtonSetting("Add Point Here", "Adds the block under you", "Add") { OrderedWaypoints.addHere() })
+        route.sub.add(ButtonSetting("Remove Last Point", "", "Remove") { OrderedWaypoints.removeLast() })
+        route.sub.add(ButtonSetting("Restart Route", "", "Restart") { OrderedWaypoints.index = 0 })
+        route.sub.add(ButtonSetting("Clear Route", "", "Clear") { OrderedWaypoints.clear() })
+        route.sub.add(SliderIntSetting("Reach Radius", "", S::class.java, "routeRadius", 1, 10))
+        route.sub.add(ToggleSetting("Show Next Point", "", S::class.java, "routeShowNext"))
+        route.sub.add(ColorPickerSetting("Color", "", S::class.java, "routeColor"))
+        col.features.add(route)
+
         return col
     }
 
@@ -122,6 +143,14 @@ object MiningMenu {
         "Commissions" -> "Commission HUD, completed title and menu highlight"
         "Powder Chest Overlay" -> "Boxes and lines to Crystal Hollows treasure chests"
         "Corpse Announcer" -> "Party chat once per corpse you see in a mineshaft"
+        "Mineshaft Timer" -> "HUD with time spent in the current mineshaft"
+        "Ordered Waypoints" -> "Your own route of points, walked in order (works anywhere)"
+        "Metal Detector Solver" -> "Mines of Divan: stand still with the detector to narrow down the treasure spot"
+        "Ghost Counter" -> "The Mist HUD: ghost kills (needs Bestiary tab widget), kills/h, sorrows, bags of cash, MF drops"
+        "Mute High Heat" -> "Crystal Hollows: mute the panting sound at 90+ heat"
+        "Gemstone Desync Fix" -> "Lone gemstone panes keep their full shape so mining them doesn't desync (restart world to apply)"
+        "Honeyhive Reminder" -> "Torrhus Canyon: chat reminder when honeyhives can be looted again"
+        "Fallen Star Alert" -> "Title with the location when a Fallen Star crashes"
         "Mineshaft Announce" -> "Title (and party message) with shaft type and corpses"
         else -> null
     }

@@ -170,7 +170,6 @@ object NetworthCalculator {
         return num(member.get("coin_purse")) ?: 0.0
     }
 
-    /** Coop `banking.balance`, falling back to personal `profile.bank_account`. */
     @JvmStatic
     @JvmOverloads
     fun bank(profileRoot: JsonObject?, member: JsonObject? = null): Double {

@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.CustomCrosshair;
+import fishmod.features.cosmetics.CustomCrosshair;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;

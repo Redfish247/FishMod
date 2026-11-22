@@ -18,7 +18,6 @@ import fishmod.pv.gui.nav.PvSubTab
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Mining: Overview (Garden-style two panels) + HOTM (powders | tree | forge). */
 class MiningPage {
 	private var snapshot: MiningSnapshot = MiningSnapshot.empty()
 	private var lastSub: PvSubTab? = null

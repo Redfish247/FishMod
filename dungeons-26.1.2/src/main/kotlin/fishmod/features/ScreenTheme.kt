@@ -6,12 +6,44 @@ import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.debug.FishDiag
 
 object ScreenTheme {
-    // follows the config accent once FishModScreen has refreshed its theme
-    var ACCENT = 0xFF24B6B0.toInt()
-    var ACCENT_HOVER = 0xFF3AD8D1.toInt()
-    val CARD_BG = 0xFF14181D.toInt()
-    val TEXT_COLOR = 0xFFEDF1F5.toInt()
-    val SUBTEXT_COLOR = 0xFF8A96A3.toInt()
+    var ACCENT = 0xFFD6D6D6.toInt()
+    var ACCENT_HOVER = 0xFFFFFFFF.toInt()
+    val CARD_BG = 0xFF171717.toInt()
+    // Text follows the window background: dark text on light backgrounds, light text on dark ones
+    private var lbC = 0; private var lbV = false
+    fun lightBg(): Boolean { val c = windowBg(); if (c != lbC) { lbC = c; lbV = isLight(c) }; return lbV }
+    // Relative luminance of a colour composited over the dimmed (dark) world behind the screen
+    fun luma(c: Int): Float {
+        fun ch(v: Int): Float { val s = v / 255f; return if (s <= 0.03928f) s / 12.92f else Math.pow(((s + 0.055f) / 1.055f).toDouble(), 2.4).toFloat() }
+        val a = (c ushr 24) / 255f
+        val l = 0.2126f * ch((c shr 16) and 0xFF) + 0.7152f * ch((c shr 8) and 0xFF) + 0.0722f * ch(c and 0xFF)
+        return l * a + 0.02f * (1f - a)
+    }
+    // Black text beats white when contrast vs black is higher (luminance above ~0.18)
+    fun isLight(c: Int): Boolean = luma(c) > 0.18f
+    // text on an accent fill, judged on the accent as it shows over the window
+    fun onAccent(): Int = if (isLight(over(ACCENT, windowBg() or 0xFF000000.toInt()))) 0xFF141414.toInt() else 0xFFEDEDED.toInt()
+    fun textOn(bg: Int): Int = if (isLight(bg)) 0xFF141414.toInt() else 0xFFF2F2F2.toInt()
+    fun subtextOn(bg: Int): Int = if (isLight(bg)) 0xFF4A4A4A.toInt() else 0xFFA8A8A8.toInt()
+    // Source-over blend of fg on bg (opaque result alpha kept from bg)
+    fun over(fg: Int, bg: Int): Int {
+        val a = (fg ushr 24) / 255f
+        fun m(s: Int) = Math.round(((fg shr s) and 0xFF) * a + ((bg shr s) and 0xFF) * (1f - a))
+        return (Math.max(fg ushr 24, bg ushr 24) shl 24) or (m(16) shl 16) or (m(8) shl 8) or m(0)
+    }
+    val TEXT_COLOR: Int get() = if (lightBg()) 0xFF141414.toInt() else 0xFFEDEDED.toInt()
+    val SUBTEXT_COLOR: Int get() = if (lightBg()) 0xFF5A5A5A.toInt() else 0xFF949494.toInt()
+    // white-ish overlay on dark, black-ish on light
+    fun ink(alpha: Int): Int = (alpha shl 24) or (if (lightBg()) 0x000000 else 0xFFFFFF)
+    // Accent used as TEXT: falls back to the normal text colour when the accent is too close to the window background to read
+    fun accentFg(): Int {
+        val a = ACCENT or 0xFF000000.toInt()
+        val l1 = luma(a); val l2 = luma(windowBg() or 0xFF000000.toInt())
+        val ratio = (Math.max(l1, l2) + 0.05f) / (Math.min(l1, l2) + 0.05f)
+        return if (ratio >= 3f) a else TEXT_COLOR
+    }
+    // Opaque panel/field fill: the window background lifted (dark) or dimmed (light) by `level`, so text colours always have the right contrast
+    fun surface(level: Int): Int = over(ink(level), windowBg() or 0xFF000000.toInt())
     val DANGER = 0xFFE05A5A.toInt()
     val DANGER_HOVER = 0xFFEE7A7A.toInt()
 
@@ -57,9 +89,30 @@ object ScreenTheme {
         roundedRect(ctx, x, y, w, h, r, fillColor)
     }
 
+    // Window background chosen in /fm UI Customization (preset + alpha), shared by every FishMod screen
+    fun windowBg(): Int {
+        val s = fishmod.utils.config.values.FishSettings
+        val rgb = when (s.fmBgPreset) {
+            "Charcoal" -> 0x2B2B2B
+            "Obsidian" -> 0x0B0B0D
+            "Moss" -> 0x24311F
+            "Wine" -> 0x3A1C24
+            "Deep Sea" -> 0x13262E
+            "Custom" -> s.fmBgCustomColor and 0xFFFFFF
+            else -> 0x1E1E1E
+        }
+        // below ~20% the window is unreadable over the world
+        return (Math.round(s.fmBgAlpha.coerceIn(20, 100) * 2.55f) shl 24) or rgb
+    }
+    // Dark opaque panel fills follow the chosen window background
+    private fun themed(fill: Int): Int {
+        val a = fill ushr 24; val r = (fill shr 16) and 0xFF; val g = (fill shr 8) and 0xFF; val b = fill and 0xFF
+        return if (a >= 0xC0 && r < 0x30 && g < 0x30 && b < 0x30 && Math.abs(r - g) < 8 && Math.abs(g - b) < 8) windowBg() else fill
+    }
+
     fun panel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
         roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, border)
-        roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
+        roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), themed(fill))
     }
 
     private const val NVG_BASE_TEXT_SIZE = 9.5f
@@ -84,7 +137,7 @@ object ScreenTheme {
 
     fun nPanel(x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
         nRoundedRect(x1, y1, x2 - x1, y2 - y1, r, border)
-        nRoundedRect(x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
+        nRoundedRect(x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), themed(fill))
     }
 
     fun nTextField(field: net.minecraft.client.gui.components.EditBox, focused: Boolean, x: Int, y: Int, w: Int, h: Int, textSize: Float = 7f) {
@@ -168,7 +221,6 @@ object ScreenTheme {
     private var tooltipWidthSize = -1f
     private var tooltipTextW = 0f
 
-    // Bold stamps each glyph one device pixel wider; paintScale is the scale the recorder is replayed at.
     private fun runWidth(r: Run, size: Float, paintScale: Float): Float {
         val w = UiRecorder.textWidth(r.text, size)
         if (!r.bold) return w
@@ -205,7 +257,7 @@ object ScreenTheme {
         tx = tx.coerceAtLeast(4f)
         val ty = (my - 12f * u).coerceAtMost(screenH - h - 4f).coerceAtLeast(4f)
         UiRecorder.dropShadow(tx, ty, w, h, 5f * u, 6f * u, 0x66000000)
-        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, 0xFF101318.toInt(), FIELD_BORDER_DEFAULT)
+        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, 0xFF131313.toInt(), FIELD_BORDER_DEFAULT)
         var ly = ty + pad
         for ((i, rs) in runs.withIndex()) {
             var px = tx + pad
@@ -217,6 +269,6 @@ object ScreenTheme {
         }
     }
 
-    private val FIELD_BG_DEFAULT = 0xFF1A1E26.toInt()
-    private val FIELD_BORDER_DEFAULT = 0xFF2E333D.toInt()
+    private val FIELD_BG_DEFAULT = 0xFF1E1E1E.toInt()
+    private val FIELD_BORDER_DEFAULT = 0xFF333333.toInt()
 }

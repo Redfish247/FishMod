@@ -4,9 +4,9 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import fishmod.features.item.ItemCustomizationStore
-import fishmod.features.item.ItemCustomizationStore.AnimatedDye
-import fishmod.features.item.ItemCustomizationStore.ArmorTrimId
+import fishmod.features.hud.ItemCustomizationStore
+import fishmod.features.hud.ItemCustomizationStore.AnimatedDye
+import fishmod.features.hud.ItemCustomizationStore.ArmorTrimId
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemTools
@@ -21,7 +21,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.component.CustomData
 import java.util.concurrent.ConcurrentHashMap
 
-/** Shares your item customs (keyed by vanilla item type, since Hypixel hides other players' item uuids) and paints other players' on their worn/held items. */
 object RemoteItems {
 
     private class Custom(val name: String?, val model: String?, val dye: Int?, val animated: AnimatedDye?, val trim: ArmorTrimId?)
@@ -32,12 +31,14 @@ object RemoteItems {
     private const val CHECK_TICKS = 100
     private val GSON = Gson()
 
-    private var lastUploaded: String? = null
+    @Volatile private var lastUploaded: String? = null
+    @Volatile private var retryAt = 0L
+    @Volatile private var failStreak = 0
     private var tick = 0
 
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> lastUploaded = null }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> lastUploaded = null; failStreak = 0; retryAt = 0L }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             try {
                 if (++tick % CHECK_TICKS == 0) uploadIfChanged(mc)
@@ -90,11 +91,17 @@ object RemoteItems {
 
     private fun uploadIfChanged(mc: Minecraft) {
         if (!FishSettings.remoteItemsEnabled || mc.player == null) return
+        // A failed upload backs off (10 s doubling to ~2.5 min) so a worker outage isn't hit every 5 s
+        if (System.currentTimeMillis() < retryAt) return
         val payload = buildOwnPayload(mc)
         if (payload == lastUploaded) return
         if (lastUploaded == null && payload == "[]") { lastUploaded = payload; return }
         lastUploaded = payload
-        HypixelApi.uploadItems(mc.player!!.uuid.toString().replace("-", ""), payload)
+        HypixelApi.uploadItems(mc.player!!.uuid.toString().replace("-", ""), payload) {
+            if (lastUploaded == payload) lastUploaded = null
+            failStreak = minOf(failStreak + 1, 5)
+            retryAt = System.currentTimeMillis() + (5_000L shl failStreak)
+        }
         RemoteSync.forceSync()
     }
 
@@ -107,6 +114,7 @@ object RemoteItems {
             val payload = payloads[u]
             val parsed = if (payload.isNullOrEmpty()) emptyMap() else parse(payload)
             if (parsed.isEmpty()) byPlayer.remove(u) else byPlayer[u] = parsed
+            ItemCustomizationStore.clearRemotePlayer("fmr:$u:")
             for ((v, c) in parsed) ItemCustomizationStore.setRemote(synthetic(u, v), c.name, c.model, c.dye, c.animated, c.trim)
         }
     }

@@ -13,10 +13,6 @@ import java.util.Locale
 import java.util.regex.Pattern
 import net.minecraft.nbt.CompoundTag
 
-/**
- * Farming tool fortune worked out from ExtraAttributes. Toolkit tools have no lore, so this is the only way to value
- * them, and held tools use it too so both compare the same way. Values follow EliteFarmers' FarmingWeight tables.
- */
 object FarmingToolFortune {
 	enum class Type { HOE, AXE }
 
@@ -55,7 +51,6 @@ object FarmingToolFortune {
 		"Wild Rose" to "turbo_rose"
 	)
 
-	/** Null when the id isn't a crop-specific farming tool. */
 	@JvmStatic
 	fun info(id: String?): Info? {
 		if (id == null) {
@@ -93,7 +88,6 @@ object FarmingToolFortune {
 		return if (m.find()) m.group(1).toInt().coerceIn(1, 3) else 1
 	}
 
-	/** Mk. I tools start Uncommon, Mk. II Rare, Mk. III Epic; a recombobulator adds one. */
 	@JvmStatic
 	fun rarity(info: Info, attrs: CompoundTag?, lore: List<String>?): String {
 		rarityFromLore(lore)?.let { return it }

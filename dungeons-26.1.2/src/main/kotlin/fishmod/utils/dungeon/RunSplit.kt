@@ -159,7 +159,20 @@ class RunSplit(
 
     fun getTickTime(): Double = tick * FishConstants.TICK_DURATION
 
+    private var frozenReal: Double = -1.0
+
+    /** HUD editor example state: a frozen time, either still running (live) or finished. */
+    fun setExample(seconds: Double, live: Boolean, pace: Int = 0) {
+        frozenReal = seconds
+        tick = (seconds * 20).toInt()
+        started = live
+        ended = !live
+        paceColor = pace
+        cachedAt = 0L
+    }
+
     fun getRealTime(): Double {
+        if (frozenReal >= 0.0) return frozenReal
         if (startTime == 0L) return 0.0
         return if (ended) {
             (endTime - startTime) / 1000.0

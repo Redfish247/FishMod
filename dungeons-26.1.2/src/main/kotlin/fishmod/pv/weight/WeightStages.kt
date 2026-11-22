@@ -31,12 +31,10 @@ object WeightStages {
 		else -> "Bronze"
 	}
 
-	/** ARGB colour for a Senither stage or Lily rank label. */
 	@JvmStatic
 	fun colorFor(stageOrRank: String?): Int {
 		if (stageOrRank.isNullOrBlank()) return 0xFF9A9AAC.toInt()
 		return when (stageOrRank.lowercase(Locale.ROOT)) {
-			// Lily - named after the colour/metal
 			"bronze" -> 0xFFCD7F32
 			"silver" -> 0xFFC0C0C0
 			"gold" -> 0xFFFFAA00
@@ -44,7 +42,6 @@ object WeightStages {
 			"diamond" -> 0xFF55FFFF
 			"grandmaster" -> 0xFFFF55FF
 			"prestigious" -> 0xFFFF5555
-			// Senither - progression ladder (grey → green → blue → purple → gold → red)
 			"early game" -> 0xFFAAAAAA
 			"mid game" -> 0xFF55FF55
 			"late game" -> 0xFF5555FF

@@ -56,7 +56,7 @@ object SecretClicked {
             InteractionResult.PASS
         })
 
-        registerPacket(ClientboundTakeItemEntityPacket::class.java, ClientboundSoundPacket::class.java) { packet ->
+        registerPacket(ClientboundTakeItemEntityPacket::class.java, ClientboundSoundPacket::class.java, gate = { FishSettings.secretClickedEnabled && SkyblockLocation.inDungeon() }) { packet ->
             try {
                 when (packet) {
                     is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
@@ -194,7 +194,6 @@ object SecretClicked {
         val secret = block is ChestBlock || block is LeverBlock ||
             (block is AbstractSkullBlock && SecretDrops.isSecretSkull(level, pos))
         if (!secret) {
-            // Unknown skull owner id: confirm via the action-bar secret count instead
             if (block is AbstractSkullBlock) { pendingSkull = pos.immutable(); pendingSkullAt = System.currentTimeMillis() }
             return
         }

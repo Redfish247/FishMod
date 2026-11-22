@@ -104,7 +104,6 @@ public class HypixelApi {
 
     private static final CachingHttp HTTP = new CachingHttp();
 
-    // Profile/networth GETs are shared + cached client-side so every feature asking about the same player reuses one proxy call.
     private static final class CachingHttp {
         private static final long OK_TTL_MS = 5 * 60 * 1000L;
         private static final long FAIL_TTL_MS = 60 * 1000L;
@@ -124,7 +123,6 @@ public class HypixelApi {
             return u.startsWith(PROXY_URL + "/skyblock/") || u.startsWith(PROXY_URL + "/networth");
         }
 
-        // Past the server's HTTP/2 stream limit requests fail with "too many concurrent streams", so queue extras.
         private static final int MAX_CONCURRENT = 16;
         private int active = 0;
         private final java.util.ArrayDeque<Runnable> waiting = new java.util.ArrayDeque<>();
@@ -238,7 +236,6 @@ public class HypixelApi {
         scheduleUuidSave();
     }
 
-    // Lock-free fast path: the class lock is also held by saveUuidCacheNow's file write.
     private static void ensureUuidCacheLoaded() {
         if (uuidCacheLoaded) return;
         loadUuidCache();
@@ -265,7 +262,7 @@ public class HypixelApi {
                         if (uuid == null || uuid.isEmpty()) continue;
                         uuidByName.put(e.getKey(), uuid);
                         uuidCachedAt.put(e.getKey(), ts);
-                    } catch (Exception ignored) { /* skip one bad cache entry */ }
+                    } catch (Exception ignored) {   }
                 }
             }
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.2", "ensureUuidCacheLoaded failed", ignored);}
@@ -395,16 +392,24 @@ public class HypixelApi {
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.7", "decodeRawCompound failed", e); return null; }
     }
 
+    // Walks nested keys; null when any step is missing or JSON null (the API sends null toolkits)
+    private static JsonObject objAt(JsonObject o, String... keys) {
+        JsonElement e = o;
+        for (String k : keys) {
+            if (e == null || !e.isJsonObject()) return null;
+            e = e.getAsJsonObject().get(k);
+        }
+        return e != null && e.isJsonObject() ? e.getAsJsonObject() : null;
+    }
+
     private static double toolkitsValueNw(JsonObject member, Map<String, Double> prices) {
         double total = 0;
         JsonObject[] kits = new JsonObject[2];
         try {
-            if (member.has("garden_player_data") && member.getAsJsonObject("garden_player_data").has("farming_toolkit"))
-                kits[0] = member.getAsJsonObject("garden_player_data").getAsJsonObject("farming_toolkit");
+            kits[0] = objAt(member, "garden_player_data", "farming_toolkit");
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.8", "toolkitsValueNw failed", ignored);}
         try {
-            if (member.has("foraging") && member.getAsJsonObject("foraging").has("hunting_toolkit"))
-                kits[1] = member.getAsJsonObject("foraging").getAsJsonObject("hunting_toolkit");
+            kits[1] = objAt(member, "foraging", "hunting_toolkit");
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.9", "toolkitsValueNw failed", ignored);}
         for (JsonObject kit : kits) {
             if (kit == null) continue;
@@ -636,9 +641,18 @@ public class HypixelApi {
         return d;
     }
 
-    public static void getByNameSilent(String ign, DungeonDataCallback rawCallback) {
-        // deliver on the client thread, callers touch game state
-        DungeonDataCallback callback = d -> Minecraft.getInstance().execute(() -> rawCallback.onData(d));
+    public static boolean isServerError(DungeonData d) {
+        return d != null && d.failed && d.failReason != null && d.failReason.startsWith("proxy HTTP 5");
+    }
+
+    public static void getByNameSilent(String ign, DungeonDataCallback rawCallback) { getByNameSilent(ign, rawCallback, true); }
+
+    private static void getByNameSilent(String ign, DungeonDataCallback rawCallback, boolean retry) {
+        // proxy 5xx is transient: retry once after 2s before reporting failure
+        DungeonDataCallback callback = d -> {
+            if (retry && isServerError(d)) CompletableFuture.delayedExecutor(2, java.util.concurrent.TimeUnit.SECONDS).execute(() -> getByNameSilent(ign, rawCallback, false));
+            else Minecraft.getInstance().execute(() -> rawCallback.onData(d));
+        };
         String cachedUuid = getCachedUuid(ign);
         if (cachedUuid != null) { fetchProfilesSilent(cachedUuid, callback); return; }
         resolveUuid(ign, 0, uuid -> {
@@ -679,7 +693,6 @@ public class HypixelApi {
             .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.26", "fetchProfilesSilent request future failed", e); callback.onData(failedData()); return null; });
     }
 
-    // Raw selected-profile member JSON for uuid (null on any failure), shared cache with other lookups
     public static void fetchSelectedMember(String uuidStr, java.util.function.Consumer<JsonObject> cb) {
         HttpRequest req;
         try {
@@ -705,7 +718,6 @@ public class HypixelApi {
             .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach3", "fetchSelectedMember request failed", e); cb.accept(null); return null; });
     }
 
-    // Selected profile object (with profile_id and members) for uuid; null on any failure
     public static void fetchSelectedProfile(String uuidStr, java.util.function.Consumer<JsonObject> cb) {
         HttpRequest req;
         try {
@@ -731,7 +743,6 @@ public class HypixelApi {
             .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach6", "fetchSelectedProfile request failed", e); cb.accept(null); return null; });
     }
 
-    // GET json from the proxy (path starting with /) or a public absolute url; null on any failure
     public static void fetchJson(String urlOrPath, java.util.function.Consumer<JsonObject> cb) {
         HttpRequest req;
         try {
@@ -1727,7 +1738,7 @@ public class HypixelApi {
                 }
 
                 int maxLevel = fishmod.utils.networth.NwConstants.PET_SPECIAL_MAX.getOrDefault(type, 100);
-                int level = Math.min(maxLevel, fishmod.features.OverflowPetLevels.calcLevel(exp, petRarity(effTier)));
+                int level = Math.min(maxLevel, fishmod.features.hud.OverflowPetLevels.calcLevel(exp, petRarity(effTier)));
                 String basePetId = effTier + "_" + type;
                 String petId = skin != null ? basePetId + "_SKINNED_" + skin : basePetId;
 
@@ -1856,11 +1867,10 @@ public class HypixelApi {
         }
     }
 
-    private static fishmod.features.OverflowPetLevels.Rarity petRarity(String tier) {
-        // SPECIAL/VERY_SPECIAL/DIVINE pets level on the mythic curve
-        if ("SPECIAL".equals(tier) || "VERY_SPECIAL".equals(tier) || "DIVINE".equals(tier)) return fishmod.features.OverflowPetLevels.Rarity.MYTHIC;
-        try { return fishmod.features.OverflowPetLevels.Rarity.valueOf(tier); }
-        catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.93", "petRarity failed", e); return fishmod.features.OverflowPetLevels.Rarity.LEGENDARY; }
+    private static fishmod.features.hud.OverflowPetLevels.Rarity petRarity(String tier) {
+        if ("SPECIAL".equals(tier) || "VERY_SPECIAL".equals(tier) || "DIVINE".equals(tier)) return fishmod.features.hud.OverflowPetLevels.Rarity.MYTHIC;
+        try { return fishmod.features.hud.OverflowPetLevels.Rarity.valueOf(tier); }
+        catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.93", "petRarity failed", e); return fishmod.features.hud.OverflowPetLevels.Rarity.LEGENDARY; }
     }
 
     private static String resolveUuidBlocking(String ign) {
@@ -2086,7 +2096,7 @@ public class HypixelApi {
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.105", "fetchNicks failed", e); cb.accept(java.util.Map.of()); }
     }
 
-    public static void uploadItems(String uuidNoDashes, String itemsJson) {
+    public static void uploadItems(String uuidNoDashes, String itemsJson, Runnable onRetry) {
         try {
             JsonObject o = new JsonObject();
             o.addProperty("uuid", uuidNoDashes);
@@ -2095,7 +2105,9 @@ public class HypixelApi {
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
                 .build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).whenComplete((r, t) -> {
+                if (t != null || r.statusCode() >= 500 || r.statusCode() == 429) onRetry.run();
+            });
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.110", "uploadItems failed", ignored);}
     }
 
@@ -2125,7 +2137,6 @@ public class HypixelApi {
                 try {
                     String body = r.body();
                     com.google.gson.JsonElement el = body == null || body.isBlank() ? null : JsonParser.parseString(body);
-                    // Proxy can answer "null" or an error page; skip quietly and retry next sync.
                     if (el == null || !el.isJsonObject()) { cb.onData(version, null, null, null, null, null, null); return; }
                     JsonObject root = el.getAsJsonObject();
                     if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null, null, null, null, null); return; }
@@ -2155,7 +2166,6 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
             HttpRequest req = proxyGet("/badge-defs", 10);
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                 java.util.List<fishmod.cosmetic.badge.BadgeDef> out = new java.util.ArrayList<>();
-                // Proxy outage (non-2xx): keep last good defs, no report.
                 if (r.statusCode() < 200 || r.statusCode() >= 300) { cb.accept(out); return; }
                 try {
                     JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
@@ -2226,8 +2236,12 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
         }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
             JsonObject member = null;
-            try {
-                JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+            String body = r.body();
+            // Proxy/Cloudflare error pages aren't JSON; skip quietly (fishmod.dev #623).
+            if (body == null || !body.stripLeading().startsWith("{")) {
+                fishmod.utils.debug.FishDebug.LOGGER.debug("[HypixelApi] getLocalMember non-JSON HTTP {}", r.statusCode());
+            } else try {
+                JsonObject root = JsonParser.parseString(body).getAsJsonObject();
                 if (root.has("success") && root.get("success").getAsBoolean())
                     member = findSelectedMember(root, uuid);
             } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.115", "getLocalMember failed", ignored);}
@@ -2461,14 +2475,14 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                             String type = active.get("type").getAsString();
                             String tier = active.has("tier") ? active.get("tier").getAsString() : "LEGENDARY";
                             double exp  = active.has("exp") ? active.get("exp").getAsDouble() : 0;
-                            fishmod.features.OverflowPetLevels.Rarity rar = petRarity(tier);
+                            fishmod.features.hud.OverflowPetLevels.Rarity rar = petRarity(tier);
                             int maxLevel = "GOLDEN_DRAGON".equals(type) ? 200 : 100;
                             double remaining = exp;
                             int level = 1;
-                            double cost = fishmod.features.OverflowPetLevels.getXpForLevel(0, rar);
+                            double cost = fishmod.features.hud.OverflowPetLevels.getXpForLevel(0, rar);
                             while (remaining >= cost && level < 1000) {
                                 remaining -= cost; level++;
-                                cost = fishmod.features.OverflowPetLevels.getXpForLevel(level - 1, rar);
+                                cost = fishmod.features.hud.OverflowPetLevels.getXpForLevel(level - 1, rar);
                             }
                             info.name = petTypeToName(type);
                             info.tier = tier;
@@ -2844,7 +2858,6 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
         }
     }
 
-    // Selected-profile member JSON for any player (null on failure), callback off-thread
     public static void getMemberByName(String ign, java.util.function.Consumer<JsonObject> cb) {
         CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);

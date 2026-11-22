@@ -19,7 +19,6 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 
-// Global achievement leaderboard: totals submit, fetch and the in-world hologram board
 object AchLeaderboard {
 
     class Entry(val name: String, val points: Int, val secrets: Int)
@@ -33,6 +32,7 @@ object AchLeaderboard {
     private const val RANGE = 48.0
     private const val LINE_H = 0.25
     private val SECRET_TOTAL: Int by lazy { AchRegistry.ALL.count { it.section == "Secret Achievements" } }
+    private val MAX_POINTS: Int by lazy { AchRegistry.ALL.sumOf { it.points } }
 
     @Volatile var points: List<Entry> = emptyList(); private set
     @Volatile var secrets: List<Entry> = emptyList(); private set
@@ -52,18 +52,15 @@ object AchLeaderboard {
     @Volatile var total = 0; private set
     private var registered = false
 
-    // Secret achievements unlocked (the Secret Achievements section, )
     fun secretCount(): Int = AchRegistry.ALL.count { it.section == "Secret Achievements" && AchEngine.unlocked(it) }
 
     private fun key(): String = "${AchEngine.points()}/${secretCount()}/${AchStore.data.unlocked.size}"
 
-    // Called by the board renderer and the achievements screen while they are visible
     fun want() { wantedAt = System.currentTimeMillis() }
 
-    // The achievements screen needs the whole list, not just the top 10
     fun wantFull() { fullAt = System.currentTimeMillis(); wantedAt = fullAt }
 
-    private fun limit(): Int = if (System.currentTimeMillis() - fullAt < 3000) 100 else 10
+    private fun limit(): Int = if (System.currentTimeMillis() - fullAt < 3000) 200 else 10
 
     fun init() {
         if (registered) return
@@ -103,13 +100,15 @@ object AchLeaderboard {
             addProperty("points", AchEngine.points())
             addProperty("secrets", secretCount())
             addProperty("unlocked", AchStore.data.unlocked.size)
+            // Registry maxima so the worker's clamp follows new achievements (#533)
+            addProperty("maxPoints", MAX_POINTS)
+            addProperty("maxSecrets", SECRET_TOTAL)
         }
         val r = try { req("/submit").header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body.toString())).build() }
         catch (t: Throwable) { submitting = false; return }
         Http.CLIENT.sendAsync(r, HttpResponse.BodyHandlers.ofString()).thenAccept { resp ->
             submitting = false
             val ok = resp.statusCode() == 200
-            // A 429 means the server already holds a recent copy; retry later
             if (ok) { lastSubmittedKey = k; lastFetch = 0L }
             if (manual) mc.execute {
                 FishMsg.send(
@@ -148,7 +147,7 @@ object AchLeaderboard {
     }
 
     private fun parse(o: JsonObject, k: String): List<Entry> = o.getAsJsonArray(k).mapNotNull {
-        runCatching { val e = it.asJsonObject; Entry(e.get("name").asString, e.get("points").asInt, e.get("secrets").asInt) }.getOrNull() // skip bad rows
+        runCatching { val e = it.asJsonObject; Entry(e.get("name").asString, e.get("points").asInt, e.get("secrets").asInt) }.getOrNull()
     }
 
     fun ago(): String {
@@ -161,7 +160,6 @@ object AchLeaderboard {
 
     fun value(e: Entry, secretList: Boolean): String = if (secretList) "${e.secrets}/${SECRET_TOTAL}" else "%,d AP".format(e.points)
 
-    // Own rank line when outside the top 10, else null
     fun meLine(secretList: Boolean): String? {
         val m = me ?: return null
         val rank = if (secretList) m.secretsRank else m.pointsRank
@@ -173,6 +171,7 @@ object AchLeaderboard {
     private fun lines(secretList: Boolean): List<String> {
         val list = (if (secretList) secrets else points).take(10)
         val out = ArrayList<String>()
+        for (e in list) fishmod.cosmetic.RemoteNicks.ensureKnown(e.name)
         for ((i, e) in list.withIndex()) out.add("${medal(i + 1)}#${i + 1} §f${e.name} §e${value(e, secretList)}")
         meLine(secretList)?.let { out.add("§8..."); out.add(it) }
         return out
@@ -209,7 +208,7 @@ object AchLeaderboard {
             var y = 0.8 + (rows + 2) * lh
             FishDraw.renderBoardText(m, Component.literal(title), base, yaw, 0.0, y, (sc * 1.1).toFloat())
             y -= lh * 1.4
-            for (l in ls) { FishDraw.renderBoardText(m, Component.literal(l), base, yaw, 0.0, y, sc.toFloat()); y -= lh }
+            for (l in ls) { FishDraw.renderBoardText(m, fishmod.cosmetic.RemoteNicks.applyResolvedOnly(Component.literal(l)) ?: Component.literal(l), base, yaw, 0.0, y, sc.toFloat()); y -= lh }
             FishDraw.renderBoardText(m, Component.literal(status), base, yaw, 0.0, 0.8, (sc * 0.9).toFloat())
         }
     }

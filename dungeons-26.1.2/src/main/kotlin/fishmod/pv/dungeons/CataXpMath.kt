@@ -21,7 +21,6 @@ object CataXpMath {
 	 */
 	const val SOFT_CAP = 50
 
-	/** Highest level the catacombs XP table supports (includes mastery steps). */
 	@JvmStatic
 	fun maxLevel(): Int {
 		val table = RepoData.catacombsXp()
@@ -29,7 +28,6 @@ object CataXpMath {
 		return table.size()
 	}
 
-	/** Catacombs / class progress using the full XP table (not soft-capped at 50). */
 	@JvmStatic
 	fun progress(xp: Float): Leveling.Progress = Leveling.getLevel(RepoData.catacombsXp(), xp, maxLevel(), false)
 

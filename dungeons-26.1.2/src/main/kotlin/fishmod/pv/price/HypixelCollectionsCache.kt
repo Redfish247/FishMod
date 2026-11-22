@@ -66,8 +66,6 @@ object HypixelCollectionsCache {
 		}
 
 		fun nextTier(amount: Long): Tier? = tiers.firstOrNull { amount < it.amountRequired } ?: tiers.lastOrNull()
-
-		fun currentTier(amount: Long): Tier? = tiers.lastOrNull { amount >= it.amountRequired }
 	}
 
 	@JvmRecord
@@ -115,7 +113,6 @@ object HypixelCollectionsCache {
 		return itemsById[upper] ?: itemsById[upper.replace('-', ':')]
 	}
 
-	/** Wait briefly so profile parse can attach tier tables. */
 	@JvmStatic
 	fun awaitReady(timeoutMs: Long) {
 		if (!isReady()) requestRefresh()

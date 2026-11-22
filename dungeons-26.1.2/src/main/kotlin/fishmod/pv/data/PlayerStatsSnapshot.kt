@@ -9,10 +9,8 @@ package fishmod.pv.data
 
 import java.util.OptionalDouble
 
-/** Computed overview combat/fortune stats from profile + equipped gear lore. */
 class PlayerStatsSnapshot private constructor(
     entries: List<Entry>?,
-    /** Null until full inventories have been parsed. */
     @get:JvmName("farmingFortune") val farmingFortune: FarmingFortuneEstimate?,
 ) {
     class Entry(id: String?, label: String?, value: OptionalDouble?) {

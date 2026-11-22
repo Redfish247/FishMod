@@ -2,8 +2,8 @@ package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import fishmod.features.BossBarFeature;
-import fishmod.features.RenderOptimizer;
+import fishmod.features.dungeon.BossBarFeature;
+import fishmod.features.visuals.RenderOptimizer;
 import net.minecraft.client.gui.components.BossHealthOverlay;
 import net.minecraft.client.gui.components.LerpingBossEvent;
 import net.minecraft.network.chat.Component;

@@ -3,6 +3,7 @@ package fishmod.utils.networth
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import java.net.URI
@@ -19,7 +20,6 @@ object ItemsDb {
     private const val ITEMS_URL = "https://api.hypixel.net/v2/resources/skyblock/items"
     private const val REFRESH_MS = 12L * 60 * 60 * 1000L
     private const val RETRY_MS = 5L * 60 * 1000L
-    private val COLOR = Regex("§.")
     @Volatile private var retryAfter = 0L
 
     private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
@@ -51,6 +51,9 @@ object ItemsDb {
         if (name == null) return null
         return nameToId[name]
     }
+
+    @JvmStatic
+    fun names(): Collection<String> = nameToId.keys
 
     @JvmStatic
     fun npcSellPriceFor(id: String?): Double {
@@ -137,7 +140,8 @@ object ItemsDb {
                     FishDiag.fail("ItemsDb.8", "write items.json cache", ignored)
                 }
             } else {
-                FishDiag.fail("ItemsDb.9", "items API HTTP ${r.statusCode()}")
+                // 403/429/5xx is Hypixel/Cloudflare side: log only, retry after RETRY_MS
+                fishmod.utils.debug.FishDebug.LOGGER.warn("[ItemsDb] items API HTTP {}", r.statusCode())
             }
         } catch (e: Exception) {
             fishmod.utils.debug.FishDebug.LOGGER.warn("[ItemsDb] fetch: {}", e.toString())
@@ -158,7 +162,7 @@ object ItemsDb {
                 val id = o.get("id").asString
                 next[id] = o
                 if (o.has("name") && o.get("name").isJsonPrimitive) {
-                    val name = o.get("name").asString.replace(COLOR, "").trim()
+                    val name = TextStrip.plain(o.get("name").asString).trim()
                     if (name.isNotEmpty()) nextNames[name] = id
                 }
                 if (o.has("npc_sell_price")) {
@@ -176,7 +180,7 @@ object ItemsDb {
             nameToId = nextNames
             npcSellPrice = nextNpc
             fishmod.utils.debug.FishDebug.LOGGER.info("[ItemsDb] indexed {} items ({} names, {} with NPC sell price)", next.size, nextNames.size, nextNpc.size)
-            FishDiag.guard("ItemsDb.14", "apply croesus price mode after items index") { fishmod.features.croesus.CroesusPrices.applyPriceMode() }
+            FishDiag.guard("ItemsDb.14", "apply croesus price mode after items index") { fishmod.features.dungeon.trackers.CroesusPrices.applyPriceMode() }
         }
     }
 }

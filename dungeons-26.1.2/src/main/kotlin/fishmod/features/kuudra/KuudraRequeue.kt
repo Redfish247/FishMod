@@ -7,7 +7,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import fishmod.features.kuudra.KuudraSettings as S
 
-// Same idea as dungeon DungeonRequeue: one /joininstance for the tier you just ran, skipped when the party changed or someone said !dt
 object KuudraRequeue {
 
     private val TIERS = arrayOf("normal", "hot", "burning", "fiery", "infernal")

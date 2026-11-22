@@ -17,7 +17,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** "Socials" footer label and its external profile links popup. */
 class SocialsMenu(
 	private val target: Supplier<SocialLinks.Target?>,
 	private val opener: Consumer<String>
@@ -76,7 +75,6 @@ class SocialsMenu(
 			mx >= labelX && mx < labelX + labelW &&
 			my >= labelY && my < labelY + labelH
 
-	/** True while the open popup (or its label) owns the mouse, so nothing underneath reacts. */
 	fun blocksMouse(mx: Double, my: Double): Boolean =
 		open && (labelContains(mx, my) || layout?.contains(mx, my) == true)
 
@@ -94,7 +92,6 @@ class SocialsMenu(
 		return -1
 	}
 
-	/** Consumes every click while open, so outside clicks only close the popup. */
 	fun mouseClicked(mx: Double, my: Double, button: Int): Boolean {
 		if (labelContains(mx, my)) {
 			if (button == 0) {
@@ -194,7 +191,6 @@ class SocialsMenu(
 		const val EDGE = 2
 		private val SITES = SocialLinks.Site.entries.toTypedArray()
 
-		/** Opens under the label, flips above it when there is no room, and stays inside the visible area. */
 		@JvmStatic
 		fun popupLayout(
 			labelX: Int, labelY: Int, labelH: Int, width: ToIntFunction<String>, lineHeight: Int,

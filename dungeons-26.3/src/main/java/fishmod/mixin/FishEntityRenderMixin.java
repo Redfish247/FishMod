@@ -26,6 +26,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
+import fishmod.cosmetic.NameRewriter;
+import fishmod.cosmetic.NickState;
+import fishmod.cosmetic.prestige.PrestigeLevelColors;
+import net.minecraft.ChatFormatting;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
 @Mixin(EntityRenderer.class)
 public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState> {
@@ -36,20 +42,12 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
         if (fishmod.utils.debug.FishDebug.skipExtract) return;
         try {
-            if (state.nameTag != null && fishmod.utils.debug.FishDebug.INSTANCE.getHoloTrace()) {
-                fishmod.utils.debug.FishDebug.INSTANCE.holoTraceMsg(entity.getType().toShortString(), state.nameTag.getString());
-            }
             if (DungeonSettings.hideBlazeTags && state.nameTag != null && SkyblockLocation.inDungeon()
                     && !(entity instanceof net.minecraft.world.entity.player.Player)) {
                 String nameTagText = state.nameTag.getString();
                 if (nameTagText.contains("Blaze")) {
                     state.nameTag = null;
                 }
-            }
-            // Gate before getPosition: it allocates a Vec3 per named armor stand per frame.
-            if (VisualSettings.nametagsOnTop && entity instanceof net.minecraft.world.entity.decoration.ArmorStand && state.nameTag != null
-                    && fishmod.features.HologramText.take(entity.getPosition(tickProgress), state.nameTagAttachment, state.nameTag)) {
-                state.nameTag = null;
             }
             if (entity instanceof RemotePlayer player && DungeonSettings.roleNameTags && SkyblockLocation.inDungeon()) {
                 if (DungeonRole.isTeammate(player)) {
@@ -70,8 +68,25 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 if (outline != EntityRenderState.NO_OUTLINE) state.outlineColor = outline;
             }
 
+            if (fishmod.features.fishing.FishingWorld.anyOn) {
+                int fishGlow = fishmod.features.fishing.RareMobHighlight.glowColor(entity);
+                if (fishGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = fishGlow;
+            }
+
             int dianaGlow = fishmod.features.diana.RareMobs.glowColor(entity);
             if (dianaGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dianaGlow;
+
+            int miniGlow = fishmod.features.slayer.SlayerMiniHighlight.glowColor(entity);
+            if (miniGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = miniGlow;
+
+            int dgGlow = fishmod.features.dungeon.DungeonExtras.glowColor(entity);
+            if (dgGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dgGlow;
+            int trevorGlow = fishmod.features.extras.TrevorHelper.glowColor(entity);
+            if (trevorGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = trevorGlow;
+            int jerryGlow = fishmod.features.events.JerryHighlight.glowColor(entity);
+            if (jerryGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = jerryGlow;
+            int carnivalGlow = fishmod.features.events.CarnivalShootout.glowColor(entity);
+            if (carnivalGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = carnivalGlow;
 
             if (VisualSettings.hideMobFire) {
                 state.displayFireAnimation = false;
@@ -89,10 +104,9 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
 
             List<Component> statLines = null;
             if (FishSettings.nametagStatsEnabled && state.nameTag != null && entity instanceof Player pl) {
-                // self only: other players cost an API call each
                 if (EntityTools.isClientPlayer(pl)) {
                     String playerName = pl.getName().getString();
-                    statLines = fishmod.features.NametagStats.linesFor(playerName);
+                    statLines = fishmod.features.cosmetics.NametagStats.linesFor(playerName);
                 }
             }
             if (statLines != null && !statLines.isEmpty() && !FishSettings.nametagStatsAbove && state.nameTagAttachment != null) {
@@ -113,7 +127,6 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
         List<Component> lines = ((NametagStatsHolder) state).fishmod$getNametagStats();
         if (lines == null || lines.isEmpty()) return;
         boolean above = FishSettings.nametagStatsAbove;
-        // Vanilla lifts the name one row when a score line sits under it, so go one row higher too.
         int y = above ? baseOffset - (state.scoreText != null ? 20 : 10) : baseOffset + 10;
         try {
             for (Component line : lines) {
@@ -130,15 +143,23 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                                      CallbackInfoReturnable<Boolean> cir) {
         if (fishmod.utils.debug.FishDebug.skipCull) return;
         try {
+            if (fishmod.features.fishing.FishingWorld.anyOn && fishmod.features.fishing.HideHooks.shouldHide(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
             if (fishmod.features.rift.RiftMobs.INSTANCE.shouldHideSlime(entity)) {
                 cir.setReturnValue(false);
                 return;
             }
-            if (fishmod.features.mining.MiningBoxes.hideGhost(entity)) {
+            if (fishmod.features.dungeon.DungeonExtras.hideSkull(entity)) {
                 cir.setReturnValue(false);
                 return;
             }
-            if (fishmod.features.dungeon.puzzles.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
+            if (fishmod.features.visuals.MiningBoxes.hideGhost(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
+            if (fishmod.features.dungeon.solvers.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
                 cir.setReturnValue(false);
                 return;
             }
@@ -165,9 +186,9 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 return;
             }
 
-            if (fishmod.features.RenderOptimizer.hideDeathAnimation()) {
+            if (fishmod.features.visuals.RenderOptimizer.hideDeathAnimation()) {
                 if (entity instanceof net.minecraft.world.entity.decoration.ArmorStand) {
-                    if (fishmod.features.RenderOptimizer.hideDyingArmorStands()
+                    if (fishmod.features.visuals.RenderOptimizer.hideDyingArmorStands()
                             && entity.getVehicle() instanceof LivingEntity mount && mount.deathTime > 0) {
                         cir.setReturnValue(false);
                     }
@@ -178,5 +199,55 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("FishEntityRenderMixin.3", "entity cull check failed entity=" + entity.getType(), t);
         }
+    }
+
+    // Pet tags have no ❤; mob tags ("[Lv5] Zombie 100/100❤") never match
+    @org.spongepowered.asm.mixin.Unique
+    private static final java.util.regex.Pattern fishmod$PET_LEVEL = java.util.regex.Pattern.compile("^\\s*\\[(?:Lvl? ?)?\\d+]\\s*(?=[^❤]+$)");
+
+    @org.spongepowered.asm.mixin.Unique
+    private static final java.util.HashMap<Integer, Component[]> fishmod$PET_CACHE = new java.util.HashMap<>();
+
+    @ModifyReturnValue(method = "getNameTag(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/network/chat/Component;", at = @At("RETURN"))
+    private Component fishmod$cosmeticNameTag(Component original, Entity entity) {
+        if (original == null || fishmod.utils.debug.FishDebug.skipName) return original;
+        if (entity instanceof ArmorStand) {
+            Component dmg = fishmod.features.visuals.RenderOptimizer.damageNameTag(entity, original);
+            if (dmg != original) return dmg;
+        }
+        if (FishSettings.petNametagHideLevel && entity instanceof ArmorStand) {
+            // Same Component instance until the tag changes, so cache the rewrite per stand
+            Component[] hit = fishmod$PET_CACHE.get(entity.getId());
+            if (hit != null && hit[0] == original) return hit[1];
+            String plain = ChatFormatting.stripFormatting(original.getString());
+            java.util.regex.Matcher m = fishmod$PET_LEVEL.matcher(plain);
+            Component out = m.find() ? NameRewriter.dropVisiblePrefix(original, m.end()) : original;
+            if (fishmod$PET_CACHE.size() > 2048) fishmod$PET_CACHE.clear();
+            fishmod$PET_CACHE.put(entity.getId(), new Component[]{original, out});
+            return out;
+        }
+        boolean player = entity instanceof Player;
+        boolean prestige = player && FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags;
+        boolean badges = player && FishSettings.badgesEnabled && FishSettings.badgesOnNametags;
+        if (!NickState.isActive() && fishmod.cosmetic.RemoteNicks.isEmpty() && !prestige && !badges) return original;
+        try {
+            return fishmod.cosmetic.NameDecorCache.NAMETAG.get(entity.getUUID(), original, () -> fishmod$decorate(original, entity, prestige, badges));
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FishEntityRenderMixin.cosmetic", "nametag decorate failed entity=" + entity.getType(), t);
+            return original;
+        }
+    }
+
+    private static Component fishmod$decorate(Component original, Entity entity, boolean prestige, boolean badges) {
+        Component out = original;
+        if (NickState.isActive()) {
+            String real = NickState.realName();
+            if (!real.isEmpty() && out.getString().contains(real))
+                out = NameRewriter.replaceName(out, real, NickState.asComponent());
+        }
+        if (entity instanceof Player && entity.getUUID().version() == 4) out = fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
+        if (prestige) out = PrestigeLevelColors.colorizeLevelPrefix(out);
+        if (badges) out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, entity.getUUID().toString().replace("-", ""));
+        return out;
     }
 }

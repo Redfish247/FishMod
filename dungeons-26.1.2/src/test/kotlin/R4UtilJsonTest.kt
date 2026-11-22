@@ -1,7 +1,7 @@
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.features.achievements.AchLeaderboard
-import fishmod.features.item.NeuItems
+import fishmod.features.hud.NeuItems
 import fishmod.utils.ChatQueue
 import fishmod.utils.HypixelApi
 import fishmod.utils.FishJson

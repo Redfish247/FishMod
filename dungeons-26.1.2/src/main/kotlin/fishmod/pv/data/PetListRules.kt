@@ -7,13 +7,11 @@
  */
 package fishmod.pv.data
 
-/** Which pets the Pets page shows. Networth and other pages still see every pet. */
 object PetListRules {
     @JvmField
     val WISP_LADDER: List<String> = listOf("DROPLET_WISP", "FROST_WISP", "GLACIAL_WISP", "SUBZERO_WISP")
     private val HIDDEN = setOf("BINGO")
 
-    // Highest wisp type, then rarity, then XP; uuid keeps duplicates deterministic.
     private val WISP_ORDER: Comparator<PetSnapshot.Entry> = compareBy<PetSnapshot.Entry> { wispRank(it.type) }
         .thenBy { it.tierIndex }
         .thenBy { it.exp }

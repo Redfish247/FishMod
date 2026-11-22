@@ -1,5 +1,7 @@
 package fishmod.features.dungeon
 
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.FishConstants
 import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
@@ -20,7 +22,6 @@ import java.util.regex.Pattern
 
 object FishEstTotal {
 
-    // Reads the Splits HUD's own splits so both always agree (a private copy missed early splits).
     private val currentSplits: List<RunSplit>? get() = BossPhase.currentSplitList()
     private val floor: String? get() = BossPhase.getFloor()
 
@@ -141,7 +142,6 @@ object FishEstTotal {
             try { renderAt(context, client, splits, component.scaledX, component.scaledY) } catch (e: Exception) { FishDiag.fail("FishEstTotal.10", "est total render failed (fallback pos)", e) }
             return
         }
-        // Splits draw inside their own scale, so follow it or the rows overlap at scale != 1.
         val rel = try { BossPhase.runSplitsBox.scale / component.scale } catch (t: Throwable) { 1f }
         val pose = context.pose()
         pose.pushMatrix()
@@ -150,7 +150,22 @@ object FishEstTotal {
         finally { pose.popMatrix() }
     }
 
+    // HUD editor example: the real rows over the Splits example (M7 history/averages, example lag)
+    @JvmStatic
+    fun example(): HudExample? {
+        val splits = BossPhase.exampleSplits()
+        if (splits.isEmpty()) return null
+        val client = Minecraft.getInstance()
+        val s = BossPhase.runSplitsBox.scale
+        return HudExample(Math.ceil(BossPhase.SPLIT_LENGTH * s.toDouble()).toInt(), Math.ceil((FishConstants.TEXT_HEIGHT + 9) * s.toDouble()).toInt()) { ctx ->
+            val pose = ctx.pose()
+            pose.pushMatrix()
+            try { pose.scale(s, s); renderAt(ctx, client, splits, 0, 0) } finally { pose.popMatrix() }
+        }
+    }
+
     private fun renderAt(context: GuiGraphicsExtractor, client: Minecraft, splits: List<RunSplit>, x: Int, y: Int) {
+        val floor = if (HudPreview.active) "M7" else floor
         val splitCount = splits.size - 1
         FishDiag.check(splitCount >= 0, "FishEstTotal.12") { "empty split list for floor $floor" }
         var base = 0.0
@@ -184,7 +199,7 @@ object FishEstTotal {
     }
 
     private fun drawLagLine(context: GuiGraphicsExtractor, client: Minecraft, x: Int, y: Int) {
-        val lag = LagTracker.getCurrentLag()
+        val lag = if (HudPreview.active) 1.35 else LagTracker.getCurrentLag()
         val lagStr = FishConstants.DECIMAL_FORMAT.format(lag) + "s"
         if (lagStr != cachedLagStr) {
             cachedLagStr = lagStr

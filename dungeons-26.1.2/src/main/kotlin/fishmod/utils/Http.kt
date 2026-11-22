@@ -21,7 +21,6 @@ object Http {
         .followRedirects(HttpClient.Redirect.ALWAYS)
         .build()
 
-    // Too many parallel HTTP/2 streams fail with "too many concurrent streams", so cap and queue.
     private const val MAX_CONCURRENT = 8
     private const val MAX_RETRIES = 3
     private var active = 0
@@ -30,7 +29,6 @@ object Http {
         Thread(r, "FishMod-HttpRetry").apply { isDaemon = true }
     }
 
-    // CLIENT.sendAsync behind a global concurrency cap, retrying IO failures with backoff.
     @JvmStatic
     fun <T> sendAsync(req: HttpRequest, handler: HttpResponse.BodyHandler<T>): java.util.concurrent.CompletableFuture<HttpResponse<T>> {
         val out = java.util.concurrent.CompletableFuture<HttpResponse<T>>()

@@ -54,7 +54,6 @@ object TabListCache {
     }
 
     private fun scan(mc: Minecraft) {
-        // onlinePlayers is unordered; sort like vanilla's tab so widgets read top-to-bottom per column
         val online = mc.connection!!.onlinePlayers.sortedWith(
             compareBy<PlayerInfo> { -it.tabListOrder }.thenBy { it.team?.name ?: "" }
                 .thenBy(String.CASE_INSENSITIVE_ORDER) { it.profile.name })

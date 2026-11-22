@@ -9,7 +9,6 @@ import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import fishmod.features.garden.GardenSettings as S
 
-// Your own keys press the vanilla controls while farming in a plot; a remap only, one key down = one control down.
 object GardenKeybinds {
 
     @JvmField val NAMES = arrayOf("Attack", "Use Item", "Forward", "Back", "Left", "Right", "Jump", "Sneak")

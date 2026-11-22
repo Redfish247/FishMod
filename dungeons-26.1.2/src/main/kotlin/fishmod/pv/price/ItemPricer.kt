@@ -55,7 +55,6 @@ object ItemPricer {
 		return SkyHelperPriceCache.get(id) ?: 0.0
 	}
 
-	/** Bazaar first, then any market price; null when no source prices the item (unlike the 0 above). */
 	@JvmStatic
 	fun knownPrice(itemId: String?): Double? {
 		val bazaar = materialPrice(itemId)

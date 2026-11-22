@@ -11,7 +11,6 @@ import com.google.gson.JsonObject
 import fishmod.pv.data.Leveling
 import java.util.Locale
 
-/** Mayor / city-project slayer XP and quest-price modifiers. */
 @JvmRecord
 data class SlayerMayorMods(
 	val aatroxXp: Boolean,

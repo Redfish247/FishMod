@@ -102,7 +102,6 @@ object RemoteSync {
             if (u == selfUuid) continue
             uuidToName[u] = name
         }
-        // Hypixel drops real players from the tab list once spawned, so take nearby players from the world too
         mc.level?.players()?.forEach { p ->
             if (p.uuid.version() != 4) return@forEach
             val name = p.gameProfile.name()
@@ -118,11 +117,9 @@ object RemoteSync {
         val newPlayers = !lastUuids.containsAll(uuidToName.keys)
         val since = if (newPlayers) -1L else version
         val keys: Set<String> = HashSet(uuidToName.keys)
-        // self is always asked about so an admin block/nick-clear reaches this client without a restart
         val queryKeys: Set<String> = keys + selfUuid
         if (queryKeys.isEmpty()) return
 
-        // live socket holds every cosmetic locally: no request, re-apply only on a push or new players
         val live = CosmeticLive.slice(queryKeys)
         if (live != null) {
             if (!newPlayers && CosmeticLive.rev == appliedLiveRev && keys == lastUuids) return

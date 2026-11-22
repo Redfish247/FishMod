@@ -187,7 +187,6 @@ class SummaryCards {
 			return maxOf(1, minOf(MAX_COLS, cols))
 		}
 
-		/** Places each card, in order, into the currently shortest column. */
 		@JvmStatic
 		fun assignColumns(heights: IntArray, cols: Int): IntArray {
 			val n = maxOf(1, cols)

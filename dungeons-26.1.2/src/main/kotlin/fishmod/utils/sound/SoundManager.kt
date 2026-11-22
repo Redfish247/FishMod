@@ -40,14 +40,6 @@ object SoundManager {
         BuiltInRegistries.SOUND_EVENT.keySet().map { it.toString() }.sorted()
     }
 
-    val shortlist: List<String> = listOf(
-        "minecraft:block.note_block.pling", "minecraft:block.note_block.harp",
-        "minecraft:block.note_block.bell", "minecraft:block.note_block.bass",
-        "minecraft:entity.arrow.hit", "minecraft:entity.arrow.hit_player",
-        "minecraft:entity.experience_orb.pickup", "minecraft:entity.player.levelup",
-        "minecraft:block.anvil.land", "minecraft:entity.item.break",
-    )
-
     private fun resolve(v: Any?): SoundEvent = when (v) {
         is SoundEvent -> v
         is net.minecraft.core.Holder<*> -> v.value() as SoundEvent
@@ -59,16 +51,29 @@ object SoundManager {
 
     @JvmStatic
     fun preset(name: String?): SoundEvent {
-        if (name.isNullOrBlank()) return SoundEvents.NOTE_BLOCK_PLING.value()
+        // "Ping" is the old default of three alert sounds and always meant pling
+        if (name.isNullOrBlank() || name.trim().equals("Ping", ignoreCase = true)) return SoundEvents.NOTE_BLOCK_PLING.value()
         PRESETS[name]?.let { return resolve(it) }
-        val id = FishDiag.notNull(Identifier.tryParse(if (':' in name) name else "minecraft:$name"), "SoundManager.2") { "invalid sound id '$name'" }
+        PRESETS.entries.firstOrNull { it.key.equals(name.trim(), ignoreCase = true) }?.let { return resolve(it.value) }
+        // ids are lowercase; hand-typed names like "Ping" or "Note Pling" must not hit the invalid-id path
+        val norm = name.trim().lowercase().replace(' ', '_')
+        val id = FishDiag.notNull(Identifier.tryParse(if (':' in norm) norm else "minecraft:$norm"), "SoundManager.2") { "invalid sound id '$name'" }
         val fromRegistry: SoundEvent? =
-            id?.let { BuiltInRegistries.SOUND_EVENT.getOptional(it).orElse(null) }
-        if (id != null && fromRegistry == null) FishDiag.fail("SoundManager.3", "sound '$id' not in registry, using pling")
+            id?.let { BuiltInRegistries.SOUND_EVENT.getOptional(it).orElse(null) ?: shortName(it.path) }
+        if (id != null && fromRegistry == null && warned.add(id.toString())) FishDiag.fail("SoundManager.3", "sound '$id' not in registry, using pling")
         return fromRegistry ?: SoundEvents.NOTE_BLOCK_PLING.value()
     }
 
-    private val lastPlayed = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val warned = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    // Short names like "pling" -> block.note_block.pling (any vanilla id ending in ".pling")
+    private fun shortName(path: String): SoundEvent? {
+        if ('.' in path) return null
+        val key = BuiltInRegistries.SOUND_EVENT.keySet().firstOrNull { it.namespace == "minecraft" && it.path.endsWith(".$path") } ?: return null
+        return BuiltInRegistries.SOUND_EVENT.getOptional(key).orElse(null)
+    }
+
+    private val lastPlayed =java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     @JvmStatic
     @JvmOverloads

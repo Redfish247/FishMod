@@ -5,10 +5,11 @@ import com.google.gson.GsonBuilder
 import fishmod.features.FishHudEditor
 import fishmod.features.ProfitTrackerKit
 import fishmod.features.ProfitTrackerKit.Row
-import fishmod.features.croesus.CroesusPrices
+import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.utils.FishMsg
 import fishmod.utils.events.FishEvents
 import fishmod.utils.networth.ItemsDb
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -22,7 +23,6 @@ import net.minecraft.resources.Identifier
 import java.io.File
 import fishmod.features.mining.MiningSettings as S
 
-// Mining profit tracker (same shape as the Diana tracker): Session/Total, per category, chat + sack parsing
 object MiningProfitTracker {
 
     enum class Cat(val display: String, override val color: String, override val short: String) : ProfitTrackerKit.Cat {
@@ -35,8 +35,8 @@ object MiningProfitTracker {
     val SORTS = arrayOf("Most Profit", "Least Profit", "Category")
 
     class Tracker {
-        var items: MutableMap<String, Long> = LinkedHashMap()  // "CAT|Item Name" -> count
-        var counts: MutableMap<String, Long> = LinkedHashMap() // runs/corpses/chests
+        var items: MutableMap<String, Long> = LinkedHashMap()
+        var counts: MutableMap<String, Long> = LinkedHashMap()
         var timeMs = 0L
     }
     private class Persisted { var session = Tracker(); var total = Tracker() }
@@ -49,11 +49,13 @@ object MiningProfitTracker {
     var version = 0; private set
 
     private val CORPSE = Regex("""^\s*(LAPIS|UMBER|TUNGSTEN|VANGUARD) CORPSE LOOT!""")
-    // Key consumed per corpse, tracked as a negative item so profit nets it out
-    private val CORPSE_KEY = mapOf("UMBER" to "Tungsten Key", "TUNGSTEN" to "Umber Key", "VANGUARD" to "Skeleton Key")
+    private val CORPSE_KEY = mapOf("UMBER" to "Umber Key", "TUNGSTEN" to "Tungsten Key", "VANGUARD" to "Skeleton Key")
+    private val KEY_ID = mapOf("Umber Key" to "UMBER_KEY", "Tungsten Key" to "TUNGSTEN_KEY", "Skeleton Key" to "SKELETON_KEY")
     private val BAR = Regex("""^▬{20,}$""")
     private val ITEM = Regex("""^\s{2,}[☠✦+]?\s*(.+?)(?:\s+x([\d,]+))?\s*$""")
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
+    // Sack items from other skills (fishing, farming...) must not count as Mined
+    private val MINING_SACKS = arrayOf("Mining", "Enchanted Mining", "Gemstone", "Crystal Hollows", "Dwarven")
     private val SKIP = setOf("REWARDS", "LOOT", "CHEST LOCKPICKED", "LOOT CHEST COLLECTED")
 
     private var lootCat: Cat? = null
@@ -61,11 +63,13 @@ object MiningProfitTracker {
     private var lastCat: Cat? = null
     private var lastLootMs = 0L
     private var lastActivityMs = 0L
+    private var lastBreakMs = 0L
     private var lastTickMs = 0L
     private var scroll = 0
 
     fun init() {
         load()
+        ProfitTrackerKit.registerEdit("miningtracker", "mining profit", Cat.MINING, Cat.entries.toTypedArray(), { data.session.items.keys + data.total.items.keys }) { c, n, v -> add(c, n, v) }
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
         FishEvents.worldChange.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
@@ -73,17 +77,17 @@ object MiningProfitTracker {
             if (S.miningProfit && Mining.inMiningIsland()) onChat(text)
             false
         }
-        Mining.breakListeners += Mining.BreakListener { _, _, _ -> lastActivityMs = System.currentTimeMillis() }
+        Mining.breakListeners += Mining.BreakListener { _, _, _ -> lastActivityMs = System.currentTimeMillis(); lastBreakMs = lastActivityMs }
 
         FishHudEditor.register("Mining Profit", { S.miningProfitHudX }, { S.miningProfitHudX = it },
             { S.miningProfitHudY }, { S.miningProfitHudY = it }, 180, 120, { S.miningProfitHudScale }, { S.miningProfitHudScale = it },
             { S.miningProfit })
+        MiningHuds.registerExample("Mining Profit", ::exampleLines)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_profit")) { ctx, _ ->
             val mc = Minecraft.getInstance()
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
                 MiningHuds.draw(ctx, lines(), S.miningProfitHudX, S.miningProfitHudY, S.miningProfitHudScale)
         }
-        // In the inventory the HUD stays up and scrolls with the mouse wheel
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is InventoryScreen) return@AfterInit
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
@@ -92,7 +96,7 @@ object MiningProfitTracker {
                 val sc = S.miningProfitHudScale
                 MiningHuds.draw(ctx, l, S.miningProfitHudX, S.miningProfitHudY, sc)
                 if (S.miningProfitMode != "Total")
-                    fishmod.features.other.TrackerResetButton.draw(ctx, "mining", S.miningProfitHudX, S.miningProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) { resetSession() }
+                    fishmod.features.general.TrackerResetButton.draw(ctx, "mining", S.miningProfitHudX, S.miningProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) { resetSession() }
             })
             ScreenMouseEvents.allowMouseScroll(screen).register(ScreenMouseEvents.AllowMouseScroll { _, mx, my, _, v ->
                 !(shown() && over(mx, my) && scrollBy(if (v > 0) -1 else 1))
@@ -110,7 +114,6 @@ object MiningProfitTracker {
 
     private fun scrollBy(d: Int): Boolean { scroll = (scroll + d).coerceAtLeast(0); version++; return true }
 
-    // ---- parsing ----
 
     private fun onChat(text: Component) {
         val s = Mining.strip(text.string)
@@ -134,13 +137,18 @@ object MiningProfitTracker {
         val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: 1L
         if (!trackable(name) || name.endsWith("Powder")) return
         add(cat, name, n)
-        // [Sacks] already counted these as mined (it arrived before the loot block): move them out of Mined
         val early = consume(sackMined, norm(name), n, now)
         if (early > 0) add(Cat.MINING, name, -early)
-        lootPending.getOrPut(norm(name)) { ArrayList() } += longArrayOf(n - early, now)
+        queuePending(lootPending, norm(name), longArrayOf(n - early, now), now)
     }
 
-    // Loot-block items that will reappear in the batched [Sacks] summary; deducted so they aren't also "Mined"
+    // Prunes expired entries on insert so keys that never match a sack summary do not grow forever
+    private fun queuePending(map: HashMap<String, MutableList<LongArray>>, key: String, e: LongArray, now: Long) {
+        val q = map.getOrPut(key) { ArrayList() }
+        q.removeAll { now - it[1] > PENDING_MS }
+        q += e
+    }
+
     private val lootPending = HashMap<String, MutableList<LongArray>>()
     // Items [Sacks] credited as Mined, in case the loot block lands after the summary
     private val sackMined = HashMap<String, MutableList<LongArray>>()
@@ -201,16 +209,17 @@ object MiningProfitTracker {
             c.siblings.forEach(::walk)
         }
         walk(text)
-        // Loot blocks already list their items; sacks only add what wasn't in a recent loot block
         for (m in SACK_LINE.findAll(hovers.joinToString("\n"))) {
             if (m.groupValues[1] != "+") continue
             val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
             val item = m.groupValues[3].trim()
             if (item.endsWith("Powder")) continue
+            if (!ProfitTrackerKit.inSacks(idOf(item), *MINING_SACKS)) continue
+            if (ProfitTrackerKit.isFishingLeak(idOf(item), now, lastBreakMs)) continue
             val rest = consumePending(item, n, now)
             if (rest > 0) {
                 add(Cat.MINING, item, rest)
-                sackMined.getOrPut(norm(item)) { ArrayList() } += longArrayOf(rest, now)
+                queuePending(sackMined, norm(item), longArrayOf(rest, now), now)
             }
         }
     }
@@ -260,16 +269,17 @@ object MiningProfitTracker {
         save(false)
     }
 
-    // ---- values ----
 
     fun priceOf(name: String): Double {
         if (name.endsWith("Powder")) return 0.0
-        val id = idOf(name) ?: return 0.0
+        val id = KEY_ID[name] ?: idOf(name) ?: return 0.0
         CroesusPrices.bazaarPrice(id, S.miningProfitPriceMode != "Insta Sell")?.let { if (it > 0) return it }
-        return CroesusPrices.price(id)
+        val p = CroesusPrices.price(id)
+        // Key prices unverified: flag once if no source has them
+        if (name in KEY_ID) FishDiag.check(p > 0, "MiningProfit.key") { "no price for corpse key $id (${CroesusPrices.debugSource(id)})" }
+        return p
     }
 
-    // Achievement ledger reads: value of the total/session trackers and a counter
     fun profitOf(session: Boolean): Double = (if (session) data.session else data.total).items.entries.sumOf { (k, n) ->
         val name = k.substringAfter('|'); if (name.endsWith("Powder")) 0.0 else priceOf(name) * n }
     fun totalItems(): Map<String, Long> = data.total.items.entries.associate { it.key.substringAfter('|') to it.value }
@@ -281,18 +291,20 @@ object MiningProfitTracker {
 
     fun lines(): List<String> = cache.get(version, ::buildLines)
 
-    private fun buildLines(): List<String> {
-        val t = tracker()
+    private fun buildLines(): List<String> = buildLines(tracker(), ::priceOf, true)
+
+    // live = the in-game HUD (keeps the inventory scroll); false = the HUD editor example over example data
+    private fun buildLines(t: Tracker, price: (String) -> Double, live: Boolean): List<String> {
         val only = Cat.of(S.miningProfitCategory)
         val rows = ProfitTrackerKit.sort(ProfitTrackerKit.mergeSources(t.items.mapNotNull { (k, n) ->
             val cat = runCatching { Cat.valueOf(k.substringBefore('|')) }.getOrNull() ?: return@mapNotNull null
             if (only != null && cat != only) return@mapNotNull null
             val name = k.substringAfter('|')
             if (name.endsWith("Powder")) return@mapNotNull null
-            Row(cat, name, n, priceOf(name) * n)
+            Row(cat, name, n, price(name) * n)
         }), S.miningProfitSort)
         val max = S.miningProfitLines.coerceIn(5, 25)
-        scroll = scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0))
+        val scroll = if (live) this.scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0)).also { this.scroll = it } else 0
         val out = ArrayList<String>()
         out += "§e§lMining Profit §7(${S.miningProfitCategory}, ${S.miningProfitMode})"
         if (scroll > 0) out += "§8  ▲ $scroll more"
@@ -330,6 +342,17 @@ object MiningProfitTracker {
     }
 
     private fun perHour(v: Double, t: Tracker) = ProfitTrackerKit.perHour(v, t.timeMs)
+
+    private val EXAMPLE_PRICES = mapOf("Enchanted Mithril" to 1500.0, "Refined Titanium" to 32000.0, "Flawless Ruby Gemstone" to 90000.0, "Umber Key" to -45000.0)
+
+    private fun exampleLines(): List<String> {
+        val t = Tracker()
+        for ((k, n) in listOf("MINING|Enchanted Mithril" to 640L, "MINING|Refined Titanium" to 12L, "NUCLEUS|Flawless Ruby Gemstone" to 3L,
+            "CORPSES|Umber Key" to -2L, "MINING|Mithril Powder" to 24_500L)) t.items[k] = n
+        t.counts["Corpses"] = 2; t.counts["Nucleus Runs"] = 3; t.counts["Excavations"] = 1; t.counts["Powder Chests"] = 5
+        t.timeMs = 3_725_000L
+        return buildLines(t, { EXAMPLE_PRICES[it] ?: 0.0 }, false)
+    }
 
     fun resetSession(msg: Boolean = true) { data.session = Tracker(); changed(); if (msg) FishMsg.send("§aMining profit session reset.") }
     fun resetTotal() { data.total = Tracker(); changed(); FishMsg.send("§aMining profit total reset.") }

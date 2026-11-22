@@ -21,7 +21,6 @@ import fishmod.features.rift.RiftSettings as S
 // Own Bloodfiend helper, detection modelled on SkyHanni's VampireSlayerFeatures
 object RiftVampire {
 
-    // Skin hashes of the Blood Ichor and Killer Spring skull stands
     private const val ICHOR_SKIN = "c0340923a6de4825a176813d133503eff186db0896e32b6704928c2a2bf68422"
     private const val SPRING_SKIN = "77f7a7bc8ac86f23ca7bf98afeb76960227e1832fe209a3026f6ceb8bde74f54"
     private val TWINCLAWS = Regex("TWINCLAWS \\d[\\d.,]*s")
@@ -50,12 +49,11 @@ object RiftVampire {
         val name = me.gameProfile.name
         val area = me.boundingBox.inflate(RANGE)
 
-        // Bloodfiend is an NPC player; its "Spawned by" tag floats ~3 blocks above it
         val b = level.getEntitiesOfClass(Player::class.java, area) {
             it !== me && it.isAlive && it.uuid.version() != 4 && Rift.strip(it.name.string).trim() == "Bloodfiend"
-        }.firstOrNull { tagsNear(it, "Spawned by").any { s -> s.contains(name) } }
+        }.firstOrNull { p -> tagsNear(p, name).any { s -> s.contains("$name's SLAYER BOSS") || s.contains("Spawned by") } }
         boss = b
-        canSteak = b != null && b.health <= b.getAttributeBaseValue(Attributes.MAX_HEALTH) * 0.2
+        canSteak = b != null && steakable(b)
         if (b != null && canSteak && S.riftVampireSteakTitle)
             FishUtil.forceTitle(Component.literal("§c§lSTEAK!"), Component.empty(), 300)
         if (b != null && S.riftVampireTwinclaws && tagsNear(b, "TWINCLAWS").any { TWINCLAWS.containsMatchIn(it) }) {
@@ -76,7 +74,23 @@ object RiftVampire {
         }
     }
 
-    // Stand names in a 3-block box centred 3 blocks above the entity, stretched 3 more vertically
+    // Hypixel shows "Bloodfiend III 1,554/1,800♥"; the entity's own health isn't the boss HP
+    private val HP = Regex("Bloodfiend [IVX]+ ([\\d.,]+[kM]?)/([\\d.,]+[kM]?)")
+
+    private fun num(s: String): Double? {
+        val m = when (s.last()) { 'k' -> 1e3; 'M' -> 1e6; else -> 1.0 }
+        return s.trimEnd('k', 'M').replace(",", "").toDoubleOrNull()?.times(m)
+    }
+
+    private fun steakable(b: Player): Boolean {
+        val hp = tagsNear(b, "Bloodfiend").firstNotNullOfOrNull { HP.find(it) }
+        if (hp != null) {
+            val cur = num(hp.groupValues[1]); val max = num(hp.groupValues[2])
+            if (cur != null && max != null && max > 0) return cur <= max * 0.2
+        }
+        return b.health <= b.getAttributeBaseValue(Attributes.MAX_HEALTH) * 0.2
+    }
+
     private fun tagsNear(e: Player, contains: String): List<String> {
         val c = e.position().add(0.0, 3.0, 0.0)
         val box = AABB(c.x - 3, c.y - 6, c.z - 3, c.x + 3, c.y + 6, c.z + 3)

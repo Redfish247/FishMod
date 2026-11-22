@@ -33,14 +33,9 @@ object ChatClickProcessor {
 	private val UUID_PATTERN = Pattern.compile(
 		"(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 	)
-	/** Same hover Hypixel puts on SocialOptions / viewprofile name spans. */
 	private val VIEW_PROFILE_HOVER = Pattern.compile(
 		"(?i)\\bview\\s+(?:\\[[^\\]]*\\]\\s*)?([A-Za-z0-9_]{1,16})['’ʼ‘]?s\\s+profile\\b"
 	)
-	/**
-	 * SkyBlock PV `otherChatRegex`: channel chat only.
-	 * `Party > [MVP+] Name [Elite]: hello`
-	 */
 	private val CHANNEL_CHAT = Pattern.compile(
 		"(?i)^(?:Party|Guild|Officer|Co-op)\\b[^>]{0,8}> (?:[^\\[\\s]{1,3}\\s+)?(?:\\[[^\\]]*\\]\\s*)?([A-Za-z0-9_]{1,16})(?:\\s*\\[[^\\]]*\\])?: .+"
 	)
@@ -188,12 +183,8 @@ object ChatClickProcessor {
 		return null
 	}
 
-	// Hypixel often embeds § codes inside literal text, which getString() keeps.
 	private fun stripLegacy(text: String?): String? = if (text == null) null else TextStrip.plain(text)
 
-	/**
-	 * SkyBlock PV `getUsername`: socialoptions arg, else hover profile line.
-	 */
 	private fun usernameFromSocial(command: String?, hoverText: String?): String? {
 		usernameFromCommand(command)?.let { return it }
 		if (hoverText.isNullOrBlank()) {
@@ -211,7 +202,6 @@ object ChatClickProcessor {
 		return null
 	}
 
-	/** Used by [ProfileViewerOpener] when clicking an unmapped Hypixel style. */
 	@JvmStatic
 	fun usernameFromHypixelStyle(style: Style?): String? {
 		if (style == null) {
@@ -228,7 +218,6 @@ object ChatClickProcessor {
 		return usernameFromSocial(null, hoverText)
 	}
 
-	// The clicked span is usually just the name, maybe with rank tags: "[MVP+] naplass".
 	private fun usernameFromSpanText(text: String?): String? {
 		if (text == null) {
 			return null
@@ -252,7 +241,6 @@ object ChatClickProcessor {
 		if (rest.isEmpty()) {
 			return null
 		}
-		// Prefer the first non-UUID token (Hypixel sometimes sends uuid, or uuid + name).
 		for (token in rest.split(WHITESPACE)) {
 			if (token.isEmpty() || UUID_PATTERN.matcher(token).matches()) {
 				continue

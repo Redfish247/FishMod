@@ -14,7 +14,6 @@ import fishmod.pv.gui.nav.PvSubTab
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Events tab: Bingo / Chocolate Factory - layout matches Mining/Rift overviews. */
 class EventsPage {
 	enum class BingoLoadState {
 		IDLE,
@@ -26,7 +25,6 @@ class EventsPage {
 	private var snapshot: EventsSnapshot = EventsSnapshot.empty()
 	private var bingoState = BingoLoadState.IDLE
 	private var bingoError = ""
-	/** True when resources loaded but player history did not. */
 	private var bingoHistoryMissing = false
 	private val ui = EventsUi()
 	private val bingo = BingoPage()
@@ -36,7 +34,6 @@ class EventsPage {
 		this.snapshot = snapshot ?: EventsSnapshot.empty()
 		chocolate.resetScroll()
 		ui.zones.clear()
-		// Fresh profile - bingo resources/history load lazily on Events tab.
 		if (bingoState == BingoLoadState.READY &&
 			this.snapshot.bingo.currentGoals.isEmpty() && this.snapshot.bingo.history.isEmpty()
 		) {
@@ -66,7 +63,6 @@ class EventsPage {
 
 	fun bingoState(): BingoLoadState = bingoState
 
-	/** Resources present but `/skyblock/bingo` history missing - worth retrying. */
 	fun needsBingoHistory(): Boolean = bingoState == BingoLoadState.READY && bingoHistoryMissing
 
 	fun resetBingoFetch() {

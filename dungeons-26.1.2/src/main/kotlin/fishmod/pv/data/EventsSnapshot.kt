@@ -12,9 +12,6 @@ import com.google.gson.JsonObject
 import java.util.Locale
 import java.util.UUID
 
-/**
- * Event tabs: Bingo (resources + bingo profile) and Chocolate Factory ({@code events.easter}).
- */
 class EventsSnapshot private constructor(chocolate: Chocolate?, bingo: Bingo?) {
 	@JvmRecord
 	data class Employee(val id: String, val name: String, val level: Int)
@@ -22,7 +19,6 @@ class EventsSnapshot private constructor(chocolate: Chocolate?, bingo: Bingo?) {
 	@JvmRecord
 	data class Rabbit(val id: String, val name: String, val count: Int, val rarity: String)
 
-	/** Years are SkyBlock years; 0 means the API didn't record one. */
 	@JvmRecord
 	data class Chocobit(val id: Int, val ownedYear: Int, val expiryYear: Int) {
 		fun expired(currentYear: Int): Boolean = expiryYear > 0 && expiryYear < currentYear
@@ -176,7 +172,6 @@ class EventsSnapshot private constructor(chocolate: Chocolate?, bingo: Bingo?) {
 				faction = str(rabbits, "selected_faction").lowercase(Locale.ROOT)
 				factionLevel = intOf(rabbits, "faction_level")
 				for ((id, value) in rabbits.entrySet()) {
-					// Faction fields share the rabbits object with the rabbit counts.
 					if (id == null || id == "collected_eggs" || id == "collected_locations" ||
 						id == "selected_faction" || id == "faction_level"
 					) {
@@ -222,7 +217,6 @@ class EventsSnapshot private constructor(chocolate: Chocolate?, bingo: Bingo?) {
 			)
 		}
 
-		/** Soonest expiry first; bits without a recorded expiry go last. */
 		@JvmStatic
 		private fun parseChocobits(bits: JsonObject?): List<Chocobit> {
 			val out = ArrayList<Chocobit>()

@@ -117,7 +117,6 @@ object OdinWaypointImport {
         if (e == null || e.isJsonNull) return 0xFFFFFFFF.toInt()
         if (e.isJsonPrimitive) {
             val s = e.asString.trim()
-            // Hex string "#RRGGBB" or "#RRGGBBAA" -> ARGB int.
             if (s.startsWith("#")) {
                 val h = s.substring(1)
                 val v = h.toLongOrNull(16) ?: return 0xFFFFFFFF.toInt()

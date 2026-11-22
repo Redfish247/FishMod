@@ -26,6 +26,10 @@ object Scan {
     @JvmField
     val rooms: MutableSet<Room> = Collections.synchronizedSet(LinkedHashSet())
 
+    // Synchronized collections need their lock held while copying, or a scan mid-copy throws CME
+    @JvmStatic fun roomsSnapshot(): List<Room> = synchronized(rooms) { ArrayList(rooms) }
+    @JvmStatic fun doorsSnapshot(): List<Door> = synchronized(doors) { ArrayList(doors) }
+
     // unknown core hashes already reported this run
     private val missedCores = HashSet<Int>()
     private val loggedMissingCores = HashSet<Int>()
@@ -111,7 +115,6 @@ object Scan {
     @JvmStatic
     fun scan(world: ClientLevel) {
         if (!DungeonState.isInDungeon()) return
-        // tab list lags a world change; only scan once location says dungeon (hub cores spammed Scan.5)
         val loc = fishmod.utils.SkyblockLocation.getCurrentLocation()
         if (loc != fishmod.utils.SkyblockLocation.DUNGEON && !fishmod.utils.dungeon.PracticeMode.active) return
         if (!DungeonMap.anyFeatureEnabled()) return
@@ -263,7 +266,7 @@ object Scan {
                     pendingCores[idx] = coreHash
                     if (!stable || !missedCores.add(coreHash)) continue
                     // unknown core: log once per game session, plain log (not a bug report)
-                    if (loggedMissingCores.add(coreHash)) fishmod.utils.debug.FishDebug.LOGGER.warn("[Scan] no room data for core hash={} cell=({},{}) height={} roomsLoaded={}", coreHash, x, z, height, RoomData.isLoaded())
+                    if (loggedMissingCores.add(coreHash)) fishmod.utils.debug.FishDebug.LOGGER.debug("[Scan] no room data for core hash={} cell=({},{}) height={} roomsLoaded={}", coreHash, x, z, height, RoomData.isLoaded())
                     continue
                 }
 

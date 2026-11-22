@@ -3,6 +3,8 @@ import fishmod.utils.events.chatRaw
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import fishmod.utils.ChatQueue
 import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
@@ -51,7 +53,6 @@ enum class RareMob(val display: String, val short: String, val code: String, pri
     companion object {
         fun fromName(name: String): RareMob? = entries.firstOrNull { name.contains(it.display, ignoreCase = true) }
 
-        // Short party-chat aliases (inq, king, ...) as well as full names
         fun fromAlias(s: String): RareMob? = when (s.replace("|", "").trim().lowercase()) {
             "inq", "inquisitor", "minos inquisitor" -> INQ
             "king", "king minos" -> KING
@@ -62,7 +63,6 @@ enum class RareMob(val display: String, val short: String, val code: String, pri
     }
 }
 
-// Rare Diana mobs: name tag tracking, HP/shuriken HUDs, world scan, share/receive, cocoon, glow
 object RareMobs {
 
     private const val MYTHOS_CHAR = ''
@@ -82,7 +82,6 @@ object RareMobs {
     private const val HP_HUD = "Diana Mythos HP"
     private const val SHURIKEN_HUD = "Diana No Shuriken"
 
-    // Filled by the tracker: mob display name -> (mobs since last, chance %)
     var sinceProvider: ((String) -> Pair<Int, Double>)? = null
     val deathListeners = mutableListOf<(String, Boolean) -> Unit>()
     @Volatile var lastDianaMobDeathMs = 0L
@@ -115,6 +114,7 @@ object RareMobs {
             { DianaSettings.dianaShurikenHudScale }, { v -> DianaSettings.dianaShurikenHudScale = v },
             { DianaSettings.dianaNoShuriken },
         )
+        registerExamples()
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "diana_mythos_hp")) { ctx, _ ->
             if (!FishHudEditor.isOpen()) renderHud(ctx)
         }
@@ -125,11 +125,10 @@ object RareMobs {
     }
 
     private fun reset() {
-        defeated.clear(); missingTicks.clear(); glow.clear()
+        defeated.clear(); missingTicks.clear(); glow.clear(); pendingSends.clear()
         hpLines = emptyList(); noShuriken = false
     }
 
-    // ---- name tags ----
 
     private fun strip(s: String) = fishmod.utils.TextStrip.plain(s)
 
@@ -182,7 +181,7 @@ object RareMobs {
             alive.add(e.id)
             val dist = e.position().distanceTo(eye)
             if (kingHits != null) {
-                lines.add(dist to Component.literal("§6King Minos §7- §5${kingHits.groupValues[1]} Hits"))
+                lines.add(dist to kingHitsLine(kingHits.groupValues[1]))
                 continue
             }
             val hp = parseHp(plain) ?: continue
@@ -205,14 +204,12 @@ object RareMobs {
         if (DianaSettings.dianaRareMobs) pruneStale(eye, rareStands)
     }
 
-    // An Inquisitor tag that vanishes up close with no kill: despawned
     private fun onDeath(name: String, pos: Vec3, dist: Double, rare: RareMob?) {
         lastDianaMobDeathMs = System.currentTimeMillis()
         if (rare != null) DianaWaypoints.removeRareMobsNear(pos, 32.0)
         for (l in deathListeners) runCatching { l(name, dist <= 30) }
     }
 
-    // ---- world scan ----
 
     private fun scanStand(stand: ArmorStand, rare: RareMob) {
         val pos = stand.position()
@@ -243,7 +240,6 @@ object RareMobs {
         }
     }
 
-    // ---- chat ----
 
     private fun onChat(msg: String) {
         if (!DianaSettings.dianaRareMobs) return
@@ -304,7 +300,6 @@ object RareMobs {
         val rare = RareMob.fromAlias(trailing)
         if (rare != null) {
             if (!DianaSettings.dianaReceiveRareMob || !rare.receive()) return
-            // Always alert on a share; only skip the duplicate waypoint
             if (!DianaWaypoints.rareMobNear(Vec3.atCenterOf(pos), 10.0)) DianaWaypoints.addRareMob(pos, "${rare.label} §7($sender)", 45_000)
             if (!self) notify(rare, sender, force = true)
         } else if (!self) {
@@ -312,18 +307,21 @@ object RareMobs {
         }
     }
 
-    // ---- notify ----
 
     private fun notify(rare: RareMob, from: String, force: Boolean = false) {
         val now = System.currentTimeMillis()
         if (!force && now - (lastNotify[rare] ?: 0L) < 3000) return
         lastNotify[rare] = now
-        title("§6§l<§b§l§kO§6§l> ${rare.code}§l${rare.short.uppercase()}! §6§l<§b§l§kO§6§l>", if (from.isEmpty()) "" else "§7$from")
+        val (t, sub) = alertText(rare, from)
+        title(t, sub)
         playSound()
     }
 
+    // Main + subtitle of the rare mob alert title (also the HUD editor example)
+    fun alertText(rare: RareMob, from: String): Pair<String, String> =
+        "§6§l<§b§l§kO§6§l> ${rare.code}§l${rare.short.uppercase()}! §6§l<§b§l§kO§6§l>" to (if (from.isEmpty()) "" else "§7$from")
+
     private fun playSound() {
-        // MC caps one sound at 100%, so stack copies to go louder
         var vol = DianaSettings.dianaRareMobVolume.coerceIn(0, 500) / 100f
         val snd = SoundManager.preset(DianaSettings.dianaRareMobSound)
         while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
@@ -333,7 +331,6 @@ object RareMobs {
         Minecraft.getInstance().execute { DianaTitles.rareAlert(t, sub) }
     }
 
-    // ---- glow hook (EntityRendererMixin) ----
 
     @JvmStatic
     fun glowColor(e: Entity): Int {
@@ -341,7 +338,6 @@ object RareMobs {
         return glow[e.id] ?: EntityRenderState.NO_OUTLINE
     }
 
-    // ---- HUD ----
 
     private fun renderHud(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
@@ -354,7 +350,7 @@ object RareMobs {
                 ctx.pose().pushMatrix()
                 ctx.pose().translate(DianaSettings.dianaHpHudX.toFloat(), DianaSettings.dianaHpHudY.toFloat())
                 ctx.pose().scale(sc, sc)
-                lines.forEachIndexed { i, c -> ctx.text(font, c, 0, i * 10, -1, true) }
+                drawHp(ctx, lines)
                 ctx.pose().popMatrix()
             }
         }
@@ -363,8 +359,30 @@ object RareMobs {
             ctx.pose().pushMatrix()
             ctx.pose().translate(DianaSettings.dianaShurikenHudX.toFloat(), DianaSettings.dianaShurikenHudY.toFloat())
             ctx.pose().scale(sc, sc)
-            ctx.text(font, "§c§lNO SHURIKEN!", 0, 0, -1, true)
+            drawShuriken(ctx)
             ctx.pose().popMatrix()
+        }
+    }
+
+    private const val NO_SHURIKEN_TEXT = "§c§lNO SHURIKEN!"
+
+    private fun kingHitsLine(hits: String): Component = Component.literal("§6King Minos §7- §5$hits Hits")
+
+    private fun drawHp(ctx: GuiGraphicsExtractor, lines: List<Component>) {
+        val font = Minecraft.getInstance().font
+        lines.forEachIndexed { i, c -> ctx.text(font, c, 0, i * 10, -1, true) }
+    }
+
+    private fun drawShuriken(ctx: GuiGraphicsExtractor) = ctx.text(Minecraft.getInstance().font, NO_SHURIKEN_TEXT, 0, 0, -1, true)
+
+    private fun registerExamples() {
+        HudPreview.register(HP_HUD) {
+            val lines = listOf(Component.literal("§2Empyrean King Minos §a100M§f/§a100M§c❤ §b✯"), kingHitsLine("75"))
+            val font = Minecraft.getInstance().font
+            HudExample(lines.maxOf { font.width(it) }, HudPreview.textHeight(lines.size, 10)) { ctx -> drawHp(ctx, lines) }
+        }
+        HudPreview.register(SHURIKEN_HUD) {
+            HudExample(Minecraft.getInstance().font.width(NO_SHURIKEN_TEXT), HudPreview.TEXT_H) { ctx -> drawShuriken(ctx) }
         }
     }
 }

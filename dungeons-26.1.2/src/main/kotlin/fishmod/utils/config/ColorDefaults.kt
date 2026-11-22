@@ -2,7 +2,6 @@ package fishmod.utils.config
 
 import java.lang.reflect.Modifier
 
-// Int field values captured before the config file is applied, so colour pickers can offer "Default".
 object ColorDefaults {
     private val defaults = HashMap<String, Int>()
 

@@ -21,7 +21,6 @@ object SidebarCache {
     var version: Int = 0
         private set
 
-    // sidebar objective title, null when no sidebar is shown
     @JvmStatic
     var title: Component? = null
         private set

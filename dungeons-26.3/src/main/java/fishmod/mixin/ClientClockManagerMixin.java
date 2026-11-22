@@ -1,12 +1,11 @@
 package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import fishmod.features.TimeChanger;
+import fishmod.features.visuals.TimeChanger;
 import net.minecraft.client.ClientClockManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-// 26.3: total ticks moved to ClientClockInstance.
 @Mixin(ClientClockManager.ClientClockInstance.class)
 public abstract class ClientClockManagerMixin {
 

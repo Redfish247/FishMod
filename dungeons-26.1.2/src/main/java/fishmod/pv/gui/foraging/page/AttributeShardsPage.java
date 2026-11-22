@@ -43,9 +43,10 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Attribute Shards subtab with dual-scroll grid + cost list. */
 public final class AttributeShardsPage {
 	private final List<HoverZone> zones = new ArrayList<>();
+	private record ClickZone(int x, int y, int w, int h, ForagingSnapshot.AttributeShardRow row) {}
+	private final List<ClickZone> clickZones = new ArrayList<>();
 	private final Map<String, AttributeShardTooltip.Info> shardInfo = new HashMap<>();
 
 	private int attrGridScroll;
@@ -81,7 +82,24 @@ public final class AttributeShardsPage {
 			this.attrGridScroll = 0;
 			return true;
 		}
+		for (ClickZone z : this.clickZones) {
+			if (ForagingUi.hit(mx, my, z.x(), z.y(), z.w(), z.h())) {
+				copyAndOpenBazaar(z.row());
+				return true;
+			}
+		}
 		return false;
+	}
+
+	private static void copyAndOpenBazaar(ForagingSnapshot.AttributeShardRow row) {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+		int need = Math.max(0, row.shardsForMax() - row.shardsOwned());
+		if (need > 0) {
+			mc.keyboardHandler.setClipboard(Integer.toString(need));
+		}
+		if (mc.player != null && row.name() != null && !row.name().isEmpty()) {
+			mc.player.connection.sendCommand("bz " + row.name());
+		}
 	}
 
 	private List<ForagingSnapshot.AttributeShardRow> gridOrder(List<ForagingSnapshot.AttributeShardRow> rows) {
@@ -126,6 +144,7 @@ public final class AttributeShardsPage {
 		int x, int y, int w, int h, int mx, int my
 	) {
 		this.zones.clear();
+		this.clickZones.clear();
 		int rightW = Math.max(210, w * 42 / 100);
 		int leftW = w - rightW - GAP;
 		PvDraw.innerPanel(g, x, y, leftW, h);
@@ -225,10 +244,11 @@ public final class AttributeShardsPage {
 
 		List<ForagingSnapshot.AttributeShardRow> notMaxed = new ArrayList<>();
 		for (ForagingSnapshot.AttributeShardRow row : rows) {
-			// Reptiloid cannot realistically be maxed, so it never counts as "not maxed".
-			boolean reptiloid = row.name() != null && row.name().equalsIgnoreCase("Reptiloid")
-				|| row.stackId() != null && row.stackId().toUpperCase(java.util.Locale.ROOT).contains("REPTILOID");
-			if (row.level() < row.maxLevel() && !reptiloid) {
+			// Reptiloid cannot realistically be maxed and Chameleon cannot be syphoned, so neither counts as "not maxed".
+			String sid = row.stackId() == null ? "" : row.stackId().toUpperCase(java.util.Locale.ROOT);
+			boolean skip = row.name() != null && (row.name().equalsIgnoreCase("Reptiloid") || row.name().equalsIgnoreCase("Chameleon"))
+				|| sid.contains("REPTILOID") || sid.contains("CHAMELEON");
+			if (row.level() < row.maxLevel() && !skip) {
 				notMaxed.add(row);
 			}
 		}
@@ -311,7 +331,6 @@ public final class AttributeShardsPage {
 		}
 		JsonObject neuItem = NeuRepoCache.get(row.iconId());
 		AttributeShardTooltip.Info info = AttributeShardTooltip.info(AttributeShardsData.def(row.stackId()), neuItem, row.name());
-		// Only cache once NEU has the item, so the description fills in after the repo finishes loading.
 		if (neuItem != null) {
 			this.shardInfo.put(row.iconId(), info);
 		}
@@ -342,7 +361,6 @@ public final class AttributeShardsPage {
 		return unit;
 	}
 
-	/** Dark rarity-tinted slot fill (keeps icons readable); white common keeps the neutral slot. */
 	private static int raritySlotBackground(int rarityArgb) {
 		int r = (rarityArgb >>> 16) & 0xFF;
 		int green = (rarityArgb >>> 8) & 0xFF;

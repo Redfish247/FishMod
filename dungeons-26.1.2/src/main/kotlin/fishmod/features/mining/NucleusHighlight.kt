@@ -5,7 +5,6 @@ import fishmod.utils.rendering.RenderHooks
 import net.minecraft.world.phys.AABB
 import fishmod.features.mining.MiningSettings as S
 
-// Boxes around the five barrier pockets in the Crystal Nucleus where crystals get placed
 object NucleusHighlight {
 
     // SkyHanni NucleusBarriersBox coords (inclusive block corners)

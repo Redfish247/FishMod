@@ -17,7 +17,6 @@ import fishmod.pv.gui.nav.PvSubTab;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 
-/** Foraging: Overview / HOTF / Hunting / Attribute Shards. */
 public final class ForagingPage {
 	private ForagingSnapshot snapshot = ForagingSnapshot.empty();
 	private PvSubTab lastSub;

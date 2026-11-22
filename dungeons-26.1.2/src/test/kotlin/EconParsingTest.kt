@@ -9,7 +9,7 @@ class EconParsingTest {
         return m.invoke(o, s) as Long?
     }
     private fun abbrev(s: String?): Double {
-        val o = Class.forName("fishmod.features.PetHud").getField("INSTANCE").get(null)
+        val o = Class.forName("fishmod.features.hud.PetHud").getField("INSTANCE").get(null)
         val m = o.javaClass.getDeclaredMethod("parseAbbrev", String::class.java).apply { isAccessible = true }
         return m.invoke(o, s) as Double
     }

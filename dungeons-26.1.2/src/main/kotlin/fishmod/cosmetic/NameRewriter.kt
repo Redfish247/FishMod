@@ -1,6 +1,7 @@
 package fishmod.cosmetic
 
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import java.util.Optional
@@ -38,20 +39,26 @@ object NameRewriter {
                     && full.regionMatches(blockStart, cosmetic, 0, cosmetic.length)
                 ) {
                     appendRange(out, segs, charPos, blockStart)
-                    out.append(replacement.copy())
+                    out.append(withRealNameHover(replacement, realName))
                     charPos = blockStart + cosmetic.length
                     continue
                 }
             }
             appendRange(out, segs, charPos, idx)
-            out.append(replacement.copy())
+            out.append(withRealNameHover(replacement, realName))
             charPos = idx + realName.length
         }
         appendRange(out, segs, charPos, full.length)
         return out
     }
 
-    // Drops the first `count` visible chars, keeping § codes and styles so the rest stays coloured
+    private fun withRealNameHover(replacement: Component, realName: String): MutableComponent {
+        val hover = HoverEvent.ShowText(Component.literal("§7Real name: §f$realName"))
+        val root = Component.empty().withStyle { it.withHoverEvent(hover) }
+        root.append(replacement.copy())
+        return root
+    }
+
     @JvmStatic
     fun dropVisiblePrefix(original: Component, count: Int): Component {
         val out: MutableComponent = Component.empty()
@@ -90,21 +97,6 @@ object NameRewriter {
             }
             pos = segEnd
         }
-    }
-
-    private var dumps = 0
-
-    // Temp: logs per-segment colours of chat lines with the player's name (first 40)
-    @JvmStatic
-    fun dumpColors(tag: String, c: Component?) {
-        if (c == null || dumps >= 40 || !c.string.contains(NickState.realName())) return
-        dumps++
-        val sb = StringBuilder("[NickDump] $tag:")
-        c.visit({ style, text ->
-            if (text.isNotEmpty()) sb.append(" [").append(style.color?.serialize() ?: "none").append(if (style.isBold) " b" else "").append("]").append(text)
-            Optional.empty<Any>()
-        }, Style.EMPTY)
-        fishmod.utils.debug.FishDebug.LOGGER.info(sb.toString())
     }
 
     private data class Segment(val text: String, val style: Style)

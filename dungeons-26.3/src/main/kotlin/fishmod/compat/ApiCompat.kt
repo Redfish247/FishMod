@@ -12,7 +12,6 @@ import net.minecraft.world.level.block.entity.SignTextSlot
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
 
-// 26.3 side of small API differences; overlays the 26.1.2 file of the same path.
 typealias EndermanT = net.minecraft.world.entity.monster.Enderman
 
 val ClientboundLevelParticlesPacket.speed: Float get() = xMaxSpeed()
@@ -34,4 +33,3 @@ fun signUpdatePacket(sign: SignBlockEntity, lines: List<String>): ServerboundSig
     ServerboundSignUpdatePacket(sign.blockPos, lines, SignTextSlot.FRONT)
 
 fun com.mojang.blaze3d.vertex.PoseStack.rotate(q: org.joml.Quaternionf) { mulPose(org.joml.Matrix4f().rotation(q)) }
-fun glTextureId(t: Any?): Int = (t as? com.mojang.renderpearl.backend.opengl.GlTexture)?.glId() ?: 0

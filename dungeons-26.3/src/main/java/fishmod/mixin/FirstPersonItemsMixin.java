@@ -11,7 +11,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// 26.3 side of the "no equip animation" option (was in ItemInHandRendererMixin).
 @Mixin(FirstPersonHandsAndItems.class)
 public abstract class FirstPersonItemsMixin {
 

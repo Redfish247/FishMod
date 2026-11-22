@@ -1,8 +1,8 @@
 package fishmod.mixin;
 
 import fishmod.features.HasUiOverlay;
-import fishmod.features.item.AnimatedDyeAnimator;
-import fishmod.features.storage.StorageOverlay;
+import fishmod.features.hud.AnimatedDyeAnimator;
+import fishmod.features.inventory.StorageOverlay;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.Minecraft;
@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// 26.3 side: GameRenderer.render() takes no arguments now (the per-frame work moved to extract(DeltaTracker, boolean)).
 @Mixin(GameRenderer.class)
 public class GameRendererUiMixin {
 

@@ -17,9 +17,6 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-/**
- * SkyHelper `pricesV2.json` - needed for leveled pet keys and missing Athen IDs.
- */
 object SkyHelperPriceCache {
 	private val PRICES_URI: URI = URI.create(
 		"https://raw.githubusercontent.com/SkyHelperBot/Prices/main/pricesV2.json"

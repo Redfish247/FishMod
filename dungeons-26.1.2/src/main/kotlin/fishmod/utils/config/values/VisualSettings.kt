@@ -27,12 +27,16 @@ object VisualSettings {
     @ConfigValue @JvmField var roHideObjective: Boolean = false
     @ConfigValue @JvmField var roRemoveDamageIndicator: Boolean = false
     @ConfigValue @JvmField var roFormatDamageIndicator: Boolean = false
+    @ConfigValue @JvmField var roNoLoadingScreen: Boolean = false
+    @ConfigValue @JvmField var roNoGhostPlace: Boolean = false
 
     @ConfigValue @JvmField var hideNearbyPlayers: Boolean = false
     @ConfigValue @JvmField var hidePlayersRadius: Double = 3.0
 
     @ConfigValue @JvmField var rarityBackground: Boolean = false
     @ConfigValue @JvmField var itemRarityOpacity: Int = 35
+    @ConfigValue @JvmField var itemRaritySeparateHotbar: Boolean = false
+    @ConfigValue @JvmField var itemRarityHotbarOpacity: Int = 35
     @ConfigValue @JvmField var itemRarityHypixelColors: Boolean = true
 
     @ConfigValue @JvmField var hideEffectHud: Boolean = false

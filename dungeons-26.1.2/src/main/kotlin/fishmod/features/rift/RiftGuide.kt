@@ -12,18 +12,17 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.resources.Identifier
 import fishmod.features.rift.RiftSettings as S
 
-// Rift Guide overlay: caches unfinished tasks of every guide page you open and draws them as a HUD
 object RiftGuide {
 
     private const val NAME = "Rift Guide"
     private const val BACK_SLOT = 40
     private const val LINE_H = 10
 
-    // page title -> unfinished task names, in the order the pages were opened
     private val pages = LinkedHashMap<String, List<String>>()
     @Volatile private var rows: List<String> = emptyList()
 
     fun init() {
+        registerPreview()
         FishHudEditor.register(NAME,
             { S.riftGuideX }, { S.riftGuideX = it }, { S.riftGuideY }, { S.riftGuideY = it }, 140, 80,
             { S.riftGuideScale }, { S.riftGuideScale = it }, { S.riftGuide })
@@ -37,12 +36,28 @@ object RiftGuide {
             pose.pushMatrix()
             pose.translate(S.riftGuideX.toFloat(), S.riftGuideY.toFloat())
             pose.scale(S.riftGuideScale.toFloat(), S.riftGuideScale.toFloat())
-            val color = S.riftGuideColor and 0xFFFFFF
-            rows.take(S.riftGuideMaxLines.coerceAtLeast(1)).forEachIndexed { i, r ->
-                val head = r.startsWith("#")
-                ctx.text(mc.font, if (head) r.substring(1) else "• $r", 0, i * LINE_H, if (head) -1 else (0xFF000000.toInt() or color), true)
-            }
+            drawRows(ctx, rows.take(S.riftGuideMaxLines.coerceAtLeast(1)))
             pose.popMatrix()
+        }
+    }
+
+    private fun drawRows(ctx: net.minecraft.client.gui.GuiGraphicsExtractor, shown: List<String>) {
+        val font = Minecraft.getInstance().font
+        val color = S.riftGuideColor and 0xFFFFFF
+        shown.forEachIndexed { i, r ->
+            val head = r.startsWith("#")
+            ctx.text(font, if (head) r.substring(1) else "• $r", 0, i * LINE_H, if (head) -1 else (0xFF000000.toInt() or color), true)
+        }
+    }
+
+    // Example data: one fake guide page with fake task names, built like rebuild()
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register(NAME) {
+            val shown = rows.ifEmpty { listOf("#§e§lExample Page", "Example task one", "Example task two", "Example task three") }
+                .take(S.riftGuideMaxLines.coerceAtLeast(1))
+            val font = Minecraft.getInstance().font
+            val w = shown.maxOf { font.width(if (it.startsWith("#")) it.substring(1) else "• $it") }
+            fishmod.features.HudExample(w, fishmod.features.HudPreview.textHeight(shown.size, LINE_H)) { drawRows(it, shown) }
         }
     }
 

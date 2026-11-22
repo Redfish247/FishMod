@@ -4,7 +4,6 @@ import fishmod.utils.rendering.UiRecorder
 import kotlin.math.cos
 import kotlin.math.sin
 
-// Vector glyphs for achievement tiles: one per section, tinted by difficulty
 object AchIcons {
 
     fun diffColor(diff: String): Int = when (diff) {

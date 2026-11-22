@@ -18,12 +18,7 @@ import java.util.Collections
 import java.util.Locale
 import java.util.TreeMap
 
-/**
- * Chocolate Factory constants from {@code chocolate_factory.json} (prestige thresholds, Hitman slot costs and rabbit
- * factions, sourced from the meowdding repo with rabbit ids checked against NEU {@code hoppity.json}).
- */
 object ChocolateFactoryData {
-	/** {@code threshold} is chocolate earned this prestige needed for {@code level + 1}; 0 when maxed. */
 	@JvmRecord
 	data class Prestige(val level: Int, val maxLevel: Int, val threshold: Long, val earned: Long) {
 		fun maxed(): Boolean = level >= maxLevel || threshold <= 0L
@@ -33,7 +28,6 @@ object ChocolateFactoryData {
 		fun ready(): Boolean = !maxed() && earned >= threshold
 	}
 
-	/** Coin costs are per slot, so {@code paid} is the sum of the first {@code slots} entries. */
 	@JvmRecord
 	data class Hitmen(val slots: Int, val maxSlots: Int, val paid: Long, val total: Long, val nextSlotCost: Long) {
 		fun fraction(): Double = if (total <= 0L) 0.0 else minOf(1.0, paid / total.toDouble())
@@ -49,7 +43,6 @@ object ChocolateFactoryData {
 			rabbitsByRarity.values.sumOf { ids -> ids.count { ownedRabbits.contains(it) } }
 	}
 
-	// SkyBlock year 1 began 2019-06-11 17:55 UTC; one year is 124 real hours.
 	private const val SKYBLOCK_EPOCH_MS = 1_560_275_700_000L
 	private const val SKYBLOCK_YEAR_MS = 124L * 60L * 60L * 1000L
 

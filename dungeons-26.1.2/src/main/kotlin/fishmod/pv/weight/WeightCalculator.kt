@@ -94,7 +94,6 @@ object WeightCalculator {
 	fun lily(member: JsonObject?, levels: Map<String, Leveling.Progress>?): WeightBreakdown {
 		val weight = RepoData.weight()
 		if (weight == null || member == null || levels == null) return WeightBreakdown.empty(WeightSystem.LILY)
-		// Lily always uses the shared leveling_xp table capped at 60 (NEU / official Lily).
 		val lilySkills = lilySkillLevels(member)
 
 		var skillAverage = 0.0
@@ -143,7 +142,6 @@ object WeightCalculator {
 		return WeightBreakdown(WeightSystem.LILY, base, overflow, WeightStages.lilyRank(base + overflow), categories)
 	}
 
-	/** Lily skill levels ignore Jacob/farming caps - always leveling_xp to 60. */
 	private fun lilySkillLevels(member: JsonObject): Map<String, Leveling.Progress> {
 		val table = RepoData.levelingXp()
 		return SKILL_NAMES.associateWith { skill ->
@@ -224,7 +222,6 @@ object WeightCalculator {
 		val overallEl = RepoData.path(weight, "lily.dungeons.overall")
 		val overall = if (overallEl != null && overallEl.isJsonPrimitive) overallEl.asDouble else 1.0
 		if (catacombs.totalXp < CATACOMBS_LEVEL_50_XP) {
-			// Float division on purpose: level is a float
 			val n = 0.2 * (catacombs.level / 50).toDouble().pow(1.538679118869934)
 			return overall * ((1.18340401286164044.pow((catacombs.level + 1).toDouble()) - 1.05994990217254) * (1 + n))
 		}

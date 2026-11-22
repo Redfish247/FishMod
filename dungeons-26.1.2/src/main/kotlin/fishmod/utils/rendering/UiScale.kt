@@ -14,7 +14,8 @@ object UiScale {
     fun factor(): Float {
         val guiScale = Minecraft.getInstance().window.guiScale
         if (guiScale <= 0) FishDiag.fail("UiScale.1", "window guiScale is $guiScale, UI scale will be infinite")
-        val compensation = (REFERENCE_GUI_SCALE / guiScale).coerceAtMost(1.0)
+        // no cap at 1: GUI scale 1 got half-size menus (0.77x physical vs 1.54x at every other scale)
+        val compensation = REFERENCE_GUI_SCALE / guiScale
         val base = (compensation * FLAT_SHRINK).toFloat()
         return (if (isSiblingScreen()) base * SIBLING_ENLARGE else base) * userScale()
     }
@@ -24,14 +25,13 @@ object UiScale {
         if (!FishSettings.guiSettings || screen == null) return 1f
         val pct = when (screen) {
             is fishmod.features.FishModScreen -> FishSettings.guiScaleMain
-            is fishmod.features.ChatCommandsScreen -> FishSettings.guiScaleChatCommands
-            is fishmod.features.PartyLootScreen -> FishSettings.guiScalePartyLoot
+            is fishmod.features.hud.ChatCommandsScreen -> FishSettings.guiScaleChatCommands
+            is fishmod.features.party.PartyLootScreen -> FishSettings.guiScalePartyLoot
             is fishmod.features.FishHudEditor -> FishSettings.guiScaleHudEditor
-            is fishmod.features.item.ItemCustomizeScreen -> FishSettings.guiScaleItemCustomize
-            is fishmod.features.storage.StorageViewerScreen -> FishSettings.guiScaleStorage
-            is fishmod.features.item.AuctionPriceScreen -> FishSettings.guiScaleAuction
+            is fishmod.features.hud.ItemCustomizeScreen -> FishSettings.guiScaleItemCustomize
+            is fishmod.features.inventory.StorageViewerScreen -> FishSettings.guiScaleStorage
+            is fishmod.features.hud.AuctionPriceScreen -> FishSettings.guiScaleAuction
             is fishmod.features.dungeon.DungeonWaypointTitleScreen -> FishSettings.guiScaleWaypoint
-            is fishmod.features.CreditsScreen -> FishSettings.guiScaleCredits
             is fishmod.features.diana.DianaPastEventsScreen -> FishSettings.guiScaleDianaProfit
             else -> 100
         }

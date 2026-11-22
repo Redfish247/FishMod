@@ -29,7 +29,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Heart of the Forest subtab. */
 public final class HotfPage {
 	private final List<HoverZone> zones = new ArrayList<>();
 
@@ -42,7 +41,6 @@ public final class HotfPage {
 		int x, int y, int w, int h, int mx, int my
 	) {
 		this.zones.clear();
-		// Wide enough that "Heart of the Forest" isn't truncated.
 		int leftW = Math.max(128, Math.min(156, w / 5));
 		int centerW = w - leftW - GAP;
 		int leftX = x;
@@ -73,7 +71,6 @@ public final class HotfPage {
 			rx, ry, rw, PvDraw.COLOR_ACCENT) + 1;
 		ry = ForagingUi.statLine(g, font, "Tokens spent", String.valueOf(snapshot.forestTokensSpent()),
 			rx, ry, rw, PvDraw.COLOR_TEXT) + 2;
-		// skill_tree.last_reset.foraging unit/reliability unverified; hide until confirmed.
 
 		ry = ForagingUi.sectionSeparator(g, font, x, ry, w);
 		PvDraw.text(g, font, "Whispers", rx, ry, PvDraw.COLOR_MUTED);
@@ -131,7 +128,6 @@ public final class HotfPage {
 			String effect = snapshot.dailyEffect().isBlank() ? "-" : ForagingUi.pretty(snapshot.dailyEffect());
 			ForagingUi.wrapText(g, font, effect, rx, ry, rw, PvDraw.COLOR_GOLD);
 			ry += font.lineHeight + 4;
-			// current_daily_effect_last_changed is unmapped (value scale != daily_*_day). Hide raw until verified.
 		}
 
 		List<ForagingSnapshot.HotfNode> unplaced = snapshot.unplacedHotfNodes();
@@ -178,7 +174,6 @@ public final class HotfPage {
 		int baseGap = 2;
 		int baseGridW = cols * baseCell + Math.max(0, cols - 1) * baseGap;
 		int baseGridH = rows * baseCell + Math.max(0, rows - 1) * baseGap;
-		// Integer zoom only - fractional scale softens item textures.
 		int zoom = 1;
 		if (baseGridW > 0 && baseGridH > 0) {
 			zoom = Math.max(1, Math.min(innerW / baseGridW, innerH / baseGridH));
@@ -227,10 +222,6 @@ public final class HotfPage {
 		g.disableScissor();
 	}
 
-	/**
-	 * Locked: pale oak button · unlocked: stripped oak · maxed: oak log.
-	 * Locked ability: dead bush · unlocked/maxed ability: stripped/oak log.
-	 */
 	private static ItemStack hotfPerkIcon(ForagingHotfData.PerkDef perk, int level) {
 		if (perk.ability()) {
 			if (level <= 0) {
@@ -247,7 +238,6 @@ public final class HotfPage {
 		return new ItemStack(Items.STRIPPED_OAK_LOG);
 	}
 
-	/** Three significant figures (10.4M) so the pool name fits beside it; exact numbers stay in the tooltip. */
 	static String whisperValue(ForagingSnapshot.WhisperPool pool) {
 		return compact(pool.balance()) + " / " + compact(pool.total());
 	}

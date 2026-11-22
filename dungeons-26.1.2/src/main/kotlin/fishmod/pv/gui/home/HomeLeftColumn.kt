@@ -37,7 +37,6 @@ import net.minecraft.network.chat.FormattedText
 import net.minecraft.network.chat.Style
 import net.minecraft.world.item.ItemStack
 
-/** Profile face, left-column flip, and stats-face drawing for Home. */
 class HomeLeftColumn {
 	private var weightHitX = 0
 	private var weightHitY = 0
@@ -120,11 +119,6 @@ class HomeLeftColumn {
 			&& mouseY >= nameHitY && mouseY < nameHitY + nameHitH
 			&& nameHitW > 0
 
-	/**
-	 * Real cursor for the model's look-at. Popups mask the hover mouse to a far off-screen point,
-	 * and feeding that to the follow-mouse entity render snaps the model's head and body.
-	 * Only applies to the next draw.
-	 */
 	fun setModelLook(x: Int, y: Int) {
 		modelLookSet = true
 		modelLookX = x
@@ -157,7 +151,6 @@ class HomeLeftColumn {
 		mouseX >= leftHitX && mouseX < leftHitX + leftHitW
 			&& mouseY >= leftHitY && mouseY < leftHitY + leftHitH
 
-	/** Stats face removed from the profile page; the model panel no longer flips. */
 	fun beginFlip(): Boolean {
 		if (!FLIP_ENABLED) {
 			return false
@@ -223,19 +216,17 @@ class HomeLeftColumn {
 		}
 		var scaleX = 1F
 		var scaleY = 1F
+		var slideDx = 0F
 		if (animating) {
-			scaleX = maxOf(0.04F, abs(cos(angle.toDouble()).toFloat()))
-			scaleY = 1F - (1F - scaleX) * 0.06F
+			slideDx = PvDraw.slideOffset(eased, w)
 		}
 
 		val cxFlip = x + w / 2F
 		val cyFlip = y + h / 2F
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0F)
 
 		var modelBox: IntArray? = null
 		if (showStats) {
@@ -245,15 +236,16 @@ class HomeLeftColumn {
 			statusHitW = 0
 			drawStatsFace(g, font, x, y, w, h, playerStats, zones)
 		} else if (snapshot != null) {
-			modelBox = drawProfileFace(
+			val faceBox = drawProfileFace(
 				g, font, x, y, w, h, layout, mouseX, mouseY,
 				snapshot, playerStatus, playerRank, activeNw, senither, lily, weightSystem, loadError, zones
 			)
+			if (!animating) modelBox = faceBox
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 
-		// Entity rendering ignores the GUI pose matrix - apply the same flip in screen space after pop.
 		val uuid = snapshot?.playerUuid
 		if (modelBox != null && uuid != null) {
 			playerModel.draw(
@@ -524,7 +516,6 @@ class HomeLeftColumn {
 		}
 		var namePart: Component = Component.literal(name)
 		val styled = Component.empty()
-		// SkyBlock level bracket in place of the Hypixel rank tag, e.g. [603].
 		val nameAlreadyHasBracket = namePart.string.startsWith("[")
 		if (!nameAlreadyHasBracket) {
 			val level = snapshot.skyBlockLevel
@@ -533,11 +524,9 @@ class HomeLeftColumn {
 			styled.append(PvTooltip.Span.of("] ", 0xFF555555.toInt()).toComponent())
 		}
 		if (playerRank != null && !nameAlreadyHasBracket) {
-			// Cosmetics did nothing special, so use the HypixelRanks name colour (grey with no rank).
 			namePart = PvTooltip.Span.of(name, HypixelRanks.nameColor(playerRank)).toComponent()
 		}
 		if (uuid != null) {
-			// FishMod badges, then the name, then any emblem the player wears in the tab list.
 			for (badge in BadgeManager.badgesFor(uuid.toString().replace("-", ""))) {
 				styled.append(badge.component(" "))
 			}
@@ -618,7 +607,6 @@ class HomeLeftColumn {
 			zones.add(HomePage.HoverZone(lineX, ty, lineW, font.lineHeight, tip))
 		}
 
-		/** Trailing symbol after the name in the tab list (Hypixel emblem), with its colour. */
 		private fun tabEmblem(uuid: UUID): Component? {
 			val connection = Minecraft.getInstance().connection ?: return null
 			for (info in connection.onlinePlayers) {
@@ -696,7 +684,6 @@ class HomeLeftColumn {
 			return text.substring(0, lo).trimEnd() + ellipsis
 		}
 
-		/** Compact rounded stats: `3908.7 → 3.9k`, `469.5 → 470`, `0.0 → 0`. */
 		private fun formatStat(value: Double): String {
 			val abs = abs(value)
 			if (abs >= 1_000_000_000L) {
@@ -711,7 +698,6 @@ class HomeLeftColumn {
 			return Math.round(value).toString()
 		}
 
-		/** Full tooltip number with commas (and one decimal when meaningful). */
 		private fun formatStatFull(value: Double): String {
 			val rounded = Math.round(value * 10.0) / 10.0
 			if (abs(rounded - Math.rint(rounded)) < 0.05) {

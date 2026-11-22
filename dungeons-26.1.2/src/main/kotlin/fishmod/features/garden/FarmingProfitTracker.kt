@@ -1,11 +1,14 @@
 package fishmod.features.garden
+
+import fishmod.features.garden.visitors.Pests
+import fishmod.features.garden.visitors.Visitors
 import fishmod.compat.curScreen
 
 import com.google.gson.GsonBuilder
 import fishmod.features.FishHudEditor
 import fishmod.features.ProfitTrackerKit
 import fishmod.features.ProfitTrackerKit.Row
-import fishmod.features.croesus.CroesusPrices
+import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishMsg
 import fishmod.utils.events.FishEvents
@@ -23,7 +26,6 @@ import net.minecraft.resources.Identifier
 import java.io.File
 import fishmod.features.garden.GardenSettings as S
 
-// Farming profit tracker (same shape as the Mining one): Session/Total, per category, chat + sack parsing
 object FarmingProfitTracker {
 
     enum class Cat(val display: String, override val color: String, override val short: String) : ProfitTrackerKit.Cat {
@@ -35,7 +37,7 @@ object FarmingProfitTracker {
     val SORTS = arrayOf("Most Profit", "Least Profit", "Category")
 
     class Tracker {
-        var items: MutableMap<String, Long> = LinkedHashMap()  // "CAT|Item Name" -> count
+        var items: MutableMap<String, Long> = LinkedHashMap()
         var counts: MutableMap<String, Long> = LinkedHashMap()
         var timeMs = 0L
         var feverMs = 0L
@@ -66,6 +68,7 @@ object FarmingProfitTracker {
 
     fun init() {
         load()
+        ProfitTrackerKit.registerEdit("farmingtracker", "farming profit", Cat.CROPS, Cat.entries.toTypedArray(), { data.session.items.keys + data.total.items.keys }) { c, n, v -> add(c, n, v) }
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
         FishEvents.worldChange.register { save(true); pending.clear(); rewardUntil = 0L; false }
@@ -77,12 +80,12 @@ object FarmingProfitTracker {
         FishHudEditor.register("Farming Profit", { S.gardenProfitHudX }, { S.gardenProfitHudX = it },
             { S.gardenProfitHudY }, { S.gardenProfitHudY = it }, 180, 120, { S.gardenProfitHudScale }, { S.gardenProfitHudScale = it },
             { S.gardenProfit })
+        MiningHuds.registerExample("Farming Profit", ::exampleLines)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_profit")) { ctx, _ ->
             val mc = Minecraft.getInstance()
             if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
                 MiningHuds.draw(ctx, lines(), S.gardenProfitHudX, S.gardenProfitHudY, S.gardenProfitHudScale)
         }
-        // In the inventory the HUD stays up and scrolls with the mouse wheel
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is InventoryScreen) return@AfterInit
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
@@ -91,7 +94,7 @@ object FarmingProfitTracker {
                 val sc = S.gardenProfitHudScale
                 MiningHuds.draw(ctx, l, S.gardenProfitHudX, S.gardenProfitHudY, sc)
                 if (S.gardenProfitMode != "Total")
-                    fishmod.features.other.TrackerResetButton.draw(ctx, "farming", S.gardenProfitHudX, S.gardenProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) { resetSession() }
+                    fishmod.features.general.TrackerResetButton.draw(ctx, "farming", S.gardenProfitHudX, S.gardenProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) { resetSession() }
             })
             ScreenMouseEvents.allowMouseScroll(screen).register(ScreenMouseEvents.AllowMouseScroll { _, mx, my, _, v ->
                 !(shown() && over(mx, my) && scrollBy(if (v > 0) -1 else 1))
@@ -109,7 +112,6 @@ object FarmingProfitTracker {
 
     private fun scrollBy(d: Int): Boolean { scroll = (scroll + d).coerceAtLeast(0); version++; return true }
 
-    // ---- parsing ----
 
     private fun onChat(text: Component) {
         val raw = Garden.strip(text.string)
@@ -146,7 +148,10 @@ object FarmingProfitTracker {
     private fun credit(cat: Cat, name: String, n: Long, now: Long) {
         if (name.isEmpty() || n <= 0 || idOf(name) == null) return
         add(cat, name, n)
-        pending.getOrPut(norm(name)) { ArrayList() } += longArrayOf(n, now)
+        // Entries for items the Sacks summary never repeats would pile up; drop the stale ones on every credit
+        val q = pending.getOrPut(norm(name)) { ArrayList() }
+        q.removeAll { now - it[1] > 90_000 }
+        q += longArrayOf(n, now)
     }
 
     private fun num(s: String) = s.replace(",", "").toLongOrNull() ?: 0L
@@ -170,7 +175,6 @@ object FarmingProfitTracker {
 
     private fun idOf(name: String): String? = ItemsDb.idFor(name) ?: ItemsDb.idFor(name.trimStart { !it.isLetterOrDigit() })
 
-    // Sack hover lists gained items; whatever chat didn't already count is farmed crops
     private fun onSacks(text: Component, now: Long) {
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
@@ -182,7 +186,8 @@ object FarmingProfitTracker {
             if (m.groupValues[1] != "+") continue
             val n = num(m.groupValues[2]); if (n <= 0) continue
             val item = m.groupValues[3].trim()
-            if (idOf(item) == null) continue
+            if (!ProfitTrackerKit.inSacks(idOf(item), "Agronomy", "Enchanted Agronomy", "Garden", "Flower", "Mutations")) continue
+            if (ProfitTrackerKit.isFishingLeak(idOf(item), now, 0L)) continue
             val rest = consumePending(item, n, now)
             if (rest > 0) add(Cat.CROPS, item, rest)
         }
@@ -213,7 +218,6 @@ object FarmingProfitTracker {
         save(false)
     }
 
-    // ---- values ----
 
     fun priceOf(name: String): Double {
         val id = idOf(name) ?: return 0.0
@@ -227,22 +231,24 @@ object FarmingProfitTracker {
 
     fun lines(): List<String> = cache.get(version, ::buildLines)
 
-    private fun buildLines(): List<String> {
-        val t = tracker()
+    private fun buildLines(): List<String> = buildLines(tracker(), ::priceOf, true, S.gardenRareCropCount)
+
+    // live = the in-game HUD (keeps the inventory scroll); false = the HUD editor example over example data
+    private fun buildLines(t: Tracker, price: (String) -> Double, live: Boolean, rareCount: Int): List<String> {
         val only = Cat.of(S.gardenProfitCategory)
         val rows = ProfitTrackerKit.sort(ProfitTrackerKit.mergeSources(t.items.mapNotNull { (k, n) ->
             val cat = runCatching { Cat.valueOf(k.substringBefore('|')) }.getOrNull() ?: return@mapNotNull null
             if (only != null && cat != only) return@mapNotNull null
             val name = k.substringAfter('|')
-            Row(cat, name, n, priceOf(name) * n)
+            Row(cat, name, n, price(name) * n)
         }), S.gardenProfitSort)
         val max = S.gardenProfitLines.coerceIn(5, 25)
-        scroll = scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0))
+        val scroll = if (live) this.scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0)).also { this.scroll = it } else 0
         val out = ArrayList<String>()
         out += "${Garden.legacy(S.gardenProfitColor)}§lFarming Profit §7(${S.gardenProfitCategory}, ${S.gardenProfitMode})"
         if (scroll > 0) out += "§8  ▲ $scroll more"
         for (r in rows.drop(scroll).take(max)) {
-            val v = if (r.value > 0) "§6${Garden.short(r.value)}" else ""
+            val v = if (r.value > 0) "§6${Garden.short(r.value)} §7(${Garden.short(perHour(r.value, t))}/h)" else ""
             out += ProfitTrackerKit.rowLine(r, v, ProfitTrackerKit.rarityColor(idOf(r.name)), S.gardenProfitShowSources)
         }
         val below = rows.size - scroll - max
@@ -262,17 +268,25 @@ object FarmingProfitTracker {
         out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
         if (t.feverMs > 0) out += "${Garden.legacy(S.gardenFeverColor)}Crop Fever §f${fishmod.features.diana.DianaTracker.fmtTime(t.feverMs)}"
         out += "§eProfit §6${Garden.short(profit)} §7(${Garden.short(ph)}/h)"
-        out += "${Garden.legacy(S.gardenRareCropColor)}Rare Crops §f${"%,d".format(S.gardenRareCropCount)}"
+        out += "${Garden.legacy(S.gardenRareCropColor)}Rare Crops §f${"%,d".format(rareCount)}"
         return out
+    }
+
+    private val EXAMPLE_PRICES = mapOf("Enchanted Potato" to 280.0, "Compost" to 3500.0, "Pesterminator" to 120000.0)
+
+    private fun exampleLines(): List<String> {
+        val t = Tracker()
+        for ((k, n) in listOf("CROPS|Enchanted Potato" to 960L, "PESTS|Compost" to 14L, "RARE|Pesterminator" to 1L)) t.items[k] = n
+        t.counts["Pests Killed"] = 17; t.counts["Visitors"] = 22; t.counts["Copper"] = 4_800; t.counts["Garden XP"] = 9_100
+        t.timeMs = 3_725_000L
+        if (S.gardenFever) t.feverMs = 540_000L
+        return buildLines(t, { EXAMPLE_PRICES[it] ?: 0.0 }, false, 7)
     }
 
     private val COUNT_COLOR = mapOf("Pests Killed" to "§c", "Visitors" to "§a", "Copper" to "§6", "Garden XP" to "§2", "Rare Crops" to "§d")
 
     private fun perHour(v: Double, t: Tracker) = ProfitTrackerKit.perHour(v, t.timeMs)
 
-    // Session items ("CAT|Item" -> count) and active time, for the other garden HUDs
-    fun sessionItems(): Map<String, Long> = HashMap(data.session.items)
-    fun sessionTimeMs(): Long = data.session.timeMs
     fun addFeverTime(ms: Long) { data.session.feverMs += ms; data.total.feverMs += ms; changed() }
 
     fun resetSession(msg: Boolean = true) { data.session = Tracker(); changed(); if (msg) FishMsg.send("§aFarming profit session reset.") }

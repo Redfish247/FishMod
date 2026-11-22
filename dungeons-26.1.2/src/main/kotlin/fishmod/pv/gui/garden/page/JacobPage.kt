@@ -39,7 +39,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Garden Jacob contests subpage. */
 class JacobPage {
 	private var scroll = 0
 	private var maxScroll = 0
@@ -181,21 +180,14 @@ class JacobPage {
 		} else {
 			jacobExtrasFace
 		}
-		var scaleX = 1F
-		var scaleY = 1F
+		var slideDx = 0f
 		if (animating) {
-			scaleX = maxOf(0.04F, abs(cos(angle.toDouble()).toFloat()))
-			scaleY = 1F - (1F - scaleX) * 0.06F
+			slideDx = PvDraw.slideOffset(eased, w)
 		}
-
-		val cxFlip = x + w / 2F
-		val cyFlip = y + h / 2F
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 		if (hovered && !animating) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -207,6 +199,7 @@ class JacobPage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawJacobContestsFace(snap: GardenSnapshot, ui: GardenUi, g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, h: Int) {
@@ -478,7 +471,6 @@ class JacobPage {
 		}
 
 		fun drawOrb(g: GuiGraphicsExtractor, x: Int, y: Int, size: Int, argb: Int) {
-			// Odd sizes center cleanly; even sizes read as knobbly squares.
 			val r = size / 2
 			val mid = (size - 1) * 0.5F
 			val r2 = r * r + 0.25F
@@ -494,7 +486,6 @@ class JacobPage {
 					if (dist2 > r2) {
 						continue
 					}
-					// Soft sphere shade so medals read as circles, not flat squares.
 					var shade = 1.0F - (cy / maxOf(1F, r.toFloat())) * 0.22F
 					shade = shade.coerceIn(0.72F, 1.18F)
 					if (cx * cx + (cy + r * 0.35F) * (cy + r * 0.35F) < r2 * 0.22F) {

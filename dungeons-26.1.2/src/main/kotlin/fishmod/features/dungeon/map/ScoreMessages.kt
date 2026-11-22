@@ -105,10 +105,27 @@ object ScoreMessages {
         fadeStartMs = displayUntilMs - Math.min(FADE_MS, DURATION_MS)
     }
 
-    private fun previewText(): String {
-        var raw = DungeonMapSettings.mapScore300TitleText
-        if (raw.isBlank()) raw = "300 Score"
-        return raw.replace("<time>", "12m 34s").replace('&', '§')
+    // The title the player's settings would show (300 first, else 270), with an example time; null if none
+    private fun previewText(): String? {
+        val raw = when {
+            DungeonMapSettings.mapScore300Title && DungeonMapSettings.mapScore300TitleText.isNotBlank() -> DungeonMapSettings.mapScore300TitleText
+            DungeonMapSettings.mapScore270Title && DungeonMapSettings.mapScore270TitleText.isNotBlank() -> DungeonMapSettings.mapScore270TitleText
+            else -> return null
+        }
+        return titleText(raw, "12m 34s")
+    }
+
+    @JvmStatic
+    fun previewWidth(): Int = Minecraft.getInstance().font.width(previewText() ?: "300 Score")
+
+    // Example: the live title draw, centred on the box like in game
+    fun registerPreview() {
+        fishmod.features.HudPreview.register("Dungeon Score Title") {
+            val text = previewText() ?: return@register null
+            val mc = Minecraft.getInstance()
+            val w = mc.font.width(text)
+            fishmod.features.HudExample(w, 9) { renderAt(it, mc, w / 2f, 0f, 1f, text, 1f) }
+        }
     }
 
     private fun renderAt(g: GuiGraphicsExtractor, mc: Minecraft, x: Float, y: Float, scale: Float, text: String, alpha: Float) {

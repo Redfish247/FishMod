@@ -1,4 +1,6 @@
 package fishmod.features.chat
+
+import fishmod.features.general.*
 import fishmod.compat.hud
 import fishmod.utils.TextStrip
 

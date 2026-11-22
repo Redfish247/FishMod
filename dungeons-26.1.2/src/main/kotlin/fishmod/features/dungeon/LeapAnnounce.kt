@@ -16,7 +16,6 @@ object LeapAnnounce {
 
     private val TARGET: Pattern = Pattern.compile("You have teleported to (.+?)!")
 
-    // Hide-players-after-leap window end (ms)
     @Volatile private var hideUntil = 0L
 
     @JvmStatic

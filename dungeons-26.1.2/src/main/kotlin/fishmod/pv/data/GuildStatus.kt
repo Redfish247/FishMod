@@ -12,7 +12,6 @@ import fishmod.pv.util.LegacyChatFormatting
 import java.util.Locale
 import net.minecraft.ChatFormatting
 
-/** Click-to-load Hypixel guild card for Home → Misc. */
 class GuildStatus private constructor(
 	state: State?,
 	name: String?,
@@ -67,7 +66,6 @@ class GuildStatus private constructor(
 	}
 
 	companion object {
-		// Local accent so this data class need not import PvDraw.
 		private const val ACCENT = 0xFF5B8CFF.toInt()
 
 		@JvmStatic

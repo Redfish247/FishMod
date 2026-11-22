@@ -41,7 +41,6 @@ import net.minecraft.server.packs.resources.ResourceManager
 object PvClient {
 	/** Runs after [Event.DEFAULT_PHASE] so we replace Skyblocker's `/pv`. */
 	private val PV_COMMAND_PHASE: Identifier = ProfileViewer.id("override_pv")
-	/** Set when Brigadier reflection could not strip another mod's `/pv`. */
 	private val PV_OVERRIDE_FAILED = AtomicBoolean(false)
 	private val PV_SHADOW_CHAT_SENT = AtomicBoolean(false)
 	private val INITIALIZED = AtomicBoolean(false)
@@ -66,7 +65,8 @@ object PvClient {
 			dispatcher.register(buildPvCommand(ClientCommands.literal("pv")))
 		}
 
-		ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
+		// a rejected listener (duplicate id, late registration) must not abort the rest of PV init
+		runCatching { ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
 			object : SimpleSynchronousResourceReloadListener {
 				override fun getFabricId(): Identifier = Identifier.fromNamespaceAndPath("fishmod", "pv_icon_probe_cache")
 
@@ -74,14 +74,13 @@ object PvClient {
 					SkyBlockIconRenderer.invalidateProbeCache()
 				}
 			}
-		)
+		) }
 
 		PlayerInteractPvOpener.register()
 		HypixelProfileSpyButton.register()
 		// Inject /pv clicks on party / friends-list lines that Hypixel left non-clickable.
 		// Does not remap existing SocialOptions (avoids chat color bleach).
 		ClientReceiveMessageEvents.MODIFY_GAME.register { message, overlay ->
-			// process() returns null with PV disabled; Fabric needs the message back.
 			if (overlay) message else ChatClickProcessor.process(message) ?: message
 		}
 		ClientTickEvents.END_CLIENT_TICK.register { ProfileViewerOpener.tick(it) }
@@ -99,7 +98,6 @@ object PvClient {
 		}
 	}
 
-	/** One in-game chat tip if bare `/pv` could not be claimed from another mod. */
 	private fun warnPvShadowedOnce(client: Minecraft?) {
 		if (PV_OVERRIDE_FAILED.get()) {
 			sendShadowNoteOnce(client, "FishMod PV: another mod owns /pv. Open profiles from chat name clicks instead.")

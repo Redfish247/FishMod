@@ -25,9 +25,12 @@ object RiftCaducousStem {
                     net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("stem").executes { debug(); 1 })))
         }
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 4 == 0) scan() }
-        fishmod.utils.events.FishEvents.worldChange.register { tops = emptyList(); false }
+        fishmod.utils.events.FishEvents.worldChange.register { tops = emptyList(); lastBase = null; false }
         RenderHooks.GIZMO.register { _ -> render() }
     }
+
+    private var lastBase: BlockPos? = null
+    private var lastScan = 0
 
     private fun scan() {
         val mc = Minecraft.getInstance()
@@ -35,12 +38,14 @@ object RiftCaducousStem {
         if (!S.riftStem || me == null || level == null || !Rift.inRift() || !RiftDreadfarm.wandHeld()) { tops = emptyList(); return }
         val ar = Rift.area(); if (ar.isNotEmpty() && !ar.contains("Dreadfarm", true)) { tops = emptyList(); return }
         val base = me.blockPosition()
+        // Stems rarely change; rescan when the player moves a block or once a second
+        if (base == lastBase && tick - lastScan < 20) return
+        lastBase = base; lastScan = tick
         val found = ArrayList<BlockPos>()
         val m = BlockPos.MutableBlockPos()
         for (dx in -RADIUS..RADIUS) for (dz in -RADIUS..RADIUS) {
             var y = base.y + RADIUS + 2
             val low = base.y - RADIUS
-            // First bush from the top of the window, then climb past the window to the stem's real top
             while (y >= low && !level.getBlockState(m.set(base.x + dx, y, base.z + dz)).`is`(Blocks.ROSE_BUSH)) y--
             if (y < low) continue
             var n = 0
@@ -50,13 +55,11 @@ object RiftCaducousStem {
         tops = found
     }
 
-    // Stem continues upward through any non-solid plant block (the vine above the bush is not a Rose Bush)
     private fun climbable(level: net.minecraft.world.level.Level, p: BlockPos): Boolean {
         val s = level.getBlockState(p)
         return !s.isAir && s.fluidState.isEmpty && s.getCollisionShape(level, p).isEmpty
     }
 
-    // /fm rift stem: block ids in the column above the targeted block
     private fun debug() {
         val mc = Minecraft.getInstance(); val level = mc.level ?: return
         val hit = mc.hitResult as? net.minecraft.world.phys.BlockHitResult

@@ -12,13 +12,7 @@ import fishmod.pv.neu.NeuRepoCache
 import fishmod.pv.price.HypixelItemsCache
 import fishmod.pv.price.ItemPricer
 
-/**
- * Accessories missing from the bag, SkyHelper style: only the top missing tier of each chain, priced after
- * selling the tier already owned, cheapest coins per MP first.
- * Upgrade chains come from NEU `talisman_upgrades` plus our `accessory_families.json`.
- */
 object MissingAccessories {
-    /** `soldId` is the owned lower tier replaced by this one, or null. */
     @JvmRecord
     data class Entry(
         val id: String,
@@ -38,7 +32,6 @@ object MissingAccessories {
         fun coinsPerMp(): Double = if (mpGain > 0) netCost() / mpGain else Double.MAX_VALUE
     }
 
-    /** `costToMax` is the summed net cost of every listed entry. */
     @JvmRecord
     data class Result(val entries: List<Entry>, val costToMax: Double, val mpToMax: Int, val unpricedTop: Int) {
         companion object {
@@ -73,7 +66,6 @@ object MissingAccessories {
             val id = str(item.get("id")).uppercase()
             if (id.isBlank() || id in ignored || id in owned) continue
             if (id.contains("ABICASE") && ownsAbicase) continue
-            // Rift accessories only work in the Rift unless Hypixel marks them transferable.
             if (str(item.get("origin")) == "RIFT" && !bool(item.get("rift_transferrable"))) continue
             if (ownsHigherTier(id, owned, upgrades)) continue
             val tier = tierOf(str(item.get("tier")))
@@ -84,14 +76,12 @@ object MissingAccessories {
 
         val missingIds = missing.mapTo(HashSet()) { it.id }
 
-        // Keyed by family so ids that share one (abicases) collapse to a single suggestion.
         val byFamily = LinkedHashMap<String, Entry>()
         for (candidate in missing) {
             val higher = upgrades[candidate.id] ?: emptyList()
             if (higher.any { it in missingIds } || hasMissingHigherFamilyMember(candidate.id, missingIds)) continue
             val sold = bestOwnedInChain(candidate.id, owned, upgrades)
             val mpGain = maxOf(0, MagicalPowerCalculator.magicalPower(candidate.id, candidate.tier) - sold.mp)
-            // Same-rarity upgrade of something already owned (e.g. Campfire 13 -> 20) adds nothing.
             if (sold.id != null && mpGain == 0) continue
             val price = ItemPricer.price(candidate.id)
             val soldPrice = if (sold.id == null) 0.0 else ItemPricer.price(sold.id)
@@ -144,7 +134,6 @@ object MissingAccessories {
         }
     }
 
-    /** Best owned lower tier in the same chain; its MP is what the upgrade replaces. */
     private fun bestOwnedInChain(id: String, owned: Set<String>, upgrades: Map<String, List<String>>): OwnedTier {
         val family = MagicalPowerCalculator.accessoryFamily(id)
         var bestId: String? = null
@@ -171,7 +160,6 @@ object MissingAccessories {
         return name.ifBlank { id }
     }
 
-    /** Hypixel omits `tier` for common items. */
     private fun tierOf(tier: String?): String = if (tier.isNullOrBlank()) "COMMON" else tier.trim().uppercase()
 
     private fun str(element: JsonElement?): String =

@@ -29,7 +29,6 @@ enum class InventoryPane(
 	EQUIPMENT_WARDROBE(null, null, Items.IRON_CHESTPLATE, "fishmod.pv.inv.equipment_wardrobe"),
 	LOADOUTS(null, null, Items.NAME_TAG, "fishmod.pv.inv.loadouts"),
 	SACKS("POCKET_SACK_IN_A_SACK", null, Items.BUNDLE, "fishmod.pv.inv.sacks"),
-	/** No dedicated Fishing Bag skull in the Hypixel items API. */
 	FISHING_BAG(null, null, Items.FISHING_ROD, "fishmod.pv.inv.fishing_bag"),
 	/**
 	 * Hypixel items API ships a broken shared placeholder skin for potion bags -
@@ -37,9 +36,6 @@ enum class InventoryPane(
 	 */
 	POTION_BAG(null, "textures/gui/inventories/potion_bag.png", Items.POTION, "fishmod.pv.inv.potion_bag"),
 	QUIVER(null, null, Items.ARROW, "fishmod.pv.inv.quiver"),
-	/**
-	 * Same API placeholder issue as potion bags (talisman bag = accessory bag).
-	 */
 	ACCESSORY_BAG(null, "textures/gui/inventories/accessory_bag.png", Items.GOLDEN_APPLE, "fishmod.pv.inv.accessory_bag"),
 	TIME_POCKET(null, null, Items.CLOCK, "fishmod.pv.inv.time_pocket"),
 	PERSONAL_VAULT(null, null, Items.ENDER_EYE, "fishmod.pv.inv.personal_vault"),

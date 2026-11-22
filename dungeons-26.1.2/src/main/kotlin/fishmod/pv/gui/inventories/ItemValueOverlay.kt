@@ -16,7 +16,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 
-/** Click-to-open item coin breakdown for the Inventories tab. */
 class ItemValueOverlay {
 	private var opened = false
 	private var breakdown: ItemWorth.Breakdown? = null
@@ -104,7 +103,6 @@ class ItemValueOverlay {
 
 		var titleX = panelX + PAD
 		if (!icon.isEmpty || skyblockId.isNotBlank()) {
-			// Pass skyblock id so Hypixel models / official PNGs match the inventory slot.
 			SkyBlockIconRenderer.draw(g, icon, skyblockId, titleX, panelY + PAD, 16)
 			titleX += 20
 		}
@@ -134,7 +132,6 @@ class ItemValueOverlay {
 		g.disableScissor()
 	}
 
-	/** @return true if the click was consumed. */
 	fun mouseClicked(mx: Double, my: Double): Boolean {
 		if (!opened) {
 			return false
@@ -191,19 +188,12 @@ class ItemValueOverlay {
 		private const val PAD = 8
 		private const val CLOSE_SIZE = 12
 
-		/** Strong green for estimated value / total labels. */
 		private const val COLOR_TOTAL = 0xFF55FF55.toInt()
-		/** Consistent coin prices. */
 		private const val COLOR_PRICE = PvDraw.COLOR_GOLD
-		/** Upgrade rows and upgrade section header. */
 		private const val COLOR_UPGRADE = 0xFFFFAA55.toInt()
-		/** Gemstone section + rows. */
 		private const val COLOR_GEM = 0xFF55FFFF.toInt()
-		/** Enchantment section + rows. */
 		private const val COLOR_ENCHANT = 0xFFC88CFF.toInt()
-		/** Unlock / apply / slot cost style rows. */
 		private const val COLOR_COST = 0xFFFF7744.toInt()
-		/** Soft structural labels. */
 		private val COLOR_LABEL = PvDraw.COLOR_TEXT
 		private val COLOR_MUTED = PvDraw.COLOR_MUTED
 
@@ -266,7 +256,6 @@ class ItemValueOverlay {
 
 		private fun titleColor(breakdown: ItemWorth.Breakdown?): Int = headerColor(breakdown)
 
-		/** Enchantments: highest value first. Everything else: stable logical order. */
 		private fun sortSectionParts(section: ItemWorth.Section, parts: MutableList<ItemWorth.Part>) {
 			if (section == ItemWorth.Section.ENCHANTMENTS) {
 				parts.sortWith { a, b ->
@@ -353,7 +342,6 @@ class ItemValueOverlay {
 			}
 			if (part.role == ItemWorth.Role.UPGRADE) {
 				if (part.detail.isNotBlank()) {
-					// "Reforge" soft + stone/progress warm; keeps upgrade rows scannable.
 					return Row.upgradeSplit(part.label, part.detail, price, COLOR_LABEL, color, lineH)
 				}
 				return Row.upgrade(part.label, price, color, lineH)

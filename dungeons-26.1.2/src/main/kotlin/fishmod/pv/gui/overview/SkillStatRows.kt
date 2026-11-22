@@ -14,7 +14,6 @@ import fishmod.pv.gui.PvTooltip
 import fishmod.pv.gui.SkyBlockStats
 import kotlin.math.abs
 
-/** Calculated stat rows for skill overviews, with what the estimate leaves out spelled out on hover. */
 object SkillStatRows {
 	@JvmStatic
 	fun row(stats: PlayerStatsSnapshot?, id: String, exclusions: List<String>): SummaryCards.Stat {

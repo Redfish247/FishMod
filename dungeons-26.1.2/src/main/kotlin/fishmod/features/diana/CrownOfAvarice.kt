@@ -7,7 +7,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import fishmod.features.item.fishmodCustomDataTag
+import fishmod.features.hud.fishmodCustomDataTag
 import fishmod.utils.FishConstants
 import fishmod.utils.FishMsg
 import fishmod.utils.IoExecutor
@@ -20,6 +20,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
 import net.minecraft.resources.Identifier
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -31,14 +32,12 @@ import java.nio.file.Paths
 import java.text.NumberFormat
 import java.util.Locale
 
-// Hypixel stops counting Crown of Avarice coins at 1B; keep counting from purse gains while doing Diana
 object CrownOfAvarice {
 
     private const val ID = "CROWN_OF_AVARICE"
     private const val CAP = 1_000_000_000L
     // A maxed crown gives 2x coins instead of 5x, so each purse gain is scaled up by 2.5
     private const val SCALE = 2.5
-    // Only purse gains right after a Diana coin source count (mob kill, dug coins, or a burrow dig for Four-Eyed Fish)
     private const val COIN_WINDOW_MS = 3_000L
     private const val MAX_GAIN = 10_000_000L
 
@@ -46,7 +45,6 @@ object CrownOfAvarice {
     private val GSON = GsonBuilder().setPrettyPrinting().create()
     private val PURSE = Regex("""(?:Purse|Piggy):\s*([\d,]+)""")
     private val DUG_COINS = Regex("""^Wow! You dug out [\d,]+ coins!""")
-    // Coins from selling, trading or the bank are not crown coins
     private val NOT_CROWN = Regex("""^(?:You sold |\[Bazaar]|\[Auction]|\[NPC]|Sold |You collected |You claimed |Withdrew |Withdrawing |Deposited |Trade completed|You have withdrawn|Claimed )""")
     private val NUM = NumberFormat.getIntegerInstance(Locale.US)
     private val LOG = org.slf4j.LoggerFactory.getLogger("fishmod/crown")
@@ -81,6 +79,7 @@ object CrownOfAvarice {
         FishHudEditor.register("Crown of Avarice", { DianaSettings.dianaCrownHudX }, { DianaSettings.dianaCrownHudX = it },
             { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,
             { DianaSettings.dianaCrownHudScale }, { DianaSettings.dianaCrownHudScale = it }, { DianaSettings.dianaCrownHud })
+        HudPreview.register("Crown of Avarice") { HudPreview.text(buildLines(250_000_000L, 4_320_000L, 50_000_000L, true), 10) }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ ->
             if (Minecraft.getInstance().curScreen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
         }
@@ -90,7 +89,7 @@ object CrownOfAvarice {
                 val n = drawHud(ctx)
                 if (n > 0) {
                     val sc = DianaSettings.dianaCrownHudScale
-                    fishmod.features.other.TrackerResetButton.draw(ctx, "crown", DianaSettings.dianaCrownHudX, DianaSettings.dianaCrownHudY + (n * 10 * sc).toInt() + 2, sc, mx, my) {
+                    fishmod.features.general.TrackerResetButton.draw(ctx, "crown", DianaSettings.dianaCrownHudX, DianaSettings.dianaCrownHudY + (n * 10 * sc).toInt() + 2, sc, mx, my) {
                         resetSessions(); FishMsg.send("§aCrown of Avarice session reset.")
                     }
                 }
@@ -137,19 +136,22 @@ object CrownOfAvarice {
         val cur = total(crown) ?: itemCoins(crown)
         val session = sessions[uuidOf(crown) ?: "crown"]
         val rate = perHour(session)
-        val lines = ArrayList<String>()
-        lines += "§dCrown of Avarice"
-        lines += if (cur < CAP) "§7Coins: §6${coins(cur)}§7/§61B" else "§7Coins: §6${coins(cur)}"
         val now = System.currentTimeMillis()
         val running = session != null && crown === p.getItemBySlot(EquipmentSlot.HEAD) &&
             session.lastGainMs > 0 && now - session.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L
-        lines += "§7Time: §f${duration(session?.activeMs ?: 0L)}" + if (running) "" else " §c(Paused)"
+        return buildLines(cur, session?.activeMs ?: 0L, rate, running)
+    }
+
+    private fun buildLines(cur: Long, activeMs: Long, rate: Long, running: Boolean): List<String> {
+        val lines = ArrayList<String>()
+        lines += "§dCrown of Avarice"
+        lines += if (cur < CAP) "§7Coins: §6${coins(cur)}§7/§61B" else "§7Coins: §6${coins(cur)}"
+        lines += "§7Time: §f${duration(activeMs)}" + if (running) "" else " §c(Paused)"
         lines += "§7Per Hour: §6${if (rate > 0) short(rate) else "-"}"
         if (cur < CAP) lines += "§7Time to Max: §b${if (rate > 0) duration((CAP - cur) * 3_600_000L / rate) else "-"}"
         return lines
     }
 
-    // Returns how many lines were drawn
     private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor): Int {
         val mc = Minecraft.getInstance()
         if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.hudHidden || mc.player == null || !Diana.active()) return 0
@@ -160,7 +162,7 @@ object CrownOfAvarice {
         pose.translate(DianaSettings.dianaCrownHudX.toFloat(), DianaSettings.dianaCrownHudY.toFloat())
         val sc = DianaSettings.dianaCrownHudScale.toFloat()
         pose.scale(sc, sc)
-        lines.forEachIndexed { i, l -> ctx.text(mc.font, l, 0, i * 10, -1, true) }
+        HudPreview.drawText(ctx, lines, 10)
         pose.popMatrix()
         return lines.size
     }
@@ -188,7 +190,6 @@ object CrownOfAvarice {
         val gain = purse - prev
         val helmet = p.getItemBySlot(EquipmentSlot.HEAD)
         val u = uuidOf(helmet) ?: return
-        // Below 1B Hypixel still counts it on the item itself
         if (itemCoins(helmet) < CAP && (totals[u] ?: 0L) < CAP) return
         val now = System.currentTimeMillis()
         val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs, BurrowDetector.lastDigMs) <= COIN_WINDOW_MS
@@ -200,7 +201,6 @@ object CrownOfAvarice {
         save()
     }
 
-    // Chat line each time the worn crown passes another 100M
     private fun checkMilestone(helmet: ItemStack) {
         if (!DianaSettings.dianaCrownMilestones) return
         val u = uuidOf(helmet) ?: return
@@ -221,7 +221,6 @@ object CrownOfAvarice {
         return -1L
     }
 
-    // Swap the capped "Coins Consumed" value and the per-digit bonuses for the tracked total
     private fun editTooltip(stack: ItemStack, lines: MutableList<Component>) {
         if (!DianaSettings.dianaCrownCounter) return
         val u = uuidOf(stack) ?: return
@@ -231,7 +230,6 @@ object CrownOfAvarice {
         for (i in lines.indices) {
             val s = lines[i].string
             when {
-                // Hypixel's capped counter line; matched by its value so a renamed label still gets replaced
                 s.contains(':') && s.contains("Coin") && s.substringAfter(':').filter { it.isDigit() }.toLongOrNull() == itemCoins(stack) ->
                     lines[i] = Component.literal("§7${s.substringBefore(':').trim()}: §6${NUM.format(tracked)}")
                 s.trim().endsWith("x Damage") && s.trim().startsWith("+") ->
@@ -249,7 +247,6 @@ object CrownOfAvarice {
         return (num * mult).toLong().takeIf { it >= 0 }
     }
 
-    // Worn crown first, then the held one
     private fun targetCrown(): ItemStack? {
         val p = Minecraft.getInstance().player ?: return null
         return listOf(p.getItemBySlot(EquipmentSlot.HEAD), p.mainHandItem).firstOrNull { uuidOf(it) != null }

@@ -3,11 +3,12 @@ package fishmod.features.garden
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import fishmod.features.garden.GardenExtraSettings as X
 
-// Charmed visitor + mushroom pet perk progress, read from the tab list widget whose header is configurable (format is a guess)
 object GardenPerks {
 
     private var charmed: List<String> = emptyList()
     private var tick = 0
+
+    private fun charmedLines(rows: List<String>) = listOf(Garden.legacy(X.gardenCharmedColor) + "§lCharmed Visitor") + rows.map { "§7$it" }
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
@@ -18,6 +19,7 @@ object GardenPerks {
         Garden.hud("Charmed Visitor", "garden_charmed", 130, 24,
             { X.gardenCharmedHudX }, { X.gardenCharmedHudX = it }, { X.gardenCharmedHudY }, { X.gardenCharmedHudY = it },
             { X.gardenCharmedHudScale }, { X.gardenCharmedHudScale = it },
-            { X.gardenCharmed && charmed.isNotEmpty() }, { X.gardenCharmed }) { listOf(Garden.legacy(X.gardenCharmedColor) + "§lCharmed Visitor") + charmed.map { "§7$it" } }
+            { X.gardenCharmed && charmed.isNotEmpty() }, { X.gardenCharmed },
+            example = { charmedLines(listOf("Example Visitor: 2m 10s")) }) { charmedLines(charmed) }
     }
 }

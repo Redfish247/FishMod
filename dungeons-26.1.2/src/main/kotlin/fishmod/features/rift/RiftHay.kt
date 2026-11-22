@@ -16,7 +16,6 @@ import fishmod.features.rift.RiftSettings as S
 // Half-Eaten Cave hay warning. No SkyHanni/Skyblocker equivalent; block-update packets never showed clears (debug 2026-10-24), so hay is scanned from the loaded level.
 object RiftHay {
 
-    // Main-thread only
     private val seen = HashSet<Long>()
     private val cleared = HashMap<Long, Long>()
     private var learnedMs = 0L
@@ -32,7 +31,6 @@ object RiftHay {
         RenderHooks.GIZMO.register { _ -> render() }
     }
 
-    // Hay seen in range marks a cell; a marked cell that is no longer hay is a cleared cell that will refill
     private fun scan() {
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
@@ -54,10 +52,8 @@ object RiftHay {
         }
     }
 
-    // Age at which a cleared cell counts as about to refill
     private fun dueMs() = S.riftHayDelay * 1000L - S.riftHayLead * 1000L
 
-    // Cleared hay cells the player's body overlaps
     private fun standingIn(): Boolean {
         val me = Minecraft.getInstance().player ?: return false
         if (cleared.isEmpty()) return false

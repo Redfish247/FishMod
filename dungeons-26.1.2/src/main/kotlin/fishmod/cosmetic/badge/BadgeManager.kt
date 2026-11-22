@@ -6,9 +6,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 object BadgeManager {
 
-    // Gamble #1 crown, drawn like any other badge
-    private val CROWN = BadgeDef("gamble_crown", "Gamble #1", "♛", 0xFFAA00, -1)
-
     private val byUuid: MutableMap<String, List<String>> = ConcurrentHashMap()
     private val nameToUuid: MutableMap<String, String> = ConcurrentHashMap()
 
@@ -51,8 +48,6 @@ object BadgeManager {
     @JvmStatic
     fun badgesFor(uuidNoDashes: String): List<BadgeDef> {
         val ids = byUuid[uuidNoDashes]
-        val base = if (ids == null) emptyList() else BadgeRegistry.resolveOrdered(ids)
-        val crown = fishmod.features.gamble.CrownBadge.crownUuid()
-        return if (crown.isNotEmpty() && crown == uuidNoDashes) listOf(CROWN) + base else base
+        return if (ids == null) emptyList() else BadgeRegistry.resolveOrdered(ids)
     }
 }

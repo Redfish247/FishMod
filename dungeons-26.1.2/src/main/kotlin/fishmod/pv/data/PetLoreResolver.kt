@@ -18,10 +18,6 @@ import java.nio.file.Files
 import java.util.Locale
 import kotlin.math.abs
 
-/**
- * Resolves NEU pet lore placeholders (`{STRENGTH}`, `{0}`, etc.) using
- * `constants/petnums.json`, matching NotEnoughUpdates' interpolation.
- */
 object PetLoreResolver {
     private val PLACEHOLDER = Regex("\\{([A-Za-z0-9_]+)\\}|<([A-Za-z0-9_]+)>|\\(([0-9]+)\\)")
 
@@ -50,6 +46,20 @@ object PetLoreResolver {
     }
 
     @JvmStatic
+    fun maxLevelLore(neuId: String): Pair<String, List<String>>? {
+        val semi = neuId.indexOf(';')
+        if (semi <= 0) return null
+        val type = neuId.substring(0, semi)
+        val tier = PET_TIERS.getOrNull(neuId.substring(semi + 1).toIntOrNull() ?: return null) ?: return null
+        val tierObj = petnums().getAsJsonObject(type)?.getAsJsonObject(tier)
+        val level = if (tierObj != null && tierObj.has("stats_levelling_curve")) 200 else 100
+        val repl = loreReplacements(type, tier, level)
+        val lore = neuLore(neuId).map { apply(it, repl, level) }
+        val name = NeuRepoCache.get(neuId)?.get("displayname")?.asString?.let { apply(it, repl, level) } ?: return null
+        return name to lore
+    }
+
+    @JvmStatic
     fun displayNameFor(pet: PetSnapshot.Entry?): String {
         if (pet == null) return ""
         val tierColor = tierColor(pet.tier)
@@ -61,7 +71,6 @@ object PetLoreResolver {
         return "§7[Lvl " + pet.level + "] " + tierColor + pet.displayName
     }
 
-    /** Every pet type in NEU petnums.json at its highest tier, sorted by name. */
     @JvmStatic
     fun petTypes(): List<PetType> {
         val out = ArrayList<PetType>()
@@ -138,7 +147,6 @@ object PetLoreResolver {
         return out
     }
 
-    /** NEU `stats_levelling_curve` e.g. `101:200:1` maps pet level 101→1 … 200→100. */
     private fun numsLevelFor(tierObj: JsonObject?, petLevel: Int): Int {
         val level = maxOf(1, petLevel)
         if (tierObj != null && tierObj.has("stats_levelling_curve") && tierObj.get("stats_levelling_curve").isJsonPrimitive) {
@@ -252,8 +260,8 @@ object PetLoreResolver {
 
     private fun loadPetnums(): JsonObject {
         val candidates = listOf(
-            ProfileViewer.DIR.resolve("neu-repo").resolve("repo").resolve("constants").resolve("petnums.json"),
-            ProfileViewer.DIR.resolve("neu-repo").resolve("constants").resolve("petnums.json"),
+            ProfileViewer.NEU_DIR.resolve("repo").resolve("constants").resolve("petnums.json"),
+            ProfileViewer.NEU_DIR.resolve("constants").resolve("petnums.json"),
         )
         for (path in candidates) {
             try {

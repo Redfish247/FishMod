@@ -1,0 +1,64 @@
+package fishmod.features.visuals
+import fishmod.compat.hudHidden
+
+import fishmod.utils.debug.FishDiag
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
+import net.minecraft.client.Minecraft
+import net.minecraft.util.ARGB
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.HitResult
+
+object BlockOverlay {
+
+    @JvmStatic
+    fun init() {
+        RenderHooks.GIZMO.register { _ ->
+            if (!FishSettings.blockOverlayPhase) {
+                try { renderGizmo() } catch (t: Throwable) { FishDiag.fail("BlockOverlay.1", "block overlay gizmo render failed (mode ${FishSettings.blockOverlayMode})", t) }
+            }
+        }
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
+            if (FishSettings.blockOverlayPhase) {
+                try { renderNoDepth(m, vc) } catch (t: Throwable) { FishDiag.fail("BlockOverlay.2", "block overlay no-depth render failed (mode ${FishSettings.blockOverlayMode})", t) }
+            }
+        }
+    }
+
+    private fun targetBox(): AABB? {
+        if (!FishSettings.blockOverlayEnabled) return null
+        val mc = Minecraft.getInstance()
+        val level = mc.level ?: return null
+        if (mc.player == null || mc.hudHidden) return null
+        val hit = mc.hitResult as? BlockHitResult ?: return null
+        if (hit.type != HitResult.Type.BLOCK) return null
+        val pos = hit.blockPos
+        val state = level.getBlockState(pos)
+        if (state.isAir) return null
+        val shape = state.getShape(level, pos)
+        return (if (shape.isEmpty) AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0) else shape.bounds())
+            .move(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble()).inflate(0.002)
+    }
+
+    private fun fillArgb(): Int =
+        ARGB.multiplyAlpha(FishSettings.blockOverlayFillColor, FishSettings.blockOverlayOpacity.coerceIn(0, 100) / 100f)
+
+    private fun renderGizmo() {
+        val box = targetBox() ?: return
+        val mode = FishSettings.blockOverlayMode
+        if (mode != 0) FishDraw.gizmoBox(box, fillArgb(), 0)
+        if (mode != 1) FishDraw.gizmoThickOutline(box, FishSettings.blockOverlayOutlineColor, FishSettings.blockOverlayOutlineThickness)
+    }
+
+    // One target lookup per frame; fill first, then outline
+    private fun renderNoDepth(matrices: PoseStack, vc: VertexConsumer) {
+        val box = targetBox() ?: return
+        val mode = FishSettings.blockOverlayMode
+        if (mode != 0) FishDraw.renderFilled(matrices, vc, box, FishDraw.toFloats(fillArgb()))
+        if (mode != 1) FishDraw.renderThickOutline(matrices, vc, box, FishDraw.toFloats(FishSettings.blockOverlayOutlineColor), FishSettings.blockOverlayOutlineThickness)
+    }
+}

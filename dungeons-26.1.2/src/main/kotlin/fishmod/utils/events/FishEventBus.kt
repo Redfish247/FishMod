@@ -13,8 +13,6 @@ class FishEventBus<T> {
 
     fun size(): Int = listeners.size
 
-    fun isEmpty(): Boolean = listeners.isEmpty()
-
     fun invoke(action: Predicate<T>): Boolean {
         if (listeners.isEmpty()) return false
         var cancelled = false

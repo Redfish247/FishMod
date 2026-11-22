@@ -35,7 +35,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Minions grid (grouped by category) or cheapest-next list, plus a tier checklist with upgrade costs. */
 class MinionsPage {
 	private var selectedMinion = 0
 	private var minionScroll = 0
@@ -120,7 +119,6 @@ class MinionsPage {
 		return false
 	}
 
-	/** Recipes, prices and collection categories load async; recompute until all three are in. */
 	private fun ensureCosts(snapshot: CollectionSnapshot?) {
 		val now = System.currentTimeMillis()
 		if (snapshot === costsFor && (costsFinal || now - costsAt < COST_RETRY_MS)) {
@@ -534,7 +532,6 @@ class MinionsPage {
 			return lines
 		}
 
-		/** Partial totals get a trailing `+`: the real cost is at least this much. */
 		private fun costText(cost: MinionCosts.TierCost): String {
 			if (cost.noRecipe) {
 				return "?"
@@ -562,7 +559,6 @@ class MinionsPage {
 		private fun itemColor(id: String): Int =
 			SkyBlockItemFactory.tierArgb(SkyBlockItemFactory.resolveTier(id.replace(':', '-')))
 
-		// NEU hands back paper while it's still loading; skip the icon rather than show a placeholder.
 		private fun itemIcon(id: String): ItemStack? {
 			val icon: ItemStack = SkyBlockItemFactory.iconStack(id.replace(':', '-'))
 			return if (icon.isEmpty || icon.`is`(Items.PAPER)) null else icon

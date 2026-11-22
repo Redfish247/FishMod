@@ -20,7 +20,6 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
-/** SkyBlock XP strip expand/collapse overlay for Home. */
 class HomeSbXpOverlay {
 	private var phase = SbXpExpandPhase.CLOSED
 	private var animStartMs = 0L
@@ -106,7 +105,6 @@ class HomeSbXpOverlay {
 			return false
 		}
 		if (phase == SbXpExpandPhase.EXPANDING_LEFT) {
-			// Reverse mid-expand: collapse left from current progress.
 			val p = stageProgress()
 			phase = SbXpExpandPhase.COLLAPSING_LEFT
 			animStartMs = System.currentTimeMillis() - Math.round((1F - p) * SB_XP_STAGE_MS)

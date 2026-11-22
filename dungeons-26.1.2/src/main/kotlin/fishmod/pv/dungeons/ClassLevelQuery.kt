@@ -28,7 +28,6 @@ object ClassLevelQuery {
 	private val CLASS_THEN_LEVEL = Regex("^([a-z]+)\\s*(\\d{1,3})$")
 	private val LEVEL_THEN_CLASS = Regex("^(\\d{1,3})\\s*([a-z]+)$")
 
-	/** Longest CA phrases first so `class average` wins over `ca`/`avg`. */
 	private val CA_THEN_LEVEL = Regex(
 		"^(?:class\\s*average|class\\s*avg|classaverage|classavg|average|avg|ca)\\s*(\\d{1,2})$"
 	)
@@ -37,7 +36,6 @@ object ClassLevelQuery {
 	)
 	private val WHITESPACE = Regex("\\s+")
 
-	/** Longer aliases first so `berserker` wins over `bers`/`b`. */
 	private val ALIASES: Map<String, String> = linkedMapOf(
 		"mage" to "mage",
 		"m" to "mage",
@@ -86,7 +84,6 @@ object ClassLevelQuery {
 		return Parsed.ofAverage(clampAverageLevel(match.groupValues[1].toInt()))
 	}
 
-	/** Class average RTCA stays capped at soft max (50). */
 	private fun clampAverageLevel(level: Int): Int = max(1, min(CataXpMath.SOFT_CAP, level))
 
 	/** Individual class targets may use overflow levels from the XP table. */
