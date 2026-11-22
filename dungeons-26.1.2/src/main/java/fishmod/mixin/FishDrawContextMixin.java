@@ -66,7 +66,7 @@ public class FishDrawContextMixin {
         int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
         boolean fit = est > shh - 8;
         shifted.set(on || fit);
-        if (est > shh - 40 && System.currentTimeMillis() - fishmod$ttLog > 1000) { fishmod$ttLog = System.currentTimeMillis(); fishmod.utils.debug.FishDebug.LOGGER.debug("[TooltipFit] lines={} est={} screenH={} fit={} on={} xo={} yo={}", lines.size(), est, shh, fit, on, xo, yo); }
+        if ((lines.size() >= 12 || est > shh - 40) && System.currentTimeMillis() - fishmod$ttLog > 1000) { fishmod$ttLog = System.currentTimeMillis(); fishmod.utils.debug.FishDiag.fail("FishDrawContextMixin.fit", "tooltip lines=" + lines.size() + " est=" + est + " screenH=" + shh + " fit=" + fit + " on=" + on + " xo=" + xo + " yo=" + yo); }
         if (!on && !fit) return;
         pose.pushMatrix();
         if (fit) {
