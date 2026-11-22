@@ -234,9 +234,16 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
         )
 
+        // Same names and order as the FishModScreen columns
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
+            "Extras" to listOf("Item Pickup Log", "Skill Progress", "Todos"),
+            "HUD & Overlays" to listOf(
+                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
+                "Spotify", "Stopwatch", "Achievement Popup", "Arrow HUD",
+            ),
+            "Party & Social" to listOf("Party Finder List"),
             "Dungeons" to listOf(
-                "Run Splits", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
+                "Run Splits", "Est. Total (follows Splits)", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
                 "Spirit Bear", "Mask & Phoenix Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
             ),
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
@@ -247,24 +254,25 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Melody Callout", "Section Cleared", "Storm Over Alert", "Veno Stack Count", "Players Leaped",
                 "Relic Countdown", "Necron Drag Timer", "Necron Drop Lava/Platform",
             ),
-            "HUD & Overlays" to listOf(
-                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
-                "Spotify", "Stopwatch", "Achievement Popup", "Arrow HUD",
-            ),
-            "Party & Social" to listOf("Party Finder List"),
-            "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries", "Slayer RNG Meter"),
+            "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries", "Slayer RNG Meter", "Broodmother", "Summonings", "Zealot Counter"),
+            "The End" to listOf("Dragon Profit"),
+            "Hunting & Foraging" to listOf("Foraging Tracker", "Treecapitator Cooldown", "Shard Tracker", "Fusion: Cancel", "Fusion: Confirm", "Fusion: Repeat"),
             "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title", "Crown of Avarice"),
-            "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
+            "Fishing" to listOf("Fishing Sea Creatures", "Fishing Profit", "Fishing Efficiency", "Barn Fishing Timer", "Fishing Festival", "Fishing Area Tracker",
+                "Fishing Creature Alert", "Fishing Rare Drop Alert", "Fishing Hotspot Alert", "Fishing Wormhole Alert", "Fishing Trophy Alert", "Fishing Deployable Alert", "Fishing Bait Alert",
+                "Current Bait", "Golden Fish Timer", "Sea Creature Count", "Totem of Corruption", "Trophy Fish HUD"),
+            "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions", "Ghost Counter", "Mineshaft Timer"),
             "Farming" to listOf(
                 "Visitor Timer", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
                 "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
-                "Log Book", "Sensitivity", "Mooshroom Cow Perk",
+                "Log Book", "Sensitivity", "Mooshroom Cow Perk", "Farming Speed", "Mantid Bonus", "Wheat", "Yaw / Pitch",
             ),
-            "Fishing" to listOf("Fishing Sea Creatures", "Fishing Profit", "Fishing Efficiency", "Barn Fishing Timer", "Fishing Festival", "Fishing Area Tracker",
-                "Fishing Creature Alert", "Fishing Rare Drop Alert", "Fishing Hotspot Alert", "Fishing Wormhole Alert", "Fishing Trophy Alert", "Fishing Deployable Alert", "Fishing Bait Alert"),
-            "Rift" to listOf("Rift Guide"),
-            "Alert Titles" to AlertTitles.NAMES,
             "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
+            "Rift" to listOf("Rift Guide", "Rift Timer", "Vermin Tracker", "Agaricus Cap Timer", "Bacte Helper", "Berberis Highlighter", "Blood Effigy Spots", "Burger Warning",
+                "Caducous Stem Highlighter", "Colosseum Kill Zone Warning", "Crux Helper", "Fleespook Tracker", "Half-Eaten Cave Hay Warning", "Leech Supreme Helper",
+                "Mirrorverse Parkour", "Punchcard Marker", "Rift Nametag Stats", "Snake Helper", "Sun Gecko Helper", "Vampire Slayer Helper"),
+            "Events" to listOf("SkyBlock Date", "Gift Tracker"),
+            "Alerts & Reminders" to AlertTitles.NAMES,
         )
 
         const val SCOREBOARD_W = 118
