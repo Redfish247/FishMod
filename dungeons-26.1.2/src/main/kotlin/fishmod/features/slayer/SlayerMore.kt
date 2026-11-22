@@ -167,7 +167,7 @@ object SlayerMore {
         for (e in level.getEntitiesOfClass(LivingEntity::class.java, player.boundingBox.inflate(24.0)) { it !== player }) {
             val id = e.id
             if (!e.isDeadOrDying) {
-                if (S.zealotHud && inEnd && e.type === net.minecraft.world.entity.EntityType.ENDERMAN && id !in zealotIds && isZealot(e)) zealotIds.add(id)
+                if (S.zealotHud && inEnd && e.type.descriptionId == "entity.minecraft.enderman" && id !in zealotIds && isZealot(e)) zealotIds.add(id)
                 continue
             }
             if (!deadSeen.add(id)) continue
@@ -191,7 +191,7 @@ object SlayerMore {
         SkyblockLocation.HUB -> e is Zombie || e is Wolf
         SkyblockLocation.THE_PARK -> e is Wolf
         SkyblockLocation.SPIDERS_DEN -> e is Spider
-        SkyblockLocation.THE_END -> e.type === net.minecraft.world.entity.EntityType.ENDERMAN
+        SkyblockLocation.THE_END -> e.type.descriptionId == "entity.minecraft.enderman"
         SkyblockLocation.CRIMSON_ISLE -> e is Blaze
         else -> false
     }
