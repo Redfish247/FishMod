@@ -21,7 +21,6 @@ object AchStore {
         var counters: MutableMap<String, Long> = HashMap()
         var unlocked: MutableMap<String, Long> = LinkedHashMap()
         var playDays: MutableMap<String, Long> = HashMap()
-        var playDaysDungeon: MutableMap<String, Long> = HashMap()
         var fmDays: MutableSet<String> = HashSet()
         var mayors: MutableSet<String> = HashSet()
         var featuresOn: MutableSet<String> = HashSet()

@@ -305,7 +305,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         private val TEXT get() = ScreenTheme.TEXT_COLOR
         private val SUBTEXT get() = ScreenTheme.SUBTEXT_COLOR
-        private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private val GUIDE = 0xFFFF4FB0.toInt()
         private val GRID_LINE = 0x14FFFFFF
         private val SIDE_BG get() = ScreenTheme.SOLID_PANEL
