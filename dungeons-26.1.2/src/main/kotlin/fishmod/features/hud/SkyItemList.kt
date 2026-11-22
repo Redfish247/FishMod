@@ -588,7 +588,7 @@ object SkyItemList {
             else if (Minecraft.getInstance().hasShiftDown()) openMarket(id)
             else if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
             1 -> { if (!favs.remove(id)) favs.add(id); saveFavs(); val keep = scroll; refilter(); scroll = keep }
-            2 -> if (!isNpc(id)) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(MarketScreen(id, screen)) } }
+            2 -> if (!isNpc(id) && MarketScreen.hasHistory(id)) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(MarketScreen(id, screen)) } }
         }
         return true
     }
