@@ -23,9 +23,8 @@ object SkyItemList {
 
     private const val CELL = 20
     private const val PAD = 6
-    private const val HEAD_H = 26
+    private const val HEAD_H = 8
     private const val FOOT_H = 2
-    private const val SEARCH_H = 14
     private const val TAB_COLS = 1
     private const val TAB_CELL = 18
     private const val TAB_W = TAB_COLS * TAB_CELL
@@ -392,20 +391,14 @@ object SkyItemList {
         val accent = FishSettings.skyItemListAccentColor or 0xFF000000.toInt()
         ctx.fill(px, py, px + pw, py + ph, bg)
         ctx.fill(px, py, px + pw, py + 1, accent)
-        val sx = px + PAD; val sy = py + 6; val sw = pw - PAD * 2 - TAB_W
-        ctx.fill(sx, sy, sx + sw, sy + SEARCH_H, 0x80000000.toInt())
-        if (focused) ctx.fill(sx, sy + SEARCH_H - 1, sx + sw, sy + SEARCH_H, accent)
         if (!built && !ensureBuilt()) {
-            ctx.text(font, "Loading items...", sx + 3, sy + 3, 0xFF9AA4B0.toInt(), false)
+            ctx.text(font, "Loading items...", px + PAD, py + 3, 0xFF9AA4B0.toInt(), false)
             return
         }
+        // search comes from the inventory search bar
+        val bq = fishmod.features.inventory.InvSearchBar.term()
+        if (bq != query) { query = bq; needRefilter = true }
         if (needRefilter) { needRefilter = false; refilter() }
-        if (query.isEmpty() && !focused) ctx.text(font, "Search items...", sx + 3, sy + 3, 0xFF6B7480.toInt(), false)
-        else {
-            val shown = font.plainSubstrByWidth(query + if (focused && !selectAll) "_" else "", sw - 6, true)
-            if (selectAll && focused) ctx.fill(sx + 2, sy + 2, sx + 4 + font.width(shown), sy + SEARCH_H - 2, 0x80336699.toInt())
-            ctx.text(font, shown, sx + 3, sy + 3, 0xFFFFFFFF.toInt(), false)
-        }
 
         scroll = scroll.coerceIn(0, maxScroll())
         var hover = -1
@@ -547,12 +540,6 @@ object SkyItemList {
         if (!on() || hiddenFor(screen) || !layout(screen)) return false
         val x = click.x(); val y = click.y()
         if (!inPanel(x, y)) { focused = false; selectAll = false; return false }
-        val sx = px + PAD; val sy = py + 6
-        if (x >= sx && x < sx + pw - PAD * 2 - TAB_W && y >= sy && y < sy + SEARCH_H) {
-            focused = true; selectAll = false
-            if (GLFW.btn(click) == 1 && query.isNotEmpty()) { query = ""; if (built) refilter() }
-            return true
-        }
         focused = false; selectAll = false
         if (!built) return true
         val t = tabAt(x, y)

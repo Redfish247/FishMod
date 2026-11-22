@@ -23,7 +23,6 @@ import fishmod.compat.GLFW
 
 object InvSearchBar {
 
-    private const val SEARCH_Y = 20
     private const val SEARCH_WIDTH = 150
     private const val SEARCH_HEIGHT = 20
     private var searchBar: EditBox? = null
@@ -33,8 +32,24 @@ object InvSearchBar {
 
     private fun on() = FishSettings.inventorySearchEnabled && !fishmod.compat.BladeCompat.active
 
+    private fun defX(): Int = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
+    private fun defY(): Int = Minecraft.getInstance().window.guiScaledHeight - 62
+    private fun posX(): Int = if (FishSettings.inventorySearchX < 0) defX() else FishSettings.inventorySearchX
+    private fun posY(): Int = if (FishSettings.inventorySearchY < 0) defY() else FishSettings.inventorySearchY
+
+    // Text the item list filters by; empty while the bar is off or hidden
+    @JvmStatic
+    fun term(): String = if (on() && shouldDisplay()) searchTerm else ""
+
     @JvmStatic
     fun init() {
+        fishmod.features.FishHudEditor.register(
+            "Inventory Search",
+            { posX() }, { v -> FishSettings.inventorySearchX = v },
+            { posY() }, { v -> FishSettings.inventorySearchY = v },
+            SEARCH_WIDTH, SEARCH_HEIGHT,
+            { on() },
+        )
         DrawHooks.INVENTORY_SLOT_AFTER.register { context, item, x, y ->
             if (!on() || !shouldDisplay() || searchTerm.isEmpty() || !parsedValue.isNaN()) return@register
             val matched = try {
@@ -74,7 +89,7 @@ object InvSearchBar {
     fun render(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
         if (!on() || !exists() || !shouldDisplay()) return
         val bar = searchBar!!
-        bar.x = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
+        bar.x = posX(); bar.y = posY()
         try {
             bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
         } catch (e: Exception) {
@@ -152,7 +167,7 @@ object InvSearchBar {
         if (window == null || textRenderer == null) return false
 
         val bar = EditBox(
-            textRenderer, (window.guiScaledWidth - SEARCH_WIDTH) / 2, SEARCH_Y, SEARCH_WIDTH, SEARCH_HEIGHT, Component.literal("")
+            textRenderer, posX(), posY(), SEARCH_WIDTH, SEARCH_HEIGHT, Component.literal("")
         )
         bar.setResponder { string ->
             searchTerm = string.lowercase()
