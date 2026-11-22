@@ -61,6 +61,13 @@ object CoflnetApiClient {
         return CompletableFuture.supplyAsync({ getArray("$BASE/item/price/${enc(tag)}/history/$range", queuedNanos) }, EXECUTOR)
     }
 
+    /** Active BIN auctions for an item tag, cheapest first. */
+    @JvmStatic
+    fun activeBins(tag: String): CompletableFuture<Optional<JsonArray>> {
+        val queuedNanos = System.nanoTime()
+        return CompletableFuture.supplyAsync({ getArray("$BASE/auctions/tag/${enc(tag)}/active/bin", queuedNanos) }, EXECUTOR)
+    }
+
     private fun enc(s: String): String = java.net.URLEncoder.encode(s, Charsets.UTF_8).replace("+", "%20")
 
     private fun getArray(url: String, queuedNanos: Long): Optional<JsonArray> =

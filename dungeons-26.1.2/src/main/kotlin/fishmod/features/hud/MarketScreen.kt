@@ -35,7 +35,18 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         class Ready(val data: Data) : State()
     }
 
+    private class Bin(val uuid: String, val price: Long, val count: Int, val reforge: String, val tier: String, val endMs: Long)
+
+    private sealed class BinState {
+        object Loading : BinState()
+        object Failed : BinState()
+        class Ready(val bins: List<Bin>) : BinState()
+    }
+
     private companion object {
+        private const val ROW_H = 9
+        private const val ROWS = 8
+        private val BINS = ConcurrentHashMap<String, BinState>()
         private const val W = 300
         private const val H = 232
         private const val PAD = 12
@@ -59,6 +70,8 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     private val tag = bazaarTag(id)
     private val bazaar = CroesusPrices.bazaarPrice(tag, true) != null || CroesusPrices.bazaarPrice(tag, false) != null
     private var range = 1
+    private var view = 0
+    private var scroll = 0
     private var px = 0
     private var py = 0
 
@@ -98,6 +111,36 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
             }
         }
     }
+
+    private fun loadBins() {
+        val cur = BINS[tag]
+        if (cur is BinState.Ready || cur is BinState.Loading) return
+        BINS[tag] = BinState.Loading
+        CoflnetApiClient.activeBins(tag).whenComplete { res, err ->
+            try {
+                if (err != null || res == null || !res.isPresent) { BINS[tag] = BinState.Failed; return@whenComplete }
+                val bins = CoflnetApiClient.objects(res.get()).map {
+                    Bin(it.get("uuid")?.asString ?: "", it.get("startingBid")?.asLong ?: 0L, it.get("count")?.asInt ?: 1,
+                        it.get("reforge")?.asString?.takeIf { r -> r != "None" } ?: "", it.get("tier")?.asString ?: "", epoch(it.get("end")?.asString))
+                }.filter { it.uuid.isNotEmpty() && it.price > 0 }.sortedBy { it.price }
+                BINS[tag] = BinState.Ready(bins)
+            } catch (e: Exception) {
+                FishDiag.fail("MarketScreen.3", "active BIN parse failed for $tag", e)
+                BINS[tag] = BinState.Failed
+            }
+        }
+    }
+
+    private fun binsReady(): List<Bin>? = (BINS[tag] as? BinState.Ready)?.bins
+
+    private fun timeLeft(endMs: Long): String {
+        val s = ((endMs - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+        return when { s >= 86400 -> "${s / 86400}d"; s >= 3600 -> "${s / 3600}h"; s >= 60 -> "${s / 60}m"; else -> "${s}s" }
+    }
+
+    private fun rowY(i: Int): Int = py + GY + 3 + i * ROW_H
+    private fun viewX(): Int = px + GX
+    private fun listingsView(): Boolean = !bazaar && view == 1
 
     private fun epoch(s: String?): Long = try { LocalDateTime.parse(s).toInstant(ZoneOffset.UTC).toEpochMilli() } catch (_: Exception) { 0L }
 
@@ -153,17 +196,41 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         UiRecorder.textBold("Price History", (px + GX).toFloat(), (py + GY - 12).toFloat(), 7.5f, ScreenTheme.TEXT_COLOR)
         val state = CACHE[key()]
         val data = (state as? State.Ready)?.data
-        when {
+        if (listingsView()) { drawBins(mx, my) } else when {
             data == null && state is State.Failed -> centered(if (tag.contains(';')) "No history for this item" else "No price history found", py + GY + GH / 2f - 4)
             data == null -> centered("Loading...", py + GY + GH / 2f - 4)
             else -> drawGraph(data, mx, my)
         }
-        button("Range: ${ranges()[range]}", rangeX(), rangeY(), 70, mx, my)
+        if (!listingsView()) button("Range: ${ranges()[range]}", rangeX(), rangeY(), 70, mx, my)
+        if (!bazaar) button(if (view == 0) "View: History" else "View: Lowest BINs", viewX(), rangeY(), 84, mx, my)
         button(if (bazaar) "Open Bazaar" else "Open Auction House", openX() - (if (bazaar) 0 else 30), openY(), if (bazaar) 70 else 100, mx, my)
         UiRecorder.text("Data: SkyCofl  ·  Esc: close", (px + PAD).toFloat(), (py + H - 20).toFloat(), 6f, ScreenTheme.SUBTEXT_COLOR)
 
         super.extractRenderState(ctx, rawX, rawY, delta)
-        if (data != null) tooltip(data, mx, my)
+        if (data != null && !listingsView()) tooltip(data, mx, my)
+    }
+
+    private fun drawBins(mx: Int, my: Int) {
+        val bins = binsReady()
+        if (bins == null) {
+            centered(if (BINS[tag] is BinState.Failed) "Could not load auctions" else "Loading...", py + GY + GH / 2f - 4)
+            return
+        }
+        if (bins.isEmpty()) { centered("No active BIN listings", py + GY + GH / 2f - 4); return }
+        val x = (px + GX + 6).toFloat()
+        for (r in 0 until ROWS) {
+            val b = bins.getOrNull(scroll + r) ?: break
+            val y = rowY(r)
+            if (inside(mx, my, px + GX + 2, y - 1, GW - 4, ROW_H)) UiRecorder.fillRect((px + GX + 2).toFloat(), (y - 1).toFloat(), (GW - 4).toFloat(), ROW_H.toFloat(), ScreenTheme.ink(40))
+            UiRecorder.text("#${scroll + r + 1}", x, y.toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
+            UiRecorder.textBold("%,d".format(b.price), x + 22, y.toFloat(), 6.5f, GOLD)
+            val info = listOf(if (b.count > 1) "x${b.count}" else "", b.reforge, b.tier.lowercase().replaceFirstChar { it.uppercase() }).filter { it.isNotEmpty() }.joinToString(" · ")
+            UiRecorder.text(info, x + 100, y.toFloat(), 6.5f, ScreenTheme.TEXT_COLOR)
+            val t = timeLeft(b.endMs)
+            UiRecorder.text(t, px + GX + GW - 8 - UiRecorder.textWidth(t, 6.5f), y.toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
+        }
+        val hint = "${bins.size} listings · scroll · click to view"
+        UiRecorder.text(hint, px + GX + GW - UiRecorder.textWidth(hint, 5.5f), (py + GY + GH + 3).toFloat(), 5.5f, ScreenTheme.SUBTEXT_COLOR)
     }
 
     private fun centered(s: String, y: Float) =
@@ -281,7 +348,24 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val mx = UiScale.vx(click.x())
         val my = UiScale.vx(click.y())
-        if (inside(mx, my, rangeX(), rangeY(), 70, TAB_H)) {
+        if (!bazaar && inside(mx, my, viewX(), rangeY(), 84, TAB_H)) {
+            view = 1 - view
+            scroll = 0
+            if (view == 1) loadBins()
+            return true
+        }
+        if (listingsView()) {
+            val bins = binsReady()
+            if (bins != null) for (r in 0 until ROWS) {
+                val b = bins.getOrNull(scroll + r) ?: break
+                if (inside(mx, my, px + GX + 2, rowY(r) - 1, GW - 4, ROW_H)) {
+                    Minecraft.getInstance().connection?.sendCommand("viewauction ${b.uuid}")
+                    Minecraft.getInstance().showScreen(null)
+                    return true
+                }
+            }
+        }
+        if (!listingsView() && inside(mx, my, rangeX(), rangeY(), 70, TAB_H)) {
             range = (range + 1) % ranges().size
             load()
             return true
@@ -293,6 +377,13 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
             return true
         }
         return super.mouseClicked(click, doubled)
+    }
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        if (!listingsView()) return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)
+        val max = ((binsReady()?.size ?: 0) - ROWS).coerceAtLeast(0)
+        scroll = (scroll - Math.signum(verticalAmount).toInt()).coerceIn(0, max)
+        return true
     }
 
     override fun keyPressed(input: KeyEvent): Boolean {
