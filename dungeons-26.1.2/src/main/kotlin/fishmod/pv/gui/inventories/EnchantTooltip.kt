@@ -67,7 +67,7 @@ object EnchantTooltip {
 			val name = match.groupValues[1].trim()
 			val level = parseLevel(match.groupValues[2])
 			val max = maxes[name.lowercase(Locale.ROOT).trim()]
-			if (max == null || max < 2 || level <= 0) {
+			if (max == null || max < 1 || level <= 0) { // single-level enchants (Piercing I) count as maxed
 				out.append(Component.literal(part).withStyle(Style.EMPTY.withColor(ChatFormatting.BLUE).withItalic(false)))
 				continue
 			}
