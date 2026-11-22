@@ -2394,7 +2394,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun fa(c: Int, a: Float): Int = (((c ushr 24) * a).toInt() shl 24) or (c and 0xFFFFFF)
     private fun tabRects(): List<IntArray> {
         // start near the left wall; the strip corner radius clamps to this gap
-        var x = left() + 8
+        var x = left() + 5
         val out = ArrayList<IntArray>()
         for (t in tabs) { val w = Math.min(150, sw(this.font, t, 0.85f) + 40); out.add(intArrayOf(x, w)); x += w + 4 }
         out.add(intArrayOf(x, 20))
@@ -2759,7 +2759,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val dk = titleBarColor(); val wr = winR()
         if (at == null) UiRecorder.fillRoundedRectCorners(l, top().toFloat(), w, 30f, wr, wr, 0f, 0f, dk)
         else {
-            UiRecorder.fillRoundedRectCorners(l, top().toFloat(), (at[0] - left()).toFloat(), 30f, Math.min(wr, (at[0] - left()).toFloat()), 0f, 0f, 0f, dk)
+            UiRecorder.fillRoundedRectCorners(l, top().toFloat(), Math.max((at[0] - left()).toFloat(), wr * 2f), 30f, wr, 0f, 0f, 0f, dk)
             UiRecorder.fillRect(at[0].toFloat(), top().toFloat(), at[1].toFloat(), (TAB_Y - top()).toFloat(), dk)
             UiRecorder.fillRoundedRectCorners((at[0] + at[1]).toFloat(), top().toFloat(), (right() - at[0] - at[1]).toFloat(), 30f, 0f, wr, 0f, 0f, dk)
             // active tab is the window colour, so it joins the toolbar below (one tone, no overlay mix)
