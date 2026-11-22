@@ -777,6 +777,9 @@ object FishSettings {
     @ConfigValue @JvmField var inventorySearchEnabled: Boolean = false
     @ConfigValue @JvmField var inventorySearchAlwaysShow: Boolean = false
     @ConfigValue @JvmField var inventorySearchHighlight: Boolean = true
+    // -1 = default spot (bottom centre, above the hotbar)
+    @ConfigValue @JvmField var inventorySearchX: Int = -1
+    @ConfigValue @JvmField var inventorySearchY: Int = -1
     @ConfigValue @JvmField var inventorySearchHighlightColor: Int = 0xFF55FF55.toInt()
 
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
