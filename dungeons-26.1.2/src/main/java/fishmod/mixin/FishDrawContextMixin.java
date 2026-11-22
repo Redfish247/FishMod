@@ -65,10 +65,17 @@ public class FishDrawContextMixin {
         int shh = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledHeight();
         int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
         boolean fit = est > shh - 8;
-        shifted.set(on || fit);
+        // short tooltip whose top would be above the screen (mouse near the top): push it down to 4px
+        int liftY = 0;
+        if (!fit) {
+            int top0 = positioner.positionTooltip(sww, shh, xo, yo, 100, (int) est - 12).y() - 6;
+            if (top0 < 4) liftY = 4 - top0;
+        }
+        shifted.set(on || fit || liftY != 0);
         if ((lines.size() >= 12 || est > shh - 40) && System.currentTimeMillis() - fishmod$ttLog > 1000) { fishmod$ttLog = System.currentTimeMillis(); fishmod.utils.debug.FishDiag.fail("FishDrawContextMixin.fit", "tooltip lines=" + lines.size() + " est=" + est + " screenH=" + shh + " fit=" + fit + " on=" + on + " xo=" + xo + " yo=" + yo); }
-        if (!on && !fit) return;
+        if (!on && !fit && liftY == 0) return;
         pose.pushMatrix();
+        if (liftY != 0) pose.translate(0f, (float) liftY);
         if (fit) {
             float s = (shh - 8) / est;
             int topY = positioner.positionTooltip(sww, shh, xo, yo, 100, (int) est - 12).y() - 6;
