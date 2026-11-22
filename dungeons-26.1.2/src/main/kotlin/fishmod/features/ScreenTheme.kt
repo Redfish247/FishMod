@@ -35,6 +35,8 @@ object ScreenTheme {
     val SUBTEXT_COLOR: Int get() = if (lightBg()) 0xFF5A5A5A.toInt() else 0xFF949494.toInt()
     // white-ish overlay on dark, black-ish on light
     fun ink(alpha: Int): Int = (alpha shl 24) or (if (lightBg()) 0x000000 else 0xFFFFFF)
+    // Opaque panel/field fill: the window background lifted (dark) or dimmed (light) by `level`, so text colours always have the right contrast
+    fun surface(level: Int): Int = over(ink(level), windowBg() or 0xFF000000.toInt())
     val DANGER = 0xFFE05A5A.toInt()
     val DANGER_HOVER = 0xFFEE7A7A.toInt()
 
