@@ -23,6 +23,7 @@ object SkyItemList {
 
     private const val CELL = 20
     private const val PAD = 6
+    private const val RGAP = 2
     private const val HEAD_H = 8
     private const val FOOT_H = 2
     private const val TAB_COLS = 1
@@ -351,10 +352,10 @@ object SkyItemList {
         val sw = mc.window.guiScaledWidth
         val sh = mc.window.guiScaledHeight
         val acc = screen as HandledScreenAccessor
-        val avail = (sw * 3 / 5 - PAD * 2 - TAB_W) / CELL
+        val avail = (sw * 3 / 5 - PAD - RGAP - TAB_W) / CELL
         cols = minOf(FishSettings.skyItemListColumns, avail)
         if (cols < 2) return false
-        pw = PAD * 2 + cols * CELL + TAB_W
+        pw = PAD + RGAP + cols * CELL + TAB_W
         px = sw - pw
         py = 0
         ph = sh
@@ -387,10 +388,10 @@ object SkyItemList {
         if (!on() || hiddenFor(screen) || !layout(screen)) return
         fishmod.utils.rendering.FishHudLayer.setPanel(px, py, px + pw, py + ph)
         val font = Minecraft.getInstance().font
-        val bg = argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListOpacity)
+        val bgOn = FishSettings.skyItemListBgOn
+        val bg = argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListBgOpacity)
         val accent = FishSettings.skyItemListAccentColor or 0xFF000000.toInt()
-        ctx.fill(px, py, px + pw, py + ph, bg)
-        ctx.fill(px, py, px + pw, py + 1, accent)
+        if (bgOn) ctx.fill(px, py, px + pw, py + ph, bg)
         if (!built && !ensureBuilt()) {
             ctx.text(font, "Loading items...", px + PAD, py + 3, 0xFF9AA4B0.toInt(), false)
             return
@@ -421,7 +422,7 @@ object SkyItemList {
             val trackH = rowsVis * CELL
             val barH = (trackH * rowsVis / (rowsVis + ms)).coerceAtLeast(10)
             val barY = py + HEAD_H + (trackH - barH) * scroll / ms
-            ctx.fill(gridRight() - 4, barY, gridRight() - 2, barY + barH, accent)
+            ctx.fill(gridRight() - 2, barY, gridRight(), barY + barH, accent)
         }
         val tabHover = drawTabs(ctx, mx, my, accent)
         if (tabHover >= 0) {
@@ -459,7 +460,7 @@ object SkyItemList {
         val x0 = gridRight()
         tabScroll = tabScroll.coerceIn(0, tabMaxScroll())
         // dark strip behind the whole sidebar, top to bottom
-        ctx.fill(x0, py + 1, px + pw, py + ph, argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListOpacity / 2))
+        if (FishSettings.skyItemListBgOn) ctx.fill(x0, py, px + pw, py + ph, argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListBgOpacity / 2))
         for ((slot, i) in TAB_ORDER.withIndex()) {
             val row = slot - tabScroll
             if (row < 0 || row >= tabRows()) continue
