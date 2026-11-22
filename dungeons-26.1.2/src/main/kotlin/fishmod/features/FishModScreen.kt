@@ -2537,7 +2537,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun vx(real: Number): Int = (real.toDouble() / fishmod.utils.rendering.UiScale.factor()).toInt()
 
-    private fun cx0(): Int = stackX0() + STACK_W + 14
+    // sidebar width: the divider is draggable, width is saved
+    private fun stackW(): Int = FishSettings.fmSidebarW.coerceIn(STACK_W_MIN, Math.max(STACK_W_MIN, Math.min(STACK_W_MAX, winW() / 2)))
+    private var sbDrag = false
+    private fun sbDividerHit(mx: Int, my: Int): Boolean { val sbx = stackX0() + stackW() + 6; return mx in sbx - 3..sbx + 3 && my in top() + 89..bottom() - STATUS_H }
+    private fun cx0(): Int = stackX0() + stackW() + 14
     private fun cx1(): Int = right() - MARGIN
     private fun cyTop(): Int = top() + 92 + HEADER_H
     private fun cyBot(): Int = bottom() - STATUS_H - 6
@@ -2718,6 +2722,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     // resize cursor on the window edges/corners
     private fun dragCursor(mx: Int, my: Int): CursorType? {
         if (closing) return null
+        if (sbDrag || (resizeMask == 0 && !navDragging && winDrag == null && sbDividerHit(mx, my))) return CursorTypes.RESIZE_EW
         val em = if (resizeMask != 0) resizeMask else if (navDragging || winDrag != null) 0 else edgeMask(mx, my)
         if (em != 0) return when {
             em and 3 != 0 && em and 12 != 0 -> CursorTypes.RESIZE_ALL
@@ -2836,7 +2841,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             field.setResponder { t -> searchText = t; gridScroll = 0; if (t.isNotEmpty()) page = null; openedAt = System.currentTimeMillis() }
             searchField = field
         } else { field.setX(s[0] + 8); field.setY(s[1] + 4); field.setWidth(s[2] - 16) }
-        if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search columns and features", (s[0] + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
+        if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search categories and features", (s[0] + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
         else nvgTextFieldContent(field, s[0] + 8, s[1] + 4, s[2] - 16, s[3] - 8, 8f)
         val all = columns.sumOf { it.features.count { f -> f.hasMaster() } }
         val on = columns.sumOf { it.features.count { f -> f.hasMaster() && f.get!!() } }
@@ -2907,7 +2912,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val crumbRects = ArrayList<Pair<IntArray, (() -> Unit)?>>()
 
     // Sidebar like the mockup: PINNED + OTHER COLUMNS, tight rows; right-click pins/unpins
-    private var allMode = false
+    private var allMode = true
     private var statusHint: String? = null
     private val pinned by lazy { LinkedHashSet(FishSettings.fmPinned.split(",").filter { it.isNotBlank() }) }
     private var navScroll = 0
@@ -2916,7 +2921,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         out.add("All features" to null)
         val p = columns.filter { it.name in pinned }
         if (p.isNotEmpty()) { out.add("PINNED" to null); p.forEach { out.add(it.name to it) } }
-        out.add((if (p.isEmpty()) "COLUMNS" else "OTHER COLUMNS") to null)
+        out.add((if (p.isEmpty()) "CATEGORIES" else "OTHER CATEGORIES") to null)
         columns.filter { it.name !in pinned }.forEach { out.add(it.name to it) }
         return out
     }
@@ -2925,7 +2930,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun navMax(): Int = Math.max(0, navRows().size * NAV_ROW + 8 - (navBot() - navTop()))
     private fun renderNav(mx: Int, my: Int) {
         navScroll = Mth.clamp(navScroll, 0, navMax())
-        val x = stackX0(); val w = STACK_W
+        val x = stackX0(); val w = stackW()
         UiRecorder.pushScissor(left().toFloat(), navTop().toFloat(), (w + MARGIN).toFloat(), (navBot() - navTop()).toFloat())
         try {
             for ((i, r) in navRows().withIndex()) {
@@ -2952,12 +2957,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val ha = hover("nav" + c.name, hv)
                 if (open) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, ScreenTheme.ink(0x24))
                 else if (ha > 0f) UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, fa(ROW_HOVER, ha))
-                val n = "${c.features.count { it.hasMaster() && it.get!!() }}/${c.features.size}"
-                val ns = 0.82f * NVG_BASE_TEXT_SIZE
-                val nw = UiRecorder.textWidth(n, ns)
                 val ts = 1.0f * NVG_BASE_TEXT_SIZE
-                UiRecorder.text(ellipsize(c.name, (w - nw - 26).toInt(), 1.0f), (x + 8).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else SUBTEXT_COLOR)
-                UiRecorder.text(n, x + w - 8 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
+                UiRecorder.text(ellipsize(c.name, w - 16, 1.0f), (x + 8).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else SUBTEXT_COLOR)
             }
             if (navDragging) {
                 // insertion line under/over the hovered row, and a ghost of the dragged row at the cursor
@@ -2975,7 +2976,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         } finally { UiRecorder.popScissor() }
     }
     private fun navClick(mx: Int, my: Int, btn: Int): Boolean {
-        if (mx !in left()..stackX0() + STACK_W || my !in navTop()..navBot()) return false
+        if (mx !in left()..stackX0() + stackW() || my !in navTop()..navBot()) return false
         val i = (my - navTop() - 4 + navScroll) / NAV_ROW
         val row = navRows().getOrNull(i) ?: return true
         if (row.first == "All features" && row.second == null) { goHome(); return true }
@@ -3033,7 +3034,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun detMax(f: Feature): Int = Math.max(0, descH(f) + f.naturalSubHeight() - (cyBot() - detTop()))
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        val sbx = stackX0() + STACK_W + 6
+        val sbx = stackX0() + stackW() + 6
         UiRecorder.fillRect(left().toFloat(), (top() + 89).toFloat(), (sbx - left()).toFloat(), (bottom() - STATUS_H - top() - 89).toFloat(), ScreenTheme.ink(0x08))
         UiRecorder.fillRect(sbx.toFloat(), (top() + 89).toFloat(), 1f, (bottom() - STATUS_H - top() - 89).toFloat(), ScreenTheme.ink(0x1F))
         renderNav(mouseX, mouseY)
@@ -3048,7 +3049,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val items = exItems()
         val col = visibleColumns().firstOrNull()
         val ht = cyTop() - HEADER_H
-        val title = if (searchText.isNotEmpty()) "Search  ·  ${items.size} results" else if (allMode) "All features" else col?.name ?: "Click a tab on the left to open a column"
+        val title = if (searchText.isNotEmpty()) "Search  ·  ${items.size} results" else if (allMode) "All features" else col?.name ?: "Click a tab on the left to open a category"
         // no subtitle line under All features / search, so the title grows to fill that gap
         val hasSub = searchText.isEmpty() && !allMode && col?.sub() != null
         val ts = if (hasSub) 1.2f else 1.5f; val ty = if (hasSub) ht + 6 else ht + 9
@@ -3277,6 +3278,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         val headerTop = cyTop() - HEADER_H
 
+        if (btn == 0 && sbDividerHit(mx, my)) { sbDrag = true; return true }
         if (navClick(mx, my, btn)) return true
 
         if (page != null) {
@@ -3297,6 +3299,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         if (resizeMask != 0) { applyResize(vx(click.x()), vx(click.y())); return true }
+        if (sbDrag) { FishSettings.fmSidebarW = (vx(click.x()) - stackX0() - 6).coerceIn(STACK_W_MIN, STACK_W_MAX); return true }
         if (navPress != null) {
             val my = vx(click.y())
             if (!navDragging && Math.abs(my - navPressY) > 4) navDragging = true
@@ -3319,6 +3322,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun releaseInner(click: MouseButtonEvent): Boolean {
         if (resizeMask != 0) { resizeMask = 0; resizeFrom = null; return true }
+        if (sbDrag) { sbDrag = false; return true }
         if (winDrag != null) { winDrag = null; return true }
         navPress?.let { c ->
             val my = vx(click.y())
@@ -3343,7 +3347,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun scrollInner(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         val mouseX = vx(mouseX).toDouble()
         val mouseY = vx(mouseY).toDouble()
-        if (mouseX <= stackX0() + STACK_W && mouseY >= navTop()) {
+        if (mouseX <= stackX0() + stackW() && mouseY >= navTop()) {
             navScroll = Mth.clamp((navScroll - verticalAmount * NAV_ROW).toInt(), 0, navMax())
             return true
         }
@@ -4484,6 +4488,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         )
         private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
         private const val STACK_W = 150
+        private const val STACK_W_MIN = 110
+        private const val STACK_W_MAX = 320
         private const val NAV_ROW = 20
         private val STACK_TAB_H get() = if (COMPACT) 20 else 24
         private const val STACK_SUB_INDENT = 10
