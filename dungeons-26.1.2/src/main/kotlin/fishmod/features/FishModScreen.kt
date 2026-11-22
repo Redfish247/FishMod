@@ -3068,7 +3068,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val last = Math.min(items.size, ((gridScroll + (cyBot() - cyTop())) / rowH + 2) * nc)
             for (i in first until last) {
                 val f = items[i]
-                val p = if (searchText.isEmpty()) anim(openedAt, Math.min(i - first, 24) * 25) else 1f
+                val p = if (searchText.isEmpty()) anim(openedAt, Math.min(i - first, 90) * 12) else 1f
                 val x = cardX(i); val y = cardY(i) + Math.round((1f - p) * 10f)
                 if (y + cardH() < cyTop() || y > cyBot()) continue
                 val on = f.hasMaster() && f.get!!()
