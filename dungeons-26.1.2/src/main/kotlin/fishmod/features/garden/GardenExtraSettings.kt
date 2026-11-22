@@ -77,5 +77,4 @@ object GardenExtraSettings {
     @ConfigValue @JvmField var gardenDnaColor: Int = 0x8055FF55.toInt()
     @ConfigValue @JvmField var gardenSkyMart: Boolean = false
     @ConfigValue @JvmField var gardenSkyMartColor: Int = 0xFFAAAAAA.toInt()
-    @ConfigValue @JvmField var gardenWatering: Boolean = false
 }
