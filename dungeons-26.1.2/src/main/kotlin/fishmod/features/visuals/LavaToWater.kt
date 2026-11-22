@@ -1,0 +1,85 @@
+package fishmod.features.visuals
+import fishmod.compat.reloadChunks
+
+import fishmod.utils.debug.FishDiag
+import fishmod.utils.config.values.FishSettings
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.client.Minecraft
+import net.minecraft.client.color.block.BlockTintSources
+import net.minecraft.client.renderer.block.FluidModel
+import net.minecraft.client.renderer.block.FluidStateModelSet
+import net.minecraft.world.level.material.FluidState
+import net.minecraft.world.level.material.Fluids
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable
+
+object LavaToWater {
+
+    private var lastEnabled = false
+    private var appliedTint = 0L
+    private var settleTicks = 0
+
+    private class Tinted(val water: FluidModel, val rgb: Int, val model: FluidModel)
+
+    @Volatile
+    private var tinted: Tinted? = null
+
+    private fun tintKey(): Long =
+        (if (FishSettings.lavaToWaterTint) 1L shl 32 else 0L) or (FishSettings.lavaToWaterColor.toLong() and 0xFFFFFFL)
+
+    @JvmStatic
+    fun init() {
+        ClientTickEvents.END_CLIENT_TICK.register {
+            if (FishSettings.lavaToWaterEnabled != lastEnabled) {
+                lastEnabled = FishSettings.lavaToWaterEnabled
+                appliedTint = tintKey()
+                refresh()
+                return@register
+            }
+            if (!lastEnabled) return@register
+            if (tintKey() == appliedTint) { settleTicks = 0; return@register }
+            if (++settleTicks < 10) return@register
+            settleTicks = 0
+            appliedTint = tintKey()
+            refresh()
+        }
+    }
+
+    @JvmStatic
+    fun refresh() {
+        try {
+            Minecraft.getInstance().reloadChunks()
+        } catch (t: Throwable) {
+            FishDiag.fail("LavaToWater.1", "levelRenderer.allChanged failed", t)
+        }
+    }
+
+    @JvmStatic
+    fun modelHook(self: FluidStateModelSet, state: FluidState, cir: CallbackInfoReturnable<FluidModel>) {
+        if (!FishSettings.lavaToWaterEnabled) return
+        val t = state.type
+        if (t !== Fluids.LAVA && t !== Fluids.FLOWING_LAVA) return
+        val water = self.get(Fluids.WATER.defaultFluidState())
+        if (!FishSettings.lavaToWaterTint) {
+            cir.setReturnValue(water)
+            return
+        }
+        val rgb = FishSettings.lavaToWaterColor and 0xFFFFFF
+        val cached = tinted
+        if (cached != null && cached.water === water && cached.rgb == rgb) {
+            cir.setReturnValue(cached.model)
+            return
+        }
+        val model = try {
+            FluidModel(
+                water.layer(), water.stillMaterial(), water.flowingMaterial(), water.overlayMaterial(),
+                BlockTintSources.constant(rgb, rgb)
+            )
+        } catch (t: Throwable) {
+            FishDiag.fail("LavaToWater.2", "tinted FluidModel build failed rgb=${Integer.toHexString(rgb)}", t)
+            cir.setReturnValue(water)
+            return
+        }
+        tinted = Tinted(water, rgb, model)
+        cir.setReturnValue(model)
+    }
+}

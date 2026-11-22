@@ -26,7 +26,6 @@ import kotlin.math.sign
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Rift inventory: player inventory + ender chest pager. */
 class RiftInventoryPage {
 	private var enderPage = 0
 

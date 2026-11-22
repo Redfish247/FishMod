@@ -32,7 +32,6 @@ import fishmod.pv.gui.rift.RiftPage
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Collects and draws deferred page / selector tooltips above search chrome. */
 object DeferredTooltipLayer {
 	private const val PAD = 8
 

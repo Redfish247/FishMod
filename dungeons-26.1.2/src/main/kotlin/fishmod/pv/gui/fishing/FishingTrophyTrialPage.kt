@@ -20,7 +20,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Trophy table: one row per fish with a count per tier, split across two blocks. */
 class FishingTrophyTrialPage {
 	private data class Zone(val x: Int, val y: Int, val w: Int, val h: Int, val row: FishingSnapshot.TrophyRow)
 
@@ -91,7 +90,6 @@ class FishingTrophyTrialPage {
 		if (best != null) {
 			val skullId = row.id + "_" + best.suffix()
 			skull = SKULLS[skullId] ?: SkyBlockItemFactory.trophySkullStack(skullId).also {
-				// Cache only once the texture is known; before that it's a plain head.
 				if (!TrophySkulls.value(skullId).isNullOrBlank()) {
 					SKULLS[skullId] = it
 				}

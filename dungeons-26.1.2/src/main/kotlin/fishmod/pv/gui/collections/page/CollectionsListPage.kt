@@ -25,7 +25,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Collections board subpage. */
 class CollectionsListPage {
 	private var selectedCat = 0
 	private var selectedItem = 0
@@ -164,7 +163,6 @@ class CollectionsListPage {
 		if (allCategories.isEmpty()) {
 			return
 		}
-		// One category at a time; the side tabs pick which.
 		val cat = maxOf(0, minOf(selectedCat, allCategories.size - 1))
 		val categories = listOf(allCategories[cat])
 		val n = 1
@@ -179,7 +177,6 @@ class CollectionsListPage {
 		val rowPitch = cellH + layout.rowGap
 		val contentH = headerH + layout.maxRows * cellH + maxOf(0, layout.maxRows - 1) * layout.rowGap
 
-		// No scrolling - board is fitted to the panel.
 		gridMaxScroll = 0
 		gridScroll = 0
 
@@ -309,7 +306,6 @@ class CollectionsListPage {
 				)))
 			}
 		}
-		// Shared collections only - boss kills are personal per member.
 		if (!boss && snapshot.members.size > 1) {
 			lines.add(PvTooltip.Line.blank())
 			lines.add(PvTooltip.Line.bold(
@@ -383,14 +379,12 @@ class CollectionsListPage {
 		fun layoutBoard(categories: List<HypixelCollectionsCache.Category>, w: Int, h: Int): BoardLayout {
 			var best: BoardLayout? = null
 			for (icon in COLL_ICON_STEPS) {
-				// Comfortable metrics first for this icon size, then tighter if needed.
 				val packs = if (icon >= 14) {
 					arrayOf(intArrayOf(4, 5, 4, 2, 9, 8), intArrayOf(2, 4, 3, 2, 8, 6), intArrayOf(2, 3, 2, 1, 8, 6))
 				} else {
 					arrayOf(intArrayOf(2, 4, 3, 1, 8, 6), intArrayOf(2, 3, 2, 1, 7, 5), intArrayOf(2, 2, 2, 1, 7, 4))
 				}
 				for (p in packs) {
-					// slotPad, gap, rowGap, labelGap, labelH, catSep
 					val candidate = packBoard(categories, w, h, icon, icon + p[0], p[1], p[2], p[3], p[4], p[5])
 					if (candidate.neededW <= w && candidate.contentH() <= h) {
 						return candidate

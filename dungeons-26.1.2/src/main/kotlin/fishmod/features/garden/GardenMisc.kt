@@ -1,4 +1,6 @@
 package fishmod.features.garden
+
+import fishmod.features.garden.visitors.Visitors
 import fishmod.compat.curScreen
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -6,7 +8,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import fishmod.features.garden.GardenMilestoneSettings as S
 
-// Visitor Log Book stats HUD (menu/chat formats are guesses, unverified)
 object GardenMisc {
 
     private val STAT = Regex("^([A-Za-z' ]+): ([\\d,]+)(?:/([\\d,]+))?$")
@@ -22,12 +23,12 @@ object GardenMisc {
         Garden.hud("Log Book", "garden_logbook", 150, 50,
             { S.gardenLogBookHudX }, { S.gardenLogBookHudX = it }, { S.gardenLogBookHudY }, { S.gardenLogBookHudY = it },
             { S.gardenLogBookHudScale }, { S.gardenLogBookHudScale = it },
-            { S.gardenLogBookHud && Garden.inGarden() && logBook.isNotEmpty() }, { S.gardenLogBookHud }) {
-            listOf(Garden.legacy(S.gardenLogBookColor) + "§lLog Book") + logBook.map { "§7${it.key}: §f${it.value}" }
-        }
+            { S.gardenLogBookHud && Garden.inGarden() && logBook.isNotEmpty() }, { S.gardenLogBookHud },
+            example = { logLines(mapOf("Visitors Served" to "142", "Unique Visitors" to "38/90")) }) { logLines(logBook) }
     }
 
-    // Caches "Name: x/y" stat lines from the Logbook menu's info item
+    private fun logLines(rows: Map<String, String>) = listOf(Garden.legacy(S.gardenLogBookColor) + "§lLog Book") + rows.map { "§7${it.key}: §f${it.value}" }
+
     private fun scanLogBook() {
         val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val t = Garden.strip(scr.title.string)

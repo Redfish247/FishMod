@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class AbstractSignEditScreenMixin {
     @Inject(method = "removed", at = @At("HEAD"), cancellable = true)
     private void fishmod$skipSend(CallbackInfo ci) {
-        if (fishmod.features.item.AuctionPriceAutofill.suppressSignSend) ci.cancel();
+        if (fishmod.features.hud.AuctionPriceAutofill.suppressSignSend) { ci.cancel(); return; }
+        try { fishmod.features.hud.SignCalculator.beforeSend((AbstractSignEditScreen) (Object) this); } catch (Exception ignored) {}
     }
 }

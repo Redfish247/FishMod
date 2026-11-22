@@ -11,7 +11,6 @@ import java.util.Locale
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Vanilla item icons for collection category column headers. */
 object CollectionCategoryIcons {
 	// Drawn every frame; shared read-only stacks avoid per-frame allocation.
 	private val FARMING = ItemStack(Items.GOLDEN_HOE)

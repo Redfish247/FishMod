@@ -17,6 +17,7 @@ import fishmod.pv.gui.PvDraw
 import fishmod.pv.gui.PvTooltip
 import fishmod.pv.gui.essence.EssenceShopColumn
 import java.util.Locale
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.pow
@@ -152,9 +153,6 @@ class DungeonPage {
 		return true
 	}
 
-	fun isCalcButton(mx: Double, my: Double): Boolean =
-		!overlay.isOpen() && (hitButton(cataRow, mx, my) || hitButton(classRow, mx, my))
-
 	fun charTyped(codepoint: Char): Boolean {
 		if (focus == FieldFocus.NONE || overlay.isOpen()) {
 			return false
@@ -197,9 +195,9 @@ class DungeonPage {
 			return false
 		}
 		when (key) {
-			256 -> blurField() // Esc
-			fishmod.compat.GLFW.GLFW_KEY_ENTER, fishmod.compat.GLFW.GLFW_KEY_KP_ENTER -> if (focus == FieldFocus.CLASS) runClassCalc() else runCataCalc() // Enter
-			259 -> { // Backspace
+			256 -> blurField()
+			fishmod.compat.GLFW.GLFW_KEY_ENTER, fishmod.compat.GLFW.GLFW_KEY_KP_ENTER -> if (focus == FieldFocus.CLASS) runClassCalc() else runCataCalc()
+			259 -> {
 				if (replaceOnType) {
 					if (focus == FieldFocus.CLASS) classLevelText = "" else cataLevelText = ""
 					replaceOnType = false
@@ -228,13 +226,11 @@ class DungeonPage {
 	) {
 		zones.clear()
 
-		// Catacombs / class column on the left, calculators and floor runs on the right.
 		val rightW = maxOf(120, w * 38 / 100)
 		val leftW = w - rightW - GAP
 		val leftX = x + rightW + GAP
 		val rightX = x
 
-		// Calculators removed (commands cover them); floors take the whole panel.
 		val headerH = font.lineHeight + 4
 		val lineH = font.lineHeight
 		val runsY = y
@@ -274,7 +270,6 @@ class DungeonPage {
 		overlay.render(g, font, screenW, screenH, mouseX, mouseY)
 	}
 
-	/** Flip progress 0..1, or -1 when no flip is running. */
 	private fun flipState(startMs: Long): Float =
 		if (startMs == 0L) -1f else minOf(1f, (System.currentTimeMillis() - startMs) / FLIP_MS.toFloat())
 
@@ -295,28 +290,21 @@ class DungeonPage {
 		val showEssence = if (animating && cos(angle) < 0.0) classFlipTarget else classEssenceFace
 
 		pushFlip(g, x, y, w, h, animating, angle)
-		PvDraw.innerPanel(g, x, y, w, h)
 		if (showEssence) {
 			drawWitherUndeadEssenceFace(g, font, x + PAD, y + PAD, w - PAD * 2, h - PAD * 2, !animating)
 		} else {
 			drawClassStatsFace(g, font, x, y, w, totalY)
 		}
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun pushFlip(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, animating: Boolean, angle: Float) {
-		var scaleX = 1f
-		var scaleY = 1f
-		if (animating) {
-			scaleX = maxOf(0.04f, abs(cos(angle)))
-			scaleY = 1f - (1f - scaleX) * 0.06f
-		}
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
+		PvDraw.innerPanel(g, x, y, w, h)
+		val slideDx = if (animating) PvDraw.slideOffset(angle / PI.toFloat(), w) else 0f
+		g.enableScissor(x, y, x + w, y + h)
 		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
+		g.pose().translate(slideDx, 0f)
 	}
 
 	private fun drawClassStatsFace(g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, totalY: Int) {
@@ -470,13 +458,13 @@ class DungeonPage {
 		val showEssence = if (animating && cos(angle) < 0.0) runsFlipTarget else runsEssenceFace
 
 		pushFlip(g, x, y, w, h, animating, angle)
-		PvDraw.innerPanel(g, x, y, w, h)
 		if (showEssence) {
 			drawIceSpiderDragonEssenceFace(g, font, x + PAD, y + PAD, w - PAD * 2, h - PAD * 2, !animating)
 		} else {
 			drawRunsFace(g, font, x, y, w, floors)
 		}
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawRunsFace(g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, floors: FloorLayout) {
@@ -589,22 +577,17 @@ class DungeonPage {
 		private const val GAP = 6
 		private const val FLOOR_GAP_MAX = 6
 
-		/** Height of the personal-best line under each floor name. */
 		private const val PB_H = 8
 		private const val PB_SCALE = 0.75f
 
-		/** Enough for `cata99` / `C55`. */
 		private const val CATA_MAX_LEN = 6
 		private const val CLASS_MAX_LEN = 32
 		private const val FLIP_MS = 480
 
-		// Click-to-flip to the essence faces is switched off.
 		private const val FLIP_ENABLED = false
 
-		/** Wither essence: light gray so the header reads at the same weight as Ice/Spider/Dragon. */
 		private const val WITHER_COLOR = 0xFFAAAAAA.toInt()
 
-		/** Undead essence - pink. */
 		private const val UNDEAD_COLOR = 0xFFFF8EC8.toInt()
 		private const val ICE_COLOR = 0xFF55FFFF.toInt()
 		private const val SPIDER_COLOR = 0xFF55FF55.toInt()
@@ -704,7 +687,6 @@ class DungeonPage {
 
 		private fun easeInOutCubic(t: Float): Float = if (t < 0.5f) 4f * t * t * t else 1f - (-2f * t + 2f).pow(3) / 2f
 
-		/** Small personal-best line under a floor name: S+, S and any-rank clear times. */
 		private fun drawPbLine(g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, floor: DungeonSnapshot.FloorEntry) {
 			val times = longArrayOf(floor.fastestSPlusMs, floor.fastestSMs, floor.fastestMs)
 			val tags = arrayOf("S+", "S", "Any")

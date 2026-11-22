@@ -9,7 +9,6 @@ package fishmod.pv.data
 
 import java.util.function.Function
 
-/** Per-shop totals for the Essence overview. Perks without NEU cost data are counted, not guessed. */
 @JvmRecord
 data class EssenceSummary(
 	val loaded: Boolean,

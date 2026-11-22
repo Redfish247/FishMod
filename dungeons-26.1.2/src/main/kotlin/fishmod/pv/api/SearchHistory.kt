@@ -13,7 +13,6 @@ import com.google.gson.JsonObject
 import java.util.Locale
 import java.util.UUID
 
-/** Last few players opened from the search box, newest first. */
 class SearchHistory private constructor(entries: List<Entry>) {
     private val entries: List<Entry> = entries.toList()
 
@@ -27,7 +26,6 @@ class SearchHistory private constructor(entries: List<Entry>) {
 
     fun entries(): List<Entry> = entries
 
-    /** Moves the player to the top (renames replace the old name) and drops anything past [MAX]. */
     fun record(uuid: UUID?, name: String?): SearchHistory {
         val cleaned = name?.trim() ?: ""
         if (!NAME.matches(cleaned)) return this

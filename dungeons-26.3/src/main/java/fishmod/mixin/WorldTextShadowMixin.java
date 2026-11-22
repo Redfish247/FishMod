@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-// 26.3 side: nametags are built in SubmitNodeCollection.nameTag with the shadow flag hard-coded to false.
 @Mixin(SubmitNodeCollection.class)
 public abstract class WorldTextShadowMixin {
 

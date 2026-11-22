@@ -1,10 +1,6 @@
 package fishmod.utils.rendering
 
 import fishmod.utils.debug.FishDiag
-import org.lwjgl.opengl.GL11
-import org.lwjgl.opengl.GL12
-import org.lwjgl.opengl.GL15
-import org.lwjgl.opengl.GL21
 import org.lwjgl.stb.STBTTFontinfo
 import org.lwjgl.stb.STBTruetype
 import org.lwjgl.system.MemoryStack
@@ -39,8 +35,7 @@ object UiFont {
     private var penX = GAP
     private var penY = GAP
     private var rowH = 0
-    private var dirty = false
-    private var texture = 0
+    private var dirty = true
 
     private fun ensureLoaded(): Boolean {
         if (loaded) return true
@@ -182,7 +177,6 @@ object UiFont {
             val gw = x1[0] - x0[0]; val gh = y1[0] - y0[0]
             if (gw <= 0 || gh <= 0) return Glyph(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
             if (gw + 2 * GAP >= ATLAS || gh + 2 * GAP >= ATLAS) {
-                // Would write past the atlas array (AIOOBE every frame); skip the glyph instead.
                 FishDiag.fail("UiFont.8", "glyph cp=$cp at size $devSize is ${gw}x$gh, bigger than the ${ATLAS}px atlas")
                 return Glyph(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
             }
@@ -205,36 +199,16 @@ object UiFont {
         }
     }
 
-    fun texture(): Int {
-        if (texture == 0) {
-            texture = GL11.glGenTextures()
-            if (texture == 0) FishDiag.fail("UiFont.9", "glGenTextures returned 0 for font atlas")
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture)
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR)
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR)
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE)
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE)
-            dirty = true
-        } else GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture)
-        if (dirty) {
-            val pbo = GL11.glGetInteger(GL21.GL_PIXEL_UNPACK_BUFFER_BINDING)
-            val rowLen = GL11.glGetInteger(GL11.GL_UNPACK_ROW_LENGTH)
-            val skipRows = GL11.glGetInteger(GL11.GL_UNPACK_SKIP_ROWS)
-            val skipPx = GL11.glGetInteger(GL11.GL_UNPACK_SKIP_PIXELS)
-            GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0)
-            GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, 0)
-            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0)
-            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0)
-            GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1)
-            val buf = MemoryUtil.memAlloc(atlas.size).put(atlas).flip()
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, org.lwjgl.opengl.GL30.GL_R8, ATLAS, ATLAS, 0, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, buf)
-            MemoryUtil.memFree(buf)
-            GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, rowLen)
-            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, skipRows)
-            GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, skipPx)
-            GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, pbo)
-            dirty = false
-        }
-        return texture
+    private var upload: ByteBuffer? = null
+
+    // R8 atlas pixels if glyphs were baked since the last upload, else null; buffer is reused
+    fun takeDirtyAtlas(): ByteBuffer? {
+        if (!dirty) return null
+        dirty = false
+        val b = upload ?: MemoryUtil.memAlloc(atlas.size).also { upload = it }
+        b.clear(); b.put(atlas).flip()
+        return b
     }
+
+    fun markAtlasLost() { dirty = true }
 }

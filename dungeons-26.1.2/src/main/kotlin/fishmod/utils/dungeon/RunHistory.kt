@@ -28,24 +28,6 @@ object RunHistory {
     }
 
     @JvmStatic
-    fun saveSplitTimes(floor: String?, times: Map<String, Double>?) {
-        if (floor == null || times == null || times.isEmpty()) return
-        synchronized(lock) {
-            val floorData = data.getOrPut(floor) { HashMap() }
-            var anyRecorded = false
-            for ((key, t) in times) {
-                if (t.isNaN() || t > MAX_SPLIT_SECONDS) FishDiag.fail("RunHistory.1", "rejected split time $floor/$key=$t")
-                if (t <= 0 || t > MAX_SPLIT_SECONDS) continue
-                val list = floorData.getOrPut(key) { ArrayList() }
-                list.add(t)
-                if (list.size > MAX_RUNS) list.removeAt(0)
-                anyRecorded = true
-            }
-            if (anyRecorded) save()
-        }
-    }
-
-    @JvmStatic
     fun saveSplits(floor: String?, splits: List<RunSplit>?) {
         if (floor == null || splits == null || splits.isEmpty()) return
 

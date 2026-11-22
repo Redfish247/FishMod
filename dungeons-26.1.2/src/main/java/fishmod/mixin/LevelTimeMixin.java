@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import fishmod.features.TimeChanger;
+import fishmod.features.visuals.TimeChanger;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

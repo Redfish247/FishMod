@@ -3,8 +3,8 @@ import fishmod.compat.showScreen
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
-import fishmod.features.croesus.CroesusPrices
-import fishmod.features.croesus.LootIcons
+import fishmod.features.dungeon.trackers.CroesusPrices
+import fishmod.features.dungeon.trackers.LootIcons
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiScale
@@ -20,7 +20,6 @@ import fishmod.compat.GLFW
 import kotlin.math.max
 import kotlin.math.min
 
-// Diana profit across the events you pick (current event = index -1)
 class DianaPastEventsScreen(private val parent: Screen? = null) :
     Screen(Component.literal("Diana Profit")), HasUiOverlay {
 
@@ -84,7 +83,7 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         val winX = (vw - winW) / 2
         val winY = (vh - winH) / 2
         for (i in 8 downTo 2 step 2) ScreenTheme.roundedRect(ctx, winX - i, winY - i + 4, winW + i * 2, winH + i * 2, 12 + i, 0x12000000)
-        ScreenTheme.roundedRect(ctx, winX, winY, winW, winH, 12, PANEL)
+        ScreenTheme.roundedRect(ctx, winX, winY, winW, winH, 12, ScreenTheme.windowBg())
         UiRecorder.roundedRectRing(winX.toFloat(), winY.toFloat(), winW.toFloat(), winH.toFloat(), 12f, 1f, 0, LINE)
 
         val gx = winX + 14
@@ -93,8 +92,7 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         UiRecorder.textBold("$", gx + 11 - tw("$", S_LG) / 2f, gy + (22 - S_LG) / 2f, S_LG, ACCENT)
         UiRecorder.textBold("Diana Profit", (gx + 30).toFloat(), (gy + 1).toFloat(), S_LG, ScreenTheme.TEXT_COLOR)
         UiRecorder.text("Pick events to add them up (live prices)", (gx + 30).toFloat(), (gy + 13).toFloat(), S_XS, ScreenTheme.SUBTEXT_COLOR)
-        val chipX = gx + 30 + max(tw("Diana Profit", S_LG), tw("Pick events to add them up (live prices)", S_XS)) + 16
-        val headH = max(44, renderChips(chipX, winY + 7, winX + winW - 14 - chipX) - winY + 7)
+        val headH = 44
         UiRecorder.fillRect(winX.toFloat(), (winY + headH).toFloat(), winW.toFloat(), 1f, LINE)
 
         val footY = winY + winH - FOOT_H
@@ -116,31 +114,29 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         }
         button(winX + winW - 74, footY + (FOOT_H - 18) / 2, 60, 18, "Done") { onClose() }
 
-        renderBody(ctx, winX + 14, winY + headH + 12, winW - 28, footY - 10 - (winY + headH + 12))
+        val bodyY = winY + headH + 12
+        renderYears(winX + 14, bodyY, footY - 10 - bodyY)
+        renderBody(ctx, winX + 14 + YEAR_W + 12, bodyY, winW - 28 - YEAR_W - 12, footY - 10 - bodyY)
         ctx.pose().popMatrix()
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    // event chips in the header, wrapping; returns bottom y
-    private fun renderChips(x: Int, y: Int, w: Int): Int {
+    // Years as a sidebar, same style as the loot tracker floors
+    private fun renderYears(x: Int, y: Int, h: Int) {
         val evs = events()
         selected.retainAll(evs.map { it.idx }.toSet())
-        // event chips, wrapping
-        val chipH = 11
-        var cx = x
+        val rowH = 16
         var cy = y
         val allOn = evs.all { it.idx in selected }
         fun chip(label: String, on: Boolean, action: () -> Unit) {
-            val cw = (if (on) Math.ceil(UiRecorder.textWidthBold(label, S_XS).toDouble()).toInt() else tw(label, S_XS)) + 10
-            if (cx + cw > x + w) { cx = x; cy += chipH + 3 }
-            val hov = over(cx, cy, cw, chipH)
-            if (on) UiRecorder.fillPillBar(cx.toFloat(), cy.toFloat(), cw.toFloat(), chipH.toFloat(), ACCENT)
-            else UiRecorder.roundedRectRing(cx.toFloat(), cy.toFloat(), cw.toFloat(), chipH.toFloat(), chipH / 2f, 1f, if (hov) RAISE else PANEL2, if (hov) ACCENT else LINE2)
+            if (cy + rowH > y + h) return
+            val hov = !on && over(x, cy, YEAR_W, rowH - 2)
+            if (on) UiRecorder.fillPillBar(x.toFloat(), cy.toFloat(), YEAR_W.toFloat(), (rowH - 2).toFloat(), ACCENT)
+            else UiRecorder.roundedRectRing(x.toFloat(), cy.toFloat(), YEAR_W.toFloat(), (rowH - 2).toFloat(), (rowH - 2) / 2f, 1f, if (hov) RAISE else PANEL2, LINE2)
             val fg = if (on) ACC_INK else if (hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR
-            if (on) UiRecorder.textBold(label, (cx + 5).toFloat(), cy + (chipH - S_XS) / 2f, S_XS, fg)
-            else UiRecorder.text(label, (cx + 5).toFloat(), cy + (chipH - S_XS) / 2f, S_XS, fg)
-            hit(cx, cy, cw, chipH, action)
-            cx += cw + 3
+            UiRecorder.text(label, (x + 8).toFloat(), cy + (rowH - 2 - S_XS) / 2f, S_XS, fg)
+            hit(x, cy, YEAR_W, rowH - 2, action)
+            cy += rowH
         }
         chip("All", allOn) { if (allOn) { selected.clear(); selected.add(-1) } else selected.addAll(evs.map { it.idx }); scroll = 0 }
         for (e in evs) chip(e.label, e.idx in selected) {
@@ -148,14 +144,11 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
             else if (e.idx in selected) selected.remove(e.idx) else selected.add(e.idx)
             scroll = 0
         }
-
-        return cy + chipH
     }
 
     private fun renderBody(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
         val evs = events()
 
-        // aggregate the picked events
         val items = HashMap<String, Long>()
         val mobs = HashMap<String, Long>()
         var time = 0L
@@ -198,7 +191,7 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
     private fun renderList(ctx: GuiGraphicsExtractor, rows: List<Row>, none: Boolean, total: Double) {
         val x0 = listX; val top = listY; val lw = listW; val lh = listH
         if (rows.isEmpty()) {
-            val msg = if (selected.isEmpty()) "Pick an event above." else if (none) "No drops tracked for these events." else "No drops match your search."
+            val msg = if (selected.isEmpty()) "Pick an event on the left." else if (none) "No drops tracked for these events." else "No drops match your search."
             UiRecorder.text(msg, x0 + (lw - tw(msg, S_SM)) / 2f, (top + 24).toFloat(), S_SM, DIM)
             return
         }
@@ -250,8 +243,13 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
     private fun tile(x: Int, y: Int, w: Int, h: Int, label: String, value: String, color: Int, side: String?) {
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 8f, 1f, PANEL2, LINE)
         UiRecorder.textBold(label, (x + 10).toFloat(), (y + 7).toFloat(), S_XS, ScreenTheme.SUBTEXT_COLOR)
-        if (side != null) UiRecorder.text(side, (x + w - 10 - tw(side, S_XS)).toFloat(), (y + 7).toFloat(), S_XS, DIM)
-        UiRecorder.textBold(clip(value, w - 20, S_VAL), (x + 10).toFloat(), y + 18f, S_VAL, color)
+        // side text shares the label row only if both fit; else bottom-right (overlapped "TOTAL PROFIT" on narrow tiles)
+        val sw = if (side != null) tw(side, S_XS) else 0
+        val sideTop = side != null && 10 + tw(label, S_XS) * 1.1f + 8 + sw <= w - 10
+        var valW = w - 20
+        if (side != null && sideTop) UiRecorder.text(side, (x + w - 10 - sw).toFloat(), (y + 7).toFloat(), S_XS, DIM)
+        else if (side != null) { UiRecorder.text(side, (x + w - 10 - sw).toFloat(), y + h - 6 - S_XS, S_XS, DIM); valW = w - 26 - sw }
+        UiRecorder.textBold(clip(value, valW, S_VAL), (x + 10).toFloat(), y + 18f, S_VAL, color)
     }
 
     private fun button(x: Int, y: Int, w: Int, h: Int, label: String, action: () -> Unit) {
@@ -315,16 +313,17 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
     }
 
     companion object {
+        private const val YEAR_W = 86
         private val ACCENT get() = ScreenTheme.ACCENT
-        private val PANEL = 0xF014181D.toInt()
-        private val PANEL2 = 0xFF0F1317.toInt()
-        private val RAISE = 0xFF1B2027.toInt()
-        private val LINE = 0xFF262D36.toInt()
-        private val LINE2 = 0xFF3A3F48.toInt()
-        private val DIM = 0xFF5D6873.toInt()
+        private val PANEL = 0xF0171717.toInt()
+        private val PANEL2 = 0xFF121212.toInt()
+        private val RAISE = 0xFF1F1F1F.toInt()
+        private val LINE = 0xFF2C2C2C.toInt()
+        private val LINE2 = 0xFF3F3F3F.toInt()
+        private val DIM = 0xFF666666.toInt()
         private val GOLD = 0xFFF2C14E.toInt()
-        private const val ACC_SOFT = 0x2424B6B0
-        private val ACC_INK = 0xFF06302F.toInt()
+        private const val ACC_SOFT = 0x24D6D6D6
+        private val ACC_INK get() = ScreenTheme.onAccent()
 
         private const val S_XS = 6.5f
         private const val S_SM = 7.5f

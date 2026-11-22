@@ -20,20 +20,19 @@ import java.util.Date
 import kotlin.math.max
 import kotlin.math.min
 
-// Achievements browser opened by /fm ach
 class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("Achievements")), HasUiOverlay {
 
     companion object {
         private val ACCENT get() = ScreenTheme.ACCENT
-        private val PANEL = 0xF014181D.toInt()
-        private val PANEL2 = 0xFF0F1317.toInt()
-        private val RAISE = 0xFF1B2027.toInt()
-        private val LINE = 0xFF262D36.toInt()
-        private val LINE2 = 0xFF3A3F48.toInt()
-        private val DIM = 0xFF5D6873.toInt()
+        private val PANEL = 0xF0171717.toInt()
+        private val PANEL2 = 0xFF121212.toInt()
+        private val RAISE = 0xFF1F1F1F.toInt()
+        private val LINE = 0xFF2C2C2C.toInt()
+        private val LINE2 = 0xFF3F3F3F.toInt()
+        private val DIM = 0xFF666666.toInt()
         private val GOLD = 0xFFF2C14E.toInt()
-        private const val ACC_SOFT = 0x2424B6B0
-        private val ACC_INK = 0xFF06302F.toInt()
+        private const val ACC_SOFT = 0x24D6D6D6
+        private val ACC_INK get() = ScreenTheme.onAccent()
         private const val S_XS = 6.5f
         private const val S_SM = 7.5f
         private const val S_MD = 8f
@@ -130,7 +129,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    // left category rail with count rings
     private fun rail(x: Int, y: Int, w: Int, h: Int, mx: Int, my: Int) {
         UiRecorder.fillRoundedRect((x + 1).toFloat(), (y + 1).toFloat(), w.toFloat(), (h - 2).toFloat(), 13f, PANEL2)
         UiRecorder.fillRect((x + w - 10).toFloat(), (y + 1).toFloat(), 11f, (h - 2).toFloat(), PANEL2)
@@ -195,9 +193,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         clicks.add(intArrayOf(bx, by, bw, bh) to { onClose() })
     }
 
-    // hero strip: AP ring, rank title, overall bar, search
     private fun hero(x: Int, y: Int, w: Int) {
-        // Stats follow the selected category; All/Recent/Leaderboard use everything
         val all = if (group == ALL || group == RECENT || group == LB) AchRegistry.ALL else AchRegistry.ALL.filter { it.section == group }
         val done = all.count { AchEngine.unlocked(it) }
         val frac = if (all.isNotEmpty()) done.toFloat() / all.size else 0f
@@ -262,7 +258,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         }
     }
 
-    // Two ranked lists: AP and secret achievements
     private fun leaderboard(x: Int, y: Int, w: Int, h: Int) {
         val colW = (w - GAP) / 2
         panel(x, y, colW, h, "Top Achievement Points", false)
@@ -311,7 +306,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
             val v = AchLeaderboard.value(e, secrets)
             val vw = tw(v, S_SM)
             val nameCol = if (mine) ACCENT else if (rank <= 3) col else ScreenTheme.TEXT_COLOR
-            UiRecorder.text(clip(e.name, (rowW - 36 - vw - 12).toFloat(), S_SM), (x + 34).toFloat(), ry + (rh - S_SM) / 2f, S_SM, nameCol)
+            UiRecorder.text(clip(fishmod.cosmetic.RemoteNicks.plainFor(e.name),(rowW - 36 - vw - 12).toFloat(), S_SM), (x + 34).toFloat(), ry + (rh - S_SM) / 2f, S_SM, nameCol)
             UiRecorder.text(v, (x + 6 + rowW - 8 - vw).toFloat(), ry + (rh - S_SM) / 2f, S_SM, GOLD)
         }
         UiRecorder.popScissor()
@@ -327,8 +322,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val done = AchEngine.unlocked(a)
         val secret = secretHidden(a)
         val xf = x.toFloat(); val yf = y.toFloat(); val wf = w.toFloat(); val hf = TILE_H.toFloat()
-        val top = if (done) 0xFF1B2A2D.toInt() else if (hov) 0xFF1E242B.toInt() else 0xFF181D23.toInt()
-        val bot = if (done) 0xFF13191D.toInt() else 0xFF12161B.toInt()
+        val top = if (done) 0xFF262626.toInt() else if (hov) 0xFF232323.toInt() else 0xFF1C1C1C.toInt()
+        val bot = if (done) 0xFF181818.toInt() else 0xFF151515.toInt()
         UiRecorder.fillRectVGradient(xf, yf, wf, hf, top, bot, 10f)
         UiRecorder.roundedRectRing(xf, yf, wf, hf, 10f, 1f, 0, if (done) ACCENT else if (hov) LINE2 else LINE)
 
@@ -338,8 +333,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val gw = UiRecorder.textWidthBold(glyph, S_LG)
         val dc = AchIcons.diffColor(a.difficulty)
         if (secret) {
-            UiRecorder.disc(bcx, bcy, 12f, 0xFF0D1014.toInt())
-            UiRecorder.textBold(glyph, bcx - gw / 2f, bcy - S_LG / 2f, S_LG, 0xFF3A424B.toInt())
+            UiRecorder.disc(bcx, bcy, 12f, 0xFF101010.toInt())
+            UiRecorder.textBold(glyph, bcx - gw / 2f, bcy - S_LG / 2f, S_LG, 0xFF414141.toInt())
         } else if (done) {
             UiRecorder.disc(bcx, bcy, 15f, (dc and 0xFFFFFF) or 0x33000000)
             UiRecorder.disc(bcx, bcy, 12f, dc)
@@ -350,7 +345,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         }
 
         val name = if (secret) "???" else a.name
-        val nc = if (done) ScreenTheme.TEXT_COLOR else if (secret) DIM else 0xFF9AA4AE.toInt()
+        val nc = if (done) ScreenTheme.TEXT_COLOR else if (secret) DIM else 0xFFA2A2A2.toInt()
         val shownName = clip(name, (w - 14).toFloat(), S_SM)
         UiRecorder.text(shownName, bcx - tw(shownName, S_SM) / 2f, (y + 46).toFloat(), S_SM, nc)
         val ap = " · ${a.points} AP"
@@ -365,7 +360,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         else bar(x + 12, by, w - 24, 3, max(frac, 0f), 0xFF2F8F8B.toInt())
     }
 
-    // -1 when there is no numeric progress to show
     private fun progress(a: Ach): Float {
         if (secretHidden(a) || a.serverSide || !a.tracked) return -1f
         if (a.metric.startsWith("meta.") || a.metric.startsWith("secret.") || a.goal <= 1) return -1f
@@ -383,7 +377,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         return out
     }
 
-    // floating detail card for the hovered tile
     private fun detail(a: Ach, mx: Int, my: Int) {
         val done = AchEngine.unlocked(a)
         val secret = secretHidden(a)
@@ -407,7 +400,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         if (cy + ch > vh() - 8) cy = vh() - 8 - ch
         cx = max(8, cx); cy = max(8, cy)
         UiRecorder.dropShadow(cx.toFloat(), cy.toFloat(), cw.toFloat(), ch.toFloat(), 10f, 10f, 0x80000000.toInt())
-        UiRecorder.roundedRectRing(cx.toFloat(), cy.toFloat(), cw.toFloat(), ch.toFloat(), 10f, 1f, 0xFF10141A.toInt(), if (done) ACCENT else LINE2)
+        UiRecorder.roundedRectRing(cx.toFloat(), cy.toFloat(), cw.toFloat(), ch.toFloat(), 10f, 1f, 0xFF131313.toInt(), if (done) ACCENT else LINE2)
         var ty = cy + 10
         val ap = "${a.points} AP"
         UiRecorder.textBold(clip(title, inner - tw(ap, S_SM) - 8, S_MD), (cx + 12).toFloat(), ty.toFloat(), S_MD, ScreenTheme.TEXT_COLOR)
@@ -428,7 +421,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         UiRecorder.text(a.difficulty, (cx + cw - 12 - tw(a.difficulty, S_XS)).toFloat(), ty.toFloat(), S_XS, dcol)
     }
 
-    // arc drawn as small discs, clockwise from top
     private fun ring(cx: Float, cy: Float, r: Float, frac: Float, color: Int, thick: Float) {
         val n = max(24, (r * 4).toInt())
         for (i in 0 until n) {
@@ -508,7 +500,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
 
     override fun charTyped(input: CharacterEvent): Boolean {
         if (search.isFocused) { search.charTyped(input); return true }
-        // Typing anywhere starts a search
         search.isFocused = true
         search.charTyped(input)
         return true

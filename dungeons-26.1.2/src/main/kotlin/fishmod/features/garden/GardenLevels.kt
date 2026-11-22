@@ -34,14 +34,12 @@ object GardenLevels {
     private var hoeLines: List<String> = emptyList()
     private var tick = 0
 
-    // Total XP needed to reach `level`
     private fun cum(level: Int): Long {
         var t = 0L
         for (i in 0 until level) t += if (i < XP.size) XP[i] else OVERFLOW_EXP
         return t
     }
 
-    // level, xp into level, xp needed for next level
     private fun levelOf(total: Long): Triple<Int, Long, Long> {
         var tier = 0
         var sum = 0L
@@ -94,17 +92,29 @@ object GardenLevels {
         Garden.hud("Garden Level", "garden_level", 150, 24,
             { S.gardenLevelHudX }, { S.gardenLevelHudX = it }, { S.gardenLevelHudY }, { S.gardenLevelHudY = it },
             { S.gardenLevelHudScale }, { S.gardenLevelHudScale = it },
-            { S.gardenLevelHud && Garden.inGarden() }, { S.gardenLevelHud }) {
-            val c = Garden.legacy(S.gardenLevelColor)
-            if (S.gardenLevelXp <= 0) return@hud listOf("$c§lGarden Level §f? §cOpen the Garden Desk!")
-            val (l, x, n) = levelOf(S.gardenLevelXp)
-            listOf("$c§lGarden Level §f$l" + (if (l > MAX_LEVEL) " §7(+${l - MAX_LEVEL} overflow)" else ""),
-                "§7XP: §f${"%,d".format(x)}§7/§f${"%,d".format(n)} §8(${"%.1f".format(x * 100.0 / n)}%)")
+            { S.gardenLevelHud && Garden.inGarden() }, { S.gardenLevelHud },
+            example = { levelLines(8_500L) }) {
+            levelLines(S.gardenLevelXp)
         }
         Garden.hud("Hoe Level", "garden_hoe", 130, 24,
             { S.gardenHoeHudX }, { S.gardenHoeHudX = it }, { S.gardenHoeHudY }, { S.gardenHoeHudY = it },
             { S.gardenHoeHudScale }, { S.gardenHoeHudScale = it },
-            { S.gardenHoeHud && Garden.inGarden() && hoeLines.isNotEmpty() }, { S.gardenHoeHud }) { hoeLines }
+            { S.gardenHoeHud && Garden.inGarden() && hoeLines.isNotEmpty() }, { S.gardenHoeHud },
+            example = { hoeLine(7, 10) }) { hoeLines }
+    }
+
+    // xp <= 0 = not synced yet; shared with the HUD editor example
+    private fun levelLines(xp: Long): List<String> {
+        val c = Garden.legacy(S.gardenLevelColor)
+        if (xp <= 0) return listOf("$c§lGarden Level §f? §cOpen the Garden Desk!")
+        val (l, x, n) = levelOf(xp)
+        return listOf("$c§lGarden Level §f$l" + (if (l > MAX_LEVEL) " §7(+${l - MAX_LEVEL} overflow)" else ""),
+            "§7XP: §f${"%,d".format(x)}§7/§f${"%,d".format(n)} §8(${"%.1f".format(x * 100.0 / n)}%)")
+    }
+
+    private fun hoeLine(lvl: Int, max: Int?): List<String> {
+        val c = Garden.legacy(S.gardenHoeColor)
+        return listOf("$c§lHoe Level §f$lvl" + (if (max != null) "§7/§f$max" + (if (lvl > max) " §a(+${lvl - max} overflow)" else "") else ""))
     }
 
     // Sync like SkyHanni: Garden Level item in the Desk (slot 4) or SkyBlock Menu (slot 10); also any Garden Level item in the Farming Skill menu
@@ -145,7 +155,6 @@ object GardenLevels {
             val m = TAB_LEVEL.find(e.stripped.trim()) ?: continue
             val lvl = m.groupValues[1].toInt()
             val into = if (m.groupValues[2].isNotEmpty()) num(m.groupValues[2]).toLong() else 0L
-            // resync total from the tab (xp-into-level is only present when the widget shows it)
             if (m.groupValues[2].isNotEmpty() || S.gardenLevelXp == 0L) S.gardenLevelXp = cum(lvl) + into
             checkLevelUp()
             return
@@ -165,13 +174,11 @@ object GardenLevels {
         val m = Garden.lore(st).firstNotNullOfOrNull { HOE_LEVEL.find(it) } ?: run { hoeLines = emptyList(); return }
         val lvl = m.groupValues[1].toInt()
         val max = m.groupValues[2].toIntOrNull()
-        val c = Garden.legacy(S.gardenHoeColor)
-        hoeLines = listOf("$c§lHoe Level §f$lvl" + (if (max != null) "§7/§f$max" + (if (lvl > max) " §a(+${lvl - max} overflow)" else "") else ""))
+        hoeLines = hoeLine(lvl, max)
     }
 
     private fun isHoe(id: String?) = id != null && id.contains("HOE", true)
 
-    // Called from SoundEngineMixin: true cancels the sound
     @JvmStatic
     fun muteSound(instance: SoundInstance): Boolean {
         if (!S.gardenHoeMute || !instance.identifier.path.startsWith("item.hoe.")) return false

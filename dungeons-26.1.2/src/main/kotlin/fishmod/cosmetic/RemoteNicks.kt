@@ -1,5 +1,7 @@
 package fishmod.cosmetic
 
+import fishmod.utils.TextStrip
+
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -18,11 +20,8 @@ object RemoteNicks {
     private val inFlight: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     private const val NEGATIVE_TTL_MS = 15 * 60_000L
-    // Every name-like chat word costs a UUID + nick lookup; skipped names retry the next time they show up
     private const val MAX_IN_FLIGHT = 8
     private val IGN_PAT: Pattern = Pattern.compile("\\b([A-Za-z0-9_]{3,16})\\b")
-    // Nametags carry legacy codes ("§bName"), which would glue the code letter onto the name
-    private val COLOR_CODE: Pattern = Pattern.compile("§.")
 
     @JvmStatic
     fun init() {
@@ -83,7 +82,7 @@ object RemoteNicks {
         if (text == null || text.isEmpty()) return
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return
         if (text.trimStart().startsWith("[NPC]")) return
-        val m = IGN_PAT.matcher(COLOR_CODE.matcher(text).replaceAll(""))
+        val m = IGN_PAT.matcher(TextStrip.plain(text))
         val now = System.currentTimeMillis()
         if (negativeCache.size > 1024) negativeCache.values.removeIf { it <= now }
         var triggered = 0
@@ -101,6 +100,27 @@ object RemoteNicks {
             lookupAndCache(name)
         }
     }
+
+    @JvmStatic
+    fun ensureKnown(name: String?) {
+        if (name.isNullOrEmpty() || !fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return
+        if (styledByName.containsKey(name) || !hasLetter(name) || name.length !in 3..16) return
+        val neg = negativeCache[name]
+        if (neg != null && neg > System.currentTimeMillis()) return
+        if (inFlight.size >= MAX_IN_FLIGHT || !inFlight.add(name)) return
+        lookupAndCache(name)
+    }
+
+    @JvmStatic
+    fun styledFor(name: String): Component? {
+        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return null
+        ensureKnown(name)
+        if (NickState.isActive() && name == NickState.realName()) return null
+        return styledByName[name]
+    }
+
+    @JvmStatic
+    fun plainFor(name: String): String = styledFor(name)?.string?.takeIf { it.isNotBlank() } ?: name
 
     private fun hasLetter(s: String): Boolean {
         for (i in s.indices) if (Character.isLetter(s[i])) return true
@@ -157,7 +177,7 @@ object RemoteNicks {
         val own = if (NickState.isActive()) NickState.realName() else null
         // Look up the line's name-like tokens instead of scanning every known nick
         val hits = LinkedHashSet<String>()
-        val m = IGN_PAT.matcher(if (s.indexOf('§') >= 0) COLOR_CODE.matcher(s).replaceAll("") else s)
+        val m = IGN_PAT.matcher(if (s.indexOf('§') >= 0) TextStrip.plain(s) else s)
         while (m.find()) { val n = m.group(1); if (styledByName.containsKey(n)) hits += n }
         if (hits.isEmpty()) return text
         for (k in hits) {

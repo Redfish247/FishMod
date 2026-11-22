@@ -13,7 +13,6 @@ import com.google.gson.JsonObject
 import fishmod.pv.dungeons.EssenceShopData
 import java.util.Locale
 
-/** Member {@code nether_island_player_data} + Crimson essence. */
 class CrimsonSnapshot private constructor(
 	selectedFaction: String?,
 	@get:JvmName("magesReputation") val magesReputation: Double,
@@ -87,10 +86,6 @@ class CrimsonSnapshot private constructor(
 		val dnd: Boolean
 	)
 
-	/**
-	 * Kuudra Follower Armor quest flags from {@code nether_island_player_data.quests}. Hypixel only
-	 * writes these once set, so a missing key reads as not done.
-	 */
 	@JvmRecord
 	data class KuudraFollower(val loremaster: Boolean, val cathedralBook: Boolean, val relicClaimedMs: Long, val leggings: Boolean) {
 		companion object {
@@ -135,7 +130,6 @@ class CrimsonSnapshot private constructor(
 	@get:JvmName("crimsonShop") val crimsonShop: DungeonSnapshot.EssenceShop =
 		crimsonShop ?: DungeonSnapshot.EssenceShop.empty("crimson", "Crimson")
 
-	/** Prefer full profile INT / Magic Find once player stats are computed. */
 	fun withPlayerStats(stats: PlayerStatsSnapshot?): CrimsonSnapshot {
 		if (stats == null || stats.isEmpty()) {
 			return this
@@ -171,7 +165,6 @@ class CrimsonSnapshot private constructor(
 		}
 	}
 
-	/** Faction colour for the selected faction label, or muted when none. */
 	fun factionColor(mageColor: Int, barbColor: Int, noneColor: Int): Int {
 		val lower = selectedFaction.lowercase(Locale.ROOT)
 		return when {
@@ -187,15 +180,12 @@ class CrimsonSnapshot private constructor(
 
 	fun kuudraTotalCompletions(): Int = kuudra.values.sumOf { it.completions }
 
-	/** Highest wave on the highest Kuudra tier that has at least one clear. */
 	fun kuudraHighestClearedWave(): Int =
 		KuudraTier.values().reversed().map { kuudra(it) }.firstOrNull { it.completions > 0 }?.highestWave ?: 0
 
 	fun dojo(challenge: DojoChallenge): DojoScore = dojo[challenge] ?: DojoScore.empty()
 
 	fun dojoTotalPoints(): Int = dojo.values.sumOf { it.points }
-
-	fun kuudraLoremaster(): Boolean = kuudraFollower.loremaster
 
 	fun abiphoneQuestsDone(): Int = abiphoneContacts.count { it.completedQuest }
 
@@ -383,19 +373,6 @@ class CrimsonSnapshot private constructor(
 				"MAGMA_BOSS" -> "Magma Boss"
 				else -> prettyContact(id)
 			}
-		}
-
-		@JvmStatic
-		fun prettyDaily(id: String?): String {
-			if (id.isNullOrBlank()) {
-				return ""
-			}
-			var raw: String = id.removePrefix("crimson_isle_")
-			// Strip trailing quality letter like _c / _a / _s
-			if (raw.length > 2 && raw[raw.length - 2] == '_' && Character.isLetter(raw[raw.length - 1])) {
-				raw = raw.substring(0, raw.length - 2)
-			}
-			return prettyContact(raw)
 		}
 
 		private fun prettyContact(id: String?): String {

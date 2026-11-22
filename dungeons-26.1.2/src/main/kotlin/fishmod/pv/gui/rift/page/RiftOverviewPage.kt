@@ -39,7 +39,6 @@ import kotlin.math.pow
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Rift overview: progress bars + timecharms / zone unlocks. */
 class RiftOverviewPage {
 	private var questScroll = 0
 	private var questMaxScroll = 0
@@ -133,21 +132,14 @@ class RiftOverviewPage {
 		}
 		val angle = (if (animating) easeInOutCubic(flipProgress) else 0f) * Math.PI.toFloat()
 		val showQuests = if (animating && cos(angle) < 0.0) leftFlipTarget else leftQuestFace
-		var scaleX = 1f
-		var scaleY = 1f
+		var slideDx = 0f
 		if (animating) {
-			scaleX = maxOf(0.04f, abs(cos(angle)))
-			scaleY = 1f - (1f - scaleX) * 0.06f
+			slideDx = PvDraw.slideOffset(angle / Math.PI.toFloat(), w)
 		}
-
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 		if (hovered && !animating) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -161,6 +153,7 @@ class RiftOverviewPage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawStatsFace(

@@ -1,0 +1,104 @@
+package fishmod.features.hud
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
+
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
+import fishmod.utils.debug.FishDiag
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.world.item.component.ResolvableProfile
+import java.io.File
+
+private val BRACKET_RE = Regex("""\[[^]]*]""")
+
+object PetIcons {
+
+    private const val FILE_PATH = "config/fishmod-pet-icons.json"
+    private val GSON = GsonBuilder().setPrettyPrinting().create()
+    private val LEVEL = Regex("""\[Lvl\s*\d+]""")
+    private val PETS_TITLE = Regex("""^(\(\d+/\d+\)\s*)?Pets.*""")
+
+    private var textures: MutableMap<String, String> = HashMap()
+    private val stacks = HashMap<String, ItemStack>()
+    private var tick = 0
+
+    init { load() }
+
+    @JvmStatic
+    fun init() {
+        ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick >= 10) { tick = 0; FishDiag.guard("PetIcons.1", "pet icon learn failed") { learn(mc) } } }
+    }
+
+    private val keyCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    @JvmStatic
+    fun key(name: String): String {
+        keyCache[name]?.let { return it }
+        if (keyCache.size >= 256) keyCache.clear()
+        val k = name.replace(BRACKET_RE, "").replace("✦", "").replace("★", "").trim().lowercase()
+        keyCache[name] = k
+        return k
+    }
+
+    @JvmStatic
+    fun icon(petName: String?): ItemStack? {
+        val k = key(petName ?: return null)
+        stacks[k]?.let { return it }
+        val tex = textures[k] ?: return null
+        return FishDiag.guard("PetIcons.2", "pet icon build failed for '$k'") { buildIcon(k, tex) }
+    }
+
+    private fun buildIcon(k: String, tex: String): ItemStack {
+        val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", tex))
+        val profile = com.mojang.authlib.GameProfile(java.util.UUID.nameUUIDFromBytes(k.toByteArray()), "fmpet", com.mojang.authlib.properties.PropertyMap(props))
+        return ItemStack(Items.PLAYER_HEAD).also {
+            it.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile))
+            stacks[k] = it
+        }
+    }
+
+    private fun learn(mc: Minecraft) {
+        val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
+        if (!PETS_TITLE.matches(fishmod.utils.ScreenTitle.plain(screen).trim())) return
+        var changed = false
+        for (slot in screen.menu.slots) {
+            val st = slot.item
+            if (st.isEmpty) continue
+            val name = TextStrip.plain(st.hoverName.string)
+            val m = LEVEL.find(name) ?: continue
+            val k = key(name.substring(m.range.last + 1))
+            if (k.isEmpty()) continue
+            val tex = st.get(DataComponents.PROFILE)?.partialProfile()?.properties()?.get("textures")?.firstOrNull()?.value() ?: continue
+            if (textures[k] != tex) { textures[k] = tex; stacks.remove(k); changed = true }
+        }
+        if (changed) save()
+    }
+
+    private fun load() {
+        val f = File(FILE_PATH)
+        if (!f.exists()) return
+        try {
+            val type = object : TypeToken<MutableMap<String, String>>() {}.type
+            f.reader().use { r -> GSON.fromJson<MutableMap<String, String>>(r, type)?.let { textures = it } }
+        } catch (e: Exception) {
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[PetIcons] load failed: {}", e.toString())
+            FishDiag.fail("PetIcons.3", "pet icons load failed", e)
+        }
+    }
+
+    private fun save() {
+        try {
+            val f = File(FILE_PATH)
+            f.parentFile?.mkdirs()
+            f.writer().use { w -> GSON.toJson(textures, w) }
+        } catch (e: Exception) {
+            fishmod.utils.debug.FishDebug.LOGGER.warn("[PetIcons] save failed: {}", e.toString())
+            FishDiag.fail("PetIcons.4", "pet icons save failed (${textures.size} entries)", e)
+        }
+    }
+}

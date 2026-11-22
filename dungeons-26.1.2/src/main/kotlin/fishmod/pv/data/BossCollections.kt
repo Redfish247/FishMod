@@ -61,7 +61,6 @@ object BossCollections {
 		val normalCompletions = normal?.let { Leveling.obj(it.get("tier_completions")) }
 		val masterCompletions = master?.let { Leveling.obj(it.get("tier_completions")) }
 
-		// Bonzo..Necron map to floors 1..7
 		for (i in 0 until 7) {
 			val floor = (i + 1).toString()
 			val amount = readLong(normalCompletions, floor) + readLong(masterCompletions, floor) * 2L

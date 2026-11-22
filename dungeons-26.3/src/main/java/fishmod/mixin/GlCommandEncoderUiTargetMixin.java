@@ -1,15 +1,14 @@
 package fishmod.mixin;
 
 import com.mojang.renderpearl.api.commands.RenderPassDescriptor;
-import com.mojang.renderpearl.backend.opengl.GlTexture;
 import fishmod.utils.rendering.UiRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// 26.3 side: the GL backend moved to com.mojang.renderpearl.backend.opengl.
-@Mixin(targets = "com.mojang.renderpearl.backend.opengl.GlCommandEncoder")
+// Remembers the last full-size colour target so the UI layer draws where the GUI went (OpenGL and Vulkan)
+@Mixin(targets = {"com.mojang.renderpearl.backend.opengl.GlCommandEncoder", "com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder"})
 public class GlCommandEncoderUiTargetMixin {
 
     @Inject(
@@ -20,10 +19,9 @@ public class GlCommandEncoderUiTargetMixin {
         var atts = descriptor.colorAttachments();
         if (atts == null || atts.isEmpty() || atts.get(0) == null) return;
         var view = atts.get(0).textureView();
-        if (view == null || !(view.texture() instanceof GlTexture tex)) return;
-        // Only full-window passes; picture-in-picture/blur/offscreen passes would swallow the UI.
+        if (view == null) return;
         var main = fishmod.compat.McCompatKt.getMainTarget(net.minecraft.client.Minecraft.getInstance());
-        if (main == null || tex.getWidth(0) != main.width || tex.getHeight(0) != main.height) return;
-        UiRenderer.lastPassColorTex = tex.glId();
+        if (main == null || view.getWidth(0) != main.width || view.getHeight(0) != main.height) return;
+        UiRenderer.lastPassView = view;
     }
 }

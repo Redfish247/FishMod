@@ -8,7 +8,6 @@ import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.garden.GardenMilestoneSettings as S
 
-// Farming-tab entries for milestone / level / hoe / misc cards
 object GardenMilestoneMenu {
 
     fun addTo(col: Column) {

@@ -20,10 +20,6 @@ import java.util.Locale
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/**
- * Fishing main page. Left: skill, items fished and sea creature totals. Right: sea creature kills
- * per bestiary family. Trophy fish and frogs live on the Trophies subtab.
- */
 class FishingPage {
 	private var snapshot: FishingSnapshot = FishingSnapshot.empty()
 	private var bestiary: BestiarySnapshot = BestiarySnapshot.empty()
@@ -230,11 +226,8 @@ class FishingPage {
 		private const val SEP_GAP = 10
 		private const val BAR_FISH = 0xFF55AAFF.toInt()
 		private const val SLOT = 16
-		private const val TIER_BORDER = 1
 		private const val COLOR_MAXED = 0xFF7CFF9A.toInt()
-		/** NEU bestiary category holding every sea creature family. */
 		private const val SEA_CREATURE_CATEGORY = "fishing"
-		/** Soft violet for trophy names. */
 		private const val NAME_COLOR = 0xFFC9A6FF.toInt()
 		private const val TIER_DIAMOND = 0xFF55FFFF.toInt()
 		private const val TIER_GOLD = 0xFFFFE566.toInt()
@@ -263,7 +256,6 @@ class FishingPage {
 			return tip
 		}
 
-		/** Sea creature families with at least one kill, most kills first. */
 		@JvmStatic
 		fun seaCreatureRows(category: BestiarySnapshot.CategoryProgress?): List<BestiarySnapshot.FamilyProgress> {
 			if (category == null) {
@@ -276,20 +268,10 @@ class FishingPage {
 		}
 
 		@JvmStatic
-		fun drawTierBorder(g: GuiGraphicsExtractor, bx: Int, by: Int, color: Int) {
-			val t = TIER_BORDER
-			PvDraw.fill(g, bx, by, SLOT, t, color)
-			PvDraw.fill(g, bx, by + SLOT - t, SLOT, t, color)
-			PvDraw.fill(g, bx, by + t, t, SLOT - t * 2, color)
-			PvDraw.fill(g, bx + SLOT - t, by + t, t, SLOT - t * 2, color)
-		}
-
-		@JvmStatic
 		fun sortedRows(rows: List<FishingSnapshot.TrophyRow>?): List<FishingSnapshot.TrophyRow> {
 			if (rows.isNullOrEmpty()) {
 				return listOf()
 			}
-			// Each key descending; chained .reversed() flipped the earlier keys too.
 			return rows.sortedWith(
 				compareBy<FishingSnapshot.TrophyRow> { -(it.counts?.bestRank() ?: 0) }
 					.thenBy { -(it.counts?.discoveredTier() ?: 0) }
@@ -322,7 +304,6 @@ class FishingPage {
 				}
 			}
 
-			// Only show obtain/howto text when NEU item lore has it.
 			val howto = trophyHowtoFromNeu(row)
 
 			var contentW = maxOf(
@@ -394,10 +375,6 @@ class FishingPage {
 			}
 		}
 
-		/**
-		 * First NEU lore line for the best/bronze trophy item when it looks like obtain text.
-		 * Returns null when unavailable, so no howto copy is invented.
-		 */
 		private fun trophyHowtoFromNeu(row: FishingSnapshot.TrophyRow?): String? {
 			if (row == null || row.id.isBlank()) {
 				return null
@@ -425,35 +402,6 @@ class FishingPage {
 			TrophyFishData.Tier.GOLD -> TIER_GOLD
 			TrophyFishData.Tier.SILVER -> TIER_SILVER
 			TrophyFishData.Tier.BRONZE -> TIER_BRONZE
-		}
-
-		@JvmStatic
-		fun prettyLast(raw: String?): String {
-			if (raw.isNullOrBlank()) {
-				return ""
-			}
-			val parts = raw.split("/").dropLastWhile { it.isEmpty() }
-			if (parts.isEmpty()) {
-				return ""
-			}
-			val sb = StringBuilder()
-			for (p in parts[0].replace('_', ' ').split(" ")) {
-				if (p.isEmpty()) {
-					continue
-				}
-				if (sb.isNotEmpty()) {
-					sb.append(' ')
-				}
-				sb.append(p[0].uppercaseChar())
-				if (p.length > 1) {
-					sb.append(p.substring(1).lowercase(Locale.ROOT))
-				}
-			}
-			if (parts.size > 1 && parts[1].isNotEmpty()) {
-				sb.append(" · ").append(parts[1].substring(0, 1).uppercase(Locale.ROOT))
-					.append(parts[1].substring(1).lowercase(Locale.ROOT))
-			}
-			return sb.toString()
 		}
 
 		private fun sectionSeparator(g: GuiGraphicsExtractor, font: Font, panelX: Int, y: Int, panelW: Int): Int {

@@ -49,7 +49,6 @@ object FossilSolver {
         Fossil("Ugly", "6.2%", intArrayOf(0,1, 1,0, 1,1, 1,2, 2,0, 2,1, 2,2, 2,3, 3,0, 3,1, 3,2, 3,3, 4,0, 4,1, 4,2, 5,1), ROT),
     )
 
-    // Opening sequences (tile, chance, boards left) used before any fossil tile is found
     private val RISKY = listOf(Tile(4, 2) to 0.515, Tile(5, 3) to 0.393, Tile(3, 2) to 0.513, Tile(7, 2) to 0.345,
         Tile(1, 3) to 0.342, Tile(3, 4) to 0.6, Tile(5, 1) to 0.8, Tile(4, 3) to 1.0)
     private val SAFE = listOf(Tile(4, 2) to 0.515, Tile(5, 4) to 0.413, Tile(3, 3) to 0.461, Tile(5, 2) to 0.387,
@@ -66,8 +65,8 @@ object FossilSolver {
     private var charges = 0
     private var maxCharges = 0
     private var types: List<String> = emptyList()
-    private var possible: Map<Int, Double> = emptyMap() // slot -> share of placements covering it
-    private var sure: Set<Int> = emptySet()             // slots every remaining placement covers
+    private var possible: Map<Int, Double> = emptyMap()
+    private var sure: Set<Int> = emptySet()
     private var fossilName = ""
 
     private fun screen(): AbstractContainerScreen<*>? =
@@ -102,6 +101,7 @@ object FossilSolver {
         FishHudEditor.register("Fossil Solver", { S.miningFossilHudX }, { S.miningFossilHudX = it },
             { S.miningFossilHudY }, { S.miningFossilHudY = it }, 150, 60, { S.miningFossilHudScale }, { S.miningFossilHudScale = it },
             { S.miningFossilSolver })
+        MiningHuds.registerExample("Fossil Solver") { panel(placementsText(24), 18, "", FOSSILS.take(2).map { it.name }) }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, scr, _, _ ->
             if (scr !is AbstractContainerScreen<*>) return@AfterInit
             ScreenEvents.afterExtract(scr).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
@@ -114,7 +114,9 @@ object FossilSolver {
     private fun reset() { sig = 0; bestSlot = -1; status = ""; types = emptyList(); maxCharges = 0; charges = 0
         possible = emptyMap(); sure = emptySet(); fossilName = "" }
 
-    private fun panel(): List<String> {
+    private fun panel(): List<String> = panel(status, charges, fossilName, types)
+
+    private fun panel(status: String, charges: Int, fossilName: String, types: List<String>): List<String> {
         val out = arrayListOf("§6§lFossil Solver", status, "§eCharges: §a$charges")
         if (fossilName.isNotEmpty()) out += "§eFossil: §a$fossilName"
         else if (types.isNotEmpty()) out += "§eTypes: §7" + types.joinToString(", ")
@@ -180,7 +182,9 @@ object FossilSolver {
         status = when {
             sure.isNotEmpty() && sure.size == counts.size -> "§aFossil located, dig the green slots."
             fossilName.isNotEmpty() -> "§eIdentified, §a$remaining §eplacements left"
-            else -> "§ePossible placements: §a$remaining"
+            else -> placementsText(remaining)
         }
     }
+
+    private fun placementsText(n: Int) = "§ePossible placements: §a$n"
 }

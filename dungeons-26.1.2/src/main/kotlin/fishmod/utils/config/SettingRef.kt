@@ -6,7 +6,6 @@ import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
 
-// Static config field bound by name; replaces one KProperty class per call site.
 class SettingRef<T>(val owner: Class<*>, val name: String, private val fallback: T) {
     constructor(name: String, fallback: T) : this(FishSettings::class.java, name, fallback)
 
@@ -27,7 +26,6 @@ class SettingRef<T>(val owner: Class<*>, val name: String, private val fallback:
         }
 
         private fun find(owner: Class<*>, name: String): Field? {
-            // companion properties live as statics on the enclosing class
             for (c in listOfNotNull(owner, owner.enclosingClass)) {
                 val f = try { c.getDeclaredField(name) } catch (_: NoSuchFieldException) { continue }
                 if (!Modifier.isStatic(f.modifiers)) continue

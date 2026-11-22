@@ -25,7 +25,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** HOTM subtab: powders | perk tree | forge / unlocked flip. Owns HOTM-specific scroll fields. */
 class HotmPage {
 	private var scroll = 0
 	private var maxScroll = 0
@@ -43,7 +42,6 @@ class HotmPage {
 	private var treeW = 0
 	private var treeH = 0
 
-	/** false = forge face, true = unlocked perks face. */
 	private var unlockedFace = false
 	private var flipTarget = false
 	private var flipStartMs = 0L
@@ -219,21 +217,14 @@ class HotmPage {
 		}
 		val angle = (if (animating) easeInOutCubic(flipProgress) else 0f) * Math.PI.toFloat()
 		val showUnlocked = if (animating && cos(angle) < 0.0) flipTarget else unlockedFace
-		var scaleX = 1f
-		var scaleY = 1f
+		var slideDx = 0f
 		if (animating) {
-			scaleX = maxOf(0.04f, abs(cos(angle)))
-			scaleY = 1f - (1f - scaleX) * 0.06f
+			slideDx = PvDraw.slideOffset(angle / Math.PI.toFloat(), w)
 		}
-
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 		if (hovered && !animating) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -247,6 +238,7 @@ class HotmPage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawForgeFace(g: GuiGraphicsExtractor, font: Font, snapshot: MiningSnapshot, x: Int, y: Int, w: Int, h: Int) {

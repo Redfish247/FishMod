@@ -1,8 +1,8 @@
 package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import fishmod.features.NoCursorReset;
-import fishmod.features.other.Zoom;
+import fishmod.features.general.NoCursorReset;
+import fishmod.features.general.Zoom;
 import fishmod.utils.FishKeys;
 import fishmod.utils.config.values.MiscSettings;
 import net.minecraft.client.Minecraft;
@@ -27,7 +27,7 @@ public class FishMouseMixin {
 
     @Inject(method = "onScroll", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getInventory()Lnet/minecraft/world/entity/player/Inventory;"), cancellable = true, require = 1)
     private void fishmod$lockHotbarScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
-        if (MiscSettings.lockHotbarScroll) {
+        if (MiscSettings.lockHotbarScroll || fishmod.features.dungeon.floor7.M7Relics.blockSlot9Scroll()) {
             ci.cancel();
         }
     }
@@ -63,7 +63,6 @@ public class FishMouseMixin {
         if (NoCursorReset.shouldHook() && fishmod.compat.McCompatKt.getCurScreen(Minecraft.getInstance()) instanceof AbstractContainerScreen) {
             this.xpos = this.fishmod$beforeX;
             this.ypos = this.fishmod$beforeY;
-            // Move the real OS cursor too, or the next mouse move snaps back to centre
             fishmod.compat.GLFW.glfwSetCursorPos(Minecraft.getInstance().getWindow().handle(), this.xpos, this.ypos);
         }
     }

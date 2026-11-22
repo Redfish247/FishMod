@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import fishmod.features.RenderOptimizer;
+import fishmod.features.visuals.RenderOptimizer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.ScreenEffectRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;

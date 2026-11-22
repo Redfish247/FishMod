@@ -17,11 +17,9 @@ import java.net.http.WebSocket
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
-// Live cosmetics: one WebSocket to fishmod.dev/live; full set on connect, then pushed changes only.
 object CosmeticLive {
     private const val URL = "wss://fishmod.dev/live"
     private const val PING_MS = 30_000L
-    // No frame (pong included) for this long = half-open socket; drop it and reconnect
     private const val DEAD_MS = 75_000L
     private const val MIN_BACKOFF_MS = 5_000L
     private const val MAX_BACKOFF_MS = 5 * 60_000L
@@ -40,7 +38,6 @@ object CosmeticLive {
     private val badges = ConcurrentHashMap<String, String>()
     private val cleared = ConcurrentHashMap<String, Long>()
     @Volatile private var blocked: Set<String> = emptySet()
-    // Dashboard message ids already shown (server may resend on reconnect).
     private val seenMsgs = LinkedHashSet<Long>()
 
     @Volatile private var ws: WebSocket? = null
@@ -57,7 +54,14 @@ object CosmeticLive {
     }
 
     private fun wanted(): Boolean =
-        FishSettings.remoteNicksEnabled || FishSettings.remoteItemsEnabled || FishSettings.playerSizeShared || FishSettings.badgesEnabled
+        FishSettings.remoteNicksEnabled || FishSettings.remoteItemsEnabled || FishSettings.playerSizeShared || FishSettings.badgesEnabled ||
+            FishSettings.fishChatEnabled
+
+    @Synchronized
+    fun sendText(text: String): Boolean {
+        val s = ws ?: return false
+        return try { s.sendText(text, true); true } catch (_: Exception) { false }
+    }
 
     private fun tick(mc: Minecraft) {
         val player = mc.player
@@ -66,14 +70,16 @@ object CosmeticLive {
         val socket = ws
         if (socket != null) {
             if (now - lastRx > DEAD_MS) {
-                // network drop, expected: log only
                 fishmod.utils.debug.FishDebug.LOGGER.info("[CosmeticLive] live socket silent {}s, reconnecting", (now - lastRx) / 1000)
                 ws = null
                 try { socket.abort() } catch (_: Exception) {}
                 failed()
+                backoff = MIN_BACKOFF_MS
+                retryAt = now + 1_000L
                 return
             }
-            if (now - lastPing >= PING_MS) { lastPing = now; socket.sendText("ping", true) }
+            // shared send path: a ping racing a chat send must not throw into the tick guard
+            if (now - lastPing >= PING_MS) { lastPing = now; sendText("ping") }
             return
         }
         if (connecting || now < retryAt) return
@@ -108,7 +114,6 @@ object CosmeticLive {
         try { s?.sendClose(WebSocket.NORMAL_CLOSURE, "bye") } catch (_: Exception) {}
     }
 
-    /** Cosmetics for these uuids, or null while not connected (caller falls back to /sync). */
     fun slice(uuids: Set<String>): Slice? {
         if (!ready) return null
         fun <V> pick(m: Map<String, V>) = HashMap<String, V>().also { out -> for (u in uuids) m[u]?.let { out[u] = it } }
@@ -121,6 +126,7 @@ object CosmeticLive {
         val root = JsonParser.parseString(text).asJsonObject
         val type = root.get("t")?.asString
         if (type == "msg") { dashboardMessage(root); return }
+        if (type == "chat") { FishChat.receive(root); return }
         val full = type == "snap"
         if (full) { nicks.clear(); items.clear(); scales.clear(); badges.clear(); cleared.clear() }
         mergeStrings(root, "nicks", nicks)

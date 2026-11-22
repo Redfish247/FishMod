@@ -22,7 +22,6 @@ import net.minecraft.nbt.NbtIo
 import net.minecraft.nbt.StringTag
 import net.minecraft.nbt.Tag
 
-/** Uncached gzip/NBT inventory decode and text flattening. */
 internal object NbtInventoryCodec {
     private val EDGE_QUOTES = Regex("^\"|\"$")
 
@@ -58,7 +57,6 @@ internal object NbtInventoryCodec {
         return ByteArrayInputStream(bytes).use { NbtIo.readCompressed(it, NbtAccounter.unlimitedHeap()) }
     }
 
-    // Toolkit slots store the item's ExtraAttributes as the root, with no "i" list, name or lore.
     @JvmStatic
     fun fromBareAttributes(root: CompoundTag): InventoryDecoder.Stack? {
         val id = string(root, "id")
@@ -81,7 +79,6 @@ internal object NbtInventoryCodec {
             displayName = cleanJsonText(tagText(display.get("Name")))
             val loreTag = display.get("Lore")
             if (loreTag is ListTag) {
-                // Blank lore entries stay as tooltip spacers.
                 for (line in loreTag) lore.add(cleanJsonText(tagText(line)))
             }
             if (display.contains("color")) {
@@ -134,7 +131,6 @@ internal object NbtInventoryCodec {
         .replace("\\u00a7", "§")
         .replace("\\u00A7", "§")
 
-    /** Flatten Hypixel JSON text components / quoted SNBT into a §-legacy string. */
     @JvmStatic
     fun cleanJsonText(raw: String?): String {
         if (raw.isNullOrBlank()) return ""
@@ -147,9 +143,7 @@ internal object NbtInventoryCodec {
                 val flattened = flattenJsonText(JsonParser.parseString(line), JsonStyle())
                 if (flattened.isNotEmpty()) return SkyBlockSymbols.replace(flattened)
             } catch (ignored: Exception) {
-                // Fall through to the legacy quote scraper below.
             }
-            // Fallback: scrape text nodes only (loses obfuscated / bold).
             val out = StringBuilder()
             var idx = 0
             while (true) {
@@ -171,7 +165,6 @@ internal object NbtInventoryCodec {
         return SkyBlockSymbols.replace(line.replace("\\u00a7", "§").replace("\\u00A7", "§"))
     }
 
-    /** JSON text to §-legacy, keeping obfuscated (§k) used for recombobulator rarity markers. */
     @JvmStatic
     fun flattenJsonText(element: JsonElement?, parent: JsonStyle): String {
         if (element == null || element.isJsonNull) return ""

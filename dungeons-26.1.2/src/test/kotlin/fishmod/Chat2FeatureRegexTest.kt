@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.util.regex.Pattern
 
-// Reads private regex fields of feature objects via reflection.
 class Chat2FeatureRegexTest {
     private fun field(cls: String, name: String): Any {
         val f = Class.forName(cls).getDeclaredField(name).apply { isAccessible = true }

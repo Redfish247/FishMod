@@ -2,6 +2,8 @@ package fishmod.features.diana
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
+import fishmod.features.HudExample
+import fishmod.features.HudPreview
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -20,7 +22,6 @@ object DianaTitles {
 
         fun screenW() = Minecraft.getInstance().window.guiScaledWidth
         fun screenH() = Minecraft.getInstance().window.guiScaledHeight
-        // -1 means centred on screen until the player moves it
         fun x(): Int = gx().takeIf { it >= 0 } ?: ((screenW() - w * gs()) / 2).toInt()
         fun y(): Int = gy().takeIf { it >= 0 } ?: (screenH() / 2 + centerOffsetY)
 
@@ -51,9 +52,12 @@ object DianaTitles {
     )
 
     fun init() {
+        val (rareMain, rareSub) = RareMobs.alertText(RareMob.INQ, "ExamplePlayer")
+        registerExample(rare, rareMain, rareSub)
+        registerExample(warp, DianaWarp.titleText("castle", false), "")
         for (s in listOf(rare, warp)) {
             FishHudEditor.register(s.name, { s.x() }, { v -> s.sx(v) }, { s.y() }, { v -> s.sy(v) }, s.w, s.h,
-                { s.gs() }, { v -> s.ss(v) }, { true })
+                { s.gs() }, { v -> s.ss(v) }, { if (s === warp) DianaSettings.dianaWarp && DianaSettings.dianaWarpTitle else DianaSettings.dianaRareMobs })
             fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", s.id)) { ctx, _ ->
                 if (!FishHudEditor.isOpen()) {
                     val a = s.alpha(System.currentTimeMillis())
@@ -63,12 +67,20 @@ object DianaTitles {
         }
     }
 
+    private fun registerExample(s: Slot, main: String, sub: String) {
+        HudPreview.register(s.name) {
+            val lh = Minecraft.getInstance().font.lineHeight
+            val ms = mainScaleOf(s)
+            val h = lh * ms + (if (sub.isEmpty()) 0f else 2f + lh * 1.5f)
+            HudExample(s.w, Math.ceil(h.toDouble()).toInt()) { ctx -> drawBody(ctx, s, main, sub, 1f) }
+        }
+    }
+
     fun rareAlert(main: String, sub: String) = show(rare, main, sub,
         DianaSettings.dianaTitleFadeIn.coerceAtLeast(0), DianaSettings.dianaTitleStay.coerceAtLeast(1), DianaSettings.dianaTitleFadeOut.coerceAtLeast(0))
 
     fun warpTitle(text: String) = show(warp, text, "", 2, 30, 6)
 
-    // Skip straight to the fade-out once the warp is used or no longer suggested
     fun fadeWarpTitle() {
         val t = (System.currentTimeMillis() - warp.start) / 50f
         if (warp.start != 0L && t < warp.fadeIn + warp.stay) warp.start = System.currentTimeMillis() - (warp.fadeIn + warp.stay) * 50L
@@ -83,15 +95,23 @@ object DianaTitles {
     private fun draw(ctx: GuiGraphicsExtractor, s: Slot, main: String, sub: String, alpha: Float) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden || main.isEmpty()) return
-        val font = mc.font
         val scale = s.gs().toFloat()
-        val small = s === warp && DianaSettings.dianaWarpTitleSubtitle
-        val mainScale = s.mainScale * (if (small) 0.6f else 1f)
-        val color = ((alpha * 255).toInt().coerceIn(0, 255) shl 24) or 0xFFFFFF
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(s.x().toFloat(), s.y().toFloat())
         pose.scale(scale, scale)
+        drawBody(ctx, s, main, sub, alpha)
+        pose.popMatrix()
+    }
+
+    private fun mainScaleOf(s: Slot) = s.mainScale * (if (s === warp && DianaSettings.dianaWarpTitleSubtitle) 0.6f else 1f)
+
+    private fun drawBody(ctx: GuiGraphicsExtractor, s: Slot, main: String, sub: String, alpha: Float) {
+        val font = Minecraft.getInstance().font
+        val mainScale = mainScaleOf(s)
+        val color = ((alpha * 255).toInt().coerceIn(0, 255) shl 24) or 0xFFFFFF
+        val pose = ctx.pose()
+        pose.pushMatrix()
         val cx = s.w / 2f
         pose.pushMatrix()
         pose.translate(cx, 0f)

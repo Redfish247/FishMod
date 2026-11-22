@@ -8,7 +8,6 @@ import fishmod.utils.events.FishEvents
 import net.minecraft.core.BlockPos
 import org.slf4j.LoggerFactory
 
-// Only active with -Dfishmod.dianaTest=true: datapack chat markers stand in for spade use and block clicks
 object DianaTest {
 
     private val LOG = LoggerFactory.getLogger("FishMod/DianaTest")
@@ -52,7 +51,6 @@ object DianaTest {
         }
     }
 
-    // Delay a few frames so the tp/rotation and new waypoints are rendered
     private fun shot(name: String) {
         val mc = net.minecraft.client.Minecraft.getInstance()
         fishmod.utils.TickScheduler.scheduleTask(Runnable {
@@ -60,7 +58,6 @@ object DianaTest {
         }, 10)
     }
 
-    // Turns on every default-off Diana option so one run exercises all of them
     private fun enableAll() {
         with(DianaSettings) {
             dianaSubGuessText = true; dianaBeaconBeam = true; dianaChainEndTitle = true

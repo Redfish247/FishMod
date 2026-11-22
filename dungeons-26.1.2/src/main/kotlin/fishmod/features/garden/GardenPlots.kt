@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import fishmod.features.garden.GardenExtraSettings as X
 
-// Plot number icons + prices in the plot menu, and a /gp <plot> shortcut the player types (nothing is sent automatically)
 object GardenPlots {
 
     private val PLOT = Regex("""^Plot\s*-?\s*(\d+)""", RegexOption.IGNORE_CASE)

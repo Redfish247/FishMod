@@ -2,7 +2,6 @@ package fishmod.features.garden
 
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 
-// Settings for milestone, garden level, hoe and misc garden cards
 object GardenMilestoneSettings {
 
     @ConfigValue @JvmField var gardenMilestoneHud: Boolean = false

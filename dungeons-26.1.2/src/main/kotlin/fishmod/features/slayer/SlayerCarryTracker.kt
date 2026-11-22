@@ -1,0 +1,243 @@
+package fishmod.features.slayer
+import fishmod.compat.hudHidden
+
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import fishmod.features.FishHudEditor
+import fishmod.features.HudPreview
+import fishmod.utils.FishConstants
+import fishmod.utils.FishUtil
+import fishmod.utils.TickScheduler
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.client.DeltaTracker
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.phys.Vec3
+import java.io.File
+
+object SlayerCarryTracker {
+
+    const val HUD = "Slayer Carries"
+
+    data class Carry(val ign: String, var done: Int = 0, var total: Int = 0, var boss: String = "")
+
+    private class Watched(val ign: String, val stand: net.minecraft.world.entity.Entity, var pos: Vec3, var boss: String)
+
+    // Owner tag: "Spawned by: X" (old) or "X's SLAYER BOSS" / "Xs' SLAYER BOSS" (seen 2026-11-20)
+    private val SPAWNED_BY_RE = Regex("""Spawned by: (\w+)|^\W*(\w+)'s? SLAYER BOSS""")
+    private const val OWNER_RANGE_SQ = 8.0 * 8.0
+    private const val COUNT_RANGE_SQ = 32.0 * 32.0
+    private val FILE = File("config/fishmod/slayer_carries.json")
+    private val GSON = Gson()
+    private val TIER_RE = Regex("""\b(I|II|III|IV|V)\b""")
+
+    private val carries = LinkedHashMap<String, Carry>()
+    private val watched = HashMap<Int, Watched>()
+    private val seen = HashSet<Int>()
+    private val tries = HashMap<Int, Int>()
+    private var level: Any? = null
+    private var tick = 0
+
+    @JvmStatic
+    fun init() {
+        load()
+        FishHudEditor.register(
+            HUD,
+            { FishSettings.slayerCarryHudX }, { v -> FishSettings.slayerCarryHudX = v },
+            { FishSettings.slayerCarryHudY }, { v -> FishSettings.slayerCarryHudY = v },
+            140, 14 * 4,
+            { FishSettings.slayerCarryHudScale }, { v -> FishSettings.slayerCarryHudScale = v },
+            { FishSettings.slayerCarryHudEnabled },
+        )
+        registerExample()
+        ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("SlayerCarryTracker.1", "carry tracker tick failed") { tick(mc) } }
+        fishmod.utils.events.FishEvents.locationChange.register { loc -> onLocation(loc); false }
+    }
+
+    private fun tick(mc: Minecraft) {
+        val lvl = mc.level
+        if (lvl !== level) { level = lvl; watched.clear(); seen.clear(); tries.clear() }
+        val player = mc.player ?: return
+        if (lvl == null || carries.isEmpty() || !FishSettings.slayerCarryHudEnabled) return
+
+        val it = watched.values.iterator()
+        while (it.hasNext()) {
+            val w = it.next()
+            if (!w.stand.isRemoved) { w.pos = w.stand.position(); continue }
+            it.remove()
+            if (player.position().distanceToSqr(w.pos) <= COUNT_RANGE_SQ) count(w)
+        }
+
+        if (tick++ % 5 != 0) return
+        for (e in lvl.entitiesForRendering()) {
+            if (e.id in seen || !e.hasCustomName()) continue
+            val name = e.customName?.string ?: continue
+            val boss = bossLabel(name) ?: continue
+            // "Spawned by" stand can load after the boss name: retry ~5s, nearest-player guess only on the last try
+            val n = (tries[e.id] ?: 0) + 1
+            val o = owner(lvl, e, n >= 20)
+            if (o == null && n < 20) { tries[e.id] = n; continue }
+            seen.add(e.id); tries.remove(e.id)
+            val ign = o?.takeIf { it.isNotEmpty() } ?: continue
+            watched[e.id] = Watched(ign, e, e.position(), boss)
+        }
+        if (seen.size > 4096) seen.retainAll(lvl.entitiesForRendering().map { it.id }.toSet())
+        if (tries.size > 256) tries.clear()
+    }
+
+    // Tracked ign, "" = someone else's boss (final), null = owner not known yet
+    private fun owner(lvl: net.minecraft.client.multiplayer.ClientLevel, boss: net.minecraft.world.entity.Entity, last: Boolean): String? {
+        for (o in lvl.getEntities(boss, boss.boundingBox.inflate(1.5, 4.0, 1.5))) {
+            val n = o.customName?.string ?: continue
+            val m = SPAWNED_BY_RE.find(n) ?: continue
+            val ign = m.groupValues[1].ifEmpty { m.groupValues[2] }.lowercase()
+            return if (carries.containsKey(ign)) ign else ""
+        }
+        if (!last) return null
+        var best: String? = null
+        var bestD = OWNER_RANGE_SQ
+        for (p in lvl.players()) {
+            val ign = p.gameProfile.name().lowercase()
+            if (!carries.containsKey(ign)) continue
+            val d = p.distanceToSqr(boss)
+            if (d <= bestD) { bestD = d; best = ign }
+        }
+        return best
+    }
+
+    private fun bossLabel(n: String): String? {
+        val type = SlayerType.entries.firstOrNull { t -> t.bossNames.any { n.contains(it) } } ?: return null
+        val tier = TIER_RE.find(n.substringAfter(type.bossNames.first { n.contains(it) }))?.value ?: return null
+        return "${type.bossLabel} $tier"
+    }
+
+    private fun count(w: Watched) {
+        val c = carries[w.ign] ?: return
+        c.done++
+        if (w.boss.isNotEmpty()) c.boss = w.boss
+        save()
+        val left = if (c.total > 0) " §7(${c.done}/${c.total})" else " §7(${c.done})"
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fCarry boss for §e${c.ign}§f done$left"))
+        if (c.total > 0 && c.done >= c.total) {
+            FishUtil.forceTitle(Component.literal("§aCarry done!"), Component.literal("§e${c.ign} §7${c.done}/${c.total}"))
+            TickScheduler.scheduleSound(SoundEvents.PLAYER_LEVELUP, 1f, 1f)
+        }
+    }
+
+    private fun onLocation(loc: fishmod.utils.SkyblockLocation) {
+        if (carries.isEmpty() || loc == fishmod.utils.SkyblockLocation.UNKNOWN) return
+        if (SlayerType.entries.any { it.island == loc }) return
+        val n = carries.size
+        carries.clear(); watched.clear(); save()
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fLeft the slayer area, cleared $n carr${if (n == 1) "y" else "ies"}"))
+    }
+
+
+    @JvmStatic
+    fun debug() {
+        val mc = Minecraft.getInstance()
+        val p = mc.player ?: return
+        val lvl = mc.level ?: return
+        var n = 0
+        for (e in lvl.getEntities(p, p.boundingBox.inflate(10.0))) {
+            val name = e.customName?.string ?: continue
+            val line = "${e.type.description.string} #${e.id} '${name}' d=${"%.1f".format(e.distanceTo(p))}"
+            fishmod.utils.debug.FishDebug.LOGGER.info("[CarryDebug] $line")
+            FishUtil.addChatMessage(Component.literal("§8[carry] §7$line"))
+            n++
+        }
+        FishUtil.addChatMessage(Component.literal("§b[FM] §f$n named entities within 10 blocks · watching ${watched.size} · tracking ${carries.keys}"))
+    }
+
+    @JvmStatic
+    fun add(ign: String, total: Int) {
+        if (!FishSettings.slayerCarryHudEnabled) { FishSettings.slayerCarryHudEnabled = true; fishmod.utils.config.FishConfig.manager.save() }
+        val key = ign.lowercase()
+        val c = carries.getOrPut(key) { Carry(ign) }
+        if (total >= 0) c.total = total
+        save()
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fTracking carries for §e${c.ign}§f: §a${c.done}§7/§f${if (c.total > 0) c.total else "∞"}"))
+    }
+
+    @JvmStatic
+    fun remove(ign: String) {
+        val removed = carries.remove(ign.lowercase())
+        watched.values.removeIf { it.ign == ign.lowercase() }
+        save()
+        FishUtil.addChatMessage(Component.literal(if (removed != null) "§b[FM] §fStopped tracking §e${removed.ign}§f (${removed.done} done)" else "§b[FM] §cNot tracking $ign"))
+    }
+
+    @JvmStatic
+    fun clear() {
+        carries.clear(); watched.clear(); save()
+        FishUtil.addChatMessage(Component.literal("§b[FM] §fCleared all carries"))
+    }
+
+    @JvmStatic
+    fun list() {
+        if (carries.isEmpty()) {
+            FishUtil.addChatMessage(Component.literal("§b[FM] §7No carries tracked. §f/trackcarry <ign> [amount]"))
+            return
+        }
+        for (c in carries.values) FishUtil.addChatMessage(Component.literal("§b[FM] §e${c.ign} §7${c.boss} §a${c.done}§7/§f${if (c.total > 0) c.total else "∞"}"))
+    }
+
+
+    @JvmStatic
+    fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        if (!FishSettings.slayerCarryHudEnabled || carries.isEmpty()) return
+        val mc = Minecraft.getInstance()
+        if (mc.player == null || mc.hudHidden) return
+        val lines = carryLines(carries.values)
+        val sc = FishSettings.slayerCarryHudScale.toFloat()
+        ctx.pose().pushMatrix()
+        ctx.pose().translate(FishSettings.slayerCarryHudX.toFloat(), FishSettings.slayerCarryHudY.toFloat())
+        ctx.pose().scale(sc, sc)
+        HudPreview.drawText(ctx, lines, FishConstants.TEXT_HEIGHT + 2)
+        ctx.pose().popMatrix()
+    }
+
+    private fun carryLines(list: Collection<Carry>): List<String> {
+        val lines = ArrayList<String>(list.size + 1)
+        lines.add("§5§lSLAYER CARRIES")
+        for (c in list) {
+            val col = if (c.total > 0 && c.done >= c.total) "§a" else "§f"
+            val boss = if (c.boss.isNotEmpty()) " §7${c.boss}" else ""
+            lines.add("§e${c.ign}$boss§7: $col${c.done}§7/§f${if (c.total > 0) c.total else "∞"}")
+        }
+        return lines
+    }
+
+    private fun registerExample() {
+        HudPreview.register(HUD) {
+            val boss = SlayerType.entries[0].bossLabel + " IV"
+            HudPreview.text(carryLines(listOf(Carry("ExampleOne", 3, 10, boss), Carry("ExampleTwo", 5, 5, boss))), FishConstants.TEXT_HEIGHT + 2)
+        }
+    }
+
+
+    private fun load() {
+        if (!FILE.exists()) return
+        try {
+            FILE.reader().use { r ->
+                val list: List<Carry>? = GSON.fromJson(r, object : TypeToken<List<Carry>>() {}.type)
+                list?.forEach { carries[it.ign.lowercase()] = it }
+            }
+        } catch (e: Exception) {
+            FishDiag.fail("SlayerCarryTracker.2", "carry file unreadable", e)
+            fishmod.utils.SafeFiles.quarantine(FILE, e)
+        }
+    }
+
+    private fun save() {
+        val json = GSON.toJson(carries.values.toList())
+        fishmod.utils.IoExecutor.execute {
+            FishDiag.guard("SlayerCarryTracker.3", "carry file write failed") { fishmod.utils.SafeFiles.writeAtomic(FILE, json) }
+        }
+    }
+}

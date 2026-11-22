@@ -73,7 +73,6 @@ public final class TwitchIrcClient {
 				sleep(Math.min(30_000L, 2_000L * (1L << Math.min(attempt, 4))));
 			} catch (ServerReconnectException e) {
 				if (!started) break;
-				// Normal Twitch maintenance: only a rapid loop of these is a problem
 				attempt = System.currentTimeMillis() - startedAt > 60_000L ? 0 : attempt + 1;
 				if (attempt == RECONNECT_LOOP_REPORT_AT) {
 					fishmod.utils.debug.FishDiag.fail("TwitchIrcClient.6", "IRC server for #" + channel + " keeps asking to reconnect (" + attempt + " in a row)", e);

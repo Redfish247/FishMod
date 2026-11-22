@@ -2,8 +2,8 @@ package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import fishmod.features.item.AnimatedDyeAnimator;
-import fishmod.features.item.ItemCustomizationStore;
+import fishmod.features.hud.AnimatedDyeAnimator;
+import fishmod.features.hud.ItemCustomizationStore;
 import fishmod.utils.data.ItemTools;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.item.ItemStack;

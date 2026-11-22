@@ -1,4 +1,4 @@
-import fishmod.features.slayers.SlayerType
+import fishmod.features.slayer.SlayerType
 import fishmod.utils.data.Roman
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -21,11 +21,11 @@ class DungeonParsersTest {
         assertNull(SlayerType.parseCategory("Foo Bar III"))
     }
 
-    private fun progress(s: String): fishmod.features.slayers.SlayerManager.SpawnProgress {
-        val c = fishmod.features.slayers.SlayerManager::class.java
+    private fun progress(s: String): fishmod.features.slayer.SlayerManager.SpawnProgress {
+        val c = fishmod.features.slayer.SlayerManager::class.java
         val m = c.getDeclaredMethod("parseProgress", String::class.java)
         m.isAccessible = true
-        return m.invoke(c.getField("INSTANCE").get(null), s) as fishmod.features.slayers.SlayerManager.SpawnProgress
+        return m.invoke(c.getField("INSTANCE").get(null), s) as fishmod.features.slayer.SlayerManager.SpawnProgress
     }
 
     @Test fun slayerProgress() {

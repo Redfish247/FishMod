@@ -36,7 +36,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Crimson Abiphone subtab: contact grid + stats. */
 class AbiphonePage {
 	private val zones = ArrayList<HoverZone>()
 
@@ -180,7 +179,6 @@ class AbiphonePage {
 		}
 
 		val gridH = maxOf(1, bottom - ly)
-		// Largest slot that fits every contact without scrolling; undiscovered start on a fresh row.
 		var slot = 18
 		var gap = 2
 		var cols = 1
@@ -195,7 +193,6 @@ class AbiphonePage {
 				break
 			}
 		}
-		// Stretch gaps so the grid uses the full width.
 		val usedW = cols * slot
 		val freeW = maxOf(0, lw - usedW)
 		val gapX = maxOf(gap, if (cols > 1) freeW / (cols - 1) else 0)
@@ -284,14 +281,12 @@ class AbiphonePage {
 	}
 
 	private fun undiscovered(snapshot: CrimsonSnapshot): List<AbiphoneNpcs.Undiscovered> {
-		// Keep recomputing until the NEU repo and prices are ready; both may still be loading on first draw.
 		val now = System.currentTimeMillis()
 		val retry = !undiscoveredFinal && now - undiscoveredAtMs >= 1000L
 		if (undiscoveredFor !== snapshot || retry) {
 			undiscoveredAtMs = now
 			val ids = snapshot.abiphoneContacts.map { it.id }
 			val missing = AbiphoneNpcs.undiscovered(ids)
-			// NEU lists extra entries; the real count of contacts still missing caps the red slots.
 			val allowed = maxOf(0, AbiphoneNpcs.TOTAL_CONTACTS - snapshot.abiphoneActive)
 			undiscoveredCache = if (missing.size > allowed) missing.subList(0, allowed).toList() else missing
 			val costs = IdentityHashMap<AbiphoneNpcs.Undiscovered, AbiphoneCosts.Estimate>()

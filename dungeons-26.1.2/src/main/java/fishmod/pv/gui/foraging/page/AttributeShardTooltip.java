@@ -23,13 +23,11 @@ import java.util.regex.Pattern;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.TextColor;
 
-/** Attribute shard hover: the shard item, its attribute, NEU description and progress to max. */
 final class AttributeShardTooltip {
 	private static final int MAX_DESCRIPTION_LINES = 8;
 	private static final Pattern RARITY_FOOTER = Pattern.compile(
 		"^(COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|MYTHIC|DIVINE)\\b.*\\bSHARD\\b.*", Pattern.CASE_INSENSITIVE);
 
-	/** Shard identity resolved from the NEU catalog entry and the shard's NEU item json. */
 	record Info(String shardName, String attribute, List<String> description) {
 		Info {
 			description = description == null ? List.of() : List.copyOf(description);
@@ -39,10 +37,6 @@ final class AttributeShardTooltip {
 	private AttributeShardTooltip() {
 	}
 
-	/**
-	 * {@code def} maps the attribute to its shard ({@code displayName} = shard, {@code abilityName} = attribute);
-	 * {@code neuItem} is the {@code ATTRIBUTE_SHARD_*} item whose display name and lore describe the shard.
-	 */
 	static Info info(AttributeShardsData.Def def, JsonObject neuItem, String fallbackAttribute) {
 		String attribute = def != null && !def.abilityName().isBlank() ? def.abilityName() : blankToNull(fallbackAttribute);
 		return new Info(shardName(def, neuItem), attribute, description(lore(neuItem), attribute));
@@ -62,10 +56,6 @@ final class AttributeShardTooltip {
 		return "Unknown Shard";
 	}
 
-	/**
-	 * Description is the lore block after the "Attribute I" line, up to the first blank line. That skips the
-	 * generic Hunting Box text, click actions, requirements and the rarity footer, which the tip shows itself.
-	 */
 	static List<String> description(List<String> lore, String attribute) {
 		List<String> out = new ArrayList<>();
 		if (lore == null || lore.isEmpty()) {

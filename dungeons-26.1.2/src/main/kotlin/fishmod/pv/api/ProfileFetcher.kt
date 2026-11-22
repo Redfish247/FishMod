@@ -64,7 +64,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.item.ItemStack
 
 object ProfileFetcher {
-    /** Match worker profiles cache TTL (5 minutes). */
     private const val CACHE_TTL_MS = 5L * 60L * 1000L
     private val CACHE = ConcurrentHashMap<String, CacheEntry>()
     private val MINECRAFT_NAME = Regex("[A-Za-z0-9_]{1,16}")
@@ -80,7 +79,6 @@ object ProfileFetcher {
     @Volatile
     private var requestedTab: PvTab? = null
 
-    // joinedMs is coop_invitation.confirmed_timestamp, 0 for the profile creator.
     @ConsistentCopyVisibility
     data class CoopMemberRef private constructor(
         @get:JvmName("uuid") val uuid: String,
@@ -104,8 +102,6 @@ object ProfileFetcher {
         @get:JvmName("currentMembers") val currentMembers: List<CoopMemberRef>,
         @get:JvmName("formerMembers") val formerMembers: List<CoopMemberRef>
     ) {
-        fun soloProfile(): Boolean = currentOthers == 0 && formerCount == 0
-
         companion object {
             private val SOLO = CoopSummary(0, 0, listOf(), listOf())
 
@@ -167,7 +163,6 @@ object ProfileFetcher {
         }
     }
 
-    // Fields nullable like the Java record; profiles must be immutable (listProfileChoices returns one).
     @JvmRecord
     data class LoadedProfile(
         val snapshot: ProfileSnapshot?,
@@ -248,9 +243,6 @@ object ProfileFetcher {
         MiningHotmData.ensureLoaded()
         val startedNanos = if (requestStartedNanos > 0L) requestStartedNanos else System.nanoTime()
         val correlation = normalizeCorrelationId(correlationId)
-        if (!HypixelApiClient.canFetch()) {
-            return CompletableFuture.completedFuture(failed(playerName, "API unavailable"))
-        }
         val cleaned = playerName?.trim() ?: ""
         val preferred = if (preferredProfileId.isNullOrBlank()) null else preferredProfileId
         getCached(nameKey(cleaned))?.let { cached ->
@@ -300,7 +292,6 @@ object ProfileFetcher {
                     coreFuture.thenAccept { core ->
                         logStage(cleaned, "core_ready", startedNanos, correlation)
                         if (core != null && core.ok()) {
-                            // Cache core immediately so a quick second /pv is warm for first paint.
                             putCache(uuidKey(id.uuid), core)
                             putCache(nameKey(id.name), core)
                             putCache(nameKey(cleaned), core)
@@ -329,9 +320,6 @@ object ProfileFetcher {
         return switchToProfile(snapshot.playerName, uuid, root, preferredProfileId, onUpdate)
     }
 
-    // Skips the Mojang lookup when the client already knows the player. Tab entries are
-    // only trusted for real accounts (version 4 UUIDs); Hypixel NPCs and fake tab rows
-    // use version 2.
     private fun localUuid(name: String): HypixelApiClient.UuidName? {
         val client: Minecraft? = Minecraft.getInstance()
         if (client == null || !client.isSameThread() || !MINECRAFT_NAME.matches(name)) return null
@@ -381,12 +369,8 @@ object ProfileFetcher {
     private fun normalizeCorrelationId(correlationId: String?): String =
         if (correlationId != null && CORRELATION_ID.matches(correlationId)) correlationId else UUID.randomUUID().toString()
 
-    /**
-     * Prefer loading the clicked tab next while background enrichment is still running.
-     */
     @JvmStatic
     fun prioritizeTab(tab: PvTab?) {
-        // The screen asks before its session exists, so remember it for the next session too.
         requestedTab = tab
         activeEnrichment?.prioritize(tab)
     }
@@ -411,9 +395,6 @@ object ProfileFetcher {
         inventoryCategories: Map<String, List<InventoryDecoder.Stack>>?
     ): DungeonSnapshot = ProfileDungeonParser.parseDungeons(member, museumMember, electionRoot, inventoryCategories)
 
-    internal fun findMuseumMemberPublic(museumRoot: JsonObject?, profileId: String?, undashed: String): JsonObject? =
-        ProfileMuseumLookup.findMuseumMember(museumRoot, profileId, undashed)
-
     internal fun scheduleNetworthRefreshPublic(
         base: LoadedProfile,
         member: JsonObject,
@@ -423,10 +404,6 @@ object ProfileFetcher {
         onUpdate: Consumer<LoadedProfile>?
     ) = scheduleNetworthRefresh(base, member, profile, museumMember, inventoryCategories, onUpdate)
 
-    /**
-     * Called after the Museum tab fetched museum data, so networth can include it
-     * without /pv ever requesting museum itself.
-     */
     @JvmStatic
     fun museumLoaded(uuid: UUID?, profileId: String?, museumMember: JsonObject?) {
         if (uuid == null || profileId == null || museumMember == null) return
@@ -529,7 +506,6 @@ object ProfileFetcher {
         val next = PlayerAuctionFutures(
             uuid,
             now,
-            // The Auctions tab is gone and the proxy has no auction route: no calls, no failures.
             CompletableFuture.completedFuture(Optional.empty()),
             CompletableFuture.completedFuture(Optional.empty()),
             CompletableFuture.completedFuture(Optional.empty())
@@ -596,188 +572,6 @@ object ProfileFetcher {
     )
 
     private fun emptyArmor(): Array<ItemStack> = arrayOf(ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY)
-
-    @JvmStatic
-    fun parseByProfileId(name: String, uuid: UUID, root: JsonObject?, profileId: String?): LoadedProfile {
-        if (root == null || profileId.isNullOrBlank()) return failed(name, "Missing profile")
-        return try {
-            InventoryDecoder.withSharedDecode(Supplier {
-                parseUnsafe(name, uuid, root, null, null, AuctionSnapshot.empty(), true, profileId)
-            })
-        } catch (exception: RuntimeException) {
-            if (!SoftDataFailure.isSoft(exception)) throw exception
-            ProfileViewer.LOGGER.warn("Profile re-parse failed for {} ({})", name, profileId, exception)
-            failed(name, exception.message ?: "Parse failed")
-        }
-    }
-
-    // Logs and falls back to the empty value when a soft data failure hits one tab.
-    private inline fun <T> softParse(what: String, name: String, empty: () -> T, block: () -> T): T = try {
-        block()
-    } catch (exception: RuntimeException) {
-        if (!SoftDataFailure.isSoft(exception)) throw exception
-        ProfileViewer.LOGGER.warn("$what failed for {}", name, exception)
-        empty()
-    }
-
-    private fun parseUnsafe(
-        name: String,
-        uuid: UUID,
-        root: JsonObject,
-        museumRoot: JsonObject?,
-        electionRoot: JsonObject?,
-        auctions: AuctionSnapshot?,
-        includeNetworth: Boolean,
-        preferredProfileId: String?
-    ): LoadedProfile {
-        val profiles = if (root.has("profiles") && root.get("profiles").isJsonArray) root.getAsJsonArray("profiles") else null
-        if (profiles == null || profiles.isEmpty) return failed(name, "No SkyBlock profiles")
-        val best = ProfileCoopIndex.pickProfile(profiles, preferredProfileId)
-        var cuteName = "Unknown"
-        val undashed = HypixelApiClient.undashed(uuid)
-        var profileId: String? = null
-        if (best != null) {
-            if (best.has("cute_name")) cuteName = best.get("cute_name").asString
-            if (best.has("profile_id")) profileId = best.get("profile_id").asString
-        }
-        val choices = ProfileCoopIndex.listProfileChoices(profiles, profileId, undashed)
-        if (best == null) return failed(name, "No usable profile")
-        val members = if (best.has("members") && best.get("members").isJsonObject) best.getAsJsonObject("members") else null
-        val member = ProfileMuseumLookup.findMember(members, undashed) ?: return failed(name, "Member data missing")
-
-        ProfileCoopIndex.warmCoopMemberNames(choices, undashed, name, null)
-
-        val weightLevels = WeightCalculator.buildLevels(member)
-        val senither = WeightCalculator.senither(member, weightLevels)
-        val lily = WeightCalculator.lily(member, weightLevels)
-
-        // Never block first paint on prices. Brief wait only during enrichment.
-        if (includeNetworth && !ItemPricer.isReady()) ItemPricer.awaitReady(1_500L)
-        val museumMember = if (includeNetworth) ProfileMuseumLookup.findMuseumMember(museumRoot, profileId, undashed) else null
-        ProfileViewer.LOGGER.info("Parsing profile {} ({})", name, cuteName)
-
-        val inventoryCategories = InventoryDecoder.parseCategories(member, museumMember)
-
-        val pricesReady = includeNetworth && ItemPricer.isReady()
-        fun networth(mode: NetworthMode): NetworthBreakdown =
-            if (pricesReady) NetworthCalculator.calculate(member, best, museumMember, inventoryCategories, mode)
-            else NetworthBreakdown.empty("Loading networth")
-        val networthNormal = networth(NetworthMode.NORMAL)
-        val networthNonCosmetic = networth(NetworthMode.NON_COSMETIC)
-        val networthUnsoulbound = networth(NetworthMode.UNSOULBOUND)
-        val networthUnsoulboundNonCosmetic = networth(NetworthMode.UNSOULBOUND_NON_COSMETIC)
-
-        val skills = ProfileHomeParser.buildHomeSkills(member)
-        val social = ProfileHomeParser.buildSocial(member)
-        val runecrafting = ProfileHomeParser.buildRunecrafting(member)
-        val slayers = ProfileHomeParser.buildHomeSlayers(member)
-        val activeSlayer = ProfileHomeParser.parseActiveSlayerQuest(member)
-
-        var sbLevel = 0
-        var sbXp = 0
-        val leveling = Leveling.obj(member.get("leveling"))
-        if (leveling != null) {
-            Leveling.num(leveling.get("experience"))?.let { experience ->
-                sbLevel = floor(experience / 100f).toInt()
-                sbXp = Math.round(experience % 100f)
-            }
-        }
-        val emblems = ProfileHomeParser.parseEmblems(leveling)
-
-        val nwText = when {
-            !includeNetworth || !pricesReady -> "..."
-            networthNormal.total > 0 -> FormatUtil.shortCoins(networthNormal.total)
-            else -> "-"
-        }
-
-        val purseCoins = NetworthCalculator.purse(member)
-        val bankCoins = NetworthCalculator.bank(best, member)
-        val bankTransactions = ProfileHomeParser.parseBankTransactions(best)
-
-        val snapshot = ProfileSnapshot(
-            name,
-            uuid,
-            cuteName,
-            sbLevel,
-            sbXp,
-            FormatUtil.weight(senither.total()),
-            nwText,
-            purseCoins,
-            bankCoins,
-            bankTransactions,
-            skills,
-            slayers,
-            social,
-            runecrafting,
-            activeSlayer,
-            emblems,
-            SlayerMayorMods.from(electionRoot)
-        )
-
-        val dungeons = ProfileDungeonParser.parseDungeons(member, museumMember, electionRoot, inventoryCategories)
-
-        val inventories = softParse("Inventory decode", name, { InventorySnapshot.empty() }) {
-            InventoryDecoder.parseUi(member).also { SkyBlockItemFactory.warmAsync(it) }
-        }
-        val pets = softParse("Pets decode", name, { PetSnapshot.empty() }) {
-            PetSnapshot.fromMember(member).also { SkyBlockItemFactory.warmPetsAsync(it) }
-        }
-        val collections = softParse("Collections decode", name, { CollectionSnapshot.empty() }) {
-            CollectionSnapshot.fromProfile(members, uuid, name)
-        }
-        val garden = softParse("Garden member parse", name, { GardenSnapshot.empty() }) { GardenSnapshot.fromMember(member) }
-        val mining = softParse("Mining member parse", name, { MiningSnapshot.empty() }) {
-            val parsed = MiningSnapshot.fromMember(member)
-            parsed.withColeWeight(ColeWeight.calculate(parsed, collections, member))
-        }
-        val foraging = softParse("Foraging member parse", name, { ForagingSnapshot.empty() }) { ForagingSnapshot.fromMember(member) }
-        val fishing = softParse("Fishing member parse", name, { FishingSnapshot.empty() }) { FishingSnapshot.fromMember(member) }
-        var crimson = softParse("Crimson member parse", name, { CrimsonSnapshot.empty() }) { CrimsonSnapshot.fromMember(member) }
-        val rift = softParse("Rift member parse", name, { RiftSnapshot.empty() }) { RiftSnapshot.fromMember(member) }
-        val bestiary = softParse("Bestiary member parse", name, { BestiarySnapshot.empty() }) { BestiarySnapshot.fromMember(member) }
-        val events = softParse("Events member parse", name, { EventsSnapshot.empty() }) { EventsSnapshot.fromMember(member, root, uuid) }
-        val misc = softParse("Misc stats parse", name, { MiscStatsSnapshot.empty() }) { MiscStatsSnapshot.from(best, member) }
-        ProfileViewer.LOGGER.info("Profile ready for {} (nw={})", name, nwText)
-        val auctionSnapshot = (auctions ?: AuctionSnapshot.empty()).withStats(AuctionSnapshot.Stats.fromMember(member))
-        val playerStats = FarmingFortuneEstimate.attach(PlayerStatsCalculator.fromMember(member), member, inventoryCategories)
-        crimson = crimson.withPlayerStats(playerStats)
-
-        val loaded = LoadedProfile(
-            snapshot,
-            dungeons,
-            inventories,
-            pets,
-            auctionSnapshot,
-            collections,
-            garden,
-            mining,
-            foraging,
-            fishing,
-            crimson,
-            rift,
-            bestiary,
-            events,
-            misc,
-            museumMember,
-            profileId,
-            root,
-            choices,
-            senither,
-            lily,
-            networthNormal,
-            networthNonCosmetic,
-            networthUnsoulbound,
-            networthUnsoulboundNonCosmetic,
-            ArmorStacks.fromMember(member),
-            playerStats,
-            null
-        )
-
-        if (includeNetworth && !pricesReady) {
-            scheduleNetworthRefresh(loaded, member, best, museumMember, inventoryCategories, null)
-        }
-        return loaded
-    }
 
     private fun scheduleNetworthRefresh(
         base: LoadedProfile?,

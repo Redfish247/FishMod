@@ -47,10 +47,6 @@ object SoftDataFailure {
         return current
     }
 
-    /**
-     * Runs `action`; on a soft data failure returns `fallback` after logging.
-     * Hard runtime failures rethrow.
-     */
     @JvmStatic
     fun <T> call(context: String, fallback: T, action: SoftCall<T>): T =
         try {

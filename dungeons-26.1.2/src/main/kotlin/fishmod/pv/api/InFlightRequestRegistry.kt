@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Supplier
 
-/** Shares active work while keeping caller cancellation away from the shared source. */
 internal class InFlightRequestRegistry<K : Any, V> {
     private val requests = ConcurrentHashMap<K, Entry<V>>()
 
@@ -31,8 +30,6 @@ internal class InFlightRequestRegistry<K : Any, V> {
         entry.source.whenComplete { _, _ -> requests.remove(key, entry) }
         return Shared(entry.source.thenApply { it }, entry.correlationId, !created)
     }
-
-    fun size(): Int = requests.size
 
     @JvmRecord
     data class Shared<V>(val future: CompletableFuture<V>, val correlationId: String, val reused: Boolean)

@@ -16,7 +16,6 @@ import fishmod.pv.gui.rift.page.RiftOverviewPage
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Rift: Overview progress + side-by-side Inventory / Ender Chest. */
 class RiftPage {
 	private var snapshot: RiftSnapshot = RiftSnapshot.empty()
 	private val ui = RiftUi()

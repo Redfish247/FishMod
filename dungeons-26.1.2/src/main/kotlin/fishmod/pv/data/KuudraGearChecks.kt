@@ -7,6 +7,8 @@
  */
 package fishmod.pv.data
 
+import fishmod.utils.TextStrip
+
 import com.google.gson.JsonObject
 import fishmod.pv.neu.NeuRepoCache
 import fishmod.pv.networth.InventoryDecoder
@@ -26,7 +28,6 @@ object KuudraGearChecks {
 
 	enum class CheckState { OK, UPGRADE, MISSING, WARN, INFO, UNKNOWN }
 
-	/** {@code upgradeTo} is the recommended level or tier when the value is below it. */
 	@JvmRecord
 	data class Check(val label: String, val value: String, val state: CheckState, val upgradeTo: String?, val highlight: Boolean) {
 		companion object {
@@ -34,7 +35,6 @@ object KuudraGearChecks {
 		}
 	}
 
-	/** {@code value} is set for slot style rows ("Chestplate: Infernal Terror"), null for item rows. */
 	@JvmRecord
 	data class Entry(
 		val name: String, val value: String?, val iconId: String, val status: Status, val checks: List<Check>, val source: String?,
@@ -58,7 +58,6 @@ object KuudraGearChecks {
 	@JvmRecord
 	data class Owned(val stack: InventoryDecoder.Stack, val source: String)
 
-	/** {@code abilityId} is null when the profile has no HOTM data, blank when nothing is selected. */
 	@JvmRecord
 	data class Inputs(
 		val items: List<Owned>,
@@ -82,7 +81,6 @@ object KuudraGearChecks {
 		}
 	}
 
-	// Item sources Kuudra gear can be pulled from, in dedup priority order.
 	private val SOURCES = arrayOf(
 		"armor" to "Armour", "equipment" to "Equipment", "inventory" to "Inventory",
 		"enderchest" to "Ender Chest", "storage" to "Backpack", "wardrobe" to "Wardrobe",
@@ -94,7 +92,6 @@ object KuudraGearChecks {
 	private val SLOTS = listOf("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS")
 	private val BODY_SLOTS = listOf("CHESTPLATE", "LEGGINGS", "BOOTS")
 	private val RARITIES = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "SPECIAL", "VERY SPECIAL")
-	// Max levels from the NEU enchanted book items (e.g. CUBISM;6, PROSECUTE;6, TABASCO;3).
 	private const val MAX_CUBISM = 6
 	private const val MAX_SMOLDERING = 5
 	private const val MAX_POWER = 7
@@ -105,7 +102,6 @@ object KuudraGearChecks {
 	private const val MAX_CANDY = 10
 	private val DUPLEX = arrayOf("ultimate_reiterate", "ultimate_duplex")
 	private val API_OFF = Check.of("Inventory API", "Off", CheckState.UNKNOWN)
-	private val FORMAT_CODE = Regex("§.")
 	private val ULTIMATE_MAX: Map<String, Int> = mapOf(
 		"ultimate_reiterate" to 5, "ultimate_duplex" to 5, "ultimate_rend" to 5,
 		"ultimate_chimera" to 5, "ultimate_swarm" to 5, "ultimate_wise" to 5,
@@ -149,7 +145,6 @@ object KuudraGearChecks {
 		return entry.stack?.lore ?: listOf()
 	}
 
-	/** Flattens the accessible item sources, keeping one copy per item uuid. */
 	internal fun collect(categories: Map<String, List<InventoryDecoder.Stack?>>?): List<Owned> {
 		val out = ArrayList<Owned>()
 		if (categories == null) {
@@ -307,7 +302,6 @@ object KuudraGearChecks {
 		return Group(group.title, group.iconId, group.status, total, entries, group.checks, false)
 	}
 
-	/** Copies without Rend are only listed when no Rend copy exists, so the reason is visible. */
 	private fun rendBonemerang(input: Inputs): Group {
 		val numbering = Numbering()
 		val withRend = ArrayList<Entry>()
@@ -366,7 +360,6 @@ object KuudraGearChecks {
 		return itemGroup(input, "Last Breath (Duplex I)", "LAST_BREATH", entries, listOf())
 	}
 
-	/** One representative tool plus the selected HOTM ability; owning many pickaxes adds nothing. */
 	private fun stun(input: Inputs): Group {
 		var tool: Owned? = null
 		var toolScore = Int.MIN_VALUE
@@ -540,7 +533,6 @@ object KuudraGearChecks {
 		return armourGroup("Racing Helmet", "RACING_HELMET", listOf(helmetRow(input, "RACING_HELMET")), false)
 	}
 
-	/** Warns per wardrobe set that wears Crown of Avarice with Terror pieces. Owning both alone is fine. */
 	private fun crownOfAvarice(input: Inputs): Group {
 		if (!input.inventoryKnown) {
 			return Group("Crown of Avarice", "CROWN_OF_AVARICE", Status.UNKNOWN, 0, listOf(), listOf(API_OFF), false)
@@ -646,7 +638,6 @@ object KuudraGearChecks {
 
 	private fun matching(input: Inputs, idMatches: (String) -> Boolean): List<Owned> = input.items.filter { idMatches(baseId(it.stack)) }
 
-	/** Higher rarity first; Dungeonbreaker and Pickonimbus sort last since they're limited-use tools. */
 	internal fun toolScore(stack: InventoryDecoder.Stack): Int {
 		val id = baseId(stack)
 		var score = rarityRank(stack) * 10
@@ -659,7 +650,7 @@ object KuudraGearChecks {
 	private fun rarityRank(stack: InventoryDecoder.Stack): Int {
 		val lore = stack.lore
 		for (i in lore.indices.reversed()) {
-			val line = FORMAT_CODE.replace(lore[i], "").trim().uppercase(Locale.ROOT)
+			val line = TextStrip.plain(lore[i]).trim().uppercase(Locale.ROOT)
 			if (line.isEmpty()) {
 				continue
 			}
@@ -680,7 +671,6 @@ object KuudraGearChecks {
 		Entry(name + " (" + numbering.next(name) + ")", null, baseId(owned.stack), statusOf(checks),
 			java.util.List.copyOf(checks), owned.source, owned.stack, null)
 
-	/** {@code whenAbsent} is MISSING for hard requirements, UPGRADE for recommended enchants. */
 	private fun enchCheck(label: String, level: Int, max: Int, whenAbsent: CheckState): Check = when {
 		level <= 0 -> Check(label, "None", whenAbsent, if (whenAbsent == CheckState.UPGRADE) roman(max) else null, false)
 		level < max -> Check(label, roman(level), CheckState.UPGRADE, roman(max), false)
@@ -740,7 +730,7 @@ object KuudraGearChecks {
 		}
 		val lore = stack.lore
 		for (i in lore.indices.reversed()) {
-			val line = FORMAT_CODE.replace(lore[i], "").trim()
+			val line = TextStrip.plain(lore[i]).trim()
 			if (line.isEmpty()) {
 				continue
 			}
@@ -760,7 +750,7 @@ object KuudraGearChecks {
 		}
 		val neu = NeuRepoCache.get(id)
 		if (neu != null && neu.has("displayname") && neu.get("displayname").isJsonPrimitive) {
-			return FORMAT_CODE.replace(neu.get("displayname").asString, "")
+			return TextStrip.plain(neu.get("displayname").asString)
 		}
 		return pretty(id)
 	}

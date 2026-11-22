@@ -6,7 +6,6 @@ import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.network.chat.Component;
 
-// 26.2 side: submitNameTag dropped the squared camera distance argument.
 public final class NameTagCompat {
     private NameTagCompat() {}
 

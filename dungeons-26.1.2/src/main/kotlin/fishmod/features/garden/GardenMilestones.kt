@@ -40,7 +40,8 @@ object GardenMilestones {
         Garden.hud("Crop Milestone", "garden_milestone", 150, 36,
             { S.gardenMilestoneHudX }, { S.gardenMilestoneHudX = it }, { S.gardenMilestoneHudY }, { S.gardenMilestoneHudY = it },
             { S.gardenMilestoneHudScale }, { S.gardenMilestoneHudScale = it },
-            { S.gardenMilestoneHud && Garden.inGarden() && cropNow.isNotEmpty() }, { S.gardenMilestoneHud }) { hudLines() }
+            { S.gardenMilestoneHud && Garden.inGarden() && cropNow.isNotEmpty() }, { S.gardenMilestoneHud },
+            example = { hudLines("Wheat", 24, 42.5, 21.3, if (S.gardenMilestoneEta) 5400L else -1L, 0.35) }) { hudLines() }
     }
 
     private fun scanTab() {
@@ -90,18 +91,25 @@ object GardenMilestones {
     private fun average() = if (tiers.isEmpty()) 0.0 else tiers.values.average()
 
     private fun hudLines(): List<String> {
-        val c = Garden.legacy(S.gardenMilestoneColor)
-        val out = arrayListOf("$c§lMilestone §7$cropNow $tierNow")
-        out += "§7Next: §f${tierNow + 1} §8- §e${"%.1f".format(pctNow)}%" + (if (tiers.size > 1) "  §7Avg: §f${"%.1f".format(average())}" else "")
+        var etaSec = -1L; var rate = 0.0
         if (S.gardenMilestoneEta && samples.size >= 2) {
             val (t0, v0) = samples.first()
             val (t1, v1) = samples.last()
             val hrs = (t1 - t0) / 3_600_000.0
             if (hrs > 20 / 3600.0 && v1 > v0) {
-                val rate = (v1 - v0) / hrs
-                out += "§7ETA: §b${eta(((tierNow + 1 - v1) / rate * 3600).toLong())} §8(${"%.2f".format(rate)} lvl/h)"
+                rate = (v1 - v0) / hrs
+                etaSec = ((tierNow + 1 - v1) / rate * 3600).toLong()
             }
         }
+        return hudLines(cropNow, tierNow, pctNow, if (tiers.size > 1) average() else null, etaSec, rate)
+    }
+
+    // avg = null hides the average; etaSec < 0 hides the ETA line; shared with the HUD editor example
+    private fun hudLines(crop: String, tier: Int, pct: Double, avg: Double?, etaSec: Long, rate: Double): List<String> {
+        val c = Garden.legacy(S.gardenMilestoneColor)
+        val out = arrayListOf("$c§lMilestone §7$crop $tier")
+        out += "§7Next: §f${tier + 1} §8- §e${"%.1f".format(pct)}%" + (if (avg != null) "  §7Avg: §f${"%.1f".format(avg)}" else "")
+        if (etaSec >= 0) out += "§7ETA: §b${eta(etaSec)} §8(${"%.2f".format(rate)} lvl/h)"
         return out
     }
 

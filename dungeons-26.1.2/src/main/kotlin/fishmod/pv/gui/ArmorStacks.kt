@@ -13,9 +13,7 @@ import fishmod.pv.gui.inventories.SkyBlockItemFactory
 import fishmod.pv.networth.InventoryDecoder
 import net.minecraft.world.item.ItemStack
 
-/** Armor stacks for the home mannequin from SkyBlock `inv_armor`. */
 object ArmorStacks {
-	/** @return boots, leggings, chestplate, helmet (Hypixel slot order) */
 	@JvmStatic
 	fun fromMember(member: JsonObject?): Array<ItemStack> {
 		val armor = Array<ItemStack>(4) { ItemStack.EMPTY }

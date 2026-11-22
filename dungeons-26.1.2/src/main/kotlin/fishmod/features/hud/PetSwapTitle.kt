@@ -1,0 +1,57 @@
+package fishmod.features.hud
+import fishmod.compat.Fmt
+import fishmod.utils.TextStrip
+
+import fishmod.utils.FishUtil
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.Style
+import java.util.Optional
+
+object PetSwapTitle {
+
+    private val AUTOPET = Regex("""Autopet equipped your \[Lvl\s*\d+]\s*(.+?)!""")
+    private val SUMMON = Regex("""You summoned your\s+(.+?)!""")
+    // Level/overflow tags like "[Lvl 100]" or "(+12)" around the name
+    private val TAGS = Regex("""\[[^\]]*]|\([^)]*\)""")
+    private val SPACES = Regex("""\s+""")
+
+    @JvmStatic
+    fun cleanName(raw: String): String = raw.replace(TAGS, " ").replace("✦", "").replace(SPACES, " ").trim()
+
+    @JvmStatic
+    fun init() {
+        ClientReceiveMessageEvents.GAME.register { msg, overlay ->
+            if (overlay || !FishSettings.petSwapTitleEnabled) return@register
+            val s = TextStrip.plain(msg.string).trim()
+            val name = (AUTOPET.find(s) ?: SUMMON.find(s))?.groupValues?.get(1)?.let(::cleanName) ?: return@register
+            if (!FishDiag.check(name.isNotEmpty(), "PetSwapTitle.1") { "pet swap name empty in '$s'" }) return@register
+            FishDiag.guard("PetSwapTitle.2", "pet swap title failed") { show(name, rarityColor(msg, name)) }
+        }
+    }
+
+    private fun rarityColor(msg: Component, name: String): Int? {
+        val first = name.split(' ').first()
+        var color: Int? = null
+        msg.visit({ style: Style, text: String ->
+            if (text.contains(first)) { color = style.color?.value; Optional.of(Unit) } else Optional.empty()
+        }, Style.EMPTY)
+        if (color != null) return color
+        val raw = msg.string
+        val idx = raw.indexOf(first)
+        if (idx < 2) return null
+        for (i in idx - 1 downTo 1) {
+            if (raw[i - 1] != '§') continue
+            Fmt.colorOf(raw[i])?.let { return it }
+        }
+        return null
+    }
+
+    private fun show(name: String, rarity: Int?) {
+        val text = FishSettings.petSwapTitleFormat.ifBlank { "{pet}" }.replace("{pet}", name)
+        val color = if (FishSettings.petSwapTitleRarityColor && rarity != null) rarity else FishSettings.petSwapTitleColor
+        FishUtil.forceTitle(Component.literal(text).withColor(color and 0xFFFFFF), Component.empty(), FishSettings.petSwapTitleMs)
+    }
+}

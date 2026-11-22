@@ -22,7 +22,6 @@ import fishmod.pv.gui.nav.PvSubTab
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Garden page: Overview / Visitors / Crops / Composter / Greenhouse / Jacob. */
 class GardenPage {
 	private var snapshot: GardenSnapshot = GardenSnapshot.empty()
 	private var lastSub: PvSubTab? = null
@@ -52,7 +51,6 @@ class GardenPage {
 		playerStats = stats ?: PlayerStatsSnapshot.empty()
 	}
 
-	/** Update data without resetting scroll (async weight / contests). */
 	fun patch(snapshot: GardenSnapshot?) {
 		this.snapshot = snapshot ?: GardenSnapshot.empty()
 		prefetch()

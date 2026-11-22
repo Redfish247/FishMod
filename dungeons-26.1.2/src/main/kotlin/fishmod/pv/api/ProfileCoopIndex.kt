@@ -13,30 +13,9 @@ import fishmod.pv.data.Leveling
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Coop member name cache and profile-list / coop summary parsing.
- * Public coop display APIs stay on [ProfileFetcher] as thin delegates.
- */
 internal object ProfileCoopIndex {
     private val COOP_MEMBER_NAMES = ConcurrentHashMap<String, String>()
 
-    @JvmStatic
-    fun selectedProfile(root: JsonObject): JsonObject? {
-        val profiles = if (root.has("profiles") && root.get("profiles").isJsonArray) root.getAsJsonArray("profiles") else return null
-        var best: JsonObject? = null
-        for (element in profiles) {
-            if (!element.isJsonObject) continue
-            val profile = element.asJsonObject
-            val selected = ProfileParseSupport.bool(profile, "selected")
-            if (selected || best == null) {
-                best = profile
-                if (selected) break
-            }
-        }
-        return best
-    }
-
-    /** Prefer `preferredProfileId`, else Hypixel-selected, else first usable profile. */
     @JvmStatic
     fun pickProfile(profiles: JsonArray?, preferredProfileId: String?): JsonObject? {
         if (profiles == null) return null

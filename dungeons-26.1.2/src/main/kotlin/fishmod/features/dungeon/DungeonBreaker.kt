@@ -32,12 +32,15 @@ object DungeonBreaker {
 
     @JvmStatic
     fun init() {
+        registerPreview()
         FishHudEditor.register(
             "Dungeon Breaker",
             { FishSettings.dungeonBreakerHudX }, { v -> FishSettings.dungeonBreakerHudX = v },
             { FishSettings.dungeonBreakerHudY }, { v -> FishSettings.dungeonBreakerHudY = v },
             80, 10,
-            { FishSettings.dungeonBreakerHudScale }, { v -> FishSettings.dungeonBreakerHudScale = v }
+            { FishSettings.dungeonBreakerHudScale }, { v -> FishSettings.dungeonBreakerHudScale = v },
+            java.util.function.BooleanSupplier { FishSettings.dungeonBreakerEnabled && FishSettings.dungeonBreakerHudEnabled },
+            java.util.function.BooleanSupplier { FishSettings.dungeonBreakerEnabled && FishSettings.dungeonBreakerHudEnabled }
         )
 
         AttackBlockCallback.EVENT.register(AttackBlockCallback { player, level, hand, pos, _ ->
@@ -127,6 +130,20 @@ object DungeonBreaker {
         charges = -1; maxCharges = -1
     }
 
+    private fun label(cur: Int, max: Int): String {
+        val col = when {
+            cur <= 0 -> "§c"
+            cur * 4 <= max -> "§6"
+            else -> "§e"
+        }
+        return "§cCharges: $col$cur§7/§e$max§c⸕"
+    }
+
+    // Example data: 17 of 20 charges
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register("Dungeon Breaker") { fishmod.features.HudPreview.text(listOf(label(17, 20))) }
+    }
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tickCounter: DeltaTracker) {
         if (!FishSettings.dungeonBreakerEnabled || !FishSettings.dungeonBreakerHudEnabled) return
@@ -134,21 +151,14 @@ object DungeonBreaker {
         if (mc.player == null || mc.level == null) return
         if (charges < 0 || !activeHere()) return
 
-        val cur = charges
-        val max = maxCharges
-        val col = when {
-            cur <= 0 -> "§c"
-            cur * 4 <= max -> "§6"
-            else -> "§e"
-        }
-        val label = "§cCharges: $col$cur§7/§e$max§c⸕"
+        val text = label(charges, maxCharges)
 
         val sc = FishSettings.dungeonBreakerHudScale.toFloat()
         ctx.pose().pushMatrix()
         try {
             ctx.pose().translate(FishSettings.dungeonBreakerHudX.toFloat(), FishSettings.dungeonBreakerHudY.toFloat())
             ctx.pose().scale(sc, sc)
-            ctx.text(mc.font, label, 0, 0, -1, true)
+            ctx.text(mc.font, text, 0, 0, -1, true)
         } catch (e: Exception) {
             FishDiag.fail("DungeonBreaker.9", "dungeonbreaker hud render failed", e)
         } finally {

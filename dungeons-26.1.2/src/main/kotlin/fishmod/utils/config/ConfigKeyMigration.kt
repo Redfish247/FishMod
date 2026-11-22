@@ -6,7 +6,6 @@ import com.google.gson.JsonParser
 import fishmod.utils.debug.FishDiag
 import java.io.File
 
-// Moves renamed setting keys to their new names; runs before the config managers load.
 object ConfigKeyMigration {
 
     private val RENAMED: Map<String, String> = mapOf(
@@ -110,7 +109,6 @@ object ConfigKeyMigration {
         "hidePlayersInRange" to "hideNearbyPlayers"
     )
 
-    // saved HUD boxes keep their label in "info"
     private val HUD_LABELS: Map<String, String> = mapOf(
         "Tick Timer" to "Boss Tick Clock",
         "Crystal Spawn Time" to "Crystal Respawn",

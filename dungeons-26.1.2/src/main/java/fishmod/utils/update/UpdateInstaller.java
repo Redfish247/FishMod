@@ -7,8 +7,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalTime;
 import java.util.concurrent.TimeUnit;
 
-// Standalone (JDK-only) helper run in its own JVM after the game exits: swaps the old mod jar for the staged one.
-// Copied out of the mod jar before launch, so it must stay a single class with no Kotlin / Minecraft references.
 public final class UpdateInstaller {
 
     public static void main(String[] args) throws Exception {
@@ -27,11 +25,9 @@ public final class UpdateInstaller {
         if (!Files.isRegularFile(staged)) { log("staged jar missing, nothing to do"); return; }
         long size = Files.size(staged);
 
-        // Stage next to the target first so the only step after removing the old jar is a same-folder rename.
         Path tmp = target.resolveSibling(target.getFileName() + ".tmp");
         Files.copy(staged, tmp, StandardCopyOption.REPLACE_EXISTING);
 
-        // Old jar goes to a backup (not deleted) so it can be put back; retries cover Windows' lingering file lock.
         Path backup = staged.resolveSibling(oldJar.getFileName() + ".bak");
         boolean moved = !Files.exists(oldJar);
         for (int i = 0; i < 60 && !moved; i++) {

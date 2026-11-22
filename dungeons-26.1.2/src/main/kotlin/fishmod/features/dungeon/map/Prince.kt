@@ -19,7 +19,7 @@ object Prince {
     @JvmStatic
     fun updatePrince() {
         val princeRooms = ArrayList<Room>()
-        for (r in ArrayList(Scan.rooms)) {
+        for (r in Scan.roomsSnapshot()) {
             val d = r.data
             if (d != null && d.prince) princeRooms.add(r)
         }
@@ -35,7 +35,7 @@ object Prince {
 
         if (revealed <= 0) {
             var notVisible = 0
-            for (r in ArrayList(Scan.rooms)) {
+            for (r in Scan.roomsSnapshot()) {
                 if (r.type != Room.Type.BLOOD && (r.state == Room.State.UNDISCOVERED || r.state == Room.State.UNOPENED)) {
                     notVisible++
                 }

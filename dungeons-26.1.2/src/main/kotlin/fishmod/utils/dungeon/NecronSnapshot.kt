@@ -7,7 +7,6 @@ import fishmod.utils.FishConstants
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.decoration.ArmorStand
 
-// Shared Necron bar + nametag read, refreshed at most every 2 ticks for NecronDeath and BossPhase.
 object NecronSnapshot {
     private var lastTick = Long.MIN_VALUE
     private var lastTag = false

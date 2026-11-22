@@ -23,7 +23,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Shared Garden UI helpers and hover zones. */
 class GardenUi {
 	@JvmField
 	val zones: MutableList<HoverZone> = ArrayList()
@@ -97,7 +96,6 @@ class GardenUi {
 		const val CHIP_CELL = 22
 		const val CHIP_GAP = 4
 		const val GH_CELL_W = 24
-		const val GH_CELL_H = 24
 		const val CELL_BORDER = 0xFF3A3A48.toInt()
 		const val CREDIT_C = 0xFF4A4A58.toInt()
 		const val BAR_CROP = 0xFF6BAA3D.toInt()
@@ -123,6 +121,7 @@ class GardenUi {
 		const val ORB_GAP = 3
 
 		private val COST_ICONS = HashMap<String, ItemStack>()
+		private val TITLE_SEPARATORS = Regex("[\\s_]+")
 
 		@JvmStatic
 		fun barRowH(font: Font): Int = font.lineHeight + BAR_LABEL_GAP + PvDraw.BAR_HEIGHT + BAR_AFTER
@@ -269,7 +268,7 @@ class GardenUi {
 			if (raw.isNullOrBlank()) {
 				return "?"
 			}
-			return raw.lowercase(Locale.ROOT).split(Regex("[\\s_]+"))
+			return raw.lowercase(Locale.ROOT).split(TITLE_SEPARATORS)
 				.filter { it.isNotEmpty() }
 				.joinToString(" ") { it[0].uppercaseChar() + it.substring(1) }
 		}

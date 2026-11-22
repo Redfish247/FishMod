@@ -13,7 +13,6 @@ import fishmod.pv.data.ForagingSnapshot
 import fishmod.pv.data.MiningSnapshot
 import java.util.function.Function
 
-/** The 11 essence shops in selector order. Shops are read from snapshots the other tabs already decoded. */
 object EssenceShops {
 	enum class Group(private val label: String) {
 		DUNGEONS("Dungeons"),

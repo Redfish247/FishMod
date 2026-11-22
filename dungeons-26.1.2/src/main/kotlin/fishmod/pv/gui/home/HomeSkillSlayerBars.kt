@@ -19,7 +19,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Skill and slayer bar grids for the Home bars column. */
 class HomeSkillSlayerBars {
 	private var cachedSkillBars: List<CachedBar> = listOf()
 	private var cachedExtraSkillBars: List<CachedBar> = listOf()

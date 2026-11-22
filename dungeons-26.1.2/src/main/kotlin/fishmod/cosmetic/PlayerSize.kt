@@ -27,7 +27,6 @@ object PlayerSize {
         val mc = Minecraft.getInstance()
         val isSelf = mc.player != null && p.getUUID() == mc.player!!.getUUID()
         if (isSelf) {
-            // inventory paperdoll renders self while a screen is open; scaling it fills the box with skin
             if (mc.curScreen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return IDENTITY
             return if (FishSettings.playerSizeEnabled) localSelfValue() else IDENTITY
         }
@@ -37,6 +36,7 @@ object PlayerSize {
         }
         if (!FishSettings.playerSizeShared) return IDENTITY
         val id = p.getUUID()
+        if (KEYS.size > 512) KEYS.clear()
         val key = KEYS.getOrPut(id) { id.toString().replace("-", "") }
         return RemoteScales.get(key) ?: IDENTITY
     }

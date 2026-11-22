@@ -13,7 +13,6 @@ import fishmod.pv.networth.InventoryDecoder
 import fishmod.pv.networth.PetWorth
 import fishmod.pv.neu.NeuRepoCache
 
-/** Pets menu data from Hypixel `pets_data`. */
 class PetSnapshot(
     pets: List<Entry>?,
     highestPetScore: Int,
@@ -85,7 +84,6 @@ class PetSnapshot(
         @JvmStatic
         fun empty(): PetSnapshot = PetSnapshot(emptyList(), 0, emptyList(), 0, 0, emptyList())
 
-        /** Parse `pets_data.pets[]` (fallback `pets[]`), sorted active → level → name. */
         @JvmStatic
         fun fromMember(member: JsonObject?): PetSnapshot {
             if (member == null) return empty()
@@ -244,8 +242,6 @@ class PetSnapshot(
             else -> 4
         }
 
-        // NEU only ships some pets at a few tiers (Phoenix is SPECIAL/VERY_SPECIAL there), so fall back to
-        // the closest tier NEU actually has when the API rarity isn't in the repo.
         @JvmStatic
         fun neuIdFor(type: String, tierIndex: Int): String {
             val base = type.uppercase()

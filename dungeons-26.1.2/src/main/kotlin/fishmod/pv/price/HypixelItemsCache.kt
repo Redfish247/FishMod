@@ -11,7 +11,6 @@ import com.google.gson.JsonObject
 import fishmod.utils.networth.ItemsDb
 import java.util.Locale
 
-// Items resource is fetched and parsed once, by ItemsDb.
 object HypixelItemsCache {
 	@JvmStatic
 	fun start() {

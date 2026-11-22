@@ -25,11 +25,6 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.minecraft.client.Minecraft
 
-/**
- * Side fetches for an open profile screen (rank, history, guild, status, garden, museum, bingo).
- * Captures `loadGeneration` at fetch start; applies only while the screen is still current
- * and the generation matches.
- */
 class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 	private var gardenFetchStarted = false
 	private var gardenContestsFetchStarted = false
@@ -59,7 +54,6 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 		museumFetchStarted = true
 	}
 
-	/** Runs `action` on the client thread while this load is still the one on screen. */
 	private fun onClient(generation: Int, action: () -> Unit) {
 		val client = Minecraft.getInstance() ?: return
 		client.execute {
@@ -102,7 +96,6 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 			screen.homePage().applyUsernameHistory(UsernameHistory.error("Missing player"))
 			return
 		}
-		// Allow re-click refresh when already READY/ERROR so a truncated prior fetch can be replaced.
 		if (screen.homePage().usernameHistory().state == UsernameHistory.State.LOADING) {
 			return
 		}
@@ -270,7 +263,6 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 					if (error != null) {
 						ProfileViewer.LOGGER.warn("Elite contests failed for {}", id, error)
 					}
-					// Keep Hypixel contest list if Elite miss.
 					if (base.contests.isNotEmpty()) {
 						screen.gardenPage().patch(base.withContestsReady())
 					} else {
@@ -337,7 +329,6 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 		}
 		val cached = MuseumCache.get(uuid, id)
 		if (!force && cached != null) {
-			// applyMuseum no-ops when the same cached member is already applied.
 			screen.museumPage().applyMuseum(cached.museumMember)
 			museumFetchStarted = true
 			return

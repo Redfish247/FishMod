@@ -21,12 +21,12 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
 
     private companion object {
         private const val SCRIM = 0x99000000.toInt()
-        private const val BG = 0xFF12151B.toInt()
-        private const val BORDER = 0xFF2A2D38.toInt()
-        private const val CARD = 0xFF181C23.toInt()
-        private const val CARD_HOVER = 0xFF1E232C.toInt()
-        private const val LOG_BG = 0xFF0B0E12.toInt()
-        private const val ON_ACCENT = 0xFF06302F.toInt()
+        private const val BG = 0xFF151515.toInt()
+        private const val BORDER = 0xFF2D2D2D.toInt()
+        private const val CARD = 0xFF1C1C1C.toInt()
+        private const val CARD_HOVER = 0xFF232323.toInt()
+        private const val LOG_BG = 0xFF0E0E0E.toInt()
+        private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private const val SUCCESS = 0xFF4FD08A.toInt()
         private const val LOG_SIZE = 6.5f
         private const val LOG_LINE = 9
@@ -142,8 +142,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         ScreenTheme.nPanel(x, y, x + panelW, y + panelH, 10, fade(BG, p), fade(if (bodyHov) ScreenTheme.ACCENT else BORDER, p))
         UiRecorder.fillRect((x + 10).toFloat(), y.toFloat(), (panelW - 20).toFloat(), 2f, fade(ScreenTheme.ACCENT, p))
 
-        // Header: arrow glyph, title, version delta, page link.
-        ScreenTheme.nRoundedRect(x + pad, y + 12, 24, 24, 6, fade(0x2424B6B0, p))
+        ScreenTheme.nRoundedRect(x + pad, y + 12, 24, 24, 6, fade(0x24D6D6D6, p))
         UiRecorder.fillRect((x + pad + 11).toFloat(), (y + 17).toFloat(), 2f, 11f, fade(ScreenTheme.ACCENT, p))
         UiRecorder.chevron((x + pad + 8).toFloat(), (y + 27).toFloat(), true, fade(ScreenTheme.ACCENT, p))
         val tx = (x + pad + 32).toFloat()
@@ -160,7 +159,6 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         }
         ScreenTheme.nRect(x + pad, y + 44, innerW, 1, fade(BORDER, p))
 
-        // Changelog (scrolls; clicking anywhere outside the buttons opens the mod page).
         val ly = logY + dy
         ScreenTheme.nRoundedRect(x + pad, ly, innerW, logH, 6, fade(LOG_BG, p))
         UiRecorder.pushScissor((x + pad).toFloat(), ly.toFloat(), innerW.toFloat(), logH.toFloat())
@@ -189,11 +187,11 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
             UiRecorder.text(hint, x + panelW / 2f - hw / 2f, ly + logH - 11.5f, 6f, ScreenTheme.ACCENT_HOVER)
         }
 
-        // Buttons.
         val by = btnY + dy
         val sHov = inside(mx, my, skipX, btnY, skipW, btnH)
-        ScreenTheme.nRoundedRectRing(skipX, by, skipW, btnH, btnH / 2, 1, fade(if (sHov) CARD_HOVER else CARD, p), fade(BORDER, p))
-        centered("Don't show again", skipX + skipW / 2, by, fade(if (sHov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR, p))
+        // plain text link, not a third pill
+        UiRecorder.text("Don't show again", skipX.toFloat(), by + (btnH - 6.5f) / 2f, 6.5f, fade(if (sHov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR, p))
+        if (sHov) UiRecorder.fillRect(skipX.toFloat(), by + btnH / 2f + 4f, UiRecorder.textWidth("Don't show again", 6.5f), 0.7f, fade(ScreenTheme.TEXT_COLOR, p))
 
         val lHov = inside(mx, my, laterX, btnY, laterW, btnH)
         ScreenTheme.nRoundedRectRing(laterX, by, laterW, btnH, btnH / 2, 1, fade(if (lHov) CARD_HOVER else CARD, p), fade(BORDER, p))
@@ -213,7 +211,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
                 if (UpdateManager.downloadProgress.isNaN()) FishDiag.fail("UpdateScreen.5", "download progress is NaN")
                 ScreenTheme.nRoundedRectRing(updateX, by, updateW, btnH, btnH / 2, 1, fade(CARD, p), fade(ScreenTheme.ACCENT, p))
                 val fillW = ((updateW - 2) * UpdateManager.downloadProgress).toInt()
-                if (fillW > btnH / 2) ScreenTheme.nRoundedRect(updateX + 1, by + 1, fillW, btnH - 2, (btnH - 2) / 2, fade(0x5524B6B0, p))
+                if (fillW > btnH / 2) ScreenTheme.nRoundedRect(updateX + 1, by + 1, fillW, btnH - 2, (btnH - 2) / 2, fade(0x55D6D6D6, p))
                 centered("Downloading ${(UpdateManager.downloadProgress * 100).toInt()}%", updateX + updateW / 2, by, fade(ScreenTheme.TEXT_COLOR, p))
             }
             state == DS.STAGED -> {
@@ -249,7 +247,6 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
     private val MD_TAG = Regex("<[^>]+>")
     private val MD_BULLET = Regex("""^[-*+]\s+""")
 
-    // Release markdown → plain lines; headings are tagged with \u0001 so they render bold.
     private fun changelog(body: String): List<String> {
         val out = ArrayList<String>()
         for (raw in body.replace("\r", "").lines()) {

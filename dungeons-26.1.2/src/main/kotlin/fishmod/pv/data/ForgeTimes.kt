@@ -9,9 +9,7 @@ package fishmod.pv.data
 
 import fishmod.pv.neu.NeuRepoCache
 
-/** Forge durations from NEU forge recipes, with the profile's Quick Forge reduction applied. */
 object ForgeTimes {
-	// Quick Forge: -(10 + 0.5 * level)% forge time, jumping to -30% at level 20.
 	@JvmStatic
 	fun quickForgeMultiplier(level: Int): Double = when {
 		level <= 0 -> 1.0
@@ -19,7 +17,6 @@ object ForgeTimes {
 		else -> 1.0 - (10.0 + 0.5 * level) / 100.0
 	}
 
-	/** Base recipe duration in ms, or 0 when NEU has no forge recipe for the item (or isn't loaded yet). */
 	@JvmStatic
 	fun baseDurationMs(itemId: String?): Long {
 		val item = NeuRepoCache.get(itemId) ?: return 0L

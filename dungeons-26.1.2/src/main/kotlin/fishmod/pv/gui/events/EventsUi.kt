@@ -14,7 +14,6 @@ import java.util.Locale
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Shared Events UI helpers and hover zones. */
 class EventsUi {
 	@JvmField
 	val zones = ArrayList<HoverZone>()

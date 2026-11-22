@@ -41,7 +41,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Chocolate Factory subpage (owns rabbit-list scroll). */
 class ChocolatePage {
 	private data class FactionHit(val id: String, val x: Int, val y: Int, val w: Int, val h: Int)
 
@@ -305,21 +304,14 @@ class ChocolatePage {
 		} else {
 			rabbitsFace
 		}
-		var scaleX = 1f
-		var scaleY = 1f
+		var slideDx = 0f
 		if (animating) {
-			scaleX = maxOf(0.04f, abs(cos(angle.toDouble()).toFloat()))
-			scaleY = 1f - (1f - scaleX) * 0.06f
+			slideDx = PvDraw.slideOffset(eased, w)
 		}
-
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 		if (hovered && !animating) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -330,6 +322,7 @@ class ChocolatePage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawEmployeesFace(
@@ -671,7 +664,6 @@ class ChocolatePage {
 			return ItemStack(Items.RABBIT_FOOT)
 		}
 
-		/** Soft rarity tint like pets/museum slots. */
 		private fun raritySlotBackground(rarityArgb: Int): Int {
 			val r = (rarityArgb shr 16) and 0xFF
 			val g = (rarityArgb shr 8) and 0xFF

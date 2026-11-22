@@ -15,11 +15,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Intercept chat component clicks before vanilla routes them.
- * Hypixel profile names may use RunCommand, SuggestCommand, Custom, or hover-only
- * "Click to view X's profile" text. {@link ScreenClickCommandMixin} only sees RunCommand.
- */
 @Mixin(ChatScreen.class)
 public abstract class ChatScreenClickMixin {
 	@Inject(method = "handleComponentClicked", at = @At("HEAD"), cancellable = true)

@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.CameraTweaks;
+import fishmod.features.visuals.CameraTweaks;
 import net.minecraft.client.renderer.Lightmap;
 import net.minecraft.client.renderer.state.LightmapRenderState;
 import org.joml.Vector3f;

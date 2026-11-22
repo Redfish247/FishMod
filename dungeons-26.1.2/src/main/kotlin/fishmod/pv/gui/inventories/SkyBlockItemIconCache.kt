@@ -9,6 +9,7 @@ package fishmod.pv.gui.inventories
 
 import com.mojang.blaze3d.platform.NativeImage
 import fishmod.pv.ProfileViewer
+import fishmod.pv.api.PvExecutors
 import fishmod.pv.neu.SkyBlockPackCache
 import java.io.IOException
 import java.nio.charset.StandardCharsets
@@ -22,10 +23,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.texture.DynamicTexture
 import net.minecraft.resources.Identifier
 
-/**
- * Registers Hypixel SkyBlock item PNGs as dynamic GUI textures
- * (paper items, drills, attuned daggers, animated icons, …).
- */
 object SkyBlockItemIconCache {
 	private val BY_MODEL = ConcurrentHashMap<String, IconState>()
 
@@ -35,12 +32,10 @@ object SkyBlockItemIconCache {
 		BY_MODEL.clear()
 		val client: Minecraft? = Minecraft.getInstance()
 		if (client != null && ids.isNotEmpty()) {
-			// Free GPU textures; ids are deterministic so a re-request re-registers them.
 			client.execute { ids.forEach { client.textureManager.release(it) } }
 		}
 	}
 
-	/** Kick pack download; icons register as textures become available. */
 	@JvmStatic
 	fun ensurePack() {
 		SkyBlockPackCache.start()
@@ -85,26 +80,32 @@ object SkyBlockItemIconCache {
 		}
 		SkyBlockPackCache.start()
 		if (!SkyBlockPackCache.isReady()) {
-			// Pack still downloading - allow another attempt later.
 			state.requested.set(false)
 			return
 		}
-		val layers = SkyBlockPackCache.resolveTextureLayers(state.model)
-		if (layers.isEmpty()) {
-			state.failed = true
-			return
+		// Pack lookup and PNG decode run off the render thread; only the texture register is on it.
+		PvExecutors.IO.execute {
+			val layers = SkyBlockPackCache.resolveTextureLayers(state.model)
+			if (layers.isEmpty()) {
+				state.failed = true
+				return@execute
+			}
+			val image = try {
+				composeLayers(layers)
+			} catch (exception: Exception) {
+				state.failed = true
+				ProfileViewer.LOGGER.warn("[FishPV] Failed reading item icon {}: {}", state.model, exception.toString())
+				return@execute
+			}
+			if (image == null) {
+				state.failed = true
+				return@execute
+			}
+			registerAsync(state, image)
 		}
-		val image = try {
-			composeLayers(layers)
-		} catch (exception: IOException) {
-			state.failed = true
-			ProfileViewer.LOGGER.warn("[FishPV] Failed reading item icon {}: {}", state.model, exception.toString())
-			return
-		}
-		if (image == null) {
-			state.failed = true
-			return
-		}
+	}
+
+	private fun registerAsync(state: IconState, image: NativeImage) {
 		val client: Minecraft? = Minecraft.getInstance()
 		if (client == null) {
 			image.close()
@@ -112,6 +113,11 @@ object SkyBlockItemIconCache {
 			return
 		}
 		client.execute {
+			// Dropped by clear() (world change) while decoding: free the image, do not register.
+			if (BY_MODEL[state.model] !== state) {
+				image.close()
+				return@execute
+			}
 			try {
 				val size = maxOf(image.width, image.height)
 				val id = ProfileViewer.id(
@@ -144,7 +150,6 @@ object SkyBlockItemIconCache {
 		return composed
 	}
 
-	/** Animated item sheets are width×(N·width); keep the first frame for GUI icons. */
 	private fun firstFrame(image: NativeImage): NativeImage {
 		val width = image.width
 		val height = image.height

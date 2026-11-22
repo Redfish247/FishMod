@@ -27,7 +27,6 @@ object RiftLeech {
         return v * when (suf.lowercase()) { "k" -> 1e3; "m" -> 1e6; else -> 1.0 }
     }
 
-    // Boss nametag "Leech Supreme ... cur/max": laser phase once cur is within the last fifth of max
     private fun poll() {
         if (!S.riftLeech || !Rift.inRift()) { laser = false; return }
         val now = System.currentTimeMillis()

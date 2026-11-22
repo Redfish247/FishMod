@@ -5,7 +5,6 @@ import fishmod.utils.debug.FishDiag
 import java.nio.file.Files
 import java.nio.file.Paths
 
-// Per-item paid-chest drops: Session (this launch) and Total (saved)
 object KuudraLoot {
 
     class Item { @JvmField var name = ""; @JvmField var count = 0L; @JvmField var value = 0.0 }

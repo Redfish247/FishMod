@@ -7,7 +7,6 @@ import fishmod.utils.dungeon.RunSplit
 
 object FishJson {
 
-    // run_splits.json: { "m7": [ { label, rgb "#RRGGBB", from, to, avgSec }, ... ] }, floor keys come back upper-case
     @JvmStatic
     fun readSplits(path: String): HashMap<String, ArrayList<RunSplit>> {
         val text = FishJson::class.java.getResourceAsStream(path)?.use { it.readBytes().toString(Charsets.UTF_8) }

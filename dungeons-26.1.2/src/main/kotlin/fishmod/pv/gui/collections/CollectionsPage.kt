@@ -21,10 +21,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/**
- * Collections: full-width multi-column board; amount/tier/coop on hover.
- * Minions: icon grid + tier checklist.
- */
 class CollectionsPage {
 	private var snapshot: CollectionSnapshot = CollectionSnapshot.empty()
 	private val list = CollectionsListPage()
@@ -83,7 +79,6 @@ class CollectionsPage {
 
 	fun category(): Int = list.category()
 
-	/** Category tabs across the top, same style as the Bestiary family tabs. */
 	private fun drawStrip(g: GuiGraphicsExtractor, x: Int, y: Int, w: Int, mouseX: Int, mouseY: Int): Int {
 		stripHits.clear()
 		stripTip = null

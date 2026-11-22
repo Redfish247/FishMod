@@ -4,14 +4,12 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object DianaSettings {
 
-    // Main toggles
     @ConfigValue @JvmField var dianaGuessing: Boolean = true
     @ConfigValue @JvmField var dianaWarp: Boolean = true
     @ConfigValue @JvmField var dianaRareMobs: Boolean = true
     @ConfigValue @JvmField var dianaTracker: Boolean = true
     @ConfigValue @JvmField var dianaAnnouncers: Boolean = true
 
-    // Guessing / burrows
     @ConfigValue @JvmField var dianaSpadeGuess: Boolean = true
     @ConfigValue @JvmField var dianaArrowGuess: Boolean = true
     @ConfigValue @JvmField var dianaBurrowDetection: Boolean = true
@@ -29,7 +27,6 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaMuteBurrowSounds: Boolean = false
     @ConfigValue @JvmField var dianaMuteSpadeSounds: Boolean = false
 
-    // Warp
     @ConfigValue @JvmField var dianaWarpCastle: Boolean = true
     @ConfigValue @JvmField var dianaWarpWizard: Boolean = true
     @ConfigValue @JvmField var dianaWarpCrypt: Boolean = true
@@ -43,7 +40,6 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaWarpTitle: Boolean = false
     @ConfigValue @JvmField var dianaWarpTitleSubtitle: Boolean = false
 
-    // Rare mobs
     @ConfigValue @JvmField var dianaScanRareMobs: Boolean = true
     @ConfigValue @JvmField var dianaShareRareMob: Boolean = true
     @ConfigValue @JvmField var dianaReceiveRareMob: Boolean = true
@@ -71,7 +67,6 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaRareMobSound: String = "Ping"
     @ConfigValue @JvmField var dianaRareMobVolume: Int = 100
 
-    // Tracker
     @ConfigValue @JvmField var dianaLootTracker: String = "Event"
     @ConfigValue @JvmField var dianaMobTracker: String = "Off"
     @ConfigValue @JvmField var dianaStatsTracker: Boolean = true
@@ -88,7 +83,6 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaCrownHudY: Int = 120
     @ConfigValue @JvmField var dianaCrownHudScale: Double = 1.0
 
-    // Announcers
     @ConfigValue @JvmField var dianaRareDropChat: Boolean = true
     @ConfigValue @JvmField var dianaHiltMessage: Boolean = true
     @ConfigValue @JvmField var dianaLootScreen: Boolean = true
@@ -99,7 +93,6 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaMsgFood: String = ""
     @ConfigValue @JvmField var dianaMsgWool: String = ""
 
-    // Chat
     @ConfigValue @JvmField var dianaPartyCommands: Boolean = true
     @ConfigValue @JvmField var dianaMessageHider: Boolean = true
     @ConfigValue @JvmField var dianaHideArrows: Boolean = true
@@ -110,7 +103,6 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaHideDugMob: Boolean = true
     @ConfigValue @JvmField var dianaSphinxSolver: Boolean = true
 
-    // Waypoint look
     @ConfigValue @JvmField var dianaColorClosestGuess: Int = 0xFF9933CC.toInt()
     @ConfigValue @JvmField var dianaColorOtherGuess: Int = 0xFF00F6FF.toInt()
     @ConfigValue @JvmField var dianaColorSubGuess: Int = 0xFF8C8C8C.toInt()
@@ -133,7 +125,6 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaShowTimesDug: Boolean = true
     @ConfigValue @JvmField var dianaLineWidth: Int = 3
 
-    // HUD positions
     @ConfigValue @JvmField var dianaLootPosX: Int = 5
     @ConfigValue @JvmField var dianaLootPosY: Int = 60
     @ConfigValue @JvmField var dianaLootPosScale: Double = 1.0

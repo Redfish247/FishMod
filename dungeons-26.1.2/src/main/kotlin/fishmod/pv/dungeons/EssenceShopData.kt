@@ -187,14 +187,12 @@ object EssenceShopData {
 		return out
 	}
 
-	// Called once per profile load; logs each unmapped key once per session so the real ids show up in latest.log.
 	private fun logUnmappedPerks(member: JsonObject?) {
 		val unmapped = unmappedPerks(member)
 		unmapped.keys.removeIf { !LOGGED_UNMAPPED.add(it) }
 		if (unmapped.isNotEmpty()) ProfileViewer.LOGGER.info("[FishPV] Unmapped essence perk keys: {}", unmapped)
 	}
 
-	/** Raw essence balance from `currencies.essence.<TYPE>.current`. */
 	@JvmStatic
 	fun balance(member: JsonObject?, currencyKey: String): Long = essenceBalance(member, currencyKey)
 

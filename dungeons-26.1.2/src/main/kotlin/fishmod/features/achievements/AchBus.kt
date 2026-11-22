@@ -3,7 +3,6 @@ package fishmod.features.achievements
 import fishmod.utils.debug.FishDiag
 import java.util.concurrent.CopyOnWriteArrayList
 
-// Typed gameplay events turned out of chat/scoreboard/trackers; achievements and trackers subscribe
 sealed interface AchEvent {
     data class RunStarted(val floor: String?) : AchEvent
     data class RunEnded(val floor: String?, val seconds: Double, val score: Int, val deaths: Int, val secrets: Int, val solo: Boolean, val cleared: Int) : AchEvent

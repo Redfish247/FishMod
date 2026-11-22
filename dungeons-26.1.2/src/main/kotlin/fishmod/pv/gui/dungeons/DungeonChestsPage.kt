@@ -18,7 +18,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.TextColor
 
-/** Dungeons → Chests: recent runs from `dungeons.treasures` with every reward chest. */
 class DungeonChestsPage {
 	private var history: DungeonChestHistory = DungeonChestHistory.empty()
 	private val zones = ArrayList<HoverZone>()
@@ -278,7 +277,6 @@ class DungeonChestsPage {
 			}
 		}
 
-		// Hypixel lore draws ultimate enchants bold (§d§l); regular books are not.
 		@JvmStatic
 		fun isBold(tier: String?): Boolean = tier == "ULTIMATE"
 

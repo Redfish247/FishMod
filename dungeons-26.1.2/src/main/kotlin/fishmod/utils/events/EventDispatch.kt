@@ -5,12 +5,10 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 
-// Turns raw chat into the party-chat and leap hooks.
 object EventDispatch {
 
     private const val PARTY_PREFIX = "Party >"
     private val LEAP_LINE = Regex("^You have teleported to .*!$")
-    // "[MVP+] Name" -> "Name"
     private val RANK_TAG = Regex("^\\[[^\\]]*] ")
 
     @JvmStatic

@@ -7,10 +7,6 @@
  */
 package fishmod.pv
 
-/**
- * Legacy shift+right-click hook — replaced by [HypixelProfileSpyButton]
- * on Hypixel's native Profile chest. Kept as a no-op registrar for call sites.
- */
 object PlayerInteractPvOpener {
 	@JvmStatic
 	fun register() {

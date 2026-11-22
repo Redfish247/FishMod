@@ -3,7 +3,6 @@ package fishmod.compat;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 
-// Input constants/calls: GLFW values on 26.1.2/26.2 (the 26.3 copy maps to SDL).
 public final class GLFW {
     private GLFW() {}
     public static final int GLFW_PRESS = org.lwjgl.glfw.GLFW.GLFW_PRESS;
@@ -62,8 +61,6 @@ public final class GLFW {
     public static void glfwSetCursorPos(long window, double x, double y) { org.lwjgl.glfw.GLFW.glfwSetCursorPos(window, x, y); }
     public static boolean keyDown(Window window, int key) { return InputConstants.isKeyDown(window, key); }
     public static void openUri(java.net.URI uri) { net.minecraft.util.Util.getPlatform().openUri(uri); }
-    // 0 = left, 1 = right, 2 = middle on every version.
-    // Raw Minecraft mouse key value for KeyMapping(Type.MOUSE, ...).
     public static final int KEY_MOUSE_RIGHT = org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
     public static int btn(net.minecraft.client.input.MouseButtonEvent click) { return click.button(); }
 }
