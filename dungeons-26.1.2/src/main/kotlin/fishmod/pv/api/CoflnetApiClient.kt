@@ -47,11 +47,11 @@ object CoflnetApiClient {
         return CompletableFuture.supplyAsync({ getObject("$BASE/auction/$id", queuedNanos) }, EXECUTOR)
     }
 
-    /** Bazaar daily history for an item tag, newest first. Empty when unknown. */
+    /** Bazaar history for an item tag, newest first. fine = hour (~20s, 1h) | day (~5min, 24h) | week (2h, 7d); null = daily, all time. */
     @JvmStatic
-    fun bazaarHistory(tag: String): CompletableFuture<Optional<JsonArray>> {
+    fun bazaarHistory(tag: String, fine: String? = null): CompletableFuture<Optional<JsonArray>> {
         val queuedNanos = System.nanoTime()
-        return CompletableFuture.supplyAsync({ getArray("$BASE/bazaar/${enc(tag)}/history", queuedNanos) }, EXECUTOR)
+        return CompletableFuture.supplyAsync({ getArray("$BASE/bazaar/${enc(tag)}/history${if (fine == null) "" else "/$fine"}", queuedNanos) }, EXECUTOR)
     }
 
     /** AH price history (min/avg/max/volume per hour or day). range = day | week | month | full. */

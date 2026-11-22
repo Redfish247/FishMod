@@ -62,11 +62,13 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         private val GOLD = 0xFFFFAA00.toInt()
         private val GREEN = 0xFF55FF55.toInt()
         private val RED = 0xFFFF5555.toInt()
-        private val BZ_RANGES = listOf("7d" to 7, "30d" to 30, "90d" to 90, "1y" to 365, "All" to Int.MAX_VALUE)
+        private class BzRange(val label: String, val fine: String?, val days: Int)
+        private val BZ_RANGES = listOf(BzRange("1h", "hour", 0), BzRange("24h", "day", 0), BzRange("7d", "week", 0), BzRange("30d", null, 30), BzRange("90d", null, 90), BzRange("1y", null, 365), BzRange("All", null, Int.MAX_VALUE))
         private val AH_RANGES = listOf("24h" to "day", "7d" to "week", "30d" to "month")
         private val CACHE = ConcurrentHashMap<String, State>()
         private val TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         private val DAY_FMT = DateTimeFormatter.ofPattern("MMM d")
+        private val CLOCK_FMT = DateTimeFormatter.ofPattern("HH:mm")
         private val HOUR_FMT = DateTimeFormatter.ofPattern("d HH:mm")
     }
 
@@ -91,8 +93,8 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         return if (semi > 0 && NeuRepo.get(id)?.get("itemid")?.asString == "minecraft:enchanted_book") "ENCHANTMENT_${id.substring(0, semi)}_${id.substring(semi + 1)}" else id
     }
 
-    private fun ranges(): List<String> = if (bazaar) BZ_RANGES.map { it.first } else AH_RANGES.map { it.first }
-    private fun key(): String = if (bazaar) "bz|$tag" else "ah|$tag|$rarity|${AH_RANGES[range].second}"
+    private fun ranges(): List<String> = if (bazaar) BZ_RANGES.map { it.label } else AH_RANGES.map { it.first }
+    private fun key(): String = if (bazaar) "bz|$tag|${BZ_RANGES[range].fine}" else "ah|$tag|$rarity|${AH_RANGES[range].second}"
 
     override fun init() {
         px = (vw() - W) / 2
@@ -105,7 +107,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         if (CACHE[k] is State.Ready) return
         if (CACHE.putIfAbsent(k, State.Loading) != null && CACHE[k] !is State.Failed) return
         CACHE[k] = State.Loading
-        val fut = if (bazaar) CoflnetApiClient.bazaarHistory(tag) else CoflnetApiClient.auctionHistory(tag, AH_RANGES[range].second, rarity)
+        val fut = if (bazaar) CoflnetApiClient.bazaarHistory(tag, BZ_RANGES[range].fine) else CoflnetApiClient.auctionHistory(tag, AH_RANGES[range].second, rarity)
         fut.whenComplete { res, err ->
             try {
                 if (err != null || res == null || !res.isPresent || res.get().size() == 0) { CACHE[k] = State.Failed; return@whenComplete }
@@ -169,7 +171,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     /** Last N points of the loaded data for the selected range. */
     private fun visible(d: Data): Pair<Int, Int> {
         val n = d.times.size
-        val keep = if (bazaar) BZ_RANGES[range].second else n
+        val keep = if (bazaar) (if (BZ_RANGES[range].fine != null) n else BZ_RANGES[range].days) else n
         return (n - keep).coerceAtLeast(0) to n
     }
 
@@ -334,7 +336,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     }
 
     private fun fmtAxis(t: Long): String =
-        java.time.Instant.ofEpochMilli(t).atZone(ZoneId.systemDefault()).format(if (bazaar) DAY_FMT else HOUR_FMT)
+        java.time.Instant.ofEpochMilli(t).atZone(ZoneId.systemDefault()).format(when { bazaar && BZ_RANGES[range].fine == null -> DAY_FMT; bazaar && BZ_RANGES[range].fine != "week" -> CLOCK_FMT; else -> HOUR_FMT })
 
     private fun hoverIndex(d: Data, mx: Int, my: Int, from: Int, to: Int): Int {
         if (mx < px + GX || mx > px + GX + GW || my < py + GY || my > py + GY + GH) return -1
