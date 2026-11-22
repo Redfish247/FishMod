@@ -49,8 +49,12 @@ object ChatTabs {
     @JvmStatic
     fun matches(line: Component): Boolean {
         val p = selected.prefix ?: return true
-        return TextStrip.plain(line.string).trimStart().startsWith(p)
+        val s = TextStrip.plain(line.string).trimStart()
+        return s.startsWith(p) || SWITCHED.containsMatchIn(s)
     }
+
+    // Hypixel's /chat confirmation stays visible on every tab
+    private val SWITCHED = Regex("^You are now in the [A-Z-]+ channel")
 
     private fun tabs(): List<Tab> = Tab.entries.filter { it.enabled() }
 
