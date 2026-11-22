@@ -177,7 +177,17 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
     private fun barY(): Int = py + H - 32
     private fun openW(): Int = if (bazaar) 80 else 110
     private fun openX(): Int = px + W - PAD - openW()
-    private fun rangeX(): Int = openX() - 4 - 76
+    private fun pillY(): Int = py + GY - 18
+    private fun pillW(i: Int): Int = UiRecorder.textWidth(ranges()[i], 6.5f).toInt() + 12
+    private fun pillX(i: Int): Int {
+        var x = px + GX + GW
+        for (j in ranges().indices.reversed()) { x -= pillW(j); if (j == i) return x; x -= 3 }
+        return x
+    }
+    private fun pillAt(mx: Int, my: Int): Int {
+        if (listingsView() || my < pillY() || my >= pillY() + 13) return -1
+        return ranges().indices.firstOrNull { mx >= pillX(it) && mx < pillX(it) + pillW(it) } ?: -1
+    }
 
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val scale = UiScale.factor()
@@ -210,7 +220,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
             data == null -> centered("Loading...", py + GY + GH / 2f - 4)
             else -> drawGraph(data, mx, my)
         }
-        if (!listingsView()) button("Range: ${ranges()[range]}", rangeX(), barY(), 76, mx, my, false)
+        if (!listingsView()) for (i in ranges().indices) pill(ranges()[i], pillX(i), pillW(i), mx, my, i == range)
         if (!bazaar) button(if (view == 0) "View: History" else "View: Lowest BINs", viewX(), barY(), 104, mx, my, view == 1)
         button(if (bazaar) "Open Bazaar" else "Open Auction House", openX(), barY(), openW(), mx, my, false)
         UiRecorder.text("Data: SkyCofl  ·  Esc: close", (px + PAD).toFloat(), (py + H - 12).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
@@ -314,10 +324,11 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         UiRecorder.text(fmtAxis(d.times[from]), (px + GX).toFloat(), (py + GY + GH + 4).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
         val end = fmtAxis(d.times[to - 1])
         UiRecorder.text(end, px + GX + GW - UiRecorder.textWidth(end, 6.5f), (py + GY + GH + 4).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
-        var lx = px + GX + 100f
+        val total = d.series.sumOf { (14 + UiRecorder.textWidth(it.label, 7.5f)).toDouble() }.toFloat() - 6f
+        var lx = px + GX + GW / 2f - total / 2f
         for (s in d.series) {
-            UiRecorder.fillRect(lx, (py + GY - 10).toFloat(), 6f, 6f, s.color)
-            UiRecorder.text(s.label, lx + 8, (py + GY - 12).toFloat(), 7.5f, s.color)
+            UiRecorder.fillRect(lx, (py + GY + GH + 5).toFloat(), 6f, 6f, s.color)
+            UiRecorder.text(s.label, lx + 8, (py + GY + GH + 4).toFloat(), 7.5f, s.color)
             lx += 14 + UiRecorder.textWidth(s.label, 7.5f)
         }
     }
@@ -354,6 +365,15 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         UiRecorder.text(label, x + w / 2f - UiRecorder.textWidth(label, 7f) / 2f, y + 4f, 7f, color)
     }
 
+    private fun pill(label: String, x: Int, w: Int, mx: Int, my: Int, selected: Boolean) {
+        val y = pillY()
+        val hov = inside(mx, my, x, y, w, 13)
+        val fill = when { selected -> ScreenTheme.ACCENT; hov -> ScreenTheme.surface(34); else -> ScreenTheme.surface(22) }
+        ScreenTheme.nRoundedRectRing(x, y, w, 13, 6, 1, fill, if (selected) ScreenTheme.ACCENT else ScreenTheme.surface(44))
+        val color = when { selected -> ScreenTheme.onAccent(); hov -> ScreenTheme.TEXT_COLOR; else -> ScreenTheme.SUBTEXT_COLOR }
+        UiRecorder.text(label, x + w / 2f - UiRecorder.textWidth(label, 6.5f) / 2f, y + 3.5f, 6.5f, color)
+    }
+
     private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx < x + w && my >= y && my < y + h
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
@@ -376,11 +396,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
                 }
             }
         }
-        if (!listingsView() && inside(mx, my, rangeX(), barY(), 76, TAB_H)) {
-            range = (range + 1) % ranges().size
-            load()
-            return true
-        }
+        pillAt(mx, my).takeIf { it >= 0 }?.let { range = it; scroll = 0; load(); return true }
         if (inside(mx, my, openX(), barY(), openW(), TAB_H)) {
             val q = RecipeViewer.clean(name()).trim()
             Minecraft.getInstance().connection?.sendCommand(if (bazaar) "bz $q" else "ahs $q")
