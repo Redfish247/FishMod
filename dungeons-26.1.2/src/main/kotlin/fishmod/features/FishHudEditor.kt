@@ -234,13 +234,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
         )
 
-        // Same names and order as the FishModScreen columns (categories without HUDs are listed too, greyed out)
+        // Same names and order as the FishModScreen columns; categories without HUDs are hidden
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
-            "General" to emptyList(),
-            "Chat" to emptyList(),
-            "Inventory & Storage" to emptyList(),
-            "Items & Tooltips" to emptyList(),
-            "Pets" to emptyList(),
             "HUD & Overlays" to listOf(
                 "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
                 "Spotify", "Stopwatch", "Achievement Popup", "Arrow HUD",
@@ -250,9 +245,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Run Splits", "Est. Total (follows Splits)", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
                 "Spirit Bear", "Mask & Phoenix Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
             ),
-            "Dungeon Trackers" to emptyList(),
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
-            "Dungeon Solvers" to emptyList(),
             "Floor 7" to listOf(
                 "Boss Tick Clock", "Wither Dragon Timer", "Crystal Respawn", "Crystal Not Placed",
                 "Storm Kill Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crush Banner", "Pillar Blast Timer", "Terminals Open In",
@@ -273,7 +266,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
                 "Log Book", "Sensitivity", "Mooshroom Cow Perk", "Farming Speed", "Mantid Bonus", "Wheat", "Yaw / Pitch",
             ),
-            "Visitors & Pests" to emptyList(),
             "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
             "Rift" to listOf("Rift Guide", "Rift Timer", "Vermin Tracker", "Agaricus Cap Timer", "Bacte Helper", "Berberis Highlighter", "Blood Effigy Spots", "Burger Warning",
                 "Caducous Stem Highlighter", "Colosseum Kill Zone Warning", "Crux Helper", "Fleespook Tracker", "Half-Eaten Cave Hay Warning", "Leech Supreme Helper",
@@ -281,9 +273,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Events" to listOf("SkyBlock Date", "Gift Tracker"),
             "Alerts & Reminders" to AlertTitles.NAMES,
             "Extras" to listOf("Item Pickup Log", "Skill Progress", "Todos"),
-            "Achievements" to emptyList(),
-            "Visuals & Rendering" to emptyList(),
-            "Cosmetics" to emptyList(),
         )
 
         const val SCOREBOARD_W = 118
@@ -458,7 +447,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val grouped = HashSet<HudEntry>()
         fun addGroup(g: String, items: List<HudEntry>) {
             val hit = if (q.isEmpty() || g.lowercase().contains(q)) items else items.filter { it.name().lowercase().contains(q) }
-            if (hit.isEmpty() && (q.isNotEmpty() || items.isNotEmpty())) return
+            if (hit.isEmpty()) return
             body += Row.Header(g, hit)
             // groups start collapsed; searching opens every match
             if (q.isNotEmpty() || g in expandedGroups) hit.forEach { body += Row.Hud(it) }
