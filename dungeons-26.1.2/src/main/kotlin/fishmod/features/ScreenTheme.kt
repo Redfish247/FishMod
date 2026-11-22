@@ -35,6 +35,13 @@ object ScreenTheme {
     val SUBTEXT_COLOR: Int get() = if (lightBg()) 0xFF5A5A5A.toInt() else 0xFF949494.toInt()
     // white-ish overlay on dark, black-ish on light
     fun ink(alpha: Int): Int = (alpha shl 24) or (if (lightBg()) 0x000000 else 0xFFFFFF)
+    // Accent used as TEXT: falls back to the normal text colour when the accent is too close to the window background to read
+    fun accentFg(): Int {
+        val a = ACCENT or 0xFF000000.toInt()
+        val l1 = luma(a); val l2 = luma(windowBg() or 0xFF000000.toInt())
+        val ratio = (Math.max(l1, l2) + 0.05f) / (Math.min(l1, l2) + 0.05f)
+        return if (ratio >= 3f) a else TEXT_COLOR
+    }
     // Opaque panel/field fill: the window background lifted (dark) or dimmed (light) by `level`, so text colours always have the right contrast
     fun surface(level: Int): Int = over(ink(level), windowBg() or 0xFF000000.toInt())
     val DANGER = 0xFFE05A5A.toInt()
