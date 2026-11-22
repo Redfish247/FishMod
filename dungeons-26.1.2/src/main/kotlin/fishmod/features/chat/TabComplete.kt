@@ -5,6 +5,9 @@ import fishmod.features.extras.*
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import fishmod.features.extras.ExtrasSettings
+import fishmod.features.extras.PartyCommandHint
+import fishmod.features.party.PartyCommandHandler
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.NeuRepo
 import fishmod.utils.networth.ItemsDb
 import fishmod.features.dungeon.trackers.CroesusPrices
@@ -21,6 +24,47 @@ object TabComplete {
     private const val MAX = 60
     private val BZ_CMDS = setOf("bz", "bazaar")
     private val AHS_CMDS = setOf("ahs", "ahsearch")
+
+    private val FLOORS = listOf("e") + (1..7).map { "f$it" } + (1..7).map { "m$it" }
+    private val WS = Regex("\\s+")
+
+    // .cmd / !cmd: Tab fills the command name, then the argument keys shown by PartyCommandHint
+    @JvmStatic
+    fun partySuggest(text: String): Suggestions? {
+        if (!FishSettings.partyCommandsEnabled || !FishSettings.pcArgHints) return null
+        val m = PartyCommandHint.PREFIX.find(text) ?: return null
+        val base = m.range.last + 1
+        val rest = text.substring(base)
+        val sp = rest.indexOf(' ')
+        val start: Int
+        val pool: List<String>
+        if (sp < 0) {
+            start = base
+            pool = PartyCommandHandler.USAGE.keys.toList()
+        } else {
+            val cmd = rest.substring(0, sp)
+            val usage = PartyCommandHandler.USAGE[cmd] ?: return null
+            start = text.lastIndexOf(' ') + 1
+            val done = text.substring(base + sp + 1, start).trim().split(WS).filter { it.isNotEmpty() }
+            val slot = if (done.isEmpty()) 0 else done.size - 1 + PartyCommandHandler.hintSlotsForFirstArg(cmd, done[0])
+            if (slot >= usage.size) return null
+            // An optional leading player can be skipped, so offer the next argument too
+            pool = argOptions(usage[slot]) + if (usage[slot].contains("empty for yourself") && slot + 1 < usage.size) argOptions(usage[slot + 1]) else emptyList()
+        }
+        val frag = text.substring(start).lowercase(Locale.ROOT)
+        val hits = pool.asSequence().filter { it.lowercase(Locale.ROOT).startsWith(frag) }.distinct().sorted().take(MAX).toList()
+        if (hits.isEmpty()) return null
+        val b = SuggestionsBuilder(text, start)
+        hits.forEach { b.suggest(it) }
+        return b.build()
+    }
+
+    private fun argOptions(key: String): List<String> = when {
+        key.startsWith("<player") -> players()
+        key.startsWith("<floor") -> FLOORS
+        key.contains('|') -> key.removeSurrounding("<", ">").split('|')
+        else -> emptyList()
+    }
 
     @JvmStatic
     fun suggest(text: String): Suggestions? {
