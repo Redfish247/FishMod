@@ -57,13 +57,27 @@ public class FishDrawContextMixin {
         float ox = fishmod.features.hud.ScrollableTooltip.offsetX;
         float oy = fishmod.features.hud.ScrollableTooltip.offsetY;
         boolean on = fishmod.features.hud.ScrollableTooltip.isEnabled() && (scale != 1f || ox != 0f || oy != 0f);
-        shifted.set(on);
-        if (!on) return;
+        // taller than the screen: shrink to fit, keeping the top 4px from the edge
+        float est = lines.size() * 10f + 10f;
+        int shh = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        boolean fit = est > shh - 8;
+        shifted.set(on || fit);
+        if (!on && !fit) return;
         pose.pushMatrix();
-        pose.translate(xo, yo);
-        pose.scale(scale);
-        pose.translate(ox, oy);
-        pose.translate(-xo, -yo);
+        if (fit) {
+            float s = (shh - 8) / est;
+            int topY = DefaultTooltipPositioner.INSTANCE.positionTooltip(sww, shh, xo, yo, 100, (int) est).y();
+            pose.translate(xo, 4f);
+            pose.scale(s);
+            pose.translate(-xo, -topY);
+        }
+        if (on) {
+            pose.translate(xo, yo);
+            pose.scale(scale);
+            pose.translate(ox, oy);
+            pose.translate(-xo, -yo);
+        }
     }
 
     @Inject(method = "tooltip", at = @At("RETURN"))
