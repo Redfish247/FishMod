@@ -34,36 +34,39 @@ class ReportPage(private val font: Font) {
         return f
     }
 
-    fun render(x: Int, y0: Int, w: Int, mx: Int, my: Int) {
+    fun render(x: Int, y0: Int, w: Int, h: Int, mx: Int, my: Int) {
         rects.clear()
-        val inner = Math.min(w, 460)
+        val inner = w
+        val bottom = y0 + h - 6
         var y = y0
         UiRecorder.text("Tell RedFish what broke or what you'd like added.", x.toFloat(), y.toFloat(), 8.4f, ScreenTheme.SUBTEXT_COLOR)
         y += 18
-        val half = (inner - 6) / 2
-        pill("bug", "Bug", x, y, half, 20, bug, mx, my)
-        pill("feat", "Feature Request", x + half + 6, y, half, 20, !bug, mx, my)
-        y += 30
-        UiRecorder.text("Title", x.toFloat(), y.toFloat(), 7.6f, ScreenTheme.SUBTEXT_COLOR)
-        y += 11
-        title = field(title, 80, x, y, inner).also { box("title", it, x, y, inner, focused == 0, if (bug) "What broke?" else "What should it do?") }
-        y += FIELD_H + 9
-        UiRecorder.text("Details", x.toFloat(), y.toFloat(), 7.6f, ScreenTheme.SUBTEXT_COLOR)
-        y += 11
-        details = field(details, 500, x, y, inner).also { box("details", it, x, y, inner, focused == 1, if (bug) "Where, when, what you expected" else "Any details") }
-        y += FIELD_H + 10
-        UiRecorder.text(if (bug) "Sends mod/MC version, area and recent FishMod errors. No name or IP." else "Sends mod/MC version and area. No name or IP.", x.toFloat(), y.toFloat(), 7f, ScreenTheme.SUBTEXT_COLOR)
-        y += 16
-        if (status.isNotEmpty()) UiRecorder.text(status, x.toFloat(), (y + 6).toFloat(), 7.6f, if (statusOk) OK else ScreenTheme.DANGER)
-        pill("send", if (sending) "Sending…" else "Send", x + inner - 76, y, 76, 20, true, mx, my)
+        val half = (inner - 8) / 2
+        pill("bug", "Bug", x, y, half, 26, bug, mx, my)
+        pill("feat", "Feature Request", x + half + 8, y, half, 26, !bug, mx, my)
+        y += 38
+        UiRecorder.text("Title", x.toFloat(), y.toFloat(), 8f, ScreenTheme.TEXT_COLOR)
+        y += 13
+        title = field(title, 80, x, y, inner).also { box("title", it, x, y, inner, FIELD_H + 6, focused == 0, if (bug) "What broke?" else "What should it do?") }
+        y += FIELD_H + 6 + 14
+        UiRecorder.text("Details", x.toFloat(), y.toFloat(), 8f, ScreenTheme.TEXT_COLOR)
+        y += 13
+        // the details box takes the rest of the page above the footer row
+        val dh = Math.max(FIELD_H + 6, bottom - 30 - y)
+        details = field(details, 500, x, y, inner).also { box("details", it, x, y, inner, dh, focused == 1, if (bug) "Where, when, what you expected" else "Any details") }
+        y += dh + 10
+        UiRecorder.text(if (bug) "Sends mod/MC version, area and recent FishMod errors. No name or IP." else "Sends mod/MC version and area. No name or IP.", x.toFloat(), (y + 2).toFloat(), 7.2f, ScreenTheme.SUBTEXT_COLOR)
+        if (status.isNotEmpty()) UiRecorder.text(status, x.toFloat(), (y + 13).toFloat(), 7.8f, if (statusOk) OK else ScreenTheme.DANGER)
+        pill("send", if (sending) "Sending…" else "Send", x + inner - 96, y - 2, 96, 24, true, mx, my)
     }
 
-    private fun box(id: String, f: EditBox, x: Int, y: Int, w: Int, active: Boolean, hint: String) {
+    private fun box(id: String, f: EditBox, x: Int, y: Int, w: Int, bh: Int, active: Boolean, hint: String) {
         f.setFocused(active)
-        ScreenTheme.nRoundedRectRing(x, y, w, FIELD_H, 6, 1, ScreenTheme.ink(0x0C), if (active) ScreenTheme.ACCENT else ScreenTheme.ink(0x33))
-        if (f.value.isEmpty() && !active) UiRecorder.text(hint, (x + 4).toFloat(), y + (FIELD_H - 8f) / 2f, 8f, ScreenTheme.SUBTEXT_COLOR)
-        else FishModScreen.nvgTextFieldContent(f, x, y, w, FIELD_H, 8f)
-        rects[id] = intArrayOf(x, y, w, FIELD_H)
+        ScreenTheme.nRoundedRectRing(x, y, w, bh, 7, 1, ScreenTheme.ink(0x0C), if (active) ScreenTheme.ACCENT else ScreenTheme.ink(0x33))
+        val cy = if (bh > FIELD_H + 6) y + 3 else y + (bh - FIELD_H) / 2
+        if (f.value.isEmpty() && !active) UiRecorder.text(hint, (x + 6).toFloat(), cy + (FIELD_H - 8f) / 2f, 8f, ScreenTheme.SUBTEXT_COLOR)
+        else FishModScreen.nvgTextFieldContent(f, x + 2, cy, w - 2, FIELD_H, 8f)
+        rects[id] = intArrayOf(x, y, w, bh)
     }
 
     private fun pill(id: String, label: String, x: Int, y: Int, w: Int, h: Int, filled: Boolean, mx: Int, my: Int) {
