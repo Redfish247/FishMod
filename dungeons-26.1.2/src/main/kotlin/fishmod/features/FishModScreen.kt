@@ -2711,18 +2711,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         dragCursor(vmx, vmy)?.let { ctx.requestCursor(it) }
     }
 
-    // move cursor over draggable sidebar rows / column headers (and while dragging them)
+    // move cursor over draggable sidebar rows (and while dragging one)
     private fun dragCursor(mx: Int, my: Int): CursorType? {
-        if (closing || anyColumnAnimating()) return null
-        if (!stackIdle()) return CursorTypes.RESIZE_NS
-        if (dragColumn != null) return CursorTypes.RESIZE_EW
-        val r = stackHitAt(mx, my)?.first
-        if (r != null && !r.isAdd()) return CursorTypes.RESIZE_NS
-        if (searchText.isEmpty() && my >= cyTop() - HEADER_H && my < cyTop()) {
-            val colW = columnWidth()
-            if (visibleColumns().indices.any { mx in columnX0(it)..(columnX0(it) + colW) }) return CursorTypes.RESIZE_EW
-        }
-        return null
+        if (closing) return null
+        if (navDragging) return CursorTypes.RESIZE_NS
+        if (mx !in left()..stackX0() + STACK_W || my !in navTop()..navBot()) return null
+        val row = navRows().getOrNull((my - navTop() - 4 + navScroll) / NAV_ROW) ?: return null
+        return if (row.second != null) CursorTypes.RESIZE_NS else null
     }
 
     // Window chrome, laid out like docs/ui-mockups/fishmod-explorer.html:
