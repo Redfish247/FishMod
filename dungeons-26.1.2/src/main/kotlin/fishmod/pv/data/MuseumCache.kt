@@ -39,6 +39,9 @@ object MuseumCache {
     @JvmStatic
     fun put(uuid: UUID?, profileId: String?, museumMember: JsonObject?, itemCount: Int) {
         val k = key(uuid, profileId)
+        if (CACHE.size >= 64 && !CACHE.containsKey(k)) {
+            CACHE.entries.minByOrNull { it.value.fetchedAtMs }?.key?.let { CACHE.remove(it); NEXT_REFRESH_AT_MS.remove(it) }
+        }
         CACHE[k] = Entry(museumMember, System.currentTimeMillis(), itemCount)
         NEXT_REFRESH_AT_MS[k] = System.currentTimeMillis() + REFRESH_COOLDOWN_MS
     }
