@@ -48,6 +48,9 @@ object FishSettings {
     @ConfigValue @JvmField var fmBgPreset: String = "Graphite"
     @ConfigValue @JvmField var fmBgCustomColor: Int = 0xFF14181D.toInt()
     @ConfigValue @JvmField var fmBgAlpha: Int = 100
+    @ConfigValue @JvmField var fmSwitchColorMode: String = "Accent"
+    @ConfigValue @JvmField var fmSwitchOnColor: Int = 0xFF3DDC84.toInt()
+    @ConfigValue @JvmField var fmSwitchOffColor: Int = 0xFF6B6B6B.toInt()
     @ConfigValue @JvmField var fmDropDurationMs: Int = 450
     @ConfigValue @JvmField var fmStaggerDelayMs: Int = 60
     @ConfigValue @JvmField var fmExitStyle: String = "Floor Fall"
