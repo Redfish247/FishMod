@@ -2722,7 +2722,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     // resize cursor on the window edges/corners
     private fun dragCursor(mx: Int, my: Int): CursorType? {
         if (closing) return null
-        if (sbDrag || (resizeMask == 0 && !navDragging && winDrag == null && sbDividerHit(mx, my))) return CursorTypes.RESIZE_EW
+        if (sbDrag || detDrag || (resizeMask == 0 && !navDragging && winDrag == null && (sbDividerHit(mx, my) || detDividerHit(mx, my)))) return CursorTypes.RESIZE_EW
         val em = if (resizeMask != 0) resizeMask else if (navDragging || winDrag != null) 0 else edgeMask(mx, my)
         if (em != 0) return when {
             em and 3 != 0 && em and 12 != 0 -> CursorTypes.RESIZE_ALL
@@ -3019,7 +3019,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (searchText.isNotEmpty()) visibleColumns().flatMap { visibleFeatures(it) }
         else if (allMode) columns.flatMap { visibleFeatures(it) }
         else visibleColumns().firstOrNull()?.let { visibleFeatures(it) } ?: emptyList()
-    private fun detW(): Int = Mth.clamp((winW() * 0.22f).toInt(), DET_W, 215)
+    // settings pane width: auto by window size until the user drags its left edge (then saved in fmDetailW)
+    private fun detW(): Int = if (FishSettings.fmDetailW > 0) Mth.clamp(FishSettings.fmDetailW, DET_W_MIN, Math.max(DET_W_MIN, (winW() * 0.6f).toInt())) else Mth.clamp((winW() * 0.22f).toInt(), DET_W, 215)
+    private var detDrag = false
+    private fun detDividerHit(mx: Int, my: Int): Boolean { if (selected == null) return false; val x = cx1() - detW() - COLUMN_GUTTER / 2; return mx in x - 4..x + 4 && my in cyTop() - HEADER_H..cyBot() }
     private fun gx1(): Int = if (selected != null) cx1() - detW() - COLUMN_GUTTER else cx1()
     private fun cardFill(): Int = (Math.round(FishSettings.fmCardAlpha.coerceIn(0, 100) * 2.55f) shl 24) or (FishSettings.fmCardColor and 0xFFFFFF)
     private fun cardH(): Int = if (listView) 26 else CARD_TALL
@@ -3279,6 +3282,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val headerTop = cyTop() - HEADER_H
 
         if (btn == 0 && sbDividerHit(mx, my)) { sbDrag = true; return true }
+        if (btn == 0 && detDividerHit(mx, my)) { detDrag = true; return true }
         if (navClick(mx, my, btn)) return true
 
         if (page != null) {
@@ -3299,6 +3303,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         if (resizeMask != 0) { applyResize(vx(click.x()), vx(click.y())); return true }
+        if (detDrag) { FishSettings.fmDetailW = (cx1() - vx(click.x()) - COLUMN_GUTTER / 2).coerceIn(DET_W_MIN, Math.max(DET_W_MIN, (winW() * 0.6f).toInt())); return true }
         if (sbDrag) { FishSettings.fmSidebarW = (vx(click.x()) - stackX0() - 6).coerceIn(STACK_W_MIN, STACK_W_MAX); return true }
         if (navPress != null) {
             val my = vx(click.y())
@@ -3323,6 +3328,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun releaseInner(click: MouseButtonEvent): Boolean {
         if (resizeMask != 0) { resizeMask = 0; resizeFrom = null; return true }
         if (sbDrag) { sbDrag = false; return true }
+        if (detDrag) { detDrag = false; return true }
         if (winDrag != null) { winDrag = null; return true }
         navPress?.let { c ->
             val my = vx(click.y())
@@ -4463,6 +4469,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val CARD_TALL = 46
         private const val CARD_GAP = 4
         private const val DET_W = 196
+        private const val DET_W_MIN = 150
         private val COLUMN_SUBTITLES = mapOf(
             "General" to "Core mod options",
             "Dungeons" to "Run helpers & alerts",
