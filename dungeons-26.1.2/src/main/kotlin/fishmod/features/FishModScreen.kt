@@ -2988,8 +2988,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val col = visibleColumns().firstOrNull()
         val ht = cyTop() - HEADER_H
         val title = if (searchText.isNotEmpty()) "Search  ·  ${items.size} results" else if (allMode) "All features" else col?.name ?: "Click a tab on the left to open a column"
-        sst(ctx, this.font, ellipsize(title, gx1() - cx0() - 80, 1.2f), cx0(), ht + 6, TEXT_COLOR, 1.2f)
-        if (col != null || searchText.isNotEmpty() || allMode) sst(ctx, this.font, "${items.size} features", cx0() + Math.min(sw(this.font, title, 1.2f), gx1() - cx0() - 80) + 8, ht + 7, SUBTEXT_COLOR, 1f)
+        // no subtitle line under All features / search, so the title grows to fill that gap
+        val hasSub = searchText.isEmpty() && !allMode && col?.sub() != null
+        val ts = if (hasSub) 1.2f else 1.5f; val ty = if (hasSub) ht + 6 else ht + 9
+        sst(ctx, this.font, ellipsize(title, gx1() - cx0() - 80, ts), cx0(), ty, TEXT_COLOR, ts)
+        if (col != null || searchText.isNotEmpty() || allMode) sst(ctx, this.font, "${items.size} features", cx0() + Math.min(sw(this.font, title, ts), gx1() - cx0() - 80) + 8, ty + (if (hasSub) 1 else 3), SUBTEXT_COLOR, 1f)
         if (searchText.isEmpty() && !allMode) col?.sub()?.let { sst(ctx, this.font, ellipsize(it, gx1() - cx0(), 0.8f), cx0(), ht + 22, SUBTEXT_COLOR, 0.8f) }
         gridScroll = Mth.clamp(gridScroll, 0, gridMax(items.size))
         val cw = cardW()
