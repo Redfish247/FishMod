@@ -24,7 +24,6 @@ import net.minecraft.world.phys.Vec3
 import kotlin.math.cos
 import kotlin.math.sin
 
-// Ability announcer, ichor pool circle, rend damage alert, backbone timer and stun waypoints; lines and numbers follow IQ
 object KuudraExtras {
 
     enum class Pod(val label: String, val pos: Vec3) {
@@ -58,7 +57,6 @@ object KuudraExtras {
     private var boneCooldown = 0
     private var rendShow = 0
 
-    // Stun state: set by the Human Cannonball purchase, cleared when a pod dies
     private val ENTER = Vec3(-161.0, 49.0, -186.0)
     private var stunPhase = false
     private var eaten = false
@@ -92,18 +90,21 @@ object KuudraExtras {
         })
         MiningHuds.reg("Kuudra Backbone", "kuudra_backbone", 100, 10,
             { S.kuudraBackboneX }, { S.kuudraBackboneX = it }, { S.kuudraBackboneY }, { S.kuudraBackboneY = it },
-            { S.kuudraBackboneScale }, { S.kuudraBackboneScale = it }, { S.kuudraBossMaster && S.kuudraBackbone && Kuudra.inKuudra() && (boneLeft > 0 || rendShow > 0) }, { S.kuudraBossMaster && S.kuudraBackbone }) {
-            if (rendShow > 0) listOf("§a§lREND NOW!")
-            else {
-                val done = ((boneStart - boneLeft) * 20 / maxOf(1, boneStart)).coerceIn(0, 20)
-                listOf("§6Backbone §c" + "|".repeat(done) + "§7" + "|".repeat(20 - done))
-            }
+            { S.kuudraBackboneScale }, { S.kuudraBackboneScale = it }, { S.kuudraBossMaster && S.kuudraBackbone && Kuudra.inKuudra() && (boneLeft > 0 || rendShow > 0) }, { S.kuudraBossMaster && S.kuudraBackbone },
+            example = { backboneLines(false, 100, 50) }) {
+            backboneLines(rendShow > 0, boneStart, boneLeft)
         }
         RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.3", "kuudra extras fill render failed") { fills(ps, vc) }
             // screenLine emits quads: draw on the QUADS buffer, DEBUG_LINES turns them into corner ticks
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.4", "kuudra extras line render failed") { lines(ps, vc) }
         }
+    }
+
+    private fun backboneLines(rend: Boolean, start: Int, left: Int): List<String> {
+        if (rend) return listOf("§a§lREND NOW!")
+        val done = ((start - left) * 20 / maxOf(1, start)).coerceIn(0, 20)
+        return listOf("§6Backbone §c" + "|".repeat(done) + "§7" + "|".repeat(20 - done))
     }
 
     private fun reset() {
@@ -115,7 +116,7 @@ object KuudraExtras {
         if (!Kuudra.inKuudra()) return
         if (msg.contains("Sending to server") || (msg.contains("Starting in ") && msg.contains(" seconds"))) pools.clear()
         if (S.kuudraBossMaster && S.kuudraAnnounce) for (sp in SPELLS) if (sp.on() && msg == sp.line) {
-            val p = Minecraft.getInstance().player?.blockPosition() ?: return
+            val p = Minecraft.getInstance().player?.blockPosition() ?: break
             val t = if (Kuudra.phase == 4 && Kuudra.phaseStart[3] > 0) " in %.2fs".format((Kuudra.now() - Kuudra.phaseStart[3]) / 1000.0) else ""
             if (PartyTools.isInParty()) Kuudra.party("${sp.name} Casted at ${p.x}, ${p.y}, ${p.z}$t!")
             break
@@ -159,7 +160,6 @@ object KuudraExtras {
 
     private fun podBox(p: Vec3) = AABB(p.x - 0.5, p.y, p.z - 0.5, p.x + 0.5, p.y + 1.0, p.z + 0.5)
 
-    // Waypoint stays on the pod while eaten, shifts with you during the stun flight
     private fun stunPos(): Vec3? {
         if (!(S.kuudraBossMaster && S.kuudraStunWaypoints)) return null
         val ph = Kuudra.phase

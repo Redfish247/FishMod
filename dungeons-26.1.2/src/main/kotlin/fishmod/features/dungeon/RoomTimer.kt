@@ -7,7 +7,6 @@ import fishmod.features.dungeon.map.DungeonState
 import fishmod.features.dungeon.map.Room
 import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.debug.FishDebug
 import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.network.chat.Component
@@ -107,22 +106,15 @@ object RoomTimer {
                 val t = object : TypeToken<HashMap<String, Pb>>() {}.type
                 GSON.fromJson<HashMap<String, Pb>>(Files.readString(FILE), t)?.let { pbs.putAll(it) }
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
             FishDiag.fail("RoomTimer.3", "loading room_timers.json failed", e)
-            FishDebug.LOGGER.warn("[RoomTimer] load failed: {}", e.toString())
+        } catch (e: RuntimeException) {
+            fishmod.utils.SafeFiles.quarantine(FILE, e)
         }
     }
 
     private fun save() {
         val json = GSON.toJson(pbs)
-        fishmod.utils.IoExecutor.execute {
-            try {
-                Files.createDirectories(FILE.parent)
-                Files.writeString(FILE, json)
-            } catch (e: Exception) {
-                FishDiag.fail("RoomTimer.4", "saving room_timers.json failed", e)
-                FishDebug.LOGGER.warn("[RoomTimer] save failed: {}", e.toString())
-            }
-        }
+        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(FILE, json) }
     }
 }

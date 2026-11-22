@@ -36,7 +36,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Bingo events subpage. */
 class BingoPage {
 	// Goal tooltips per goals list; done-state is fixed for a given snapshot.
 	private var tipGoals: List<EventsSnapshot.BingoGoal>? = null

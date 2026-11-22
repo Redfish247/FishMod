@@ -14,7 +14,6 @@ import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.Style
 import java.util.Optional
 
-// Sphinx quiz: marks the right answer and answers it on any left click while chat is open
 object SphinxSolver {
 
     private val QUESTIONS: Map<String, String> = mapOf(
@@ -69,7 +68,6 @@ object SphinxSolver {
         solved = null
     }
 
-    // true hides the packet line (only while buffering answer lines)
     private fun onMessage(msg: Component): Boolean {
         if (!enabled()) return false
         val plain = ChatFormatting.stripFormatting(msg.string)?.trim() ?: return false
@@ -137,7 +135,6 @@ object SphinxSolver {
     private fun findHover(c: Component): HoverEvent? =
         c.visit({ style: Style, _: String -> Optional.ofNullable(style.hoverEvent) }, Style.EMPTY).orElse(null)
 
-    // One user click = one answer
     private fun answer(): Boolean {
         val s = solved ?: return false
         if (!enabled() || System.currentTimeMillis() - s.at > TIMEOUT_MS) { solved = null; return false }

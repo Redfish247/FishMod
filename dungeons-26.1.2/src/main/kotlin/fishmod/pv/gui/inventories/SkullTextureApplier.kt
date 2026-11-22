@@ -20,7 +20,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.ResolvableProfile
 
-/** Applies NEU / Hypixel skull Value (+ optional Signature) onto player heads. */
 object SkullTextureApplier {
 	private val SKULL_VALUE = Regex("Value\\s*:\\s*\"([^\"]+)\"", RegexOption.IGNORE_CASE)
 	private val SKULL_SIGNATURE = Regex("Signature\\s*:\\s*\"([^\"]+)\"", RegexOption.IGNORE_CASE)
@@ -46,8 +45,6 @@ object SkullTextureApplier {
 		if (padded.isNullOrEmpty()) {
 			return
 		}
-		// Prefer unsigned textures first: NEU/Hypixel signatures are often rejected by the client
-		// skin pipeline, which leaves a bare Steve head even when PROFILE is set incorrectly.
 		if (tryApplyProfile(stack, padded, null)) {
 			return
 		}
@@ -68,7 +65,6 @@ object SkullTextureApplier {
 	}
 
 	private fun tryApplyProfile(stack: ItemStack, paddedValue: String, signature: String?): Boolean {
-		// Resolved profile first: an unresolved CODEC profile (fake id) makes the client look it up and lose the texture.
 		try {
 			stack.set(DataComponents.PROFILE, resolvedProfile(paddedValue, signature))
 			if (isTexturedPlayerHead(stack)) {
@@ -105,7 +101,6 @@ object SkullTextureApplier {
 		}
 	}
 
-	/** True when a player head has a non-blank textures property (not a Steve placeholder). */
 	@JvmStatic
 	fun isTexturedPlayerHead(stack: ItemStack?): Boolean {
 		if (stack == null || stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) {

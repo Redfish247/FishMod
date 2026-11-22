@@ -24,7 +24,6 @@ import fishmod.pv.gui.garden.GardenUi.Companion.SLOT_GAP
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Garden greenhouse subpage. */
 class GreenhousePage {
 	private var scroll = 0
 	private var maxScroll = 0

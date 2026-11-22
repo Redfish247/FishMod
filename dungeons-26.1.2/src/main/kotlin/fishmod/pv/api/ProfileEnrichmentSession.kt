@@ -48,10 +48,6 @@ import java.util.concurrent.Executor
 import java.util.function.Consumer
 import net.minecraft.world.item.ItemStack
 
-/**
- * After Home core is shown, fills remaining tabs one job at a time.
- * Clicking a tab moves that job to the front of the pending queue.
- */
 internal class ProfileEnrichmentSession(
     core: ProfileFetcher.LoadedProfile,
     private val cleanedNameKey: String?,
@@ -100,7 +96,6 @@ internal class ProfileEnrichmentSession(
     @Volatile
     private var cancelled = false
 
-    /** Guarded by [lock]; false once the loop has drained the queue. */
     private var running = true
 
     init {
@@ -119,14 +114,12 @@ internal class ProfileEnrichmentSession(
         val job = jobForTab(tab) ?: return
         synchronized(lock) {
             if (done.contains(job) || started.contains(job)) return
-            // Dependencies go in front of the requested job, so add the job first.
             pending.remove(job)
             pending.addFirst(job)
             if (job == Job.MINING && !done.contains(Job.COLLECTIONS) && !started.contains(Job.COLLECTIONS)) {
                 pending.remove(Job.COLLECTIONS)
                 pending.addFirst(Job.COLLECTIONS)
             }
-            // Inventory decode is required before several tabs; pull it forward too.
             if (job != Job.INVENTORY && !done.contains(Job.INVENTORY) && !started.contains(Job.INVENTORY)) {
                 pending.remove(Job.INVENTORY)
                 pending.addFirst(Job.INVENTORY)
@@ -137,7 +130,6 @@ internal class ProfileEnrichmentSession(
     fun matches(uuid: UUID?, profileId: String?): Boolean =
         this.uuid != null && this.uuid == uuid && this.profileId != null && this.profileId == profileId
 
-    /** Re-runs networth after museum data arrives. False when the loop has already finished. */
     fun requeueNetworth(): Boolean {
         synchronized(lock) {
             if (!running || cancelled) return false
@@ -149,7 +141,6 @@ internal class ProfileEnrichmentSession(
         }
     }
 
-    /** Queues a job that became runnable later, restarting the loop if it already drained. */
     private fun enqueueLate(job: Job) {
         val restart: Boolean
         synchronized(lock) {
@@ -185,15 +176,11 @@ internal class ProfileEnrichmentSession(
                         (System.nanoTime() - sessionStartedNanos) / 1_000_000L
                     )
                 } catch (exception: RuntimeException) {
-                    // Soft or hard: keep enriching other tabs. Core is already on screen;
-                    // aborting the session would strand the rest of the viewer empty.
                     ProfileViewer.LOGGER.warn("Enrichment job {} failed for {}", next, name, exception)
                 }
                 synchronized(lock) { done.add(next) }
             }
         } finally {
-            // A drained loop already cleared running under the lock; clearing it again here
-            // could hide a loop that enqueueLate restarted in between.
             if (!drained) {
                 synchronized(lock) { running = false }
             }
@@ -229,7 +216,6 @@ internal class ProfileEnrichmentSession(
         onUpdate?.accept(next)
     }
 
-    // Logs and falls back to the empty value when a soft data failure hits one tab.
     private inline fun <T> softParse(what: String, empty: () -> T, block: () -> T): T = try {
         block()
     } catch (exception: RuntimeException) {
@@ -405,7 +391,6 @@ internal class ProfileEnrichmentSession(
         }
     }
 
-    // Museum is only ever fetched by the Museum tab; /pv and networth just reuse what it cached.
     private fun cachedMuseumMember(): JsonObject? {
         val entry = MuseumCache.get(uuid, profileId)
         return if (entry != null) entry.museumMember else current.museumMember
@@ -417,7 +402,6 @@ internal class ProfileEnrichmentSession(
         }
     }
 
-    /** Join a network future without aborting enrichment on failure. */
     private fun <T : Any> joinOptional(future: CompletableFuture<Optional<T>>, label: String): Optional<T> = try {
         future.join() ?: Optional.empty<T>()
     } catch (exception: RuntimeException) {
@@ -463,7 +447,6 @@ internal class ProfileEnrichmentSession(
             PvTab.EVENTS -> Job.EVENTS
         }
 
-        /** Null fields keep the previous `base` value. */
         private fun merge(
             base: ProfileFetcher.LoadedProfile,
             dungeons: DungeonSnapshot? = null,

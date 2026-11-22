@@ -18,7 +18,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Shared Collections / Minions UI helpers. */
 object CollectionsUi {
 	const val GAP = 8
 	const val PAD = 6
@@ -26,20 +25,14 @@ object CollectionsUi {
 	const val SLOT_GAP = 3
 	const val ITEM_ICON = 16
 
-	/**
-	 * Collections: pick the largest crisp icon that fits without scrolling.
-	 * Discrete sizes only - fractional scales look muddy.
-	 */
 	@JvmField
 	val COLL_ICON_STEPS = intArrayOf(16, 14, 12, 10)
 	const val MINION_UNLOCKED = 0xFF98E898.toInt()
 	const val MINION_LOCKED = 0xFFFF9999.toInt()
 
-	/** Hypixel SkyBlock heavy marks (not the thin ✓/✗). */
 	const val MINION_TICK = "✔"
 	const val MINION_CROSS = "✖"
 
-	// Only resolved hits are cached so a not-yet-loaded icon can still upgrade later.
 	private val RESOLVED = ConcurrentHashMap<String, String>()
 
 	@JvmStatic

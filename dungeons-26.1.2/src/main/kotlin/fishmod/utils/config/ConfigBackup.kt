@@ -8,7 +8,6 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-// The config library overwrites in place, so a full disk can truncate settings: keep a last-good copy.
 object ConfigBackup {
 
     @JvmStatic

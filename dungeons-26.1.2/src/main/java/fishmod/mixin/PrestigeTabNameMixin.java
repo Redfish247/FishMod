@@ -13,7 +13,8 @@ import org.spongepowered.asm.mixin.injection.At;
 public class PrestigeTabNameMixin {
 
     @ModifyReturnValue(method = "getNameForDisplay", at = @At("RETURN"))
-    private Component fishmod$prestigeTabName(Component original, PlayerInfo playerInfo) {
+    private Component fishmod$prestigeTabName(Component tabName, PlayerInfo playerInfo) {
+        Component original = tabName == null ? null : fishmod.features.dungeon.DungeonExtras.classTab(tabName);
         if (original == null || playerInfo == null || playerInfo.getProfile() == null || playerInfo.getProfile().id() == null) return original;
         boolean prestige = FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsTab;
         boolean badges = FishSettings.badgesEnabled && FishSettings.badgesOnTab;

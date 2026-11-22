@@ -9,10 +9,6 @@ package fishmod.pv.data
 
 import java.util.Locale
 
-/**
- * Coral "Fish Family" catalog (Galatea Red House).
- * Discovered IDs come from {@code foraging.fish_family}; this list fills empty slots.
- */
 object FishFamilyData {
 	private val ALL: List<String> = listOf(
 		"BAT_THE_FISH",

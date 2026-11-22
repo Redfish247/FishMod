@@ -18,7 +18,6 @@ import net.minecraft.world.item.CrossbowItem
 import net.minecraft.world.item.Items
 import fishmod.features.extras.ExtrasSettings as S
 
-// Selected quiver arrow + count, with low / out warnings
 object ArrowHud {
     private val SELECTED = Regex("""^You set your selected arrow type to (.+?)!$""")
     private val COUNT_SUFFIX = Regex("""\s*x?[\d,]+$""")
@@ -37,6 +36,7 @@ object ArrowHud {
     private var tickN = 0
 
     fun init() {
+        registerPreview()
         FishHudEditor.register("Arrow HUD", { S.arrowHudX }, { S.arrowHudX = it }, { S.arrowHudY }, { S.arrowHudY = it }, 110, 10,
             { S.arrowHudScale }, { S.arrowHudScale = it })
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "arrow_hud")) { ctx, _ ->
@@ -47,6 +47,13 @@ object ArrowHud {
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register { if ((S.arrowHud || S.quiverWarning) && ++tickN % 10 == 0) scan() }
+        FishEvents.worldChange.register { reset(); false }
+    }
+
+    // Drop the last quiver state so a new world does not show the old count
+    private fun reset() {
+        type = "Unknown"; count = -1L; rarityRgb = 0; extra = 0L
+        warnedLow = false; warnedOut = false
     }
 
     private fun onChat(s: String) {
@@ -61,7 +68,6 @@ object ArrowHud {
         return it.item is BowItem || it.item is CrossbowItem
     }
 
-    // Bow lore shows the active arrow; real arrow stacks (outside the quiver) are counted too
     private fun scan() {
         val p = Minecraft.getInstance().player ?: return
         if (!SkyblockLocation.inSkyblock()) return
@@ -83,7 +89,6 @@ object ArrowHud {
         if (inv > 0 && count < 0) setCount(inv)
     }
 
-    // Hotbar slot 9 holds the selected arrow stack; its name is the type and stack size the count
     private fun slotNine(p: net.minecraft.world.entity.player.Player): Boolean {
         val st = p.inventory.getItem(8)
         if (st.isEmpty) return false
@@ -93,12 +98,11 @@ object ArrowHud {
             id?.endsWith("ARROW") == true || name.contains("Arrow", true)
         if (!arrowy) return false
         type = name.replace(COUNT_SUFFIX, "").ifEmpty { name }
-        rarityRgb = fishmod.features.ItemRarityHotbar.getRarity(st).color and 0xFFFFFF
+        rarityRgb = fishmod.features.visuals.ItemRarityHotbar.getRarity(st).color and 0xFFFFFF
         setCount(remainingFromLore(st) ?: st.count.toLong())
         return true
     }
 
-    // "Arrows Remaining: 1,234" lore line is the real quiver count; the stack size caps at 64
     private fun remainingFromLore(st: net.minecraft.world.item.ItemStack): Long? {
         st.get(DataComponents.LORE)?.lines()?.forEach { line ->
             val m = REMAINING.find(fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(line.string, "").trim()) ?: return@forEach
@@ -128,20 +132,34 @@ object ArrowHud {
         if (S.arrowHudOnlyBow && !holdingBow()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
+        val sc = S.arrowHudScale.toFloat()
+        ctx.pose().pushMatrix()
+        try {
+            ctx.pose().translate(S.arrowHudX.toFloat(), S.arrowHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, label(type, count, rarityRgb, extra), 0, 0, -1, true)
+        } finally {
+            ctx.pose().popMatrix()
+        }
+    }
+
+    private fun label(type: String, count: Long, rarityRgb: Int, extra: Long): Component {
         val n = when {
             count < 0 -> "§7?"
             count == 0L -> "§c0"
             count <= S.arrowLowThreshold -> "§e" + fishmod.utils.Fmt.grouped(count)
             else -> "§f" + fishmod.utils.Fmt.grouped(count)
         }
-        val sc = S.arrowHudScale.toFloat()
-        ctx.pose().pushMatrix()
-        try {
-            ctx.pose().translate(S.arrowHudX.toFloat(), S.arrowHudY.toFloat())
-            ctx.pose().scale(sc, sc)
-            ctx.text(mc.font, Component.literal(type).withColor(if (S.arrowHudRarity && rarityRgb != 0) rarityRgb else S.arrowHudColor and 0xFFFFFF).append(Component.literal(" §7x$n")).append(Component.literal(if (S.arrowHudExtra && extra > 0) " §8(+${fishmod.utils.Fmt.grouped(extra)} extra)" else "")), 0, 0, -1, true)
-        } finally {
-            ctx.pose().popMatrix()
+        return Component.literal(type).withColor(if (S.arrowHudRarity && rarityRgb != 0) rarityRgb else S.arrowHudColor and 0xFFFFFF).append(Component.literal(" §7x$n")).append(Component.literal(if (S.arrowHudExtra && extra > 0) " §8(+${fishmod.utils.Fmt.grouped(extra)} extra)" else ""))
+    }
+
+    // Example data: a common arrow stack with extra loose arrows
+    private fun registerPreview() {
+        fishmod.features.HudPreview.register("Arrow HUD") {
+            val c = label("Flint Arrow", 1284, 0xFFFFFF, 256)
+            fishmod.features.HudExample(Minecraft.getInstance().font.width(c), fishmod.features.HudPreview.TEXT_H) {
+                it.text(Minecraft.getInstance().font, c, 0, 0, -1, true)
+            }
         }
     }
 }

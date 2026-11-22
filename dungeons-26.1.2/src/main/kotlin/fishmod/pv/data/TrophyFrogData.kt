@@ -7,7 +7,6 @@
  */
 package fishmod.pv.data
 
-/** Trophy frog catalog (Lotus Atoll / Ribery order). */
 object TrophyFrogData {
     private val DEFS: List<TrophyFishData.Def> = listOf(
         "COMMON_FROG",

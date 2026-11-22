@@ -18,12 +18,13 @@ import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.Collections
 import java.util.Optional
+import java.util.concurrent.atomic.AtomicBoolean
 
-/** Five-minute cache for proxy responses: in memory, mirrored to disk so a restart still hits. */
 internal object ResponseCache {
     private const val TTL_MS = 5L * 60L * 1000L
     private const val MAX_MEMORY = 24
     private val DIR: Path = ProfileViewer.DIR.resolve("response-cache")
+    private val PRUNED = AtomicBoolean()
 
     private class Cached(val json: JsonObject, val storedAtMs: Long)
 
@@ -63,12 +64,12 @@ internal object ResponseCache {
 
     @JvmStatic
     fun put(key: String, original: JsonObject) {
-        // Own copy: caller mutates its object while the disk write serializes on another thread.
         val json = original.deepCopy()
         MEMORY[key] = Cached(json, System.currentTimeMillis())
         HypixelApiClient.networkExecutor().execute {
             try {
                 Files.createDirectories(DIR)
+                if (PRUNED.compareAndSet(false, true)) pruneExpired()
                 val file = fileFor(key)
                 val tmp = file.resolveSibling("${file.fileName}.tmp")
                 Files.writeString(tmp, json.toString(), StandardCharsets.UTF_8)
@@ -77,6 +78,20 @@ internal object ResponseCache {
                 ProfileViewer.LOGGER.debug("Response cache write failed for {}", key, exception)
             } catch (exception: RuntimeException) {
                 ProfileViewer.LOGGER.debug("Response cache write failed for {}", key, exception)
+            }
+        }
+    }
+
+    // Once per session: delete expired files for keys that are never read again.
+    private fun pruneExpired() {
+        val cutoff = System.currentTimeMillis() - TTL_MS
+        Files.list(DIR).use { files ->
+            files.filter { it.fileName.toString().endsWith(".json") }.forEach { file ->
+                try {
+                    if (Files.getLastModifiedTime(file).toMillis() < cutoff) Files.deleteIfExists(file)
+                } catch (exception: IOException) {
+                    ProfileViewer.LOGGER.debug("Response cache prune failed for {}", file, exception)
+                }
             }
         }
     }

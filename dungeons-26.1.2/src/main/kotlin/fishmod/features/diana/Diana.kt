@@ -16,12 +16,10 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.world.InteractionResult
 
-// Shared Diana state: hub/spade gating, block clicks, init of all Diana parts
 object Diana {
 
     private val SPADES = setOf("ANCESTRAL_SPADE", "ARCHAIC_SPADE", "DEIFIC_SPADE")
 
-    // -Dfishmod.dianaTest=true treats any world as the hub (singleplayer testing)
     @JvmField val testMode: Boolean = java.lang.Boolean.getBoolean("fishmod.dianaTest")
 
     @JvmStatic var hasSpade = false; private set
@@ -36,12 +34,6 @@ object Diana {
     @JvmStatic fun inHub(): Boolean = testMode || SkyblockLocation.`in`(SkyblockLocation.HUB)
 
     @JvmStatic fun active(): Boolean = inHub() && hasSpade
-
-    // Held a spade continuously for at least ms (200ms grace after switching away)
-    fun heldSpadeFor(ms: Long): Boolean {
-        val now = System.currentTimeMillis()
-        return holdStartMs != 0L && now - lastHoldMs < 200 && now - holdStartMs >= ms
-    }
 
     fun clickedRecently(pos: BlockPos): Boolean =
         recentClicks[pos]?.let { System.currentTimeMillis() - it < 4000 } ?: false

@@ -11,7 +11,6 @@ import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sign
 
-// Reads the dust arrow shown after a dig and walks the ray for grass blocks in the arrow's distance band
 object ArrowGuess {
 
     private const val SHAFT = 20
@@ -30,7 +29,6 @@ object ArrowGuess {
     private const val DUST_TTL_MS = 2000L
     private const val DUST_CAP = 120
 
-    // point -> when first seen; Hypixel resends the same arrow every few ticks
     private val dust = LinkedHashMap<Vec3, Long>()
     private var pending = false
     private var range: IntRange? = null
@@ -48,13 +46,11 @@ object ArrowGuess {
             val last = Diana.lastClickedWaypoint
             if (last != null && v.distanceTo(Vec3(last.x + 0.5, last.y + 0.5, last.z + 0.5)) > 7) return@register false
             range = r
-            // Only a genuinely new point is worth another shape search
             if (dust.putIfAbsent(v, System.currentTimeMillis()) == null) pending = true
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register {
             if (!Diana.inHub()) return@register
-            // At most one search per tick, however many particles arrived
             if (pending) {
                 pending = false
                 val now = System.currentTimeMillis()
@@ -75,10 +71,8 @@ object ArrowGuess {
 
     fun onBurrowDug() { dust.clear() }
 
-    // A spade guess is far more precise than the arrow's distance band; drop the arrow guesses
     fun clearGuesses() { entries.forEach { dropEntryWaypoints(it) }; entries.clear() }
 
-    // A real burrow on any of an arrow's candidates resolves it: drop the guess and all its subs
     fun onBurrowAt(pos: BlockPos) {
         val it = entries.iterator()
         while (it.hasNext()) {
@@ -89,7 +83,6 @@ object ArrowGuess {
         }
     }
 
-    // Clicked the current guess: if no burrow shows up there, advance() moves on to the next sub guess
     fun onGuessClicked(pos: BlockPos) {
         entries.firstOrNull { it.current == pos }?.clickedAt = System.currentTimeMillis()
     }
@@ -98,7 +91,6 @@ object ArrowGuess {
         if (dust.size < SHAFT) return
         val pts = dust.keys.toList()
         val line = findShaft(pts) ?: return DianaTest.log("arrow: no shaft in ${pts.size} pts")
-        // Neighbours include the shaft's own points: base end has 2 (shaft only), tip end 4 (shaft + barbs)
         val c1 = line[1]; val c2 = line[line.size - 2]
         val n1 = pts.count { it != c1 && it.distanceTo(c1) <= TOL }
         val n2 = pts.count { it != c2 && it.distanceTo(c2) <= TOL }
@@ -110,7 +102,6 @@ object ArrowGuess {
         val now = System.currentTimeMillis()
         seenRays.entries.removeIf { now - it.value > 18_000 }
         dust.clear()
-        // Resends of the same arrow give a slightly different ray each time; treat near-identical rays as one
         if (seenRays.keys.any { (o, d) -> o.distanceTo(origin) <= 1.0 && d.dot(dir) >= 0.999 }) return
         seenRays[origin to dir] = now
         DianaTest.log("arrow: ray $origin -> $dir band $range")
@@ -152,7 +143,6 @@ object ArrowGuess {
 
     private fun comp(v: Vec3, axis: Int) = when (axis) { 0 -> v.x; 1 -> v.y; else -> v.z }
 
-    // Step along the ray's shallowest axis inside the hub box, keep the best-aligned valid blocks
     private fun solve(origin: Vec3, dir: Vec3, band: IntRange) {
         val exit = exitPoint(origin, dir) ?: return fail()
         val delta = exit.subtract(origin)
@@ -207,7 +197,6 @@ object ArrowGuess {
         return if (tExit == Double.MAX_VALUE) null else o.add(d.scale(tExit))
     }
 
-    // Invalid block, or spade held within 32 blocks for a full second with no burrow: next candidate or drop the guess
     private fun advance() {
         if (Diana.player() == null) return
         val it = entries.iterator()

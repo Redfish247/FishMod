@@ -7,7 +7,6 @@ import fishmod.utils.events.FishEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import fishmod.features.garden.GardenSettings as S
 
-// Chat message when the Garden's bonus Farming Fortune changes (tab "Bonus:" line) or the game announces a fortune bonus
 object FortuneBonus {
 
     private val CHAT = Regex("""\+?([\d,.]+)\W{0,2}\s*Farming Fortune""", RegexOption.IGNORE_CASE)
@@ -28,7 +27,6 @@ object FortuneBonus {
             val cur = Mining.tabLine("Bonus:")?.substringAfter(":")?.trim()?.takeIf { it.isNotEmpty() } ?: return@register
             val prev = last
             last = cur
-            // First read is the baseline; only changes notify
             if (prev != null && prev != cur) send(cur)
         }
         // Server announcements ("+N Farming Fortune ..."); throttled so the tab change doesn't double up (guess at wording)

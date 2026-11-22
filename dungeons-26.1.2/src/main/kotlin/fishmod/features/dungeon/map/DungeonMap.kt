@@ -51,6 +51,7 @@ object DungeonMap {
 
     @JvmStatic
     fun init() {
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { retryPending() }
         registerPacket(ClientboundMapItemDataPacket::class.java) { packet ->
             if (packet is ClientboundMapItemDataPacket) {
                 val mc = Minecraft.getInstance()
@@ -69,6 +70,7 @@ object DungeonMap {
 
     @JvmStatic
     fun reset() {
+        pendingPacket = null
         mapId = null
         mapCenter = null
         startCoords = null
@@ -82,19 +84,32 @@ object DungeonMap {
         DungeonScore.reset()
     }
 
+    private var pendingPacket: ClientboundMapItemDataPacket? = null
+    private var pendingSince = 0L
+
+    private fun retryPending() {
+        val p = pendingPacket ?: return
+        if (System.currentTimeMillis() - pendingSince > 8_000L) { pendingPacket = null; return }
+        if (Minecraft.getInstance().level == null || !DungeonState.isInDungeon()) return
+        pendingPacket = null
+        try { rescanMapItem(p) } catch (t: Throwable) { FishDiag.fail("DungeonMap.3", "pending map rescan failed", t) }
+    }
+
     private fun rescanMapItem(packet: ClientboundMapItemDataPacket) {
-        if (!DungeonState.isInDungeon() || !anyFeatureEnabled()) return
+        if (!anyFeatureEnabled()) return
+        if (!DungeonState.isInDungeon()) { pendingPacket = packet; pendingSince = System.currentTimeMillis(); return }
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
 
         if (mapId == null) mapId = packet.mapId()
         if (mapId != packet.mapId()) return
 
-        val state = level.getMapData(packet.mapId()) ?: return
+        val state = level.getMapData(packet.mapId()) ?: run { pendingPacket = packet; pendingSince = System.currentTimeMillis(); return }
         val colors = state.colors ?: return
         if (colors.isEmpty()) return
 
-        if (startCoords == null && !initializeSizes(colors)) return
+        // not the dungeon map (or not drawn yet): forget the id so the next packet can be tried
+        if (startCoords == null && !initializeSizes(colors)) { mapId = null; return }
 
         DungeonPlayers.updateDecorations((state as MapItemSavedDataAccessor).decorations)
         if (!Scan.loadedAllRooms) updateRoomTiles(colors)
@@ -162,7 +177,10 @@ object DungeonMap {
             greenLength = length
         }
 
-        if (greenLength != 16 && greenLength != 18) return false
+        if (greenLength != 16 && greenLength != 18) {
+            FishDiag.fail("DungeonMap.10", "map init skipped: entrance run length $greenLength (need 16/18) colors=${colors.size} floor=${DungeonState.floorNumber()}")
+            return false
+        }
         FishDiag.check(greenStart >= 0, "DungeonMap.9") { "entrance run length $greenLength but no start index" }
 
         val floor = DungeonState.floorNumber()
@@ -345,7 +363,7 @@ object DungeonMap {
             found.doors.addAll(stray.doors)
         }
 
-        for (door in ArrayList(Scan.doors)) {
+        for (door in Scan.doorsSnapshot()) {
             var refers = false
             for (dt in door.rooms) {
                 if (strays.contains(dt.owner)) {
@@ -377,7 +395,7 @@ object DungeonMap {
         val sc = startSc.add(rs / 2, rs / 2)
         val tile = rs + 4
 
-        for (room in ArrayList(Scan.rooms)) {
+        for (room in Scan.roomsSnapshot()) {
             if (room.places.isEmpty()) continue
 
             var topLeft = room.places[0]
@@ -434,7 +452,6 @@ object DungeonMap {
 
                 val doorIndex = sc.add(MapVec2i(door, midRoom)).mapIndex()
                 val roomIndex = sc.add(MapVec2i(door, midRoom - hrs + 1)).mapIndex()
-                // Smaller floors have fewer than 6 rows; rows past the map edge are skipped.
                 val inMap = sc.x + door in 0..127 && sc.z + midRoom in 0..127
                 if (inMap && doorIndex in colors.indices && roomIndex in colors.indices && colors[roomIndex].toInt() == 0) {
                     handleDoor(MapVec2i(coordsDoor, coordsMidRoom), MapVec2i(a, b), MapVec2i(1, 0), colors[doorIndex])

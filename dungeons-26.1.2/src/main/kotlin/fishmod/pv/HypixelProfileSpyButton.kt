@@ -21,10 +21,6 @@ import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Injects a command-block "Open Profile Viewer" control into Hypixel's right-click
- * player menu (empty slot under Co-op Request / next to Ender Chest).
- */
 object HypixelProfileSpyButton {
 	private val TITLE_PROFILE = Regex("^([A-Za-z0-9_]{3,16})'s Profile$")
 	private val TITLE_NAME = Regex("^([A-Za-z0-9_]{3,16})$")
@@ -132,7 +128,6 @@ object HypixelProfileSpyButton {
 				return slot
 			}
 		}
-		// Fallback: nearest empty slot to the right/below within 2 slot steps.
 		var best: Slot? = null
 		var bestDist = Int.MAX_VALUE
 		for (slot in slots) {
@@ -189,7 +184,6 @@ object HypixelProfileSpyButton {
 			}
 			c = c.superclass
 		}
-		// Mojmap accessor fallbacks (getLeftPos / leftPos via method).
 		for (methodName in arrayOf("getGuiLeft", "getLeftPos")) {
 			try {
 				val v = target.javaClass.getMethod(methodName).invoke(target)

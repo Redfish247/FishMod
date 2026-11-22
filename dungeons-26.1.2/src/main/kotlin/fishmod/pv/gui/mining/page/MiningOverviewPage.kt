@@ -42,7 +42,6 @@ class MiningOverviewPage {
 	private var crystalsHitW = 0
 	private var crystalsHitH = 0
 
-	/** Profile apply: HEAD only zeroed shared scroll, not the crystals flip face. */
 	fun resetScroll() {
 		scroll = 0
 	}
@@ -165,21 +164,14 @@ class MiningOverviewPage {
 		}
 		val angle = (if (animating) easeInOutCubic(flipProgress) else 0f) * Math.PI.toFloat()
 		val showEssence = if (animating && cos(angle) < 0.0) crystalsFlipTarget else crystalsEssenceFace
-		var scaleX = 1f
-		var scaleY = 1f
+		var slideDx = 0f
 		if (animating) {
-			scaleX = maxOf(0.04f, abs(cos(angle)))
-			scaleY = 1f - (1f - scaleX) * 0.06f
+			slideDx = PvDraw.slideOffset(angle / Math.PI.toFloat(), w)
 		}
-
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 		if (hovered && !animating) {
 			PvDraw.fill(g, x + 1, y + 1, w - 2, h - 2, PANEL_HOVER)
 		}
@@ -192,6 +184,7 @@ class MiningOverviewPage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawCrystalsFace(
@@ -269,7 +262,6 @@ class MiningOverviewPage {
 		}
 	}
 
-	/** Gold / Diamond essence shops stacked full-width (names fit; rows fill each half). */
 	private fun drawMiningEssenceFace(
 		g: GuiGraphicsExtractor, font: Font, snapshot: MiningSnapshot, zones: MutableList<HoverZone>, x: Int, y: Int, w: Int, h: Int,
 	) {
@@ -379,7 +371,6 @@ class MiningOverviewPage {
 
 		fun easeInOutCubic(t: Float): Float = if (t < 0.5f) 4f * t * t * t else 1f - (-2f * t + 2f).pow(3) / 2f
 
-		/** Flawless gemstone player-head cubes (classic NBT skulls). */
 		fun drawCrystalIcon(g: GuiGraphicsExtractor, crystalApiId: String, x: Int, y: Int, size: Int) {
 			val head = SkyBlockItemFactory.gemstoneHead(crystalApiId)
 			MiningUi.drawItemIcon(g, if (head.isEmpty) ItemStack(Items.PLAYER_HEAD) else head, x, y, size)

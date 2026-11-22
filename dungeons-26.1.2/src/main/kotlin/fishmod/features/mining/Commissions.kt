@@ -41,7 +41,9 @@ object Commissions {
         MiningHuds.reg("Commissions", "mining_comms", 160, 50,
             { S.miningCommHudX }, { S.miningCommHudX = it }, { S.miningCommHudY }, { S.miningCommHudY = it },
             { S.miningCommHudScale }, { S.miningCommHudScale = it },
-            { (S.miningCommissions && S.miningCommHud) && current.isNotEmpty() }, { (S.miningCommissions && S.miningCommHud) }, ::lines)
+            { (S.miningCommissions && S.miningCommHud) && current.isNotEmpty() }, { (S.miningCommissions && S.miningCommHud) },
+            example = { lines(listOf(Comm("Mithril Miner", "82.5%"), Comm("Goblin Raid Slayer", "40%"), Comm("Titanium Miner", "DONE"), Comm("Treasure Hoarder Puncher", "12%"))) },
+            lines = { lines(current) })
 
         DrawHooks.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             if (!(S.miningCommissions && S.miningCommHighlight) || stack.isEmpty) return@register
@@ -55,7 +57,7 @@ object Commissions {
         }
     }
 
-    private fun lines(): List<String> = listOf("§9§lCommissions") + current.map {
+    private fun lines(comms: List<Comm>): List<String> = listOf("§9§lCommissions") + comms.map {
         val p = if (it.done) "§aDONE" else {
             val v = it.progress.removeSuffix("%").toDoubleOrNull() ?: 0.0
             (if (v >= 75) "§e" else if (v >= 25) "§6" else "§c") + it.progress

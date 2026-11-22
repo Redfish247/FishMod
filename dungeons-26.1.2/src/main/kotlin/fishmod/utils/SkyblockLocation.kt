@@ -2,13 +2,13 @@ package fishmod.utils
 
 import fishmod.utils.debug.FishDebug
 import fishmod.utils.debug.FishDiag
+import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.dungeon.PracticeMode
 import fishmod.utils.events.FishEvents
 import net.hypixel.modapi.HypixelModAPI
 import net.hypixel.modapi.packet.impl.clientbound.event.ClientboundLocationPacket
 import net.minecraft.network.chat.Component
 
-// SkyBlock island from the Hypixel mod API location packet; label is the packet's map name.
 enum class SkyblockLocation(val label: String) {
     UNKNOWN("Unknown"),
     DUNGEON("Dungeon"),
@@ -16,7 +16,6 @@ enum class SkyblockLocation(val label: String) {
     PRIVATE_ISLAND("Private Island"),
     HUB("Hub"),
     GALATEA("Galatea"),
-    // own packet map names since the foraging/safari update (seen in error reports)
     MOONGLADE_MARSH("Moonglade Marsh"),
     TORRHUS_CANYON("Torrhus Canyon"),
     LOTUS_ATOLL("Lotus Atoll"),
@@ -41,17 +40,18 @@ enum class SkyblockLocation(val label: String) {
     override fun toString(): String = "$label (${(System.currentTimeMillis() - since) / 1000.0}s ago)"
 
     companion object {
-        // "Spider's Den", "SPIDERS_DEN" and "spiders den" all match; the dungeon run map is called "Catacombs"
         private fun key(s: String) = s.lowercase().replace('_', ' ').replace("'", "")
         private val BY_MAP: Map<String, SkyblockLocation> = entries.associateBy { key(it.label) } + ("catacombs" to DUNGEON)
 
-        private var here: SkyblockLocation = UNKNOWN
-        private var onSkyblock = false
+        // Volatile: packet gates read these on the netty thread
+        @Volatile private var here: SkyblockLocation = UNKNOWN
+        @Volatile private var onSkyblock = false
         private var since = System.currentTimeMillis()
 
-        // raw Hypixel server mode, e.g. "hub" or "combat_1"
         @JvmStatic var currentMode: String = ""
             private set
+
+        private var lastServerName: String? = null
 
         @JvmStatic
         fun init() {
@@ -61,7 +61,10 @@ enum class SkyblockLocation(val label: String) {
                     currentMode = packet.mode.orElse("")
                     val map = packet.map.orElse(null) ?: return@guard
                     packet.serverType.ifPresent { onSkyblock = it.name == "SkyBlock" }
-                    changeLocation(getLocation(map))
+                    val server = packet.serverName
+                    val sameServer = server != null && server == lastServerName
+                    lastServerName = server
+                    changeLocation(getLocation(map), sameServer)
                 }
             }
             api.subscribeToEventPacket(ClientboundLocationPacket::class.java)
@@ -75,8 +78,14 @@ enum class SkyblockLocation(val label: String) {
         }
 
         @JvmStatic
-        fun changeLocation(location: SkyblockLocation) {
+        fun changeLocation(location: SkyblockLocation, sameServer: Boolean = false) {
+            // Hypixel re-sends the Dungeon location mid-run from the same server; listeners reset run state on it (timers, lag, P3 flags)
+            val repeat = sameServer && location == DUNGEON && here == DUNGEON && BossPhase.midRun()
             here = location
+            if (repeat) {
+                FishDebug.LOGGER.info("[Location] ignored repeat Dungeon location mid-run")
+                return
+            }
             since = System.currentTimeMillis()
             FishDebug.sendDebugMessage(Component.literal("Island: $here"))
             FishDiag.guard("SkyblockLocation.3", "location change listener threw for ${location.label}") {
@@ -84,7 +93,6 @@ enum class SkyblockLocation(val label: String) {
             }
         }
 
-        // practice mode fakes a dungeon in singleplayer
         @JvmStatic
         fun `in`(location: SkyblockLocation): Boolean =
             (location == DUNGEON && PracticeMode.active) || (onSkyblock && here == location)

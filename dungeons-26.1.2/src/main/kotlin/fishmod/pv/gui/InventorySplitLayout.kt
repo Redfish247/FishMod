@@ -14,7 +14,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.network.chat.Component
 
-/** Inventory tab body split: left pane + right selector grid + search. */
 class InventorySplitLayout {
 	@Suppress("UNUSED_PARAMETER")
 	fun render(
@@ -39,7 +38,6 @@ class InventorySplitLayout {
 		layoutInventorySearch(font, inventorySearch, x, y, w)
 		if (inventorySearch != null) {
 			inventorySearch.extractWidgetRenderState(g, mouseX, mouseY, delta)
-			// EditBox only draws its hint when unfocused; keep placeholder visible while empty.
 			if (inventorySearch.value.isEmpty()) {
 				val hint = Component.translatable("fishmod.pv.inv.search_hint").string
 				PvDraw.text(g, font, hint, inventorySearch.x, inventorySearch.y, PvDraw.COLOR_MUTED)
@@ -63,7 +61,6 @@ class InventorySplitLayout {
 				return
 			}
 			val inset = 4
-			// Unbordered EditBox draws text at getY() (not vertically centred) - match the box.
 			val textH = maxOf(8, font.lineHeight)
 			val textY = y + maxOf(0, (SEARCH_H - textH) / 2)
 			inventorySearch.width = maxOf(20, w - inset * 2)

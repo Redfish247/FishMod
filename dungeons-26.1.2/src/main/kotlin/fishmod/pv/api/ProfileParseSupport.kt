@@ -12,7 +12,6 @@ import com.google.gson.JsonObject
 import fishmod.pv.data.Leveling
 import java.util.Locale
 
-/** Shared JSON helpers for package-private profile parsers. */
 internal object ProfileParseSupport {
     @JvmStatic
     fun str(element: JsonElement?): String {
@@ -45,7 +44,6 @@ internal object ProfileParseSupport {
     @JvmStatic
     fun readLong(obj: JsonObject?, key: String): Long {
         if (obj == null || !obj.has(key)) return 0L
-        // Math.round(float) semantics: int-ranged, half up
         return Leveling.num(obj.get(key))?.let { Math.round(it).toLong() } ?: 0L
     }
 
@@ -55,7 +53,6 @@ internal object ProfileParseSupport {
         return Leveling.num(obj.get(key))?.toDouble() ?: 0.0
     }
 
-    // Gson's primitive coercion failures fall back to the default.
     inline fun <T> lenient(fallback: T, block: () -> T): T = try {
         block()
     } catch (_: IllegalStateException) {

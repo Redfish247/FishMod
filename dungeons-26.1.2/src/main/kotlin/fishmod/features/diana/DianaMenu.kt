@@ -15,7 +15,6 @@ import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.diana.DianaSettings as S
 
-// The Diana tab in /fm
 object DianaMenu {
 
     private val TRACKER_MODES = arrayOf("Off", "Event", "Session", "Total")

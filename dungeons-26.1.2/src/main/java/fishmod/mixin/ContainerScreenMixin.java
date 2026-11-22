@@ -15,6 +15,6 @@ public abstract class ContainerScreenMixin {
     @Inject(method = "extractBackground", at = @At("HEAD"), cancellable = true)
     private void fishmod$hideLeapMenuChest(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
-        if (LeapMenu.isActive(self) || fishmod.features.storage.StorageOverlay.isActive(self)) ci.cancel();
+        if (LeapMenu.isActive(self) || fishmod.features.inventory.StorageOverlay.isActive(self)) ci.cancel();
     }
 }

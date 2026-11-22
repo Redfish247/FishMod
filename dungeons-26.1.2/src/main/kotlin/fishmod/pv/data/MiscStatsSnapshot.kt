@@ -12,7 +12,6 @@ import com.google.gson.JsonObject
 import fishmod.pv.networth.InventoryDecoder
 import java.util.Collections
 
-/** Home → Misc: lifetime player_stats, profile extras, community upgrades. */
 class MiscStatsSnapshot private constructor(
     kills: List<CountEntry>?,
     killsTotal: Long,
@@ -53,7 +52,6 @@ class MiscStatsSnapshot private constructor(
         @get:JvmName("entries") val entries: List<CountEntry> = entries?.toList() ?: emptyList()
     }
 
-    /** Experimentation Table progress from `members.*.experimentation`. */
     class ExperimentGame(id: String?, label: String?, claims: Long, attempts: Long, bestScore: Long) {
         @get:JvmName("id") val id: String = id ?: ""
         @get:JvmName("label") val label: String = if (label.isNullOrBlank()) this.id else label
@@ -76,7 +74,6 @@ class MiscStatsSnapshot private constructor(
         }
     }
 
-    /** `player_stats.end_island.dragon_fight` for one dragon type. Fastest kill is in ms. */
     @JvmRecord
     data class DragonStat(
         val id: String,
@@ -115,7 +112,6 @@ class MiscStatsSnapshot private constructor(
         @get:JvmName("modes") val modes: List<RaceTime> = modes?.toList() ?: emptyList()
     }
 
-    /** `byRarity` is keyed by the Griffin pet rarity used while digging. */
     class BurrowCount(
         @get:JvmName("key") val key: String,
         @get:JvmName("label") val label: String,
@@ -137,12 +133,6 @@ class MiscStatsSnapshot private constructor(
         }
     }
 
-    /**
-     * Jerry's Workshop bests (`player_stats.winter`) and Spooky Festival candy / bats.
-     * Best festival is ranked by festival points (green 1, purple 5), not raw candy count.
-     * `festivalHistoryCandy` is the candy covered by per-festival entries; Hypixel's history
-     * can be shorter than the lifetime total, in which case the best is only the best recorded.
-     */
     @JvmRecord
     data class SeasonalStats(
         val snowballsHit: Long,
@@ -200,7 +190,6 @@ class MiscStatsSnapshot private constructor(
     @get:JvmName("mythos") val mythos: MythosStats = mythos ?: MythosStats.empty()
     @get:JvmName("seasonal") val seasonal: SeasonalStats = seasonal ?: SeasonalStats.empty()
 
-    // Zero deaths divides by 1 (Hypixel convention), so the ratio equals total kills.
     fun killDeathRatio(): Double = killsTotal / maxOf(1L, deathsTotal).toDouble()
 
     companion object {
@@ -374,7 +363,6 @@ class MiscStatsSnapshot private constructor(
             for ((key, value) in races.entrySet()) {
                 if (key == null) continue
                 if (value.isJsonObject) {
-                    // dungeon_hub: <course>_<mode>_<return>_best_time
                     val obj = value.asJsonObject
                     for (subKey in obj.keySet()) {
                         val ms = longOf(obj, subKey)

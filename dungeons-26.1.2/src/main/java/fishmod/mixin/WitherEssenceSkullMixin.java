@@ -19,7 +19,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.UUID;
 
-// Hypixel's wither essence skulls share one owner id; swap their skin for our own texture.
 @Mixin(SkullBlockRenderer.class)
 public abstract class WitherEssenceSkullMixin {
 

@@ -35,15 +35,6 @@ class PlayerModelRenderer {
 	private var boundUuid: UUID? = null
 	private val equipped = Array<ItemStack>(4) { ItemStack.EMPTY }
 
-	/**
-	 * @param flipScaleX horizontal squash for left-panel flip (1 = normal)
-	 * @param flipScaleY vertical squash for left-panel flip (1 = normal)
-	 * @param flipPivotX pivot matching the Home panel flip (entity draws ignore GUI pose)
-	 * @param flipPivotY pivot matching the Home panel flip
-	 * @param openScale PV open expand scale (entity draws ignore GUI pose)
-	 * @param openPivotX panel-center pivot for the open expand
-	 * @param openPivotY panel-center pivot for the open expand
-	 */
 	fun draw(
 		graphics: GuiGraphicsExtractor,
 		uuid: UUID?,
@@ -87,7 +78,6 @@ class PlayerModelRenderer {
 		equipIfChanged(entity, EquipmentSlot.FEET, 3, boots)
 		applyDinnerboneFlip(entity)
 
-		// Entity path ignores GUI pose matrices - mirror open expand then card flip in screen space.
 		val box = floatArrayOf(x0.toFloat(), y0.toFloat(), x1.toFloat(), y1.toFloat())
 		scaleBox(box, openPivotX, openPivotY, open, open)
 		scaleBox(box, flipPivotX, flipPivotY, sx, sy)
@@ -265,10 +255,6 @@ class PlayerModelRenderer {
 			box[3] = pivotY + (box[3] - pivotY) * scaleY
 		}
 
-		/**
-		 * Full 360° yaw spin. [LivingEntityRenderState.bodyRot] turns the whole model;
-		 * [LivingEntityRenderState.yRot] is head-relative-to-body only (keep 0 so head stays locked).
-		 */
 		fun extractSpinning(
 			graphics: GuiGraphicsExtractor,
 			x0: Int,
@@ -303,7 +289,6 @@ class PlayerModelRenderer {
 			return state
 		}
 
-		/** Dinnerbone / Grumm upside-down render when the Moulberry Konami mode is on. */
 		fun applyDinnerboneFlip(entity: LivingEntity) {
 			try {
 				entity.customName = if (DINNERBONE) Component.literal("Dinnerbone") else null

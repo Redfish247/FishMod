@@ -8,12 +8,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import fishmod.features.garden.GardenExtraSettings as X
 
-// Composter upgrade prices, Stereo Harmony, Greenhouse status, Anita shop, farming toolkit icons (lore/title formats are guesses)
 object GardenMenus {
 
     private var tick = 0
 
-    // ---- Composter upgrades ----
     private val COST = Regex("""^([\d,]+(?:\.\d+)?)\s+(.+?)$""")
     private var cheapest: ItemStack? = null
 
@@ -41,7 +39,6 @@ object GardenMenus {
         cheapest = (if (priced.size == costs.size) priced.minByOrNull { it.second.coins } else costs.minByOrNull { it.second.raw })?.first
     }
 
-    // ---- Stereo Harmony ----
     private val PEST_CROP = linkedMapOf(
         "fly" to "Wheat", "cricket" to "Carrot", "locust" to "Potato", "rat" to "Pumpkin", "earthworm" to "Melon",
         "slug" to "Mushroom", "moth" to "Cocoa Beans", "mite" to "Cactus", "mosquito" to "Sugar Cane", "beetle" to "Nether Wart",
@@ -66,8 +63,7 @@ object GardenMenus {
         X.gardenStereoActive = sel?.let { GardenExtras.name(it.item) } ?: ""
     }
 
-    private fun stereoLines(): List<String> {
-        val n = X.gardenStereoActive
+    private fun stereoLines(n: String = X.gardenStereoActive): List<String> {
         val pest = pestOf(n, emptyList())
         val crop = pest?.let { PEST_CROP[it] }
         val out = arrayListOf(Garden.legacy(X.gardenStereoColor) + "§lStereo Harmony", "§f$n")
@@ -75,10 +71,9 @@ object GardenMenus {
         return out
     }
 
-    // ---- Greenhouse ----
     private var greenhouse: List<String> = emptyList()
 
-    private fun greenhouseLines(): List<String> {
+    private fun greenhouseLines(greenhouse: List<String> = this.greenhouse): List<String> {
         val good = Garden.legacy(X.gardenGreenhouseGoodColor); val bad = Garden.legacy(X.gardenGreenhouseBadColor)
         val out = arrayListOf(good + "§lGreenhouse")
         for (l in greenhouse) {
@@ -93,7 +88,6 @@ object GardenMenus {
         return out
     }
 
-    // ---- Anita shop ----
     private val MEDAL = Regex("""([\d,]+)\s+(Bronze|Silver|Gold)\s+Medals?""", RegexOption.IGNORE_CASE)
     private val ITEM_NAME = Regex("""^(?:(\d+)x\s+)?(.+?)(?:\s+x(\d+))?$""")
     private var anitaBest: ItemStack? = null
@@ -101,7 +95,6 @@ object GardenMenus {
     private fun goldCost(lore: List<String>): Double? =
         lore.firstNotNullOfOrNull { l -> MEDAL.find(l)?.takeIf { it.groupValues[2].equals("Gold", true) } }?.let { GardenExtras.num(it.groupValues[1]) }
 
-    // Coins per gold medal from the item's bazaar price
     private fun anitaRate(stack: ItemStack): Double? {
         val c = goldCost(Garden.lore(stack)) ?: return null
         if (c <= 0) return null
@@ -115,7 +108,6 @@ object GardenMenus {
         anitaBest = GardenExtras.slots().mapNotNull { s -> anitaRate(s.item)?.let { s.item to it } }.maxByOrNull { it.second }?.first
     }
 
-    // Slot already shows the crop (pumpkin/melon come as block variants), so no badge on top
     private fun sameCrop(crop: net.minecraft.world.item.Item, held: net.minecraft.world.item.Item): Boolean {
         if (crop == held) return true
 
@@ -183,10 +175,12 @@ object GardenMenus {
         Garden.hud("Stereo Harmony", "garden_stereo", 130, 30,
             { X.gardenStereoHudX }, { X.gardenStereoHudX = it }, { X.gardenStereoHudY }, { X.gardenStereoHudY = it },
             { X.gardenStereoHudScale }, { X.gardenStereoHudScale = it },
-            { X.gardenStereo && Garden.inGarden() && X.gardenStereoActive.isNotEmpty() }, { X.gardenStereo }) { stereoLines() }
+            { X.gardenStereo && Garden.inGarden() && X.gardenStereoActive.isNotEmpty() }, { X.gardenStereo },
+            example = { stereoLines("Pretty Fly") }) { stereoLines() }
         Garden.hud("Greenhouse", "garden_greenhouse", 130, 30,
             { X.gardenGreenhouseHudX }, { X.gardenGreenhouseHudX = it }, { X.gardenGreenhouseHudY }, { X.gardenGreenhouseHudY = it },
             { X.gardenGreenhouseHudScale }, { X.gardenGreenhouseHudScale = it },
-            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }, { X.gardenGreenhouse }) { greenhouseLines() }
+            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }, { X.gardenGreenhouse },
+            example = { greenhouseLines(listOf("Harvestable: 6", "Water: 82%")) }) { greenhouseLines() }
     }
 }

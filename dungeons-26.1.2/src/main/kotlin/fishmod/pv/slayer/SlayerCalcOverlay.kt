@@ -16,7 +16,6 @@ import net.minecraft.world.item.ItemStack
 import kotlin.math.max
 import kotlin.math.min
 
-/** Centered slayer XP calculator overlay, matching dungeon calc chrome. */
 class SlayerCalcOverlay {
 	private var open = false
 	private var openStartMs = 0L
@@ -210,10 +209,8 @@ class SlayerCalcOverlay {
 		return true
 	}
 
-	/** Hard-cap the typed target at 9 (slayer max). */
 	private fun clampLevelText() {
 		if (levelText.isBlank()) return
-		// keep raw text when unparsable; parseLevel falls back
 		val value = levelText.trim().toIntOrNull() ?: return
 		if (value > 9) levelText = "9"
 	}

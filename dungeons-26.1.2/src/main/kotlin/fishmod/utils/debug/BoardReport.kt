@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object BoardReport {
 
-    // fishmod.dev worker → /incomming-features review queue; 404 until that route is deployed.
     private const val ENDPOINT = "https://fishmod.dev/api/report"
     private const val MANUAL_COOLDOWN_MS = 30_000L
     private const val HOUR_MS = 3_600_000L
@@ -37,7 +36,6 @@ object BoardReport {
     private val autoTimes = ArrayDeque<Long>()
     @Volatile private var lastManualAt = 0L
 
-    // Unit tests feed bad input on purpose; JUnit's launcher is test-runtime only, so it also catches async threads
     private val underTest: Boolean by lazy {
         System.getProperty("fishmod.test") != null || Thread.currentThread().name.startsWith("Test worker") ||
             runCatching { Class.forName("org.junit.platform.launcher.Launcher", false, BoardReport::class.java.classLoader) }.isSuccess
@@ -57,7 +55,6 @@ object BoardReport {
         }
     }
 
-    /** Player-written report; [done] runs off-thread with (ok, reason). */
     fun submit(kind: String, title: String, text: String, done: (Boolean, String) -> Unit) {
         if (!FishSettings.boardReports) return done(false, "board reports are off (General > Board Reports)")
         if (title.isBlank() && text.isBlank()) return done(false, "write something first")
@@ -70,7 +67,6 @@ object BoardReport {
         }
     }
 
-    /** Called by FishDiag on the first hit of each code; deduped and rate limited. */
     @JvmStatic
     fun auto(code: String, message: String, t: Throwable?) {
         try {
@@ -113,7 +109,6 @@ object BoardReport {
             addProperty("mod", modVersion())
             addProperty("mc", mcVersion())
             addProperty("loc", area())
-            // Manual reports name the sender so the board shows who asked; auto reports stay anonymous.
             if (kind != "auto") try { addProperty("player", Minecraft.getInstance().user.name) } catch (_: Throwable) {}
             if (kind != "suggest") addProperty("log", scrub(FishDiag.recentLines(15).joinToString("\n")).take(4000))
         }
@@ -140,7 +135,6 @@ object BoardReport {
         JsonParser.parseString(s).asJsonObject.get("ok")?.asBoolean == true
     } catch (_: Throwable) { false }
 
-    // Drops the player's own name and anything that looks like an IP.
     private fun scrub(s: String): String {
         var out = s
         try {

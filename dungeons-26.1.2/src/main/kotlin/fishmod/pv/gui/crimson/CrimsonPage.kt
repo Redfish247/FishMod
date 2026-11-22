@@ -15,7 +15,6 @@ import fishmod.pv.gui.nav.PvSubTab
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Crimson coordinator: Overview / Kuudra / Abiphone. */
 class CrimsonPage {
 	private var snapshot: CrimsonSnapshot = CrimsonSnapshot.empty()
 	private var activeSub: PvSubTab = PvSubTab.CRIMSON_OVERVIEW

@@ -13,10 +13,8 @@ import fishmod.pv.data.InventorySnapshot
 
 /** Wardrobe / equipment-set page decoding. */
 internal object WardrobeDecoder {
-    /** Rank max (18) + Community Center wardrobe/loadout upgrades (9). */
     const val WARDROBE_SLOT_COUNT = 27
 
-    /** Hypixel wardrobe UI shows 9 set columns per page. */
     const val WARDROBE_SETS_PER_PAGE = 9
 
     private val ARMOR_SLOTS = listOf("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS")
@@ -90,14 +88,12 @@ internal object WardrobeDecoder {
             }
         }
         if (byId.isEmpty()) {
-            // Hypixel equipped_set is 1-based when loadout layouts exist; live-only fallback treats missing id as slot 1.
             val idx = if (equippedId == null) 1 else equippedId.coerceIn(1, WARDROBE_SLOT_COUNT)
             byId[idx] = WardrobeSet(liveEquipment(inventory), true)
         }
         return packWardrobeSetPages(padWardrobeSets(byId), "Equipment")
     }
 
-    /** Armor/equipment sets per page, each set a vertical column. */
     @JvmStatic
     fun packWardrobeSetPages(sets: List<WardrobeSet>, titlePrefix: String): List<InventorySnapshot.Page> {
         val all = sets.ifEmpty { padWardrobeSets(emptyMap()) }
@@ -108,7 +104,6 @@ internal object WardrobeDecoder {
             val count = minOf(all.size, start + perPage) - start
             val slots = ArrayList<InventorySnapshot.Slot?>(4 * count)
             var equippedColumn = -1
-            // Row-major by piece so columns=count draws piece rows with sets as columns.
             for (piece in 0 until 4) {
                 for (col in 0 until count) {
                     val set = all[start + col]
@@ -182,7 +177,6 @@ internal object WardrobeDecoder {
         return ArrayList(live.subList(0, 4))
     }
 
-    /** inv_armor is boots→helmet; loadout/wardrobe columns are helmet→boots. */
     @JvmStatic
     fun liveArmorHelmetToBoots(inventory: JsonObject?): List<InventorySnapshot.Slot?> {
         val raw = InventoryDecodeSupport.toUiSlots(InventoryDecodeCache.decodeFieldKeepingEmpty(inventory, "inv_armor", 4))

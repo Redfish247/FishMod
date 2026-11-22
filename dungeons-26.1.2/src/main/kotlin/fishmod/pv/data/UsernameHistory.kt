@@ -7,7 +7,6 @@
  */
 package fishmod.pv.data
 
-/** Public Mojang username history for the Home name tooltip. */
 class UsernameHistory private constructor(state: State?, entries: List<Entry>?, error: String?) {
     class Entry(username: String?, changedAt: String?) {
         @get:JvmName("username") val username: String = username ?: ""

@@ -15,7 +15,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Recent searches dropdown under the player search box. */
 class SearchHistoryMenu(
 	private val history: Supplier<SearchHistory>,
 	private val opener: Consumer<String>
@@ -59,10 +58,6 @@ class SearchHistoryMenu(
 		return if (matches.size > SearchHistory.MAX) matches.subList(0, SearchHistory.MAX) else matches
 	}
 
-	/**
-	 * Follows the search box each frame: gaining focus or typing opens the dropdown, losing focus closes it.
-	 * Returns true when this call made it appear, so the caller can close other menus.
-	 */
 	fun syncSearch(focused: Boolean, value: String?): Boolean {
 		val next = value ?: ""
 		val wasVisible = isVisible()
@@ -122,7 +117,6 @@ class SearchHistoryMenu(
 		return -1
 	}
 
-	/** Consumes clicks on the dropdown; outside clicks close it and carry on to whatever is underneath. */
 	fun mouseClicked(mx: Double, my: Double, button: Int): Boolean {
 		if (!isVisible()) {
 			return false
@@ -182,7 +176,6 @@ class SearchHistoryMenu(
 		const val ROW_PAD = 4
 		const val EDGE = 2
 
-		/** Matches the search box width, opens under it, flips above when there is no room, and stays on screen. */
 		@JvmStatic
 		fun dropdownLayout(
 			anchorX: Int, anchorY: Int, anchorW: Int, anchorH: Int, rows: Int, lineHeight: Int,

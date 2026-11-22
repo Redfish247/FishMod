@@ -32,10 +32,6 @@ internal object LoadoutDecoder {
         return if (value != null && value.isJsonPrimitive) value.asString else null
     }
 
-    /**
-     * Named presets under `loadout.loadouts`, resolving armor/equipment set ids and pet uniqueId.
-     * Equipped wardrobe sets store pieces in inv_armor / equipment_contents (layout entry is empty).
-     */
     @JvmStatic
     fun parseNamedLoadouts(
         member: JsonObject,
@@ -73,7 +69,6 @@ internal object LoadoutDecoder {
             }
         }
 
-        // Fallback: wardrobe set keys if named presets are empty.
         if (byIndex.isEmpty()) {
             val keys = LinkedHashSet<String>()
             armorLayouts?.keySet()?.filterTo(keys) { it != "equipped_set" }
@@ -97,7 +92,6 @@ internal object LoadoutDecoder {
         return padLoadouts(byIndex)
     }
 
-    /** Loadouts with gear, pet, power, tuning or a tree preset, in key order (API keys are 1-based). */
     @JvmStatic
     fun padLoadouts(byIndex: Map<Int, InventorySnapshot.Loadout?>?): List<InventorySnapshot.Loadout> {
         val out = ArrayList<InventorySnapshot.Loadout>()
@@ -126,20 +120,6 @@ internal object LoadoutDecoder {
     }
 
     @JvmStatic
-    fun emptyLoadout(index: Int): InventorySnapshot.Loadout = InventorySnapshot.Loadout(
-        "Loadout ${index + 1}",
-        MutableList(4) { null },
-        MutableList(4) { null },
-        "",
-        null,
-        emptyList(),
-        null,
-        "",
-        null,
-        null,
-    )
-
-    @JvmStatic
     fun resolveTuning(info: InventorySnapshot.AccessoryInfo?, slot: Int?): List<InventorySnapshot.StatPoint> {
         if (info == null || slot == null) return emptyList()
         return info.tunings.firstOrNull { it.slot == slot }?.stats ?: emptyList()
@@ -162,7 +142,6 @@ internal object LoadoutDecoder {
             ?: return map
         for (element in pets) {
             val pet = InventoryDecodeSupport.obj(element) ?: continue
-            // Loadouts reference uniqueId; some payloads also expose uuid.
             primString(pet, "uniqueId")?.let { map[InventoryDecodeSupport.normalizeUuid(it)] = pet }
             primString(pet, "uuid")?.let { map[InventoryDecodeSupport.normalizeUuid(it)] = pet }
         }
@@ -176,7 +155,6 @@ internal object LoadoutDecoder {
         val lore = ArrayList<String>()
         if (tier.isNotBlank()) lore.add(InventoryDecodeSupport.prettyWords(tier))
         primString(pet, "heldItem")?.let(lore::add)
-        // NEU pet items are TYPE;tierIndex (COMMON=0 … MYTHIC=5).
         val neuId = type.uppercase(Locale.ROOT) + ";" + petTierIndex(tier)
         return InventorySnapshot.Slot(neuId, 1, lore, petLabel(pet), null, null, null)
     }

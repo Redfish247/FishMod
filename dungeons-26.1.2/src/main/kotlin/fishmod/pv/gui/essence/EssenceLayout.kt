@@ -7,7 +7,6 @@
  */
 package fishmod.pv.gui.essence
 
-/** Geometry for Home → Essence. Kept free of rendering so bounds can be unit tested. */
 object EssenceLayout {
 	const val PAD = 6
 	const val GAP = 6
@@ -34,10 +33,6 @@ object EssenceLayout {
 		fun bottom(): Int = y + h
 	}
 
-	/**
-	 * Selector rows. `rowY` and `headerY` are offsets from `list.y()` before
-	 * scrolling; `headerY` is empty when there is only room for dividers between groups.
-	 */
 	@JvmRecord
 	data class Selector(
 		val panel: Rect,
@@ -52,7 +47,6 @@ object EssenceLayout {
 		fun maxScroll(): Int = maxOf(0, contentH - list.h)
 	}
 
-	/** Column-major perk grid inside the detail list area. */
 	@JvmRecord
 	data class Perks(val list: Rect, val cols: Int, val rows: Int, val rowH: Int, val colW: Int, val contentH: Int) {
 		fun maxScroll(): Int = maxOf(0, contentH - list.h)
@@ -114,7 +108,6 @@ object EssenceLayout {
 		return Selector(panel, list, headers, rowH, headerY, dividerY, rowY, y)
 	}
 
-	/** Top of the perk list: header row, two stat rows, the level bar and the "Perks" section header. */
 	@JvmStatic
 	fun perkListTop(detail: Rect, lineHeight: Int): Int =
 		detail.y + PAD + DETAIL_HEADER_H + 4 + STAT_ROW * 2 + 4 + BAR_H + 6 + lineHeight + 3

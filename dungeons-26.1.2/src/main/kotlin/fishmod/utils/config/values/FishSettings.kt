@@ -29,22 +29,26 @@ object FishSettings {
 
     @ConfigValue @JvmField var fmColumnOrder: String = ""
     @ConfigValue @JvmField var fmFoldedColumns: String = ""
-    // sidebar folders: name|open|col,col;...
     @ConfigValue @JvmField var fmSidebarFolders: String = ""
+    @ConfigValue @JvmField var fmPinned: String = "General"
+    @ConfigValue @JvmField var fmUiAnimations: Boolean = true
+    @ConfigValue @JvmField var fmThemeV2: Boolean = false
+    @ConfigValue @JvmField var fmCardColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var fmCardAlpha: Int = 7
 
     @ConfigValue @JvmField var fmAnimations: Boolean = true
 
     @ConfigValue @JvmField var fmCompact: Boolean = false
 
-    @ConfigValue @JvmField var fmBgPreset: String = "Dark Glass"
+    @ConfigValue @JvmField var fmBgPreset: String = "Graphite"
     @ConfigValue @JvmField var fmBgCustomColor: Int = 0xFF14181D.toInt()
     @ConfigValue @JvmField var fmBgAlpha: Int = 100
     @ConfigValue @JvmField var fmDropDurationMs: Int = 450
     @ConfigValue @JvmField var fmStaggerDelayMs: Int = 60
     @ConfigValue @JvmField var fmExitStyle: String = "Floor Fall"
-    @ConfigValue @JvmField var fmButtonColor: Int = 0xFF24B6B0.toInt()
+    @ConfigValue @JvmField var fmButtonColor: Int = 0xFFD6D6D6.toInt()
     @ConfigValue @JvmField var fmButtonAlpha: Int = 100
-    @ConfigValue @JvmField var fmRowColor: Int = 0xFF24B6B0.toInt()
+    @ConfigValue @JvmField var fmRowColor: Int = 0xFFD6D6D6.toInt()
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
     @ConfigValue @JvmField var fmRowBgAlpha: Int = 100
     @ConfigValue @JvmField var guiSettings: Boolean = false
@@ -53,6 +57,7 @@ object FishSettings {
     @ConfigValue @JvmField var updateNotice: Boolean = false
     @ConfigValue @JvmField var updateNoticeStyle: String = "Chat Message"
     @ConfigValue @JvmField var dashboardMessagesEnabled: Boolean = true
+    @ConfigValue @JvmField var fishChatEnabled: Boolean = true
     @ConfigValue @JvmField var boardReports: Boolean = true
     @ConfigValue @JvmField var boardAutoSend: Boolean = true
     @ConfigValue @JvmField var boardAutoPerHour: Int = 5
@@ -162,6 +167,17 @@ object FishSettings {
 
     @ConfigValue @JvmField var chatSearch: Boolean = false
 
+    @ConfigValue @JvmField var chatTabs: Boolean = false
+    @ConfigValue @JvmField var chatTabParty: Boolean = true
+    @ConfigValue @JvmField var chatTabGuild: Boolean = true
+    @ConfigValue @JvmField var chatTabOfficer: Boolean = false
+    @ConfigValue @JvmField var chatTabCoop: Boolean = true
+    @ConfigValue @JvmField var chatTabsSwitchChannel: Boolean = true
+    @ConfigValue @JvmField var chatTabsBgColor: Int = 0xC014181D.toInt()
+    @ConfigValue @JvmField var chatTabsHoverColor: Int = 0xE0283038.toInt()
+    @ConfigValue @JvmField var chatTabsSelectedColor: Int = 0xFF24B6B0.toInt()
+    @ConfigValue @JvmField var chatTabsTextColor: Int = 0xFFEDF1F5.toInt()
+
     @ConfigValue @JvmField var chatPeek: Boolean = true
 
     @ConfigValue @JvmField var zoomEnabled: Boolean = false
@@ -192,6 +208,7 @@ object FishSettings {
     @ConfigValue @JvmField var compactTabShowEffects: Boolean = false
 
     @ConfigValue @JvmField var partyCommandsEnabled: Boolean = false
+    @ConfigValue @JvmField var pcArgHints: Boolean = true
     @ConfigValue @JvmField var pcAllinvite: Boolean = false
     @ConfigValue @JvmField var pcPb: Boolean = false
     @ConfigValue @JvmField var pcCata: Boolean = false
@@ -256,6 +273,11 @@ object FishSettings {
     @ConfigValue @JvmField var cfSpamLaunchPad: Boolean = true
     @ConfigValue @JvmField var cfSpamLootShare: Boolean = true
     @ConfigValue @JvmField var cfSpamMisc: Boolean = true
+    @ConfigValue @JvmField var cfTrophyFish: Boolean = false
+    @ConfigValue @JvmField var cfTrophyBronze: Boolean = true
+    @ConfigValue @JvmField var cfTrophySilver: Boolean = true
+    @ConfigValue @JvmField var cfTrophyGold: Boolean = false
+    @ConfigValue @JvmField var cfTrophyDiamond: Boolean = false
     @ConfigValue @JvmField var cfCollapseBlank: Boolean = false
     @ConfigValue @JvmField var cfCustom: Boolean = false
     @ConfigValue @JvmField var cfCustomPatterns: String = ""
@@ -275,7 +297,6 @@ object FishSettings {
     @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
 
     @ConfigValue @JvmField var nametagStatsEnabled: Boolean = false
-    @ConfigValue @JvmField var nametagStatsShowSelf: Boolean = false
     @ConfigValue @JvmField var nametagStatsShowNetworth: Boolean = true
     @ConfigValue @JvmField var nametagStatsShowCataLevel: Boolean = true
     @ConfigValue @JvmField var nametagStatsShowSecretAvg: Boolean = true
@@ -341,6 +362,7 @@ object FishSettings {
     @ConfigValue @JvmField var pcRuns: Boolean = false
     @ConfigValue @JvmField var pcJoinFloor: Boolean = false
     @ConfigValue @JvmField var pcFps: Boolean = false
+    @ConfigValue @JvmField var pcHolding: Boolean = false
     @ConfigValue @JvmField var pcTps: Boolean = false
     @ConfigValue @JvmField var pcPing: Boolean = false
     @ConfigValue @JvmField var pcDisband: Boolean = false
@@ -546,10 +568,25 @@ object FishSettings {
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var recipeViewer: Boolean = false
     @ConfigValue @JvmField var recipeViewerHoldTime: Int = 1200
+    @ConfigValue @JvmField var skyItemList: Boolean = false
+    @ConfigValue @JvmField var skyItemListColumns: Int = 5
+    @ConfigValue @JvmField var skyItemListBgOn: Boolean = true
+    @ConfigValue @JvmField var skyItemListBgOpacity: Int = 35
+    @ConfigValue @JvmField var skyItemListBgColor: Int = 0xFF12151B.toInt()
+    @ConfigValue @JvmField var skyItemListRarityBg: Boolean = true
+    @ConfigValue @JvmField var skyItemListRarityOpacity: Int = 40
+    @ConfigValue @JvmField var skyItemListRarityRound: Boolean = false
+    @ConfigValue @JvmField var skyItemListAccentColor: Int = 0xFF24B6B0.toInt()
+    @ConfigValue @JvmField var skyItemListClickKey: Boolean = true
+    @ConfigValue @JvmField var npcWarpHighlight: Boolean = true
+    @ConfigValue @JvmField var npcWarpHighlightColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var npcWarpHighlightBeam: Boolean = true
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
+    @ConfigValue @JvmField var focusMode: Boolean = false
 
     @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false
     @ConfigValue @JvmField var auctionAutofillPercent: Int = 5
+    @ConfigValue @JvmField var signCalculator: Boolean = true
 
     @ConfigValue @JvmField var tooltipScrollEnabled: Boolean = false
     @ConfigValue @JvmField var tooltipScrollScale: Int = 100
@@ -741,6 +778,9 @@ object FishSettings {
     @ConfigValue @JvmField var inventorySearchEnabled: Boolean = false
     @ConfigValue @JvmField var inventorySearchAlwaysShow: Boolean = false
     @ConfigValue @JvmField var inventorySearchHighlight: Boolean = true
+    // -1 = default spot (bottom centre, above the hotbar)
+    @ConfigValue @JvmField var inventorySearchX: Int = -1
+    @ConfigValue @JvmField var inventorySearchY: Int = -1
     @ConfigValue @JvmField var inventorySearchHighlightColor: Int = 0xFF55FF55.toInt()
 
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
@@ -828,19 +868,19 @@ object FishSettings {
     @ConfigValue @JvmField var clockHudX: Int = 10
     @ConfigValue @JvmField var clockHudY: Int = 100
     @ConfigValue @JvmField var clockHudScale: Double = 1.0
-    @ConfigValue @JvmField var spotifyHudEnabled: Boolean = false
-    @ConfigValue @JvmField var spotifyHudShowPaused: Boolean = false
-    @ConfigValue @JvmField var spotifyHudIcon: Boolean = true
-    @ConfigValue @JvmField var spotifyHudLyrics: Boolean = true
-    @ConfigValue @JvmField var spotifyHudConnected: Boolean = true
-    @ConfigValue @JvmField var spotifyHudMaxChars: Int = 28
-    @ConfigValue @JvmField var spotifyHudLyricOffset: Int = 0
-    @ConfigValue @JvmField var spotifyHudBackground: Boolean = true
-    @ConfigValue @JvmField var spotifyHudTextColor: Int = 0xFF1DB954.toInt()
-    @ConfigValue @JvmField var spotifyHudBgColor: Int = 0x80000000.toInt()
-    @ConfigValue @JvmField var spotifyHudX: Int = 10
-    @ConfigValue @JvmField var spotifyHudY: Int = 20
-    @ConfigValue @JvmField var spotifyHudScale: Double = 1.0
+    @ConfigValue @JvmField var spotifyLyricsEnabled: Boolean = false
+    @ConfigValue @JvmField var spotifyLyricsShowPaused: Boolean = false
+    @ConfigValue @JvmField var spotifyLyricsIcon: Boolean = true
+    @ConfigValue @JvmField var spotifyLyricsLyrics: Boolean = true
+    @ConfigValue @JvmField var spotifyLyricsConnected: Boolean = true
+    @ConfigValue @JvmField var spotifyLyricsMaxChars: Int = 28
+    @ConfigValue @JvmField var spotifyLyricsLyricOffset: Int = 0
+    @ConfigValue @JvmField var spotifyLyricsBackground: Boolean = true
+    @ConfigValue @JvmField var spotifyLyricsTextColor: Int = 0xFF1DB954.toInt()
+    @ConfigValue @JvmField var spotifyLyricsBgColor: Int = 0x80000000.toInt()
+    @ConfigValue @JvmField var spotifyLyricsX: Int = 10
+    @ConfigValue @JvmField var spotifyLyricsY: Int = 20
+    @ConfigValue @JvmField var spotifyLyricsScale: Double = 1.0
     @ConfigValue @JvmField var perfHudX: Int = 10
     @ConfigValue @JvmField var perfHudY: Int = 60
     @ConfigValue @JvmField var perfHudScale: Double = 1.0
@@ -873,7 +913,7 @@ object FishSettings {
     @ConfigValue @JvmField var invincProcBonzoColor: Int = 0xFF5555FF.toInt()
     @ConfigValue @JvmField var invincProcPhoenixText: String = "Phoenix Procced!"
     @ConfigValue @JvmField var invincProcPhoenixColor: Int = 0xFFFF5555.toInt()
-    @ConfigValue @JvmField var invincProcSound: Boolean = true
+    @ConfigValue @JvmField var invincProcSoundOn: Boolean = false
     @ConfigValue @JvmField var invincProcSoundName: String = "Blaze Hit"
     @ConfigValue @JvmField var invincProcVolume: Int = 100
     @ConfigValue @JvmField var invincProcPitch: Double = 1.0
@@ -972,7 +1012,6 @@ object FishSettings {
     @ConfigValue @JvmField var secretClickedPitch: Double = 2.0
 
     @ConfigValue @JvmField var customScoreboardEnabled: Boolean = false
-    @ConfigValue @JvmField var customScoreboardCompactNumbers: Boolean = false
     @ConfigValue @JvmField var customScoreboardHideInDungeon: Boolean = false
     @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
     @ConfigValue @JvmField var customScoreboardHudY: Int = 2
@@ -990,39 +1029,17 @@ object FishSettings {
     @ConfigValue @JvmField var sbSectionDate: Boolean = true
     @ConfigValue @JvmField var sbSectionTime: Boolean = true
     @ConfigValue @JvmField var sbSectionLocation: Boolean = true
-    @ConfigValue @JvmField var sbSectionPlayers: Boolean = true
-    @ConfigValue @JvmField var sbSectionGameMode: Boolean = true
     @ConfigValue @JvmField var sbSectionPurse: Boolean = true
-    @ConfigValue @JvmField var sbSectionBank: Boolean = true
     @ConfigValue @JvmField var sbSectionMotes: Boolean = true
     @ConfigValue @JvmField var sbSectionBits: Boolean = true
-    @ConfigValue @JvmField var sbSectionCopper: Boolean = true
-    @ConfigValue @JvmField var sbSectionSowdust: Boolean = true
     @ConfigValue @JvmField var sbSectionGems: Boolean = true
-    @ConfigValue @JvmField var sbSectionHeat: Boolean = true
-    @ConfigValue @JvmField var sbSectionCold: Boolean = true
-    @ConfigValue @JvmField var sbSectionNorthStars: Boolean = true
-    @ConfigValue @JvmField var sbSectionSoulflow: Boolean = true
-    @ConfigValue @JvmField var sbSectionGuild: Boolean = true
-    @ConfigValue @JvmField var sbSectionCookie: Boolean = true
-    @ConfigValue @JvmField var sbSectionSkillAverage: Boolean = true
-    @ConfigValue @JvmField var sbSectionObjective: Boolean = true
     @ConfigValue @JvmField var sbSectionSlayer: Boolean = true
     @ConfigValue @JvmField var sbSectionPowder: Boolean = true
-    @ConfigValue @JvmField var sbSectionDiana: Boolean = true
     @ConfigValue @JvmField var sbSectionParty: Boolean = true
-    @ConfigValue @JvmField var sbSectionEquipment: Boolean = true
-    @ConfigValue @JvmField var sbSectionDungeon: Boolean = true
-    @ConfigValue @JvmField var sbSectionPet: Boolean = true
     @ConfigValue @JvmField var sbSectionOther: Boolean = true
-    @ConfigValue @JvmField var sbSectionTps: Boolean = true
-    @ConfigValue @JvmField var sbSectionPing: Boolean = true
-    @ConfigValue @JvmField var sbSectionFps: Boolean = true
-    @ConfigValue @JvmField var sbSectionPetExtra: Boolean = false
     @ConfigValue @JvmField var sbSectionSkills: Boolean = false
     @ConfigValue @JvmField var sbSectionBestiary: Boolean = false
     @ConfigValue @JvmField var sbSectionCollections: Boolean = false
-    @ConfigValue @JvmField var sbSectionElection: Boolean = false
     @ConfigValue @JvmField var sbSectionFireSales: Boolean = false
 
     @ConfigValue @JvmField var slayerSpawnAlertEnabled: Boolean = false
@@ -1043,12 +1060,10 @@ object FishSettings {
     @ConfigValue @JvmField var slayerSpawnHudX: Int = 10
     @ConfigValue @JvmField var slayerSpawnHudY: Int = 140
     @ConfigValue @JvmField var slayerSpawnHudScale: Double = 1.0
-    @ConfigValue @JvmField var slayerSpawnOpacity: Int = 0
 
     @ConfigValue @JvmField var slayerStatsHudEnabled: Boolean = false
     @ConfigValue @JvmField var slayerStatsShowXp: Boolean = true
     @ConfigValue @JvmField var slayerStatsShowKills: Boolean = true
-    @ConfigValue @JvmField var slayerStatsOpacity: Int = 50
     @ConfigValue @JvmField var slayerStatsHudX: Int = 10
     @ConfigValue @JvmField var slayerStatsHudY: Int = 170
     @ConfigValue @JvmField var slayerStatsHudScale: Double = 1.0
@@ -1062,12 +1077,10 @@ object FishSettings {
     @ConfigValue @JvmField var slayerTimerHudX: Int = 10
     @ConfigValue @JvmField var slayerTimerHudY: Int = 255
     @ConfigValue @JvmField var slayerTimerHudScale: Double = 1.0
-    @ConfigValue @JvmField var slayerTimerOpacity: Int = 0
 
     @ConfigValue @JvmField var slayerProfitEnabled: Boolean = false
     @ConfigValue @JvmField var slayerProfitLines: Int = 10
     @ConfigValue @JvmField var slayerProfitIdleSeconds: Int = 60
-    @ConfigValue @JvmField var slayerProfitOpacity: Int = 56
     @ConfigValue @JvmField var slayerProfitHudX: Int = 10
     @ConfigValue @JvmField var slayerProfitHudY: Int = 300
     @ConfigValue @JvmField var slayerProfitHudScale: Double = 1.0
@@ -1094,10 +1107,21 @@ object FishSettings {
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
+    @ConfigValue @JvmField var slayerPhaseHpLabel: Boolean = false
+    @ConfigValue @JvmField var slayerPhaseTimeLabel: Boolean = false
+    @ConfigValue @JvmField var slayerPhaseHideNametag: Boolean = false
 
     @JvmStatic
+    fun trophyRarityHidden(r: fishmod.features.fishing.FishingAlertText.TrophyRarity): Boolean = when (r) {
+        fishmod.features.fishing.FishingAlertText.TrophyRarity.BRONZE -> cfTrophyBronze
+        fishmod.features.fishing.FishingAlertText.TrophyRarity.SILVER -> cfTrophySilver
+        fishmod.features.fishing.FishingAlertText.TrophyRarity.GOLD -> cfTrophyGold
+        fishmod.features.fishing.FishingAlertText.TrophyRarity.DIAMOND -> cfTrophyDiamond
+    }
+
     fun slayerAnyEnabled(): Boolean =
         slayerSpawnAlertEnabled || slayerCocoonAlertEnabled || slayerSpawnHudEnabled ||
-            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled || slayerRngTitleEnabled
+            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled || slayerRngTitleEnabled ||
+            fishmod.features.slayer.EndAlertSettings.slayerMiniHighlight
 
 }

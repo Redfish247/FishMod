@@ -13,14 +13,11 @@ import java.util.Locale
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Resolves SkyBlock ids against NEU repo defs and builds base stacks from NEU fields. */
 object NeuItemResolver {
-	/** Hypixel sack rune ids: `RUNE_ZAP_1` → NEU `ZAP_RUNE;1`. */
 	private val SACK_RUNE_ID = Regex("^RUNE_(.+)_(\\d+)$", RegexOption.IGNORE_CASE)
 	private val ITEM_MODEL = Regex("ItemModel\\s*:\\s*\"([^\"]+)\"", RegexOption.IGNORE_CASE)
 	private val DAMAGE_SUFFIX = Regex("-\\d+$")
 
-	/** Rarity word in NEU lore tails. */
 	@JvmField
 	val RARITY_WORD = Regex("(?i)\\b(COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|MYTHIC|DIVINE|VERY[_ ]SPECIAL|SPECIAL|ULTIMATE)\\b")
 
@@ -32,11 +29,6 @@ object NeuItemResolver {
 		return null
 	}
 
-	/**
-	 * NEU internal names often differ from Hypixel ids
-	 * (e.g. `RED_STAINED_GLASS_PANE` → `STAINED_GLASS_PANE-14`, pets `TYPE;4`,
-	 * sack runes `RUNE_ZAP_1` → `ZAP_RUNE;1`).
-	 */
 	@JvmStatic
 	fun candidates(skyblockId: String?): List<String> {
 		val out = ArrayList<String>()
@@ -54,7 +46,6 @@ object NeuItemResolver {
 		SACK_RUNE_ID.matchEntire(key)?.let { rune ->
 			addCandidate(out, rune.groupValues[1] + "_RUNE;" + rune.groupValues[2])
 		}
-		// Cofl / AH pet tags: PET_JELLYFISH → NEU JELLYFISH;3 (not PET_ITEM_*).
 		if (key.startsWith("PET_") && !key.startsWith("PET_ITEM_")) {
 			val type = key.substring(4)
 			if (type.isNotBlank()) {
@@ -64,7 +55,6 @@ object NeuItemResolver {
 				addCandidate(out, type)
 			}
 		}
-		// COLOUR_STAINED_GLASS_PANE / COLOUR_WOOL / etc. → legacy NEU damage form
 		for (color in LegacyMaterialMap.COLOR_NAMES) {
 			val prefix = color + "_"
 			if (!key.startsWith(prefix)) {
@@ -113,7 +103,6 @@ object NeuItemResolver {
 	fun buildFromNeu(key: String): ItemStack? {
 		val item = NeuRepoCache.get(key)
 		if (item == null) {
-			// Kick off async fetch; next frame/open may resolve.
 			NeuRepoCache.prefetch(listOf(key))
 			return null
 		}
@@ -138,7 +127,6 @@ object NeuItemResolver {
 
 		val model = extract(ITEM_MODEL, nbt)
 		val resolveId = if (LegacyMaterialMap.isBanner(itemId) || LegacyMaterialMap.isBanner(model)) {
-			// NEU often sets ItemModel white_banner while damage carries the real colour (e.g. Totem).
 			"minecraft:banner"
 		} else if (model != null && model.lowercase(Locale.ROOT).startsWith("minecraft:")) {
 			model
@@ -160,7 +148,6 @@ object NeuItemResolver {
 		return pattern.find(nbt)?.groupValues?.get(1)
 	}
 
-	/** Newer NEU items often omit `tier`; rarity lives in the last lore line / name colour. */
 	@JvmStatic
 	fun tierFromNeuItem(neu: JsonObject): String {
 		if (neu.has("lore") && neu.get("lore").isJsonArray) {

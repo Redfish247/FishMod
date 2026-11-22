@@ -5,7 +5,7 @@ import fishmod.compat.showScreen
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.shaded.practicalconfig.hud.HUDComponent
-import fishmod.features.chat.ChatRuleStore
+import fishmod.features.extras.ChatRuleStore
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.config.values.FishSettings
@@ -55,17 +55,37 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         fun scale(): Double = if (getScaleVal != null) getScaleVal.asDouble else 1.0
         fun isVisible(): Boolean = visibleVal == null || visibleVal.asBoolean
-        /** Setting-level on/off for the list pill (not "showing right now"). */
         fun isEnabledInList(): Boolean =
             enabledVal?.asBoolean ?: FeatureMasters.map[nameVal]?.invoke() ?: isVisible()
     }
 
     companion object {
         private val ENTRIES: MutableList<HudEntry> = ArrayList()
+        private val FROZEN: MutableSet<String> = HashSet()
+        private const val EYE_W = 11
+        private const val EYE_H = 9
 
         private fun addEntry(e: HudEntry) {
             if (ENTRIES.any { it.name() == e.name() }) FishDiag.fail("FishHudEditor.1", "HUD '${e.name()}' registered twice (entries=${ENTRIES.size})")
             ENTRIES.add(e)
+        }
+
+        /** Draws a HUD's example at its configured spot for the config screen's shift preview; false if it has none. */
+        @JvmStatic
+        fun drawPreview(ctx: GuiGraphicsExtractor, name: String): Boolean {
+            val e = ENTRIES.firstOrNull { it.name() == name } ?: return false
+            val ex = HudPreview.example(name) ?: return false
+            val sc = e.scale().toFloat()
+            val pose = ctx.pose()
+            pose.pushMatrix()
+            try {
+                pose.translate(e.getX().asInt.toFloat(), e.getY().asInt.toFloat())
+                pose.scale(sc, sc)
+                HudPreview.draw(ex, ctx, name)
+            } finally {
+                pose.popMatrix()
+            }
+            return true
         }
 
         @JvmStatic
@@ -126,8 +146,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
 
         @JvmStatic
-        fun registerLocked(name: String, getX: IntSupplier, getY: IntSupplier, w: Int, h: Int) {
-            addEntry(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true))
+        @JvmOverloads
+        fun registerLocked(name: String, getX: IntSupplier, getY: IntSupplier, w: Int, h: Int, enabled: BooleanSupplier? = null) {
+            addEntry(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true, null, null, null, enabled))
         }
 
         @JvmStatic
@@ -235,187 +256,15 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title", "Crown of Avarice"),
             "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
             "Farming" to listOf(
-                "Visitor Timer", "Visitor Shopping List", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Pest Profit", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
+                "Visitor Timer", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
                 "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
-                "Log Book", "Sensitivity", "Anita Medal Profit", "Mooshroom Cow Perk",
+                "Log Book", "Sensitivity", "Mooshroom Cow Perk",
             ),
+            "Fishing" to listOf("Fishing Sea Creatures", "Fishing Profit", "Fishing Efficiency", "Barn Fishing Timer", "Fishing Festival", "Fishing Area Tracker",
+                "Fishing Creature Alert", "Fishing Rare Drop Alert", "Fishing Hotspot Alert", "Fishing Wormhole Alert", "Fishing Trophy Alert", "Fishing Deployable Alert", "Fishing Bait Alert"),
             "Rift" to listOf("Rift Guide"),
+            "Alert Titles" to AlertTitles.NAMES,
             "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
-        )
-
-        private class Sample(
-            val lines: List<String>,
-            val center: Boolean = false,
-            val lineH: Int = 10,
-            val right: List<String>? = null,
-            val width: Int? = null,
-            val bg: Int = 0,
-        )
-
-        private fun s(vararg lines: String, lineH: Int = 10) = Sample(lines.toList(), lineH = lineH)
-        private fun c(vararg lines: String, lineH: Int = 10) = Sample(lines.toList(), center = true, lineH = lineH)
-        private fun cols(rows: List<Pair<String, String>>, width: Int? = null, lineH: Int = 10) =
-            Sample(rows.map { it.first }, lineH = lineH, right = rows.map { it.second }, width = width)
-
-        private val SAMPLES: Map<String, Sample> = mapOf(
-            "Boss Tick Clock" to c("§f12.35"),
-            "Crystal Respawn" to c("§d1.20"),
-            "Crystal Not Placed" to c("§d§lCRYSTAL NOT PLACED"),
-            "Storm Kill Time" to c("§538.45"),
-            "LB Release Timer" to c("§c2.35"),
-            "Storm Crush Banner" to c("§d§lSTORM CRUSHED"),
-            "Pillar Blast Timer" to c("§c0.85"),
-            "Terminals Open In" to c("§e3.45"),
-            "Section Count" to c("§a(§c3§a/7)"),
-            "P3 Section" to s("§5P3: §f 2/4"),
-            "Device Done" to c("§a§lDEVICE DONE"),
-            "Melody Callout" to c("§5§lHEALER §7» §dMelody §f2§7/§f4"),
-            "Section Cleared" to c("§a§lSECTION CLEARED"),
-            "Goldor Splits" to cols(listOf(
-                "§6S1 " to "§a12.34s§8 (§712.05s§8)",
-                "§6S2 " to "§a13.10s§8 (§712.80s§8)",
-                "§6S3 " to "§a11.92s§8 (§711.70s§8)",
-                "§6S4 " to "§a14.05s§8 (§713.85s§8)",
-            ), width = 120),
-            "Terminal Tracker" to Sample(
-                listOf("§fTerminals", "§fS2 (5/8)", " §bTerm #1 §fTechnoFish", " §bTerm #2 §fGoldorMain",
-                    " §dDev #1 §fSlowGuy", " §cLever #1 §fTechnoFish", " §cLever #2 §fHealerGuy", " §cMissing 3", " §cGate pending"),
-                lineH = 10,
-                bg = 0x66000000,
-            ),
-            "Run Splits" to cols(listOf(
-                "§4Blood Open " to "§a25.70s§8 (§725.10s§8)",
-                "§cBlood Clear " to "§a1m 7.02s§8 (§765.40s§8)",
-                "§dPortal " to "§a31.44s§8 (§730.90s§8)",
-                "§5Maxor " to "§a28.15s§8 (§727.60s§8)",
-                "§3Storm " to "§a52.80s§8 (§751.95s§8)",
-                "§eTerminals " to "§a46.21s§8 (§745.30s§8)",
-            ), width = 165),
-            "Est. Total (follows Splits)" to cols(listOf(
-                "§3Est. Total " to "§a6m 12.40s",
-                "§8Lag Lost " to "§c1.35s",
-            ), width = 165),
-            "Puzzles" to s("§fPuzzles: (3)", "§aCreeper Beams: [✔]", "§cIce Path: [✦]", "§9???: [✦]"),
-            "PB Pace" to s("§6§lPB Pace §7(M7)", "§fStorm §c+1.24s", "§7vs PB: §cbehind §c+3.87s", lineH = 11),
-            "Dungeon Map Info" to c(
-                "§fSecrets: §b34§7-§e41§7-§c52   §fScore: §e287",
-                "§fDeaths: §a0   §fM: §a✔   §fP: §c✖   §fCrypts: §e3",
-            ),
-            "Party Warp Timer" to s("§eWarp: §a23.4s"),
-            "Blessings" to s("§4Power: §a34", "§5Time: §a5"),
-            "Mask & Phoenix Timer" to s("§eBonzo §7●", "§7Spirit §7●", "§7Phoenix §7✔"),
-            "Dungeon Breaker" to s("§cCharges: §e17§7/§e20§c⸕"),
-            "Spirit Bear" to s("§cBear: §f18/25"),
-            "Rift Guide" to s("§d§lMirrorverse", "§f• Lava maze: follow the glass", "§f• Upside-down parkour", "§f• Turn on the red lever", "§f• Dance room: copy the moves"),
-            "Slayer RNG Meter" to s("§dRNG Meter: §eWarden Heart §8(§a62.4%§8)"),
-            "Achievement Popup" to Sample(listOf("§6§lAchievement Unlocked!", "§fFlawless Floor 7", "§7S+ on F7 without dying", "§e+25 points"), lineH = 12, bg = 0xC0101018.toInt()),
-            "Mooshroom Cow Perk" to s("§c§lMooshroom Cow Perk", "§7Mushroom Milestone §f24", "§e182,340§8/§e300,000 §8(60.8%)", "§7ETA: §b1h 12m"),
-            "Necron Drag Timer" to s("§bDragged: §f3.45"),
-            "Kuudra Backbone" to s("§6Backbone §c||||||||||||§7||||||||"),
-            "Session Stats" to s("§7Runs: §a14", "§7Deaths: §c3", "§7R/hr: §e9.2", "§7Time: §f1h 31m", lineH = 12),
-            "Simon Says" to s("§bSimon Says: §a3§7/4"),
-            "Party Finder List" to s(
-                "§e§lParty Finder §7(§f7§7)",
-                "§8· §fTechnoFish  §d§lM7 §8[§e4§7/5§8]  §7lv §f45  §8· §7wPB §fSlowGuy §f5:48",
-                "   §7need §cH  §8· §7s+ runs, no leechers",
-                "§8· §fGoldorMain  §b§lF7 §8[§e2§7/5§8]  §7lv §f38  §8· §7wPB §fTechnoFish §f6:02",
-                "   §7need §aT §9M  §8· §7chill run",
-            ),
-            "Relic Countdown" to s("§dRelic §f1.85s"),
-            "Wither Dragon Timer" to s("§53450ms"),
-            "Chat Alerts" to c("§e⚑ Wither Key Picked Up!", lineH = 11),
-            "Soulflow" to s("§3Soulflow: §f12,345"),
-            "Quiz Timer" to s("§dQuiz §7(§f2/3§7): §b8.4s"),
-            "Secret Overlay" to s("§7Secrets: §e5§7/§e9"),
-            "Performance" to s("§7FPS: §a144", "§7TPS: §a19.9", "§7Ping: §a42ms"),
-            "Storm Over Alert" to s("§dStorm Over!"),
-            "Veno Stack Count" to s("§e3.4s", "§f20/40"),
-            "Py Tick Timer" to c("§d12.35"),
-            "Necron LB Timer" to c("§c3.20"),
-            "Players Leaped" to s("§5Leaped (HEE2): §e2/4"),
-            "Dungeon Score Title" to c("§aOn pace for 300 §7(12m 34s)"),
-            "Custom Scoreboard" to Sample(
-                listOf("§e§lSKYBLOCK") + List(13) { "" },
-                center = true,
-                lineH = 9,
-                right = listOf(
-                    "", "§711/02/26  §8m117DM", "Winter 8th", "§712:00am", "§7⏣ §aYour Island",
-                    "", "Level: §b312", "Purse: §61,234,567", "Bits/Motes: §b1,024§7/§d850", "Gems: §a120", "",
-                    "§eMayor Diana §7(3d 4h)", " §7- §fPet XP Buff",
-                    "§ewww.hypixel.net",
-                ),
-                width = SCOREBOARD_W,
-                bg = 0x4C000000,
-            ),
-            "Tac Timer" to s("§5Tac: §a2.4"),
-            "Arrow HUD" to s("§fFlint Arrow §7x§f1,284"),
-            "Kuudra Splits" to s("§6§lKuudra Splits §7T5", "§bSupplies: §a38.2s §8(36.9s)", "§bBuild: §a41.5s §8(40.1s)", "§bEat: §a22.8s §8(21.5s)", "§bKill: §e18.3s", "§fTotal: §e2m 1.8s §8(1m 58s)"),
-            "Kuudra Supplies" to s("§6Supplies: §a4§7/6", "§eSupply 1 §73.2s", "§eSupply 2 §76.8s", "§eSupply 3 §79.1s", "§eSupply 4 §711.4s"),
-            "Kuudra Build" to s("§bBuild: §e64%", "§bBuilders: §a3", "§bFreshers: §a2"),
-            "Kuudra Fresh Timers" to s("§6TechnoFish§f: 7.4s", "§6GoldorMain§f: 4.1s"),
-            "Kuudra Health" to s("§c§l62.5M §7/ §a100M §c❤"),
-            "Kuudra Chest Counter" to s("§6Chests: §e57§7/60"),
-            "Kuudra Profit" to s("§6Kuudra Profit: §a48.2M", "§712 paid chests, §a4.0M§7/chest"),
-            "Kuudra Chest Value" to s("§6§lChest Value", "§fWither Shard §6§l+1.2M", "§9Hollow Wisp §6§l+310k", "§fTotal: §a1.5M"),
-            "Rag Timer" to s("§5Rag: §a8.5s"),
-            "Spring Boots" to s("§aCharge: §f67%"),
-            "Diana Mythos HP" to s("§2Empyrean King Minos §a100M§f/§a100M§c❤ §b✯", "§6King Minos §7- §575 Hits"),
-            "Diana No Shuriken" to s("§c§lNO SHURIKEN!"),
-            "Diana Rare Mob Alert" to c("§6§l<§b§lO§6§l> §d§lINQUISITOR! §6§l<§b§lO§6§l>", "§7Tester"),
-            "Diana Warp Title" to c("§bWarp §eCastle"),
-            "Mining Profit" to s("§e§lMining Profit §7(Combined, Session)", "§6  4.2M §7| §6Fine Jade Gemstone §f38",
-                "§6  1.8M §7| §5Umber Plate §f3", "§6420.5k §7| §9Rough Topaz Gemstone §f2,140", "§7Corpses §f12",
-                "§7Glacite Powder §b48,210", "§7Playtime §f1h 12m", "§eProfit §66.4M §7(5.3M/h)"),
-            "Commissions" to s("§9§lCommissions", "§fCorpse Looter§7: §c0%", "§fPeridot Gemstone Collector§7: §e78.5%",
-                "§fManiac Slayer§7: §aDONE"),
-            "Mineshaft Pity" to s("§3§lMineshaft Pity", "§3Counter: §e1,298§6/§e2000 §7(64.9%)", "§3Chance: §e1§6/§e702", "§3Blocks: §e341"),
-            "Pickobulus" to s("§b§lPickobulus §7(38 blocks)", "§7Glacite: §f24", "§7Umber: §f9", "§7Hard Stone: §f5"),
-            "Maniac Miner" to s("§c§lManiac Miner", "§7Blocks: §f212 §8(18s)"),
-            "SkyMall" to s("§bSkyMall: §f+100 ☘ Mining Fortune"),
-            "Visitor Timer" to s("§aVisitors: §f3  §7Next: §b2m 14s"),
-            "Visitor Shopping List" to s("§e§lShopping List", "§fEnchanted Hay Bale §8x2 §6340k", "§fBox of Seeds §8x1 §6610k", "§7Total: §6950k"),
-            "Visitor Stats" to s("§a§lVisitor Stats", "§7Accepted: §f124", "§7Copper: §c8,412", "§7Garden XP: §21,950", "§7Rare Rewards: §d3"),
-            "Pest Timer" to s("§c§lPests §f3", "§7Cooldown: §e1m 58s", "§7Plots: §f4, 12", "§7Spray: §aCompost (12m)"),
-            "Pest Profit" to s("§c§lPest Profit", "§61.2M §fBurrowing Spores §8x1", "§7Kills: §f42", "§eTotal: §61.9M"),
-            "Composter" to s("§2§lComposter", "§7Organic Matter: 120k", "§7Fuel: 30k", "§7Time Left: 2h 5m", "§7Stored Compost: 12"),
-            "Jacob's Contest" to s("§e§lJacob's Contest", "§f○ Wheat", "§fStarts In: 12m"),
-            "Rare Crops" to s("§6Rare Crops: §f7"),
-            "Farming Profit" to s("§6§lFarming Profit §7(All, Session)", "§6 2.4M §7| §fEnchanted Potato §8x640", "§6 820k §7| §fBountiful Drops §8x12",
-                "§6 310k §7| §fSeeds §8x4,200", "§7Time §f1h 05m", "§eProfit §63.5M §7(3.2M/h)"),
-            "Garden Titles" to c("§a§lNew Visitor: §fSpaceman"),
-            "Rare Drop Alert" to c("§6§lRARE DROP!", "§6Cropie §7(+120 Farming Fortune)"),
-            "Crop Milestone" to s("§6§lWheat §7- Tier §f32", "§7Next: §f33 §8(71.3%)", "§7Average tier: §f28.4", "§7ETA: §e4m 12s §8(2.1 lvl/h)"),
-            "Garden Level" to s("§a§lGarden Level §f20 §7(+5 overflow)", "§7XP: §f4,210§7/§f10,000 §8(42.1%)"),
-            "Hoe Level" to s("§e§lHoe Level §f14§7/§f10 §a(+4 overflow)"),
-            "Jeff Buy Order" to s("§e§lJeff Buy Order", "§8§mRarefinder", "§a▶ §f§lVermin Vaporizer §7(2/3)", "§7  Hypercharge", "§7  Cropshot", "§7  Overdrive"),
-            "Charmed Visitor" to s("§d§lCharmed Visitor", "§7Next: §f12m 30s", "§7Charm: §a+35%"),
-            "Greenhouse" to s("§a§lGreenhouse", "§7Harvestable: §a12", "§7Water: §c Low"),
-            "Stereo Harmony" to s("§d§lStereo Harmony", "§7Vinyl: §fPretty Fly", "§7Pest: §aFly §7Crop: §6Wheat"),
-            "Log Book" to s("§b§lLog Book", "§7Visited: §f128§7/§f165", "§7Accepted: §f1,204", "§7Rare: §d38§7/§d60"),
-            "Sensitivity" to s("§e§lSensitivity §f25%", "§7Lowered while farming"),
-            "Fossil Solver" to s("§6§lFossil Solver", "§eIdentified, §a4 §eplacements left", "§eCharges: §a12", "§eFossil: §aClaw"),
-            "Diana Loot Tracker" to s("§6§lDiana Loot §7(Event)", "§5Chimera§7: §f2", "§6Daedalus Stick§7: §f1", "§9Griffin Feather§7: §f14", "§6Coins§7: §f1.2m", "§aProfit§7: §f25.3m §7(4.1m/h)"),
-            "Diana Mob Tracker" to s("§6§lDiana Mobs §7(Event)", "§dMinos Inquisitor§7: §f6", "§5Minos Champion§7: §f21", "§7Total Mobs§7: §f140"),
-            "Diana Stats" to s("§6§lDiana Stats", "§eMobs since Inq§7: §f38", "§eInqs since Chimera§7: §f4"),
-            "Crown of Avarice" to s("§dCrown of Avarice", "§7Coins: §6250.0M§7/§61B", "§7Time: §f1h 12m", "§7Per Hour: §650.0M", "§7Time to Max: §b15h 0m"),
-            "Diana Magic Find" to s("§6§lDiana Magic Find", "§5Chimera§7: §b320%", "§6Stick§7: §b250%"),
-            "Pet" to s("§6Ender Dragon §a+1.2k §7(845.3k/1.9M 44.5%)"),
-            "Slayer Spawn" to s("§5§lRevenant Horror V", "§7Spawn: §f1,850 §7/ §f2,400 §8(77%)", lineH = 12),
-            "Experiment Profit" to s("§e§lExperiment Profit", "§61.2M §7| §fUltimate Wise I §f1", "§7Superpairs §f3 §8| §7Chrono §f3", "§7Enchanting XP §b450K §7(§b150K§7/exp)", "§eProfit §61.2M §7(§6400K§7/exp)", lineH = 12),
-            "Slayer Carries" to s("§5§lSLAYER CARRIES", "§eSteve §7Voidgloom Seraph IV§7: §f3§7/§f10", lineH = 12),
-            "Slayer Stats" to s("§5§lSLAYER STATS", "§7XP: §f12.5K", "§7Kills: §f84", "§7XP/hr: §e45.2K", "§7Kills/hr: §e31", lineH = 12),
-            "Slayer Boss Timer" to s("§6Boss: §f12.84s", "§7PB: §f9.51s", "§a§lNEW PB!", "§7Cycle: §f52.3s", "§7Since kill: §f18.4s", lineH = 12),
-            "Slayer Profit" to cols(listOf(
-                "§e§lRevenant Horror 5 Profit Tracker" to "",
-                "§71x §fShard of the Shredded" to "§61.2M",
-                "§73x §fFoul Flesh" to "§6186K",
-                "§71,284x §6Mob Kill Coins" to "§6356K",
-                "§7142x §fRevenant Flesh" to "§68.5K",
-                " §7Slayer Spawn Costs:" to "§c-2.1M",
-                "§7Bosses killed:" to "§e42",
-                "§eTotal Profit:" to "§64,812,300 coins",
-                "§eProfit/h:" to "§63.2M",
-            ), lineH = 12),
         )
 
         const val SCOREBOARD_W = 118
@@ -437,7 +286,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         private const val SIDE_W_MIN = 110
         private const val SIDE_W_MAX = 200
-        private const val SIDE_ROW = 12
+        private const val SIDE_ROW = 14
         private const val SIDE_TOP = 58
         private const val SEARCH_Y = 20
         private const val SEARCH_H = 14
@@ -446,26 +295,27 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         private val ACCENT get() = ScreenTheme.ACCENT
         private val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
-        private val TEXT = ScreenTheme.TEXT_COLOR
-        private val SUBTEXT = ScreenTheme.SUBTEXT_COLOR
-        private val ON_ACCENT = 0xFF06302F.toInt()
+        private val TEXT get() = ScreenTheme.TEXT_COLOR
+        private val SUBTEXT get() = ScreenTheme.SUBTEXT_COLOR
+        private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private val GUIDE = 0xFFFF4FB0.toInt()
         private val GRID_LINE = 0x14FFFFFF
-        private val SIDE_BG = 0xFF101418.toInt()
+        private val SIDE_BG = 0xFF131313.toInt()
         private val ROW_HOV = 0x1AFFFFFF
-        private val ROW_PICKED = 0x2624B6B0
-        private val HOVER_OUTLINE = 0xB33AD8D1.toInt()
-        private val PILL_BG = 0xE00E1115.toInt()
-        private val PILL_BORDER = 0xFF2B333C.toInt()
+        private val ROW_PICKED = 0x26D6D6D6
+        private val HOVER_OUTLINE = 0xB3FFFFFF.toInt()
+        private val PILL_BG = 0xE0111111.toInt()
+        private val PILL_BORDER = 0xFF323232.toInt()
         private val PILL_TEXT = 0xFFCFD6DD.toInt()
         private val LABEL = 0xFFAEB8C2.toInt()
-        private val FAINT = 0xFF5A636D.toInt()
-        private val CAP_BG = 0xFF1B2027.toInt()
-        private val CAP_BORDER = 0xFF3A3F48.toInt()
-        private val OFF_BG = 0xFF262B33.toInt()
+        private val FAINT = 0xFF616161.toInt()
+        private val CAP_BG = 0xFF1F1F1F.toInt()
+        private val CAP_BORDER = 0xFF3F3F3F.toInt()
+        private val OFF_BG = 0xFF2A2A2A.toInt()
 
         private val CONTROLS = listOf(
             "Hover left edge" to "Pick HUDs",
+            "Shift/Ctrl+click" to "Add/remove HUDs",
             "Drag" to "Move",
             "Scroll / corner" to "Resize",
             "Tab" to "Swap selected",
@@ -522,12 +372,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val pickW = UiRecorder.textWidth("pick all", 5.5f)
             var w = 8f + UiRecorder.textWidth("Pick HUDs to move", 7.5f) + 1f
             w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to pick it all", 6f))
-            w = Math.max(w, 8f + UiRecorder.textWidth("Shift-click to add more", 6f))
-            for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 6.5f))
+            w = Math.max(w, 8f + UiRecorder.textWidth("Shift/Ctrl-click to add more", 6f))
+            for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 7.5f))
             for (g in GROUPS.map { it.first } + listOf("Other", "No HUDs match")) {
                 w = Math.max(w, 8f + UiRecorder.textWidth(g.uppercase(), 6f) + 1f + 6f + pickW)
             }
-            for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 6.5f) + 4f + offW)
+            for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 7.5f) + 4f + offW)
             sideWCache = Math.max(SIDE_W_MIN, Math.min(SIDE_W_MAX, Math.ceil(w + 10.0).toInt()))
             sideWFor = ENTRIES.size
             return sideWCache
@@ -617,43 +467,29 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         selected = items.first()
     }
 
+    // Shift or Ctrl held = add/remove from the pick instead of replacing it
     private fun shiftDown(): Boolean {
         val w = Minecraft.getInstance().window
-        return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT)
+        return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT) ||
+            fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_CONTROL) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_CONTROL)
     }
 
-    private fun sample(e: HudEntry): Sample? =
-        when (e.name()) {
-            "Performance" -> perfSample()
-            PerformanceHud.CLOCK_NAME -> Sample(listOf(PerformanceHud.clockText()))
-            else -> SAMPLES[e.name()]
-        }
+    // Examples are rebuilt at most every 200ms (hit-tests ask for sizes many times a frame)
+    private class CachedExample(val at: Long, val ex: HudExample?)
+    private val exampleCache = HashMap<String, CachedExample>()
 
-    private fun perfSample(): Sample {
-        val ls = listOfNotNull(
-            "§7FPS: §a144".takeIf { FishSettings.perfHudFps },
-            "§7TPS: §a19.9".takeIf { FishSettings.perfHudTps },
-            "§7Ping: §a42ms".takeIf { FishSettings.perfHudPing },
-            PerformanceHud.clockText().takeIf { FishSettings.perfHudClock && !FishSettings.perfHudClockDetached },
-        ).ifEmpty { listOf("§7FPS: §a144") }
-        return if (FishSettings.perfHudHorizontal) Sample(listOf(ls.joinToString("  "))) else Sample(ls)
+    private fun example(e: HudEntry): HudExample? {
+        if (!HudPreview.has(e.name())) return null
+        val now = System.currentTimeMillis()
+        exampleCache[e.name()]?.let { if (now - it.at < 200L) return it.ex }
+        val ex = HudPreview.example(e.name())
+        exampleCache[e.name()] = CachedExample(now, ex)
+        return ex
     }
 
-    private fun baseW(e: HudEntry): Int {
-        if (e.name() == "Spotify") return SpotifyHud.previewSize()[0]
-        val s = sample(e) ?: return e.w()
-        s.width?.let { return it }
-        val r = s.right
-        if (r != null) return s.lines.indices.maxOf { i -> this.font.width(s.lines[i]) + 6 + this.font.width(r.getOrElse(i) { "" }) }
-        val tw = s.lines.maxOf { this.font.width(it) }
-        return if (s.center) Math.max(e.w(), tw) else tw
-    }
+    private fun baseW(e: HudEntry): Int = example(e)?.w ?: e.w()
 
-    private fun baseH(e: HudEntry): Int {
-        if (e.name() == "Spotify") return SpotifyHud.previewSize()[1]
-        val s = sample(e) ?: return e.h()
-        return (s.lines.size - 1) * s.lineH + 9
-    }
+    private fun baseH(e: HudEntry): Int = example(e)?.h ?: e.h()
 
     private fun sw(e: HudEntry) = Math.max(4, (baseW(e) * e.scale()).toInt())
     private fun sh(e: HudEntry) = Math.max(4, (baseH(e) * e.scale()).toInt())
@@ -769,10 +605,47 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return mx in (gx - GRIP - 1)..(gx + GRIP) && my in (gy - GRIP - 1)..(gy + GRIP)
     }
 
-    private fun boxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { e ->
+    private fun frozen(e: HudEntry) = e.name() in FROZEN
+
+    private fun inBox(e: HudEntry, mx: Int, my: Int): Boolean {
         val x = e.getX().asInt
         val y = e.getY().asInt
-        mx in x..(x + sw(e)) && my in y..(y + sh(e))
+        return mx in x..(x + sw(e)) && my in y..(y + sh(e))
+    }
+
+    private fun boxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { !frozen(it) && inBox(it, mx, my) }
+
+    private fun anyBoxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { inBox(it, mx, my) }
+
+    // Beside the box (right, or left near the screen edge) so the name tag above/below and the resize grip never cover it
+    private fun eyeX(e: HudEntry): Int { val r = e.getX().asInt + sw(e) + 3; return if (r + EYE_W <= this.width) r else e.getX().asInt - EYE_W - 3 }
+    private fun eyeY(e: HudEntry) = e.getY().asInt
+    private fun eyeShown(e: HudEntry, hover: HudEntry?) = frozen(e) || e === selected || e === hover
+
+    private fun hoverEntry(mx: Int, my: Int): HudEntry? =
+        shown().lastOrNull { inBox(it, mx, my) || (mx in eyeX(it)..(eyeX(it) + EYE_W) && my in eyeY(it)..(eyeY(it) + EYE_H)) }
+
+    private fun eyeUnder(mx: Int, my: Int): HudEntry? {
+        val hover = hoverEntry(mx, my)
+        return shown().lastOrNull { eyeShown(it, hover) && mx in eyeX(it)..(eyeX(it) + EYE_W) && my in eyeY(it)..(eyeY(it) + EYE_H) }
+    }
+
+    private fun toggleFrozen(e: HudEntry) {
+        if (!FROZEN.remove(e.name())) { FROZEN.add(e.name()); if (selected === e) selected = null; if (dragging === e) dragging = null; if (resizing === e) resizing = null }
+    }
+
+    private fun drawEye(ctx: GuiGraphicsExtractor, e: HudEntry, mx: Int, my: Int) {
+        val x = eyeX(e); val y = eyeY(e)
+        val off = frozen(e)
+        val hov = mx in x..(x + EYE_W) && my in y..(y + EYE_H)
+        ctx.fill(x, y, x + EYE_W, y + EYE_H, if (hov) 0xE0333333.toInt() else 0xB0191919.toInt())
+        val c = if (off) 0xFF959595.toInt() else 0xFFFFFFFF.toInt()
+        ctx.fill(x + 3, y + 2, x + 8, y + 3, c)
+        ctx.fill(x + 1, y + 3, x + 3, y + 4, c); ctx.fill(x + 8, y + 3, x + 10, y + 4, c)
+        ctx.fill(x + 1, y + 4, x + 3, y + 5, c); ctx.fill(x + 8, y + 4, x + 10, y + 5, c)
+        ctx.fill(x + 3, y + 5, x + 8, y + 6, c)
+        if (!off) ctx.fill(x + 4, y + 3, x + 7, y + 5, c)
+        else for (i in 0..6) ctx.fill(x + 2 + i, y + 7 - i, x + 3 + i, y + 8 - i, 0xFFFF6B6B.toInt())
     }
 
     private fun outline(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, c: Int) {
@@ -783,50 +656,21 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     private fun drawExample(ctx: GuiGraphicsExtractor, e: HudEntry, x: Int, y: Int) {
-        val s = sample(e)
         val sc = e.scale().toFloat()
         val pose = ctx.pose()
         pose.pushMatrix()
         try {
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(sc, sc)
-        if (e.name() == "Dungeon Map") {
-            drawMapExample(ctx, e.w(), e.h())
-        } else if (e.name() == "Spotify") {
-            SpotifyHud.drawPreview(ctx)
-        } else if (s != null) {
-            val bw = baseW(e)
-            if (s.bg != 0) ctx.fill(0, 0, bw, baseH(e), s.bg)
-            s.lines.forEachIndexed { i, line ->
-                val lx = if (s.center) (bw - this.font.width(line)) / 2 else 0
-                ctx.text(this.font, line, lx, i * s.lineH, 0xFFFFFFFF.toInt(), true)
-                s.right?.getOrNull(i)?.let { r -> ctx.text(this.font, r, bw - this.font.width(r), i * s.lineH, 0xFFFFFFFF.toInt(), true) }
-            }
+        val ex = example(e)
+        if (ex != null) {
+            HudPreview.draw(ex, ctx, e.name())
         } else {
             ctx.fill(0, 0, e.w(), e.h(), 0x40000000)
             ctx.centeredText(this.font, "§7" + e.name(), e.w() / 2, (e.h() - 8) / 2, 0xFFFFFFFF.toInt())
         }
         } finally {
             pose.popMatrix()
-        }
-    }
-
-    // Fake 6x6 dungeon layout: 0 empty, 1 normal, 2 puzzle, 3 trap, 4 blood, 5 entrance, 6 fairy, 7 mini
-    private val MAP_EXAMPLE = arrayOf(
-        intArrayOf(5, 1, 1, 0, 2, 1), intArrayOf(0, 1, 6, 1, 1, 0), intArrayOf(1, 1, 0, 7, 1, 1),
-        intArrayOf(2, 1, 1, 1, 0, 1), intArrayOf(1, 0, 3, 1, 1, 1), intArrayOf(1, 1, 1, 0, 1, 4),
-    )
-
-    private fun drawMapExample(ctx: GuiGraphicsExtractor, w: Int, h: Int) {
-        ctx.fill(0, 0, w, h, 0x80000000.toInt())
-        val cell = minOf(w, h) / 6
-        val room = cell * 4 / 5
-        val ox = (w - cell * 6) / 2 + (cell - room) / 2
-        val oy = (h - cell * 6) / 2 + (cell - room) / 2
-        val cols = intArrayOf(0, 0xFF6B3A1E.toInt(), 0xFF8A2BE2.toInt(), 0xFFD87F33.toInt(), 0xFFE02020.toInt(), 0xFF20A020.toInt(), 0xFFF070C0.toInt(), 0xFFE0C020.toInt())
-        for (r in 0 until 6) for (c in 0 until 6) {
-            val t = MAP_EXAMPLE[r][c]
-            if (t != 0) ctx.fill(ox + c * cell, oy + r * cell, ox + c * cell + room, oy + r * cell + room, cols[t])
         }
     }
 
@@ -871,6 +715,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val w = sw(e)
             val h = sh(e)
             drawExample(ctx, e, x, y)
+            if (frozen(e)) ctx.fill(x, y, x + w, y + h, 0x59000000)
             when {
                 e === sel -> {
                     outline(ctx, x - 1, y - 1, w + 2, h + 2, 0xFFFFFFFF.toInt())
@@ -878,18 +723,23 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     val ts = 6.5f
                     val ty = if (y - 2 - 10f * k >= 1f) (y - 2) / k - 10f else (y + h + 2) / k
                     val tx = (x - 1) / k
-                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, ACCENT)
-                    UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, ON_ACCENT)
+                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, 0xE6191919.toInt())
+                    UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, 0xFFFFFFFF.toInt())
                     if (e.setScale() != null && !e.locked()) {
                         UiRecorder.roundedRectRing(
                             (x + w - GRIP) / k, (y + h - GRIP) / k, GRIP * 2f / k, GRIP * 2f / k,
-                            2f / k, 1f / k, ACCENT_HOVER, 0xFF0B1417.toInt()
+                            2f / k, 1f / k, ACCENT_HOVER, 0xFF121212.toInt()
                         )
                     }
                 }
                 e.locked() -> outline(ctx, x - 1, y - 1, w + 2, h + 2, 0x55888888)
                 e === hover -> outline(ctx, x - 1, y - 1, w + 2, h + 2, HOVER_OUTLINE)
             }
+        }
+
+        if (dragging == null && resizing == null) {
+            val eh = if (sideOpen) null else hoverEntry(mouseX, mouseY)
+            for (e in shown()) if (eyeShown(e, eh)) drawEye(ctx, e, mouseX, mouseY)
         }
 
         guideX?.let { ctx.fill(it, 0, it + 1, this.height, GUIDE) }
@@ -924,9 +774,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun drawControls() {
         val rows = if (showControls) CONTROLS else listOf("F1" to "Show controls")
-        val ts = 6f
-        val ks = 5.5f
-        val rowH = 10f
+        val ts = 7f
+        val ks = 6.5f
+        val rowH = 12f
         val capH = rowH - 2f
         val pad = 5f
         val capCol = rows.maxOf { UiRecorder.textWidth(it.first, ks) } + 6f
@@ -953,8 +803,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         val dx = doneX().toFloat()
         val dHov = inRect(mouseX, mouseY, doneX(), btnY(), BTN_W, BTN_H)
-        UiRecorder.fillPillBar(dx, by, bw, bh, if (dHov) ACCENT_HOVER else ACCENT)
-        centerText("Done", dx + bw / 2f, ty, ts, ON_ACCENT)
+        UiRecorder.roundedRectRing(dx, by, bw, bh, bh / 2f, 1.5f, if (dHov) 0xF2231A1D.toInt() else 0xE6171717.toInt(), if (dHov) ACCENT_HOVER else ACCENT)
+        centerText("Done", dx + bw / 2f, ty, ts, 0xFFFFFFFF.toInt())
 
         val rx = resetX().toFloat()
         val rHov = inRect(mouseX, mouseY, resetX(), btnY(), BTN_W, BTN_H)
@@ -963,7 +813,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             centerText("Sure?", rx + bw / 2f, ty, ts, 0xFF2A0B0B.toInt())
         } else {
             UiRecorder.roundedRectRing(
-                rx, by, bw, bh, bh / 2f, 1f, if (rHov) 0xF2231A1D.toInt() else 0xE614181D.toInt(),
+                rx, by, bw, bh, bh / 2f, 1f, if (rHov) 0xF2231A1D.toInt() else 0xE6171717.toInt(),
                 if (rHov) ScreenTheme.DANGER_HOVER else 0x80E05A5A.toInt()
             )
             centerText("Reset shown", rx + bw / 2f, ty, ts, if (rHov) ScreenTheme.DANGER_HOVER else ScreenTheme.DANGER)
@@ -988,15 +838,15 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         val sw = sideW - 13
         val sHov = onSearch(mouseX, mouseY)
-        val border = if (searchFocused) ACCENT else if (sHov) 0xFF5A606A.toInt() else CAP_BORDER
-        UiRecorder.roundedRectRing(6f, SEARCH_Y.toFloat(), sw.toFloat(), SEARCH_H.toFloat(), 4f, 1f, 0xFF0B0F12.toInt(), border)
+        val border = if (searchFocused) ACCENT else if (sHov) 0xFF5F5F5F.toInt() else CAP_BORDER
+        UiRecorder.roundedRectRing(6f, SEARCH_Y.toFloat(), sw.toFloat(), SEARCH_H.toFloat(), 4f, 1f, 0xFF0E0E0E.toInt(), border)
         if (search.value.isEmpty() && !searchFocused) {
             UiRecorder.text("Search HUDs…", 9f, SEARCH_Y + (SEARCH_H - 6.5f) / 2f, 6.5f, FAINT)
         } else {
             ScreenTheme.nTextFieldContent(search, searchFocused, 6, SEARCH_Y, sw, SEARCH_H, 6.5f)
         }
         UiRecorder.text("Click a category to pick it all", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
-        UiRecorder.text("Shift-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
+        UiRecorder.text("Shift/Ctrl-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
 
         UiRecorder.pushScissor(0f, SIDE_TOP.toFloat(), sideW - 1f, sh - SIDE_TOP - 5f)
         val hovRow = if (mouseX < sideW) rowAt(mouseY) else null
@@ -1004,7 +854,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         for (row in sidebarRows()) {
             if (y + SIDE_ROW >= SIDE_TOP && y < cH()) {
                 val yf = y.toFloat()
-                val ty = yf + (SIDE_ROW - 6.5f) / 2f
+                val ty = yf + (SIDE_ROW - 7.5f) / 2f
                 val hov = row === hovRow
                 when (row) {
                     is Row.Header -> {
@@ -1015,12 +865,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                             UiRecorder.text(tag, sideW - 9f - UiRecorder.textWidth(tag, 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
                         }
                         val all = clickable && row.items.all { it.name() in picked }
-                        val c = if (!clickable) 0xFF555B63.toInt() else if (all) ACCENT_HOVER else ACCENT
+                        val c = if (!clickable) 0xFF5A5A5A.toInt() else if (all) ACCENT_HOVER else ACCENT
                         UiRecorder.textBold(row.text.uppercase(), 8f, yf + (SIDE_ROW - 6f) / 2f, 6f, c)
                     }
                     is Row.Action -> {
                         if (hov) rowBg(yf, ROW_HOV)
-                        UiRecorder.text(row.text, 8f, ty, 6.5f, if (hov) TEXT else SUBTEXT)
+                        UiRecorder.text(row.text, 8f, ty, 7.5f, if (hov) TEXT else SUBTEXT)
                     }
                     is Row.Hud -> {
                         val on = row.e.name() in picked
@@ -1028,10 +878,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         if (hov) rowBg(yf, ROW_HOV)
                         if (on) UiRecorder.fillRoundedRect(4f, yf + 2.5f, 2f, SIDE_ROW - 5f, 1f, ACCENT)
                         val off = !row.e.isEnabledInList()
-                        val col = if (off) 0xFF666B72.toInt() else if (on) TEXT else LABEL
+                        val col = if (off) 0xFF6A6A6A.toInt() else if (on) TEXT else LABEL
                         val tw = UiRecorder.textWidth("off", 5.5f)
                         val ox = sideW - 10f - tw - 6f
-                        UiRecorder.text(ellipsize(row.e.name(), ox - 4f - 12f, 6.5f), 12f, ty, 6.5f, col)
+                        UiRecorder.text(ellipsize(row.e.name(), ox - 4f - 12f, 7.5f), 12f, ty, 7.5f, col)
                         if (off) {
                             UiRecorder.fillRoundedRect(ox, yf + 2.5f, tw + 6f, SIDE_ROW - 5f, 2.5f, OFF_BG)
                             UiRecorder.text("off", ox + 3f, yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
@@ -1093,6 +943,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             return true
         }
         resetArmed = false
+
+        if (fishmod.compat.GLFW.btn(click) == 0) eyeUnder(mx, my)?.let { toggleFrozen(it); return true }
+        if (fishmod.compat.GLFW.btn(click) == 1) anyBoxUnder(mx, my)?.let { toggleFrozen(it); return true }
 
         val sel = selected
         if (sel != null && onGrip(sel, mx, my)) {
@@ -1285,7 +1138,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     override fun onClose() {
         try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.9", "config save on HUD editor close failed", t) }
         fishmod.features.achievements.AchUsage.onHudSaved()
-        try { fishmod.features.chat.ChatRuleStore.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.10", "chat rule save on HUD editor close failed", t) }
+        try { fishmod.features.extras.ChatRuleStore.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.10", "chat rule save on HUD editor close failed", t) }
         Minecraft.getInstance().showScreen(parent)
     }
 }

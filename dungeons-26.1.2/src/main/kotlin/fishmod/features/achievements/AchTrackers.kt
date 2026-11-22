@@ -1,11 +1,11 @@
 package fishmod.features.achievements
 
 import fishmod.features.diana.DianaTracker
-import fishmod.features.garden.Pests
+import fishmod.features.garden.visitors.Pests
 import fishmod.features.kuudra.KuudraSettings
 import fishmod.features.mining.MiningProfitTracker
-import fishmod.features.slayers.SlayerManager
-import fishmod.features.slayers.SlayerProfitTracker
+import fishmod.features.slayer.SlayerManager
+import fishmod.features.slayer.SlayerProfitTracker
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.MayorApi
 import fishmod.utils.TickScheduler
@@ -15,7 +15,6 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
-// Counters fed by AchEvents plus polled ledgers over the existing profit/Diana/mining trackers
 object AchTrackers {
 
     private val RNG_RARITIES = setOf("CRAZY RARE", "INSANE", "PRAY TO RNGESUS", "RNGESUS INCARNATE", "PRAY RNGESUS")
@@ -45,7 +44,6 @@ object AchTrackers {
 
     private fun secret(k: String) = AchStore.max("secret.$k", 1)
 
-    // Unlocks when `need` events land inside the sliding window
     private fun burst(q: ArrayDeque<Long>, windowMs: Long, need: Int, k: String) {
         val now = System.currentTimeMillis()
         q.addLast(now)
@@ -220,7 +218,6 @@ object AchTrackers {
         return best
     }
 
-    // Lifetime value per source; a big drop means the tracker was reset, so the old total moves into base
     private fun feed(name: String, cur: Double): Double {
         if (cur.isNaN() || cur.isInfinite()) return 0.0
         val f = AchStore.data.feeds.getOrPut(name) { AchStore.Feed() }
@@ -231,13 +228,12 @@ object AchTrackers {
         return v
     }
 
-    // Lifetime dungeon chest loot value from the loot tracker rows (chest costs aren't recorded)
     private fun dungeonLootValue(): Double {
         var v = 0.0
-        for (r in fishmod.features.croesus.LootTrackerStore.rows()) {
+        for (r in fishmod.features.dungeon.trackers.LootTrackerStore.rows()) {
             if (r.id.isEmpty() || r.count <= 0) continue
             val id = r.id
-            val p = fishmod.features.croesus.CroesusPrices.bazaarPrice(id, false)?.takeIf { it > 0 } ?: fishmod.features.croesus.CroesusPrices.price(id)
+            val p = fishmod.features.dungeon.trackers.CroesusPrices.bazaarPrice(id, false)?.takeIf { it > 0 } ?: fishmod.features.dungeon.trackers.CroesusPrices.price(id)
             if (p > 0) v += p * r.count
         }
         return v
@@ -277,7 +273,6 @@ object AchTrackers {
         FishDiag.guard("AchTrackers.3", "rng feed") { pollRng() }
     }
 
-    // Rare drops from the real trackers: count/best/log, idempotent via max() and a per-item baseline
     private fun pollRng() {
         val st = AchStore
         val min = AchSettings.achRngMinValue.toDouble()
@@ -298,16 +293,16 @@ object AchTrackers {
         }
         for ((name, n) in SlayerProfitTracker.totalDrops()) {
             if (name.endsWith("Coins")) continue
-            val unit = fishmod.utils.networth.ItemsDb.idFor(name)?.let { fishmod.features.croesus.CroesusPrices.price(it) } ?: 0.0
+            val unit = fishmod.utils.networth.ItemsDb.idFor(name)?.let { fishmod.features.dungeon.trackers.CroesusPrices.price(it) } ?: 0.0
             if (unit >= min) feedItem("Slayer", name, n, unit)
         }
         for ((name, n) in MiningProfitTracker.totalItems()) {
             val unit = MiningProfitTracker.priceOf(name)
             if (unit >= min) feedItem("Mining", name, n, unit)
         }
-        for (r in fishmod.features.croesus.LootTrackerStore.rows()) {
+        for (r in fishmod.features.dungeon.trackers.LootTrackerStore.rows()) {
             if (r.id.isEmpty() || r.count <= 0) continue
-            val unit = fishmod.features.croesus.CroesusPrices.bazaarPrice(r.id, false)?.takeIf { it > 0 } ?: fishmod.features.croesus.CroesusPrices.price(r.id)
+            val unit = fishmod.features.dungeon.trackers.CroesusPrices.bazaarPrice(r.id, false)?.takeIf { it > 0 } ?: fishmod.features.dungeon.trackers.CroesusPrices.price(r.id)
             if (unit >= min) feedItem("Dungeons", r.name, r.count.toLong(), unit)
         }
         st.max("rng.trk", total)

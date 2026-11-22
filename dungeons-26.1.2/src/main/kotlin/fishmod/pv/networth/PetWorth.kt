@@ -33,7 +33,6 @@ object PetWorth {
         return getPetLevel(type, boostedTier(tier, prim(pet, "heldItem")), exp)
     }
 
-    // type/tier/exp present as primitives; JsonNull would throw on getAs*.
     private fun hasCore(pet: JsonObject): Boolean =
         prim(pet, "type") != null && prim(pet, "tier") != null && prim(pet, "exp") != null
 
@@ -73,7 +72,6 @@ object PetWorth {
         val candyUsed = if (candyUsedEl != null && candyUsedEl.isJsonPrimitive) candyUsedEl.asInt else 0
         val boostedTier = boostedTier(tier, heldItem)
 
-        // Price keys use the pet's actual tier (SkyHelper); XP table uses boosted tier.
         val basePetId = "${tier}_$type"
         val useSkin = includeCosmetics && !skin.isNullOrBlank()
         val petId = basePetId + if (useSkin) "_SKINNED_$skin" else ""

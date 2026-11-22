@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Records screen bounds of mod HUD layers and the tab list (for Hide HUDs Under Tab)
 @Mixin(GuiRenderState.class)
 public class GuiRenderStateBoundsMixin {
     @Inject(method = "addGuiElement", at = @At("HEAD"))

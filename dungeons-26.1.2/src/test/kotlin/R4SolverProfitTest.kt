@@ -1,7 +1,7 @@
-import fishmod.features.croesus.CroesusProfit
-import fishmod.features.dungeon.f7.dragons.DragonCheck
+import fishmod.features.dungeon.trackers.CroesusProfit
+import fishmod.features.dungeon.floor7.dragons.DragonCheck
 import fishmod.features.garden.FarmingProfitTracker
-import fishmod.features.garden.Pests
+import fishmod.features.garden.visitors.Pests
 import fishmod.features.mining.MiningProfitTracker
 import fishmod.utils.rendering.FishDraw
 import org.junit.jupiter.api.Assertions.*
@@ -77,7 +77,6 @@ class R4SolverProfitTest {
         m.isAccessible = true
         val map = HashMap<String, MutableList<LongArray>>()
         map["mithril"] = mutableListOf(longArrayOf(5, 0), longArrayOf(10, 200_000))
-        // first entry expired (>180s), only 10 left
         assertEquals(10L, m.invoke(MiningProfitTracker, map, "mithril", 15L, 200_100L))
         assertTrue(map["mithril"]!!.isEmpty())
         assertEquals(0L, m.invoke(MiningProfitTracker, map, "none", 3L, 0L))

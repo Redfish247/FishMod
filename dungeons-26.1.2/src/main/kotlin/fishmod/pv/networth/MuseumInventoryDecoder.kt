@@ -23,7 +23,6 @@ internal object MuseumInventoryDecoder {
                 val borrowing = value.get("borrowing")
                 if (borrowing != null && borrowing.isJsonPrimitive && borrowing.asBoolean) continue
                 val nested = InventoryDecodeSupport.obj(value.get("items"))
-                // Already-decoded array style is skipped.
                 if (nested != null && nested.has("data")) {
                     out.addAll(InventoryDecodeCache.decodeDataElement(nested))
                 }
@@ -51,7 +50,6 @@ internal object MuseumInventoryDecoder {
                 }
             }
         }
-        // Special donations have no catalog id; key them by array index so donated_time stays resolvable.
         specialArray(museumMember)?.forEachIndexed { i, element ->
             val value = InventoryDecodeSupport.obj(element) ?: return@forEachIndexed
             InventoryDecodeCache.decodeDataElement(value.get("items")).forEachIndexed { j, stack ->

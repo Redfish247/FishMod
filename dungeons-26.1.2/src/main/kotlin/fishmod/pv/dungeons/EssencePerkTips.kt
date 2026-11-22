@@ -16,10 +16,6 @@ import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * Hover tips for Malik / island essence-shop perks. Effect text matches Hypixel shop lore;
- * numbers are the bonus at the player's current tier (0 = not unlocked).
- */
 object EssencePerkTips {
 	private const val COLOR_UNLOCKED = 0xFF6DFF8A.toInt()
 	private const val COLOR_LOCKED = 0xFFFF5555.toInt()
@@ -285,7 +281,6 @@ object EssencePerkTips {
 
 	private fun text(s: String): PvTooltip.Span = PvTooltip.Span.of(s, PvDraw.COLOR_TEXT)
 
-	// The tier's number, bold green
 	private fun value(s: String): PvTooltip.Span = PvTooltip.Span.bold(s, COLOR_UNLOCKED)
 
 	private fun manaSpan(): PvTooltip.Span {

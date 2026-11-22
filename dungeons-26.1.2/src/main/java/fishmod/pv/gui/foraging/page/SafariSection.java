@@ -36,11 +36,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Safari stats and critter grid, drawn inside the Hunting page. */
 final class SafariSection {
 	private static final String[] TICKET_ORDER = { "basic", "economy", "premium", "first_class" };
 	private static final String[] BIOME_ORDER = { "forest", "cavern", "haunted", "icy", "desert" };
-	// Hypixel writes SPARKLING in bold gold (§6§l).
 	private static final int SPARKLING = 0xFFFFAA00;
 	private static final int SPARKLING_BORDER = 0x99FFAA00;
 
@@ -70,7 +68,6 @@ final class SafariSection {
 		return true;
 	}
 
-	/** Safari, Biome captures and Milestones sections. Returns the y after the last row. */
 	int drawStats(
 		GuiGraphicsExtractor g, Font font, ForagingSnapshot.SafariInfo safari,
 		int panelX, int panelW, int lx, int ly, int lw, List<HoverZone> zones
@@ -279,7 +276,6 @@ final class SafariSection {
 			|| stack.is(fishmod.compat.CI.LIME_DYE)) {
 			return false;
 		}
-		// Bare PLAYER_HEAD renders as Steve, so only accept textured skulls.
 		if (stack.is(Items.PLAYER_HEAD)) {
 			return SkyBlockItemFactory.isTexturedPlayerHead(stack);
 		}
@@ -308,7 +304,6 @@ final class SafariSection {
 		return y + STAT_ROW + 1;
 	}
 
-	/** One row: {@code Tickets  basic/economy/premium/first_class}, each count in its tier colour. */
 	private int drawTickets(
 		GuiGraphicsExtractor g, Font font, ForagingSnapshot.SafariInfo safari, int x, int y, int w, List<HoverZone> zones
 	) {

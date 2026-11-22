@@ -39,21 +39,6 @@ object CoflnetApiClient {
     private val EXECUTOR: ExecutorService = Executors.newFixedThreadPool(2, PvExecutors.daemon("FishPV-Coflnet"))
     private var nextRequestAtMillis = 0L
 
-    /** Auctions the player created. */
-    @JvmStatic
-    fun playerAuctions(uuid: UUID, page: Int): CompletableFuture<Optional<JsonArray>> = playerPage(uuid, "auctions", page)
-
-    /** Bids the player made. */
-    @JvmStatic
-    fun playerBids(uuid: UUID, page: Int): CompletableFuture<Optional<JsonArray>> = playerPage(uuid, "bids", page)
-
-    private fun playerPage(uuid: UUID, kind: String, page: Int): CompletableFuture<Optional<JsonArray>> {
-        val id = HypixelApiClient.undashed(uuid)
-        val p = maxOf(0, page)
-        val queuedNanos = System.nanoTime()
-        return CompletableFuture.supplyAsync({ getArray("$BASE/player/$id/$kind?page=$p", queuedNanos) }, EXECUTOR)
-    }
-
     @JvmStatic
     fun auction(auctionId: String?): CompletableFuture<Optional<JsonObject>> {
         if (auctionId.isNullOrBlank()) return CompletableFuture.completedFuture(Optional.empty())

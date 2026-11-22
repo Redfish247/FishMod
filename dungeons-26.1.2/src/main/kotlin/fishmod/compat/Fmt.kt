@@ -1,6 +1,5 @@
 package fishmod.compat
 
-// Legacy colour code table; ChatFormatting no longer exposes colour/char in 26.2.
 object Fmt {
     private val codes = "0123456789abcdef"
     private val names = listOf("black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple", "gold", "gray",

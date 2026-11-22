@@ -41,7 +41,6 @@ import java.util.UUID
 import java.util.function.Supplier
 import kotlin.math.floor
 
-/** Home / core profile parsing helpers. Constructs [ProfileFetcher.LoadedProfile] for core loads. */
 internal object ProfileHomeParser {
     private val HOME_SKILLS = arrayOf(
         "combat", "foraging", "farming", "enchanting", "mining", "alchemy", "fishing", "carpentry", "taming", "hunting"
@@ -57,15 +56,10 @@ internal object ProfileHomeParser {
     private val SECTION_CODE = Regex("§.")
     private val AMP_CODE = Regex("&[0-9a-fk-or]")
 
-    /**
-     * Minimum valid Home snapshot only. No inventory UI, tab snapshots, museum, or networth.
-     * Fatal validation failures return `!ok()` so the loading egg stays up.
-     */
     @JvmStatic
     @JvmOverloads
     fun parseHomeCore(name: String, uuid: UUID, root: JsonObject, preferredProfileId: String? = null): ProfileFetcher.LoadedProfile {
         return try {
-            // Home gear, stats and armor each decode the same inventory fields.
             InventoryDecoder.withSharedDecode(Supplier { parseHomeCoreUnsafe(name, uuid, root, preferredProfileId) })
         } catch (exception: RuntimeException) {
             if (!SoftDataFailure.isSoft(exception)) throw exception

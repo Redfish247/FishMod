@@ -7,6 +7,8 @@
  */
 package fishmod.pv.gui.garden.page
 
+import fishmod.utils.TextStrip
+
 import fishmod.pv.data.FarmingFortuneEstimate
 import fishmod.pv.data.FormatUtil
 import fishmod.pv.data.GardenSnapshot
@@ -19,12 +21,9 @@ import fishmod.pv.networth.InventoryDecoder
 import java.util.Locale
 import kotlin.math.abs
 
-/** Garden overview Farming Fortune row built from the best farming setup on the profile. */
 object FarmingFortuneTip {
 	const val LABEL = "Farming Fortune (est.)"
-	private val FORMAT_CODE = Regex("§.")
 
-	/** Null until inventories are parsed; callers fall back to the worn-gear stat. */
 	@JvmStatic
 	fun row(stats: PlayerStatsSnapshot?, snap: GardenSnapshot?): SummaryCards.Stat? {
 		val est = stats?.farmingFortune ?: return null
@@ -59,7 +58,7 @@ object FarmingFortuneTip {
 
 	@JvmStatic
 	fun name(stack: InventoryDecoder.Stack): String {
-		val raw = stack.displayName?.replace(FORMAT_CODE, "")?.trim() ?: ""
+		val raw = stack.displayName?.let { TextStrip.plain(it).trim() } ?: ""
 		return raw.ifEmpty { stack.id }
 	}
 

@@ -22,6 +22,7 @@ public final class PacketFilter {
         net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket.class,
         net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket.class,
         net.minecraft.network.protocol.game.ClientboundSystemChatPacket.class,
+        net.minecraft.network.protocol.game.ClientboundContainerClosePacket.class,
     };
     private static final ClassValue<Boolean> WANTED = new ClassValue<>() {
         @Override protected Boolean computeValue(Class<?> c) {
@@ -52,7 +53,7 @@ public final class PacketFilter {
         if (total == 0) return false;
         Class<?> c = packet.getClass();
         if (!WANTED.get(c)) return false;
-        if (total > SUBS.size()) return true; // untyped listener present
+        if (total > SUBS.size()) return true;
         for (Sub s : SUBS) {
             if (s.matches(c) && (s.gate == null || s.gate.getAsBoolean())) return true;
         }

@@ -337,7 +337,6 @@ class RecordsPage {
 		private fun panelH(font: Font, rows: Int, separators: Int): Int =
 			PAD * 2 + font.lineHeight + 4 + rows * STAT_ROW + separators * SEP_GAP
 
-		// Leather colours of each dragon's armour set (NEU repo).
 		private fun dragonColor(id: String?): Int = when (id?.lowercase(Locale.ROOT) ?: "") {
 			"protector" -> 0xFF99978B.toInt()
 			"old" -> 0xFFF0E6AA.toInt()

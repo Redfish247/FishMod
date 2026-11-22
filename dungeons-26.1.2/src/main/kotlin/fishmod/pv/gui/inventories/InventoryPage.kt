@@ -7,6 +7,8 @@
  */
 package fishmod.pv.gui.inventories
 
+import fishmod.utils.TextStrip
+
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.compat.CI
 import fishmod.pv.data.FormatUtil
@@ -39,21 +41,18 @@ import net.minecraft.network.chat.TextColor
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/** Left grid renderer + page controls for Inventories. Right pane buttons stay in ProfileViewerScreen. */
 class InventoryPage {
 	private var snapshot: InventorySnapshot = InventorySnapshot.empty()
 	private var pane = InventoryPane.INVENTORY
 	/** When on Sacks: `null` = sack menu; otherwise index into [InventorySnapshot.sacks]. */
 	private var openSackIndex: Int? = null
 	private val pageIndex = EnumMap<InventoryPane, Int>(InventoryPane::class.java)
-	/** Cards per loadout page, recomputed from the preview area each frame. */
 	private var loadoutsPerPage = 2
 	private var searchQuery = ""
 	private val searchPanes: MutableSet<InventoryPane> = EnumSet.noneOf(InventoryPane::class.java)
 	private val searchPages = EnumMap<InventoryPane, MutableSet<Int>>(InventoryPane::class.java)
 	private val hits = ArrayList<SlotHit>()
 	private val pageHits = ArrayList<RunnableHit>()
-	/** Render/tooltip stacks keyed by slot identity; rebuilt when the snapshot changes. */
 	private val stackCache = IdentityHashMap<InventorySnapshot.Slot, ItemStack>()
 	private var hoveredSlot: InventorySnapshot.Slot? = null
 	private var hoveredStack: ItemStack = ItemStack.EMPTY
@@ -63,7 +62,6 @@ class InventoryPage {
 	private var gemHoverX = 0
 	private var gemHoverY = 0
 
-	/** Accessory bag panel flip: bag face ↔ unlocked powers, toggled by the Powers button. */
 	private var accessoryPowersFace = false
 	private var accessoryFlipTarget = false
 	private var accessoryFlipStartMs = 0L
@@ -78,7 +76,6 @@ class InventoryPage {
 	private var accessoryTuningsW = 0
 	private var accessoryTuningsH = 0
 	private var accessoryTuningsHover = false
-	/** Accessory bag panel swapped to the missing accessories list via the top-right toggle. */
 	private var accessoryMissingView = false
 	private var missingResult: MissingAccessories.Result? = null
 	private var missingHoverName: String? = null
@@ -153,9 +150,6 @@ class InventoryPage {
 		searchQuery = next
 		rebuildSearchIndex()
 	}
-
-	/** True when this pane contains at least one search match. */
-	fun searchHighlightsPane(pane: InventoryPane?): Boolean = pane != null && searchPanes.contains(pane)
 
 	private fun searchMatches(pane: InventoryPane): Set<Int> = searchPages[pane] ?: setOf()
 
@@ -263,7 +257,6 @@ class InventoryPage {
 		}
 	}
 
-	/** Why a pane has nothing real to show (so it isn't drawn as a false empty grid), or null. */
 	private fun unavailableReason(pane: InventoryPane): String? = when (pane) {
 		InventoryPane.PERSONAL_VAULT -> when {
 			!snapshot.inventoryApi -> Component.translatable("fishmod.pv.inv.state.api_off").string
@@ -278,7 +271,6 @@ class InventoryPage {
 		else -> null
 	}
 
-	/** Sack menu (NEU sack skulls) or a single opened sack’s contents. */
 	private fun renderSacks(g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, h: Int, mouseX: Int, mouseY: Int) {
 		val sackPages = snapshot.sacks
 		val openIndex = openSackIndex
@@ -337,7 +329,6 @@ class InventoryPage {
 		return maxOf(1, (total + perPage - 1) / perPage)
 	}
 
-	// Match drawGrid capacity for a typical preview (~6 rows × 9 cols).
 	private fun sackMenuSlotsPerPage(): Int = 9 * 6
 
 	private fun drawSackMenu(
@@ -364,7 +355,6 @@ class InventoryPage {
 		val menuSlots = (start until end).map { sackMenuSlot(sackPages[it]) }
 		drawGrid(g, font, x, y, w, h, cols, menuSlots, false, -1, mouseX, mouseY)
 
-		// Click targets: open the corresponding sack (drawGrid only adds tooltip hits).
 		var rows = maxOf(1, (menuSlots.size + cols - 1) / cols)
 		val maxRows = maxOf(1, (h - GRID_PAD + SLOT_GAP) / (SLOT + SLOT_GAP))
 		rows = minOf(rows, maxRows)
@@ -387,7 +377,6 @@ class InventoryPage {
 	}
 
 	private fun sackValues(): List<SackValue> {
-		// Pricing every sack each frame is costly; refresh once a second so late prices still land.
 		val now = System.currentTimeMillis()
 		val cached = sackValuesCache
 		if (cached != null && now - sackValuesAtMs <= 1000L) {
@@ -551,7 +540,7 @@ class InventoryPage {
 		val breakdown = ItemWorth.breakdown(worth)
 		val displayName = slot.displayName
 		val title = if (!displayName.isNullOrBlank()) {
-			displayName.replace(FORMAT_CODE, "").trim()
+			TextStrip.plain(displayName).trim()
 		} else {
 			SkyBlockItemFactory.plainDisplayName(id)
 		}
@@ -693,7 +682,6 @@ class InventoryPage {
 		return lines
 	}
 
-	/** Whole left inventory panel flips: border, content, and pager. */
 	private fun renderAccessoryBagPanel(
 		g: GuiGraphicsExtractor,
 		font: Font,
@@ -735,21 +723,14 @@ class InventoryPage {
 		} else {
 			accessoryPowersFace
 		}
-		var scaleX = 1f
-		var scaleY = 1f
+		var slideDx = 0f
 		if (animating) {
-			scaleX = maxOf(0.04f, abs(cos(angle.toDouble()).toFloat()))
-			scaleY = 1f - (1f - scaleX) * 0.06f
+			slideDx = PvDraw.slideOffset(eased, w)
 		}
-
-		val cxFlip = x + w / 2f
-		val cyFlip = y + h / 2f
-		g.pose().pushMatrix()
-		g.pose().translate(cxFlip, cyFlip)
-		g.pose().scale(scaleX, scaleY)
-		g.pose().translate(-cxFlip, -cyFlip)
-
 		PvDraw.innerPanel(g, x, y, w, h)
+		g.enableScissor(x, y, x + w, y + h)
+		g.pose().pushMatrix()
+		g.pose().translate(slideDx, 0f)
 
 		val contentX = x + 8
 		val contentY = y + 6
@@ -805,6 +786,7 @@ class InventoryPage {
 		}
 
 		g.pose().popMatrix()
+		g.disableScissor()
 	}
 
 	private fun drawAccessoryPowersFace(g: GuiGraphicsExtractor, font: Font, x: Int, y: Int, w: Int, h: Int, buttonW: Int) {
@@ -897,7 +879,10 @@ class InventoryPage {
 			return null
 		}
 		val owned = ArrayList<String>()
-		for (bagPage in pagesFor(InventoryPane.ACCESSORY_BAG)) {
+		// Accessories count as owned anywhere the player keeps them, not just the bag.
+		val panes = listOf(InventoryPane.ACCESSORY_BAG, InventoryPane.INVENTORY, InventoryPane.ENDER_CHEST,
+			InventoryPane.BACKPACKS, InventoryPane.PERSONAL_VAULT)
+		for (bagPage in panes.flatMap { pagesFor(it) }) {
 			for (slot in bagPage.slots) {
 				val id = slot?.id
 				if (slot != null && !slot.isEmpty() && id != null) {
@@ -1049,7 +1034,6 @@ class InventoryPage {
 		return maxOf(1, (maxOf(1, snapshot.loadouts.size) + perPage - 1) / perPage)
 	}
 
-	/** Loadout name, shortened to fit beside the tree presets label. */
 	private fun loadoutTitle(font: Font, loadout: InventorySnapshot.Loadout, w: Int, treesW: Int): Component {
 		val nameW = maxOf(20, w - GRID_PAD * 2 - (if (treesW > 0) treesW + 6 else 0))
 		val name = SkyBlockStats.loadoutName(loadout.name)
@@ -1061,7 +1045,6 @@ class InventoryPage {
 
 	private fun isEmptySlot(slot: InventorySnapshot.Slot?): Boolean = slot == null || slot.isEmpty()
 
-	/** Two slot rows (equipment, armor) with pet and power beside; details move to the header hover. */
 	private fun drawLoadoutCompactCard(
 		g: GuiGraphicsExtractor,
 		font: Font,
@@ -1106,7 +1089,6 @@ class InventoryPage {
 		}
 	}
 
-	/** Single-row loadout: name on top, equipment + armor + pet in one line so three fit on a page. */
 	private fun drawLoadoutRowCard(
 		g: GuiGraphicsExtractor,
 		font: Font,
@@ -1154,7 +1136,6 @@ class InventoryPage {
 		}
 	}
 
-	/** Equipment column left of armor (both top→bottom), metadata under/ beside. */
 	private fun drawLoadoutCard(
 		g: GuiGraphicsExtractor,
 		font: Font,
@@ -1235,7 +1216,6 @@ class InventoryPage {
 		mouseX: Int,
 		mouseY: Int
 	) {
-		// Layout: [equipment×4][armor×4][inv×36], with legacy fallback without equipment.
 		val hasEquipment = slots.size >= 44
 		val armorOff = if (hasEquipment) 4 else 0
 		val invOff = armorOff + 4
@@ -1246,7 +1226,6 @@ class InventoryPage {
 
 		val armorH = 4 * SLOT + 3 * SLOT_GAP
 		val mainH = 3 * SLOT + 2 * SLOT_GAP
-		// Hotbar sits under the main 3×9 grid (not under the taller armor column).
 		val totalH = maxOf(armorH, mainH + HOTBAR_GAP + SLOT)
 		val mainW = 9 * SLOT + 8 * SLOT_GAP
 		val gearW = SLOT + COL_GAP + SLOT
@@ -1345,9 +1324,6 @@ class InventoryPage {
 		return "Gemstone".equals(sacks[index].title, ignoreCase = true)
 	}
 
-	/**
-	 * One slot per gem family; hover tip lists Rough→Perfect counts (no scroll matrix).
-	 */
 	private fun drawGemstoneMatrix(
 		g: GuiGraphicsExtractor,
 		font: Font,
@@ -1425,7 +1401,6 @@ class InventoryPage {
 							)
 					)
 				}
-				// Prefer showing this tip over the generic item tip.
 				hoveredSlot = null
 				hoveredStack = ItemStack.EMPTY
 				gemHoverTip = tip
@@ -1600,7 +1575,6 @@ class InventoryPage {
 		InventoryPane.CANDY_BAG -> listOf(snapshot.candyBag)
 	}
 
-	/** Ctrl+click steps 5 pages; normal click steps 1. */
 	private fun stepPage(total: Int, direction: Int) {
 		val size = maxOf(1, total)
 		val page = clampPage(pane, size)
@@ -1626,26 +1600,21 @@ class InventoryPage {
 		private const val SLOT_GAP = 3
 		private const val PAGE_BTN = 18
 		private const val ARMOR_GAP = 8
-		/** Same spacing as between inventory rows so the hotbar sits flush under the 3×9 grid. */
 		private const val HOTBAR_GAP = SLOT_GAP
 		private const val GRID_PAD = 4
-		/** Small gap under the title for non-accessory-bag previews. */
 		private const val PREVIEW_TOP_PAD = 6
 		private const val COL_GAP = 4
 		private const val META_GAP = 6
 		private const val LOADOUT_GAP = 14
-		private const val LOADOUT_MIN_W = 170
 		private const val LOADOUT_ROW_GAP = 8
 		private const val SEARCH_HIGHLIGHT = 0xFF55FF55.toInt()
 		private const val PANEL_HOVER = 0x0AFFFFFF
 		private const val FLIP_MS = 480
 		private const val POWERS_ROW = 12
 		private const val MISSING_ROW = 18
-		private val FORMAT_CODE = Regex("§.")
 		private val GEM_TIERS = arrayOf("ROUGH", "FLAWED", "FINE", "FLAWLESS", "PERFECT")
 		private val GEM_TIER_LABELS = arrayOf("Rough", "Flawed", "Fine", "Flawless", "Perfect")
 
-		/** Panes not shown in the storage side column. */
 		private val HIDDEN_PANES: Set<InventoryPane> = EnumSet.of(
 			InventoryPane.POTION_BAG, InventoryPane.CARNIVAL_MASKS, InventoryPane.CANDY_BAG,
 			InventoryPane.TIME_POCKET, InventoryPane.QUIVER
@@ -1698,12 +1667,7 @@ class InventoryPage {
 		private fun easeInOutCubic(t: Float): Float =
 			if (t < 0.5f) 4f * t * t * t else 1f - Math.pow((-2f * t + 2f).toDouble(), 3.0).toFloat() / 2f
 
-		/**
-		 * {cols, rows, perPage, compact}. Callers pass a height that already excludes the pager row.
-		 * Two rows of full cards need ~206px, more than the usual panel gives, so fall back to compact cards there.
-		 */
 		private fun loadoutGrid(w: Int, h: Int, font: Font): IntArray {
-			// Tall cards side by side: three across when they fit, one row per page.
 			val cols = maxOf(2, minOf(3, (w + LOADOUT_GAP) / (150 + LOADOUT_GAP)))
 			val rows = maxOf(1, (h + LOADOUT_ROW_GAP) / (loadoutCardHeight(font) + LOADOUT_ROW_GAP))
 			if (h < loadoutCardHeight(font)) {
@@ -1783,7 +1747,6 @@ class InventoryPage {
 			return GEM_TIERS.indices.lastOrNull { upper.startsWith(GEM_TIERS[it] + "_") } ?: -1
 		}
 
-		/** SkyBlock gem name colours (Rough→Perfect tip header). */
 		private fun gemColour(gem: String?): Int {
 			if (gem == null) {
 				return 0xFFE8E8F0.toInt()
@@ -1805,13 +1768,12 @@ class InventoryPage {
 			}.toInt()
 		}
 
-		/** Rough / Flawed / Fine / Flawless / Perfect label colours. */
 		private fun gemTierColour(tierIdx: Int): Int = when (tierIdx) {
-			0 -> 0xFFAAAAAA // Rough
-			1 -> 0xFF55FF55 // Flawed
-			2 -> 0xFF5555FF // Fine
-			3 -> 0xFFAA00AA // Flawless
-			4 -> 0xFFFFAA00 // Perfect
+			0 -> 0xFFAAAAAA
+			1 -> 0xFF55FF55
+			2 -> 0xFF5555FF
+			3 -> 0xFFAA00AA
+			4 -> 0xFFFFAA00
 			else -> 0xFFE8E8F0
 		}.toInt()
 
@@ -1819,7 +1781,7 @@ class InventoryPage {
 			if (value.isNullOrEmpty()) {
 				return ""
 			}
-			return value.replace(FORMAT_CODE, "").lowercase(Locale.ROOT)
+			return TextStrip.plain(value).lowercase(Locale.ROOT)
 		}
 
 		private fun trimToWidth(font: Font, value: String?, maxW: Int): String {

@@ -3,10 +3,8 @@ package fishmod.utils.data
 import com.google.gson.JsonObject
 import fishmod.pv.neu.NeuRepoCache
 
-// Thin facade over NeuRepoCache so there is one NEU download and one item map.
 object NeuRepo {
 
-    // constants/fairy_souls.json: server mode -> ["x,y,z", ...]
     @Volatile private var fairySoulsCache: JsonObject? = null
 
     @JvmStatic val fairySouls: JsonObject?

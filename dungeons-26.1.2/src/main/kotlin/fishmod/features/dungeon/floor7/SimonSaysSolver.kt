@@ -1,0 +1,217 @@
+package fishmod.features.dungeon.floor7
+
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import fishmod.utils.FishUtil
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDebug
+import fishmod.utils.dungeon.BossPhase
+import fishmod.utils.events.FishEvents
+import fishmod.utils.events.registerPacket
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
+import net.fabricmc.fabric.api.event.player.UseBlockCallback
+import net.minecraft.client.Minecraft
+import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
+import net.minecraft.util.ARGB
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
+import net.minecraft.world.phys.AABB
+import fishmod.utils.debug.FishDiag
+
+// F7 P3 Simon Says device solver — 1:1 port of Odin's SimonSays module.
+object SimonSaysSolver {
+
+    private val startButton = BlockPos(110, 121, 91)
+    private val grid: Set<BlockPos> = buildSet {
+        for (y in 120..123) for (z in 92..95) add(BlockPos(110, y, z))
+    }
+
+    private val clickInOrder = ArrayList<BlockPos>()
+    private var clickNeeded = 0
+    private var firstPhase = true
+    private var lastLanternTick = -1
+    private val prev = HashMap<Long, Block>()
+
+    private fun resetSolution() {
+        clickInOrder.clear()
+        clickNeeded = 0
+        lastLanternTick = -1
+    }
+
+    private fun inP3(): Boolean = FishSettings.simonSolverEnabled && try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.1", "BossPhase.inP3 threw", t); false }
+
+    private fun trackingActive(): Boolean = try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.2", "BossPhase.inP3 threw (tracking)", t); false }
+
+    @JvmField var lastRoundCompleteMs: Long = 0L
+
+    private fun dbg(msg: String) {
+        if (FishDebug.ssDebug) FishUtil.addChatMessage(Component.literal("§7[SS] §f$msg"))
+    }
+
+    private fun powered(state: BlockState): Boolean =
+        state.hasProperty(BlockStateProperties.POWERED) && state.getValue(BlockStateProperties.POWERED)
+
+    @JvmStatic
+    fun init() {
+        FishEvents.worldChange.register {
+            Minecraft.getInstance().execute {
+                resetSolution()
+                firstPhase = true
+                prev.clear()
+                lastRoundCompleteMs = 0L
+            }
+            false
+        }
+
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { BossPhase.inP3() }) { packet ->
+            try {
+                when (packet) {
+                    is ClientboundBlockUpdatePacket -> queueBlock(packet.pos, packet.blockState)
+                    is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::queueBlock)
+                }
+            } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.3", "SS solver packet handler threw (order=${clickInOrder.size} needed=$clickNeeded)", e) }
+            false
+        }
+
+        FishEvents.serverTick.register {
+            try { tick() } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.4", "SS solver tick threw", e) }
+            false
+        }
+
+        UseBlockCallback.EVENT.register(UseBlockCallback { _, _, _, hit ->
+            val pos = hit.blockPos
+            if (!inP3()) return@UseBlockCallback InteractionResult.PASS
+
+            if (pos == startButton) {
+                Minecraft.getInstance().execute { resetSolution(); firstPhase = true }
+                return@UseBlockCallback InteractionResult.PASS
+            }
+
+            if (pos.x != 110 || pos.y !in 120..123 || pos.z !in 92..95)
+                return@UseBlockCallback InteractionResult.PASS
+            val lantern = pos.east()
+
+            if (FishSettings.simonSolverBlockWrong &&
+                Minecraft.getInstance().player?.isShiftKeyDown == false &&
+                lantern != clickInOrder.getOrNull(clickNeeded)
+            ) return@UseBlockCallback InteractionResult.FAIL
+
+            try {
+                val idx = clickInOrder.indexOf(lantern)
+                if (idx >= 0) {
+                    clickNeeded = idx + 1
+                    dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
+                    if (clickNeeded >= clickInOrder.size) {
+                        lastRoundCompleteMs = System.currentTimeMillis()
+                        resetSolution(); firstPhase = false
+                    }
+                }
+            } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.5", "SS solver click handler threw at $pos", e) }
+            InteractionResult.PASS
+        })
+
+        RenderHooks.GIZMO.register { _ ->
+            if (!FishSettings.simonSolverDepth) try { renderGizmo() } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.6", "SS solver gizmo render threw", e) }
+        }
+        RenderHooks.NO_DEPTH_FILLED.register { _, m, vc ->
+            if (FishSettings.simonSolverDepth) try { render(m, vc, fill = true) } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.7", "SS solver fill render threw", e) }
+        }
+        RenderHooks.NO_DEPTH_LINE.register { _, m, vc ->
+            if (FishSettings.simonSolverDepth) try { render(m, vc, fill = false) } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.8", "SS solver line render threw", e) }
+        }
+    }
+
+    private fun queueBlock(pos: BlockPos, state: BlockState) {
+        onBlock(pos.immutable(), state)
+    }
+
+    private fun tick() {
+        if (!trackingActive() || !firstPhase) return
+        lastLanternTick++
+        if (lastLanternTick > 10 && grid.count { Minecraft.getInstance().level?.getBlockState(it)?.block === Blocks.STONE_BUTTON } > 8) {
+            dbg("grid reset detected (${clickInOrder.size})")
+            firstPhase = false
+        }
+    }
+
+    private fun onBlock(pos: BlockPos, updated: BlockState) {
+        if (!trackingActive()) return
+
+        // Only the lantern/button grid reads `old`; don't remember every P3 block update.
+        val old = if (pos.x in 110..111 && pos.y in 120..123 && pos.z in 92..95) prev.put(pos.asLong(), updated.block) else null
+
+        if (pos == startButton && updated.block === Blocks.STONE_BUTTON && powered(updated)) {
+            resetSolution()
+            firstPhase = true
+            return
+        }
+
+        if (pos.y !in 120..123 || pos.z !in 92..95) return
+
+        when (pos.x) {
+            111 ->
+                if (updated.block === Blocks.OBSIDIAN && old === Blocks.SEA_LANTERN && pos !in clickInOrder) {
+                    if (clickInOrder.size >= 5) {
+                        FishDebug.LOGGER.warn("[SS] 6th lantern ${pos.y}:${pos.z}, restarting solution (old=${clickInOrder.map { "${it.y}:${it.z}" }} needed=$clickNeeded firstPhase=$firstPhase)")
+                        resetSolution()
+                    }
+                    clickInOrder.add(pos.immutable())
+                    lastLanternTick = 0
+                    dbg("lantern ${pos.y}:${pos.z} added (${clickInOrder.size})")
+                    if (!firstPhase) return
+                    when (clickInOrder.size) {
+                        2 -> { clickInOrder.reverse(); dbg("first-phase correction: size 2 -> reverse") }
+                        3 -> { clickInOrder.removeAt(clickInOrder.lastIndex - 1); dbg("first-phase correction: size 3 -> drop middle") }
+                    }
+                }
+
+            110 ->
+                if (updated.block !== Blocks.AIR && old === Blocks.STONE_BUTTON && powered(updated)) {
+                    clickNeeded = clickInOrder.indexOf(pos.east()) + 1
+                    dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
+                    if (clickNeeded >= clickInOrder.size) {
+                        lastRoundCompleteMs = System.currentTimeMillis()
+                        resetSolution(); firstPhase = false
+                    }
+                }
+        }
+    }
+
+    private data class Btn(val box: AABB, val color: Int)
+
+    private fun buttons(): List<Btn> {
+        if (!inP3() || clickNeeded >= clickInOrder.size) return emptyList()
+        return (clickNeeded until clickInOrder.size).map { index ->
+            val p = clickInOrder[index]
+            val box = AABB(
+                p.x + 0.05, p.y + 0.37, p.z + 0.3,
+                p.x - 0.15, p.y + 0.63, p.z + 0.7
+            )
+            val color = when (index) {
+                clickNeeded -> FishSettings.simonSolverColor1
+                clickNeeded + 1 -> FishSettings.simonSolverColor2
+                else -> FishSettings.simonSolverColor3
+            }
+            Btn(box, color)
+        }
+    }
+
+    private fun renderGizmo() {
+        for ((box, color) in buttons()) FishDraw.gizmoBox(box, ARGB.multiplyAlpha(color, 0.5f), ARGB.opaque(color))
+    }
+
+    private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
+        for ((box, color) in buttons()) {
+            val rgba = FishDraw.toFloats(color)
+            if (fill) FishDraw.renderFilled(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], rgba[3] * 0.5f))
+            else FishDraw.renderOutline(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], 1f))
+        }
+    }
+}

@@ -28,7 +28,6 @@ enum class NetworthMode(
             ONLY_UNSOULBOUND -> !soulbound
         }
 
-        /** Purse / bank are liquid coins - only in full and un-soulbound views. */
         fun includesLiquid(): Boolean = this != ONLY_SOULBOUND
     }
 

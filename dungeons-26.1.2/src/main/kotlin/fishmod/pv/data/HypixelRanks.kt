@@ -14,7 +14,6 @@ import fishmod.pv.util.LegacyChatFormatting
 import java.util.Locale
 import net.minecraft.ChatFormatting
 
-/** Formats Hypixel rank-coloured display names for tooltips. */
 object HypixelRanks {
 	@JvmStatic
 	fun nameSpans(name: String?, player: JsonObject?): List<PvTooltip.Span> {
@@ -30,14 +29,12 @@ object HypixelRanks {
 		return out
 	}
 
-	/** Name colour that goes with the rank bracket, grey for no rank. Same rule as {@link #nameSpans}. */
 	@JvmStatic
 	fun nameColor(player: JsonObject?): Int {
 		val prefix = prefixSpans(player)
 		return if (prefix.isEmpty()) color(ChatFormatting.GRAY) else prefix.first().color
 	}
 
-	/** Rank bracket spans only (no player name), e.g. {@code [MVP+] }. Empty for default/none. */
 	@JvmStatic
 	fun prefixSpans(player: JsonObject?): List<PvTooltip.Span> {
 		if (player == null) {

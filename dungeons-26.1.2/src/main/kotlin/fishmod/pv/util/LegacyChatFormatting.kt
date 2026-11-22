@@ -11,10 +11,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.TextColor
 import java.util.Locale
 
-/**
- * ChatFormatting color helpers that work on both 26.1.2 and 26.2.
- * 26.2 removed `getByName`/`isColor`/`getColor`/`getName`.
- */
 object LegacyChatFormatting {
 	@JvmStatic
 	fun byName(raw: String?): ChatFormatting? {

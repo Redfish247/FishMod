@@ -10,7 +10,6 @@ package fishmod.pv.api
 import com.google.gson.JsonObject
 import fishmod.pv.data.Leveling
 
-/** Resolves museum member JSON from Hypixel museum responses. */
 internal object ProfileMuseumLookup {
     @JvmStatic
     fun findMuseumMember(museumRoot: JsonObject?, profileId: String?, undashed: String): JsonObject? {

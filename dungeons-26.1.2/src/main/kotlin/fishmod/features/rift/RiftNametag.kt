@@ -9,7 +9,6 @@ import net.minecraft.network.chat.Component
 import java.util.concurrent.ConcurrentHashMap
 import fishmod.features.rift.RiftSettings as S
 
-// Rift nametag lines: Vampire slayer level/XP, Enigma Souls, Punchcard mark
 object RiftNametag {
 
     private const val TTL_MS = 30 * 60 * 1000L
@@ -29,7 +28,6 @@ object RiftNametag {
         FishEvents.locationChange.register { loc -> if (loc != SkyblockLocation.THE_RIFT) punched.clear(); false }
     }
 
-    // Replaces the normal stat lines while in the Rift; null = not handled
     @JvmStatic
     fun override(name: String): List<Component>? {
         if (!Rift.inRift() || (!S.riftNametag && !S.riftPunchcard)) return null

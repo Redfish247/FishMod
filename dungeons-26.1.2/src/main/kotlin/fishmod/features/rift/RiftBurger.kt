@@ -12,7 +12,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 import fishmod.features.rift.RiftSettings as S
 
-// Warns when the Motes Grubber sell menu opens with Highlite in the inventory and fewer than 5 McGrubber stacks
 object RiftBurger {
 
     // SkyHanni ShowMotesNpcSellPrice.burgerPattern: chat "You have N Grubber Stacks"

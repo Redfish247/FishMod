@@ -13,7 +13,6 @@ import net.minecraft.world.entity.player.Player
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
-// Dungeon class per party member, read from the tab list; our own class also from chat.
 enum class DungeonRole(val letter: String, private val colorSetting: () -> Int) {
     ARCHER("A", { DungeonSettings.roleColorArcher }),
     BERSERK("B", { DungeonSettings.roleColorBerserk }),
@@ -31,7 +30,6 @@ enum class DungeonRole(val letter: String, private val colorSetting: () -> Int) 
             Regex("Your $ROLES stats are doubled because you are the only player using this class!")
         )
         private val CHAT_PREFIX = Regex("^\\[$ROLES]")
-        // tab row: "[42] [MVP+] Name ♲ (Mage XL)"
         private val TAB_ROW = Regex("^\\[\\d+] (?:\\[[^\\]]+] )*(\\w{1,16})\\b.*?\\($ROLES ")
 
         private val byPlayer = ConcurrentHashMap<String, DungeonRole>()

@@ -1,5 +1,8 @@
 package fishmod.features.garden
 
+import fishmod.features.garden.visitors.Pests
+import fishmod.features.garden.visitors.Visitors
+
 import fishmod.features.FishModScreen.ButtonSetting
 import fishmod.features.FishModScreen.ColorPickerSetting
 import fishmod.features.FishModScreen.Column
@@ -12,8 +15,15 @@ import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.garden.GardenSettings as S
 
-// The Farming tab in /fm
 object GardenMenu {
+
+    // Known rare visitor rewards; the stored comma list keeps any custom entries too
+    private val RARE_REWARDS = listOf(
+        "Flowering Bouquet", "Overgrown Grass", "Green Bandana", "Dedication", "Music Rune", "Space Helmet",
+        "Cultivating", "Replenish", "Delicate", "Copper Dye", "Jungle Key", "Fruit Bowl", "Harbinger Potion", "Pet Cake"
+    )
+
+    private fun rareList() = S.gardenRareRewardList.split(',').map { it.trim() }.filter { it.isNotEmpty() }
 
     fun column(): Column {
         val col = Column("Farming")
@@ -43,7 +53,13 @@ object GardenMenu {
         col.features.add(Feature("Visitor Menu Info", S::class.java, "gardenVisitorMenuInfo"))
 
         val rare = Feature("Visitor Rare Reward Warning", S::class.java, "gardenRareRewardWarn")
-        rare.sub.add(InputSetting("Rewards", "Comma-separated names", S::class.java, "gardenRareRewardList"))
+        rare.sub.add(SubcategoryHeader("Rewards"))
+        for (item in (RARE_REWARDS + rareList()).distinctBy { it.lowercase() }) {
+            rare.sub.add(ToggleSetting(item, "", { rareList().any { it.equals(item, true) } }) { on ->
+                val cur = rareList().filterNot { it.equals(item, true) }
+                S.gardenRareRewardList = (if (on) cur + item else cur).joinToString(", ")
+            })
+        }
         rare.sub.add(ColorPickerSetting("Accept Highlight", "", S::class.java, "gardenRareRewardColor"))
         col.features.add(rare)
 

@@ -15,10 +15,8 @@ import net.minecraft.nbt.CompoundTag
 
 /** Sack counts and sack UI page decoding. */
 internal object SackDecoder {
-    /** Page for counted items no NEU sack lists. */
     const val UNSORTED_PAGE = "Unsorted"
 
-    /** NEU lists Rough/Flawed/Fine only - add Flawless/Perfect for each gem type. */
     @JvmField
     val GEMSTONE_TYPES = arrayOf(
         "RUBY", "JADE", "SAPPHIRE", "AMETHYST", "AMBER", "TOPAZ", "JASPER", "OPAL",
@@ -47,16 +45,10 @@ internal object SackDecoder {
         InventoryDecodeSupport.obj(member.get("sacks_counts"))
             ?: inventory?.let { InventoryDecodeSupport.obj(it.get("sacks_counts")) }
 
-    /**
-     * One page per owned sack (from `bag_contents.sacks_bag`) with every holdable item (count may be 0).
-     * NEU's Rune sack has an empty contents list - real runes go on `Rune Sack`.
-     * Gemstone sack is expanded with Flawless/Perfect (NEU only lists Rough-Fine).
-     */
     @JvmStatic
     fun parseSackPages(member: JsonObject, inventory: JsonObject?): List<InventorySnapshot.Page> {
         val counts = LinkedHashMap<String, Int>()
         sackCountsObject(member, inventory)?.entrySet()?.forEach { (key, value) ->
-            // Same number check and int clamp as parseSacks; a non-numeric value would throw.
             if (value.isJsonPrimitive && value.asJsonPrimitive.isNumber) {
                 counts[key.uppercase(Locale.ROOT)] = maxOf(0.0, minOf(Int.MAX_VALUE.toDouble(), value.asDouble)).toInt()
             }
@@ -84,7 +76,6 @@ internal object SackDecoder {
         return owned
     }
 
-    /** Small/Medium/Large variants are one sack type; NEU only names the Large item. */
     @JvmStatic
     fun sackKey(itemId: String?): String {
         if (itemId == null) return ""
@@ -93,7 +84,6 @@ internal object SackDecoder {
         return key.substring(prefix.length)
     }
 
-    /** [owned] comes from [ownedSackKeys]; null means unknown, so only sacks holding something are shown. */
     @JvmStatic
     fun buildSackPages(
         defs: Map<String, List<String>?>,
@@ -110,7 +100,6 @@ internal object SackDecoder {
         if (contentsByName.keys.none { it.equals("Gemstone", ignoreCase = true) }) {
             contentsByName["Gemstone"] = expandGemstoneContents(emptyList())
         }
-        // NEU's Rune sack has no contents list, so the repo loader drops it; runes would fall into Unsorted.
         if (contentsByName.keys.none { it.equals("Rune", ignoreCase = true) }) {
             contentsByName["Rune"] = emptyList()
         }
@@ -157,7 +146,6 @@ internal object SackDecoder {
         }
         val shown = contentsByName.keys.filterTo(LinkedHashSet()) { it in visible }
 
-        // Events overlaps Winter/Spooky/Fishing etc. sharing one count, so only list what no other owned sack shows.
         val elsewhere = HashSet<String>()
         for (sackName in shown) {
             if (!sackName.equals("Events", ignoreCase = true)) {

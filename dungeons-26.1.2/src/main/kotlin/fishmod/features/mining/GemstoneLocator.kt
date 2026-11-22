@@ -39,7 +39,6 @@ object GemstoneLocator {
             targets = found.flatMap { (g, l) ->
                 l.sortedBy { Vec3.atCenterOf(it).distanceToSqr(eye) }.take(S.miningGemMax.coerceAtLeast(1)).map { g to it }
             }
-            // Already in a gem's area (its blocks right around you): no path for that gem
             val here = found.filterValues { l -> l.any { Vec3.atCenterOf(it).distanceToSqr(eye) < 8.0 * 8.0 } }.keys
             paths = if (S.miningGemPaths) findPaths(want - here, p.position()) else emptyList()
         }
@@ -52,11 +51,9 @@ object GemstoneLocator {
             val feet = net.minecraft.client.Minecraft.getInstance().player?.position() ?: return@register
             for ((g, pts) in paths) {
                 val argb = Mining.alpha(g.rgb, 100)
-                // Graph points sit ~2 blocks up; drop them to the floor
                 var floor = pts.map { it.add(0.0, -1.9, 0.0) }
                 // Skip a first point that's behind you so the line doesn't double back
                 if (floor.size > 1 && floor[1].distanceToSqr(feet) < floor[0].distanceToSqr(floor[1])) floor = floor.drop(1)
-                // World-space ribbon (flat + upright) so it's wide from above and from the side
                 val curve = smooth(listOf(feet.add(0.0, 0.1, 0.0)) + floor)
                 FishDraw.gizmoRibbon(curve, S.miningGemLineWidth * 0.05, argb) { it.distanceToSqr(feet) < 20.0 * 20.0 }
             }
@@ -80,7 +77,6 @@ object GemstoneLocator {
         return out
     }
 
-    // One path per wanted gem to its nearest graph spot by walking distance; dropped once you're there
     private fun findPaths(want: Set<Gem>, feet: Vec3): List<Pair<Gem, List<Vec3>>> {
         if (want.isEmpty()) return emptyList()
         TunnelGraph.ensureLoaded()

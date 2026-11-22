@@ -42,7 +42,6 @@ object MageBeam {
                 } else {
                     beams.add(Beam(arrayListOf(p), tick))
                 }
-                // Firework bursts spawn hundreds of stray one-point beams; keep the newest.
                 if (beams.size > MAX_BEAMS) beams.subList(0, beams.size - MAX_BEAMS).clear()
             } catch (e: Exception) {
                 FishDiag.fail("MageBeam.2", "mage beam particle tracking failed (${beams.size} beams)", e)

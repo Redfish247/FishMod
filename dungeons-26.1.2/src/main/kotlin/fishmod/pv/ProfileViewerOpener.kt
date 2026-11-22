@@ -49,12 +49,6 @@ object ProfileViewerOpener {
 		return false
 	}
 
-	/**
-	 * Chat `RunCommand` clicks go to the server via `sendUnattendedCommand`.
-	 * Our `/pv` is a Fabric client command, so intercept here instead.
-	 *
-	 * @return true if this was a pv command and was handled client-side
-	 */
 	@JvmStatic
 	fun tryHandleChatCommand(command: String?): Boolean {
 		if (command.isNullOrBlank() || !FishSettings.profileViewerEnabled) {
@@ -80,14 +74,6 @@ object ProfileViewerOpener {
 		return false
 	}
 
-	/**
-	 * Resolves `/pv` args:
-	 * - `/pv` or blank -> self, Home
-	 * - `/pv <name>` -> that player, Home
-	 * - `/pv <name> <page>` -> that player on that page
-	 *
-	 * The first token is always a player name so usernames that match page aliases still work.
-	 */
 	@JvmStatic
 	fun handleTypedArg(raw: String?) {
 		if (raw.isNullOrBlank()) {
@@ -108,7 +94,6 @@ object ProfileViewerOpener {
 		openSelfOr(name, route.tab, route.sub)
 	}
 
-	/** Unknown page tokens fall back to Home. */
 	@JvmStatic
 	fun routeFor(page: String?): PvTab.Route = PvTab.routeFromCommandArg(page) ?: PvTab.Route(PvTab.HOME, null)
 

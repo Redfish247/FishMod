@@ -1,4 +1,6 @@
 package fishmod.features.mining
+
+import fishmod.features.hunting.MiningForagingMisc
 import fishmod.compat.cam
 import fishmod.compat.hudHidden
 
@@ -48,12 +50,11 @@ object Mining {
     fun inShaft(): Boolean = SkyblockLocation.`in`(SkyblockLocation.MINESHAFT)
     fun inTunnels(): Boolean = SkyblockLocation.`in`(SkyblockLocation.DWARVEN_MINES) &&
         (area.contains("Glacite") || area.contains("Base Camp") || area.contains("Fossil Research") || tabLine("Glacite Mineshafts:") != null)
-    fun inGlacite(): Boolean = inTunnels() || inShaft()
 
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> onTick(mc) }
-        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java) { packet ->
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { inMiningIsland() }) { packet ->
             if (inMiningIsland()) when (packet) {
                 is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
                 is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, s -> onBlock(p, s) }
@@ -71,19 +72,26 @@ object Mining {
         Commissions.init()
         PowderChests.init()
         Corpses.init()
+        FallenStar.init()
+        MineshaftTimer.init()
+        OrderedWaypoints.init()
+        MiningForagingMisc.init()
+        MetalDetector.init()
+        GhostCounter.init()
     }
 
     private var sidebarVersion = -1
+    // Location line: icon may be ⏣, ф or a custom-font glyph (same set as CustomScoreboard), with stray leading chars
+    private val AREA_LINE = Regex("""^\W*?[⏣фൠ]\s*(.+)$""")
 
     private fun onTick(mc: Minecraft) {
         if (mc.player == null) return
         if (tick++ % 20 == 0 && fishmod.utils.SidebarCache.version != sidebarVersion) {
             sidebarVersion = fishmod.utils.SidebarCache.version
             sidebar = sidebarLines(mc)
-            area = sidebar.firstOrNull { it.startsWith("⏣") || it.startsWith("ф") }?.drop(1)?.trim() ?: ""
+            area = sidebar.firstNotNullOfOrNull { AREA_LINE.find(it)?.groupValues?.get(1) }?.trim() ?: ""
         }
         if (!inMiningIsland()) return
-        // Block under the crosshair while attacking = a block we're mining
         if (mc.options.keyAttack.isDown) {
             lastSwingMs = System.currentTimeMillis()
             val hit = mc.hitResult
@@ -92,7 +100,6 @@ object Mining {
                 if (st != null && !gone(st)) recentTargets[hit.blockPos.immutable()] = Target(lastSwingMs, st)
             }
         }
-        // Fallback when the update packet slipped past onBlock: a mined target turned to air/bedrock
         val level = mc.level
         if (level != null) {
             val it = recentTargets.entries.iterator()
@@ -106,7 +113,6 @@ object Mining {
         if (tick % 40 == 0) { val now = System.currentTimeMillis(); recentTargets.entries.removeIf { now - it.value.ms > 3000 } }
     }
 
-    // Runs before vanilla applies the packet, so the level still holds the old state
     private fun gone(s: BlockState) = s.isAir || s.`is`(Blocks.BEDROCK)
 
     private fun onBlock(pos: BlockPos, new: BlockState) {
@@ -126,11 +132,10 @@ object Mining {
     private fun sidebarLines(mc: Minecraft): List<String> {
         if (mc.level == null) return emptyList()
         return fishmod.utils.SidebarCache.entries.map { e ->
-            e.plain.filterNot { it.isSurrogate() }.trim()  // Hypixel pads lines with emoji
+            e.plain.filterNot { it.isSurrogate() }.trim()
         }
     }
 
-    // Tab lines after a widget header (e.g. "Commissions:"), until the next blank/header line
     private val widgetCache = HashMap<String, List<String>>()
     private val lineCache = HashMap<String, String?>()
     private var tabVersion = -1
@@ -179,7 +184,6 @@ object Mining {
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))
     }
 
-    // 12 camera-facing edges of a box
     fun outline(ps: PoseStack, vc: VertexConsumer, b: AABB, argb: Int, px: Float) {
         val xs = doubleArrayOf(b.minX, b.maxX); val ys = doubleArrayOf(b.minY, b.maxY); val zs = doubleArrayOf(b.minZ, b.maxZ)
         for (y in ys) for (z in zs) FishDraw.screenLine(ps, vc, Vec3(b.minX, y, z), Vec3(b.maxX, y, z), argb, px)
@@ -190,15 +194,15 @@ object Mining {
     fun short(v: Double): String = fishmod.features.diana.DianaTracker.short(v)
 }
 
-// Plain line HUDs registered with the HUD editor
 object MiningHuds {
 
     fun reg(
         name: String, id: String, w: Int, h: Int,
         gx: () -> Int, sx: (Int) -> Unit, gy: () -> Int, sy: (Int) -> Unit,
-        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, enabled: (() -> Boolean)? = null, lines: () -> List<String>,
+        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, enabled: (() -> Boolean)? = null, example: (() -> List<String>)? = null, lines: () -> List<String>,
     ) {
         FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on, enabled?.let { e -> java.util.function.BooleanSupplier { e() } })
+        if (example != null) registerExample(name, example)
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
             if (!FishHudEditor.isOpen() && on()) draw(ctx, lines(), gx(), gy(), gs())
         }
@@ -211,15 +215,39 @@ object MiningHuds {
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(scale.toFloat(), scale.toFloat())
-        // "value	item" lines: value right-aligned in its own column, item text after it (Diana style)
-        val font = mc.font
+        drawLines(ctx, lines)
+        pose.popMatrix()
+    }
+
+    // The text block at the origin (shared by the in-game draw and the HUD editor example)
+    fun drawLines(ctx: GuiGraphicsExtractor, lines: List<String>) {
+        val font = Minecraft.getInstance().font
         val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
         for ((i, l) in lines.withIndex()) {
-            if ('	' !in l) { ctx.text(font, l, 0, i * 10, -1, true); continue }
+            if ('	' !in l) { drawOne(ctx, font, l, 0, i * 10); continue }
             val left = l.substringBefore('	')
             ctx.text(font, left, colX - 6 - font.width(left), i * 10, -1, true)
             ctx.text(font, l.substringAfter('	'), colX, i * 10, -1, true)
         }
-        pose.popMatrix()
     }
+
+    fun linesWidth(lines: List<String>): Int {
+        val font = Minecraft.getInstance().font
+        val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
+        return lines.maxOfOrNull { if ('	' in it) colX + font.width(it.substringAfter('	')) else font.width(plainOf(it)) } ?: 0
+    }
+
+    const val RGB_MARK = ''
+    fun rgb(hex: String, text: String) = "$RGB_MARK$hex$text"
+    private fun plainOf(l: String) = if (l.length >= 7 && l[0] == RGB_MARK) l.substring(7) else l
+    private fun drawOne(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, l: String, x: Int, y: Int) {
+        val c = if (l.length >= 7 && l[0] == RGB_MARK) l.substring(1, 7).toIntOrNull(16) else null
+        if (c == null) ctx.text(font, l, x, y, -1, true) else ctx.text(font, Component.literal(l.substring(7)).withColor(c), x, y, -1, true)
+    }
+
+    // No lines = nothing drawn in game, so no example either
+    fun exampleOf(lines: List<String>) = if (lines.isEmpty()) null else fishmod.features.HudExample(linesWidth(lines), fishmod.features.HudPreview.textHeight(lines.size)) { ctx -> drawLines(ctx, lines) }
+
+    // HUD editor example: the real line drawing fed with example lines
+    fun registerExample(name: String, lines: () -> List<String>) = fishmod.features.HudPreview.register(name) { exampleOf(lines()) }
 }

@@ -14,7 +14,6 @@ import net.minecraft.client.gui.font.glyphs.EffectGlyph
 import net.minecraft.network.chat.FontDescription
 import net.minecraft.resources.Identifier
 
-/** A Font that renders every string with FishMod's Inter font (assets/fishmod/font/inter.json). */
 object PvFont {
 	private val INTER: FontDescription = FontDescription.Resource(Identifier.fromNamespaceAndPath("fishmod", "inter"))
 	private var cached: Font? = null

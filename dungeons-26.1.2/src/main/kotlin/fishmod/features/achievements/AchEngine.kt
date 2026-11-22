@@ -14,7 +14,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-// Unlock checks, AP totals, toasts and /fm ach
 object AchEngine {
 
     private var evaluatedVersion = -1
@@ -71,7 +70,6 @@ object AchEngine {
     fun evaluate() {
         if (AchStore.version == evaluatedVersion) return
         val fresh = ArrayList<Ach>()
-        // Metas depend on other unlocks, so loop until nothing new
         do {
             var any = false
             for (a in AchRegistry.ALL) {

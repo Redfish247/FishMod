@@ -20,7 +20,7 @@ object DoorHighlight {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.FishEvents.worldChange.register { lastRoom = null; outlineCache = emptyList(); outlineCacheAt = 0L; false }
+        fishmod.utils.events.FishEvents.worldChange.register { lastRoom = null; passed.clear(); outlineCache = emptyList(); outlineCacheAt = 0L; false }
         RenderHooks.GIZMO.register { _ ->
             try { renderGizmo() } catch (e: Exception) { FishDiag.fail("DoorHighlight.1", "door highlight gizmo render failed doors=${Scan.doors.size}", e) }
         }
@@ -88,7 +88,7 @@ object DoorHighlight {
         val prev = lastRoom
         lastRoom = here
         if (prev == null || prev === here) return
-        for (d in ArrayList(Scan.doors)) {
+        for (d in Scan.doorsSnapshot()) {
             if (d.type == Door.Type.NORMAL || closed(d)) continue
             if (d.rooms.any { it.owner === prev } && d.rooms.any { it.owner === here }) passed.add(d)
         }
@@ -168,11 +168,10 @@ object DoorHighlight {
     private var outlineCache: List<Door> = emptyList()
     private var outlineCacheAt = 0L
 
-    // shared across the three render passes; refreshed at most once per tick
     private fun outlineDoors(): List<Door> {
         val now = System.currentTimeMillis()
         if (now - outlineCacheAt >= 50) {
-            outlineCache = ArrayList(Scan.doors).filter { if (keyLive(it)) keyVisible(it) else inRoomVisible(it) }
+            outlineCache = Scan.doorsSnapshot().filter { if (keyLive(it)) keyVisible(it) else inRoomVisible(it) }
             outlineCacheAt = now
         }
         return outlineCache
@@ -209,7 +208,7 @@ object DoorHighlight {
             return
         }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
-        for (door in ArrayList(Scan.doors)) {
+        for (door in Scan.doorsSnapshot()) {
             if (!keyLive(door) || !keyVisible(door)) continue
             if (throughWall(door.type)) continue
             val fairy = isFairyDoor(door)
@@ -239,7 +238,7 @@ object DoorHighlight {
             return
         }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
-        for (door in ArrayList(Scan.doors)) {
+        for (door in Scan.doorsSnapshot()) {
             if (!keyLive(door) || !keyVisible(door)) continue
             if (throughWall(door.type) == depthTested) continue
             val fairy = isFairyDoor(door)

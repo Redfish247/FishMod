@@ -45,7 +45,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Foraging overview subtab (left stats + flip panel). */
 public final class ForagingOverviewPage {
 	private final List<HoverZone> zones = new ArrayList<>();
 
@@ -127,24 +126,19 @@ public final class ForagingOverviewPage {
 		boolean showEssence = animating
 			? (Math.cos(angle) < 0.0 ? this.rightFlipTarget : this.rightEssenceFace)
 			: this.rightEssenceFace;
-		float scaleX = 1F;
-		float scaleY = 1F;
+		float slideDx = 0F;
 		if (animating) {
-			scaleX = Math.max(0.04F, Math.abs((float) Math.cos(angle)));
-			scaleY = 1F - (1F - scaleX) * 0.06F;
+			slideDx = PvDraw.slideOffset(eased, w);
 		}
 
-		float cxFlip = x + w / 2F;
-		float cyFlip = y + h / 2F;
-		g.pose().pushMatrix();
-		g.pose().translate(cxFlip, cyFlip);
-		g.pose().scale(scaleX, scaleY);
-		g.pose().translate(-cxFlip, -cyFlip);
-
 		PvDraw.innerPanel(g, x, y, w, h);
+		g.enableScissor(x, y, x + w, y + h);
+		g.pose().pushMatrix();
+		g.pose().translate(slideDx, 0F);
 		drawContestsFace(g, font, snapshot, x, y, w, h);
 
 		g.pose().popMatrix();
+		g.disableScissor();
 	}
 
 	private void drawOverviewLeft(
@@ -379,9 +373,5 @@ public final class ForagingOverviewPage {
 	private static ItemStack essenceIcon(String skyblockId) {
 		ItemStack stack = SkyBlockItemFactory.iconStack(skyblockId == null ? "" : skyblockId);
 		return stack == null || stack.isEmpty() ? new ItemStack(Items.FLOWERING_AZALEA_LEAVES) : stack;
-	}
-
-	private static ItemStack forestPerkIcon(String perkId) {
-		return EssenceIcons.perk(perkId);
 	}
 }
