@@ -33,7 +33,6 @@ public final class ForagingUi {
 	public static final int ENABLED = 0xFF55FF55;
 	public static final int DISABLED = 0xFF9A9AAC;
 	public static final int ICON = 14;
-	public static final int CHIP = 16;
 	public static final int SLOT = 18;
 	public static final int SLOT_GAP = 3;
 	public static final int ITEM_SLOT_BG = 0x1CFFFFFF;
