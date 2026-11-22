@@ -35,27 +35,28 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         const val LEFT_W = 170
         const val ARM_STEP = 28
 
-        val BG_PANEL = 0xF2101010.toInt()
-        val BG_SECTION = 0xFF1A1A1A.toInt()
-        val PANEL_BORDER = 0xFF2D2D2D.toInt()
-        val FIELD_BG = 0xFF1E1E1E.toInt()
-        val FIELD_BORDER = 0xFF333333.toInt()
+        val BG_PANEL get() = ScreenTheme.windowBg()
+        val BG_SECTION get() = ScreenTheme.surface(0x06)
+        val PANEL_BORDER get() = ScreenTheme.surface(0x1F)
+        val FIELD_BG get() = ScreenTheme.surface(0x0C)
+        val FIELD_BORDER get() = ScreenTheme.surface(0x2E)
         val ACCENT get() = ScreenTheme.ACCENT
         val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         val ACCENT_INK get() = ScreenTheme.onAccent()
+        val ACCENT_FG get() = ScreenTheme.accentFg()
         val TEXT_PRIM get() = ScreenTheme.TEXT_COLOR
         val TEXT_HINT get() = ScreenTheme.SUBTEXT_COLOR
-        val ROW_HOVER = 0xFF2D2D2D.toInt()
-        val LIST_BG = 0xFF161616.toInt()
+        val ROW_HOVER get() = ScreenTheme.surface(0x1C)
+        val LIST_BG get() = ScreenTheme.surface(0x03)
         val DANGER = ScreenTheme.DANGER
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
         val WARN = 0xFFF2C14E.toInt()
 
-        val MC_BG = 0xFF1A1A1A.toInt()
-        val MC_EDGE = 0xFF2D2D2D.toInt()
-        val MC_SLOT = 0xFF212121.toInt()
-        val MC_SLOT_HOVER = 0xFF303030.toInt()
-        val MC_SLOT_EDGE = 0xFF333333.toInt()
+        val MC_BG get() = ScreenTheme.surface(0x06)
+        val MC_EDGE get() = ScreenTheme.surface(0x1F)
+        val MC_SLOT get() = ScreenTheme.surface(0x0A)
+        val MC_SLOT_HOVER get() = ScreenTheme.surface(0x1C)
+        val MC_SLOT_EDGE get() = ScreenTheme.surface(0x2E)
         val MC_TAG get() = ScreenTheme.SUBTEXT_COLOR
 
         val ARMOR_SLOTS = intArrayOf(39, 38, 37, 36)
@@ -486,13 +487,13 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val sel = selected()
         val id = uuidOf(sel)
 
-        ScreenTheme.nRoundedRect(panelX + 12, panelY + 8, 16, 16, 4, 0x33D6D6D6)
-        ScreenTheme.nst("Aa", panelX + 14, panelY + 12, ACCENT, 0.62f)
+        ScreenTheme.nRoundedRect(panelX + 12, panelY + 8, 16, 16, 4, ScreenTheme.ink(0x26))
+        ScreenTheme.nst("Aa", panelX + 14, panelY + 12, ACCENT_FG, 0.62f)
         ScreenTheme.nst("Item Customize", panelX + 34, panelY + 7, TEXT_PRIM, 0.85f)
         ScreenTheme.nst("Client-side only · only you see it", panelX + 34, panelY + 19, TEXT_HINT, 0.58f)
         drawTabs(mouseX, mouseY)
 
-        ScreenTheme.nst("PICK ITEM", lx, pickY, ACCENT, 0.65f)
+        ScreenTheme.nst("PICK ITEM", lx, pickY, ACCENT_FG, 0.65f)
         val hov = slotAt(mouseX, mouseY)
         val hint = if (hov >= 0 && !inv().getItem(hov).isEmpty) clip(inv().getItem(hov).hoverName.string, LEFT_W - 50, 0.55f)
             else "click armour or a slot"
@@ -527,7 +528,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
                 tags.isEmpty() -> "Not customised"
                 else -> "Custom: " + tags.joinToString(" · ")
             }
-            ScreenTheme.nst(sub, px, pvY + 30, if (tags.isEmpty()) TEXT_HINT else ACCENT, 0.55f)
+            ScreenTheme.nst(sub, px, pvY + 30, if (tags.isEmpty()) TEXT_HINT else ACCENT_FG, 0.55f)
         }
 
         ScreenTheme.nst("Editing", rx, pickY, TEXT_HINT, 0.6f)
@@ -579,7 +580,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         ScreenTheme.nst("Custom name", rx, y0, TEXT_HINT, 0.6f)
         ScreenTheme.nTextField(nameField, focusedField === nameField, rx, y0 + 10, rw, 20, 9f)
         if (nameField.value.isEmpty() && focusedField !== nameField)
-            ScreenTheme.nst(clip(selected().hoverName.string, rw - 8, 0.7f), rx + 4, y0 + 16, 0xFF626262.toInt(), 0.7f)
+            ScreenTheme.nst(clip(selected().hoverName.string, rw - 8, 0.7f), rx + 4, y0 + 16, TEXT_HINT, 0.7f)
 
         val cw = 22; val ch = 14; val gap = 3
         var x = rx; var y = y0 + 38
@@ -620,7 +621,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val neu = NeuItems.idOf(v)
         if (neu != null) {
             val e = NeuItems.get(neu)
-            if (e != null) ScreenTheme.nst(clip("SkyBlock skin: ${e.name}", rw - 90, 0.55f), rx + 90, y0 + 62, ACCENT, 0.55f)
+            if (e != null) ScreenTheme.nst(clip("SkyBlock skin: ${e.name}", rw - 90, 0.55f), rx + 90, y0 + 62, ACCENT_FG, 0.55f)
             else if (NeuItems.ready()) ScreenTheme.nst("Unknown NEU item, so the default model is kept.", rx, y0 + 80, WARN, 0.55f)
         } else if (v.isNotEmpty() && net.minecraft.resources.Identifier.tryParse(v) == null)
             ScreenTheme.nst("Not a valid id, so the default model is kept.", rx, y0 + 80, WARN, 0.55f)
