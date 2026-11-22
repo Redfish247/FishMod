@@ -14,6 +14,9 @@ object WornUuidRestore {
     private val SLOTS = arrayOf(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET)
     private val lastItem = arrayOfNulls<Item>(SLOTS.size)
     private val lastUuid = arrayOfNulls<String>(SLOTS.size)
+    private val emptyTicks = IntArray(SLOTS.size)
+    // Keep the uuid through short empty gaps (world/island joins) so the first uuid-less packets after a join are fixed too.
+    private const val FORGET_AFTER_TICKS = 200
 
     @JvmStatic
     fun init() {
@@ -23,7 +26,11 @@ object WornUuidRestore {
                 if (!ItemCustomizationStore.hasAny()) return@register
                 for (i in SLOTS.indices) {
                     val st = p.getItemBySlot(SLOTS[i])
-                    if (st.isEmpty) { lastItem[i] = null; lastUuid[i] = null; continue }
+                    if (st.isEmpty) {
+                        if (++emptyTicks[i] > FORGET_AFTER_TICKS) { lastItem[i] = null; lastUuid[i] = null }
+                        continue
+                    }
+                    emptyTicks[i] = 0
                     val uuid = ItemTools.getUuid(st)
                     if (uuid != null) { lastItem[i] = st.item; lastUuid[i] = uuid; continue }
                     val known = lastUuid[i] ?: continue
