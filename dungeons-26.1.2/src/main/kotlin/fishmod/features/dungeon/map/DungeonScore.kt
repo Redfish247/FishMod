@@ -190,8 +190,10 @@ object DungeonScore {
 
     @JvmStatic
     fun isBloodDone(): Boolean {
+        // Boss entered means blood is done; map check may be white (CLEARED) or never turn green
+        if (DungeonState.isInBoss()) return true
         val b = Scan.blood
-        return b != null && b.state == Room.State.GREEN
+        return b != null && (b.state == Room.State.GREEN || b.state == Room.State.CLEARED)
     }
 
     @JvmStatic
