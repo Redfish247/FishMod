@@ -33,6 +33,8 @@ object PartyMemberTracker {
     }
 
     private fun onChat(raw: String) {
+        // every pattern below needs the word "party"
+        if (!raw.contains("arty")) return
         run {
             val stripped = FishConstants.STRIP_COLOR_REGEX.replace(raw, "")
             JOIN.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
