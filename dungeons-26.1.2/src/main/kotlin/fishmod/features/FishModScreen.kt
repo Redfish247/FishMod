@@ -3829,7 +3829,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return true
         }
 
-        override fun getHeight(): Int = 28 + matches().size * OPTION_H + 4
+        override fun getHeight(): Int = 32 + matches().size * OPTION_H + 4
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             initField(tr)
@@ -3853,7 +3853,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (avail >= stw(tr, "…")) st(ctx, tr, shown, btnX - 6 - stw(tr, shown), sy + 1, ACCENT_HOVER)
             }
             val ix = leftX + 2
-            val iy = sy + 12
+            val iy = sy + 16
             val fieldW = rightX - leftX - 4
             nvgTextField(textField!!, ix, iy, fieldW, INPUT_H)
             rowRects.clear()
@@ -3875,7 +3875,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (mx >= r[0] && mx <= r[2] && my >= r[1] && my <= r[3]) { preview(); return true }
             }
             val ix = leftX + 2
-            val iy = sy + 12
+            val iy = sy + 16
             val fieldW = rightX - leftX - 4
             if (mx >= ix && mx <= ix + fieldW && my >= iy && my <= iy + INPUT_H) {
                 textField?.let { it.setFocused(true); val n = it.value.length; it.cursorPosition = n; it.setHighlightPos(n) }
