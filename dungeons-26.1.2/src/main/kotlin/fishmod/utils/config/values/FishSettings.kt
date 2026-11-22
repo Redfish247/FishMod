@@ -570,7 +570,8 @@ object FishSettings {
     @ConfigValue @JvmField var recipeViewerHoldTime: Int = 1200
     @ConfigValue @JvmField var skyItemList: Boolean = false
     @ConfigValue @JvmField var skyItemListColumns: Int = 5
-    @ConfigValue @JvmField var skyItemListOpacity: Int = 85
+    @ConfigValue @JvmField var skyItemListBgOn: Boolean = true
+    @ConfigValue @JvmField var skyItemListBgOpacity: Int = 35
     @ConfigValue @JvmField var skyItemListBgColor: Int = 0xFF12151B.toInt()
     @ConfigValue @JvmField var skyItemListRarityBg: Boolean = true
     @ConfigValue @JvmField var skyItemListRarityOpacity: Int = 40
