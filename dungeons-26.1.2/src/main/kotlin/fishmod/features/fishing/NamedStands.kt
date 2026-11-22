@@ -9,6 +9,8 @@ object NamedStands {
     private var tick = Long.MIN_VALUE
     private val stands = ArrayList<ArmorStand>()
 
+    init { fishmod.utils.events.FishEvents.worldChange.register { level = null; stands.clear(); false } }
+
     @JvmStatic
     fun of(lvl: ClientLevel): List<ArmorStand> {
         val t = lvl.gameTime
