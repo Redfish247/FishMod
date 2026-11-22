@@ -30,7 +30,7 @@ object ChatTabs {
         }
     }
 
-    private const val H = 11
+    private const val H = 13
     private const val PAD = 4
     private const val GAP = 2
 
@@ -86,7 +86,7 @@ object ChatTabs {
                 else -> FishSettings.chatTabsBgColor
             }
             ScreenTheme.roundedRect(ctx, x, y, w, h, 3, bg)
-            ctx.text(font, t.label, x + PAD, y + 2, FishSettings.chatTabsTextColor, false)
+            ctx.text(font, t.label, x + PAD, y + 3, FishSettings.chatTabsTextColor, false)
         }
     }
 
