@@ -37,6 +37,7 @@ public class FishDrawContextMixin {
     @Shadow
     private Matrix3x2fStack pose;
 
+    private static long fishmod$ttLog;
     private static final int FISHMOD$TOOLTIP_PULL = 6;
     private static final ClientTooltipPositioner FISHMOD$CLOSER = (sw, sh, x, y, w, h) -> {
         Vector2ic p = DefaultTooltipPositioner.INSTANCE.positionTooltip(sw, sh, x, y, w, h);
@@ -65,6 +66,7 @@ public class FishDrawContextMixin {
         int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
         boolean fit = est > shh - 8;
         shifted.set(on || fit);
+        if (est > shh - 40 && System.currentTimeMillis() - fishmod$ttLog > 1000) { fishmod$ttLog = System.currentTimeMillis(); fishmod.utils.debug.FishDebug.LOGGER.debug("[TooltipFit] lines={} est={} screenH={} fit={} on={} xo={} yo={}", lines.size(), est, shh, fit, on, xo, yo); }
         if (!on && !fit) return;
         pose.pushMatrix();
         if (fit) {

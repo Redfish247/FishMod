@@ -2708,9 +2708,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
-        dragCursor(vmx, vmy)?.let { ctx.requestCursor(it) }
+        val dc = dragCursor(vmx, vmy)
+        if (dc != null) ctx.requestCursor(dc)
+        if (System.currentTimeMillis() - cursorLogAt > 2000) { cursorLogAt = System.currentTimeMillis(); fishmod.utils.debug.FishDebug.LOGGER.debug("[FmCursor] v=({},{}) nav y={}..{} x={}..{} cursor={}", vmx, vmy, navTop(), navBot(), left(), stackX0() + STACK_W, dc) }
     }
 
+    private var cursorLogAt = 0L
     // move cursor over draggable sidebar rows (and while dragging one)
     private fun dragCursor(mx: Int, my: Int): CursorType? {
         if (closing) return null
