@@ -21,6 +21,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.block.Blocks
 import net.minecraft.network.chat.Component
 import java.io.File
 
@@ -52,6 +54,18 @@ object ExperimentProfitTracker {
     private var data = Data()
     private var lastTableMs = 0L
     private var dirty = false
+    private var nearTable = false
+    private var scanTick = 0
+
+    // HUD only shows within 5 blocks of an enchanting (experimentation) table
+    private fun scanTable(mc: Minecraft): Boolean {
+        val level = mc.level ?: return false
+        val c = mc.player?.blockPosition() ?: return false
+        for (p in BlockPos.betweenClosed(c.offset(-5, -5, -5), c.offset(5, 5, 5))) {
+            if (p.distSqr(c) <= 25.0 && level.getBlockState(p).`is`(Blocks.ENCHANTING_TABLE)) return true
+        }
+        return false
+    }
 
     @JvmStatic
     fun init() {
@@ -71,6 +85,7 @@ object ExperimentProfitTracker {
             changed()
         }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            if (FishSettings.expProfitEnabled && ++scanTick % 10 == 0) nearTable = scanTable(mc)
             val s = mc.curScreen ?: return@register
             if (FishSettings.expProfitEnabled && TABLE_SCREEN.containsMatchIn(fishmod.utils.ScreenTitle.plain(s))) {
                 lastTableMs = System.currentTimeMillis()
@@ -193,6 +208,7 @@ object ExperimentProfitTracker {
         if (mc.player == null || mc.hudHidden) return
         if (FishSettings.expProfitOnlyIsland && fishmod.utils.SkyblockLocation.getCurrentLocation() != fishmod.utils.SkyblockLocation.PRIVATE_ISLAND) return
         if (data.experiments == 0 && data.drops.isEmpty() && data.xp == 0L) return
+        if (!nearTable) return
 
         val now = System.currentTimeMillis()
         if (itemsDirty || now - itemsAt > 1000L) {
