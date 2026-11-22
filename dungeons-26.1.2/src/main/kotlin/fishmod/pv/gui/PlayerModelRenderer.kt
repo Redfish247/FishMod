@@ -33,6 +33,10 @@ import org.joml.Vector3f
 class PlayerModelRenderer {
 	private var mannequin: GuiPlayer? = null
 	private var boundUuid: UUID? = null
+
+	init { live.put(this, true) }
+
+	private fun release() { mannequin = null; boundUuid = null }
 	private val equipped = Array<ItemStack>(4) { ItemStack.EMPTY }
 
 	fun draw(
@@ -239,6 +243,11 @@ class PlayerModelRenderer {
 	}
 
 	private companion object {
+		// Weak set so a world change drops mannequins (they pin the ClientLevel).
+		val live = java.util.WeakHashMap<PlayerModelRenderer, Boolean>()
+
+		init { fishmod.utils.events.FishEvents.worldChange.register { live.keys.toList().forEach { it.release() }; false } }
+
 		const val SPIN_PERIOD_MS = 4_000L
 		const val OFFSET_Y = 0.0625f
 		// Spinning model and Dinnerbone mode are switched off, as in BetterPV.
