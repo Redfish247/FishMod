@@ -2681,7 +2681,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, fa(DIM_TOP, e), fa(DIM_BOT, e))
         val wr = winR()
-        if (maxP < 1f) UiRecorder.dropShadow(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 18f, 0x80000000.toInt())
+        UiRecorder.dropShadow(left().toFloat(), top().toFloat(), winW().toFloat(), winH().toFloat(), wr, 18f, 0x80000000.toInt())
         // outline fades out when maximized so full screen has no border; the panel overshoots the screen so its anti-aliased edge never leaves a see-through rim
         val ex = 4f * maxP
         UiRecorder.roundedRectRing(left() - ex, top() - ex, winW() + 2 * ex, winH() + 2 * ex, wr, 1f, currentCardBg(), fa(ScreenTheme.ink(0x33), 1f - maxP))
