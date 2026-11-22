@@ -29,6 +29,14 @@ object CustomTodos {
         }
         FishHudEditor.register("Todos", { S.todoHudX }, { S.todoHudX = it }, { S.todoHudY }, { S.todoHudY = it }, 120, 40,
             { S.todoHudScale }, { S.todoHudScale = it })
+        fishmod.features.HudPreview.register("Todos") {
+            val rows = items().ifEmpty { listOf("Example todo", "Another todo") }.map { "- $it" }
+            val f = Minecraft.getInstance().font
+            fishmod.features.HudExample(maxOf(f.width("Todo"), rows.maxOf { f.width(it) }), fishmod.features.HudPreview.textHeight(rows.size + 1)) { ctx ->
+                ctx.text(f, Component.literal("Todo"), 0, 0, S.todoHudTitleColor, true)
+                rows.forEachIndexed { i, s -> ctx.text(f, Component.literal(s), 0, (i + 1) * 10, S.todoHudColor, true) }
+            }
+        }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "todo_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("CustomTodos.1", "todo hud render failed", t) }
         }
