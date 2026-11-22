@@ -15,7 +15,7 @@ class ReportPage(private val font: Font) {
 
     companion object {
         private const val OK = 0xFF5FD18A.toInt()
-        private const val FIELD_H = 22
+        private const val FIELD_H = 26
     }
 
     private var bug = true
@@ -39,33 +39,33 @@ class ReportPage(private val font: Font) {
         val inner = w
         val bottom = y0 + h - 6
         var y = y0
-        UiRecorder.text("Tell RedFish what broke or what you'd like added.", x.toFloat(), y.toFloat(), 8.4f, ScreenTheme.SUBTEXT_COLOR)
-        y += 18
+        UiRecorder.text("Tell RedFish what broke or what you'd like added.", x.toFloat(), y.toFloat(), 10f, ScreenTheme.SUBTEXT_COLOR)
+        y += 20
         val half = (inner - 8) / 2
-        pill("bug", "Bug", x, y, half, 26, bug, mx, my)
-        pill("feat", "Feature Request", x + half + 8, y, half, 26, !bug, mx, my)
-        y += 38
-        UiRecorder.text("Title", x.toFloat(), y.toFloat(), 8f, ScreenTheme.TEXT_COLOR)
-        y += 13
+        pill("bug", "Bug", x, y, half, 28, bug, mx, my)
+        pill("feat", "Feature Request", x + half + 8, y, half, 28, !bug, mx, my)
+        y += 42
+        UiRecorder.text("Title", x.toFloat(), y.toFloat(), 9.6f, ScreenTheme.TEXT_COLOR)
+        y += 15
         title = field(title, 80, x, y, inner).also { box("title", it, x, y, inner, FIELD_H + 6, focused == 0, if (bug) "What broke?" else "What should it do?") }
-        y += FIELD_H + 6 + 14
-        UiRecorder.text("Details", x.toFloat(), y.toFloat(), 8f, ScreenTheme.TEXT_COLOR)
-        y += 13
+        y += FIELD_H + 6 + 16
+        UiRecorder.text("Details", x.toFloat(), y.toFloat(), 9.6f, ScreenTheme.TEXT_COLOR)
+        y += 15
         // the details box takes the rest of the page above the footer row
-        val dh = Math.max(FIELD_H + 6, bottom - 30 - y)
+        val dh = Math.max(FIELD_H + 6, bottom - 34 - y)
         details = field(details, 500, x, y, inner).also { box("details", it, x, y, inner, dh, focused == 1, if (bug) "Where, when, what you expected" else "Any details") }
         y += dh + 10
-        UiRecorder.text(if (bug) "Sends mod/MC version, area and recent FishMod errors. No name or IP." else "Sends mod/MC version and area. No name or IP.", x.toFloat(), (y + 2).toFloat(), 7.2f, ScreenTheme.SUBTEXT_COLOR)
-        if (status.isNotEmpty()) UiRecorder.text(status, x.toFloat(), (y + 13).toFloat(), 7.8f, if (statusOk) OK else ScreenTheme.DANGER)
-        pill("send", if (sending) "Sending…" else "Send", x + inner - 96, y - 2, 96, 24, true, mx, my)
+        UiRecorder.text(if (bug) "Sends mod/MC version, area and recent FishMod errors. No name or IP." else "Sends mod/MC version and area. No name or IP.", x.toFloat(), (y + 2).toFloat(), 8.8f, ScreenTheme.SUBTEXT_COLOR)
+        if (status.isNotEmpty()) UiRecorder.text(status, x.toFloat(), (y + 15).toFloat(), 9f, if (statusOk) OK else ScreenTheme.DANGER)
+        pill("send", if (sending) "Sending…" else "Send", x + inner - 110, y - 2, 110, 28, true, mx, my)
     }
 
     private fun box(id: String, f: EditBox, x: Int, y: Int, w: Int, bh: Int, active: Boolean, hint: String) {
         f.setFocused(active)
         ScreenTheme.nRoundedRectRing(x, y, w, bh, 7, 1, ScreenTheme.ink(0x0C), if (active) ScreenTheme.ACCENT else ScreenTheme.ink(0x33))
         val cy = if (bh > FIELD_H + 6) y + 3 else y + (bh - FIELD_H) / 2
-        if (f.value.isEmpty() && !active) UiRecorder.text(hint, (x + 6).toFloat(), cy + (FIELD_H - 8f) / 2f, 8f, ScreenTheme.SUBTEXT_COLOR)
-        else FishModScreen.nvgTextFieldContent(f, x + 2, cy, w - 2, FIELD_H, 8f)
+        if (f.value.isEmpty() && !active) UiRecorder.text(hint, (x + 6).toFloat(), cy + (FIELD_H - 10f) / 2f, 10f, ScreenTheme.SUBTEXT_COLOR)
+        else FishModScreen.nvgTextFieldContent(f, x + 2, cy, w - 2, FIELD_H, 10f)
         rects[id] = intArrayOf(x, y, w, bh)
     }
 
@@ -74,7 +74,7 @@ class ReportPage(private val font: Font) {
         val bg = if (hov) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT
         if (filled) ScreenTheme.nRoundedRect(x, y, w, h, h / 2, bg)
         else ScreenTheme.nRoundedRectRing(x, y, w, h, h / 2, 1, ScreenTheme.ink(0x0C), if (hov) ScreenTheme.ACCENT_HOVER else ScreenTheme.ink(0x33))
-        val s = 8.4f
+        val s = 10f
         UiRecorder.text(label, x + w / 2f - UiRecorder.textWidth(label, s) / 2f, y + (h - s) / 2f, s, if (filled) ScreenTheme.textOn(bg) else ScreenTheme.TEXT_COLOR)
         rects[id] = intArrayOf(x, y, w, h)
     }
