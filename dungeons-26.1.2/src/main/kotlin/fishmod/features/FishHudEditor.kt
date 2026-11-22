@@ -354,6 +354,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var resetArmed = false
     private var sideOpen = false
     private var sideScroll = 0
+    private val expandedGroups = HashSet<String>()
 
     private var k = 1f
     private fun refreshK() { k = UiScale.userScale(this) }
@@ -370,11 +371,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val offW = UiRecorder.textWidth("off", 5.5f) + 6f
             val pickW = UiRecorder.textWidth("pick all", 5.5f)
             var w = 8f + UiRecorder.textWidth("Pick HUDs to move", 7.5f) + 1f
-            w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to pick it all", 6f))
+            w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to fold, \"pick all\" to pick it", 6f))
             w = Math.max(w, 8f + UiRecorder.textWidth("Shift/Ctrl-click to add more", 6f))
             for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 7.5f))
             for (g in GROUPS.map { it.first } + listOf("Other", "No HUDs match")) {
-                w = Math.max(w, 8f + UiRecorder.textWidth(g.uppercase(), 6f) + 1f + 6f + pickW)
+                w = Math.max(w, 8f + UiRecorder.textWidth(g.uppercase(), 6f) + 10f + 6f + pickW)
             }
             for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 7.5f) + 4f + offW)
             sideWCache = Math.max(SIDE_W_MIN, Math.min(SIDE_W_MAX, Math.ceil(w + 10.0).toInt()))
@@ -419,6 +420,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var cachedRowsQuery: String? = null
     private var cachedRowsAt = 0L
 
+    private fun sideQ(): String = search.value.trim()
+
     private fun sidebarRows(): List<Row> {
         val q = search.value.trim().lowercase()
         val now = System.currentTimeMillis()
@@ -438,7 +441,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val hit = if (q.isEmpty() || g.lowercase().contains(q)) items else items.filter { it.name().lowercase().contains(q) }
             if (hit.isEmpty()) return
             body += Row.Header(g, hit)
-            hit.forEach { body += Row.Hud(it) }
+            // groups start collapsed; searching opens every match
+            if (q.isNotEmpty() || g in expandedGroups) hit.forEach { body += Row.Hud(it) }
         }
         for ((g, names) in GROUPS) {
             val items = names.mapNotNull { n -> avail.firstOrNull { it.name() == n && it !in grouped } }
@@ -447,7 +451,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
         addGroup("Other", avail.filter { it !in grouped })
 
-        val matches = body.filterIsInstance<Row.Hud>().map { it.e }
+        val matches = body.filterIsInstance<Row.Header>().flatMap { it.items }
         val rows = ArrayList<Row>()
         if (matches.isNotEmpty()) {
             rows += Row.Action(if (q.isEmpty()) "Show all" else "Show all matches") {
@@ -844,7 +848,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         } else {
             ScreenTheme.nTextFieldContent(search, searchFocused, 6, SEARCH_Y, sw, SEARCH_H, 6.5f)
         }
-        UiRecorder.text("Click a category to pick it all", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
+        UiRecorder.text("Click a category to fold, \"pick all\" to pick it", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
         UiRecorder.text("Shift/Ctrl-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
 
         UiRecorder.pushScissor(0f, SIDE_TOP.toFloat(), sideW - 1f, sh - SIDE_TOP - 5f)
@@ -865,7 +869,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         }
                         val all = clickable && row.items.all { it.name() in picked }
                         val c = if (!clickable) 0xFF5A5A5A.toInt() else if (all) ACCENT_HOVER else ACCENT
-                        UiRecorder.textBold(row.text.uppercase(), 8f, yf + (SIDE_ROW - 6f) / 2f, 6f, c)
+                        if (clickable) UiRecorder.chevron(7f, yf + SIDE_ROW / 2f, sideQ().isNotEmpty() || row.text in expandedGroups, c)
+                        UiRecorder.textBold(row.text.uppercase(), 17f, yf + (SIDE_ROW - 6f) / 2f, 6f, c)
                     }
                     is Row.Action -> {
                         if (hov) rowBg(yf, ROW_HOV)
@@ -921,7 +926,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             focusSearch(false)
             when (val row = rowAt(cmy)) {
                 is Row.Action -> row.run()
-                is Row.Header -> pickGroup(row.items, shiftDown())
+                is Row.Header -> {
+                    // right-hand "pick all" tag picks the group, anywhere else folds it
+                    if (cmx >= sideW - 9f - UiRecorder.textWidth("pick all", 5.5f) - 4f) pickGroup(row.items, shiftDown())
+                    else if (row.items.isNotEmpty() && !expandedGroups.remove(row.text)) expandedGroups += row.text
+                    cachedRowsQuery = null
+                }
                 is Row.Hud -> {
                     if (shiftDown()) {
                         if (!picked.remove(row.e.name())) { picked += row.e.name(); selected = row.e }
