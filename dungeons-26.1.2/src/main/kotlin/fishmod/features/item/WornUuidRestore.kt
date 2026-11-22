@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.features.hud.ItemCustomizationStore
 import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
