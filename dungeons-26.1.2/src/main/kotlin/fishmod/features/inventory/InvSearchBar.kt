@@ -93,28 +93,40 @@ object InvSearchBar {
         val ox = posX(); val oy = posY()
         bar.x = ox + 20; bar.y = oy; bar.width = SEARCH_WIDTH - 26
         drawFrame(context, ox, oy, bar)
-        bar.setTextColor(ScreenTheme.TEXT_COLOR)
-        try {
-            bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
-        } catch (e: Exception) {
+        val textRenderer: Font = Minecraft.getInstance().font ?: return
+        val endX = try { drawValue(context, textRenderer, bar) } catch (e: Exception) {
             FishDiag.fail("InvSearchBar.4", "search bar render failed", e)
             return
         }
 
         if (parsedValue.isFinite()) {
             val expression = "  §e= §2" + FishDraw.formatNumber(parsedValue.toFloat())
-            val textRenderer: Font = Minecraft.getInstance().font ?: return
-
-            val textX = bar.x + textRenderer.width(searchTerm) + 4
-            val textY = bar.y + (bar.height - 8) / 2
-            context.text(textRenderer, expression, textX, textY, 0xffffffff.toInt(), true)
+            context.text(textRenderer, expression, endX + 2, bar.y + (bar.height - 8) / 2, ScreenTheme.TEXT_COLOR, false)
         }
+    }
+
+    // Own text draw (the vanilla one sits high and ignores the theme); returns the x where the text ends
+    private fun drawValue(ctx: GuiGraphicsExtractor, font: Font, bar: EditBox): Int {
+        val v = bar.value
+        val avail = bar.width - 4
+        val cur = bar.cursorPosition.coerceIn(0, v.length)
+        var start = 0
+        while (start < cur && font.width(v.substring(start, cur)) > avail) start++
+        val shown = font.plainSubstrByWidth(v.substring(start), avail)
+        val tx = bar.x + 2
+        val ty = bar.y + (bar.height - 8) / 2
+        ctx.text(font, shown, tx, ty, ScreenTheme.TEXT_COLOR, false)
+        if (bar.isFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
+            val cx = tx + font.width(v.substring(start, cur))
+            ctx.fill(cx, ty - 1, cx + 1, ty + 9, ScreenTheme.TEXT_COLOR)
+        }
+        return tx + font.width(shown)
     }
 
     // Rounded themed box with a search icon; accent ring while focused
     private fun drawFrame(ctx: GuiGraphicsExtractor, x: Int, y: Int, bar: EditBox) {
         val fill = (0xCC shl 24) or (ScreenTheme.surface(0x0C) and 0xFFFFFF)
-        val ring = if (bar.isFocused) ScreenTheme.ACCENT else ScreenTheme.surface(0x2E)
+        val ring = if (bar.isFocused) ScreenTheme.over((0x90 shl 24) or (ScreenTheme.ACCENT and 0xFFFFFF), ScreenTheme.surface(0x2E)) else ScreenTheme.surface(0x2E)
         ScreenTheme.roundedRectRing(ctx, x, y, SEARCH_WIDTH, SEARCH_HEIGHT, 5, 1, fill, ring)
         val ic = ScreenTheme.SUBTEXT_COLOR
         val ix = x + 7; val iy = y + (SEARCH_HEIGHT - 9) / 2
