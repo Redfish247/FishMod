@@ -2717,6 +2717,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     // move cursor over draggable sidebar rows (and while dragging one)
     private fun dragCursor(mx: Int, my: Int): CursorType? {
         if (closing) return null
+        val em = if (resizeMask != 0) resizeMask else if (navDragging || winDrag != null) 0 else edgeMask(mx, my)
+        if (em != 0) return when {
+            em and 3 != 0 && em and 12 != 0 -> CursorTypes.RESIZE_ALL
+            em and 3 != 0 -> CursorTypes.RESIZE_EW
+            else -> CursorTypes.RESIZE_NS
+        }
         if (navDragging) return CursorTypes.RESIZE_NS
         if (mx !in left()..stackX0() + STACK_W || my !in navTop()..navBot()) return null
         val row = navRows().getOrNull((my - navTop() - 4 + navScroll) / NAV_ROW) ?: return null
