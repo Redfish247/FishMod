@@ -393,7 +393,7 @@ object SkyItemList {
         val accent = FishSettings.skyItemListAccentColor or 0xFF000000.toInt()
         if (bgOn) ctx.fill(px, py, px + pw, py + ph, bg)
         if (!built && !ensureBuilt()) {
-            ctx.text(font, "Loading items...", px + PAD, py + 3, 0xFF9AA4B0.toInt(), false)
+            drawLoading(ctx, font, if (NeuRepo.isLoaded()) "Building item list" else "Loading item data")
             return
         }
         // search comes from the inventory search bar
@@ -401,6 +401,10 @@ object SkyItemList {
         if (bq != query) { query = bq; needRefilter = true }
         if (needRefilter) { needRefilter = false; refilter() }
 
+        if (shownCount == 0) {
+            val m = if (query.isEmpty()) "No items in this category" else "No items match \"$query\""
+            ctx.text(font, m, px + (pw - TAB_W - font.width(m)) / 2, py + ph / 3, fishmod.features.ScreenTheme.SUBTEXT_COLOR, false)
+        }
         scroll = scroll.coerceIn(0, maxScroll())
         var hover = -1
         val first = scroll * cols
@@ -442,6 +446,24 @@ object SkyItemList {
     }
 
     private fun gridRight() = px + pw - TAB_W
+
+    // Spinner (ring of dots, one bright and trailing) with a label, centred in the grid area
+    private fun drawLoading(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, label: String) {
+        val t = System.currentTimeMillis()
+        val dots = ".".repeat(((t / 400) % 4).toInt())
+        val cx = px + (pw - TAB_W) / 2
+        val cy = py + ph / 3
+        val head = ((t / 90) % 8).toInt()
+        val accent = FishSettings.skyItemListAccentColor and 0xFFFFFF
+        val ring = arrayOf(0 to -9, 6 to -6, 9 to 0, 6 to 6, 0 to 9, -6 to 6, -9 to 0, -6 to -6)
+        for ((i, o) in ring.withIndex()) {
+            val age = (head - i + 8) % 8
+            val a = (0xFF - age * 0x1E).coerceAtLeast(0x30)
+            ctx.fill(cx + o.first - 1, cy + o.second - 1, cx + o.first + 2, cy + o.second + 2, (a shl 24) or accent)
+        }
+        val w = font.width(label + "...")
+        ctx.text(font, label + dots, cx - w / 2, cy + 18, fishmod.features.ScreenTheme.TEXT_COLOR, false)
+    }
 
     private var tabScroll = 0
     private fun tabRows() = ((ph - HEAD_H - 2) / TAB_H).coerceAtLeast(1)
