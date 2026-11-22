@@ -108,7 +108,8 @@ object DungeonMap {
         val colors = state.colors ?: return
         if (colors.isEmpty()) return
 
-        if (startCoords == null && !initializeSizes(colors)) return
+        // not the dungeon map (or not drawn yet): forget the id so the next packet can be tried
+        if (startCoords == null && !initializeSizes(colors)) { mapId = null; return }
 
         DungeonPlayers.updateDecorations((state as MapItemSavedDataAccessor).decorations)
         if (!Scan.loadedAllRooms) updateRoomTiles(colors)
@@ -176,7 +177,10 @@ object DungeonMap {
             greenLength = length
         }
 
-        if (greenLength != 16 && greenLength != 18) return false
+        if (greenLength != 16 && greenLength != 18) {
+            FishDiag.fail("DungeonMap.10", "map init skipped: entrance run length $greenLength (need 16/18) colors=${colors.size} floor=${DungeonState.floorNumber()}")
+            return false
+        }
         FishDiag.check(greenStart >= 0, "DungeonMap.9") { "entrance run length $greenLength but no start index" }
 
         val floor = DungeonState.floorNumber()
