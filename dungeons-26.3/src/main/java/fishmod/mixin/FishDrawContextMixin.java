@@ -37,6 +37,7 @@ public class FishDrawContextMixin {
     @Shadow
     private Matrix3x2fStack pose;
 
+    private static long fishmod$ttLog;
     private static final int FISHMOD$TOOLTIP_PULL = 6;
     private static final ClientTooltipPositioner FISHMOD$CLOSER = (sw, sh, x, y, w, h) -> {
         Vector2ic p = DefaultTooltipPositioner.INSTANCE.positionTooltip(sw, sh, x, y, w, h);
@@ -57,13 +58,30 @@ public class FishDrawContextMixin {
         float ox = fishmod.features.hud.ScrollableTooltip.offsetX;
         float oy = fishmod.features.hud.ScrollableTooltip.offsetY;
         boolean on = fishmod.features.hud.ScrollableTooltip.isEnabled() && (scale != 1f || ox != 0f || oy != 0f);
-        shifted.set(on);
-        if (!on) return;
+        // taller than the screen: shrink to fit, keeping the top 4px from the edge
+        float est = 12f;
+        for (ClientTooltipComponent c : lines) est += c.getHeight(font);
+        if (lines.size() > 1) est += 2f;
+        int shh = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        boolean fit = est > shh - 8;
+        shifted.set(on || fit);
+        if (est > shh - 40 && System.currentTimeMillis() - fishmod$ttLog > 1000) { fishmod$ttLog = System.currentTimeMillis(); fishmod.utils.debug.FishDebug.LOGGER.debug("[TooltipFit] lines={} est={} screenH={} fit={} on={} xo={} yo={}", lines.size(), est, shh, fit, on, xo, yo); }
+        if (!on && !fit) return;
         pose.pushMatrix();
-        pose.translate(xo, yo);
-        pose.scale(scale);
-        pose.translate(ox, oy);
-        pose.translate(-xo, -yo);
+        if (fit) {
+            float s = (shh - 8) / est;
+            int topY = positioner.positionTooltip(sww, shh, xo, yo, 100, (int) est - 12).y() - 6;
+            pose.translate(xo, 4f);
+            pose.scale(s);
+            pose.translate(-xo, -topY);
+        }
+        if (on) {
+            pose.translate(xo, yo);
+            pose.scale(scale);
+            pose.translate(ox, oy);
+            pose.translate(-xo, -yo);
+        }
     }
 
     @Inject(method = "tooltip", at = @At("RETURN"))
