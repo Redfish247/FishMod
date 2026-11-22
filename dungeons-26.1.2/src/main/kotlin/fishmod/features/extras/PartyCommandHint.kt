@@ -10,7 +10,7 @@ import net.minecraft.client.gui.components.EditBox
 object PartyCommandHint {
     private const val COLOR = 0xFFAAAAAA.toInt()
 
-    private val PREFIX = Regex(
+    internal val PREFIX = Regex(
         "^(?:/(?:pc|pchat|gc|gchat|ac|achat|r|(?:p|party|g|guild) chat|(?:msg|w|tell|whisper|message) \\w+) )?[.!]",
         RegexOption.IGNORE_CASE
     )
