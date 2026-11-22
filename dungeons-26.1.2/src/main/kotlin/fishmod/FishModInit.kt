@@ -1555,7 +1555,6 @@ class FishModInit : ClientModInitializer {
         safeInit("RenderingEvents") { RenderHooks.init() }
         safeInit("Scheduler") { TickScheduler.init() }
         safeInit("ChatQueue") { fishmod.utils.ChatQueue.init() }
-        safeInit("PrestigeChatFade") { fishmod.cosmetic.prestige.PrestigeChatFade.init() }
         safeInit("NametagCullingCompat") { fishmod.cosmetic.NametagCullingCompat.init() }
     }
 }

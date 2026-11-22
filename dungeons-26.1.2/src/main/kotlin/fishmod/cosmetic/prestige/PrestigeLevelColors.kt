@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
+import net.minecraft.util.FormattedCharSequence
+import java.util.IdentityHashMap
 import java.util.Optional
 
 object PrestigeLevelColors {
@@ -151,10 +153,54 @@ object PrestigeLevelColors {
     @JvmStatic
     fun colorizeChatLevel(c: Component?): Component? {
         if (!FishSettings.prestigeColorsChat) return c
-        return recolor(c, LEVEL_ANYWHERE)
+        return recolor(c, LEVEL_ANYWHERE, live = true)
     }
 
-    private fun recolor(c: Component?, pattern: Regex): Component? {
+    // Fixed pool: one shared colour per (tier, digit count, digit index), so memory never grows
+    private class LiveKey(@JvmField val tier: Tier, @JvmField val spread: Float)
+    private val liveKeys = IdentityHashMap<TextColor, LiveKey>()
+    private val liveColors = arrayOfNulls<TextColor>(TIERS.size * 10)
+
+    private fun liveColor(t: Tier, n: Int, i: Int): TextColor {
+        val nn = n.coerceIn(1, 4)
+        val ii = i.coerceIn(0, nn - 1)
+        val slot = t.index * 10 + nn * (nn - 1) / 2 + ii
+        liveColors[slot]?.let { return it }
+        val spread = if (nn <= 1) 0.5f else ii.toFloat() / (nn - 1)
+        val c = TextColor.fromRgb(gradientRgb(t, spread))
+        liveKeys[c] = LiveKey(t, spread)
+        liveColors[slot] = c
+        return c
+    }
+
+    private fun digitSpan(): Float = if (FishSettings.prestigeColorsAnimStyle.equals("FLOW", true)) 0.6f else 0.05f
+
+    // Swaps shared digit colours for the current animation frame while a chat line is drawn
+    @JvmStatic
+    fun animateLine(seq: FormattedCharSequence?): FormattedCharSequence? {
+        if (seq == null || liveKeys.isEmpty() || !FishSettings.prestigeColorsEnabled) return seq
+        val speed = FishSettings.prestigeColorsAnimSpeed
+        if (!FishSettings.prestigeColorsAnimated || speed <= 0.0) return seq
+        val phase = (animSeconds() * speed / 5.0).toFloat()
+        val span = digitSpan()
+        return FormattedCharSequence { sink ->
+            seq.accept { idx, style, cp ->
+                val color = style.color
+                val key = if (color == null) null else liveKeys[color]
+                if (key == null) sink.accept(idx, style, cp)
+                else sink.accept(idx, animStyle(style, key, span, phase), cp)
+            }
+        }
+    }
+
+    private fun animStyle(style: Style, key: LiveKey, span: Float, phase: Float): Style = try {
+        style.withColor(TextColor.fromRgb(cyclicGradientRgb(key.tier, key.spread * span - phase)))
+    } catch (t: Throwable) {
+        FishDiag.fail("PrestigeLevelColors.3", "chat level frame colour failed", t)
+        style
+    }
+
+    private fun recolor(c: Component?, pattern: Regex, live: Boolean = false): Component? {
         if (c == null || !FishSettings.prestigeColorsEnabled) return c
 
         val segs = ArrayList<Seg>()
@@ -182,7 +228,7 @@ object PrestigeLevelColors {
         return FishDiag.guard("PrestigeLevelColors.2", "level recolor failed for [$level] at $numFrom..$numTo/${full.length}") {
             val out: MutableComponent = Component.empty()
             appendRange(out, segs, 0, numFrom)
-            out.append(styledNumber(level, digits.value, styleAt(segs, numFrom)))
+            out.append(styledNumber(level, digits.value, styleAt(segs, numFrom), live))
             appendRange(out, segs, numTo, full.length)
             out
         } ?: c
@@ -197,17 +243,22 @@ object PrestigeLevelColors {
         return segs.first().style
     }
 
-    private fun styledNumber(level: Int, text: String, baseStyle: Style): MutableComponent {
+    private fun styledNumber(level: Int, text: String, baseStyle: Style, live: Boolean): MutableComponent {
         val t = tierAt(level)
         val useGradient = t.gradient && FishSettings.prestigeColorsGradientTiers
         if (!useGradient) {
             return Component.literal(text).setStyle(baseStyle.withColor(TextColor.fromRgb(rgb(level))))
         }
+        val n = text.length
+        if (live) {
+            val root: MutableComponent = Component.empty()
+            for (i in 0 until n) root.append(Component.literal(text.substring(i, i + 1)).setStyle(baseStyle.withColor(liveColor(t, n, i))))
+            return root
+        }
         val speed = FishSettings.prestigeColorsAnimSpeed
         val animated = FishSettings.prestigeColorsAnimated && speed > 0.0
         val phase = if (animated) (animSeconds() * speed / 5.0).toFloat() else 0f
-        val digitSpan = if (FishSettings.prestigeColorsAnimStyle.equals("FLOW", true)) 0.6f else 0.05f
-        val n = text.length
+        val digitSpan = digitSpan()
         val root: MutableComponent = Component.empty()
         var runStart = 0
         var runRgb = -1
