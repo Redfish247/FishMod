@@ -166,6 +166,9 @@ object SkyItemList {
 
     private val MOB_RE = Regex("[(](Monster|Boss|Miniboss|Animal|Sea Creature|Pest|Mythological Creature|Mayor|Retired Mayor)[)]$", RegexOption.IGNORE_CASE)
 
+    // NEU "Lava (No Spread)" / "Water (No Spread)"
+    private val HIDDEN_IDS = setOf("LAVA", "WATER")
+
     private fun isMob(id: String): Boolean = MOB_RE.containsMatchIn(TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim())
 
     private fun isNpc(id: String): Boolean = id.endsWith("_NPC") || TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim().endsWith("(NPC)")
@@ -315,7 +318,7 @@ object SkyItemList {
     }
 
     private fun buildIndex() {
-        val all = NeuRepo.ids().filter { !isMob(it) }.toTypedArray()
+        val all = NeuRepo.ids().filter { !isMob(it) && it !in HIDDEN_IDS }.toTypedArray()
         val names = Array(all.size) { i ->
             TextStrip.plain(NeuRepo.get(all[i])?.get("displayname")?.asString ?: all[i]).filter { it.code !in 0xE000..0xF8FF }.trim().lowercase()
         }
