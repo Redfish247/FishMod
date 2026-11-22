@@ -76,8 +76,6 @@ object GardenExtrasMenu {
         val sm = Feature("SkyMart Copper Value", X::class.java, "gardenSkyMart")
         sm.sub.add(ColorPickerSetting("Label Colour", "Nearest chat colour is used", X::class.java, "gardenSkyMartColor"))
         col.features.add(sm)
-
-        col.features.add(Feature("Watering Helper", X::class.java, "gardenWatering"))
     }
 
     fun describe(name: String): String? = when (name) {
@@ -97,7 +95,6 @@ object GardenExtrasMenu {
         "Phantomleaf Solver" -> "Close / Found title from the hint sound after a hit"
         "DNA Analyzer Solver" -> "Highlights the next two cells to swap in the DNA Analyzer"
         "SkyMart Copper Value" -> "Coins per copper on SkyMart item tooltips"
-        "Watering Helper" -> "Bigger, through-wall greenhouse water level bars"
         else -> null
     }
 }
