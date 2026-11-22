@@ -21,6 +21,7 @@ import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import fishmod.compat.GLFW
+import fishmod.compat.curScreen
 
 object InvSearchBar {
 
@@ -35,7 +36,7 @@ object InvSearchBar {
     private fun on() = FishSettings.inventorySearchEnabled && !fishmod.compat.BladeCompat.active && !storageOpen()
 
     private fun storageOpen(): Boolean {
-        val screen = Minecraft.getInstance().screen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return false
+        val screen = Minecraft.getInstance().curScreen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return false
         return StorageOverlay.isActive(screen)
     }
 
