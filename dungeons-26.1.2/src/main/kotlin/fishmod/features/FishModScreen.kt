@@ -2437,13 +2437,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
 
     // The menu is a draggable window, resizable from every edge/corner; double-click its top bar to maximize
-    private var winMax = false
+    private var winMax = FishSettings.fmWindowMax
     private var winDrag: IntArray? = null
     private var lastBarClick = 0L
     private var winRect: IntArray? = null
     private var resizeMask = 0
     private var resizeFrom: IntArray? = null
-    private var maxP = 0f
+    // maximized state persists across opens until the user restores it
+    private fun toggleMax() { winMax = !winMax; FishSettings.fmWindowMax = winMax }
+    private var maxP = if (FishSettings.fmWindowMax) 1f else 0f
     private fun scrW(): Int = Math.ceil((this.width / fishmod.utils.rendering.UiScale.factor()).toDouble()).toInt()
     private fun scrH(): Int = Math.ceil((this.height / fishmod.utils.rendering.UiScale.factor()).toDouble()).toInt()
     // restored (non-maximized) rect, clamped to the screen
@@ -2849,11 +2851,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         searchFocused = mx in s[0]..s[0] + s[2] && my in s[1]..s[1] + s[3]
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
-        for (b in winButtons()) if (hov(b, mx, my)) { if (b.id == "max") winMax = !winMax else onClose(); return true }
+        for (b in winButtons()) if (hov(b, mx, my)) { if (b.id == "max") toggleMax() else onClose(); return true }
         if (tabClick(mx, my)) return true
         if (my in top()..top() + 30) {
             val now = System.currentTimeMillis()
-            if (now - lastBarClick < 300) { winMax = !winMax; winDrag = null } else if (!winMax) winDrag = intArrayOf(mx - left(), my - top())
+            if (now - lastBarClick < 300) { toggleMax(); winDrag = null } else if (!winMax) winDrag = intArrayOf(mx - left(), my - top())
             lastBarClick = now
             return true
         }
