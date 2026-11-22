@@ -27,7 +27,7 @@ public final class TwitchBridgeClient {
 			Thread t = new Thread(() -> {
 				sleep(3000);
 				try {
-					connect(config.channel);
+					connect(config.channel, true);
 				} catch (Throwable e) {
 					fishmod.utils.debug.FishDiag.fail("TwitchBridgeClient.1", "twitch auto-connect failed channel=" + config.channel, e);
 				}
@@ -69,6 +69,10 @@ public final class TwitchBridgeClient {
 	}
 
 	public static synchronized void connect(String channel) {
+		connect(channel, false);
+	}
+
+	public static synchronized void connect(String channel, boolean quiet) {
 		String target = channel == null ? config.channel : channel.trim().toLowerCase();
 		if (target.startsWith("#")) target = target.substring(1);
 		if (target.startsWith("@")) target = target.substring(1);
@@ -87,7 +91,7 @@ public final class TwitchBridgeClient {
 		config.channel = target;
 		config.save();
 
-		client = new TwitchIrcClient(config, target);
+		client = new TwitchIrcClient(config, target, quiet);
 		try {
 			client.start();
 		} catch (RuntimeException e) {
