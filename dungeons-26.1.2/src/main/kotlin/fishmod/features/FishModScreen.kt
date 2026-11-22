@@ -2980,8 +2980,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val pt = cyTop() - HEADER_H
             val pp = anim(openedAt, 0, 220); val oy = Math.round((1f - pp) * 10f)
             UiRecorder.textBold(pageTitle(), cx0().toFloat(), (pt + 5 + oy).toFloat(), 1.25f * NVG_BASE_TEXT_SIZE, fa(TEXT_COLOR, pp))
-            if (page == "credits") creditsPage.render(cx0(), pt + 24 + oy, cx1() - cx0(), cyBot() - pt - 24, mouseX, mouseY)
-            else reportPage.render(cx0(), pt + 26 + oy, cx1() - cx0(), mouseX, mouseY)
+            if (page == "credits") creditsPage.render(cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
+            else reportPage.render(cx0(), pt + 32 + oy, cx1() - cx0(), cyBot() - pt - 32, mouseX, mouseY)
             return
         }
         val items = exItems()
