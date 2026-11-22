@@ -539,7 +539,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Skyblock Date", "", "sbSectionDate"))
             f.sub.add(ToggleSetting("Skyblock Time", "", "sbSectionTime"))
             f.sub.add(ToggleSetting("Location", "", "sbSectionLocation"))
-            f.sub.add(ToggleSetting("Level", "Prestige colours if enabled", "sbSectionLevel"))
+            f.sub.add(ToggleSetting("Level", "Skyblock Level Colors if enabled", "sbSectionLevel"))
             f.sub.add(ToggleSetting("Purse", "", "sbSectionPurse"))
             f.sub.add(ToggleSetting("Bits", "", "sbSectionBits"))
             f.sub.add(ToggleSetting("Motes", "", "sbSectionMotes"))
@@ -1130,7 +1130,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             cosmetics.features.add(f)
         }
         run {
-            val f = Feature("Prestige Colors", "prestigeColorsEnabled")
+            val f = Feature("Skyblock Level Colors", "prestigeColorsEnabled")
             f.sub.add(SubcategoryHeader("Recolors Hypixel's SkyBlock [level] badge by level"))
             f.sub.add(SubcategoryHeader("0–300: 15 solid tiers · 300–700: 20 gradient tiers"))
             f.sub.add(ToggleSetting("On Nametags", "", "prestigeColorsNametags"))
@@ -4661,7 +4661,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Dupe Class Detector" -> "Warns when two players pick the same class"
                 "See Others' Items" -> "Shows other players' FishMod item customizations"
                 "Nametag Stats" -> "Networth, skill and Catacombs stats on nametags"
-                "Prestige Colors" -> "Recolours the SkyBlock level badge by level"
+                "Skyblock Level Colors" -> "Recolours the SkyBlock level badge by level"
                 "Badges" -> "Small icons beside player names"
                 "Custom Crosshair" -> "Replace the crosshair with a preset or your own image"
                 "Force Others' Size" -> "Draws everyone else at one size"
