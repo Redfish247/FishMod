@@ -49,8 +49,7 @@ class BestiarySnapshot private constructor(
 		val families: List<FamilyProgress>,
 		val unlockedTiers: Int,
 		val maxTiers: Int,
-		val familiesUnlocked: Int,
-		val familiesMaxed: Int
+		val familiesUnlocked: Int
 	)
 
 	@get:JvmName("lastKilledMob") val lastKilledMob: String = lastKilledMob ?: ""
@@ -58,7 +57,7 @@ class BestiarySnapshot private constructor(
 	fun category(id: String?): CategoryProgress? = if (id == null) null else byCategory[id]
 
 	fun categories(): List<CategoryProgress> = BestiaryData.categories().map { cat ->
-		byCategory[cat.id] ?: CategoryProgress(cat, listOf(), 0, 0, 0, 0)
+		byCategory[cat.id] ?: CategoryProgress(cat, listOf(), 0, 0, 0)
 	}
 
 	fun milestone(): Int = totalUnlockedTiers / 10
@@ -106,7 +105,6 @@ class BestiarySnapshot private constructor(
 				var unlockedTiers = 0
 				var maxTiers = 0
 				var famUnlocked = 0
-				var famMaxed = 0
 				for (fam in cat.families) {
 					val fp = progressFor(fam, kills, deaths)
 					families.add(fp)
@@ -115,13 +113,10 @@ class BestiarySnapshot private constructor(
 					if (fp.tier > 0) {
 						famUnlocked++
 					}
-					if (fp.maxed) {
-						famMaxed++
-					}
 				}
 				totalUnlocked += unlockedTiers
 				totalMax += maxTiers
-				byCat[cat.id] = CategoryProgress(cat, java.util.List.copyOf(families), unlockedTiers, maxTiers, famUnlocked, famMaxed)
+				byCat[cat.id] = CategoryProgress(cat, java.util.List.copyOf(families), unlockedTiers, maxTiers, famUnlocked)
 			}
 			return BestiarySnapshot(java.util.Map.copyOf(byCat), claimed, maxVisible, lastKilled, totalUnlocked, totalMax)
 		}
