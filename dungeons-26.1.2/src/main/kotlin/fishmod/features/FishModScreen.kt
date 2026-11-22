@@ -2710,11 +2710,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         super.extractRenderState(ctx, mouseX, mouseY, delta)
         val dc = dragCursor(vmx, vmy)
         if (dc != null) ctx.requestCursor(dc)
-        if (System.currentTimeMillis() - cursorLogAt > 2000) { cursorLogAt = System.currentTimeMillis(); fishmod.utils.debug.FishDebug.LOGGER.debug("[FmCursor] v=({},{}) nav y={}..{} x={}..{} cursor={}", vmx, vmy, navTop(), navBot(), left(), stackX0() + STACK_W, dc) }
     }
 
-    private var cursorLogAt = 0L
-    // move cursor over draggable sidebar rows (and while dragging one)
+    // resize cursor on the window edges/corners
     private fun dragCursor(mx: Int, my: Int): CursorType? {
         if (closing) return null
         val em = if (resizeMask != 0) resizeMask else if (navDragging || winDrag != null) 0 else edgeMask(mx, my)
@@ -2723,10 +2721,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             em and 3 != 0 -> CursorTypes.RESIZE_EW
             else -> CursorTypes.RESIZE_NS
         }
-        if (navDragging) return CursorTypes.RESIZE_NS
-        if (mx !in left()..stackX0() + STACK_W || my !in navTop()..navBot()) return null
-        val row = navRows().getOrNull((my - navTop() - 4 + navScroll) / NAV_ROW) ?: return null
-        return if (row.second != null) CursorTypes.RESIZE_NS else null
+        return null
     }
 
     // Window chrome, laid out like docs/ui-mockups/fishmod-explorer.html:
