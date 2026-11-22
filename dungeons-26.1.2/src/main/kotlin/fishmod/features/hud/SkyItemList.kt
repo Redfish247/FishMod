@@ -521,7 +521,7 @@ object SkyItemList {
         else if (RecipeViewer.recipesFor(id).isNotEmpty()) lines.add(Component.literal("§eLeft Click: View Recipe"))
         lines.add(Component.literal(if (favs.contains(id)) "§eRight Click: Remove Favorite" else "§eRight Click: Add Favorite"))
         if (!npc) lines.add(Component.literal(if (onBazaar(id)) "§eShift-Left Click: Open in Bazaar" else "§eShift-Left Click: Open in Auction House"))
-        if (!npc) lines.add(Component.literal("§eMiddle Click: Price History"))
+        if (!npc && MarketScreen.hasHistory(id)) lines.add(Component.literal("§eMiddle Click: Price History"))
         return lines
     }
 
