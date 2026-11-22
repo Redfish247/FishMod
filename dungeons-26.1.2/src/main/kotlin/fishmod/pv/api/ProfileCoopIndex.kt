@@ -16,6 +16,9 @@ import java.util.concurrent.ConcurrentHashMap
 internal object ProfileCoopIndex {
     private val COOP_MEMBER_NAMES = ConcurrentHashMap<String, String>()
 
+    // Names are tiny; hard cap only guards against unbounded growth.
+    private fun capNames() { if (COOP_MEMBER_NAMES.size > 4096) COOP_MEMBER_NAMES.clear() }
+
     @JvmStatic
     fun pickProfile(profiles: JsonArray?, preferredProfileId: String?): JsonObject? {
         if (profiles == null) return null
@@ -135,7 +138,8 @@ internal object ProfileCoopIndex {
         onResolved: Runnable?
     ) {
         if (choices.isNullOrEmpty()) return
-        val viewed = viewedUuidUndashed?.replace("-", "")?.lowercase(Locale.ROOT) ?: ""
+        capNames()
+        val viewed =viewedUuidUndashed?.replace("-", "")?.lowercase(Locale.ROOT) ?: ""
         if (viewed.isNotBlank() && !viewedName.isNullOrBlank()) {
             COOP_MEMBER_NAMES[viewed] = viewedName
         }
