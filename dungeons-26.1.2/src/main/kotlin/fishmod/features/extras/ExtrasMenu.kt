@@ -192,6 +192,21 @@ object ExtrasMenu {
         "Middle Click Fix" -> "SkyBlock menus: middle click on a menu item acts as a left click"
         "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
         "Item Star Count" -> "Dungeon star count (1-10) in the slot corner of starred items"
+        "Fairy Soul Waypoints" -> "Boxes uncollected fairy souls on this island"
+        "Hoppity Hunt Summary" -> "Chat tally of eggs, new rabbits and duplicates this session"
+        "Trick or Treat Chest Alert" -> "Title when a Trick or Treat chest spawns"
+        "Auction Outbid Alert" -> "Title and sound when someone outbids you on the AH"
+        "Trevor the Trapper Helper" -> "Line to Trevor's hint area, then to where the animal was last seen"
+        "Gift Tracker HUD" -> "Winter gifts opened this session: tiers, coins, North Stars"
+        "Compact Teleport Pad Names" -> "Private-island teleport pads show only their destination"
+        "Hoppity Egg Waypoints" -> "Boxes visible Hoppity's Hunt chocolate eggs"
+        "Stacking Enchant Progress" -> "Tooltip line with progress to the next level of Expertise, Compact, Cultivating and similar"
+        "Hidden Jerry Highlight" -> "Outlines your own Hidden Jerries in their colour"
+        "Reindrake Alert + Warp Link" -> "Title and a clickable /warp winter when a Reindrake spawns"
+        "Carnival Zombie Shootout Outlines" -> "Outlines carnival zombies by helmet tier"
+        "Stray Rabbit Alert" -> "Sound when a Stray Rabbit spawns"
+        "HotM / HotF Helper" -> "Perk levels on Heart of the Mountain/Forest, plus powder or whispers under the cost"
+        "Moonglade Beacon Solver" -> "Highlights the matching selectors in Moonglade Beacon menus"
         else -> null
     }
 }
