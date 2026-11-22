@@ -28,17 +28,34 @@ object PlayerSize {
         val isSelf = mc.player != null && p.getUUID() == mc.player!!.getUUID()
         if (isSelf) {
             if (mc.curScreen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return IDENTITY
-            return if (FishSettings.playerSizeEnabled) localSelfValue() else IDENTITY
+            return if (FishSettings.playerSizeEnabled) selfScale() else IDENTITY
         }
         if (FishSettings.forceOthersSizeEnabled) {
             val f = floorPos(FishSettings.forceOthersSizeScale.toFloat())
-            return floatArrayOf(f, f, f)
+            if (f != forcedFor) { forcedFor = f; forcedScale = floatArrayOf(f, f, f) }
+            return forcedScale
         }
         if (!FishSettings.playerSizeShared) return IDENTITY
         val id = p.getUUID()
         if (KEYS.size > 512) KEYS.clear()
         val key = KEYS.getOrPut(id) { id.toString().replace("-", "") }
         return RemoteScales.get(key) ?: IDENTITY
+    }
+
+    // Shared arrays for the per-frame render path, rebuilt only when a setting changes (callers only read them)
+    private var forcedFor = Float.NaN
+    private var forcedScale = IDENTITY
+    private var selfScale = IDENTITY
+    private var selfX = Float.NaN
+    private var selfY = Float.NaN
+    private var selfZ = Float.NaN
+
+    private fun selfScale(): FloatArray {
+        val x = floorPos(FishSettings.playerSizeScaleX.toFloat())
+        val y = floorPos(FishSettings.playerSizeScaleY.toFloat())
+        val z = floorPos(FishSettings.playerSizeScaleZ.toFloat())
+        if (x != selfX || y != selfY || z != selfZ) { selfX = x; selfY = y; selfZ = z; selfScale = floatArrayOf(x, y, z) }
+        return selfScale
     }
 
     @JvmStatic
