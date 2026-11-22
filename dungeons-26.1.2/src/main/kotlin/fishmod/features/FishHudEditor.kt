@@ -311,7 +311,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val FAINT = 0xFF616161.toInt()
         private val CAP_BG = 0xFF1F1F1F.toInt()
         private val CAP_BORDER = 0xFF3F3F3F.toInt()
-        private val OFF_BG = 0xFF2A2A2A.toInt()
 
         private val CONTROLS = listOf(
             "Hover left edge" to "Pick HUDs",
@@ -878,12 +877,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         if (hov) rowBg(yf, ROW_HOV)
                         if (on) UiRecorder.fillRoundedRect(4f, yf + 2.5f, 2f, SIDE_ROW - 5f, 1f, ACCENT)
                         val off = !row.e.isEnabledInList()
-                        val col = if (off) 0xFF6A6A6A.toInt() else if (on) TEXT else LABEL
+                        val col = if (off) SUBTEXT else if (on) TEXT else LABEL
                         val tw = UiRecorder.textWidth("off", 5.5f)
                         val ox = sideW - 10f - tw - 6f
                         UiRecorder.text(ellipsize(row.e.name(), ox - 4f - 12f, 7.5f), 12f, ty, 7.5f, col)
                         if (off) {
-                            UiRecorder.fillRoundedRect(ox, yf + 2.5f, tw + 6f, SIDE_ROW - 5f, 2.5f, OFF_BG)
+                            UiRecorder.fillRoundedRect(ox, yf + 2.5f, tw + 6f, SIDE_ROW - 5f, 2.5f, ScreenTheme.ink(0x26))
                             UiRecorder.text("off", ox + 3f, yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
                         }
                     }
