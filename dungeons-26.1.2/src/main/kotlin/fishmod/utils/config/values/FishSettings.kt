@@ -28,6 +28,8 @@ object FishSettings {
     @ConfigValue @JvmField var soulflowHudY: Int = 60
 
     @ConfigValue @JvmField var fmColumnOrder: String = ""
+    // bumps when the default sidebar order changes so old saved orders reset once
+    @ConfigValue @JvmField var fmColumnOrderV: Int = 0
     @ConfigValue @JvmField var fmFoldedColumns: String = ""
     @ConfigValue @JvmField var fmSidebarFolders: String = ""
     @ConfigValue @JvmField var fmPinned: String = "General"
