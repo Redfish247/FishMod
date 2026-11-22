@@ -82,6 +82,7 @@
     "ClientClockManagerMixin",
     "PlayerListHudMixin",
     "GuiRenderStateBoundsMixin",
+    "PrestigeChatLineMixin",
     "PrestigeTabNameMixin",
     "NoRecipeBookScreenMixin",
     "NoRecipeBookMixin",
