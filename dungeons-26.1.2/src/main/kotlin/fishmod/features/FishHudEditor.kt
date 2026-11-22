@@ -308,7 +308,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private val GUIDE = 0xFFFF4FB0.toInt()
         private val GRID_LINE = 0x14FFFFFF
-        private val SIDE_BG = 0xFF11121F.toInt() // tinted on purpose: UiRecorder.remap turns pure greys see-through
+        private val SIDE_BG get() = ScreenTheme.SOLID_PANEL
         private val ROW_HOV = 0x1AFFFFFF
         private val ROW_PICKED = 0x26D6D6D6
         private val HOVER_OUTLINE = 0xB3FFFFFF.toInt()
