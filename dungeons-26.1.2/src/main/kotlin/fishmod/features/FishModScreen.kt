@@ -2295,31 +2295,32 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         take(itemsCol, setOf("Item Tooltip","Recipe Viewer","Item List","Auto BIN Price","Sign Calculator","Anita Medal Profit","AH Buy Price Check","Bazaar Search + Price Graph"), hud, extrasCol)
         take(petsCol, setOf("Pet HUD","Pet Swap Title","Hide Pet Nametag Level","Soulflow HUD","Pet Keybinds"), hud, invStorage)
         take(dungeon, setOf("Catacombs Overflow Levels","Fire Freeze Timer"), hud)
+        // Grouped: everyday tools, dungeons, skyblock activities (Farming + Visitors together), then misc
         columns.add(general)
         columns.add(chatCol)
         columns.add(invStorage)
+        columns.add(itemsCol)
+        columns.add(petsCol)
+        columns.add(hud)
         columns.add(party)
         columns.add(dungeon)
         columns.add(dungeonTrackers)
         columns.add(dungeonMap)
         columns.add(solvers)
         columns.add(floor7)
-        columns.add(hud)
-        columns.add(itemsCol)
-        columns.add(petsCol)
         columns.add(slayer)
         columns.add(end)
         columns.add(huntCol)
         columns.add(fishmod.features.diana.DianaMenu.column())
         columns.add(fishmod.features.fishing.FishingMenu.column())
         columns.add(fishmod.features.mining.MiningMenu.column())
-        columns.add(fishmod.features.kuudra.KuudraMenu.column())
-        columns.add(fishmod.features.rift.RiftMenu.column())
-        columns.add(extrasCol)
-        columns.add(alertsCol)
-        columns.add(eventsCol)
         columns.add(farmCol)
         columns.add(visitorsCol)
+        columns.add(fishmod.features.kuudra.KuudraMenu.column())
+        columns.add(fishmod.features.rift.RiftMenu.column())
+        columns.add(eventsCol)
+        columns.add(alertsCol)
+        columns.add(extrasCol)
         columns.add(fishmod.features.achievements.AchMenu.column())
         columns.add(visuals)
         columns.add(cosmetics)
@@ -2327,6 +2328,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun applySavedColumnOrder() {
+        if (FishSettings.fmColumnOrderV < 2) { FishSettings.fmColumnOrderV = 2; FishSettings.fmColumnOrder = ""; return }
         val saved = FishSettings.fmColumnOrder
         if (saved.isBlank()) return
         val byName = columns.associateBy { it.name }
@@ -2911,6 +2913,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val y = navTop() + 4 + i * NAV_ROW - navScroll
                 if (y + NAV_ROW < navTop() || y > navBot()) continue
                 val c = r.second
+                if (navDragging && c != null && c === navPress) { UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, ScreenTheme.ink(0x0C)); continue }
                 if (c == null && r.first == "All features") {
                     val hvA = mx in x..x + w && my in y until y + NAV_ROW && my in navTop()..navBot()
                     val haA = hover("navAll", hvA)
@@ -2937,6 +2940,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 UiRecorder.text(ellipsize(c.name, (w - nw - 26).toInt(), 1.0f), (x + 8).toFloat(), y + (NAV_ROW - ts) / 2f, ts, if (open) TEXT_COLOR else SUBTEXT_COLOR)
                 UiRecorder.text(n, x + w - 8 - nw, y + (NAV_ROW - ns) / 2f, ns, SUBTEXT_COLOR)
             }
+            if (navDragging) {
+                // insertion line under/over the hovered row, and a ghost of the dragged row at the cursor
+                val di = navDropIndex(my)
+                val dr = navRows().getOrNull(di)
+                if (dr?.second != null && dr.second !== navPress) {
+                    val ry = navTop() + 4 + di * NAV_ROW - navScroll
+                    val ly = if (my > ry + NAV_ROW / 2) ry + NAV_ROW else ry
+                    UiRecorder.fillRect((x + 4).toFloat(), (ly - 1).toFloat(), (w - 8).toFloat(), 2f, ScreenTheme.accentFg())
+                }
+                val gy = navDragY - NAV_ROW / 2
+                UiRecorder.fillRoundedRect(x.toFloat(), gy.toFloat(), w.toFloat(), NAV_ROW.toFloat(), 4f, ScreenTheme.ink(0x30))
+                navPress?.let { UiRecorder.text(ellipsize(it.name, w - 26, 1.0f), (x + 8).toFloat(), gy + (NAV_ROW - NVG_BASE_TEXT_SIZE) / 2f, NVG_BASE_TEXT_SIZE, TEXT_COLOR) }
+            }
         } finally { UiRecorder.popScissor() }
     }
     private fun navClick(mx: Int, my: Int, btn: Int): Boolean {
@@ -2946,8 +2962,33 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (row.first == "All features" && row.second == null) { goHome(); return true }
         val c = row.second ?: return true
         if (btn == 1) { if (!pinned.remove(c.name)) pinned.add(c.name); FishSettings.fmPinned = pinned.joinToString(",") }
-        else toggleFold(c)
+        else if (btn == 0) { navPress = c; navPressY = my; navDragging = false; navDragY = my }
         return true
+    }
+
+    // Sidebar drag-to-reorder: press on a column row, drag past 4px, drop on another row (drop on a PINNED row pins it)
+    private var navPress: Column? = null
+    private var navPressY = 0
+    private var navDragging = false
+    private var navDragY = 0
+
+    private fun navDropIndex(my: Int): Int = (my - navTop() - 4 + navScroll) / NAV_ROW
+
+    private fun navDrop(my: Int) {
+        val c = navPress ?: return
+        val i = navDropIndex(my)
+        val rows = navRows()
+        val target = rows.getOrNull(i)?.second ?: return
+        if (target === c) return
+        val rowTop = navTop() + 4 + i * NAV_ROW - navScroll
+        val after = my > rowTop + NAV_ROW / 2
+        columns.remove(c)
+        val at = columns.indexOf(target).let { if (after) it + 1 else it }
+        columns.add(at.coerceIn(0, columns.size), c)
+        if (target.name in pinned) pinned.add(c.name) else pinned.remove(c.name)
+        FishSettings.fmPinned = pinned.joinToString(",")
+        saveColumnOrder()
+        frameVisibleColumns = null
     }
 
     // Explorer layout: open column as a card grid, selected feature's settings in a side pane
@@ -3237,6 +3278,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         if (resizeMask != 0) { applyResize(vx(click.x()), vx(click.y())); return true }
+        if (navPress != null) {
+            val my = vx(click.y())
+            if (!navDragging && Math.abs(my - navPressY) > 4) navDragging = true
+            navDragY = my
+            return true
+        }
         winDrag?.let { val b = baseRect(); winRect = intArrayOf(vx(click.x()) - it[0], vx(click.y()) - it[1], b[2], b[3]); rectFrame = -1L; return true }
         val slider = activeSlider
         if (slider != null) { slider.onDrag(vx(click.x()), activeSliderX, activeSliderW); return true }
@@ -3254,6 +3301,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun releaseInner(click: MouseButtonEvent): Boolean {
         if (resizeMask != 0) { resizeMask = 0; resizeFrom = null; return true }
         if (winDrag != null) { winDrag = null; return true }
+        navPress?.let { c ->
+            val my = vx(click.y())
+            if (navDragging) navDrop(my) else toggleFold(c)
+            navPress = null; navDragging = false
+            return true
+        }
         activeSlider = null
 
 
