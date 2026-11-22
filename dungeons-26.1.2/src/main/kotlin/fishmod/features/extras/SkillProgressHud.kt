@@ -30,6 +30,9 @@ object SkillProgressHud {
         }
         FishHudEditor.register("Skill Progress", { S.skillHudX }, { S.skillHudX = it }, { S.skillHudY }, { S.skillHudY = it }, 140, 30,
             { S.skillHudScale }, { S.skillHudScale = it })
+        fishmod.features.HudPreview.register("Skill Progress") {
+            fishmod.features.HudPreview.text(listOf("§eCombat §71.2k/5k §f(24.0%)", "§7XP/h: §f180k", "§7ETA: §f21m"), 10, color = S.skillHudColor)
+        }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "skill_progress_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("SkillProgressHud.2", "skill hud render failed", t) }
         }
