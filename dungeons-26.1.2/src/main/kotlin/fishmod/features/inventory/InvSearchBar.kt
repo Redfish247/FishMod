@@ -36,7 +36,7 @@ object InvSearchBar {
 
     private fun storageOpen(): Boolean {
         val screen = Minecraft.getInstance().screen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return false
-        return fishmod.features.storage.StorageOverlay.isActive(screen)
+        return StorageOverlay.isActive(screen)
     }
 
     private fun defX(): Int = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
