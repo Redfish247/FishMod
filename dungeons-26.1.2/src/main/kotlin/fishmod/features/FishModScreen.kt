@@ -2437,13 +2437,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
 
     // The menu is a draggable window, resizable from every edge/corner; double-click its top bar to maximize
-    private var winMax = false
+    // remembered across reopen so a fullscreen menu reopens fullscreen
+    private var winMax = keepMax
+        set(v) { field = v; keepMax = v }
     private var winDrag: IntArray? = null
     private var lastBarClick = 0L
     private var winRect: IntArray? = null
     private var resizeMask = 0
     private var resizeFrom: IntArray? = null
-    private var maxP = 0f
+    private var maxP = if (keepMax) 1f else 0f
     private fun scrW(): Int = Math.ceil((this.width / fishmod.utils.rendering.UiScale.factor()).toDouble()).toInt()
     private fun scrH(): Int = Math.ceil((this.height / fishmod.utils.rendering.UiScale.factor()).toDouble()).toInt()
     // restored (non-maximized) rect, clamped to the screen
@@ -4423,6 +4425,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     companion object {
+        private var keepMax = false
         private var ACCENT: Int = ScreenTheme.ACCENT
         private var ACCENT_HOVER: Int = ScreenTheme.ACCENT_HOVER
         private const val DIM_TOP = 0x2E000000
