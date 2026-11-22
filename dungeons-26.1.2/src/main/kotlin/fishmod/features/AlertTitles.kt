@@ -98,7 +98,7 @@ object AlertTitles {
             st.map { it.className }
                 .filter { !it.startsWith("fishmod.utils.FishUtil") && !it.startsWith("fishmod.features.AlertTitles") && !it.startsWith("kotlin.") && !it.startsWith("java.") }
                 .findFirst().orElse("")
-        }.substringAfterLast('.').substringBefore('$')
+        }.substringAfterLast('.').substringBefore('$').removeSuffix("Kt")
     } catch (t: Throwable) { "" }
 
     private fun alpha(s: Slot, now: Long): Float {
