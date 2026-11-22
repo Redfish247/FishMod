@@ -25,6 +25,8 @@ object DungeonPlayers {
     private const val SMOOTH_MS = 350L
     private val teammates = ArrayList<DungeonPlayer>()
 
+    init { fishmod.utils.events.FishEvents.worldChange.register { teammates.clear(); false } }
+
     private fun lerp(a: Float, b: Float, t: Float): Float = a + (b - a) * t
 
     private fun interpolateYaw(start: Float, target: Float, progress: Float): Float {
