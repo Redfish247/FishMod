@@ -10,7 +10,6 @@ import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.component.DataComponents
-import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.AABB
@@ -57,12 +56,14 @@ object HoppityEggWaypoints {
     private fun render(ctx: net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext, ps: com.mojang.blaze3d.vertex.PoseStack, vc: com.mojang.blaze3d.vertex.VertexConsumer) {
         val eye = Minecraft.getInstance().cam.position()
         val argb = S.hoppityEggColor
+        val look = FishDraw.lookDir()
         for ((pos, label) in found) {
+            if (FishDraw.behindCamera(pos.x, pos.y, pos.z, eye, look, 2.0)) continue
             val d = pos.distanceTo(eye)
             val (c, k) = FishDraw.pullIn(pos, eye)
             FishDraw.fillBox(ps, vc, AABB.ofSize(c, k * 0.6, k * 0.6, k * 0.6), (0x66 shl 24) or (argb and 0xFFFFFF))
             val (tp, pk) = FishDraw.pullIn(Vec3(pos.x, pos.y + 1.0 + d / 25.0, pos.z), eye)
-            FishDraw.renderSeeThroughText(ctx, ps, Component.literal(label + " §7(" + d.toInt() + "m)"), tp, (maxOf(0.035, d * 0.0035) * pk).toFloat(), argb or (0xFF shl 24), true)
+            FishDraw.renderSeeThroughText(ctx, ps, FishDraw.distLabel(label, d.toInt()), tp, (maxOf(0.035, d * 0.0035) * pk).toFloat(), argb or (0xFF shl 24), true)
         }
     }
 }
