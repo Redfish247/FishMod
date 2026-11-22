@@ -161,11 +161,13 @@ object SlayerMore {
         val inEnd = loc == SkyblockLocation.THE_END
         val noQuest = S.noQuestWarning && SlayerManager.type == null && !warned
         if (!(S.zealotHud && inEnd) && !noQuest) return
+        // no-quest kills only count on these islands (isSlayerAreaMob)
+        if (!(S.zealotHud && inEnd) && loc != SkyblockLocation.HUB && loc != SkyblockLocation.THE_PARK && loc != SkyblockLocation.SPIDERS_DEN && loc != SkyblockLocation.THE_END && loc != SkyblockLocation.CRIMSON_ISLE) return
         val now = System.currentTimeMillis()
         for (e in level.getEntitiesOfClass(LivingEntity::class.java, player.boundingBox.inflate(24.0)) { it !== player }) {
             val id = e.id
             if (!e.isDeadOrDying) {
-                if (S.zealotHud && inEnd && net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.type).path == "enderman" && id !in zealotIds && isZealot(e)) zealotIds.add(id)
+                if (S.zealotHud && inEnd && e.type === net.minecraft.world.entity.EntityType.ENDERMAN && id !in zealotIds && isZealot(e)) zealotIds.add(id)
                 continue
             }
             if (!deadSeen.add(id)) continue
@@ -189,7 +191,7 @@ object SlayerMore {
         SkyblockLocation.HUB -> e is Zombie || e is Wolf
         SkyblockLocation.THE_PARK -> e is Wolf
         SkyblockLocation.SPIDERS_DEN -> e is Spider
-        SkyblockLocation.THE_END -> net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.type).path == "enderman"
+        SkyblockLocation.THE_END -> e.type === net.minecraft.world.entity.EntityType.ENDERMAN
         SkyblockLocation.CRIMSON_ISLE -> e is Blaze
         else -> false
     }
