@@ -15,6 +15,8 @@ import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
+import com.mojang.blaze3d.platform.cursor.CursorType
+import com.mojang.blaze3d.platform.cursor.CursorTypes
 import fishmod.utils.Easing
 import fishmod.utils.config.ConfigRoot
 import fishmod.utils.config.FishConfig
@@ -2704,6 +2706,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
+        dragCursor(vmx, vmy)?.let { ctx.requestCursor(it) }
+    }
+
+    // move cursor over draggable sidebar rows / column headers (and while dragging them)
+    private fun dragCursor(mx: Int, my: Int): CursorType? {
+        if (closing || anyColumnAnimating()) return null
+        if (!stackIdle()) return CursorTypes.RESIZE_NS
+        if (dragColumn != null) return CursorTypes.RESIZE_EW
+        val r = stackHitAt(mx, my)?.first
+        if (r != null && !r.isAdd()) return CursorTypes.RESIZE_NS
+        if (searchText.isEmpty() && my >= cyTop() - HEADER_H && my < cyTop()) {
+            val colW = columnWidth()
+            if (visibleColumns().indices.any { mx in columnX0(it)..(columnX0(it) + colW) }) return CursorTypes.RESIZE_EW
+        }
+        return null
     }
 
     // Window chrome, laid out like docs/ui-mockups/fishmod-explorer.html:
