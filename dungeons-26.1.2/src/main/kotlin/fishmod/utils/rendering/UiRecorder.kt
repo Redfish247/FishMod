@@ -192,11 +192,6 @@ object UiRecorder {
     }
 
     @JvmStatic
-    fun fillRectHGradient(x: Float, y: Float, w: Float, h: Float, leftColor: Int, rightColor: Int) {
-        push(OP_FILL_RECT_HGRADIENT, x, y, w, h, i0 = leftColor, i1 = rightColor)
-    }
-
-    @JvmStatic
     fun line(x0: Float, y0: Float, x1: Float, y1: Float, width: Float, color: Int) {
         push(OP_LINE, x0, y0, x1, y1, width, i0 = color)
     }

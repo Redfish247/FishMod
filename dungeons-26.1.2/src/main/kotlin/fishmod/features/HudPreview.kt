@@ -64,12 +64,6 @@ object HudPreview {
     )
 
     @JvmStatic
-    fun namesFor(feature: String): List<String> {
-        if (makers.containsKey(feature)) return listOf(feature)
-        return (ALIASES[feature] ?: return emptyList()).filter { makers.containsKey(it) }
-    }
-
-    @JvmStatic
     fun example(name: String): HudExample? {
         val m = makers[name] ?: return null
         return try { m() } catch (t: Throwable) { FishDiag.fail("HudPreview.1", "HUD example '$name' build failed", t); null }
