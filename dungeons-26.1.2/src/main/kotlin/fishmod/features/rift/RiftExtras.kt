@@ -17,6 +17,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.StainedGlassBlock
@@ -75,6 +76,16 @@ object RiftExtras {
         FishEvents.worldChange.register { Minecraft.getInstance().execute { maxTime = 0; timite.clear(); defense.clear() }; false }
         registerPacket(ClientboundBlockUpdatePacket::class.java, gate = { S.riftDefense && Rift.inArea("Living Cave") }) { p ->
             if (p is ClientboundBlockUpdatePacket) { val pos = p.pos; val st = p.blockState; Minecraft.getInstance().execute { onBlock(pos, st) } }
+            false
+        }
+        // timestamp new panes on packet arrival; the 1s scan alone ran up to a second late
+        registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { S.riftTimite && Rift.inArea("Mountaintop") }) { p ->
+            val now = System.currentTimeMillis(); val placed = ArrayList<Long>()
+            when (p) {
+                is ClientboundBlockUpdatePacket -> if (p.blockState.block == fishmod.compat.CB.BLUE_STAINED_GLASS_PANE) placed += p.pos.asLong()
+                is ClientboundSectionBlocksUpdatePacket -> p.runUpdates { pos, st -> if (st.block == fishmod.compat.CB.BLUE_STAINED_GLASS_PANE) placed += pos.asLong() }
+            }
+            if (placed.isNotEmpty()) Minecraft.getInstance().execute { for (k in placed) timite.merge(k, now, ::minOf) }
             false
         }
         DrawHooks.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
@@ -146,7 +157,7 @@ object RiftExtras {
                 val left = TIMITE_MS - (now - t)
                 if (left !in 0..5999) continue
                 val p = BlockPos.of(k)
-                FishDraw.gizmoText(Component.literal("§c" + fishmod.utils.Fmt.f1(left / 1000.0) + "s"), Vec3(p.x + 0.5, p.y + 0.8, p.z + 0.5), 1.5f, -1, false)
+                FishDraw.gizmoText(Component.literal("§c" + fishmod.utils.Fmt.f1(left / 1000.0) + "s"), Vec3(p.x + 0.5, p.y + 0.6, p.z + 0.5), 0.6f, -1, false)
             }
         }
         if (S.riftDefense && defense.isNotEmpty()) {
