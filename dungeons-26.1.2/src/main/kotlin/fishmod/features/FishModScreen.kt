@@ -2643,7 +2643,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) { }
 
     private var widgetRenderFailureLogged = false
-    private var recorderSizeLogged = false
 
     private var frameCaching = false
     private var frameVisibleColumns: List<Column>? = null
@@ -2712,11 +2711,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 widgetRenderFailureLogged = true
                 fishmod.utils.debug.FishDebug.LOGGER.error("[FishModScreen] widget rendering failed - screen will show blur only", t)
             }
-        }
-
-        if (!recorderSizeLogged) {
-            recorderSizeLogged = true
-            fishmod.utils.debug.FishDebug.LOGGER.debug("[UiRenderer] extractRenderState queued {} draw commands", UiRecorder.size())
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
@@ -3249,10 +3243,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (animating) UiRecorder.popScissor()
     }
 
-    private fun hovBtn(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean {
-        return mx >= x && mx <= x + w && my >= y && my <= y + h
-    }
-
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean =
         try {
             clickInner(click, bl)
@@ -3488,17 +3478,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         fun hasMaster(): Boolean = get != null && set != null
 
         fun expanded(): Boolean = expandAnim.target()
-        fun toggleExpanded() { expandAnim.setTarget(!expandAnim.target()) }
         fun naturalSubHeight(): Int {
             if (sub.isEmpty()) return 0
             var total = 0
             for (s in sub) if (!s.hiddenByGate()) total += s.getHeight()
             if (total == 0) return 0
             return total + 10
-        }
-        fun animatedSubHeight(): Int {
-            val natural = naturalSubHeight()
-            return if (natural == 0) 0 else Math.round(natural * expandAnim.progress())
         }
     }
 
@@ -4448,12 +4433,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val ROW_HOVER get() = ScreenTheme.ink(0x1E)
         private var ROW_ENABLED: Int = 0x26D6D6D6
         private var ROW_BUTTON: Int = 0xFF212121.toInt()
-        private const val ROW_RADIUS = 3f
         private val SUBROW_BG get() = ScreenTheme.ink(0x0C)
         private val TRACK_OFF get() = ScreenTheme.ink(0x33)
         private val TEXT_COLOR get() = ScreenTheme.TEXT_COLOR
         private val SUBTEXT_COLOR get() = ScreenTheme.SUBTEXT_COLOR
-        private val CHEVRON_COLOR get() = SUBTEXT_COLOR
 
         private const val TEXT_SCALE = 0.92f
         private const val OPEN_MS = 300
@@ -4463,8 +4446,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private const val COMPACT = true
         private val MARGIN get() = if (COMPACT) 10 else 16
-        private const val TOP_BAR_H = 26
-        private const val BOTTOM_RESERVE = 46
 
         private val COLUMN_GUTTER get() = if (COMPACT) 4 else 6
         private const val CARD_RADIUS = 7
@@ -4498,17 +4479,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "Farming" to "Garden farming tools",
             "Achievements" to "Goals & progress",
         )
-        private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
-        private const val STACK_W = 150
         private const val STACK_W_MIN = 110
         private const val STACK_W_MAX = 320
         private const val NAV_ROW = 20
-        private val STACK_TAB_H get() = if (COMPACT) 20 else 24
-        private const val STACK_SUB_INDENT = 10
-        private const val DRAG_THRESHOLD = 4
 
-        private val ROW_H get() = if (COMPACT) 18 else 22
-        private val ROW_GAP get() = if (COMPACT) 1 else 3
         private val ITEM_HEIGHT get() = if (COMPACT) 20 else 22
         private val PILL_H get() = if (COMPACT) 16 else 18
         private const val OPTION_H = 17
@@ -4521,7 +4495,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val INPUT_H = 15
         private const val SUBCAT_HEIGHT = 15
         private const val SUBCAT_HEIGHT_2 = 25
-        private const val TWO_LINE_H = 36
         private const val SLIDER_ROW_H = 27
         private const val SLIDER_CTRL_Y = 16
         private const val INPUT_CTRL_Y = 14
@@ -4577,10 +4550,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             UiRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * TEXT_SCALE, color)
         }
         fun stw(tr: Font, s: String): Int = Math.ceil(UiRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
-
-        fun stBold(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
-            UiRecorder.textBold(s, x.toFloat(), y.toFloat(), SUBCAT_TEXT_SIZE * TEXT_SCALE, color)
-        }
 
         fun sst(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int, scale: Float) {
             UiRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
