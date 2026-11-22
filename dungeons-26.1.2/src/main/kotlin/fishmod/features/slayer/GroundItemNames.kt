@@ -8,6 +8,8 @@ import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.world.level.Level
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.phys.Vec3
@@ -67,12 +69,22 @@ object GroundItemNames {
             if (e.isNoGravity || e.isInvisible) continue
             if (!e.onGround() && e.tickCount < 40) continue
             if (ItemTools.getId(st) == null) continue
+            if (inGlassCase(level, e)) continue
             val en = Entry(e, st.count, label(e))
             cache[e.id] = en
             seen.add(e.id); out.add(en)
         }
         cache.keys.retainAll(seen)
         visible = out
+    }
+
+    // Display-case items: glass directly above or beside the item's block
+    private fun inGlassCase(level: Level, e: ItemEntity): Boolean {
+        val p = e.blockPosition()
+        for (n in arrayOf(p.above(), p.north(), p.south(), p.east(), p.west())) {
+            if (BuiltInRegistries.BLOCK.getKey(level.getBlockState(n).block).path.contains("glass")) return true
+        }
+        return false
     }
 
     private fun label(e: ItemEntity): Component {
