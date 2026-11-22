@@ -1,6 +1,6 @@
 package fishmod.features.dungeon
 
-import fishmod.utils.TextStrip
+import fishmod.utils.events.chatPlain
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.data.ItemTools
@@ -30,7 +30,7 @@ object IceSprayTimer {
     @JvmStatic
     fun init() {
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
-            if (overlay && FishSettings.iceSprayTimerEnabled && TextStrip.plain(msg.string).contains("Mana (Ice Spray)")) FishDiag.guard("IceSprayTimer.1", "ice spray cast (action bar) failed") { cast() }
+            if (overlay && FishSettings.iceSprayTimerEnabled && msg.chatPlain.contains("Mana (Ice Spray)")) FishDiag.guard("IceSprayTimer.1", "ice spray cast (action bar) failed") { cast() }
         }
         UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
             try {
