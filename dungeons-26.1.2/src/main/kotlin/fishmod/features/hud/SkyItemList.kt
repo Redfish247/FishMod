@@ -22,8 +22,8 @@ import net.minecraft.world.item.ItemStack
 object SkyItemList {
 
     private const val CELL = 20
-    private const val PAD = 6
-    private const val RGAP = 2
+    private const val PAD = 3
+    private const val RGAP = 0
     private const val HEAD_H = 8
     private const val FOOT_H = 2
     private const val TAB_COLS = 1
