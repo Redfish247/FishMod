@@ -428,7 +428,7 @@ object SkyItemList {
             val barY = py + HEAD_H + (trackH - barH) * scroll / ms
             ctx.fill(gridRight() - 2, barY, gridRight(), barY + barH, accent)
         }
-        val tabHover = drawTabs(ctx, mx, my, accent)
+        val tabHover = drawTabs(ctx, mx, my)
         if (tabHover >= 0) {
             ctx.setTooltipForNextFrame(font, Component.literal(CAT_NAMES[tabHover]), mx, my)
             ctx.extractDeferredElements(mx, my, 0f)
@@ -477,7 +477,7 @@ object SkyItemList {
         return if (row in 0 until tabRows() && slot in TAB_ORDER.indices) TAB_ORDER[slot] else -1
     }
 
-    private fun drawTabs(ctx: GuiGraphicsExtractor, mx: Int, my: Int, accent: Int): Int {
+    private fun drawTabs(ctx: GuiGraphicsExtractor, mx: Int, my: Int): Int {
         val hov = tabAt(mx.toDouble(), my.toDouble())
         val x0 = gridRight()
         tabScroll = tabScroll.coerceIn(0, tabMaxScroll())
@@ -491,7 +491,6 @@ object SkyItemList {
             val sel = i == selCat
             // no per-cell fill on idle tabs so the sidebar is one even see-through strip top to bottom
             if (sel || i == hov) ctx.fill(tx, y0, tx + TAB_CELL - 1, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else 0x40FFFFFF)
-            if (sel) ctx.fill(tx, y0 + TAB_H - 2, tx + TAB_CELL - 1, y0 + TAB_H - 1, accent)
             fishmod.features.visuals.ItemRarityHotbar.suppress = true
             try { ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[i]), tx + 1, y0 + 1) } finally { fishmod.features.visuals.ItemRarityHotbar.suppress = false }
         }
