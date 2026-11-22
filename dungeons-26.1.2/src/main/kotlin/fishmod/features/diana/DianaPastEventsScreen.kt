@@ -323,7 +323,7 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         private val DIM = 0xFF666666.toInt()
         private val GOLD = 0xFFF2C14E.toInt()
         private const val ACC_SOFT = 0x24D6D6D6
-        private val ACC_INK = 0xFF232323.toInt()
+        private val ACC_INK get() = ScreenTheme.onAccent()
 
         private const val S_XS = 6.5f
         private const val S_SM = 7.5f

@@ -42,7 +42,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val FIELD_BORDER = 0xFF333333.toInt()
         val ACCENT get() = ScreenTheme.ACCENT
         val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
-        val ACCENT_INK = 0xFF232323.toInt()
+        val ACCENT_INK get() = ScreenTheme.onAccent()
         val TEXT_PRIM get() = ScreenTheme.TEXT_COLOR
         val TEXT_HINT get() = ScreenTheme.SUBTEXT_COLOR
         val ROW_HOVER = 0xFF2D2D2D.toInt()

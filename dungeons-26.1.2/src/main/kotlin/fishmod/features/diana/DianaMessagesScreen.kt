@@ -41,7 +41,7 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         private val FIELD_BORDER = 0xFF333333.toInt()
         private val ROW_HOVER = 0xFF232323.toInt()
         private val DIM = 0xFF646464.toInt()
-        private val DARK_TEXT = 0xFF0D0D0D.toInt()
+        private val DARK_TEXT get() = ScreenTheme.onAccent()
         private val PREVIEW_BG = 0xCC000000.toInt()
 
         private const val HEADER_H = 44
