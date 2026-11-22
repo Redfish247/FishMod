@@ -180,7 +180,7 @@ class CreditsPage {
         copyX = x + w - 10 - copyW
         copyY = y + (CREATOR_H - copyH) / 2
         val copied = System.currentTimeMillis() - copiedAt < 1500
-        val cHov = inside(mx, my, copyX, copyY, copyW, copyH) && visible(copyY, copyH)
+        val cHov = ScreenTheme.inside(mx, my, copyX, copyY, copyW, copyH) && visible(copyY, copyH)
         ScreenTheme.nRoundedRectRing(copyX, copyY, copyW, copyH, copyH / 2, 1, ScreenTheme.ink(if (cHov) 0x1C else 0x10), if (copied) accent else ScreenTheme.ink(0x26))
         centered(if (copied) "Copied" else "Copy", copyX + copyW / 2, copyY, copyH, if (copied) accent else ScreenTheme.TEXT_COLOR, 9f)
 
@@ -189,7 +189,7 @@ class CreditsPage {
         linkH = copyH
         linkX = copyX - 8 - linkW
         linkY = copyY
-        val lHov = inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)
+        val lHov = ScreenTheme.inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)
         val lColor = if (lHov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR
         UiRecorder.text(DISCORD, linkX.toFloat(), linkY + (linkH - ls) / 2f, ls, lColor)
         if (lHov) ScreenTheme.nRect(linkX, linkY + linkH - 2, linkW, 1, lColor)
@@ -233,18 +233,15 @@ class CreditsPage {
 
     private fun visible(y: Int, h: Int): Boolean = y >= bodyY && y + h <= bodyY + bodyH
 
-    private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean =
-        mx >= x && mx <= x + w && my >= y && my <= y + h
-
     fun scrollBy(amount: Double) { scroll = (scroll - (amount * 20).toInt()).coerceIn(0, maxScroll()) }
 
     fun click(mx: Int, my: Int): Boolean {
-        if (inside(mx, my, copyX, copyY, copyW, copyH) && visible(copyY, copyH)) {
+        if (ScreenTheme.inside(mx, my, copyX, copyY, copyW, copyH) && visible(copyY, copyH)) {
             Minecraft.getInstance().keyboardHandler.clipboard = DISCORD_URL
             copiedAt = System.currentTimeMillis()
             return true
         }
-        if (inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)) {
+        if (ScreenTheme.inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)) {
             try { fishmod.compat.GLFW.openUri(java.net.URI.create(DISCORD_URL)) } catch (t: Throwable) { FishDiag.fail("CreditsScreen.1", "could not open discord link", t) }
             return true
         }

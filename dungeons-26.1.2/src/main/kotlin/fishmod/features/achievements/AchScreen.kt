@@ -153,7 +153,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
             val frac = if (g == RECENT || g == LB || l.isEmpty()) 0f else done.toFloat() / l.size
             val bx = x + 8
             val bw = w - 16
-            val hov = !on && inside(mx, my, bx, ry, bw, rh) && (i == 0 || my in listTop..bot)
+            val hov = !on && ScreenTheme.inside(mx, my, bx, ry, bw, rh) && (i == 0 || my in listTop..bot)
             if (g == LB) {
                 UiRecorder.fillRoundedRect(bx.toFloat(), ry.toFloat(), bw.toFloat(), rh.toFloat(), 8f, if (on || hov) 0xFFE3B23C.toInt() else 0xFFC9962A.toInt())
             } else if (on) {
@@ -187,7 +187,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val bh = 22
         val bx = x + 16
         val by = y + h - 16 - bh
-        val hov = inside(mx, my, bx, by, bw, bh)
+        val hov = ScreenTheme.inside(mx, my, bx, by, bw, bh)
         UiRecorder.fillPillBar(bx.toFloat(), by.toFloat(), bw.toFloat(), bh.toFloat(), if (hov) ScreenTheme.ACCENT_HOVER else ACCENT)
         UiRecorder.textBold("Done", bx + (bw - tw("Done", S_SM)) / 2f, by + (bh - S_SM) / 2f, S_SM, ACC_INK)
         clicks.add(intArrayOf(bx, by, bw, bh) to { onClose() })
@@ -245,7 +245,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
             val tx = x + (i % cols) * (tileW + GAP)
             val ty = y + (i / cols) * rowStride - scroll
             if (ty + TILE_H < y || ty > y + h) continue
-            val hov = inside(mx, my, tx, ty, tileW, TILE_H) && my in y..(y + h)
+            val hov = ScreenTheme.inside(mx, my, tx, ty, tileW, TILE_H) && my in y..(y + h)
             tile(a, tx, ty, tileW, hov)
             if (hov) { hoverAch = a; hoverX = mx; hoverY = my }
         }
@@ -452,17 +452,14 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         return "$t..."
     }
 
-    private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean =
-        mx >= x && mx <= x + w && my >= y && my <= y + h
-
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         val mx = UiScale.vx(mouseX); val my = UiScale.vx(mouseY)
-        if (inside(mx, my, railBox[0], railBox[1], railBox[2], railBox[3])) {
+        if (ScreenTheme.inside(mx, my, railBox[0], railBox[1], railBox[2], railBox[3])) {
             railScroll = max(0, railScroll - (verticalAmount * 24).toInt())
             return true
         }
         if (group == LB) {
-            val i = if (inside(mx, my, lbBox[1][0], lbBox[1][1], lbBox[1][2], lbBox[1][3])) 1 else 0
+            val i = if (ScreenTheme.inside(mx, my, lbBox[1][0], lbBox[1][1], lbBox[1][2], lbBox[1][3])) 1 else 0
             lbScroll[i] = max(0, lbScroll[i] - (verticalAmount * 40).toInt())
             return true
         }
@@ -475,7 +472,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val my = UiScale.vx(click.y())
         search.isFocused = false
         for ((r, fn) in clicks.asReversed()) {
-            if (inside(mx, my, r[0], r[1], r[2], r[3])) { fn(); return true }
+            if (ScreenTheme.inside(mx, my, r[0], r[1], r[2], r[3])) { fn(); return true }
         }
         return super.mouseClicked(click, bl)
     }

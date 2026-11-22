@@ -26,7 +26,6 @@ class InventoryButtonEditScreen(private val b: InvButton, private val parent: Sc
         const val BORDER = 0xFF2D2D2D.toInt()
         const val CARD = 0xFF1C1C1C.toInt()
         const val CARD_HOVER = 0xFF232323.toInt()
-        val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         const val HINT = 0xFF626262.toInt()
         const val OFF = 0xFF333333.toInt()
     }
@@ -97,7 +96,7 @@ class InventoryButtonEditScreen(private val b: InvButton, private val parent: Sc
             else -> ScreenTheme.nRoundedRectRing(x, y, w, h, h / 2, 1, if (hov) CARD_HOVER else CARD, BORDER)
         }
         val col = when {
-            primary -> ON_ACCENT
+            primary -> ScreenTheme.onAccent()
             danger -> if (hov) ScreenTheme.DANGER_HOVER else ScreenTheme.DANGER
             hov -> ScreenTheme.TEXT_COLOR
             else -> ScreenTheme.SUBTEXT_COLOR
