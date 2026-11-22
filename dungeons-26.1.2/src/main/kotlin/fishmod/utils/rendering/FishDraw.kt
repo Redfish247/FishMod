@@ -220,6 +220,13 @@ object FishDraw {
     fun behindCamera(x: Double, y: Double, z: Double, eye: Vec3, look: Vec3, slack: Double): Boolean =
         (x - eye.x) * look.x + (y - eye.y) * look.y + (z - eye.z) * look.z < -slack
 
+    // True when the whole box is behind the camera plane (never visible).
+    @JvmStatic
+    fun boxBehindCamera(b: AABB, eye: Vec3, look: Vec3): Boolean {
+        val hx = (b.maxX - b.minX) / 2; val hy = (b.maxY - b.minY) / 2; val hz = (b.maxZ - b.minZ) / 2
+        return behindCamera((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, (b.minZ + b.maxZ) / 2, eye, look, Math.sqrt(hx * hx + hy * hy + hz * hz) + 1.0)
+    }
+
     private val distLabels = HashMap<String, Int2ObjectOpenHashMap<Component>>()
 
     // Cached "label §7(Nm)" component per label and integer distance.
