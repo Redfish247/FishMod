@@ -73,7 +73,6 @@ object ExtrasSettings {
 
     @ConfigValue @JvmField var cookieWarning: Boolean = false
     @ConfigValue @JvmField var bitsWarning: Boolean = false
-    @ConfigValue @JvmField var bazaarSearch: Boolean = false
     @ConfigValue @JvmField var ahPriceCheck: Boolean = false
     @ConfigValue @JvmField var ahPriceCheckWarnPct: Int = 20
     @ConfigValue @JvmField var kickTimer: Boolean = false
