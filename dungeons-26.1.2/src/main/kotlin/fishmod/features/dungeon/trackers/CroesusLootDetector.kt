@@ -54,7 +54,7 @@ object CroesusLootDetector {
         for (i in 0 until slotCount) {
             val stack = getSlot(menu, i)
             if (stack.isEmpty) continue
-            val name = strip(stack.hoverName.string)
+            val name = fishmod.utils.TextStrip.plain(stack.hoverName.string)
             if (!CHEST_ITEM_PATTERN.matcher(name).matches()) continue
             if (pendingChests.containsKey(name)) continue
 
@@ -84,7 +84,6 @@ object CroesusLootDetector {
         runGuiOpenPrev = runGuiOpenNow
     }
 
-    private fun strip(s: String): String = fishmod.utils.TextStrip.plain(s)
 
     private fun getSlot(menu: AbstractContainerMenu, index: Int): ItemStack =
         if (index >= 0 && index < menu.slots.size) menu.slots[index].item else ItemStack.EMPTY
