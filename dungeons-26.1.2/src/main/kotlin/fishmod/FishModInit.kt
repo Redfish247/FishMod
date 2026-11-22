@@ -402,6 +402,7 @@ class FishModInit : ClientModInitializer {
         if (fishmod.cosmetic.NickState.isActive()) fishmod.cosmetic.NickState.applyFromSettings()
         FishDiag.guard("FishModInit.3", "fishmod.cosmetic.RemoteNicks.init() failed") { fishmod.cosmetic.RemoteNicks.init() }
         FishDiag.guard("FishModInit.3b", "fishmod.cosmetic.RemoteItems.init() failed") { fishmod.cosmetic.RemoteItems.init() }
+        FishDiag.guard("FishModInit.3c", "fishmod.features.item.WornUuidRestore.init() failed") { fishmod.features.item.WornUuidRestore.init() }
         FishDiag.guard("FishModInit.4", "fishmod.cosmetic.PlayerSize.init() failed") { fishmod.cosmetic.PlayerSize.init() }
         FishDiag.guard("FishModInit.MeleeHit", "MeleeHitSound.init() failed") { fishmod.features.MeleeHitSound.init() }
         FishDiag.guard("FishModInit.5", "fishmod.features.NametagStats.init() failed") { fishmod.features.NametagStats.init() }
