@@ -452,10 +452,6 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         return "$t..."
     }
 
-    private fun centered(s: String, cx: Int, y: Int, h: Int, color: Int, size: Float) {
-        UiRecorder.text(s, cx - UiRecorder.textWidth(s, size) / 2f, y + (h - size) / 2f, size, color)
-    }
-
     private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean =
         mx >= x && mx <= x + w && my >= y && my <= y + h
 
