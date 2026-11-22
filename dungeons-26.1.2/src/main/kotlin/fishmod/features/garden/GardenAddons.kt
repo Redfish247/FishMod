@@ -10,8 +10,6 @@ import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatRaw
 import fishmod.utils.events.registerPacket
 import fishmod.utils.rendering.DrawHooks
-import fishmod.utils.rendering.FishDraw
-import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
@@ -21,12 +19,9 @@ import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.entity.EquipmentSlot
-import net.minecraft.world.entity.decoration.ArmorStand
-import net.minecraft.world.phys.AABB
-import net.minecraft.world.phys.Vec3
 import fishmod.features.garden.GardenExtraSettings as X
 
-// Mantid bonus, spray expiry, Phantomleaf, DNA Analyzer, SkyMart copper value and watering helper (logic ideas from SkyHanni / NoFrills)
+// Mantid bonus, spray expiry, Phantomleaf, DNA Analyzer and SkyMart copper value (logic ideas from SkyHanni / NoFrills)
 object GardenAddons {
 
     // from SkyHanni MantidKillDisplay: each pest kill counts 10 min, max 20
@@ -47,9 +42,6 @@ object GardenAddons {
     // from SkyHanni DnaAnalyzerSolver: menu title ends with " DNA", board in slots 9..44
     private var dnaSwap: Pair<Int, Int>? = null
     private var dnaKey = ""
-
-    // from NoFrills WateringHelper: water level bars are armor stands named only "|"
-    private val WATER_BARS = Regex("""^\|+$""")
 
     private var tick = 0
 
@@ -94,7 +86,6 @@ object GardenAddons {
             if (slot.index == sw.first || slot.index == sw.second) ctx.fill(x, y, x + 16, y + 16, X.gardenDnaColor)
         }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> skyMartTooltip(stack, lines) })
-        RenderHooks.GIZMO.register { _ -> renderWater() }
     }
 
     private fun wearingMantid(): Boolean {
@@ -160,17 +151,6 @@ object GardenAddons {
 
     // from SkyHanni readLoreCosts: a cost line like "25 Copper"
     private val COPPER = Regex("""^([\d,]+) Copper$""")
-
-    private fun renderWater() {
-        if (!X.gardenWatering || !Garden.inGarden()) return
-        val mc = Minecraft.getInstance(); val me = mc.player ?: return; val level = mc.level ?: return
-        // Named-only predicate: this runs every render frame, so keep the returned list small
-        for (s in level.getEntitiesOfClass(ArmorStand::class.java, AABB(me.blockPosition()).inflate(24.0)) { it.hasCustomName() }) {
-            val name = s.customName ?: continue
-            if (!WATER_BARS.matches(Garden.strip(name.string).trim())) continue
-            FishDraw.gizmoText(name, Vec3(s.x, s.y + 0.5 + s.bbHeight, s.z), 2.0f, -1, true)
-        }
-    }
 }
 
 // Fewest swaps so every colour row connects (each column may only reorder its own 4 cells); ends stay fixed
