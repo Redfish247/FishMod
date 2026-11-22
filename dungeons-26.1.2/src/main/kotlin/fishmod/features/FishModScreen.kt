@@ -2393,8 +2393,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
     private fun fa(c: Int, a: Float): Int = (((c ushr 24) * a).toInt() shl 24) or (c and 0xFFFFFF)
     private fun tabRects(): List<IntArray> {
-        // start past the window's corner radius so the title strip's rounded corner left of the tab isn't squashed
-        var x = left() + 16
+        // start near the left wall; the strip corner radius clamps to this gap
+        var x = left() + 8
         val out = ArrayList<IntArray>()
         for (t in tabs) { val w = Math.min(150, sw(this.font, t, 0.85f) + 40); out.add(intArrayOf(x, w)); x += w + 4 }
         out.add(intArrayOf(x, 20))
@@ -2710,11 +2710,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         super.extractRenderState(ctx, mouseX, mouseY, delta)
         val dc = dragCursor(vmx, vmy)
         if (dc != null) ctx.requestCursor(dc)
-        if (System.currentTimeMillis() - cursorLogAt > 2000) { cursorLogAt = System.currentTimeMillis(); fishmod.utils.debug.FishDebug.LOGGER.debug("[FmCursor] v=({},{}) nav y={}..{} x={}..{} cursor={}", vmx, vmy, navTop(), navBot(), left(), stackX0() + STACK_W, dc) }
     }
 
-    private var cursorLogAt = 0L
-    // move cursor over draggable sidebar rows (and while dragging one)
+    // resize cursor on the window edges/corners
     private fun dragCursor(mx: Int, my: Int): CursorType? {
         if (closing) return null
         val em = if (resizeMask != 0) resizeMask else if (navDragging || winDrag != null) 0 else edgeMask(mx, my)
@@ -2723,10 +2721,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             em and 3 != 0 -> CursorTypes.RESIZE_EW
             else -> CursorTypes.RESIZE_NS
         }
-        if (navDragging) return CursorTypes.RESIZE_NS
-        if (mx !in left()..stackX0() + STACK_W || my !in navTop()..navBot()) return null
-        val row = navRows().getOrNull((my - navTop() - 4 + navScroll) / NAV_ROW) ?: return null
-        return if (row.second != null) CursorTypes.RESIZE_NS else null
+        return null
     }
 
     // Window chrome, laid out like docs/ui-mockups/fishmod-explorer.html:
