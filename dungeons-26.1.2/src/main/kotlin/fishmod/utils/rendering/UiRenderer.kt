@@ -12,7 +12,6 @@ object UiRenderer {
     private const val MODE_SOLID = 2f
 
     const val FLOATS = 24
-    const val STRIDE = FLOATS * 4
 
     private val noUi = System.getProperty("fishmod.noui") != null
     private var failed = false

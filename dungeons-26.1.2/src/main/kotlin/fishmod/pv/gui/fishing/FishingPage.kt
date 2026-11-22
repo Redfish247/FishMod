@@ -225,7 +225,6 @@ class FishingPage {
 		private const val STAT_ROW = 12
 		private const val SEP_GAP = 10
 		private const val BAR_FISH = 0xFF55AAFF.toInt()
-		private const val SLOT = 16
 		private const val COLOR_MAXED = 0xFF7CFF9A.toInt()
 		private const val SEA_CREATURE_CATEGORY = "fishing"
 		private const val NAME_COLOR = 0xFFC9A6FF.toInt()
