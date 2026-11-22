@@ -40,6 +40,8 @@ object SlayerCarryTracker {
     private val watched = HashMap<Int, Watched>()
     private val seen = HashSet<Int>()
     private val tries = HashMap<Int, Int>()
+    // negative cache: entity id -> name component already known not to be a boss label
+    private val skip = HashMap<Int, net.minecraft.network.chat.Component>()
     private var level: Any? = null
     private var tick = 0
 
@@ -61,7 +63,7 @@ object SlayerCarryTracker {
 
     private fun tick(mc: Minecraft) {
         val lvl = mc.level
-        if (lvl !== level) { level = lvl; watched.clear(); seen.clear(); tries.clear() }
+        if (lvl !== level) { level = lvl; watched.clear(); seen.clear(); tries.clear(); skip.clear() }
         val player = mc.player ?: return
         if (lvl == null || carries.isEmpty() || !FishSettings.slayerCarryHudEnabled) return
 
@@ -76,8 +78,10 @@ object SlayerCarryTracker {
         if (tick++ % 5 != 0) return
         for (e in lvl.entitiesForRendering()) {
             if (e.id in seen || !e.hasCustomName()) continue
-            val name = e.customName?.string ?: continue
-            val boss = bossLabel(name) ?: continue
+            val comp = e.customName ?: continue
+            if (skip[e.id] === comp) continue
+            val boss = bossLabel(comp.string)
+            if (boss == null) { skip[e.id] = comp; continue }
             // "Spawned by" stand can load after the boss name: retry ~5s, nearest-player guess only on the last try
             val n = (tries[e.id] ?: 0) + 1
             val o = owner(lvl, e, n >= 20)
@@ -88,6 +92,7 @@ object SlayerCarryTracker {
         }
         if (seen.size > 4096) seen.retainAll(lvl.entitiesForRendering().map { it.id }.toSet())
         if (tries.size > 256) tries.clear()
+        if (skip.size > 4096) skip.clear()
     }
 
     // Tracked ign, "" = someone else's boss (final), null = owner not known yet
