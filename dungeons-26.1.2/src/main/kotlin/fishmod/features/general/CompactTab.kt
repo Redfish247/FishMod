@@ -28,7 +28,6 @@ object CompactTab {
         return (a shl 24) or BG_RGB
     }
 
-    private const val BORDER = 0x66303440
     private const val DIVIDER = 0x44454a58
     private const val LABEL = 0xFF8A8F9C.toInt()
     private const val VALUE = 0xFF55FF55.toInt()
