@@ -2393,8 +2393,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
     private fun fa(c: Int, a: Float): Int = (((c ushr 24) * a).toInt() shl 24) or (c and 0xFFFFFF)
     private fun tabRects(): List<IntArray> {
-        // start past the window's corner radius so the title strip's rounded corner left of the tab isn't squashed
-        var x = left() + 16
+        // start near the left wall; the strip corner radius clamps to this gap
+        var x = left() + 8
         val out = ArrayList<IntArray>()
         for (t in tabs) { val w = Math.min(150, sw(this.font, t, 0.85f) + 40); out.add(intArrayOf(x, w)); x += w + 4 }
         out.add(intArrayOf(x, 20))
