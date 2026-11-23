@@ -156,7 +156,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.updateNoticeStyle = v }))
             general.features.add(f)
         }
-        general.features.add(Feature("Messages from RedFish", "dashboardMessagesEnabled"))
         general.features.add(Feature("FishMod Chat (/fc)", "fishChatEnabled"))
         run {
             val f = Feature("Debug Reports", "debugReports")
@@ -502,12 +501,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
-            val f = Feature("Hide HUDs Under Tab", "hideHudsUnderTab")
-            f.sub.add(LabelSetting("Hides any HUD touching the tab list while tab is held", ""))
-            general.features.add(f)
-        }
-        run {
-            val f = Feature("Compact Tab", "compactTabEnabled")
+            val f = Feature("Custom Tab", null, null)
+            f.sub.add(ToggleSetting("Custom Tab Layout", "Replace the tab list with the compact FishMod one; off keeps the vanilla tab", "compactTabEnabled"))
+            f.sub.add(ToggleSetting("Hide HUDs Under Tab", "Hides any HUD touching the tab list while tab is held", "hideHudsUnderTab"))
             f.sub.add(SliderIntSetting("Opacity %", "", "compactTabOpacity", 0, 100))
             f.sub.add(ToggleSetting("Stat Bar", "SERVER/TPS/FPS/PING strip", "compactTabStatBarEnabled"))
             f.sub.add(DropdownSetting("Stat Bar Position", "", arrayOf("TOP", "BOTTOM", "LEFT", "RIGHT"),
@@ -2292,7 +2288,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val itemsCol = Column("Items & Tooltips")
         val petsCol = Column("Pets")
         fun take(to: Column, names: Set<String>, vararg from: Column) { for (c in from) { val m = c.features.filter { it.name in names }; c.features.removeAll(m); to.features.addAll(m) } }
-        take(chatCol, setOf("Chat","Chat Filter","FishMod Chat (/fc)","Messages from RedFish","Mod Prefix","Guild Bridge Bot","Twitch Bridge","Chat Coord Waypoints","Command Tooltip in Chat","Compact Bestiary","SkyBlock XP in Chat","Command Tab Complete","Wiki Lookup"), general, extrasCol)
+        take(chatCol, setOf("Chat","Chat Filter","FishMod Chat (/fc)","Mod Prefix","Guild Bridge Bot","Twitch Bridge","Chat Coord Waypoints","Command Tooltip in Chat","Compact Bestiary","SkyBlock XP in Chat","Command Tab Complete","Wiki Lookup"), general, extrasCol)
         take(invStorage, setOf("Inventory Buttons","Inventory Equipment","Hide Inventory Potion Effects","Wardrobe/Loadout Hotkeys","Pet Keybinds","Slot Binds","Slot Locking","Inventory Search","Backpack Preview","Fix Double Clicks","Middle Click Fix","Stacking Enchant Progress","Item Level Overlay"), general, extrasCol)
         take(eventsCol, setOf("Calendar Real Times","SkyBlock Date HUD","Hoppity Hunt Summary","Hoppity Egg Waypoints","Stray Rabbit Alert","Trick or Treat Chest Alert","Gift Tracker HUD","Hidden Jerry Highlight","Reindrake Alert + Warp Link","Carnival Zombie Shootout Outlines","Fairy Soul Waypoints"), extrasCol)
         take(alertsCol, setOf("Limbo Alert","Server Restart Alert","Booster Cookie Warning","No Bits Available Warning","Kick Cooldown Timer","Order Filled Alert","Auction Outbid Alert","Party Join Sound","Vanquisher Party Share","Quiver Warning"), extrasCol)
@@ -4568,7 +4564,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "GUI Settings" -> "Size of each FishMod screen"
                 "Inventory Buttons" -> "Clickable command buttons in your inventory"
                 "Smart Copy Chat" -> "Right-click a chat line to copy it"
-                "Compact Tab" -> "Cleaner custom tab player list"
+                "Custom Tab" -> "Custom tab list and tab perks"
                 "Chat Filter" -> "Hide selected chat spam + NoammAddons' list + custom regex"
                 "Explosive Shot" -> "Title with per-enemy damage"
                 "Puzzle Overlay" -> "Show solved puzzle names"
@@ -4621,7 +4617,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Container Value" -> "No-background value list + total beside the open container / storage overlay"
                 "UI Customization" -> "Colours, opacity and background of the FishMod menu"
                 "Update Notice" -> "Tells you when a new FishMod version is out"
-                "Messages from RedFish" -> "Show announcements RedFish sends to FishMod users"
                 "FishMod Chat (/fc)" -> "Chat with other FishMod users through /fc"
                 "Debug Reports" -> "Short chat notice with a copy button when something breaks"
                 "Board Reports" -> "Send bugs and suggestions to RedFish with /fm bug and /fm suggest"
@@ -4650,8 +4645,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Twitch Bridge" -> "Shows a Twitch channel's chat in your chat (read-only)"
                 "Profile Viewer" -> "Look up a player's profile with /pv"
                 "Enchant Colors" -> "Colours enchants by tier in tooltips and /pv"
-                "Hide HUDs Under Tab" -> "Hides HUDs that overlap the tab list while tab is held"
-                "Custom Scoreboard" -> "Restyled sidebar scoreboard"
+                                "Custom Scoreboard" -> "Restyled sidebar scoreboard"
                 "PB Pace" -> "Compares your current run against your PB"
                 "Key & Room Timer" -> "Key pickup alerts and room clear times"
                 "Dungeon Breaker" -> "Dungeonbreaker charges display and break sound"
