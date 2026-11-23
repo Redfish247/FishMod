@@ -137,7 +137,6 @@ object DungeonWaypoints {
             )
         )
 
-        // New world = new run: drop route progress so reached points don't stay hidden.
         fishmod.utils.events.FishEvents.worldChange.register {
             if (routeReached.isNotEmpty() || routeLoopCursor.isNotEmpty()) { routeReached.clear(); routeLoopCursor.clear(); progressVersion++ }
             false
@@ -706,7 +705,6 @@ object DungeonWaypoints {
         w.routeId != null && routeReached.getOrDefault(w.routeId, emptySet()).contains(w.routeOrder)
 
     private const val MERGE_EPSILON = 1e-4
-    // push fills off block faces so they don't z-fight
     private const val FACE_OFFSET = 0.002
 
     private fun compressAxis(values: List<Double>): List<Double> {

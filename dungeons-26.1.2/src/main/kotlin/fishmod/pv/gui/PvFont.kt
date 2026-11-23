@@ -19,7 +19,6 @@ object PvFont {
 	private var cached: Font? = null
 	private var cachedFor: Font? = null
 
-	/** Inter font for the viewer, or the given vanilla font if it cannot be built. */
 	@JvmStatic
 	fun get(vanilla: Font): Font {
 		cached?.let { if (cachedFor === vanilla) return it }

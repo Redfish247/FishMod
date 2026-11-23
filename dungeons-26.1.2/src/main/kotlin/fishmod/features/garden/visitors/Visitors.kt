@@ -78,7 +78,6 @@ object Visitors {
         }
     }
 
-    // Alert title + sub for a rare visitor reward (also the HUD editor example)
     fun rareRewardAlert(rare: String): Pair<String, String> {
         val rc = GardenAlerts.rarityColor(rare, rare.replace(TRAIL_AMT, ""), rare.replace(LEAD_AMT, "")) ?: "§d"
         return rc + "§lRARE REWARD!" to rc + rare
@@ -212,7 +211,6 @@ object Visitors {
     private class Hit(val x0: Int, val y0: Int, val x1: Int, val y1: Int, val name: String, val amount: Int)
     private var hits: List<Hit> = emptyList()
 
-    // Shown in the Bazaar and in the visitor's own menu (#562)
     private fun isBazaar(screen: AbstractContainerScreen<*>): Boolean {
         val t = Garden.strip(screen.title.string)
         return t.contains("Bazaar") || t.contains("➜") || isVisitorMenu()

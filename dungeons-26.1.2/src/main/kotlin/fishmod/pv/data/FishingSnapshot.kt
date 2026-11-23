@@ -37,7 +37,6 @@ class FishingSnapshot private constructor(
 
 		fun discoveredTier(): Int = TrophyFishData.Tier.values().count { discovered(it) }
 
-		/** Diamond=4 … Bronze=1, none=0 - for sort / completion. */
 		fun bestRank(): Int = when (bestDiscovered()) {
 			null -> 0
 			TrophyFishData.Tier.DIAMOND -> 4

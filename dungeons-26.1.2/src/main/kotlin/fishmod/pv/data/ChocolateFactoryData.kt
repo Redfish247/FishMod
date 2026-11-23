@@ -102,7 +102,6 @@ object ChocolateFactoryData {
 		return factions().firstOrNull { faction -> faction.rabbitsByRarity.values.any { it.contains(key) } }
 	}
 
-	/** Employee level tier colours (white, green, blue, purple, gold, pink, aqua), matching Skyblock-PV. */
 	@JvmStatic
 	fun employeeLevelColor(level: Int): Int = when {
 		level < 10 -> 0xFFFFFFFF.toInt()

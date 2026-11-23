@@ -52,7 +52,6 @@ object AchStore {
 
     fun ownedBy(uuid: String): Boolean = uuid.isNotEmpty() && data.owner == uuid
 
-    // Last player UUID seen by bind(); skips the string work on every tick
     private var lastBoundUuid: java.util.UUID? = null
 
     fun bind() {
@@ -104,7 +103,6 @@ object AchStore {
 
     fun inc(k: String, n: Long = 1) { if (n == 0L) return; data.counters[k] = get(k) + n; changed() }
 
-    // Never lowers a counter (API values and bests)
     fun max(k: String, v: Long) { if (v > get(k)) { data.counters[k] = v; changed() } }
 
     fun set(k: String, v: Long) { if (get(k) != v) { data.counters[k] = v; changed() } }

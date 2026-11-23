@@ -103,7 +103,6 @@ object GardenLevels {
             example = { hoeLine(7, 10) }) { hoeLines }
     }
 
-    // xp <= 0 = not synced yet; shared with the HUD editor example
     private fun levelLines(xp: Long): List<String> {
         val c = Garden.legacy(S.gardenLevelColor)
         if (xp <= 0) return listOf("$c§lGarden Level §f? §cOpen the Garden Desk!")

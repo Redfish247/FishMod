@@ -7,7 +7,6 @@ import net.minecraft.network.chat.Component
 object RoomSecrets {
     private val SECRETS = Regex("(\\d+)/(\\d+) Secrets")
 
-    // Consumers: map room secret text, Secret Overlay, Secret Clicked.
     private fun wanted(): Boolean =
         fishmod.utils.config.values.DungeonMapSettings.mapShowRoomSecrets ||
             fishmod.utils.config.values.FishSettings.secretOverlayEnabled ||
@@ -19,7 +18,6 @@ object RoomSecrets {
     }
 
     private fun onActionBarInner(message: Component) {
-        // Cheap setting gate first: this runs on every action bar message.
         if (!wanted() || !DungeonState.isInDungeon()) return
         val m = SECRETS.find(fishmod.utils.FishConstants.STRIP_COLOR_REGEX.replace(message.string, "")) ?: return
         fishmod.features.dungeon.SecretOverlay.onSecrets(m.groupValues[1].toInt(), m.groupValues[2].toInt())

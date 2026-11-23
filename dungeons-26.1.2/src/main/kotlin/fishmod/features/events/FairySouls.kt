@@ -35,7 +35,6 @@ object FairySouls {
         RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.fairySoulWaypoints && SkyblockLocation.inSkyblock()) render(ctx, ps, vc) }
     }
 
-    // parsed once per island; render calls this every frame
     private val soulCache = ConcurrentHashMap<String, List<Pair<String, Vec3>>>()
 
     private fun souls(mode: String): List<Pair<String, Vec3>> {
@@ -77,7 +76,6 @@ object FairySouls {
             if (key in done) continue
             val cy = pos.y + 0.5
             val behind = FishDraw.behindCamera(pos.x, cy, pos.z, eye, look, 2.0)
-            // A tall beam can still cross the view when the base is behind the camera
             if (behind && !beam) continue
             val center = Vec3(pos.x, cy, pos.z)
             val d = center.distanceTo(eye)

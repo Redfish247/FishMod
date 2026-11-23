@@ -10,10 +10,6 @@ package fishmod.pv.data
 import com.google.gson.JsonObject
 import kotlin.math.roundToInt
 
-/**
- * HOTM/HOTF saved presets under `skill_tree`. Slot 1 is `nodes.<tree>`, slot N is
- * `nodes.<tree>_N`; each slot is a full tree (core node included), so they must never be merged.
- */
 object SkillTreePresets {
     const val MAX_SLOTS = 5
 

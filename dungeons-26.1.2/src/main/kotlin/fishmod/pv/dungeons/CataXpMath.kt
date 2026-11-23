@@ -31,10 +31,6 @@ object CataXpMath {
 	@JvmStatic
 	fun progress(xp: Float): Leveling.Progress = Leveling.getLevel(RepoData.catacombsXp(), xp, maxLevel(), false)
 
-	/**
-	 * Total XP required to reach `level`. Levels above [SOFT_CAP] use overflow
-	 * steps from the repo table (typically 200M XP each).
-	 */
 	@JvmStatic
 	fun xpForLevel(level: Int): Float {
 		if (level <= 0) return 0f

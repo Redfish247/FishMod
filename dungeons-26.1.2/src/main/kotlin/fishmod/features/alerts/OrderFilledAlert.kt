@@ -8,7 +8,6 @@ import fishmod.utils.events.chatPlain
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Title + sound when a Bazaar order fills ("[Bazaar] Your Sell Offer for 891x Enchanted Gold Block was filled!")
 object OrderFilledAlert {
     private val FILLED = Regex("""^\[Bazaar] Your (Buy Order|Sell Offer) for ([\d,]+)x (.+) was filled!$""")
 

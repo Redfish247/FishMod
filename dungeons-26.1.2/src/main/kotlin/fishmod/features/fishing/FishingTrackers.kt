@@ -58,7 +58,7 @@ object FishingTrackers {
             }
             false
         }
-        FishEvents.worldChange.register(WorldHook { pendingDrops.clear(); if (on()) FishingTrackerStore.onWorldChange(); false })
+        FishEvents.worldChange.register(WorldHook { pendingDrops.clear(); if (S.fishingTrackers && Fishing.enabled()) FishingTrackerStore.onWorldChange(); false })
 
         ClientTickEvents.END_CLIENT_TICK.register {
             while (pauseKey.consumeClick()) {
@@ -82,11 +82,9 @@ object FishingTrackers {
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
     private val WS = Regex("""\s+""")
     private const val PENDING_MS = 180_000L
-    // Rare drops already counted from their own chat line; the [Sacks] summary must not count them again
     private val pendingDrops = HashMap<String, MutableList<LongArray>>()
     private fun sackKey(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase().replace(WS, " ")
 
-    // Drops older than the sack window can never match a summary; prune them on insert so queues stay small
     private fun queueDrop(key: String, now: Long) {
         val q = pendingDrops.getOrPut(key) { ArrayList() }
         q.removeAll { now - it[1] > PENDING_MS }
@@ -130,7 +128,6 @@ object FishingTrackers {
         }
     }
 
-
     private fun load() {
         if (!FILE.exists()) return
         try {
@@ -147,7 +144,6 @@ object FishingTrackers {
         val job = Runnable { FishDiag.guard("FishingTrackers.3", "fishing tracker file write failed") { SafeFiles.writeAtomic(FILE, json) } }
         if (sync) job.run() else IoExecutor.execute(job)
     }
-
 
     fun addMenu(col: Column) {
         val f = Feature("Fishing Trackers", S::class.java, "fishingTrackers")

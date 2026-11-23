@@ -38,7 +38,6 @@ object KuudraRender {
         Supply.Triangle to BlockPos(-149, 104, -70), Supply.Equals to BlockPos(-168, 124, -118), Supply.Slash to BlockPos(-65, 109, -162)
     )
 
-    // Lineups sorted by distance, re-sorted only when the player's block changes (pearls() runs twice a frame)
     private var sortedFor: BlockPos? = null
     private var sortedLineups: List<Lineup> = LINEUPS
 
@@ -53,7 +52,6 @@ object KuudraRender {
     fun init() {
         RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraRender.1", "kuudra fill render failed") { fills(ps, vc) }
-            // screenLine emits quads, so outlines must go on the QUADS buffer, not DEBUG_LINES
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraRender.2", "kuudra line render failed") { lines(ps, vc) }
         }
         RenderHooks.NO_DEPTH_LINE.register { ctx, ps, vc ->

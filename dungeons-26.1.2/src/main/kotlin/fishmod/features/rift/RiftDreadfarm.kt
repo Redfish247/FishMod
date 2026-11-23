@@ -15,7 +15,6 @@ import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
 import fishmod.features.rift.RiftSettings as S
 
-// Agaricus Cap countdown (area gate dropped: tab/sidebar area name unreliable, wand is Dreadfarm-only) + Wilted Berberis highlight (particle mode)
 object RiftDreadfarm {
 
     private var capPos: BlockPos? = null
@@ -28,7 +27,6 @@ object RiftDreadfarm {
     @Volatile private var hasWand = false
     @Volatile var particleSeen = 0; private set
     private val seenTimes = java.util.concurrent.ConcurrentLinkedQueue<Long>()
-    // Debug: proves the particle hook fires at all, and why fireworks were dropped
     @Volatile var anyParticles = 0; private set
     @Volatile var rejected = 0; private set
     @Volatile var lastReject = ""; private set
@@ -46,7 +44,6 @@ object RiftDreadfarm {
                 hasWand = Rift.heldId() == "FARMING_WAND" ||
                     Minecraft.getInstance().player?.mainHandItem?.hoverName?.string?.contains("Farming Wand", true) == true
                 val now = System.currentTimeMillis(); berbs.removeIf { now - it.last > 500L }
-                // Debug-only counter; prune here so it can't grow while nobody reads it
                 while ((seenTimes.peek() ?: now) < now - 5000L) seenTimes.poll()
             }
         }
@@ -57,6 +54,7 @@ object RiftDreadfarm {
 
     private fun onParticle(type: net.minecraft.core.particles.ParticleType<*>, at: Vec3) {
         if (type !== ParticleTypes.FIREWORK) return
+        if (!(S.riftBerberis || S.riftAgaricus) || !Rift.inRift()) return
         seenTimes.add(System.currentTimeMillis()); particleSeen++
         lastFirework = "${Fmt.f1(at.x)},${Fmt.f1(at.y)},${Fmt.f1(at.z)}"
         // Gate as SkyHanni RiftWiltedBerberisHelper: Dreadfarm + FARMING_WAND; unknown/blank area is allowed

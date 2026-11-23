@@ -42,10 +42,6 @@ object ItemPricer {
 		return SkyHelperPriceCache.get(id) ?: 0.0
 	}
 
-	/**
-	 * Sack / material valuation: bazaar only (never AH LBIN), then SkyHelper.
-	 * Prevents inflated sack totals when Athen has a rare AH listing for a material id.
-	 */
 	@JvmStatic
 	fun materialPrice(itemId: String?): Double {
 		if (itemId.isNullOrBlank()) return 0.0

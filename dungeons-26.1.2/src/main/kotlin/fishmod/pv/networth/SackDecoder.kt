@@ -59,10 +59,6 @@ internal object SackDecoder {
         return buildSackPages(defs, sackItems, counts, ownedSackKeys(inventory))
     }
 
-    /**
-     * Owned sack keys (size prefix stripped), or null when unknown. With the inventory API off Hypixel
-     * still sends `sacks_bag`, but empty, so it can't be trusted then.
-     */
     @JvmStatic
     fun ownedSackKeys(inventory: JsonObject?): Set<String>? {
         if (inventory == null || !InventoryDecoder.inventoryApiEnabled(inventory)) return null
@@ -134,8 +130,6 @@ internal object SackDecoder {
                 contents.forEach { claimSackId(listed, it) }
             }
         }
-        // Ownership comes from sacks_bag, which can miss sacks (e.g. the Rune Sack). A sack still gets its own
-        // page when it holds something no visible sack lists, instead of dumping that into a catch-all page.
         if (owned != null) {
             for ((sackName, contents) in contentsByName) {
                 if (sackName !in visible && holdsSomething(sackName, contents, counts, runes, gemExtras, listed)) {
@@ -209,7 +203,6 @@ internal object SackDecoder {
             val tier = GEM_TIERS.firstOrNull { upper.startsWith(it) && upper.endsWith("_GEM") } ?: return@forEach
             seenGems.add(upper.substring(tier.length, upper.length - "_GEM".length))
         }
-        // Always include every known gem (incl. Citrine) so Perfect tier rows stay complete.
         seenGems.addAll(GEMSTONE_TYPES)
         return seenGems.flatMap { gem -> GEM_TIERS.map { tier -> tier + gem + "_GEM" } }
     }

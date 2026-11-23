@@ -73,10 +73,13 @@ object HypixelRanks {
 		return spans
 	}
 
+	private val STAFF_RANKS = setOf("ADMIN", "MODERATOR", "GAME_MASTER", "HELPER")
+
 	private fun effectiveRank(player: JsonObject): String {
 		val rank = text(player, "rank", "NONE")
 		val monthly = text(player, "monthlyPackageRank", "NONE")
 		val packageRank = text(player, "newPackageRank", "NONE")
+		if (rank in STAFF_RANKS) return rank
 		if (rank != "YOUTUBER" && monthly != "NONE") {
 			return monthly
 		}

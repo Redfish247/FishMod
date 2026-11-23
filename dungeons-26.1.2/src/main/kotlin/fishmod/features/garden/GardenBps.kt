@@ -7,7 +7,6 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import fishmod.features.garden.GardenExtraSettings as X
 
-// Client-side crop break counter: blocks/sec (5s) and crops/min per type (60s)
 object GardenBps {
 
     private val CROPS: Map<Block, String> = mapOf(

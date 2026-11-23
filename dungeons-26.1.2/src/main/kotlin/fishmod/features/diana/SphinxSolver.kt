@@ -97,7 +97,6 @@ object SphinxSolver {
         solved?.let { if (now - it.at > TIMEOUT_MS) solved = null }
     }
 
-    // Re-emit buffered lines: restyled if a correct option is known, otherwise untouched
     private fun flush() {
         if (buffer.isEmpty()) return
         val lines = ArrayList(buffer)

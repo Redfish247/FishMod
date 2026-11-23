@@ -21,7 +21,6 @@ object NucleusHighlight {
         Pocket(box(542, 123, 524, 552, 111, 534)) { S.miningNucleusSapphire },
     )
 
-    // Area name, or position as a fallback if the sidebar line doesn't parse
     private fun inNucleus(): Boolean {
         if (Mining.area.contains("Nucleus")) return true
         val p = net.minecraft.client.Minecraft.getInstance().player ?: return false

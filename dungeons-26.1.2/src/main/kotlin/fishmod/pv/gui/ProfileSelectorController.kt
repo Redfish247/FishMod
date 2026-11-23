@@ -35,7 +35,6 @@ class ProfileSelectorController(private val screen: ProfileViewerScreen) {
 	private var profileMenuHoverChoice: ProfileFetcher.ProfileChoice? = null
 	private var profileCoopFlyoutScroll = 0
 	private val coopMemberHits = ArrayList<CoopMemberHit>()
-	// Per-screen head stacks so the flyout doesn't rebuild one per member every frame.
 	private val headCache = HashMap<UUID, ItemStack>()
 	private var profileFooterX = 0
 	private var profileFooterY = 0
@@ -524,7 +523,6 @@ class ProfileSelectorController(private val screen: ProfileViewerScreen) {
 				}
 				if (error != null || loaded == null || !loaded.ok()) {
 					ProfileViewer.LOGGER.warn("Profile switch failed for {} -> {}", name, nextProfileId, error)
-					// Keep prior Home visible; do not force loading-egg for a failed switch.
 					return@execute
 				}
 				screen.applyLoadedProfile(loaded)

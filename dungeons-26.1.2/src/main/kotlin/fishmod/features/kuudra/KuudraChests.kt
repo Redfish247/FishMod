@@ -38,7 +38,6 @@ object KuudraChests {
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, scr, _, _ ->
             if (scr !is AbstractContainerScreen<*>) return@AfterInit
             val title = scr.title.string
-            // only a new chest resets the claim state; other menus opening must not drop a pending buy
             if (CHEST_TITLE.matches(title)) {
                 parsed = null; claimed = false; pending = null
                 ScreenEvents.afterExtract(scr).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
@@ -84,7 +83,6 @@ object KuudraChests {
             example = { valueLines("Paid Chest", listOf(1_200_000.0 to "Example Item", 340_000.0 to "Example Essence x40"), 400_000.0) }) { emptyList() }
     }
 
-    // Header, one tab-aligned row per drop, cost and profit (shared by the chest screen and the HUD editor example)
     private fun valueLines(title: String, rows: List<Pair<Double, String>>, cost: Double): List<String> {
         val out = arrayListOf("§6§l$title Value")
         var value = 0.0
@@ -102,7 +100,6 @@ object KuudraChests {
         val m = AMOUNT.find(name)
         val base = m?.groupValues?.get(1) ?: name
         val qty = m?.groupValues?.get(2)?.toIntOrNull() ?: 1
-        // essence lines only parse with their "xN" suffix intact
         val full = CroesusRewardParser.parseLine(name)
         val r = if (full[0].startsWith("ESSENCE_")) full else CroesusRewardParser.parseLine(base)
         if (r[0] == "false") return 0.0
@@ -145,7 +142,6 @@ object KuudraChests {
         if (!(S.kuudraChestsMaster && S.kuudraProfit) || claimed) return
         val p = parsed ?: parse(scr) ?: return
         if (idx != p.slot) return
-        // only a real buy click counts; reroll / already-opened / can't-afford clicks don't
         if (lore(scr.menu.slots[idx].item).none { it.startsWith("Click to open") }) return
         pending = p
     }

@@ -2,7 +2,6 @@ package fishmod.features.slayer
 
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 
-// Settings for Ghost Counter, extra boss damage indicator and Sun Gecko helper
 object BossToolsSettings {
 
     @ConfigValue @JvmField var ghostCounter: Boolean = false

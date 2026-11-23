@@ -41,10 +41,6 @@ object SkyBlockItemIconCache {
 		SkyBlockPackCache.start()
 	}
 
-	/**
-	 * @param itemModel e.g. `hypixel_skyblock:item/uncategorized/magma_chunk`
-	 * @return texture id when loaded, otherwise `null` (request may still be in flight)
-	 */
 	@JvmStatic
 	fun getOrRequest(itemModel: String?): Identifier? {
 		if (itemModel.isNullOrBlank()) {
@@ -83,7 +79,6 @@ object SkyBlockItemIconCache {
 			state.requested.set(false)
 			return
 		}
-		// Pack lookup and PNG decode run off the render thread; only the texture register is on it.
 		PvExecutors.IO.execute {
 			val layers = SkyBlockPackCache.resolveTextureLayers(state.model)
 			if (layers.isEmpty()) {
@@ -138,14 +133,22 @@ object SkyBlockItemIconCache {
 	@Throws(IOException::class)
 	private fun composeLayers(layers: List<Path>): NativeImage? {
 		var composed: NativeImage? = null
-		for (layer in layers) {
-			val frame = Files.newInputStream(layer).use { firstFrame(NativeImage.read(it)) }
-			val target = composed ?: NativeImage(frame.width, frame.height, true).also {
-				it.fillRect(0, 0, it.width, it.height, 0)
-				composed = it
+		try {
+			for (layer in layers) {
+				val frame = Files.newInputStream(layer).use { firstFrame(NativeImage.read(it)) }
+				try {
+					val target = composed ?: NativeImage(frame.width, frame.height, true).also {
+						it.fillRect(0, 0, it.width, it.height, 0)
+						composed = it
+					}
+					blitLayer(target, frame)
+				} finally {
+					frame.close()
+				}
 			}
-			blitLayer(target, frame)
-			frame.close()
+		} catch (exception: Exception) {
+			composed?.close()
+			throw exception
 		}
 		return composed
 	}

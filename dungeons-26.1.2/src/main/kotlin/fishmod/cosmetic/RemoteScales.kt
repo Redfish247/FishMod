@@ -22,7 +22,6 @@ object RemoteScales {
             byUuid.clear()
             return
         }
-        // drop players who left the tab so the map doesn't grow across lobbies
         byUuid.keys.retainAll(queried)
         for (u in queried) {
             val xyz = parse(scales[u])

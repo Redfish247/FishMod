@@ -54,7 +54,6 @@ object MiningProfitTracker {
     private val BAR = Regex("""^▬{20,}$""")
     private val ITEM = Regex("""^\s{2,}[☠✦+]?\s*(.+?)(?:\s+x([\d,]+))?\s*$""")
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
-    // Sack items from other skills (fishing, farming...) must not count as Mined
     private val MINING_SACKS = arrayOf("Mining", "Enchanted Mining", "Gemstone", "Crystal Hollows", "Dwarven")
     private val SKIP = setOf("REWARDS", "LOOT", "CHEST LOCKPICKED", "LOOT CHEST COLLECTED")
 
@@ -114,7 +113,6 @@ object MiningProfitTracker {
 
     private fun scrollBy(d: Int): Boolean { scroll = (scroll + d).coerceAtLeast(0); version++; return true }
 
-
     private fun onChat(text: Component) {
         val s = Mining.strip(text.string)
         val now = System.currentTimeMillis()
@@ -142,7 +140,6 @@ object MiningProfitTracker {
         queuePending(lootPending, norm(name), longArrayOf(n - early, now), now)
     }
 
-    // Prunes expired entries on insert so keys that never match a sack summary do not grow forever
     private fun queuePending(map: HashMap<String, MutableList<LongArray>>, key: String, e: LongArray, now: Long) {
         val q = map.getOrPut(key) { ArrayList() }
         q.removeAll { now - it[1] > PENDING_MS }
@@ -150,7 +147,6 @@ object MiningProfitTracker {
     }
 
     private val lootPending = HashMap<String, MutableList<LongArray>>()
-    // Items [Sacks] credited as Mined, in case the loot block lands after the summary
     private val sackMined = HashMap<String, MutableList<LongArray>>()
     private const val PENDING_MS = 180_000L
     private val WS = Regex("""\s+""")
@@ -186,7 +182,6 @@ object MiningProfitTracker {
 
     private val GEM = Regex("""(Rough|Flawed|Fine|Flawless|Perfect) (\w+) Gemstone$""")
 
-    // Sack names carry a symbol prefix (e.g. "☘ Rough Jade Gemstone"), so build gem ids directly
     private fun idOf(name: String): String? =
         GEM.find(name)?.let { "${it.groupValues[1].uppercase()}_${it.groupValues[2].uppercase()}_GEM" } ?: ItemsDb.idFor(name) ?: ItemsDb.idFor(name.trimStart { !it.isLetterOrDigit() })
 
@@ -201,7 +196,6 @@ object MiningProfitTracker {
         lootCat = null
     }
 
-    // Sack hover lists items; attributed to the loot just collected, otherwise plain mining
     private fun onSacks(text: Component, now: Long) {
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
@@ -242,7 +236,6 @@ object MiningProfitTracker {
     private val powderSeen = HashMap<String, Long>()
     private var tickN = 0
 
-    // Powder from the tab's Powders widget: gains since last read, credited to the loot just opened
     private fun readPowder(now: Long) {
         for (l in Mining.tabWidget("Powders:")) {
             val m = POWDER.find(l) ?: continue
@@ -269,13 +262,11 @@ object MiningProfitTracker {
         save(false)
     }
 
-
     fun priceOf(name: String): Double {
         if (name.endsWith("Powder")) return 0.0
         val id = KEY_ID[name] ?: idOf(name) ?: return 0.0
         CroesusPrices.bazaarPrice(id, S.miningProfitPriceMode != "Insta Sell")?.let { if (it > 0) return it }
         val p = CroesusPrices.price(id)
-        // Key prices unverified: flag once if no source has them
         if (name in KEY_ID) FishDiag.check(p > 0, "MiningProfit.key") { "no price for corpse key $id (${CroesusPrices.debugSource(id)})" }
         return p
     }
@@ -293,7 +284,6 @@ object MiningProfitTracker {
 
     private fun buildLines(): List<String> = buildLines(tracker(), ::priceOf, true)
 
-    // live = the in-game HUD (keeps the inventory scroll); false = the HUD editor example over example data
     private fun buildLines(t: Tracker, price: (String) -> Double, live: Boolean): List<String> {
         val only = Cat.of(S.miningProfitCategory)
         val rows = ProfitTrackerKit.sort(ProfitTrackerKit.mergeSources(t.items.mapNotNull { (k, n) ->

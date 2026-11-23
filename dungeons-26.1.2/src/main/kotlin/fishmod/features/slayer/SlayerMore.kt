@@ -34,7 +34,6 @@ import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 
-// Egg sacs, Yang glyph tracer, Broodmother countdown, no-quest warning, zealot/dragon counter
 object SlayerMore {
 
     // from NoFrills (EggHitsDisplay)
@@ -86,7 +85,6 @@ object SlayerMore {
         AttackEntityCallback.EVENT.register { _, _, _, entity, _ ->
             if ((S.zealotHud || S.noQuestWarning) && entity is LivingEntity) {
                 hitIds.add(entity.id)
-                // swings add ids on every island, so drop the ones that no longer exist
                 if (hitIds.size > 400) Minecraft.getInstance().level?.let { lv -> hitIds.retainAll { lv.getEntity(it) != null } }
             }
             InteractionResult.PASS
@@ -100,7 +98,6 @@ object SlayerMore {
     }
 
     private fun isZealot(e: LivingEntity): Boolean {
-        // from Skyblocker (TheEnd.isZealot: nametag stand containing "zealot")
         if (e.name.string.contains("zealot", true)) return true
         val level = Minecraft.getInstance().level ?: return false
         return level.getEntitiesOfClass(ArmorStand::class.java, e.boundingBox.inflate(1.0, 2.0, 1.0)) {
@@ -155,13 +152,11 @@ object SlayerMore {
         if (type != null) { warned = false; noQuestKills.clear() }
     }
 
-    // Counts kills from the death state, so ranged/AOE kills and special zealots all count
     private fun scanDeaths(level: net.minecraft.client.multiplayer.ClientLevel, player: net.minecraft.world.entity.player.Player) {
         val loc = SkyblockLocation.getCurrentLocation()
         val inEnd = loc == SkyblockLocation.THE_END
         val noQuest = S.noQuestWarning && SlayerManager.type == null && !warned
         if (!(S.zealotHud && inEnd) && !noQuest) return
-        // no-quest kills only count on these islands (isSlayerAreaMob)
         if (!(S.zealotHud && inEnd) && loc != SkyblockLocation.HUB && loc != SkyblockLocation.THE_PARK && loc != SkyblockLocation.SPIDERS_DEN && loc != SkyblockLocation.THE_END && loc != SkyblockLocation.CRIMSON_ISLE) return
         val now = System.currentTimeMillis()
         for (e in level.getEntitiesOfClass(LivingEntity::class.java, player.boundingBox.inflate(24.0)) { it !== player }) {
@@ -186,7 +181,6 @@ object SlayerMore {
         if (deadSeen.size > 400) { deadSeen.retainAll { level.getEntity(it) != null }; zealotIds.retainAll { level.getEntity(it) != null }; hitIds.retainAll { level.getEntity(it) != null } }
     }
 
-    // Mob families each slayer quest counts, by island (SlayerManager area rules)
     private fun isSlayerAreaMob(e: LivingEntity, loc: SkyblockLocation?): Boolean = when (loc) {
         SkyblockLocation.HUB -> e is Zombie || e is Wolf
         SkyblockLocation.THE_PARK -> e is Wolf

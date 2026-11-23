@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.resources.Identifier
 
-// Fishing alert titles drawn as movable HUD slots (one per alert kind) instead of the vanilla title
 object FishingTitles {
     class Slot(
         val name: String, val id: String, val w: Int, val h: Int, val centerOffsetY: Int,
@@ -39,7 +38,6 @@ object FishingTitles {
     val BAIT = Slot("Fishing Bait Alert", "fishing_t_bait", 200, 34, 170, { S.tBaitX }, { S.tBaitX = it }, { S.tBaitY }, { S.tBaitY = it }, { S.tBaitScale }, { S.tBaitScale = it })
     private val ALL = listOf(CREATURE, DROP, HOTSPOT, WORMHOLE, TROPHY, DEPLOYABLE, BAIT)
 
-    // Example main/sub text per slot, built like the real alert would be with the current settings
     private fun example(s: Slot): Pair<String, String> = when (s) {
         CREATURE -> FishingAlerts.creatureTitle(SeaCreatures.ALL.firstOrNull { it.name == "Water Hydra" && (it.rare || !S.alertScRareOnly) }
             ?: SeaCreatures.ALL.firstOrNull { it.rare } ?: SeaCreatures.ALL.first(), 2)
@@ -102,7 +100,6 @@ object FishingTitles {
         pose.popMatrix()
     }
 
-    // The title block at the origin (shared by the in-game draw and the HUD editor example)
     private fun render(ctx: GuiGraphicsExtractor, s: Slot, main: String, sub: String, color: Int) {
         val font = Minecraft.getInstance().font
         val pose = ctx.pose()

@@ -229,7 +229,6 @@ object WeightCalculator {
 		return (4100 + extra) * 2
 	}
 
-	/** @param normal true = catacombs completions, false = master */
 	private fun lilyCompletionWeight(weight: JsonObject, member: JsonObject, normal: Boolean): Double {
 		val worth = objectAt(weight, "lily.dungeons.completion_worth") ?: return 0.0
 		val buffs = objectAt(weight, "lily.dungeons.completion_buffs")
@@ -275,7 +274,6 @@ object WeightCalculator {
 		return if (mMax1000 <= 0) 0.0 else (score / mMax1000) * upperBound * 2
 	}
 
-	// Completions past 1000 count logarithmically
 	private fun floorScore(rawAmount: Int, worth: Double, logBase: Double): Double {
 		var amount = rawAmount
 		var excess = 0.0

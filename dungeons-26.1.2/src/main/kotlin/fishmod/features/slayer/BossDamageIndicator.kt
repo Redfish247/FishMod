@@ -12,7 +12,6 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
 import fishmod.features.slayer.BossToolsSettings as S
 
-// Boss Phases-style HP label for dungeon floor bosses and other major bosses
 object BossDamageIndicator {
     // from SkyHanni (BossType names)
     private val DUNGEON = listOf("Bonzo", "Scarf", "Professor", "Thorn", "Livid", "Sadan",
@@ -62,7 +61,6 @@ object BossDamageIndicator {
 
     private fun mult(u: String) = when (u.lowercase()) { "k" -> 1e3; "m" -> 1e6; "b" -> 1e9; else -> 1.0 }
 
-    // Built per scan (every 4 ticks), not per frame
     private fun hpLabel(b: Boss): String {
         val f = if (b.max > 0) b.hp / b.max else 1.0
         val c = when { f > 0.75 -> "§a"; f > 0.5 -> "§e"; f > 0.25 -> "§6"; else -> "§c" }

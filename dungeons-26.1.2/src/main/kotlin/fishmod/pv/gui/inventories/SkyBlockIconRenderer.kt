@@ -58,7 +58,7 @@ object SkyBlockIconRenderer {
 
 	@JvmStatic
 	fun draw(g: GuiGraphicsExtractor?, skyblockId: String?, itemModelOverride: String?, x: Int, y: Int, size: Int) {
-		val stack = if (skyblockId.isNullOrBlank()) ItemStack.EMPTY else SkyBlockItemFactory.iconStack(skyblockId)
+		val stack = if (skyblockId.isNullOrBlank()) ItemStack.EMPTY else null
 		draw(g, stack, skyblockId, itemModelOverride, x, y, size)
 	}
 

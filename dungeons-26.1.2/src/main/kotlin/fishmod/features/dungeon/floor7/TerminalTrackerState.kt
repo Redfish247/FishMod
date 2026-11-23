@@ -18,7 +18,6 @@ class TerminalTrackerState {
         private fun d(n: Int, x: Double, z: Double) = Slot("D$n", x, z)
         private fun l(n: Int, x: Double, z: Double) = Slot("L$n", x, z)
 
-        // Layout per section, positions = player spot at completion (x, z)
         fun layout(section: Int): MutableList<Slot> = when (section) {
             1 -> mutableListOf(t(1, 109.9, 73.4), t(2, 109.5, 79.5), t(3, 91.9, 92.4), t(4, 91.8, 101.3),
                 d(1, 108.8, 93.9), l(1, 105.3, 113.3), l(2, 95.5, 114.5))
@@ -71,7 +70,6 @@ class TerminalTrackerState {
         val section = detectSection(x, z, counter)
         if (section !in 1..MAX_SECTION) return null
         val live = current(counter)
-        // S4 device done early (stood at it, or berserk before S3) is the S4 pre, never the live section's device
         if (objective == "device" && live in 1..3 && (section == 4 || berserk && live <= 2)) {
             return preCompleteS4Device(name, now)?.let { 4 to it }
         }

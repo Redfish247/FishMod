@@ -79,7 +79,6 @@ object DungeonPlayers {
         }
     }
 
-
     private fun playerInfoOrder(teams: Map<PlayerInfo, String>): Comparator<PlayerInfo> =
         compareBy<PlayerInfo> { if (isSpectator(it)) 1 else 0 }
             .thenBy(String.CASE_INSENSITIVE_ORDER) { teams[it] ?: "" }
@@ -153,7 +152,6 @@ object DungeonPlayers {
         }
     }
 
-    // Editor example: you + three teammates on the example map's rooms, drawn by the real head code
     @JvmStatic
     fun renderExample(g: GuiGraphicsExtractor) {
         if (!DungeonMapSettings.mapPlayerHeadsEnabled) return

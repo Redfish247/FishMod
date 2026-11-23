@@ -9,10 +9,8 @@ import net.minecraft.network.chat.Component
 
 object P3TitleFilter {
 
-    // Death/revive titles stay visible so you know you're a ghost
     private val KEEP = listOf("You became a ghost!", "Hopefully your teammates will be able to revive you!", "BEING REVIVED", "You will be revived in")
 
-    // Own P3 latch so a missed split message upstream can't leave titles unhidden
     private var inP3 = false
 
     @JvmStatic

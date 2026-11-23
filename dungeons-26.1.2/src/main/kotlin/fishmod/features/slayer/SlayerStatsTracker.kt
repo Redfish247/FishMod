@@ -47,7 +47,6 @@ object SlayerStatsTracker {
     private var pendingXp = 0
     private var pendingAt = 0L
 
-    // keyed by SlayerType.name so slayers don't share counters
     private val byType = HashMap<String, Stats>()
 
     private fun cur(): Stats? = SlayerManager.type?.let { byType[it.name] }

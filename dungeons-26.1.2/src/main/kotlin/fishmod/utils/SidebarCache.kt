@@ -12,7 +12,6 @@ object SidebarCache {
     private const val SCAN_INTERVAL_TICKS = 5
     private var tickCounter = 0
 
-    // raw = team prefix+suffix (or owner if no team), sorted by score descending
     class Entry(@JvmField val owner: String, @JvmField val team: PlayerTeam?, @JvmField val score: Int,
                 @JvmField val raw: String, @JvmField val plain: String,
                 @JvmField val hidden: Boolean, @JvmField val display: Component?)

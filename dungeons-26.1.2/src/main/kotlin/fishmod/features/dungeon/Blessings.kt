@@ -110,7 +110,6 @@ object Blessings {
         rows.forEachIndexed { i, (t, n) -> ctx.text(font, label(t, n), 0, i * LINE_H, -1, true) }
     }
 
-    // Example data: obviously fake levels, only the blessings the player has enabled
     private fun registerPreview() {
         HudPreview.register(NAME) {
             val levels = mapOf(Type.POWER to 14, Type.LIFE to 12, Type.WISDOM to 9, Type.STONE to 11, Type.TIME to 5)

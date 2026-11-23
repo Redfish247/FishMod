@@ -35,7 +35,6 @@ object MeleeHitSound {
         ClientTickEvents.END_CLIENT_TICK.register { _ ->
             val t = target ?: return@register
             val now = System.currentTimeMillis()
-            // A new hit resets hurtTime upward; otherwise it only counts down
             val rose = t.hurtTime > lastHurt
             lastHurt = t.hurtTime
             if (rose || damageSplash(t)) {

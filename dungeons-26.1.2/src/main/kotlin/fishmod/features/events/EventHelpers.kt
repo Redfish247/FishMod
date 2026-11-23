@@ -9,7 +9,6 @@ import fishmod.utils.events.chatPlain
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Hoppity's Hunt session summary and Trick or Treat Chest alert (chat lines from Eli's logs)
 object EventHelpers {
     private var eggs = 0
     private var newRabbits = 0

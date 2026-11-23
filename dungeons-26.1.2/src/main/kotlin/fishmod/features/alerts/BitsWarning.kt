@@ -15,7 +15,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Warns when the Booster Cookie "Bits Available" pool runs out (read from menu lore, counted down by scoreboard bits)
 object BitsWarning {
     // from SkyHanni (BitsApi availablemenu / scoreboard / boostercookieate)
     private val AVAILABLE = Regex("""^Bits Available: ([\d,]+)""")

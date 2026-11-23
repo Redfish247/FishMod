@@ -17,7 +17,6 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 
-// Themed (NanoVG) editor matching the config screen; help text is hover-only.
 class InventoryButtonEditScreen(private val b: InvButton, private val parent: Screen?) : Screen(Component.literal("Edit Button")), HasUiOverlay {
 
     private companion object {
@@ -134,7 +133,6 @@ class InventoryButtonEditScreen(private val b: InvButton, private val parent: Sc
         ScreenTheme.nPanel(px, py, px + pw, py + ph, 10, BG, BORDER)
         UiRecorder.fillRect((px + 10).toFloat(), py.toFloat(), (pw - 20).toFloat(), 2f, ScreenTheme.ACCENT)
 
-        // Header: live colour swatch + command preview
         val col = parseColor(fields[3].box.value) ?: b.color
         ScreenTheme.nRoundedRectRing(px + pad, py + 10, 24, 24, 6, 1, col, BORDER)
         UiRecorder.textBold("Edit Button", (px + pad + 32).toFloat(), (py + 13).toFloat(), 9f, ScreenTheme.TEXT_COLOR)

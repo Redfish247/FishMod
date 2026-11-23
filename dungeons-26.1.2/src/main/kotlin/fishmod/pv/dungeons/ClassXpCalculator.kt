@@ -150,11 +150,6 @@ object ClassXpCalculator {
 		return Result(classId, className, currentLevel, needed, target, java.util.List.copyOf(top), mods)
 	}
 
-	/**
-	 * Class XP for an S+ run while playing that class (full rate), Adjectils-style:
-	 * `base * (1 + hecClass + scarf + graduate + essence + (global-1)) * min(1.5, mayor)`.
-	 * Expert Ring and Experienced Floor do not affect class XP in this model.
-	 */
 	@JvmStatic
 	fun classXpPerRun(
 		baseXp: Double,

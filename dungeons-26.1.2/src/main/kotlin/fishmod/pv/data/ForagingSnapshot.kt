@@ -225,17 +225,10 @@ class ForagingSnapshot private constructor(
 
 	fun hasGalateaBeacon(): Boolean = galateaBeacon >= 0
 
-	/** Trees cut in the current daily period only; 0 when {@link #dailyTreesDay()} is stale. */
 	fun currentDailyTreesCut(): Long = if (dailyTreesDay > 0L && !isCurrentDailyDay(dailyTreesDay)) 0L else dailyTreesCut
 
-	/**
-	 * Tree gifts for the current daily period.
-	 * {@code daily_gifts} has no own day field; it shares the foraging daily with
-	 * {@code daily_trees_cut_day}. When that day is present and stale, gifts are 0.
-	 */
 	fun currentDailyGifts(): Long = if (dailyTreesDay > 0L && !isCurrentDailyDay(dailyTreesDay)) 0L else dailyGifts
 
-	/** Log types cut in the current daily period; empty when {@link #dailyLogsDay()} is stale. */
 	fun currentDailyLogs(): List<String> = if (dailyLogsDay > 0L && !isCurrentDailyDay(dailyLogsDay)) listOf() else dailyLogs
 
 	fun unplacedHotfNodes(): List<HotfNode> = hotfNodes.filter { ForagingHotfData.perk(it.id) == null }
@@ -833,7 +826,6 @@ class ForagingSnapshot private constructor(
 			if (map != null) {
 				var maxIdx = expected - 1
 				for (key in map.keySet()) {
-					// Cap so a bogus huge key can't spin a giant slot loop.
 					key.toIntOrNull()?.let { maxIdx = maxOf(maxIdx, minOf(63, it)) }
 				}
 				for (i in 0..maxIdx) {

@@ -9,10 +9,6 @@ package fishmod.pv.data
 
 import java.util.Locale
 
-/**
- * Chocolate Factory rabbit employees - skull textures + hire-order rarities.
- * Texture hashes from community wiki {@code SkinRender} pages.
- */
 object ChocolateEmployees {
 	@JvmRecord
 	data class Def(val id: String, val displayName: String, val rarity: String, val skullValue: String, val order: Int)
