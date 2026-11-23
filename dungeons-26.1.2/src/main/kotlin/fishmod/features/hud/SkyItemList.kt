@@ -461,12 +461,18 @@ object SkyItemList {
         ctx.text(font, t, (lx + rx + BTN_W - font.width(t)) / 2, y + 2, fishmod.features.ScreenTheme.TEXT_COLOR, false)
     }
 
+    // 10px item icon so it stays inside the 14px header bar and 10px rows
+    private fun smallIcon(ctx: GuiGraphicsExtractor, item: net.minecraft.world.item.Item, x: Int, y: Int) {
+        val pose = ctx.pose(); pose.pushMatrix(); pose.translate(x.toFloat(), y.toFloat()); pose.scale(0.625f, 0.625f)
+        ctx.item(ItemStack(item), 0, 0); pose.popMatrix()
+    }
+
     private fun drawDropdown(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, mx: Int, my: Int, accent: Int) {
         val x0 = px + 2; val x1 = px + pw - 2
         ctx.fill(x0, py + 2, x1, py + 16, 0xCC101010.toInt())
         ctx.fill(x0, py + 15, x1, py + 16, accent)
-        ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[selCat]), x0, py + 0)
-        ctx.text(font, CAT_NAMES[selCat], x0 + 16, py + 5, fishmod.features.ScreenTheme.TEXT_COLOR, false)
+        smallIcon(ctx, CAT_ICONS[selCat], x0 + 2, py + 4)
+        ctx.text(font, CAT_NAMES[selCat], x0 + 15, py + 5, fishmod.features.ScreenTheme.TEXT_COLOR, false)
         ctx.text(font, if (ddOpen) "▲" else "▼", x1 - 10, py + 5, 0xFFAAAAAA.toInt(), false)
         if (!ddOpen) return
         val hov = ddRowAt(mx.toDouble(), my.toDouble())
@@ -474,7 +480,8 @@ object SkyItemList {
         for ((r, i) in TAB_ORDER.withIndex()) {
             val y = py + 16 + r * DD_ROW
             if (r == hov) ctx.fill(x0, y, x1, y + DD_ROW, argb(FishSettings.skyItemListAccentColor, 45))
-            ctx.text(font, CAT_NAMES[i], x0 + 4, y + 1, if (i == selCat) accent else fishmod.features.ScreenTheme.TEXT_COLOR, false)
+            smallIcon(ctx, CAT_ICONS[i], x0 + 2, y)
+            ctx.text(font, CAT_NAMES[i], x0 + 15, y + 1, if (i == selCat) accent else fishmod.features.ScreenTheme.TEXT_COLOR, false)
         }
     }
 
