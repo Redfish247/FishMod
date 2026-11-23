@@ -7,6 +7,9 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
+import net.minecraft.util.FormattedCharSequence
+import java.util.IdentityHashMap
+import java.util.Optional
 
 object NickState {
     @Volatile
@@ -84,14 +87,85 @@ object NickState {
         val bucket = now / ANIM_STEP_MS
         val cached = animParsed
         if (bucket == animBucket && cached.raw == n) return cached.component
-        // speed % scales the cycle length; 1 - x flips the scroll direction
-        val period = (ANIM_PERIOD_MS * 100 / fishmod.utils.config.values.FishSettings.nickColorSpeed.coerceIn(25, 300)).coerceAtLeast(1L)
-        val phase = 1.0 - (now % period).toDouble() / period
+        val phase = animPhase(now)
         val raw = FishDiag.guard("NickState.4", "animated nick build failed") { GradientNick.build(base, GradientNick.shifted(stops, phase, 12)) } ?: return null
         val component = FishDiag.guard("NickState.5", "animated nick parse failed") { parse(raw) } ?: return null
         animParsed = Parsed(n, component)
         animBucket = bucket
         return component
+    }
+
+    // speed % scales the cycle length; 1 - x flips the scroll direction
+    private fun animPhase(now: Long): Double {
+        val period = (ANIM_PERIOD_MS * 100 / fishmod.utils.config.values.FishSettings.nickColorSpeed.coerceIn(25, 300)).coerceAtLeast(1L)
+        return 1.0 - (now % period).toDouble() / period
+    }
+
+    // ---- chat: stored lines are frozen, so the nick letters carry registered colours that animateChatLine recolours per frame ----
+    private const val CHAT_MAX_LETTERS = 40
+    private val chatKeys = IdentityHashMap<TextColor, IntArray>() // registered colour -> [letter index, letter count]
+    private val chatTable = HashMap<Int, TextColor>()
+    @Volatile private var chatSamplesBucket = -1L
+    @Volatile private var chatSamples: Array<IntArray> = emptyArray()
+
+    @Synchronized
+    private fun chatColor(n: Int, idx: Int, base: TextColor): TextColor =
+        chatTable.getOrPut(n * 64 + idx) { val c = TextColor.fromRgb(base.value); chatKeys[c] = intArrayOf(idx, n); c }
+
+    @Synchronized
+    private fun chatKey(c: TextColor): IntArray? = chatKeys[c]
+
+    /** Nick component for chat lines. Same look as [asComponent], but its letters are recoloured per frame when animation is on. */
+    @JvmStatic
+    fun asChatComponent(): Component {
+        val n = nick ?: return asComponent()
+        if (!fishmod.utils.config.values.FishSettings.nickColorAnimated || animBase == null || animStops.size < 2) return asComponent()
+        return FishDiag.guard("NickState.6", "chat nick build failed") {
+            val segs = ArrayList<Pair<String, Style>>()
+            parse(n).visit({ st, text -> if (text.isNotEmpty()) segs.add(text to st); Optional.empty<Any>() }, Style.EMPTY)
+            var letters = 0
+            for ((t, st) in segs) if (st.color != null) letters += t.codePointCount(0, t.length)
+            if (letters < 2 || letters > CHAT_MAX_LETTERS) return@guard asComponent()
+            var idx = 0
+            val out: MutableComponent = Component.empty()
+            for ((t, st) in segs) {
+                val col = st.color
+                if (col == null) { out.append(Component.literal(t).setStyle(st)); continue }
+                var i = 0
+                while (i < t.length) {
+                    val len = Character.charCount(t.codePointAt(i))
+                    out.append(Component.literal(t.substring(i, i + len)).setStyle(st.withColor(chatColor(letters, idx, col))))
+                    idx++; i += len
+                }
+            }
+            out as Component
+        } ?: asComponent()
+    }
+
+    /** Draw-time hook for chat lines: recolours registered nick letters with the current animation frame. */
+    @JvmStatic
+    fun animateChatLine(seq: FormattedCharSequence?): FormattedCharSequence? {
+        if (seq == null || chatKeys.isEmpty()) return seq
+        val stops = animStops
+        if (stops.size < 2) return seq
+        val animated = fishmod.utils.config.values.FishSettings.nickColorAnimated
+        val now = System.currentTimeMillis()
+        val bucket = if (animated) now / ANIM_STEP_MS else 0L
+        var samples = chatSamples
+        if (bucket != chatSamplesBucket || samples.isEmpty()) {
+            samples = if (animated) GradientNick.shifted(stops, animPhase(now), 12) else stops
+            chatSamples = samples
+            chatSamplesBucket = bucket
+        }
+        val frame = samples
+        return FormattedCharSequence { sink ->
+            seq.accept { idx, style, cp ->
+                val c = style.color
+                val key = if (c == null) null else chatKey(c)
+                if (key == null) sink.accept(idx, style, cp)
+                else sink.accept(idx, style.withColor(TextColor.fromRgb(GradientNick.sampleRgb(frame, key[0].toDouble() / (key[1] - 1)))), cp)
+            }
+        }
     }
 
     @JvmStatic
