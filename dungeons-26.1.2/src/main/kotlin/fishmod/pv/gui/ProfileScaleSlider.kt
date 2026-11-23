@@ -35,7 +35,7 @@ class ProfileScaleSlider {
 		opacity += (target - opacity) * blend
 
 		val track = withAlpha(0xFF363646.toInt(), opacity)
-		val fill = withAlpha(PvDraw.COLOR_ACCENT, opacity)
+		val fill = withAlpha(fishmod.features.ScreenTheme.ACCENT or 0xFF000000.toInt(), opacity)
 		val knob = withAlpha(0xFFE8E8F0.toInt(), opacity)
 		val centerY = y + HEIGHT / 2
 		PvDraw.fill(graphics, x, centerY - 1, WIDTH, 3, track)
