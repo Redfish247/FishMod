@@ -61,9 +61,9 @@ object FishSettings {
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
     @ConfigValue @JvmField var fmRowBgAlpha: Int = 100
     @ConfigValue @JvmField var guiSettings: Boolean = false
-    @ConfigValue @JvmField var debugReports: Boolean = false
-    @ConfigValue @JvmField var debugChatNotices: Boolean = true
-    @ConfigValue @JvmField var updateNotice: Boolean = false
+    @ConfigValue @JvmField var debugReports: Boolean = true
+    @ConfigValue @JvmField var debugChatNotices: Boolean = false
+    @ConfigValue @JvmField var updateNotice: Boolean = true
     @ConfigValue @JvmField var updateNoticeStyle: String = "Chat Message"
     @ConfigValue @JvmField var dashboardMessagesEnabled: Boolean = true
     @ConfigValue @JvmField var fishChatEnabled: Boolean = true
@@ -594,7 +594,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false
     @ConfigValue @JvmField var auctionAutofillPercent: Int = 5
-    @ConfigValue @JvmField var signCalculator: Boolean = true
+    @ConfigValue @JvmField var signCalculator: Boolean = false
 
     @ConfigValue @JvmField var tooltipScrollEnabled: Boolean = false
     @ConfigValue @JvmField var tooltipScrollScale: Int = 100
