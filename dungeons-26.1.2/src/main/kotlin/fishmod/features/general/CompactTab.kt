@@ -392,7 +392,7 @@ object CompactTab {
                 val e = entries[r]
                 var dn = decorated[e]
                 if (dn == null) {
-                    dn = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeLevelPrefix(e.tabListDisplayName)
+                    dn = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeLevelPrefixLive(e.tabListDisplayName)
                     if (dn == null) {
                         r++
                         continue
@@ -413,7 +413,7 @@ object CompactTab {
                     }
                     tx = colX + 10
                 }
-                ctx.text(tr, dn, tx, ry, NAME, true)
+                ctx.text(tr, fishmod.cosmetic.prestige.PrestigeLevelColors.animateLine(dn.visualOrderText) ?: dn.visualOrderText, tx, ry, NAME, true)
                 if (playersCol && r > 0 && e.latency > 0) drawSignal(ctx, colX + w - 13, ry, e.latency)
                 r++
             }

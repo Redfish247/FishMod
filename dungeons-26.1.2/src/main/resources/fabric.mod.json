@@ -15,6 +15,9 @@
 	"icon": "assets/fishmod/icon.png",
 	"environment": "client",
 	"entrypoints": {
+		"preLaunch": [
+			"fishmod.compat.conflicts.ConflictPreLaunch"
+		],
 		"client": [
 			"fishmod.FishModInit"
 		],

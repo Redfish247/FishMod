@@ -149,6 +149,10 @@ object PrestigeLevelColors {
     @JvmStatic
     fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX)
 
+    /** Fixed per-tier colours that animateLine() re-colours every frame (cache the result, animate at draw time). */
+    @JvmStatic
+    fun colorizeLevelPrefixLive(c: Component?): Component? = recolor(c, LEVEL_PREFIX, live = true)
+
     @JvmStatic
     fun colorizeChatLevel(c: Component?): Component? {
         if (!FishSettings.prestigeColorsChat) return c
