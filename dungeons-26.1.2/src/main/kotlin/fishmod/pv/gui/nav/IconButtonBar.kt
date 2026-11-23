@@ -132,7 +132,6 @@ class IconButtonBar {
 
 		g.item(icon, x + (TAB - 16) / 2, y + (TAB - 16) / 2)
 		hits.add(Hit(x, y, TAB, maxOf(h, TAB), onClick))
-		// Tooltips only - avoid building tip Components until hovered.
 		if (hovered) {
 			tooltipAbove(g, font, label, x + TAB / 2, y)
 		}
@@ -176,7 +175,6 @@ class IconButtonBar {
 		} else if (iconDraw >= 16) {
 			g.item(icon, ix, iy)
 		} else {
-			// Item renders are fixed 16×16 — center and accept slight clip into pad when tabs shrink.
 			g.item(icon, x + (TAB - 16) / 2, y + (h - 16) / 2)
 		}
 		hits.add(Hit(x, y, maxOf(w, TAB), h, onClick))

@@ -203,7 +203,6 @@ object ItemWorth {
         return SkyBlockItemFactory.plainDisplayName(stack.id)
     }
 
-    /** Catalog name without reforge prefix (e.g. Dark Claymore, not Withered Dark Claymore). */
     private fun baseItemLabel(stack: InventoryDecoder.Stack): String {
         val plain: String? = SkyBlockItemFactory.plainDisplayName(stack.id)
         return if (!plain.isNullOrBlank()) plain else displayName(stack)
@@ -467,7 +466,6 @@ object ItemWorth {
         return ItemPricer.price("RECOMBOBULATOR_3000") * NetworthData.worth("recombobulator", 0.8)
     }
 
-    // Digits-only like the original string round-trip, so a negative level reads as its absolute value.
     private fun upgradeLevel(ea: CompoundTag): Int {
         fun digits(n: Int) = n.toString().replace(NON_DIGIT, "").ifEmpty { "0" }.toInt()
         return maxOf(digits(NbtAttrs.intValue(ea, "dungeon_item_level", 0)), digits(NbtAttrs.intValue(ea, "upgrade_level", 0)))

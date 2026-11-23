@@ -385,8 +385,6 @@ object PvDraw {
 		if (filled <= 0) {
 			return
 		}
-		// Always round both ends of the fill, including incomplete bars.
-		// One scheme everywhere: gold when maxed, gray while still filling.
 		val maxed = maxedShiny || clamped >= 0.999f
 		val fw = maxOf(filled, minOf(w, h))
 		if (maxed && ExtrasSettings.pvMaxedRainbow) {

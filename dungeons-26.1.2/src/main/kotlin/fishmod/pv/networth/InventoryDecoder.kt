@@ -85,7 +85,6 @@ object InventoryDecoder {
         val home = parseHomeGear(member)
         out.addAll(home["accessories"].orEmpty())
         home["armor"].orEmpty().filterTo(out, ::looksLikeAccessory)
-        // Inventory accessories don't count: Hypixel's Magical Power only reads the bag.
         return out
     }
 

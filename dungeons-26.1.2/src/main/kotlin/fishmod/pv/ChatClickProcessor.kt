@@ -16,18 +16,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.Style
 
-/**
- * Opens `/pv` from chat the same way SkyBlock Profile Viewer does:
- *
- * 1. Remap existing Hypixel `/socialoptions` / `/viewprofile` / social-menu
- *    clicks to `/pv <name>` so they work in SkyBlock, including guild chat.
- * 2. Optionally make whole `Party|Guild|Officer|Co-op > Name: ...` lines clickable.
- *
- * Never invents clicks from arbitrary text (that falsely matched mod banners like
- * `[Detexturify] Update available: ...`).
- *
- * Wired via Fabric `MODIFY_GAME`.
- */
 object ChatClickProcessor {
 	private val PLAYER_NAME_PATTERN = Pattern.compile("[A-Za-z0-9_]{1,16}")
 	private val UUID_PATTERN = Pattern.compile(

@@ -15,11 +15,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Vanilla chat RunCommand clicks call {@code sendUnattendedCommand}, which only
- * reaches the server. The PV registers {@code /pv} as a Fabric client command,
- * so open the profile viewer here instead of forwarding to Hypixel.
- */
 @Mixin(Screen.class)
 public abstract class ScreenClickCommandMixin {
 	@Inject(method = "clickCommandAction", at = @At("HEAD"), cancellable = true)

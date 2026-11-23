@@ -264,7 +264,6 @@ class RiftSnapshot private constructor(
             if (obj == null) return emptyList()
             val lines = ArrayList<QuestLine>()
             if (intVal(obj, "bughunter_step") > 0) {
-                // No published mapping for bughunter_step integers.
                 lines.add(QuestLine("Argofay Bughunter", "In Progress"))
             }
             if (bool(obj, "sirius_completed_q_a") || bool(obj, "sirius_q_a_chain_done")) {
@@ -274,7 +273,6 @@ class RiftSnapshot private constructor(
             }
             val brothers = stringList(obj.get("talked_threebrothers")).size
             if (brothers > 0) {
-                // Size alone is not an explicit completion flag; keep the count.
                 lines.add(QuestLine("Argofay Threebrothers", "$brothers/3 talked"))
             }
             return lines
@@ -326,7 +324,6 @@ class RiftSnapshot private constructor(
                     intVal(kat, "bin_collected_silverfish") +
                     intVal(kat, "bin_collected_spider")
                 if (bins > 0) {
-                    // Bin count alone is not an explicit completion boolean.
                     lines.add(QuestLine("Kat's Vermin Bins", "$bins/3 filled"))
                 }
             }
@@ -359,7 +356,6 @@ class RiftSnapshot private constructor(
                 bool(obj, "delivered_science_paper") -> lines.add(QuestLine("Dr. Hibble", "Complete"))
                 bool(obj, "received_science_paper") -> lines.add(QuestLine("Dr. Hibble", "Paper received"))
                 bool(obj, "talked_to_edwin") -> lines.add(QuestLine("Dr. Hibble", "Talked to Edwin"))
-                // completed_step integers are undocumented; avoid raw Step N.
                 intVal(obj, "completed_step") > 0 -> lines.add(QuestLine("Dr. Hibble", "In Progress"))
             }
             return lines
@@ -370,7 +366,6 @@ class RiftSnapshot private constructor(
             val lines = ArrayList<QuestLine>()
             val murder = Leveling.obj(obj.get("murder"))
             if (murder != null && intVal(murder, "step_index") > 0) {
-                // murder.step_index integers are undocumented.
                 lines.add(QuestLine("Reverse-Murder", "In Progress"))
             }
             val cowboy = Leveling.obj(obj.get("cowboy"))
@@ -382,14 +377,12 @@ class RiftSnapshot private constructor(
                     when {
                         rabbit.isNotBlank() -> lines.add(QuestLine("Cowboy Nick", "Rabbit named"))
                         hay > 0 -> lines.add(QuestLine("Cowboy Nick", FormatUtil.commas(hay.toLong()) + " hay eaten"))
-                        // cowboy.stage integers are undocumented.
                         else -> lines.add(QuestLine("Cowboy Nick", "In Progress"))
                     }
                 }
             }
             val seraphine = Leveling.obj(obj.get("seraphine"))
             if (seraphine != null && intVal(seraphine, "step_index") > 0) {
-                // seraphine.step_index integers are undocumented.
                 lines.add(QuestLine("Seraphine's Face", "In Progress"))
             }
             return lines
@@ -404,7 +397,6 @@ class RiftSnapshot private constructor(
                 if (crumbs > 0) {
                     lines.add(QuestLine("Wizard's Quest", "$crumbs crumbs laid"))
                 } else {
-                    // wizard_quest_step integers are undocumented.
                     lines.add(QuestLine("Wizard's Quest", "In Progress"))
                 }
             }

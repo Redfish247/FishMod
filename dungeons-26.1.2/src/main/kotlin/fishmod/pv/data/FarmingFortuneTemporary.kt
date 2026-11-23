@@ -14,11 +14,6 @@ import fishmod.pv.data.FarmingFortuneEstimate.Line
 import fishmod.pv.networth.NbtAttrs
 import java.util.Locale
 
-/**
- * Temporary and situational Farming Fortune. None of it is part of a total: a source is only {@link Status#ACTIVE}
- * when saved profile data proves it, and sources the API can't show stay {@link Status#UNKNOWN}.
- * Values follow the Hypixel wiki (Farming Fortune, Garden Chips and each item's page) as of SkyBlock 0.27.
- */
 object FarmingFortuneTemporary {
 	enum class Status { ACTIVE, UNKNOWN, INACTIVE }
 

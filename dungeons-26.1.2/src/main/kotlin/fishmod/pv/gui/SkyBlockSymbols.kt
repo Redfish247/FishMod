@@ -95,7 +95,7 @@ object SkyBlockSymbols {
 		0xE02B -> "✿"
 		0xE018 -> "ൠ"
 		0xE00E -> "⛽"
-		0xE017 -> "▄" // Overflow mana
+		0xE017 -> "▄"
 
 		0xE00C -> "☂"
 		0xE021 -> "α"
@@ -120,7 +120,6 @@ object SkyBlockSymbols {
 		0xE004 -> "⚡"
 		0xE01F -> "❤"
 
-		// Mob-type / name prefix icons in lore
 		0xE085 -> "☠"
 		0xE081 -> "💀"
 		0xE078 -> "✦"

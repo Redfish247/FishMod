@@ -477,7 +477,6 @@ class ChocolatePage {
 	}
 
 	companion object {
-		// Textured heads are rebuilt from scratch per call; employees are a small fixed set.
 		private val EMPLOYEE_HEADS = ConcurrentHashMap<String, ItemStack>()
 
 		private fun drawHoppityRows(

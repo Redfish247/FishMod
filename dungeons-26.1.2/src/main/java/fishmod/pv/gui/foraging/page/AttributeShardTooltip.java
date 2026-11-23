@@ -83,7 +83,6 @@ final class AttributeShardTooltip {
 		return out;
 	}
 
-	/** Remaining coin cost for {@code need} shards; null when the price is unknown (never shown as zero). */
 	static String coins(int need, double unitPrice) {
 		if (need <= 0) {
 			return "0m";

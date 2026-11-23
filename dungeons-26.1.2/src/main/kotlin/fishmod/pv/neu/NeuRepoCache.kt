@@ -60,7 +60,6 @@ object NeuRepoCache {
 
 	private val ITEMS: MutableMap<String, JsonObject> = ConcurrentHashMap()
 	private val MISS: MutableMap<String, Boolean> = ConcurrentHashMap()
-	// Keys with a queued/running prefetch, and keys that failed recently (retry after RETRY_MS).
 	private val INFLIGHT: MutableSet<String> = ConcurrentHashMap.newKeySet()
 	private val FAILED_AT: MutableMap<String, Long> = ConcurrentHashMap()
 	private const val RETRY_MS = 60_000L
@@ -299,7 +298,6 @@ object NeuRepoCache {
 	@Volatile
 	private var displayNameIndexSize = -1
 
-
 	@JvmStatic
 	fun idForDisplayName(name: String?): String? = idsForDisplayName(name).singleOrNull()
 
@@ -441,7 +439,6 @@ object NeuRepoCache {
 		val repoRoot = base.resolve("repo")
 		if (!Files.isDirectory(repoRoot.resolve("items"))) return false
 		val marker = base.resolve(UPDATED_AT)
-		// Existing installs from before auto-update never wrote a marker.
 		if (!Files.isRegularFile(marker)) return true
 		return try {
 			val updated = Files.readString(marker, StandardCharsets.UTF_8).trim().toLong()
@@ -479,7 +476,6 @@ object NeuRepoCache {
 				}
 			}
 		}
-		// Overwrite then prune, so readers never see an empty map mid-reload.
 		ITEMS.putAll(next)
 		ITEMS.keys.retainAll(next.keys)
 		MISS.clear()

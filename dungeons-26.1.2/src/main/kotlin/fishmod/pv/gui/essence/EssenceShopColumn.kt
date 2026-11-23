@@ -16,10 +16,6 @@ import kotlin.math.roundToInt
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/**
- * Essence shop column: icon, name and balance header, then one row per perk.
- * Packs rows into the given height instead of shrinking the font.
- */
 object EssenceShopColumn {
 	const val MAXED_COLOR = 0xFF7CFF9A.toInt()
 

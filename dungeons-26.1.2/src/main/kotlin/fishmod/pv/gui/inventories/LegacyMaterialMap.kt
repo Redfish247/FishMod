@@ -216,7 +216,6 @@ object LegacyMaterialMap {
 		return Material(name.uppercase(Locale.ROOT), damage)
 	}
 
-	/** Vanilla item lookup that never throws on bad ids. Accepts `name` or `minecraft:name`. */
 	@JvmStatic
 	fun vanillaItem(id: String?): Optional<Item> {
 		if (id == null) {

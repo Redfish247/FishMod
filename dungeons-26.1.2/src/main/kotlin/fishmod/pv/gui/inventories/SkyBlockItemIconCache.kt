@@ -41,10 +41,6 @@ object SkyBlockItemIconCache {
 		SkyBlockPackCache.start()
 	}
 
-	/**
-	 * @param itemModel e.g. `hypixel_skyblock:item/uncategorized/magma_chunk`
-	 * @return texture id when loaded, otherwise `null` (request may still be in flight)
-	 */
 	@JvmStatic
 	fun getOrRequest(itemModel: String?): Identifier? {
 		if (itemModel.isNullOrBlank()) {
@@ -83,7 +79,6 @@ object SkyBlockItemIconCache {
 			state.requested.set(false)
 			return
 		}
-		// Pack lookup and PNG decode run off the render thread; only the texture register is on it.
 		PvExecutors.IO.execute {
 			val layers = SkyBlockPackCache.resolveTextureLayers(state.model)
 			if (layers.isEmpty()) {

@@ -35,7 +35,6 @@ object FarmingFortuneLayout {
 	@JvmStatic
 	fun cropRowW(count: Int): Int = count * CROP_SLOT + maxOf(0, count - 1) * CROP_GAP
 
-	/** Crop selector beside the hero when the row fits, otherwise wrapped below it. */
 	@JvmStatic
 	fun cropsBesideHero(w: Int, heroW: Int, count: Int): Boolean = heroW + HERO_CROPS_GAP + cropRowW(count) <= w
 

@@ -395,10 +395,6 @@ class HotmPage {
 		private const val PANEL_HOVER = 0x0AFFFFFF
 		private const val MIN_TREE_SCALE = 0.7f
 
-		/**
-		 * Integer zoom when the tree fits (fractional scale softens item textures). Otherwise tighter cells, then
-		 * a scaled-down grid, then vertical scrolling, so every node stays reachable at any GUI scale.
-		 */
 		@JvmStatic
 		fun treeLayout(cols: Int, rows: Int, innerW: Int, innerH: Int): TreeLayout {
 			val baseCell = 20
@@ -470,11 +466,6 @@ class HotmPage {
 
 		private fun easeInOutCubic(t: Float): Float = if (t < 0.5f) 4f * t * t * t else 1f - (-2f * t + 2f).pow(3) / 2f
 
-		/**
-		 * Abilities: locked coal block, unlocked diamond block.
-		 * CotM: diamond block only when maxed, otherwise coal block.
-		 * Other perks: locked coal, unlocked emerald, maxed diamond.
-		 */
 		private fun perkIcon(perk: MiningHotmData.PerkDef, level: Int): ItemStack = ItemStack(
 			when {
 				perk.id == "core_of_the_mountain" -> if (level >= perk.maxLevel) Items.DIAMOND_BLOCK else Items.COAL_BLOCK
