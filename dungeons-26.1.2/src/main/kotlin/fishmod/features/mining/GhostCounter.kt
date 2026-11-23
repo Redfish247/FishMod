@@ -35,6 +35,7 @@ object GhostCounter {
         (Mining.area.contains("The Mist", true) || fishmod.utils.SidebarCache.entries.any { it.plain.contains("The Mist") })
 
     fun init() {
+        FishEvents.worldChange.register { deadGhosts.clear(); false }
         FishEvents.chat.register { text ->
             if (S.ghostCounter && inMist()) onChat(text.chatPlain.trim())
             false
