@@ -87,6 +87,16 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var rareHighlightColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var rareHp: Boolean = false
     @ConfigValue @JvmField var rareHpBar: Boolean = false
+    @ConfigValue @JvmField var bobbinHud: Boolean = false
+    @ConfigValue @JvmField var bobbinX: Int = 5
+    @ConfigValue @JvmField var bobbinY: Int = 220
+    @ConfigValue @JvmField var bobbinScale: Double = 1.0
+    @ConfigValue @JvmField var legionHud: Boolean = false
+    @ConfigValue @JvmField var legionX: Int = 5
+    @ConfigValue @JvmField var legionY: Int = 235
+    @ConfigValue @JvmField var legionScale: Double = 1.0
+    @ConfigValue @JvmField var overlayNeedArmor: Boolean = true
+    @ConfigValue @JvmField var lilypadSize: Boolean = false
     @ConfigValue @JvmField var scServerCap: Boolean = true
     @ConfigValue @JvmField var scServerMax: Int = 30
     @ConfigValue @JvmField var rareImmunity: Boolean = false
