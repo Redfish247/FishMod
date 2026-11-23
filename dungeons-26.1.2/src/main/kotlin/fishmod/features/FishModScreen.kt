@@ -2260,6 +2260,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(SubcategoryHeader("SkyHanni-style attack/phase cues on the boss — all 6 slayers"))
             phases.sub.add(SubcategoryHeader("Voidgloom laser/hits/beacon · Inferno shield+dagger/fire pillar/pits · Bloodfiend twinclaws/steak/mania · Rev BOOM · Sven PUPS · Tara hatchlings"))
             phases.sub.add(ToggleSetting("World Text", "Draw the cue as text above the boss", "slayerPhaseWorldText"))
+            phases.sub.add(ToggleSetting("Through Walls", "Boss text stays visible behind blocks", "slayerPhaseThroughWalls"))
+            phases.sub.add(SliderIntSetting("Text Scale %", "Size of the boss text", "slayerPhaseTextScale", 20, 150, 5))
             phases.sub.add(ToggleSetting("Title Warnings", "Big title for BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON", "slayerPhaseTitles"))
             phases.sub.add(ToggleSetting("Health Phase Split", "Show the 1/3 · 2/3 phase fraction (Voidgloom / Inferno)", "slayerPhaseHealthSplit"))
             phases.sub.add(ToggleSetting("HP Label", "Big current/max HP over the boss, coloured by %", "slayerPhaseHpLabel"))

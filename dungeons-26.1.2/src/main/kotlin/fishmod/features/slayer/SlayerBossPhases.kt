@@ -6,6 +6,7 @@ import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.data.EntityTools
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
@@ -47,6 +48,8 @@ object SlayerBossPhases {
     @Volatile private var hpLine = ""
     @Volatile private var timeLine = ""
     @Volatile private var hiddenStandId = -1
+    @Volatile private var anchor: LivingEntity? = null
+    @Volatile private var maniaEndNanos = 0L
     private var bossSeenId = 0
     private var bossSeenNanos = 0L
 
@@ -105,6 +108,7 @@ object SlayerBossPhases {
         steakTitleFired = false
         hpBossId = 0; hpMaxSeen = 0.0
         hpLine = ""; timeLine = ""; hiddenStandId = -1; bossSeenId = 0; bossSeenNanos = 0L
+        anchor = null; maniaEndNanos = 0L
         titleAt.clear()
         scanCounter = 0
     }
@@ -126,6 +130,7 @@ object SlayerBossPhases {
         if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return
 
         show = false
+        maniaEndNanos = 0L
         var l1 = ""
         var l2 = ""
         val combatType = SlayerManager.type
@@ -153,9 +158,10 @@ object SlayerBossPhases {
             ay = bb.maxY + 0.5
             az = (bb.minZ + bb.maxZ) / 2.0
             line1 = l1; line2 = l2
+            anchor = boss
             show = true
         } else {
-            line1 = ""; line2 = ""
+            line1 = ""; line2 = ""; anchor = null
         }
     }
 
@@ -270,7 +276,7 @@ object SlayerBossPhases {
         val v = bf.vehicle
         if (l1.isEmpty() && v != null && v.tickCount > 40) {
             val remain = MANIA_SECONDS - v.tickCount / 20.0
-            if (remain > 0.0) l1 = "§bMANIA §f${fmt(remain)}s"
+            if (remain > 0.0) { l1 = "§bMANIA"; maniaEndNanos = System.nanoTime() + (remain * 1e9).toLong() }
         }
 
         if (l1.isEmpty() && hp > 0.0 && maxHp > 0.0) {
@@ -376,12 +382,22 @@ object SlayerBossPhases {
 
     private fun render() {
         if (!show || !enabled()) return
-        var y = ay + 0.36
-        if (line2.isNotEmpty() || line1.isNotEmpty()) y += 0.4
-        if (hpLine.isNotEmpty()) { FishDraw.gizmoText(Component.literal(hpLine), Vec3(ax, y, az), 1.6f, -0x1); y += 0.45 }
-        if (timeLine.isNotEmpty()) FishDraw.gizmoText(Component.literal(timeLine), Vec3(ax, y, az), 0.9f, -0x1)
+        val k = FishSettings.slayerPhaseTextScale.coerceIn(20, 150) / 100f
+        val walls = FishSettings.slayerPhaseThroughWalls
+        // Follow the boss every frame instead of the 5-tick scan position
+        var bx = ax; var by = ay; var bz = az
+        anchor?.takeIf { it.isAlive }?.let { e ->
+            val p = EntityTools.getLerpedPos(e)
+            bx += p.x - e.x; by += p.y - e.y; bz += p.z - e.z
+        }
+        var y = by + 0.36 * k
+        if (line2.isNotEmpty() || line1.isNotEmpty()) y += 0.4 * k
+        if (hpLine.isNotEmpty()) { FishDraw.gizmoText(Component.literal(hpLine), Vec3(bx, y, bz), 1.6f * k, -0x1, walls); y += 0.45 * k }
+        if (timeLine.isNotEmpty()) FishDraw.gizmoText(Component.literal(timeLine), Vec3(bx, y, bz), 0.9f * k, -0x1, walls)
         if (!FishSettings.slayerPhaseWorldText) return
-        if (line1.isNotEmpty()) FishDraw.gizmoText(Component.literal(line1), Vec3(ax, ay, az), 1.4f, -0x1)
-        if (line2.isNotEmpty()) FishDraw.gizmoText(Component.literal(line2), Vec3(ax, ay + 0.36, az), 0.95f, -0x1)
+        val me = maniaEndNanos
+        val l1 = if (me != 0L) { val r = (me - System.nanoTime()) / 1e9; if (r > 0.0) "§bMANIA §f${fmt(r)}s" else "" } else line1
+        if (l1.isNotEmpty()) FishDraw.gizmoText(Component.literal(l1), Vec3(bx, by, bz), 1.4f * k, -0x1, walls)
+        if (line2.isNotEmpty()) FishDraw.gizmoText(Component.literal(line2), Vec3(bx, by + 0.36 * k, bz), 0.95f * k, -0x1, walls)
     }
 }
