@@ -4816,6 +4816,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Carry Tracker HUD" -> "Tracks slayer carries per player"
                 "Profit Tracker" -> "Slayer drops and coins per hour"
                 "Boss Timer" -> "Slayer boss kill time and PB"
+                "Slayer QOL" -> "Egg sacs, yang glyphs, boss stats HUD, Inferno attunement colors and boss phases"
                 "Endstone Protector Stage" -> "HUD with the Protector stage and kills left, from the tab list"
                 "End Node Tracker" -> "Ender nodes mined and what they gave, with nodes per hour"
                 "Boss Phases" -> "Attack and phase cues on slayer bosses"
