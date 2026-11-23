@@ -13,6 +13,7 @@ object FishingAlertSettings {
 
     @ConfigValue @JvmField var alertRareDrop: Boolean = false
     @ConfigValue @JvmField var alertDropMinPrice: Int = 0
+    @ConfigValue @JvmField var alertDropOff: String = ""
 
     @ConfigValue @JvmField var alertHotspotFound: Boolean = false
     @ConfigValue @JvmField var alertHotspotGone: Boolean = false
