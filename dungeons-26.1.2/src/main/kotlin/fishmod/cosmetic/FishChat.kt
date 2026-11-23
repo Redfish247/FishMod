@@ -17,6 +17,11 @@ object FishChat {
 
     fun init() {
         ClientCommandRegistrationCallback.EVENT.register { d, _ ->
+            d.register(ClientCommands.literal("fcoff").executes {
+                FishSettings.fishChatEnabled = false
+                try { fishmod.utils.config.FishConfig.manager.save() } catch (_: Throwable) {}
+                note("FishMod chat disabled. Re-enable it in Chat settings."); 1
+            })
             for (name in arrayOf("fc", "fmchat")) {
                 d.register(
                     ClientCommands.literal(name)
@@ -53,6 +58,17 @@ object FishChat {
         val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
         val clean = ProfanityFilter.censor(text) ?: text
         Minecraft.getInstance().execute {
+            if (!FishSettings.fishChatNoticeShown) {
+                FishSettings.fishChatNoticeShown = true
+                try { fishmod.utils.config.FishConfig.manager.save() } catch (_: Throwable) {}
+                FishUtil.addChatMessage(
+                    Component.literal("[FishMod] FishMod chat is on. ").withStyle(ChatFormatting.AQUA)
+                        .append(Component.literal("Click this message to disable it.").withStyle {
+                            it.withColor(ChatFormatting.YELLOW).withUnderlined(true)
+                                .withClickEvent(net.minecraft.network.chat.ClickEvent.RunCommand("/fcoff"))
+                        })
+                )
+            }
             FishUtil.addChatMessage(
                 Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
                     .append(Component.literal("$name: ").withStyle(ChatFormatting.GOLD))
