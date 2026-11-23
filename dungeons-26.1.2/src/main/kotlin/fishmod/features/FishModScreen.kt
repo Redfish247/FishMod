@@ -3158,7 +3158,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val track = cyBot() - cyTop(); val h = Mth.clamp(track * track / (track + max), 16, track)
         return intArrayOf(cyTop() + ((track - h).toLong() * Mth.clamp(gridScroll, 0, max) / max).toInt(), h)
     }
-    private fun gridBarHit(mx: Int, my: Int): Boolean = page == null && mx in gx1() - 7..gx1() - 2 && my in cyTop()..cyBot() && gridMax(exItems().size) > 0
+    private fun gridBarHit(mx: Int, my: Int): Boolean = page == null && mx in gx1() - 1..gx1() + 5 && my in cyTop()..cyBot() && gridMax(exItems().size) > 0
     private fun dragGridBar(my: Int) {
         val n = exItems().size; val t = gridThumb(n) ?: return; val max = gridMax(n)
         gridScroll = Mth.clamp(((my - gridBarGrab - cyTop()).toLong() * max / Math.max(1, cyBot() - cyTop() - t[1])).toInt(), 0, max)
@@ -3245,7 +3245,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (gridScroll > 0) scrollArrow(true, gridMidX, (cyTop() + 12).toFloat())
         if (gridScroll < gridMax(items.size)) scrollArrow(false, gridMidX, (cyBot() - 12).toFloat())
         gridThumb(items.size)?.let { t ->
-            val bx = (gx1() - 5).toFloat()
+            val bx = (gx1() + 1).toFloat()
             UiRecorder.fillRoundedRect(bx, cyTop().toFloat(), 3f, (cyBot() - cyTop()).toFloat(), 1.5f, ScreenTheme.ink(0x10))
             UiRecorder.fillRoundedRect(bx, t[0].toFloat(), 3f, t[1].toFloat(), 1.5f, ScreenTheme.ink(if (gridBarGrab >= 0 || gridBarHit(mouseX, mouseY)) 0x70 else 0x40))
         }
