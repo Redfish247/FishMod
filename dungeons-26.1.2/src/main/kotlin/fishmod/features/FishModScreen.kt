@@ -3100,8 +3100,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         else visibleColumns().firstOrNull()?.let { visibleFeatures(it) } ?: emptyList()
     private fun detW(): Int = if (FishSettings.fmDetailW > 0) Mth.clamp(FishSettings.fmDetailW, DET_W_MIN, Math.max(DET_W_MIN, (winW() * 0.6f).toInt())) else Mth.clamp((winW() * 0.22f).toInt(), DET_W, 215)
     private var detDrag = false
-    private fun detDividerHit(mx: Int, my: Int): Boolean { if (selected == null) return false; val x = cx1() - detW() - COLUMN_GUTTER / 2; return mx in x - 4..x + 4 && my in cyTop() - HEADER_H..cyBot() }
-    private fun gx1(): Int = if (selected != null) cx1() - detW() - COLUMN_GUTTER else cx1()
+    private fun detDividerHit(mx: Int, my: Int): Boolean { if (selected == null) return false; val x = cx1() - detW() - 2; return mx in x - 2..x + 4 && my in cyTop() - HEADER_H..cyBot() }
+    // With the detail panel open the scrollbar sits between cards and panel with SB_GAP either side
+    private val SB_GAP = 4
+    private fun selGutter(): Int = Math.max(COLUMN_GUTTER, 3 + 2 * SB_GAP)
+    private fun gx1(): Int = if (selected != null) cx1() - detW() - selGutter() else cx1()
     private fun cardFill(): Int = (Math.round(FishSettings.fmCardAlpha.coerceIn(0, 100) * 2.55f) shl 24) or (FishSettings.fmCardColor and 0xFFFFFF)
     private fun cardH(): Int = if (listView) 26 else CARD_TALL
     private fun gridCols(): Int = if (listView) 1 else Math.max(1, (gx1() - cx0() + CARD_GAP) / (CARD_MIN_W + CARD_GAP))
@@ -3143,8 +3146,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return intArrayOf(cyTop() + ((track - h).toLong() * Mth.clamp(gridScroll, 0, max) / max).toInt(), h)
     }
     // Bar sits in the right margin, a third of the way from the content
-    private fun gridBarX(): Int = cx1() + (MARGIN - 3) / 3
-    private fun gridBarHit(mx: Int, my: Int): Boolean = page == null && mx in gridBarX() - 2..gridBarX() + 5 && my in cyTop()..cyBot() && gridMax(exItems().size) > 0
+    private fun gridBarX(): Int = if (selected != null) gx1() + SB_GAP else cx1() + (MARGIN - 3) / 3
+    private fun gridBarHit(mx: Int, my: Int): Boolean = page == null && mx in gridBarX() - 1..gridBarX() + 4 && my in cyTop()..cyBot() && gridMax(exItems().size) > 0
     private fun dragGridBar(my: Int) {
         val n = exItems().size; val t = gridThumb(n) ?: return; val max = gridMax(n)
         gridScroll = Mth.clamp(((my - gridBarGrab - cyTop()).toLong() * max / Math.max(1, cyBot() - cyTop() - t[1])).toInt(), 0, max)
@@ -3442,7 +3445,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         if (resizeMask != 0) { applyResize(vx(click.x()), vx(click.y())); return true }
         if (gridBarGrab >= 0) { dragGridBar(vx(click.y())); return true }
-        if (detDrag) { FishSettings.fmDetailW = (cx1() - vx(click.x()) - COLUMN_GUTTER / 2).coerceIn(DET_W_MIN, Math.max(DET_W_MIN, (winW() * 0.6f).toInt())); return true }
+        if (detDrag) { FishSettings.fmDetailW = (cx1() - vx(click.x()) - 2).coerceIn(DET_W_MIN, Math.max(DET_W_MIN, (winW() * 0.6f).toInt())); return true }
         if (sbDrag) { FishSettings.fmSidebarW = (vx(click.x()) - stackX0() - 6).coerceIn(STACK_W_MIN, STACK_W_MAX); return true }
         if (navPress != null) {
             val my = vx(click.y())
