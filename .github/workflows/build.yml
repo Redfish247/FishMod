@@ -71,7 +71,7 @@ jobs:
           done
 
       - name: Build
-        run: ./gradlew ${{ steps.plan.outputs.flags }} ${{ steps.plan.outputs.tasks }} --no-daemon
+        run: chmod +x gradlew && ./gradlew ${{ steps.plan.outputs.flags }} ${{ steps.plan.outputs.tasks }} --no-daemon
 
       - name: Collect jars
         run: |
