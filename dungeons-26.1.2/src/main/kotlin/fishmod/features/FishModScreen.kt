@@ -2950,8 +2950,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             field.setResponder { t -> searchText = t; gridScroll = 0; if (t.isNotEmpty()) page = null; openedAt = System.currentTimeMillis() }
             searchField = field
         } else { field.setX(s[0] + 8); field.setY(s[1] + 4); field.setWidth(s[2] - 30) }
-        if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search categories and features", (s[0] + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
-        else nvgTextFieldContent(field, s[0] + 8, s[1] + 4, s[2] - 30, s[3] - 8, 8f)
+        if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search categories and features", (s[0] + 11).toFloat(), s[1] + (s[3] - NVG_BASE_TEXT_SIZE) / 2f, NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
+        else nvgTextFieldContent(field, s[0] + 8, s[1] + 4, s[2] - 30, s[3] - 8, NVG_BASE_TEXT_SIZE)
         run {
             val ic = if (searchFocused) TEXT_COLOR else SUBTEXT_COLOR
             val gx = (s[0] + s[2] - 20).toFloat(); val gy = s[1] + s[3] / 2f - 6f
