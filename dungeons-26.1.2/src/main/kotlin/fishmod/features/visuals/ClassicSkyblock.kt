@@ -51,9 +51,16 @@ object ClassicSkyblock {
         val material = def.get("material")?.takeIf { it.isJsonPrimitive }?.asString
         val durability = def.get("durability")?.takeIf { it.isJsonPrimitive }?.let { runCatching { it.asInt }.getOrDefault(0) } ?: 0
         val model: Identifier? = try {
-            val hasSkin = HypixelItemResolver.extractHypixelSkinValue(def) != null
-            val item = if (hasSkin) Items.PLAYER_HEAD else LegacyMaterialMap.resolveMaterial(material, id, durability)
-            item.components().get(DataComponents.ITEM_MODEL)
+            if (HypixelItemResolver.extractHypixelSkinValue(def) != null) {
+                // heads: only swap when a real texture can be built, otherwise it would show as a default Steve head
+                if (buildProfile(def, id) != null) Items.PLAYER_HEAD.components().get(DataComponents.ITEM_MODEL) else null
+            } else {
+                // not sure what the vanilla item is (unknown material falls back to paper): keep the pack model
+                val parsed = LegacyMaterialMap.parseMaterial(material, durability)
+                val item = LegacyMaterialMap.resolveMaterial(material, id, durability)
+                if (parsed == null || (item === Items.PAPER && parsed.name != "PAPER")) null
+                else item.components().get(DataComponents.ITEM_MODEL)
+            }
         } catch (t: Throwable) {
             FishDiag.fail("ClassicSkyblock.2", "model lookup failed for $id", t)
             null
@@ -71,19 +78,22 @@ object ClassicSkyblock {
         profiles[id]?.let { return it.orElse(null) }
         ensureData()
         val def = HypixelItemsCache.get(id) ?: return null
-        val skin = HypixelItemResolver.extractHypixelSkinValue(def)
-        var profile: ResolvableProfile? = null
-        if (skin != null && !HypixelItemResolver.isBrokenHypixelPlaceholderSkin(skin)) {
-            try {
-                val head = ItemStack(Items.PLAYER_HEAD)
-                SkullTextureApplier.applyValue(head, skin, null)
-                profile = head.get(DataComponents.PROFILE)
-            } catch (t: Throwable) {
-                FishDiag.fail("ClassicSkyblock.3", "head profile failed for $id", t)
-            }
-        }
+        val profile = buildProfile(def, id)
         profiles[id] = Optional.ofNullable(profile)
         return profile
+    }
+
+    private fun buildProfile(def: com.google.gson.JsonObject, id: String): ResolvableProfile? {
+        val skin = HypixelItemResolver.extractHypixelSkinValue(def) ?: return null
+        if (HypixelItemResolver.isBrokenHypixelPlaceholderSkin(skin)) return null
+        return try {
+            val head = ItemStack(Items.PLAYER_HEAD)
+            SkullTextureApplier.applyValue(head, skin, null)
+            if (SkullTextureApplier.isTexturedPlayerHead(head)) head.get(DataComponents.PROFILE) else null
+        } catch (t: Throwable) {
+            FishDiag.fail("ClassicSkyblock.3", "head profile failed for $id", t)
+            null
+        }
     }
 
     @JvmStatic
