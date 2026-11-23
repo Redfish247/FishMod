@@ -4,7 +4,6 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-// Runtime-only: when blade-addons is installed, our overlapping features stand down (never saved to config).
 object BladeCompat {
 
     @JvmField
