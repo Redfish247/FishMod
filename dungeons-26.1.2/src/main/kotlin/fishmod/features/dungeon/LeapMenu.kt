@@ -32,6 +32,8 @@ object LeapMenu {
     private val teammateClasses = HashMap<String, DungeonRole>()
     private var lastLevel: Any? = null
 
+    init { fishmod.utils.events.FishEvents.worldChange.register { lastLevel = null; cacheScreen = null; cache = emptyList(); false } }
+
     private fun refreshTeammateClasses() {
         val mc = Minecraft.getInstance()
         if (mc.level !== lastLevel) { lastLevel = mc.level; teammateClasses.clear() }
