@@ -81,6 +81,9 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             int miniGlow = fishmod.features.slayer.SlayerMiniHighlight.glowColor(entity);
             if (miniGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = miniGlow;
 
+            int attuneGlow = fishmod.features.slayer.SlayerQol.glowColor(entity);
+            if (attuneGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = attuneGlow;
+
             int dgGlow = fishmod.features.dungeon.DungeonExtras.glowColor(entity);
             if (dgGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dgGlow;
             int trevorGlow = fishmod.features.extras.TrevorHelper.glowColor(entity);
