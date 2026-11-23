@@ -14,9 +14,9 @@ object PartyTools {
     private val INSTANCE: HypixelModAPI = HypixelModAPI.getInstance()
 
     private var grabbedTime: Long = 0
-    private var memberMap: Map<UUID, ClientboundPartyInfoPacket.PartyMember>? = null
-    private var inParty = false
-    private var leaderUuid: UUID? = null
+    @Volatile private var memberMap: Map<UUID, ClientboundPartyInfoPacket.PartyMember>? = null
+    @Volatile private var inParty = false
+    @Volatile private var leaderUuid: UUID? = null
 
     @JvmStatic
     @Volatile
@@ -25,6 +25,10 @@ object PartyTools {
 
     @JvmStatic
     fun init() {
+        // A party from the previous server must not linger after leaving
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+            inParty = false; memberMap = null; leaderUuid = null; grabbedTime = 0
+        }
         INSTANCE.createHandler(ClientboundPartyInfoPacket::class.java) { packet ->
             try {
                 if (FishDebug.termInfo) FishDebug.LOGGER.info("party info packet in")
