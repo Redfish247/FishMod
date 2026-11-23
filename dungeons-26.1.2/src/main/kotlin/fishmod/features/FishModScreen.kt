@@ -460,25 +460,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
-            val f = Feature("Discord Chat Relay", null, null)
-            f.sub.add(SubcategoryHeader("Always on when a webhook URL is set below — part of FishChat, not a separate switch. Posts in-game chat to your Discord webhook (pings are blocked)"))
-            f.sub.add(InputSetting("Webhook URL", "Discord channel > Integrations > Webhooks > Copy URL. Keep it private", "discordWebhookUrl"))
-            f.sub.add(ToggleSetting("Guild Chat", "Send Guild > messages", "discordGuild"))
-            f.sub.add(ToggleSetting("Officer Chat", "Send Officer > messages", "discordOfficer"))
-            f.sub.add(ToggleSetting("Party Chat", "Send Party > messages", "discordParty"))
-            f.sub.add(ToggleSetting("Private Messages", "Send From/To messages (off = stays private)", "discordDms"))
-            f.sub.add(InputSetting("Blocked Words", "Comma separated, whole word, any case. Messages with these are filtered", "discordBlockedWords"))
-            f.sub.add(ToggleSetting("Censor Instead Of Drop", "On = replace the word with ***, off = skip the whole message", "discordCensor"))
-            general.features.add(f)
-        }
-        run {
-            val f = Feature("Discord To Game Chat", "discordBotEnabled")
-            f.sub.add(SubcategoryHeader("Prints messages from a Discord channel into your game chat (needs a bot, not a webhook)"))
-            f.sub.add(InputSetting("Bot Token", "From your Discord application's Bot tab. Keep this private", "discordBotToken"))
-            f.sub.add(InputSetting("Channel ID", "Right-click the channel (Developer Mode on) > Copy Channel ID", "discordBotChannelId"))
-            general.features.add(f)
-        }
-        run {
             val f = Feature("Twitch Bridge",
                 { FishSettings.twitchBridgeEnabled },
                 { v -> twitchbridge.TwitchBridgeClient.setEnabled(v) })
@@ -4882,6 +4863,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Text Shadow" -> "Drop shadow on in-world text"
                 "Loadout Title" -> "Title when you switch loadout"
                 "Time Changer" -> "Set your own time of day"
+                "Hit Sounds" -> "Custom sounds when your arrow or melee hit lands, with volume, pitch and vanilla muting"
                 "Arrow Hit Sound" -> "Plays a sound when your arrow hits"
                 "Mob Hit Sound (Melee)" -> "Plays a sound when your melee hit lands"
                 "Block Overlay" -> "Outline or fill the block you look at"

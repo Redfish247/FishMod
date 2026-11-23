@@ -198,16 +198,6 @@ object FishSettings {
 
     @ConfigValue @JvmField var bridgeBotEnabled: Boolean = false
     @ConfigValue @JvmField var bridgeBotName: String = ""
-    @ConfigValue @JvmField var discordWebhookUrl: String = ""
-    @ConfigValue @JvmField var discordGuild: Boolean = true
-    @ConfigValue @JvmField var discordOfficer: Boolean = false
-    @ConfigValue @JvmField var discordParty: Boolean = false
-    @ConfigValue @JvmField var discordDms: Boolean = false
-    @ConfigValue @JvmField var discordCensor: Boolean = true
-    @ConfigValue @JvmField var discordBlockedWords: String = ""
-    @ConfigValue @JvmField var discordBotEnabled: Boolean = false
-    @ConfigValue @JvmField var discordBotToken: String = ""
-    @ConfigValue @JvmField var discordBotChannelId: String = ""
 
     @ConfigValue @JvmField var twitchBridgeEnabled: Boolean = false
 
