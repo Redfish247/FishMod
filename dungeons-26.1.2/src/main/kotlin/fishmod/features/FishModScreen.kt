@@ -3015,6 +3015,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cardX(i: Int): Int = cx0() + (i % gridCols()) * (cardW() + CARD_GAP)
     private fun cardY(i: Int): Int = cyTop() + (i / gridCols()) * (cardH() + CARD_GAP) - gridScroll
     private fun gridMax(n: Int): Int = Math.max(0, ((n + gridCols() - 1) / gridCols()) * (cardH() + CARD_GAP) - (cyBot() - cyTop()))
+    private var gridBarGrab = -1
+    // Feature-list scrollbar thumb as [y, h]; null when everything fits
+    private fun gridThumb(n: Int): IntArray? {
+        val max = gridMax(n); if (max <= 0) return null
+        val track = cyBot() - cyTop(); val h = Mth.clamp(track * track / (track + max), 16, track)
+        return intArrayOf(cyTop() + ((track - h).toLong() * Mth.clamp(gridScroll, 0, max) / max).toInt(), h)
+    }
+    private fun gridBarHit(mx: Int, my: Int): Boolean = page == null && mx in gx1() - 7..gx1() - 2 && my in cyTop()..cyBot() && gridMax(exItems().size) > 0
+    private fun dragGridBar(my: Int) {
+        val n = exItems().size; val t = gridThumb(n) ?: return; val max = gridMax(n)
+        gridScroll = Mth.clamp(((my - gridBarGrab - cyTop()).toLong() * max / Math.max(1, cyBot() - cyTop() - t[1])).toInt(), 0, max)
+    }
     private fun detTop(): Int = cyTop() - HEADER_H + 24
     private fun descLines(f: Feature): List<String> = descFor(f.name).let { if (it.isEmpty()) emptyList() else wrapText(it, detW() - 20, DESC_SIZE) }
     private fun descH(f: Feature): Int = descLines(f).let { if (it.isEmpty()) 0 else it.size * WRAP_LINE_H + 6 }
@@ -3078,6 +3090,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
         } finally { UiRecorder.popScissor() }
         if (gridMax(items.size) > gridScroll) { val bg = ScreenTheme.windowBg(); UiRecorder.fillRectVGradient(cx0().toFloat(), (cyBot() - 18).toFloat(), (gx1() - cx0()).toFloat(), 18f, bg and 0xFFFFFF, bg) }
+        gridThumb(items.size)?.let { t ->
+            val bx = (gx1() - 5).toFloat()
+            UiRecorder.fillRoundedRect(bx, cyTop().toFloat(), 3f, (cyBot() - cyTop()).toFloat(), 1.5f, ScreenTheme.ink(0x10))
+            UiRecorder.fillRoundedRect(bx, t[0].toFloat(), 3f, t[1].toFloat(), 1.5f, ScreenTheme.ink(if (gridBarGrab >= 0 || gridBarHit(mouseX, mouseY)) 0x70 else 0x40))
+        }
         if (items.isEmpty() && col != null) sst(ctx, this.font, "No features match", cx0(), cyTop() + 8, SUBTEXT_COLOR, 1f)
         val f = selected ?: return
         val sp = anim(selAt, 0, 220)
@@ -3252,6 +3269,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val headerTop = cyTop() - HEADER_H
 
         if (btn == 0 && sbDividerHit(mx, my)) { sbDrag = true; return true }
+        if (btn == 0 && gridBarHit(mx, my)) {
+            val t = gridThumb(exItems().size)!!
+            gridBarGrab = if (my in t[0]..t[0] + t[1]) my - t[0] else t[1] / 2
+            dragGridBar(my); return true
+        }
         if (btn == 0 && detDividerHit(mx, my)) { detDrag = true; return true }
         if (navClick(mx, my, btn)) return true
 
@@ -3273,6 +3295,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         if (resizeMask != 0) { applyResize(vx(click.x()), vx(click.y())); return true }
+        if (gridBarGrab >= 0) { dragGridBar(vx(click.y())); return true }
         if (detDrag) { FishSettings.fmDetailW = (cx1() - vx(click.x()) - COLUMN_GUTTER / 2).coerceIn(DET_W_MIN, Math.max(DET_W_MIN, (winW() * 0.6f).toInt())); return true }
         if (sbDrag) { FishSettings.fmSidebarW = (vx(click.x()) - stackX0() - 6).coerceIn(STACK_W_MIN, STACK_W_MAX); return true }
         if (navPress != null) {
@@ -3298,6 +3321,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun releaseInner(click: MouseButtonEvent): Boolean {
         if (resizeMask != 0) { resizeMask = 0; resizeFrom = null; return true }
         if (sbDrag) { sbDrag = false; return true }
+        if (gridBarGrab >= 0) { gridBarGrab = -1; return true }
         if (detDrag) { detDrag = false; return true }
         if (winDrag != null) { winDrag = null; return true }
         navPress?.let { c ->
