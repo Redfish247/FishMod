@@ -225,13 +225,13 @@ object PetHud {
         var overflowXp = -1.0
 
         for (entry in TabListCache.entries) {
-            val raw = entry.info.tabListDisplayName?.let { legacyOf(it) } ?: continue
+            val dn = entry.info.tabListDisplayName ?: continue
             val text = entry.stripped.trim()
             val nameMatch = TAB_NAME_LINE.matcher(text)
             if (nameMatch.find()) {
                 tempLevel = safeInt(nameMatch.group(1), -1)
                 tempName = nameMatch.group(2).replace("✦", "").trim()
-                tempRarity = rarityBeforeName(raw, tempName)
+                tempRarity = rarityBeforeName(legacyOf(dn), tempName)
             } else if (text.equals("MAX LEVEL", ignoreCase = true)) {
                 maxed = true
             } else {
