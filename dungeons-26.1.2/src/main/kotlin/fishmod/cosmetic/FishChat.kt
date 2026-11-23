@@ -56,6 +56,7 @@ object FishChat {
         if (!FishSettings.fishChatEnabled) return
         val name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() } ?: return
         val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
+        val fromDiscord = root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "discord"
         val clean = ProfanityFilter.censor(text) ?: text
         Minecraft.getInstance().execute {
             if (!FishSettings.fishChatNoticeShown) {
@@ -69,11 +70,11 @@ object FishChat {
                         })
                 )
             }
-            FishUtil.addChatMessage(
-                Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
-                    .append(Component.literal("$name: ").withStyle(ChatFormatting.GOLD))
-                    .append(Component.literal(clean).withStyle(ChatFormatting.WHITE))
-            )
+            var msg = Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
+            if (fromDiscord) msg = msg.append(Component.literal("(Discord) ").withStyle(ChatFormatting.LIGHT_PURPLE))
+            msg = msg.append(Component.literal("$name: ").withStyle(ChatFormatting.GOLD))
+                .append(Component.literal(clean).withStyle(ChatFormatting.WHITE))
+            FishUtil.addChatMessage(msg)
         }
     }
 }
