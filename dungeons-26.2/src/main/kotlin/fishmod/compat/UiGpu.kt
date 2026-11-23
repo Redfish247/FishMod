@@ -20,7 +20,6 @@ import org.lwjgl.system.MemoryUtil
 import java.nio.ByteBuffer
 import java.util.Optional
 
-// Draws UiRenderer's SDF batch through Mojang's GPU API so it works on OpenGL and Vulkan
 object UiGpu {
     private val ATTRS = listOf("PosLocal", "HalfUv", "Radius", "ColorA", "ColorB", "Params")
 
@@ -68,7 +67,6 @@ object UiGpu {
             if (atlasPixels == null) UiFont.markAtlasLost()
         }
         if (atlasPixels != null) enc.writeToTexture(tex, atlasPixels, 0, 0, 0, 0, UiFont.ATLAS, UiFont.ATLAS)
-        // Ring of buffers: several paints per frame (screen, overlay, popup) never overwrite each other's data
         ring = (ring + 1) % RING
         val bytes = data.remaining().toLong()
         var v = vbufs[ring]
@@ -102,11 +100,9 @@ object UiGpu {
         }
     }
 
-    // Backends reject scissors past the target edge; clamp to the real target size
     private fun scissor(pass: com.mojang.blaze3d.systems.RenderPass, s: IntArray, o: Int, tw: Int, th: Int): Boolean {
         val x0 = s[o + 2].coerceIn(0, tw); val y0 = s[o + 3].coerceIn(0, th)
         val x1 = (s[o + 2] + s[o + 4]).coerceIn(x0, tw); val y1 = (s[o + 3] + s[o + 5]).coerceIn(y0, th)
-        // Empty clip = nothing visible; backends reject 0-size scissors
         if (x1 <= x0 || y1 <= y0) return false
         pass.enableScissor(x0, y0, x1 - x0, y1 - y0)
         return true
