@@ -491,8 +491,6 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.51", "fishmod.features.inventory.SlotLocking.init() failed") { fishmod.features.inventory.SlotLocking.init() }
         FishDiag.guard("FishModInit.52", "fishmod.features.inventory.InvSearchBar.init() failed") { fishmod.features.inventory.InvSearchBar.init() }
         FishDiag.guard("FishModInit.53", "fishmod.features.general.BridgeBot.init() failed") { fishmod.features.general.BridgeBot.init() }
-        FishDiag.guard("FishModInit.206", "fishmod.features.chat.DiscordChat.init() failed") { fishmod.features.chat.DiscordChat.init() }
-        FishDiag.guard("FishModInit.207", "fishmod.features.chat.DiscordBotRelay.init() failed") { fishmod.features.chat.DiscordBotRelay.init() }
         FishDiag.guard("FishModInit.54", "twitchbridge.TwitchBridgeClient.init() failed") { twitchbridge.TwitchBridgeClient.init() }
         FishDiag.guard("FishModInit.55", "fishmod.features.visuals.LavaToWater.init() failed") { fishmod.features.visuals.LavaToWater.init() }
         FishDiag.guard("FishModInit.56", "fishmod.features.inventory.StorageCache.init() failed") { fishmod.features.inventory.StorageCache.init() }
