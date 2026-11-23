@@ -35,15 +35,15 @@ object DungeonXpData {
 		if (loaded) return
 		synchronized(this) {
 			if (!loaded) {
-				load()
+				if (!load()) return
 				loaded = true
 			}
 		}
 	}
 
 	// Fills the fields before loaded is published so other threads never see a half-loaded table.
-	private fun load() {
-		val root = RepoData.dungeonsXp() ?: return
+	private fun load(): Boolean {
+		val root = RepoData.dungeonsXp() ?: return false
 		root.get("expert_ring_bonus")?.takeIf { it.isJsonPrimitive }?.let { ringBonus = it.asDouble }
 		root.get("experienced_floor_bonus")?.takeIf { it.isJsonPrimitive }?.let { experiencedBonus = it.asDouble }
 		root.get("experienced_floor_min_completions")?.takeIf { it.isJsonPrimitive }?.let {
@@ -65,6 +65,7 @@ object DungeonXpData {
 			parsed.add(FloorDef(id, label, master, floor, base, unlock))
 		}
 		floorDefs = java.util.List.copyOf(parsed)
+		return true
 	}
 
 	@JvmStatic
