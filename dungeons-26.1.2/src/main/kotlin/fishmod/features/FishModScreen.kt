@@ -2397,10 +2397,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             for ((label, keys) in groups) {
                 val m = rest.filter { f -> keys.any { f.name.contains(it, true) } }
                 if (m.isEmpty()) continue
-                used++; rest.removeAll(m.toSet()); m.forEach { it.group = label }; out.addAll(m)
+                used++; rest.removeAll(m.toSet()); out.addAll(m)
             }
             if (used < 1 || out.isEmpty()) return
-            if (rest.isNotEmpty()) rest.forEach { it.group = "Other" }
             c.features.clear(); c.features.addAll(out + rest)
         }
         groupBy(chatCol, "FishMod Chat" to listOf("fishmod", "(/fc)", "prefix"), "History & Search" to listOf("infini", "history", "search", "peek", "tab"),
@@ -3765,7 +3764,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private var lastValue: Boolean? = null
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val on = getter()
-            if (lastValue == null) { lastValue = on; knobAnim.setTarget(on) }
+            if (lastValue == null) { lastValue = on; knobAnim.snap(on) }
             else if (lastValue != on) { lastValue = on; knobAnim.setTarget(on) }
             val tx = rightX - W - 2
             val ty = sy + (ITEM_HEIGHT - H) / 2
