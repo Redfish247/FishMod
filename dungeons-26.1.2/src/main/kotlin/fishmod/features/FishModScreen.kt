@@ -2336,6 +2336,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(fishmod.features.achievements.AchMenu.column())
         columns.add(visuals)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
+        for (c in columns) {
+            if (c === cheats) continue
+            for (f in c.features) {
+                val toggles = f.sub.filterIsInstance<ToggleSetting>()
+                if (toggles.size < 8) continue
+                f.sub.add(0, ButtonSetting("All Toggles", "Turn every toggle in this feature on or off", "All On", Runnable { toggles.forEach { t -> try { t.setter(true) } catch (_: Throwable) {} } }))
+                f.sub.add(1, ButtonSetting("All Toggles Off", "", "All Off", Runnable { toggles.forEach { t -> try { t.setter(false) } catch (_: Throwable) {} } }))
+            }
+        }
     }
 
     private fun applySavedColumnOrder() {
@@ -2594,6 +2603,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         refreshVisibleCacheIfStale()
         val out = ArrayList<Column>()
         for (c in columns) {
+            if (c === cheats) continue
             val matches = visibleFeatures(c).isNotEmpty()
             if (visibleCacheSearch!!.isEmpty()) { if (!isFolded(c)) out.add(c) }
             else if (matches) out.add(c)
