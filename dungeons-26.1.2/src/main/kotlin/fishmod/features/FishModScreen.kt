@@ -1386,16 +1386,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         hud.features.add(Feature("Catacombs Overflow Levels", "catacombsOverflowEnabled"))
         run {
             hud.features.add(Feature("Anita Medal Profit", "anitaProfitEnabled"))
-            val s = Feature("Experiment Solver", "experimentSolverEnabled")
-            s.sub.add(SubcategoryHeader("Highlights Chronomatron, Ultrasequencer and Superpairs slots. Never clicks."))
-            general.features.add(s)
-            val f = Feature("Experiment Profit Tracker", "expProfitEnabled")
-            f.sub.add(SubcategoryHeader("Experimentation Table drops, value, Enchanting XP and XP per experiment  ·  drag with Edit HUD"))
+            val f = Feature("Experience Table", null, null)
+            f.sub.add(SubcategoryHeader("Solver"))
+            f.sub.add(ToggleSetting("Experiment Solver", "Highlights Chronomatron, Ultrasequencer and Superpairs slots. Never clicks.", "experimentSolverEnabled"))
+            f.sub.add(SubcategoryHeader("Profit Tracker"))
+            f.sub.add(ToggleSetting("Profit Tracker", "Experimentation Table drops, value, Enchanting XP and XP per experiment (drag with Edit HUD)", "expProfitEnabled"))
             f.sub.add(ToggleSetting("Only On Private Island", "", "expProfitOnlyIsland"))
             f.sub.add(SliderIntSetting("Item Lines", "", "expProfitLines", 1, 30))
             f.sub.add(SliderDoubleSetting("Scale", "", "expProfitHudScale", 0.5, 3.0))
             f.sub.add(ButtonSetting("Reset", "Clear all tracked experiments", Runnable { fishmod.features.general.ExperimentProfitTracker.reset() }))
-            general.features.add(f)
+            hud.features.add(f)
         }
         run {
             val f = Feature("Performance HUD", "perfHudEnabled")
@@ -1494,23 +1494,23 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             visuals.features.add(f)
         }
         run {
-            val f = Feature("Arrow Hit Sound", "arrowHitSoundEnabled")
-            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+            val f = Feature("Hit Sounds", null, null)
+            f.sub.add(SubcategoryHeader("Arrow Hit"))
+            f.sub.add(ToggleSetting("Arrow Hit Sound", "Plays a sound when your arrow hits", "arrowHitSoundEnabled"))
+            f.sub.add(SoundSearchSetting("Arrow Sound", "Type to search every game sound",
                 { FishSettings.arrowHitSoundName }, { v -> FishSettings.arrowHitSoundName = v },
                 { FishSettings.arrowHitSoundVolume }, { FishSettings.arrowHitSoundPitch }))
-            f.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", "arrowHitSoundVolume", 0, 500, 10))
-            f.sub.add(SliderDoubleSetting("Pitch", "", "arrowHitSoundPitch", 0.0, 2.0))
-            f.sub.add(ToggleSetting("Suppress Vanilla Sound", "", "arrowHitSoundSuppress"))
-            general.features.add(f)
-        }
-        run {
-            val f = Feature("Mob Hit Sound (Melee)", "meleeHitSoundEnabled")
-            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+            f.sub.add(SliderIntSetting("Arrow Volume %", "Above 100 = louder (stacked plays)", "arrowHitSoundVolume", 0, 500, 10))
+            f.sub.add(SliderDoubleSetting("Arrow Pitch", "", "arrowHitSoundPitch", 0.0, 2.0))
+            f.sub.add(ToggleSetting("Arrow Suppress Vanilla Sound", "", "arrowHitSoundSuppress"))
+            f.sub.add(SubcategoryHeader("Melee Hit"))
+            f.sub.add(ToggleSetting("Melee Hit Sound", "Plays a sound when your melee hit lands", "meleeHitSoundEnabled"))
+            f.sub.add(SoundSearchSetting("Melee Sound", "Type to search every game sound",
                 { FishSettings.meleeHitSoundName }, { v -> FishSettings.meleeHitSoundName = v },
                 { FishSettings.meleeHitSoundVolume }, { FishSettings.meleeHitSoundPitch }))
-            f.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", "meleeHitSoundVolume", 0, 500, 10))
-            f.sub.add(SliderDoubleSetting("Pitch", "", "meleeHitSoundPitch", 0.0, 2.0))
-            f.sub.add(ToggleSetting("Suppress Vanilla Sound", "Mute the vanilla attack sounds", "meleeHitSoundSuppress"))
+            f.sub.add(SliderIntSetting("Melee Volume %", "Above 100 = louder (stacked plays)", "meleeHitSoundVolume", 0, 500, 10))
+            f.sub.add(SliderDoubleSetting("Melee Pitch", "", "meleeHitSoundPitch", 0.0, 2.0))
+            f.sub.add(ToggleSetting("Melee Suppress Vanilla Sound", "Mute the vanilla attack sounds", "meleeHitSoundSuppress"))
             general.features.add(f)
         }
         run {
