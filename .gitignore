@@ -10,6 +10,8 @@ run/
 .claude/
 .wrangler/
 .kotlin/
+CLAUDE.md
+CHANGELOG.txt
 
 # Obsidian project-brain vault — local knowledge base, never committed
 FishModNew/
@@ -47,3 +49,4 @@ FishModNew/
 */logs/
 tools/daily-bugfix/logs/
 /dungeons-1.21.11/
+docs/ui-mockups/
