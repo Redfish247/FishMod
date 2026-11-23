@@ -49,7 +49,6 @@ object HuntingHelpers {
                 if (W.invisibugHighlight) for (v in shownBugs) FishDraw.gizmoBox(AABB.ofSize(v, 1.0, 1.0, 1.0), 0, W.invisibugColor or 0xFF000000.toInt(), true)
             }
         }
-        // no-depth fill so invisibugs show through walls
         RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!W.invisibugHighlight || shownBugs.isEmpty()) return@register
             FishDiag.guard("HuntingHelpers.3", "invisibug fill render threw") {
@@ -65,7 +64,6 @@ object HuntingHelpers {
         val player = mc.player ?: return
         if (W.invisibugHighlight) bugTick(level) else bugParticles.clear()
         if (tick++ % 5 != 0) return
-        // no entity scan while both Cinderbat and lasso are off
         if (!W.cinderbatHighlight && !W.lassoAlert) { bats = emptyList(); return }
         val crimson = W.cinderbatHighlight && SkyblockLocation.`in`(SkyblockLocation.CRIMSON_ISLE)
         val b = ArrayList<Entity>()

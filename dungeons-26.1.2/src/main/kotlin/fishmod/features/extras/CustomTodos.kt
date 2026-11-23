@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as S
 
-// Custom todo list HUD, edited with /fmtodo add|done|clear
 object CustomTodos {
     private const val SEP = "\n"
 

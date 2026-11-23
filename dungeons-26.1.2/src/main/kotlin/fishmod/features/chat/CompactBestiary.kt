@@ -8,7 +8,6 @@ import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import net.minecraft.network.chat.Component
 
-// Folds Hypixel's multi-line BESTIARY level-up block into one line (lines from Eli's logs)
 object CompactBestiary {
     private val LEVEL = Regex("^(.+?) (\\w+) ➡ (\\w+)$")
     private val MILESTONE = Regex("^(\\d+) ?➡ ?(\\d+)$")

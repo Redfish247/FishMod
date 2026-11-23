@@ -8,7 +8,6 @@ import fishmod.utils.events.chatPlain
 import net.minecraft.client.Minecraft
 import fishmod.features.extras.ExtrasSettings as S
 
-// Sends your coords to party chat when Hypixel says a Vanquisher is spawning
 object VanquisherShare {
     private var lastMs = 0L
 

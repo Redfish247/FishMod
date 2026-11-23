@@ -7,7 +7,6 @@ object GardenAngles {
 
     private fun fmt(v: Float) = String.format("%.${X.gardenAnglesDecimals.coerceIn(0, 4)}f", v)
 
-    // Yaw wrapped to -180..180 like F3
     private fun lines(yaw: Float, pitch: Float): List<String> {
         val c = Garden.legacy(X.gardenAnglesColor)
         return listOf("${c}Yaw §f${fmt(net.minecraft.util.Mth.wrapDegrees(yaw))}", "${c}Pitch §f${fmt(pitch)}")

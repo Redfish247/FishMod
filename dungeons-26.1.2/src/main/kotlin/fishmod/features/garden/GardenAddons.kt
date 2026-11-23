@@ -118,7 +118,6 @@ object GardenAddons {
     private fun screen() = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*>
     private fun dnaMenu() = screen()?.let { fishmod.utils.ScreenTitle.plain(it).trim().endsWith(" DNA") } == true
 
-    // Colour code right before "DNA" in the formatted name
     private fun dnaColor(raw: String): Char? {
         val i = raw.indexOf("DNA"); if (i < 2) return null
         return raw.lastIndexOf('§', i - 1).takeIf { it >= 0 && it + 1 < raw.length }?.let { raw[it + 1] }?.takeIf { it in "cea9" }
@@ -153,7 +152,6 @@ object GardenAddons {
     private val COPPER = Regex("""^([\d,]+) Copper$""")
 }
 
-// Fewest swaps so every colour row connects (each column may only reorder its own 4 cells); ends stay fixed
 object DnaSolver {
     private val PERMS: List<IntArray> = buildList {
         fun gen(a: IntArray, l: Int) {
@@ -179,7 +177,6 @@ object DnaSolver {
         return out
     }
 
-    // Returns the next swap as (column,row) pairs, or null if solved / unsolvable
     fun nextSwap(cols: List<CharArray>): Pair<Pair<Int, Int>, Pair<Int, Int>>? {
         val n = cols.size - 2
         val inf = 1000

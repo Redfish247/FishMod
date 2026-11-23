@@ -57,7 +57,6 @@ object SecretOverlay {
         return "§7Secrets: $c$found§7/$c$total"
     }
 
-    // Example data: 5 of 8 secrets
     private fun registerPreview() {
         HudPreview.register(NAME) { HudPreview.text(listOf(label(5, 8))) }
     }

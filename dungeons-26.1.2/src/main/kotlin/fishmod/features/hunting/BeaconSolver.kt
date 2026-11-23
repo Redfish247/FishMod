@@ -15,7 +15,6 @@ import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 import fishmod.features.extras.ExtrasSettings as S
 
-// Moonglade foraging beacon tuning: highlights matching selectors, shows click offsets (never clicks)
 object BeaconSolver {
     // from SkyHanni (ForagingBeaconSolver): titles, lore patterns, colour order, speeds, pitches, slots
     private val TITLE = Regex("(Upgrade Signal Strength)|Tune Frequency")
@@ -74,7 +73,6 @@ object BeaconSolver {
         if (m == null || screen == null) { if (active) reset(); return }
         if (!active) { reset(); active = true }
         ticks++
-        // non-enchanted row sits one row higher while upgrading strength
         offset = if (m.groupValues[1].isNotEmpty()) -9 else 0
         for (slot in screen.menu.slots) {
             if (slot.container is Inventory) continue
@@ -104,7 +102,6 @@ object BeaconSolver {
         refSpeed = SPEED_TICKS.indices.minBy { kotlin.math.abs(SPEED_TICKS[it] - avg) }
     }
 
-    // only count bass notes right after the reference piece moved
     private fun onPitch(pitch: Float) {
         if (ticks - moveTick > 3) return
         val p = PITCHES.indexOfFirst { it.second == pitch }.takeIf { it >= 0 } ?: return

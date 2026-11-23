@@ -56,7 +56,6 @@ object MineshaftPity {
         return lines(points(), S.miningPityBlocks, null)
     }
 
-    // waitSec != null = the post-portal grace line; shared with the HUD editor example
     private fun lines(pts: Int, blocks: Int, waitSec: Long?): List<String> {
         val out = ArrayList<String>()
         out += "§3§lMineshaft Pity"

@@ -38,7 +38,6 @@ object RiftCaducousStem {
         if (!S.riftStem || me == null || level == null || !Rift.inRift() || !RiftDreadfarm.wandHeld()) { tops = emptyList(); return }
         val ar = Rift.area(); if (ar.isNotEmpty() && !ar.contains("Dreadfarm", true)) { tops = emptyList(); return }
         val base = me.blockPosition()
-        // Stems rarely change; rescan when the player moves a block or once a second
         if (base == lastBase && tick - lastScan < 20) return
         lastBase = base; lastScan = tick
         val found = ArrayList<BlockPos>()

@@ -49,7 +49,6 @@ object ChatRuleHandler {
             { ChatRuleStore.isMasterEnabled() }
         )
         HudPreview.register("Chat Alerts") {
-            // First title rule text, else a placeholder so the editor shows a real HUD (#547)
             val t = ChatRuleStore.rules().firstOrNull { it.enabled && it.titleMessage.isNotBlank() }?.titleMessage ?: "Chat Alert"
             HudExample(HUD_WIDTH, HudPreview.textHeight(1, 11)) { ctx -> drawAlerts(ctx, listOf(t)) }
         }
@@ -73,7 +72,6 @@ object ChatRuleHandler {
 
         return if (rule.regex) {
             val pattern = rule.compiledPattern() ?: run {
-                // Warn once per bad filter, not on every chat line
                 if (badRegexWarned.add(filter)) FishDiag.fail("ChatRuleHandler.2", "chat rule regex does not compile: '$filter'")
                 return false
             }

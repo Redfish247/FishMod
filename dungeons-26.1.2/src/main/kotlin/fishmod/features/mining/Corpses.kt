@@ -86,7 +86,6 @@ object Corpses {
                 .replace("{z}", e.z.roundToInt().toString()).replace("{type}", type.display)
             announce(msg)
         }
-        // Sight must be continuous: a corpse that left view (range, wall, despawn) starts over
         seenTicks.keys.retainAll(inView)
     }
 

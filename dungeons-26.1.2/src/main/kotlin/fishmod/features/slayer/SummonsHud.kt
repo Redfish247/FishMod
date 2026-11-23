@@ -10,7 +10,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.decoration.ArmorStand
 
-// HUD listing your Necromancer summons and their HP
 object SummonsHud {
 
     // from SkyHanni (MobFilter.summonFilter: "^(?<owner>\\w+)'s (?<name>.*) \\d+.*")

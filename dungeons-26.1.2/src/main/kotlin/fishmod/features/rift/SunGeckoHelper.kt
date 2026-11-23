@@ -10,7 +10,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.decoration.ArmorStand
 import fishmod.features.slayer.BossToolsSettings as S
 
-// Time Chamber Sun Gecko HUD: HP, revival phase, combo hits and modifiers
 object SunGeckoHelper {
     // from SkyHanni (SunGeckoHelper patterns, colours stripped)
     private val COMBO = Regex("\\[([^\\]]*?) x(\\d+) ([^\\]]*)]")

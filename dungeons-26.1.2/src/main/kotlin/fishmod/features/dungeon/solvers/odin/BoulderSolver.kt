@@ -46,7 +46,7 @@ object BoulderSolver {
 
     private fun scan(room: ORoom) {
         val level = Minecraft.getInstance().level ?: return
-        val sb = StringBuilder(42) // 6 rows x 7 columns
+        val sb = StringBuilder(42)
         for (z in 24 downTo 9 step 3) {
             for (x in 24 downTo 6 step 3) {
                 sb.append(if (level.getBlockState(room.getRealCoords(BlockPos(x, 66, z))).isAir) '0' else '1')

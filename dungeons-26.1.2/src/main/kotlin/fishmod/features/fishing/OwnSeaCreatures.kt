@@ -14,7 +14,6 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
 import fishmod.features.fishing.FishingWorldSettings as W
 
-// Own sea creatures: kill timer in chat and cap warning (catch line then matching nametag, idea from Skyblocker)
 object OwnSeaCreatures {
     private class Live(val name: String, val born: Long, var pos: Vec3)
     private val live = LinkedHashMap<Int, Live>()
@@ -47,7 +46,6 @@ object OwnSeaCreatures {
             val e = level.getEntity(id)
             if (e != null && e.isAlive) { c.pos = e.position(); continue }
             it.remove()
-            // only count it as killed when we were close enough to see it go
             if (W.scKillTimer && pl.position().distanceTo(c.pos) < 24) FishUtil.addChatMessage(Component.literal("§b" + c.name + " §7took §e" + "%.1f".format((now - c.born) / 1000.0) + "s §7to die."))
         }
         if (pending.isNotEmpty()) for (s in level.getEntitiesOfClass(ArmorStand::class.java, pl.boundingBox.inflate(40.0))) {

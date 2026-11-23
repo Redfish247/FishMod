@@ -30,7 +30,7 @@ object CustomScoreboard {
     private val BLANK: Component = Component.empty()
 
     private val HEADER = Regex("""^(\d{2}/\d{2}/\d{2})\s*(.*)$""")
-    private val LOCATION = Regex("""^\s*(§.)*\s*[⏣фൠ-]""") // location icon (incl. custom-font glyphs)
+    private val LOCATION = Regex("""^\s*(§.)*\s*[⏣фൠ-]""")
     private val PURSE = Regex("""^(Purse|Piggy):\s*(.+)$""")
     private val BITS = Regex("""^Bits:\s*([\d,.]+)""")
     private val MOTES = Regex("""^Motes:\s*([\d,.]+)""")
@@ -60,7 +60,6 @@ object CustomScoreboard {
     private var narrowSince = 0L
     private var widthLoc: Any? = null
 
-    // Grow at once, shrink only after staying narrower for a while (or on island change)
     private fun stableWidth(w: Int, now: Long): Int {
         val loc = SkyblockLocation.getCurrentLocation()
         if (loc != widthLoc) { widthLoc = loc; stableW = w; narrowSince = 0L; return w }
@@ -91,7 +90,6 @@ object CustomScoreboard {
         return w + 3
     }
 
-    // Box drawing shared by the in-game sidebar and the HUD editor example; x1 = left of the text column
     private fun drawBoard(ctx: GuiGraphicsExtractor, tr: net.minecraft.client.gui.Font, b: Built, x1: Int, y0: Int, gs: Int) {
         val x2 = x1 + b.width
         val totalH = b.totalH
@@ -127,7 +125,6 @@ object CustomScoreboard {
         "§ewww.hypixel.net" to "www.hypixel.net",
     ).map { Raw(Component.literal(it.first), it.second) }
 
-    // Example tab/API data for the sections that don't come from the sidebar
     private fun exLevel(): Component {
         val style = if (FishSettings.prestigeColorsEnabled)
             Style.EMPTY.withColor(TextColor.fromRgb(fishmod.cosmetic.prestige.PrestigeLevelColors.rgb(287)))
@@ -148,7 +145,6 @@ object CustomScoreboard {
     private var pvAt = 0L
     private var pv: Built? = null
 
-    // Example data fed through the real build(): header, world and money lines in Hypixel's own formats
     private fun preview(): Built {
         val now = System.currentTimeMillis()
         pv?.let { if (now - pvAt < 200L) return it }
@@ -266,7 +262,6 @@ object CustomScoreboard {
             .take(20)
             .map { e ->
                 val team = e.team
-                // Owner is Hypixel's hidden filler; the text is the team prefix + suffix
                 val c = if (team != null) Component.empty().append(team.playerPrefix).append(team.playerSuffix) else (e.display ?: Component.literal(e.owner))
                 Raw(trimEnd(c), clean(c.string))
             }
@@ -285,7 +280,6 @@ object CustomScoreboard {
         return out
     }
 
-    // ex = HUD editor example: tab/API-backed sections use example data instead of live state
     private fun build(mc: Minecraft, sbTitle: Component, raw: List<Raw>, ex: Boolean = false): Built {
         val used = BooleanArray(raw.size)
         fun take(pred: (Raw) -> Boolean): Raw? {
@@ -319,8 +313,6 @@ object CustomScoreboard {
             used[timeIdx] = true
             if (FishSettings.sbSectionTime) world.add(Component.literal("§7" + bare(raw[timeIdx].s)))
         }
-        // Only a real location line; the line after time differs per island
-        // .s has the icon stripped, so check the raw component text; else the colon-free line after time
         val locIdx = raw.indices.firstOrNull { !used[it] && (LOCATION.containsMatchIn(raw[it].c.string) || ScoreboardSection.classify(raw[it].s) == ScoreboardSection.LOCATION) }
             ?: timeIdx?.plus(1)?.takeIf { it < raw.size && !used[it] && ':' !in raw[it].s && raw[it].s.isNotBlank() }
         if (locIdx != null) {
@@ -337,7 +329,6 @@ object CustomScoreboard {
         val money = ArrayList<Component>()
         if (FishSettings.sbSectionLevel) (if (ex) exLevel() else stickyLevel(mc))?.let { money.add(it) }
         take { PURSE.containsMatchIn(it.s) }?.let { if (FishSettings.sbSectionPurse) money.add(kv(it.s, "§6")) }
-        // Bank right under purse: sidebar line, else the tab list Profile widget (#606)
         val bank = take { ScoreboardSection.classify(it.s) == ScoreboardSection.BANK }?.let { bare(it.s) }
             ?: (if (ex) null else tabValue(TAB_BANK))?.let { "Bank: $it" }
         if (bank != null && FishSettings.sbSectionPurse) money.add(kv(bank, "§6"))
@@ -351,7 +342,6 @@ object CustomScoreboard {
         else if (showMotes) money.add(kv(motes!!.s, "§5"))
         val gems = take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { bare(it.s) } ?: (if (ex) null else tabValue(TAB_GEMS))?.let { "Gems: $it" }
         if (gems != null && FishSettings.sbSectionGems) money.add(kv(gems, "§a"))
-        // Fixed slot order (enum order), not Hypixel's per-island order
         val others = ArrayList<Pair<ScoreboardSection, Raw>>()
         while (true) {
             val r = take { ScoreboardSection.classify(it.s) in OTHER_CURRENCIES } ?: break
@@ -421,13 +411,11 @@ object CustomScoreboard {
     private val LEADING_GLYPHS = Regex("""^[^\p{L}\p{N}]+""")
     private fun bare(s: String): String = s.replace(LEADING_GLYPHS, "").trim()
     private val TRAILING_GLYPHS = Regex("""[^\p{L}\p{N}]+$""")
-    // Also drops trailing weather/emoji glyphs ("4:30pm ☀") so date/time still match (#605)
     private fun core(s: String): String = bare(s).replace(TRAILING_GLYPHS, "").trim()
 
     private var lastLevel: Component? = null
     private var lastLevelAt = 0L
 
-    // Tab list briefly drops the player row on refresh; hold the last level so the line doesn't blink
     private fun stickyLevel(mc: Minecraft): Component? {
         val now = System.currentTimeMillis()
         levelLine(mc)?.let { lastLevel = it; lastLevelAt = now; return it }
@@ -466,7 +454,6 @@ object CustomScoreboard {
             val m = POWDER.find(e.stripped) ?: continue
             found.putIfAbsent(m.groupValues[1], m.groupValues[2])
         }
-        // Always Mithril, Gemstone, Glacite regardless of tab order
         val out = ArrayList<Component>()
         for ((k, col) in listOf("Mithril" to "§2", "Gemstone" to "§d", "Glacite" to "§b")) {
             val v = found[k] ?: continue

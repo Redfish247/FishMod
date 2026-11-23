@@ -185,7 +185,6 @@ object TerminalSolver {
         val inSol = idx in term.solution
 
         if (term is MelodyHandler) {
-            // Highlight the whole target column (rows 1-4) instead of the magenta pane on the top row.
             val r = idx / 9
             val inCol = r in 1..term.laneRows && idx % 9 == term.targetCol
             if (!before) {

@@ -77,7 +77,7 @@ object AchLeaderboard {
         if (mc.player == null) return
         val now = System.currentTimeMillis()
         if (!submitting && now - lastSubmit > SUBMIT_GAP_MS && now - lastKeyCheck > 1000L && SkyblockLocation.inSkyblock()) {
-            lastKeyCheck = now // key() sums every achievement, so check at most once a second
+            lastKeyCheck = now
             if (key() != lastSubmittedKey) submit(false)
         }
         val gap = if (offline) FETCH_RETRY_MS else FETCH_GAP_MS
@@ -105,7 +105,6 @@ object AchLeaderboard {
             addProperty("points", AchEngine.points())
             addProperty("secrets", secretCount())
             addProperty("unlocked", AchStore.data.unlocked.size)
-            // Registry maxima so the worker's clamp follows new achievements (#533)
             addProperty("maxPoints", MAX_POINTS)
             addProperty("maxSecrets", SECRET_TOTAL)
         }

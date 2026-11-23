@@ -108,7 +108,6 @@ object DungeonMap {
         val colors = state.colors ?: return
         if (colors.isEmpty()) return
 
-        // not the dungeon map (or not drawn yet): forget the id so the next packet can be tried
         if (startCoords == null && !initializeSizes(colors)) { mapId = null; return }
 
         DungeonPlayers.updateDecorations((state as MapItemSavedDataAccessor).decorations)

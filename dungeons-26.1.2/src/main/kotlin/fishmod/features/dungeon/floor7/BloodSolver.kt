@@ -120,7 +120,7 @@ object BloodSolver {
         firstSpawns = false
         if (bloodOpenTick < 0) return
         val seconds = (dungeonTick - bloodOpenTick) / 20
-        if (seconds !in 1..120) return // stale or uninitialised timestamps: no reliable delay
+        if (seconds !in 1..120) return
 
         if (Floor7Settings.bloodSolverKillTitle) {
             val moveTicks = when (seconds) {

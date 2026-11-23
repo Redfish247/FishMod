@@ -23,7 +23,6 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
 
-/** Price history for one item: bazaar (daily) or auction house (hourly), drawn as a line graph. Data: SkyCofl public API. */
 class MarketScreen(private val id: String, private val parent: Screen?) : Screen(Component.literal("Market")), HasUiOverlay {
 
     private class Series(val label: String, val color: Int, val values: DoubleArray)
@@ -52,7 +51,6 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         private val BINS = ConcurrentHashMap<String, BinState>()
         private val PROBE = ConcurrentHashMap<String, Boolean>()
 
-        /** Whether the item has price history (bazaar, or any AH history in the last month). Starts one cached lookup on first ask; false until it answers. */
         @JvmStatic
         fun hasHistory(id: String): Boolean {
             val pet = PET_RE.matchEntire(id)?.takeIf { NeuRepo.get(id)?.get("displayname")?.asString?.contains("[Lvl") == true }
@@ -187,7 +185,6 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         return Data(LongArray(rows.size) { rows[it].first }, listOf(Series("Average", GREEN, col("avg")), Series("Lowest", CYAN, col("min")), Series("Highest", RED, col("max"))), vol)
     }
 
-    /** Last N points of the loaded data for the selected range. */
     private fun visible(d: Data): Pair<Int, Int> {
         val n = d.times.size
         val keep = if (bazaar) (if (BZ_RANGES[range].fine != null) n else BZ_RANGES[range].days) else n

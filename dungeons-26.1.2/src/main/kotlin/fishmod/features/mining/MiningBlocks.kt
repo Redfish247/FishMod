@@ -78,7 +78,6 @@ object MiningBlocks {
         }
     }
 
-    // Skyblocker PickobulusHelper: what Pickobulus can break outside the Hollows/Glacite
     val CONVERT_INTO_BEDROCK = setOf<Block>(
         Blocks.STONE, Blocks.COBBLESTONE, Blocks.POLISHED_DIORITE, Blocks.PRISMARINE, Blocks.PRISMARINE_BRICKS,
         Blocks.DARK_PRISMARINE, CB.CYAN_TERRACOTTA, CB.LIGHT_BLUE_WOOL, CB.GRAY_WOOL, Blocks.LAPIS_BLOCK,

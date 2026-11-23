@@ -54,7 +54,6 @@ object BlockOverlay {
         if (mode != 1) FishDraw.gizmoThickOutline(box, FishSettings.blockOverlayOutlineColor, FishSettings.blockOverlayOutlineThickness)
     }
 
-    // One target lookup per frame; fill first, then outline
     private fun renderNoDepth(matrices: PoseStack, vc: VertexConsumer) {
         val box = targetBox() ?: return
         val mode = FishSettings.blockOverlayMode

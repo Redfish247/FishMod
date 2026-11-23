@@ -112,7 +112,6 @@ object FarmingProfitTracker {
 
     private fun scrollBy(d: Int): Boolean { scroll = (scroll + d).coerceAtLeast(0); version++; return true }
 
-
     private fun onChat(text: Component) {
         val raw = Garden.strip(text.string)
         val s = raw.trim()
@@ -156,7 +155,6 @@ object FarmingProfitTracker {
 
     private fun num(s: String) = s.replace(",", "").toLongOrNull() ?: 0L
 
-    // Chat-credited items that will reappear in the batched [Sacks] summary; deducted so they aren't also "Crops"
     private val pending = HashMap<String, MutableList<LongArray>>()
     private fun norm(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase()
 
@@ -218,7 +216,6 @@ object FarmingProfitTracker {
         save(false)
     }
 
-
     fun priceOf(name: String): Double {
         val id = idOf(name) ?: return 0.0
         CroesusPrices.bazaarPrice(id, S.gardenProfitPriceMode != "Insta Sell")?.let { if (it > 0) return it }
@@ -233,7 +230,6 @@ object FarmingProfitTracker {
 
     private fun buildLines(): List<String> = buildLines(tracker(), ::priceOf, true, S.gardenRareCropCount)
 
-    // live = the in-game HUD (keeps the inventory scroll); false = the HUD editor example over example data
     private fun buildLines(t: Tracker, price: (String) -> Double, live: Boolean, rareCount: Int): List<String> {
         val only = Cat.of(S.gardenProfitCategory)
         val rows = ProfitTrackerKit.sort(ProfitTrackerKit.mergeSources(t.items.mapNotNull { (k, n) ->

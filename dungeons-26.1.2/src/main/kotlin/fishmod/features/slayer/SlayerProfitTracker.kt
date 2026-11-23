@@ -58,7 +58,6 @@ object SlayerProfitTracker {
     private var lastQuestStartMs = 0L
     private var resetArmedAt = 0L
 
-
     private fun idleMs(): Long = FishSettings.slayerProfitIdleSeconds.coerceIn(10, 3600) * 1000L
     fun sessionMode(): Boolean = FishSettings.slayerProfitDisplayMode.equals("This Session", true)
     private fun countKillCoins(): Boolean = FishSettings.slayerProfitCountKillCoins
@@ -241,7 +240,7 @@ object SlayerProfitTracker {
     fun cycleMode() {
         FishSettings.slayerProfitDisplayMode = if (sessionMode()) "Total" else "This Session"
         resetArmedAt = 0L
-        displayCache = null // cache key has no mode, so drop it or the old mode shows for up to 1s
+        displayCache = null
     }
 
     @JvmStatic fun modeLabel(): String = if (sessionMode()) "This Session" else "Total"
@@ -388,10 +387,8 @@ object SlayerProfitTracker {
         Row("Revenant Catalyst", 3, 45_000.0, true, id = "REVENANT_CATALYST"),
         Row("Scythe Blade", 1, 0.0, false),
     )
-    // example row treated as hidden, so "Show Hidden" previews like in game
     private const val EX_HIDDEN = "Revenant Catalyst"
 
-    // Example data through the real row builder, never cached, for the HUD editor preview
     fun exampleDisplay(type: SlayerType, tier: Int): List<DisplayRow> = buildDisplay(type, tier, false, true)
 
     private fun buildDisplay(type: SlayerType, tier: Int, interactive: Boolean, example: Boolean = false): List<DisplayRow> {

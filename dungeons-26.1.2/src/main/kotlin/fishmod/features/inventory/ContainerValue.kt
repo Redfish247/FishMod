@@ -76,13 +76,11 @@ object ContainerValue {
     @JvmStatic
     fun storageSidebarEnabled(): Boolean = FishSettings.containerValueEnabled && SkyblockLocation.inSkyblock()
 
-    // Storage overlay draws these in its own fixed sidebar
     @JvmStatic
     fun storageRows(screen: AbstractContainerScreen<*>): List<SidebarRow> {
         try { recompute(screen) } catch (e: Exception) {
             FishDiag.fail("ContainerValue.4", "storage container value recompute failed", e); return emptyList()
         }
-        // Rebuilt only when recompute() swaps in a new row list (or the unit changes), not every frame
         val unit = unitName()
         if (rows !== storageRowsFor || unit != storageRowsUnit) {
             storageRowsFor = rows

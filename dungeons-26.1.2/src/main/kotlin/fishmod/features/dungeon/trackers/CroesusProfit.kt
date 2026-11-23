@@ -153,7 +153,7 @@ object CroesusProfit {
     private fun fmt(v: Double): String {
         val a = Math.abs(v)
         val s = when {
-            a >= 999_995_000.0 -> "%.2fb".format(v / 1e9) // thresholds avoid "1000k" rollover
+            a >= 999_995_000.0 -> "%.2fb".format(v / 1e9)
             a >= 999_500.0 -> "%.2fm".format(v / 1e6)
             a >= 999.5 -> "%.0fk".format(v / 1e3)
             else -> "%.0f".format(v)

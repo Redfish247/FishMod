@@ -10,7 +10,6 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 
-// Outlines the mob under a slayer miniboss nametag (names from SlayerType.miniBosses)
 object SlayerMiniHighlight {
 
     @Volatile private var glow: Map<Int, Int> = emptyMap()

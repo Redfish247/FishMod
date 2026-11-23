@@ -14,7 +14,6 @@ import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
 import fishmod.features.extras.ExtrasSettings as S
 
-// Waypoints from Patcher-style "x: 1, y: 2, z: 3" coords in chat
 object PatcherWaypoints {
     private class Wp(val label: String, val pos: Vec3, val expires: Long)
 
@@ -62,7 +61,6 @@ object PatcherWaypoints {
         val beam = S.patcherWaypointBeam
         for (w in list) {
             val behind = FishDraw.behindCamera(w.pos.x, w.pos.y + 0.5, w.pos.z, eye, look, 2.0)
-            // A tall beam can still cross the view when the base is behind the camera
             if (behind && !beam) continue
             val center = w.pos.add(0.0, 0.5, 0.0)
             val d = center.distanceTo(eye)

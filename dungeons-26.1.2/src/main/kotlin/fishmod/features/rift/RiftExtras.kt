@@ -78,7 +78,6 @@ object RiftExtras {
             if (p is ClientboundBlockUpdatePacket) { val pos = p.pos; val st = p.blockState; Minecraft.getInstance().execute { onBlock(pos, st) } }
             false
         }
-        // timestamp new panes on packet arrival; the 1s scan alone ran up to a second late
         registerPacket(ClientboundBlockUpdatePacket::class.java, ClientboundSectionBlocksUpdatePacket::class.java, gate = { S.riftTimite && Rift.inArea("Mountaintop") }) { p ->
             val now = System.currentTimeMillis(); val placed = ArrayList<Long>()
             when (p) {
@@ -112,7 +111,6 @@ object RiftExtras {
     private fun hackScreen(): AbstractContainerScreen<*>? = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*>
     private fun inHacking() = hackScreen()?.let { fishmod.utils.ScreenTitle.plain(it).trim() in HACKING_TITLES } == true
 
-    // Slots 2..6 hold the answers; row i's current pick sits at slot 11 + 10 * i
     private fun scanHacking() {
         if (!inHacking()) { answers.clear(); return }
         if (answers.size == 5) return
@@ -139,7 +137,6 @@ object RiftExtras {
         timite.keys.removeIf { level.getBlockState(BlockPos.of(it)).block != fishmod.compat.CB.BLUE_STAINED_GLASS_PANE }
     }
 
-    // A defense block appears as stained glass or a diamond block near a hurt Auto* mob
     private fun onBlock(pos: BlockPos, st: BlockState) {
         if (st.isAir) { defense.removeIf { it.pos == pos }; return }
         if (st.block !is StainedGlassBlock && st.block != Blocks.DIAMOND_BLOCK) return
