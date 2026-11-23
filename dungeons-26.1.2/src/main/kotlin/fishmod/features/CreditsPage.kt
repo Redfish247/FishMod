@@ -34,7 +34,6 @@ class CreditsPage {
                 details = listOf(
                     "Profile viewer code ported from BetterPV (MPL-2.0, github.com/Vyriv/BetterPV)",
                     "Data: NEU-REPO, Athen & SkyHelper prices, EliteBot, SkyCofl",
-                    "Font: Inter by The Inter Project Authors (SIL OFL 1.1)",
                 ),
             ),
             Credit(
