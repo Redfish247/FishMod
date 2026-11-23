@@ -995,7 +995,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonTrackers.features.add(f)
         }
         run {
-            val f = Feature("Simon Says", "simonSaysEnabled")
+            val f = Feature("Simon Says", null, null)
+            f.sub.add(SubcategoryHeader("Solver"))
+            f.sub.add(ToggleSetting("Simon Says Solver", "F7 P3 Goldor device: boxes the buttons to press, in order", "simonSolverEnabled"))
+            f.sub.add(ToggleSetting("Through Walls", "", "simonSolverDepth").gatedBy { FishSettings.simonSolverEnabled })
+            f.sub.add(ToggleSetting("Block Wrong Clicks", "Cancels clicks on the wrong button (hold sneak to override)", "simonSolverBlockWrong").gatedBy { FishSettings.simonSolverEnabled })
+            f.sub.add(ColorPickerSetting("Next", "", "simonSolverColor1").gatedBy { FishSettings.simonSolverEnabled })
+            f.sub.add(ColorPickerSetting("Second", "", "simonSolverColor2").gatedBy { FishSettings.simonSolverEnabled })
+            f.sub.add(ColorPickerSetting("Rest", "", "simonSolverColor3").gatedBy { FishSettings.simonSolverEnabled })
+            f.sub.add(SubcategoryHeader("Messages and HUD"))
+            f.sub.add(ToggleSetting("Simon Says Messages", "Round callouts, fail message and HUD", "simonSaysEnabled"))
             f.sub.add(ToggleSetting("Show HUD", "", "simonSaysHudEnabled"))
             f.sub.add(ToggleSetting("To Party", "", "simonSaysPartyChat"))
             f.sub.add(ToggleSetting("SS Skip Compatibility", "Count a skipped first round correctly", "simonSaysSkipCompat"))
@@ -1827,29 +1836,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Melody", "", "terminalMelodyPointerColor"))
             f.sub.add(ColorPickerSetting("Melody Column", "Bar showing the column to click on", "terminalMelodyColor"))
             f.sub.add(ColorPickerSetting("Wrong-Item Cover", "", "terminalWrongCover"))
+            f.sub.add(SubcategoryHeader("Melody Message"))
+            f.sub.add(ToggleSetting("Melody Message", "Party-announce the F7 melody terminal + its progress", "melodyMessageEnabled"))
+            f.sub.add(ToggleSetting("Announce on Open", "Party message when the melody terminal opens", "melodyMessageOnOpen").gatedBy { FishSettings.melodyMessageEnabled })
+            f.sub.add(InputSetting("Open Message", "",
+                { FishSettings.melodyMessageText }, { v -> FishSettings.melodyMessageText = v ?: "" })
+                .gatedBy { FishSettings.melodyMessageEnabled && FishSettings.melodyMessageOnOpen })
+            f.sub.add(ToggleSetting("Progress Calls", "Party-message 25/50/75% as the marker drops", "melodyMessageProgress").gatedBy { FishSettings.melodyMessageEnabled })
             solvers.features.add(f)
         }
         run {
             val f = Feature("Arrow Align", "arrowAlignEnabled")
             f.sub.add(ToggleSetting("Block Wrong Clicks", "Cancels rotating a frame that isn't in the solution (hold sneak to override)", "arrowAlignBlockWrong"))
-            solvers.features.add(f)
-        }
-        run {
-            val f = Feature("Simon Says Solver", "simonSolverEnabled")
-            f.sub.add(ToggleSetting("Through Walls", "", "simonSolverDepth"))
-            f.sub.add(ToggleSetting("Block Wrong Clicks", "Cancels clicks on the wrong button (hold sneak to override)", "simonSolverBlockWrong"))
-            f.sub.add(ColorPickerSetting("Next", "", "simonSolverColor1"))
-            f.sub.add(ColorPickerSetting("Second", "", "simonSolverColor2"))
-            f.sub.add(ColorPickerSetting("Rest", "", "simonSolverColor3"))
-            solvers.features.add(f)
-        }
-        run {
-            val f = Feature("Melody Message", "melodyMessageEnabled")
-            f.sub.add(ToggleSetting("Announce on Open", "Party message when the melody terminal opens", "melodyMessageOnOpen"))
-            f.sub.add(InputSetting("Open Message", "",
-                { FishSettings.melodyMessageText }, { v -> FishSettings.melodyMessageText = v ?: "" })
-                .gatedBy { FishSettings.melodyMessageOnOpen })
-            f.sub.add(ToggleSetting("Progress Calls", "Party-message 25/50/75% as the marker drops", "melodyMessageProgress"))
             solvers.features.add(f)
         }
         run {
@@ -2300,6 +2298,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         take(itemsCol, setOf("Item Tooltip","Recipe Viewer","Item List","Auto BIN Price","Sign Calculator","AH Buy Price Check","Bazaar Search + Price Graph"), hud, extrasCol)
         take(petsCol, setOf("Pet HUD","Pet Swap Title","Hide Pet Nametag Level","Pet Keybinds"), hud, invStorage)
         take(dungeon, setOf("Catacombs Overflow Levels","Fire Freeze Timer"), hud)
+        take(floor7, setOf("Simon Says","Arrow Align","Arrows Device","Terminal Solver"), solvers)
+        dungeon.features.addAll(solvers.features); solvers.features.clear()
         columns.add(cosmetics)
         columns.add(general)
         columns.add(chatCol)
@@ -2311,7 +2311,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(dungeon)
         columns.add(dungeonTrackers)
         columns.add(dungeonMap)
-        columns.add(solvers)
         columns.add(floor7)
         columns.add(slayer)
         columns.add(end)
