@@ -15,6 +15,11 @@ object RemoteNicks {
 
     private val styledByName: MutableMap<String, Component> = ConcurrentHashMap()
 
+    @Volatile private var version = 0
+
+    private class Memo(val input: Component, val ver: Int, val str: String, val own: String?, val out: Component)
+    private val memo = arrayOfNulls<Memo>(64)
+
     private val negativeCache: MutableMap<String, Long> = ConcurrentHashMap()
 
     private val inFlight: MutableSet<String> = ConcurrentHashMap.newKeySet()
@@ -51,12 +56,14 @@ object RemoteNicks {
 
     @JvmStatic
     fun clearAll() {
+        version++
         styledByName.clear()
     }
 
     @JvmStatic
     fun acceptNicks(uuidToName: Map<String, String>, nicks: Map<String, String>) {
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) {
+            version++
             styledByName.clear()
             return
         }
@@ -67,10 +74,12 @@ object RemoteNicks {
             if (raw != null && raw.isNotEmpty()) {
                 val styled = FishDiag.guard("RemoteNicks.2", "remote nick parse failed for $name") { NickState.parse(ProfanityFilter.censor(raw)) } ?: continue
                 val prev = styledByName.put(name, styled)
+                version++
                 negativeCache.remove(name)
                 if (prev == null) newlyResolved = true
             } else {
                 styledByName.remove(name)
+                version++
                 negativeCache[name] = now + NEGATIVE_TTL_MS
             }
         }
@@ -145,6 +154,7 @@ object RemoteNicks {
             if (raw != null && raw.isNotEmpty()) {
                 val styled = FishDiag.guard("RemoteNicks.3", "remote nick parse failed for $name") { NickState.parse(ProfanityFilter.censor(raw)) } ?: return@fetchNicks
                 val prev = styledByName.put(name, styled)
+                version++
                 negativeCache.remove(name)
                 if (prev == null) ChatNickRefresher.requestRefresh()
             } else {
@@ -170,19 +180,28 @@ object RemoteNicks {
     fun applyResolvedOnly(text: Component?): Component? {
         if (text == null) return text
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled || styledByName.isEmpty()) return text
-        var s = text.string
+        val s = text.string
         if (s.length < 3) return text
         if (s.trimStart().startsWith("[NPC]")) return text
-        var out = text
         val own = if (NickState.isActive()) NickState.realName() else null
-        // Look up the line's name-like tokens instead of scanning every known nick
+        val ver = version
+        val slot = System.identityHashCode(text) and 63
+        val hit = memo[slot]
+        if (hit != null && hit.input === text && hit.ver == ver && hit.own == own && hit.str == s) return hit.out
+        val result = rewrite(text, s, own)
+        memo[slot] = Memo(text, ver, s, own, result)
+        return result
+    }
+
+    private fun rewrite(text: Component, s0: String, own: String?): Component {
+        var s = s0
+        var out = text
         val hits = LinkedHashSet<String>()
         val m = IGN_PAT.matcher(if (s.indexOf('§') >= 0) TextStrip.plain(s) else s)
         while (m.find()) { val n = m.group(1); if (styledByName.containsKey(n)) hits += n }
         if (hits.isEmpty()) return text
         for (k in hits) {
             val v = styledByName[k] ?: continue
-            // Own name is already swapped locally; the server copy can be stale
             if (k == own) continue
             if (s.contains(k)) {
                 val replaced = NameRewriter.replaceName(out, k, v) ?: continue

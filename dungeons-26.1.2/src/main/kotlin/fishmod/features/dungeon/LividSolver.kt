@@ -69,7 +69,7 @@ object LividSolver {
         RenderHooks.GIZMO.register { _ ->
             if (!active()) return@register
             if (Minecraft.getInstance().player?.getEffect(MobEffects.BLINDNESS) != null) return@register
-            try { current.entity?.let { FishDraw.gizmoBox(it.boundingBox, 0, FishSettings.lividSolverColor) } }
+            try { current.entity?.takeIf { !it.isRemoved }?.let { FishDraw.gizmoBox(it.boundingBox, 0, FishSettings.lividSolverColor) } }
             catch (e: Exception) { FishDiag.fail("LividSolver.2", "livid box render threw (${current.entityName})", e) }
         }
     }

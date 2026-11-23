@@ -4,7 +4,6 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.events.FishEvents
 import fishmod.features.mining.MiningSettings as S
 
-// HUD with time spent in the current Glacite Mineshaft
 object MineshaftTimer {
     private var enteredMs = 0L
 

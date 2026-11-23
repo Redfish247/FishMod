@@ -110,10 +110,6 @@ object FarmingToolFortune {
 		return null
 	}
 
-	/**
-	 * Breakdown for one crop. {@code milestones} is null until the garden loads, which leaves Dedication unknown
-	 * instead of zero.
-	 */
 	@JvmStatic
 	fun parts(
 		info: Info, attrs: CompoundTag?, rarity: String?, crop: String, milestones: Map<String, Int>?, axedPerk: Boolean

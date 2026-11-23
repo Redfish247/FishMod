@@ -23,7 +23,6 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 
-// Deathmite/skull glow, skull hide, teammate HP alert + HUD, class level colour in tab
 object DungeonExtras {
 
     private const val HUD = "Party HP"
@@ -87,7 +86,6 @@ object DungeonExtras {
     @JvmStatic
     fun hideSkull(e: Entity): Boolean = S.skullHide && e is ArmorStand && skulls.contains(e.id)
 
-    // Rebuilds "[lvl] rank name (Class XX)" with the level coloured by tier
     @JvmStatic
     fun classTab(original: Component): Component {
         if (!S.classTabColor || !SkyblockLocation.inDungeon()) return original
@@ -95,9 +93,8 @@ object DungeonExtras {
         classTabCache[plain]?.let { return it }
         val m = TAB_TEAM.find(plain) ?: return original
         val (sb, rank, name, cls, lvl) = m.destructured
-        val n = lvl.toIntOrNull() ?: roman(lvl)
+        val n = lvl.toIntOrNull() ?: fishmod.utils.data.Roman.toInt(lvl)
         val built = Component.literal("§8$sb ${if (rank.isEmpty()) "" else "$rank "}§f$name §f(§d$cls ${color(n)}$lvl§f)")
-        // Tab names repeat every frame; output depends only on the plain text.
         if (classTabCache.size >= 256) classTabCache.clear()
         classTabCache[plain] = built
         return built
@@ -189,17 +186,5 @@ object DungeonExtras {
     private fun color(l: Int): String = when {
         l >= 50 -> "§c§l"; l >= 45 -> "§c"; l >= 40 -> "§6"; l >= 35 -> "§d"; l >= 30 -> "§9"
         l >= 25 -> "§b"; l >= 20 -> "§2"; l >= 15 -> "§a"; l >= 10 -> "§e"; l >= 5 -> "§f"; else -> "§7"
-    }
-
-    private val ROMAN = mapOf('I' to 1, 'V' to 5, 'X' to 10, 'L' to 50, 'C' to 100)
-
-    private fun roman(s: String): Int {
-        var total = 0
-        for (i in s.indices) {
-            val c = ROMAN[s[i]] ?: return 0
-            val next = if (i + 1 < s.length) ROMAN[s[i + 1]] ?: 0 else 0
-            total += if (c < next) -c else c
-        }
-        return total
     }
 }

@@ -182,6 +182,8 @@ object DianaMenu {
         "Crown of Avarice Tracker" -> "HUD with crown coins (past 1B), coins/hour and time to max"
         "Crown of Avarice Milestones" -> "Chat message every 100M coins your crown collects"
         "Diana Waypoint Style" -> "Colors, opacity and text for Diana waypoints"
+        "Share Rare Mobs" -> "Sends rare Diana mob coords to your party"
+        "Receive Rare Mobs" -> "Waypoints from rare mob coords others send"
         else -> null
     }
 }

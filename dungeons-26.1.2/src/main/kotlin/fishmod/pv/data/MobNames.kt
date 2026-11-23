@@ -7,10 +7,6 @@
  */
 package fishmod.pv.data
 
-/**
- * SkyCrypt-style labels for `player_stats.kills` / `deaths` keys.
- * Strips trailing level suffixes (`kuudra_follower_500`) then maps known ids.
- */
 object MobNames {
     private val NAMES = mapOf(
         "pond_squid" to "Squid",

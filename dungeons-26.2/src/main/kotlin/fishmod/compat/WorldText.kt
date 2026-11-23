@@ -15,8 +15,6 @@ import org.joml.Matrix4f
 import org.joml.Vector3f
 import org.joml.Vector4f
 
-// 26.2 side. Late mode (VisualSettings.lateWorldText): the label is projected to the screen and drawn in the HUD, after water/glass/leaves.
-// Otherwise text goes to the submit collector, which drains before translucent terrain.
 object WorldText {
     @JvmField var collector: SubmitNodeCollector? = null
 
@@ -63,7 +61,6 @@ object WorldText {
         }
     }
 
-    // Called once per frame from the collect pass: freezes this frame's labels with its camera
     @JvmStatic
     fun commit(cam: CameraRenderState) {
         view.set(cam.viewRotationMatrix); proj.set(cam.projectionMatrix)

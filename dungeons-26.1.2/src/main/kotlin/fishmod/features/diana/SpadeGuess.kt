@@ -28,7 +28,6 @@ object SpadeGuess {
         FishEvents.worldChange.register { reset(); false }
     }
 
-    // /particle can't send a negative speed, so test worlds use speed 0 with no spread
     private fun testTrail(p: net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket) =
         Diana.testMode && p.speed == 0f && p.xDist == 0f && p.yDist == 0f && p.zDist == 0f
 
@@ -56,13 +55,10 @@ object SpadeGuess {
     fun trailActive() = System.currentTimeMillis() - lastLavaMs < 3000
 
     private fun place(v: Vec3) {
-        // Far guesses get a wild Y; outside the hub Y range the cleanup tick deleted it every frame (flicker/vanish)
         val y = floor(v.y - 0.5).toInt().coerceIn(DianaWaypoints.MIN_Y + 1, DianaWaypoints.MAX_Y)
         val raw = BlockPos(floor(v.x).toInt(), y, floor(v.z).toInt())
-        // Rough Y (worse far away): sit it on grass so the invalid-block check doesn't keep deleting it
         val pos = if (DianaWaypoints.chunkLoaded(raw) && !DianaWaypoints.isValidBlock(raw)) DianaWaypoints.snapToGround(raw) ?: raw else raw
         if (DianaWaypoints.removedRecently(pos)) return
-        // Each trail point nudges the guess a little; keep the current one unless it really moved (stops flicker)
         if (DianaWaypoints.list.any { it.type == WpType.GUESS && flat(it.pos, pos) <= 4 }) return
         DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos != pos && it.distTo(v) <= 32 }
         if (DianaWaypoints.list.any { it.pos == pos && (it.type == WpType.BURROW || it.type == WpType.GUESS) }) return

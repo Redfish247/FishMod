@@ -52,7 +52,6 @@ object Extras {
         FishDiag.guard("Extras.26", "CarnivalShootout.init failed") { CarnivalShootout.init() }
         FishDiag.guard("Extras.27", "StrayRabbitAlert.init failed") { StrayRabbitAlert.init() }
         FishDiag.guard("Extras.40", "BitsWarning.init failed") { BitsWarning.init() }
-        FishDiag.guard("Extras.41", "BazaarSearch.init failed") { BazaarSearch.init() }
         FishDiag.guard("Extras.42", "AhPriceCheck.init failed") { AhPriceCheck.init() }
         FishDiag.guard("Extras.29", "HotxHelper.init failed") { fishmod.features.hunting.HotxHelper.init() }
         FishDiag.guard("Extras.30", "BeaconSolver.init failed") { fishmod.features.hunting.BeaconSolver.init() }

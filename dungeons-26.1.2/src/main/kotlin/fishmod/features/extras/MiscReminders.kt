@@ -17,7 +17,6 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import fishmod.features.extras.ExtrasSettings as S
 
-// Booster Cookie warning, kick cooldown timer and SkyBlock date HUD
 object MiscReminders {
     private var cookieCheckAt = 0L
     private var cookieWarnedAt = 0L
@@ -32,7 +31,6 @@ object MiscReminders {
         FishEvents.chat.register { text ->
             if (S.kickTimer) {
                 val s = text.chatPlain.trim()
-                // both lines seen in Eli's logs
                 if (s == "You were kicked while joining that server!" || s.startsWith("You were spawned in Limbo")) kickedAt = System.currentTimeMillis()
             }
             false
@@ -40,6 +38,7 @@ object MiscReminders {
         ClientTickEvents.END_CLIENT_TICK.register { if (++tickN % 20 == 0) try { tick() } catch (t: Throwable) { FishDiag.fail("MiscReminders.1", "tick failed", t) } }
         FishHudEditor.register("SkyBlock Date", { S.sbDateHudX }, { S.sbDateHudX = it }, { S.sbDateHudY }, { S.sbDateHudY = it }, 130, 10,
             { S.sbDateHudScale }, { S.sbDateHudScale = it })
+        fishmod.features.HudPreview.register("SkyBlock Date") { fishmod.features.HudPreview.text(listOf(dateText())) }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "sb_date_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("MiscReminders.2", "date hud render failed", t) }
         }
@@ -52,15 +51,15 @@ object MiscReminders {
             if (!SkyblockLocation.inSkyblock()) FishUtil.forceTitle(Component.literal("§aKick cooldown over"), Component.literal("§7You can rejoin SkyBlock"), 2500)
         }
         if (S.cookieWarning && cookieCheckAt in 1..now) {
-            cookieCheckAt = 0
-            if (SkyblockLocation.inSkyblock() && now - cookieWarnedAt > 30 * 60_000 && cookieInactive()) {
+            val inSb = SkyblockLocation.inSkyblock()
+            if (inSb || now - cookieCheckAt > 25_000) cookieCheckAt = 0
+            if (inSb && now - cookieWarnedAt > 30 * 60_000 && cookieInactive()) {
                 cookieWarnedAt = now
                 FishUtil.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§cYour Booster Cookie buff is not active!"))
             }
         }
     }
 
-    // Tab footer "Cookie Buff" then "Not active" (same parse as CompactTab)
     private fun cookieInactive(): Boolean {
         val acc = Minecraft.getInstance().hud.tabList as? PlayerTabOverlayAccessor ?: return false
         val lines = (acc.`fishmod$getFooter`()?.string ?: return false).split("\n").map { TextStrip.plain(it).trim() }.filter { it.isNotEmpty() }

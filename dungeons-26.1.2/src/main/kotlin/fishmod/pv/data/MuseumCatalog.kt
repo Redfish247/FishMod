@@ -52,10 +52,6 @@ object MuseumCatalog {
         @get:JvmName("gameStageRank") val gameStageRank: Int = maxOf(0, gameStageRank)
     }
 
-    /**
-     * @param stack display/NBT stack from the museum API (may be the higher-tier item)
-     * @param coveredBy if non-blank, this slot is filled because `coveredBy` was donated
-     */
     class ResolvedDonation(@get:JvmName("stack") val stack: InventoryDecoder.Stack, coveredBy: String?) {
         @get:JvmName("coveredBy") val coveredBy: String? = if (coveredBy.isNullOrBlank()) null else coveredBy.uppercase()
 
@@ -194,10 +190,6 @@ object MuseumCatalog {
         return children.mapValuesTo(LinkedHashMap()) { (_, v) -> v.distinct() }
     }
 
-    /**
-     * Item id whose price counts toward donated value, or null when the slot is only filled because
-     * a higher tier was donated (that donor's price is already counted on its own slot).
-     */
     @JvmStatic
     fun valueId(donationId: String?, coveredBy: String?, stack: InventoryDecoder.Stack?): String? {
         if (!coveredBy.isNullOrBlank()) return null
@@ -222,8 +214,6 @@ object MuseumCatalog {
             }
             val slot = canonicalSlotId(key)
             if (!BY_ID.containsKey(slot) && PIECE_TO_SET.containsKey(slot)) {
-                // Pieces donated before Hypixel grouped them into a set keep their own key (e.g. PESTHUNTERS_BELT
-                // next to PESTHUNTER). They aren't a museum slot and don't donate the set, so they're not Special either.
                 continue
             }
             direct.putIfAbsent(slot, value)

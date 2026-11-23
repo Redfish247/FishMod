@@ -132,21 +132,23 @@ object Stopwatch {
         FishEvents.worldChange.register { fire(Trigger.WORLD_CHANGE); false }
         FishEvents.locationChange.register { _ -> fire(Trigger.AREA_CHANGE); false }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
-            if (enabled && screen is AbstractContainerScreen<*>) {
+            if (enabled && screen is AbstractContainerScreen<*> && screen !== lastOpenScreen) {
+                lastOpenScreen = screen
                 val title = fishmod.utils.TextStrip.plain(screen.title.string)
                 if (TerminalType.values().any { title.startsWith(it.windowPrefix) }) fire(Trigger.TERMINAL_OPEN)
                 fire(Trigger.GUI_OPEN, title)
-                ScreenEvents.remove(screen).register { fire(Trigger.GUI_CLOSE) }
+                ScreenEvents.remove(screen).register { lastOpenScreen = null; fire(Trigger.GUI_CLOSE) }
             }
         }
     }
+
+    private var lastOpenScreen: Any? = null
 
     private fun key(name: String): KeyMapping = KeyMappingHelper.registerKeyMapping(
         KeyMapping(name, fishmod.compat.GLFW.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, FishKeys.category())
     )
 
     private fun tick(mc: Minecraft) {
-        // FishKeys: drain clicks even when disabled so they don't pile up
         val toggle = toggleKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
         val split = splitKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
         val reset = resetKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
@@ -241,7 +243,7 @@ object Stopwatch {
         val d = decimals.coerceIn(0, 3)
         val secs = ns / 1e9
         val m = (secs / 60).toInt()
-        val s = DEC_FMT[d].format(secs - m * 60)
+        val s = DEC_FMT[d].format(java.util.Locale.US, secs - m * 60)
         return if (m > 0) "$m:" + (if (s.substringBefore('.').length < 2) "0$s" else s) else s
     }
 
@@ -290,10 +292,8 @@ object Stopwatch {
     private val EX_SPLITS = listOf(31_200_000_000L, 41_140_000_000L)
     private val EX_HISTORY = listOf(70_010_000_000L, 68_900_000_000L, 66_500_000_000L)
 
-    // Example splits only when splits can happen (split trigger or key set)
     private fun exSplits(): List<Long> = if (splitTrigger != Trigger.NONE || splitKey?.isUnbound == false) EX_SPLITS else emptyList()
 
-    // Same rows as render() on example data, so the drag box matches the in-game size
     private fun exampleSize(): Pair<Int, Int> {
         val font = Minecraft.getInstance().font
         var w = font.width(prefix) + font.width(fmt(EX_NS))

@@ -74,6 +74,7 @@ object AchMenu {
 
     fun describe(name: String): String? = when (name) {
         "Achievements" -> "Unlock toasts, API sync and settings"
+        "Leaderboard Board" -> "In-world top 10 of achievement points or secrets at a spot you set"
         else -> null
     }
 }

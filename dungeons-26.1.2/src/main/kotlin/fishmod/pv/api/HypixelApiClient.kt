@@ -79,7 +79,6 @@ object HypixelApiClient {
     private val PLAYER_IN_FLIGHT = ConcurrentHashMap<String, CompletableFuture<Optional<JsonObject>>>()
     private val PROFILE_IN_FLIGHT = InFlightRequestRegistry<String, Optional<JsonObject>>()
 
-    /** Mojang names do not change during this client session often enough to justify repeat lookups. */
     private val UUID_NAME_CACHE = ConcurrentHashMap<String, UuidName>()
     private const val UUID_NAME_CACHE_MAX = 2048
 
@@ -87,7 +86,6 @@ object HypixelApiClient {
 
     private val PARSE_EXECUTOR: ExecutorService = Executors.newFixedThreadPool(2, PvExecutors.daemon("FishPV-ProfileParse"))
 
-    /** Shared so auth, resources and /pv calls to api.vyriv.dev reuse one warm connection. */
     @JvmStatic
     fun http(): HttpClient = HTTP
 
@@ -155,9 +153,6 @@ object HypixelApiClient {
         }
     }
 
-    // Shared server cache and Mojang race; Mojang is the authority, the server
-    // entry wins only when fresh, and an older server entry is used only when
-    // Mojang can't answer.
     private fun raceUuidLookups(cleaned: String, startedNanos: Long): CompletableFuture<Optional<UuidName>> {
         val server = CompletableFuture
             .supplyAsync({ lookupServerUuid(cleaned, false) }, EXECUTOR)
@@ -207,7 +202,6 @@ object HypixelApiClient {
             }
             if (server == null) return
             if (server.foundFor(cleaned)) {
-                // Not remembered: a fallback must not be extended into the caches.
                 logUuid(cleaned, "stale-fallback", startedNanos, detail + " age=" + server.ageSeconds + "s")
                 result.complete(Optional.of(server.found!!))
                 return
@@ -217,8 +211,6 @@ object HypixelApiClient {
         }
     }
 
-    // Runs once both sides answered. A Mojang answer that contradicts the server
-    // makes the server re-check Mojang itself; clients never write mappings.
     private fun reconcileUuid(cleaned: String, server: NameLookup, mojang: NameLookup) {
         if (mojang.status == LookupStatus.FOUND) {
             val found = mojang.found!!
@@ -260,7 +252,6 @@ object HypixelApiClient {
 
     private fun rememberUuid(uuidName: UuidName, savedAtMs: Long) {
         val key = uuidName.name.lowercase(Locale.ROOT)
-        // Session-only memory cache; disk NameUuidStore keeps the long-term copy.
         if (UUID_NAME_CACHE.size >= UUID_NAME_CACHE_MAX && !UUID_NAME_CACHE.containsKey(key)) UUID_NAME_CACHE.clear()
         UUID_NAME_CACHE[key] = uuidName
         UUID_NAME_CACHE.entries.removeIf { it.value.uuid == uuidName.uuid && it.key != key }
@@ -427,7 +418,6 @@ object HypixelApiClient {
         }, EXECUTOR)
     }
 
-    /** Refetches when the cached player is older than `maxAgeMs` (lastLogin/lastLogout go stale). */
     @JvmStatic
     @JvmOverloads
     fun player(uuid: UUID?, maxAgeMs: Long = Long.MAX_VALUE): CompletableFuture<Optional<JsonObject>> {
@@ -446,6 +436,10 @@ object HypixelApiClient {
                     if (now - e.value <= 3_600_000L) return@removeIf false
                     PLAYER_CACHE.remove(e.key)
                     true
+                }
+                while (PLAYER_CACHED_AT.size >= 64) {
+                    val oldest = PLAYER_CACHED_AT.entries.minByOrNull { it.value }?.key ?: break
+                    PLAYER_CACHED_AT.remove(oldest); PLAYER_CACHE.remove(oldest)
                 }
                 PLAYER_CACHE[id] = player
                 PLAYER_CACHED_AT[id] = now
@@ -559,7 +553,6 @@ object HypixelApiClient {
             exception is HttpConnectTimeoutException ||
             exception is ClosedChannelException
 
-    // A streamed MISS is cut mid-body when the upstream read fails, so a broken transfer is retried once.
     private fun getJson(
         url: String,
         allowReauth: Boolean,
@@ -625,7 +618,6 @@ object HypixelApiClient {
                     String(bytes, StandardCharsets.UTF_8),
                     TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos)
                 )
-                if (allowReauth) return getJson(url, false, allowStreamRetry, RequestTiming.retry(timing.correlationId), 0)
                 lastFailure = "HTTP 401"
                 ProfileViewer.LOGGER.warn("Hypixel GET {} unauthorized after re-auth", url)
                 return Optional.empty()
@@ -905,7 +897,6 @@ object HypixelApiClient {
         val laby = source("Laby", ::fetchLabyNameHistory)
         val crafty = source("Crafty", ::fetchCraftyNameHistory)
         val namemc = source("NameMC", ::fetchNameMcNameHistory)
-        // Async: the Ashcon fallback is blocking HTTP and must not run on the caller (render) thread
         return CompletableFuture.allOf(laby, crafty, namemc).thenApplyAsync({
             val merged = JsonArray()
             mergeNameHistory(merged, laby.join())

@@ -18,7 +18,6 @@ import net.minecraft.world.phys.Vec3
 import net.minecraft.core.registries.BuiltInRegistries
 import fishmod.features.extras.ExtrasSettings as S
 
-// Trevor the Trapper: line to the hint area, then to where the animal was last seen
 object TrevorHelper {
     // from SkyHanni (TrevorFeatures)
     private val QUEST = Regex("""^\[NPC] Trevor: You can find your (\w+) animal near the (.+)\.$""")

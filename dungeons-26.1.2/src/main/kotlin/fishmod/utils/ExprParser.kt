@@ -1,6 +1,5 @@
 package fishmod.utils
 
-// Small calculator for search boxes: + - * / ^, brackets, k/m/b suffixes. Anything malformed gives NaN.
 object ExprParser {
 
     private class Reader(val src: String) {

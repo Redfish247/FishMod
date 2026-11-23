@@ -14,7 +14,6 @@ import net.minecraft.client.renderer.rendertype.RenderSetup
 import net.minecraft.client.renderer.rendertype.RenderType
 import net.minecraft.resources.Identifier
 
-// 26.2 side: pipelines copy the shaders and bind groups of the vanilla debug quad pipeline (depth is reversed-Z there).
 object FishRenderLayers {
 
     private fun pipeline(name: String, topology: PrimitiveTopology, depth: CompareOp = CompareOp.ALWAYS_PASS): RenderPipeline {

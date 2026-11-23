@@ -25,6 +25,7 @@ object StarredMobHighlight {
 
     @JvmStatic
     fun init() {
+        fishmod.utils.events.FishEvents.worldChange.register { cachedStarredMobs = emptySet(); scanCounter = 0; false }
         RenderHooks.GIZMO.register { _ ->
             try { render() } catch (e: Exception) { FishDiag.fail("StarredMobHighlight.1", "starred mob render threw (mobs=${cachedStarredMobs.size})", e) }
         }

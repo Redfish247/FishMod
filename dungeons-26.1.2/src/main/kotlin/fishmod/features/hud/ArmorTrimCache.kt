@@ -14,6 +14,8 @@ object ArmorTrimCache {
     private val trims = HashMap<String, java.util.Optional<ArmorTrim>>()
     private val modelIds = HashMap<String, java.util.Optional<Identifier>>()
 
+    init { fishmod.utils.events.FishEvents.worldChange.register { trimsFor = null; trims.clear(); false } }
+
     @JvmStatic
     fun get(id: ItemCustomizationStore.ArmorTrimId): ArmorTrim? {
         val registryAccess = Minecraft.getInstance().player?.registryAccess() ?: return null

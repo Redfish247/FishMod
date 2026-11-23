@@ -14,7 +14,6 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.monster.Creeper
 
-// Glacite corpse highlight + Dwarven Mines ghost box (ghosts = charged creepers)
 object MiningBoxes {
 
     private var corpses: List<Entity> = emptyList()
@@ -23,6 +22,7 @@ object MiningBoxes {
 
     @JvmStatic
     fun init() {
+        fishmod.utils.events.FishEvents.worldChange.register { corpses = emptyList(); ghosts = emptyList(); false }
         ClientTickEvents.END_CLIENT_TICK.register { _ ->
             FishDiag.guard("MiningBoxes.1", "mining box scan threw") { scan() }
         }

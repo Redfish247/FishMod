@@ -49,10 +49,8 @@ object DianaWaypoints {
     private const val SPADE_CHECK_RANGE_SQ = 32.0 * 32.0
     private const val SPADE_CHECK_MS = 1000L
 
-    // Spade held within 32 blocks and no burrow showed up for a full second: the guess is wrong
     fun spadeDisproved(w: Waypoint): Boolean {
         val me = Diana.player()?.position()
-        // Not while the trail is still drawing / the guess is fresh, or it gets dropped and re-added (flicker)
         val settled = System.currentTimeMillis() - w.created > 3000 && !SpadeGuess.trailActive()
         val checking = me != null && settled && Diana.holdingSpade && at(w.pos, WpType.BURROW) == null &&
             w.center.distanceToSqr(me) <= SPADE_CHECK_RANGE_SQ
@@ -84,8 +82,6 @@ object DianaWaypoints {
     fun inHubBounds(p: BlockPos) =
         p.x > MIN_X && p.x <= MAX_X && p.y > MIN_Y && p.y <= MAX_Y && p.z > MIN_Z && p.z <= MAX_Z
 
-    // Burrows sit on grass with air above; an unloaded chunk is optimistically valid
-    // Once seen invalid in a loaded chunk it stays invalid, so guesses don't flip as chunks load/unload (SBO does the same)
     private val invalid = HashSet<BlockPos>()
 
     fun isValidBlock(p: BlockPos): Boolean {
@@ -174,10 +170,8 @@ object DianaWaypoints {
             if (better != null) { DianaTest.log("wp: drop GUESS ${g.pos} merged into ${better.type} ${better.pos}"); better.carryFrom(g); list.remove(g); continue }
             if (spadeDisproved(g)) { DianaTest.log("wp: drop GUESS ${g.pos} spadeDisproved"); list.remove(g); markRemoved(g.pos); continue }
             if (isValidBlock(g.pos) || !chunkLoaded(g.pos)) continue
-            // args are built before DianaTest.log's own check, so gate here (snapToGround is a block scan)
             if (Diana.testMode) DianaTest.log("wp: drop GUESS ${g.pos} invalidBlock ${Minecraft.getInstance().level?.getBlockState(g.pos)} snap=${snapToGround(g.pos)}")
             list.remove(g)
-            // Far guesses have a rough Y; move onto the nearest grass instead of dropping
             snapToGround(g.pos)?.takeIf { at(it, WpType.GUESS, WpType.BURROW) == null }?.let { add(Waypoint(it, WpType.GUESS, g.label)) }
         }
         for (a in list.filter { it.type == WpType.ARROW || it.type == WpType.SUB }) {
@@ -185,7 +179,6 @@ object DianaWaypoints {
             b.carryFrom(a); list.remove(a)
         }
     }
-
 
     private fun visible(): Boolean = Diana.active() || Diana.testMode
 
@@ -264,7 +257,6 @@ object DianaWaypoints {
         }
 
         val rare = if (DianaSettings.dianaRareMobs) newestRareMob() else null
-        // Rare-mob line takes over; otherwise always fall back to the guess line so it never blinks out
         if (DianaSettings.dianaRareMobLine && rare != null && rare.distTo(eye) >= 8) {
             line(lineStart(), rare.center, withAlpha(DianaSettings.dianaColorRareMob, 1f), width)
         } else if (DianaSettings.dianaGuessLine) {

@@ -52,6 +52,7 @@ object GardenMilestoneMenu {
         "Garden Level Overflow" -> "Garden level past max in a HUD and chat"
         "Hoe Level Overflow" -> "Hoe level overflow HUD, optional muted hoe sounds"
         "Log Book Stats" -> "Visitor Log Book stats HUD"
+        "Mooshroom Cow Perk HUD" -> "Mushroom milestone progress while farming other crops"
         else -> null
     }
 }

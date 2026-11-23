@@ -45,7 +45,6 @@ object GardenExtras {
     fun slots(): List<Slot> = screen()?.menu?.slots?.filter { !it.item.isEmpty && it.container !== Minecraft.getInstance().player?.inventory } ?: emptyList()
     fun name(stack: ItemStack) = Garden.strip(stack.hoverName.string).trim()
 
-    // Round down so shown numbers never overstate
     fun floorShort(v: Double): String = when {
         v >= 1e9 -> "${floor(v / 1e8) / 10}B"
         v >= 1e6 -> "${floor(v / 1e5) / 10}M"
@@ -62,7 +61,6 @@ object GardenExtras {
     )
     fun cropItem(text: String): Item? = CROP_ITEMS.entries.firstOrNull { text.contains(it.key, true) }?.value
 
-    // Cached display stacks so slot draws don't allocate per frame
     private val stacks = HashMap<Item, ItemStack>()
     fun stackOf(item: Item): ItemStack = stacks.getOrPut(item) { ItemStack(item) }
 

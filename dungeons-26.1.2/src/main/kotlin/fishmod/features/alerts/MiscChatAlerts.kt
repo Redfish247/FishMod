@@ -8,7 +8,6 @@ import fishmod.utils.events.chatPlain
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Auction outbid alert, Reindrake spawn alert
 object MiscChatAlerts {
     // from SkyHanni (AuctionOutbidWarning)
     private val OUTBID = Regex("""^\[Auction] (.+) outbid you by ([\d,.]+) coins for (.+?) CLICK""")

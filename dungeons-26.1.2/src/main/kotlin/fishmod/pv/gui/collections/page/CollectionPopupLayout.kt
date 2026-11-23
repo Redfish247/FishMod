@@ -10,10 +10,6 @@ package fishmod.pv.gui.collections.page
 import fishmod.pv.gui.PvDraw
 import fishmod.pv.gui.collections.CollectionsUi
 
-/**
- * Collection popup geometry. Fitted inside the board it covers with a margin, and sized from the
- * collection's widest content and busiest tier so switching tiers never moves anything.
- */
 internal data class CollectionPopupLayout(
 	val x: Int, val y: Int, val w: Int, val h: Int,
 	val innerX: Int, val innerW: Int,

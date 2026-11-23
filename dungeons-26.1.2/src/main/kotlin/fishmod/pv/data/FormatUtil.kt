@@ -56,7 +56,6 @@ object FormatUtil {
 	@JvmStatic
 	fun shortCoins(value: Double): String = shortCompact(value, false)
 
-	/** Compact XP for overflow tooltips (e.g. 617M, 16.7M). */
 	@JvmStatic
 	fun shortXp(value: Double): String = shortCompact(value, true)
 
@@ -116,7 +115,6 @@ object FormatUtil {
 
 	private fun pad2(value: Long): String = if (value < 10L) "0$value" else value.toString()
 
-	/** Three significant figures with a lowercase suffix: 1.23m, 12.3m, 123m. */
 	@JvmStatic
 	fun compactCoins(value: Double): String {
 		if (abs(value) < 1_000) {

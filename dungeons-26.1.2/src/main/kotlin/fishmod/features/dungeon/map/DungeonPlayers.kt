@@ -25,6 +25,8 @@ object DungeonPlayers {
     private const val SMOOTH_MS = 350L
     private val teammates = ArrayList<DungeonPlayer>()
 
+    init { fishmod.utils.events.FishEvents.worldChange.register { teammates.clear(); false } }
+
     private fun lerp(a: Float, b: Float, t: Float): Float = a + (b - a) * t
 
     private fun interpolateYaw(start: Float, target: Float, progress: Float): Float {
@@ -76,7 +78,6 @@ object DungeonPlayers {
             }
         }
     }
-
 
     private fun playerInfoOrder(teams: Map<PlayerInfo, String>): Comparator<PlayerInfo> =
         compareBy<PlayerInfo> { if (isSpectator(it)) 1 else 0 }
@@ -151,7 +152,6 @@ object DungeonPlayers {
         }
     }
 
-    // Editor example: you + three teammates on the example map's rooms, drawn by the real head code
     @JvmStatic
     fun renderExample(g: GuiGraphicsExtractor) {
         if (!DungeonMapSettings.mapPlayerHeadsEnabled) return

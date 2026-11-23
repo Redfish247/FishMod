@@ -29,7 +29,6 @@ object ExoticTooltip {
                 if (id in SEYMOUR) return@ItemTooltipCallback
                 NeuItems.ensureLoaded()
                 val base = NeuItems.armorColor(id)
-                // Plain dyed armour: just show its hex in its own colour.
                 if (base == null || base == rgb) {
                     lines.add(Component.literal("§7Hex: ").append(Component.literal("#%06X".format(rgb)).withStyle { it.withColor(rgb) }))
                     return@ItemTooltipCallback

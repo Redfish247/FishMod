@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.map
 
 import fishmod.compat.CB
+import fishmod.compat.cam
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
@@ -134,9 +135,10 @@ object DoorHighlight {
     }
 
     private fun box(door: Door): AABB {
+        door.renderBox?.let { return it }
         val x = door.pos.x.toDouble()
         val z = door.pos.z.toDouble()
-        return AABB(x - 1.0, Y_MIN, z - 1.0, x + 2.0, Y_MAX, z + 2.0).inflate(0.02)
+        return AABB(x - 1.0, Y_MIN, z - 1.0, x + 2.0, Y_MAX, z + 2.0).inflate(0.02).also { door.renderBox = it }
     }
 
     private fun faceQuad(door: Door, hereTile: Room.Tile): Array<Vec3>? {
@@ -188,7 +190,11 @@ object DoorHighlight {
 
     private fun doorWidth(): Double = DungeonMapSettings.mapDoorHighlightWidth.toDouble().coerceIn(1.0, 10.0) / 100.0
 
+    private var cullEye: Vec3 = Vec3.ZERO
+    private var cullLook: Vec3 = Vec3.ZERO
+
     private fun doorBox(box: net.minecraft.world.phys.AABB, fill: Int, line: Int) {
+        if (FishDraw.behindCamera(box.minX + 1.5, box.minY + 2.0, box.minZ + 1.5, cullEye, cullLook, 4.0)) return
         FishDraw.gizmoBox(box, fill, 0)
         FishDraw.gizmoThickOutline(box, line, doorWidth())
     }
@@ -199,6 +205,8 @@ object DoorHighlight {
             return
         }
         updatePassed()
+        cullEye = Minecraft.getInstance().cam.position()
+        cullLook = FishDraw.lookDir()
         if (outlineOnly()) {
             for (door in outlineDoors()) {
                 if (outlineThroughWall(door)) continue

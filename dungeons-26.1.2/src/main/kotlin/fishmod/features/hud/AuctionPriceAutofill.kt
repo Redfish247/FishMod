@@ -18,7 +18,6 @@ object AuctionPriceAutofill {
 
     private val GUI_NAMES = setOf("Create BIN Auction", "Create Auction")
 
-    // Set while replacing the sign screen so vanilla's removed() doesn't send a blank sign.
     @JvmField @Volatile var suppressSignSend = false
 
     private var pendingItem: ItemStack? = null

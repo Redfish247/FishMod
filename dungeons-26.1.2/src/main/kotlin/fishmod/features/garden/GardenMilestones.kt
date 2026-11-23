@@ -104,7 +104,6 @@ object GardenMilestones {
         return hudLines(cropNow, tierNow, pctNow, if (tiers.size > 1) average() else null, etaSec, rate)
     }
 
-    // avg = null hides the average; etaSec < 0 hides the ETA line; shared with the HUD editor example
     private fun hudLines(crop: String, tier: Int, pct: Double, avg: Double?, etaSec: Long, rate: Double): List<String> {
         val c = Garden.legacy(S.gardenMilestoneColor)
         val out = arrayListOf("$c§lMilestone §7$crop $tier")
@@ -143,7 +142,6 @@ object GardenMilestones {
         lines += Component.literal("§7Average: §f${"%.2f".format(average())}")
     }
 
-    // Clipboard export of known tiers
     fun copy() {
         val txt = if (tiers.isEmpty()) "no milestone data yet (open the Crop Milestones menu)"
         else tiers.entries.joinToString("\n") { "${it.key}: ${it.value}" } + "\nAverage: ${"%.2f".format(average())}"

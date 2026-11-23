@@ -167,7 +167,6 @@ class HomeSkillSlayerBars {
 
 		fun skillBar(skill: ProfileSnapshot.SkillEntry): CachedBar {
 			if (FishSettings.pvOverflowSkills && skill.maxed && skill.overflowLevel > skill.level) {
-				// Uncapped level; the bar stays gold and fills toward the next overflow level.
 				val over = skill.overflowLevel
 				return CachedBar(
 					skill.name,

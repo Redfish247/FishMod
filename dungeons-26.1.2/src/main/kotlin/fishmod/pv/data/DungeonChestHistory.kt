@@ -23,7 +23,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 
 	@JvmRecord
 	data class Run(val floor: String, val completedMs: Long, val party: List<String>, val chests: List<Chest>) {
-		/** Croesus drops runs 72h after completion; the API can keep them longer until the list is rewritten. */
 		fun expiresMs(): Long = if (completedMs <= 0L) 0L else completedMs + EXPIRY_MS
 
 		fun expired(nowMs: Long): Boolean = completedMs > 0L && nowMs >= expiresMs()
@@ -43,7 +42,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 
 	companion object {
 		const val EXPIRY_MS = 72L * 60L * 60L * 1000L
-
 
 		private val NAMED_ULTIMATES = setOf("wise", "jerry")
 
@@ -305,7 +303,6 @@ data class DungeonChestHistory(val runs: List<Run>) {
 
 		private fun parseLongOr(s: String, fallback: Long): Long = s.trim().toLongOrNull() ?: fallback
 
-		// Kuudra runs have type KUUDRA and tier_id (e.g. "INFERNAL") instead of dungeon_type / dungeon_tier.
 		private fun floorLabel(runType: String?, dungeonType: String?, tierEl: JsonElement?): String {
 			val type = dungeonType?.lowercase(Locale.ROOT) ?: ""
 			val tierName = str(tierEl).lowercase(Locale.ROOT)

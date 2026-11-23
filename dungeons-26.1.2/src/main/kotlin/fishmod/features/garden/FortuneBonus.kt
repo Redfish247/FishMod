@@ -29,7 +29,6 @@ object FortuneBonus {
             last = cur
             if (prev != null && prev != cur) send(cur)
         }
-        // Server announcements ("+N Farming Fortune ..."); throttled so the tab change doesn't double up (guess at wording)
         FishEvents.chat.register { t ->
             if (S.gardenFortuneMsg && Garden.inGarden()) {
                 val s = Garden.strip(t.chatRaw).trim()

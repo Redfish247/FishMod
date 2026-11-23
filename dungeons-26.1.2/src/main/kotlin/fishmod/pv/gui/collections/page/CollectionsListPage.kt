@@ -395,7 +395,6 @@ class CollectionsListPage {
 			return requireNotNull(best)
 		}
 
-		/** Build column counts for a fixed cell size; prefer fitting height without scroll. */
 		fun packBoard(
 			categories: List<HypixelCollectionsCache.Category>,
 			w: Int,

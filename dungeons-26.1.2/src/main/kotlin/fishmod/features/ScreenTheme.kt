@@ -6,26 +6,23 @@ import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.debug.FishDiag
 
 object ScreenTheme {
+    val SOLID_PANEL = 0xFF11121F.toInt()
     var ACCENT = 0xFFD6D6D6.toInt()
     var ACCENT_HOVER = 0xFFFFFFFF.toInt()
     val CARD_BG = 0xFF171717.toInt()
-    // Text follows the window background: dark text on light backgrounds, light text on dark ones
     private var lbC = 0; private var lbV = false
     fun lightBg(): Boolean { val c = windowBg(); if (c != lbC) { lbC = c; lbV = isLight(c) }; return lbV }
-    // Relative luminance of a colour composited over the dimmed (dark) world behind the screen
     fun luma(c: Int): Float {
         fun ch(v: Int): Float { val s = v / 255f; return if (s <= 0.03928f) s / 12.92f else Math.pow(((s + 0.055f) / 1.055f).toDouble(), 2.4).toFloat() }
         val a = (c ushr 24) / 255f
         val l = 0.2126f * ch((c shr 16) and 0xFF) + 0.7152f * ch((c shr 8) and 0xFF) + 0.0722f * ch(c and 0xFF)
         return l * a + 0.02f * (1f - a)
     }
-    // Black text beats white when contrast vs black is higher (luminance above ~0.18)
     fun isLight(c: Int): Boolean = luma(c) > 0.18f
-    // text on an accent fill, judged on the accent as it shows over the window
     fun onAccent(): Int = if (isLight(over(ACCENT, windowBg() or 0xFF000000.toInt()))) 0xFF141414.toInt() else 0xFFEDEDED.toInt()
+    fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean = mx >= x && mx <= x + w && my >= y && my <= y + h
     fun textOn(bg: Int): Int = if (isLight(bg)) 0xFF141414.toInt() else 0xFFF2F2F2.toInt()
     fun subtextOn(bg: Int): Int = if (isLight(bg)) 0xFF4A4A4A.toInt() else 0xFFA8A8A8.toInt()
-    // Source-over blend of fg on bg (opaque result alpha kept from bg)
     fun over(fg: Int, bg: Int): Int {
         val a = (fg ushr 24) / 255f
         fun m(s: Int) = Math.round(((fg shr s) and 0xFF) * a + ((bg shr s) and 0xFF) * (1f - a))
@@ -33,16 +30,13 @@ object ScreenTheme {
     }
     val TEXT_COLOR: Int get() = if (lightBg()) 0xFF141414.toInt() else 0xFFEDEDED.toInt()
     val SUBTEXT_COLOR: Int get() = if (lightBg()) 0xFF5A5A5A.toInt() else 0xFF949494.toInt()
-    // white-ish overlay on dark, black-ish on light
     fun ink(alpha: Int): Int = (alpha shl 24) or (if (lightBg()) 0x000000 else 0xFFFFFF)
-    // Accent used as TEXT: falls back to the normal text colour when the accent is too close to the window background to read
     fun accentFg(): Int {
         val a = ACCENT or 0xFF000000.toInt()
         val l1 = luma(a); val l2 = luma(windowBg() or 0xFF000000.toInt())
         val ratio = (Math.max(l1, l2) + 0.05f) / (Math.min(l1, l2) + 0.05f)
         return if (ratio >= 3f) a else TEXT_COLOR
     }
-    // Opaque panel/field fill: the window background lifted (dark) or dimmed (light) by `level`, so text colours always have the right contrast
     fun surface(level: Int): Int = over(ink(level), windowBg() or 0xFF000000.toInt())
     val DANGER = 0xFFE05A5A.toInt()
     val DANGER_HOVER = 0xFFEE7A7A.toInt()
@@ -55,6 +49,27 @@ object ScreenTheme {
         return (newA shl 24) or (color and 0x00FFFFFF)
     }
 
+    private class Corner(val inset: IntArray, val coverage: DoubleArray)
+    private val cornerTables = arrayOfNulls<Corner>(65)
+
+    private fun cornerTable(rr: Int): Corner {
+        if (rr >= cornerTables.size) return buildCorner(rr)
+        return cornerTables[rr] ?: buildCorner(rr).also { cornerTables[rr] = it }
+    }
+
+    private fun buildCorner(rr: Int): Corner {
+        val inset = IntArray(rr)
+        val coverage = DoubleArray(rr)
+        for (i in 0 until rr) {
+            val dy = (rr - i).toDouble() - 0.5
+            val dxExact = Math.sqrt(Math.max(0.0, rr.toDouble() * rr - dy * dy))
+            val dxFloor = Math.floor(dxExact).toInt()
+            coverage[i] = dxExact - dxFloor
+            inset[i] = rr - dxFloor
+        }
+        return Corner(inset, coverage)
+    }
+
     fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
         if (w <= 0 || h <= 0) return
         val rr = Math.max(0, Math.min(r, Math.min(w, h) / 2))
@@ -62,12 +77,10 @@ object ScreenTheme {
         ctx.fill(x + rr, y, x + w - rr, y + h, color)
         ctx.fill(x, y + rr, x + rr, y + h - rr, color)
         ctx.fill(x + w - rr, y + rr, x + w, y + h - rr, color)
+        val corner = cornerTable(rr)
         for (i in 0 until rr) {
-            val dy = (rr - i).toDouble() - 0.5
-            val dxExact = Math.sqrt(Math.max(0.0, rr.toDouble() * rr - dy * dy))
-            val dxFloor = Math.floor(dxExact).toInt()
-            val coverage = dxExact - dxFloor
-            val inset = rr - dxFloor
+            val coverage = corner.coverage[i]
+            val inset = corner.inset[i]
             val topY = y + i
             val botY = y + h - 1 - i
             ctx.fill(x + inset, topY, x + rr, topY + 1, color)
@@ -89,7 +102,6 @@ object ScreenTheme {
         roundedRect(ctx, x, y, w, h, r, fillColor)
     }
 
-    // Window background chosen in /fm UI Customization (preset + alpha), shared by every FishMod screen
     fun windowBg(): Int {
         val s = fishmod.utils.config.values.FishSettings
         val rgb = when (s.fmBgPreset) {
@@ -101,10 +113,8 @@ object ScreenTheme {
             "Custom" -> s.fmBgCustomColor and 0xFFFFFF
             else -> 0x1E1E1E
         }
-        // below ~20% the window is unreadable over the world
         return (Math.round(s.fmBgAlpha.coerceIn(20, 100) * 2.55f) shl 24) or rgb
     }
-    // Dark opaque panel fills follow the chosen window background
     private fun themed(fill: Int): Int {
         val a = fill ushr 24; val r = (fill shr 16) and 0xFF; val g = (fill shr 8) and 0xFF; val b = fill and 0xFF
         return if (a >= 0xC0 && r < 0x30 && g < 0x30 && b < 0x30 && Math.abs(r - g) < 8 && Math.abs(g - b) < 8) windowBg() else fill
@@ -257,7 +267,7 @@ object ScreenTheme {
         tx = tx.coerceAtLeast(4f)
         val ty = (my - 12f * u).coerceAtMost(screenH - h - 4f).coerceAtLeast(4f)
         UiRecorder.dropShadow(tx, ty, w, h, 5f * u, 6f * u, 0x66000000)
-        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, 0xFF131313.toInt(), FIELD_BORDER_DEFAULT)
+        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, SOLID_PANEL, FIELD_BORDER_DEFAULT)
         var ly = ty + pad
         for ((i, rs) in runs.withIndex()) {
             var px = tx + pad

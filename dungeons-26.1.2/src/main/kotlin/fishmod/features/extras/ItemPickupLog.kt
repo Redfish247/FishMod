@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as S
 
-// HUD of recent inventory gains/losses, like "+3 Enchanted Gold"
 object ItemPickupLog {
     private class Entry(var delta: Int, var at: Long)
 
@@ -23,6 +22,13 @@ object ItemPickupLog {
         ClientTickEvents.END_CLIENT_TICK.register { if (++tickN % 5 == 0) try { tick() } catch (t: Throwable) { FishDiag.fail("ItemPickupLog.1", "pickup log tick failed", t) } }
         FishHudEditor.register("Item Pickup Log", { S.pickupLogX }, { S.pickupLogX = it }, { S.pickupLogY }, { S.pickupLogY = it }, 120, 50,
             { S.pickupLogScale }, { S.pickupLogScale = it })
+        fishmod.features.HudPreview.register("Item Pickup Log") {
+            val rows = listOf("+3 Enchanted Gold" to true, "+12 Cobblestone" to true, "-1 Ender Pearl" to false)
+            val f = Minecraft.getInstance().font
+            fishmod.features.HudExample(rows.maxOf { f.width(it.first) }, fishmod.features.HudPreview.textHeight(rows.size)) { ctx ->
+                rows.forEachIndexed { i, (s, gain) -> ctx.text(f, Component.literal(s), 0, i * 10, if (gain) S.pickupLogGainColor else S.pickupLogLossColor, true) }
+            }
+        }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "item_pickup_log")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("ItemPickupLog.2", "pickup log render failed", t) }
         }
@@ -41,7 +47,6 @@ object ItemPickupLog {
         }
         val prev = last
         last = now
-        // Menus move items around: only rebase while one is open
         if (prev == null || mc.curScreen != null) return
         val t = System.currentTimeMillis()
         for (k in prev.keys + now.keys) {

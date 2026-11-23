@@ -139,7 +139,6 @@ object MissingAccessories {
         var bestId: String? = null
         var best = 0
         for (ownedId in owned) {
-            // Owned ids in the same chain are always lower tiers, otherwise this id would not be missing.
             val sameChain = (upgrades[ownedId] ?: emptyList()).contains(id) ||
                 family == MagicalPowerCalculator.accessoryFamily(ownedId)
             if (!sameChain) continue

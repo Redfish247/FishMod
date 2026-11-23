@@ -6,7 +6,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.decoration.ArmorStand
 import fishmod.features.extras.ExtrasSettings as S
 
-// Shortens private-island teleport pad nametags to the destination, hides unset pads
 object TeleportPadNames {
     // from SkyHanni (TeleportPadCompactName)
     private val WARP = Regex("""^✦ Warp To (.+)$""")

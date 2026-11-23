@@ -268,7 +268,6 @@ internal class KuudraChecklistColumn {
 			return out
 		}
 
-		/** Checks flow as whole chips, wrapping onto new rows instead of being cut. */
 		private fun addChecks(
 			out: MutableList<Line>, font: Font, checks: List<Check>, indent: Int, lw: Int, entry: Entry?, group: Group, info: Boolean,
 		) {

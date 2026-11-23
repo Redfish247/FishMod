@@ -47,6 +47,28 @@ object CoflnetApiClient {
         return CompletableFuture.supplyAsync({ getObject("$BASE/auction/$id", queuedNanos) }, EXECUTOR)
     }
 
+    @JvmStatic
+    fun bazaarHistory(tag: String, fine: String? = null): CompletableFuture<Optional<JsonArray>> {
+        val queuedNanos = System.nanoTime()
+        return CompletableFuture.supplyAsync({ getArray("$BASE/bazaar/${enc(tag)}/history${if (fine == null) "" else "/$fine"}", queuedNanos) }, EXECUTOR)
+    }
+
+    @JvmStatic
+    fun auctionHistory(tag: String, range: String, rarity: String? = null): CompletableFuture<Optional<JsonArray>> {
+        val queuedNanos = System.nanoTime()
+        return CompletableFuture.supplyAsync({ getArray("$BASE/item/price/${enc(tag)}/history/$range${rarityQuery(rarity)}", queuedNanos) }, EXECUTOR)
+    }
+
+    @JvmStatic
+    fun activeBins(tag: String, rarity: String? = null): CompletableFuture<Optional<JsonArray>> {
+        val queuedNanos = System.nanoTime()
+        return CompletableFuture.supplyAsync({ getArray("$BASE/auctions/tag/${enc(tag)}/active/bin${rarityQuery(rarity)}", queuedNanos) }, EXECUTOR)
+    }
+
+    private fun rarityQuery(rarity: String?): String = if (rarity.isNullOrEmpty()) "" else "?Rarity=${enc(rarity)}"
+
+    private fun enc(s: String): String = java.net.URLEncoder.encode(s, Charsets.UTF_8).replace("+", "%20")
+
     private fun getArray(url: String, queuedNanos: Long): Optional<JsonArray> =
         getJson(url, queuedNanos).filter(JsonElement::isJsonArray).map(JsonElement::getAsJsonArray)
 

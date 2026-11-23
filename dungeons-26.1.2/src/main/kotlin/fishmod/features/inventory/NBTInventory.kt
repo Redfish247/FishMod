@@ -17,7 +17,6 @@ class NBTInventory(val stacks: List<ItemStack>, private var encoded: String? = n
 
     val rows get() = (stacks.size + 8) / 9
 
-    // Cached: holders go stale after a server switch rebuilds registries
     fun encode(): String = encoded ?: encodeNow().also { encoded = it }
 
     private fun encodeNow(): String {

@@ -54,7 +54,6 @@ object AchUsage {
 
     private fun readConfig(): Map<String, String>? = try {
         if (!Files.exists(CONFIG)) null else HashMap<String, String>().also { flatten("", JsonParser.parseString(String(Files.readAllBytes(CONFIG), Charsets.UTF_8)), it) }
-    // #612: String(bytes) replaces bad UTF-8 instead of throwing; broken JSON is user-side, not a bug
     } catch (t: Throwable) { fishmod.utils.debug.FishDebug.LOGGER.debug("[AchUsage] config snapshot read failed", t); null }
 
     @JvmStatic

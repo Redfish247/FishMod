@@ -10,7 +10,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-// /fc <message> (alias /fmchat): chat with every other FishMod user over the live cosmetics socket. Never touches Hypixel chat.
 object FishChat {
     private const val MAX_LEN = 200
     private const val MIN_GAP_MS = 1500L
@@ -50,8 +49,8 @@ object FishChat {
 
     fun receive(root: JsonObject) {
         if (!FishSettings.fishChatEnabled) return
-        val name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.take(16)?.takeIf { it.isNotBlank() } ?: return
-        val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.take(MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
+        val name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() } ?: return
+        val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
         val clean = ProfanityFilter.censor(text) ?: text
         Minecraft.getInstance().execute {
             FishUtil.addChatMessage(

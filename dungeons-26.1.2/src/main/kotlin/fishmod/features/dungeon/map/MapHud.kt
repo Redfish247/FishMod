@@ -43,7 +43,6 @@ object MapHud {
 
     private class ExampleMap(val rooms: List<Room>, val doors: List<Door>, val size: MapVec2i)
 
-    // Example: a fake 6x6 dungeon (real room names) drawn by the real room/door/background code
     private fun exampleMap(): ExampleMap {
         class R(val type: Room.Type, val shape: Room.Shape, val name: String, val secrets: Int, val state: Room.State, val cells: List<Pair<Int, Int>>)
         val specs = listOf(

@@ -625,7 +625,6 @@ internal class CollectionDetailView {
 		private const val LOCKED_SHADE = 0x88000000.toInt()
 		private const val ROW_HOVER = 0x24FFFFFF
 		private const val ROW_CHOSEN = 0x1CFFFFFF
-		// Same navy as PvDraw.COLOR_PANEL, nearly opaque so the board doesn't read through text and icons.
 		private const val POPUP_BG = 0xF7101018.toInt()
 		private const val BACKDROP = 0xB0000000.toInt()
 
