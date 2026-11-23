@@ -2362,6 +2362,30 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(fishmod.features.achievements.AchMenu.column())
         columns.add(visuals)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
+        fun groupBy(c: Column, vararg groups: Pair<String, List<String>>) {
+            val rest = ArrayList(c.features); val out = ArrayList<Feature>(); var used = 0
+            for ((label, keys) in groups) {
+                val m = rest.filter { f -> keys.any { f.name.contains(it, true) } }
+                if (m.isEmpty()) continue
+                used++; rest.removeAll(m.toSet()); m.forEach { it.group = label }; out.addAll(m)
+            }
+            if (used < 1 || out.isEmpty()) return
+            if (rest.isNotEmpty()) rest.forEach { it.group = "Other" }
+            c.features.clear(); c.features.addAll(out + rest)
+        }
+        groupBy(chatCol, "FishMod Chat" to listOf("fishmod", "(/fc)", "prefix"), "History & Search" to listOf("infini", "history", "search", "peek", "tab"),
+            "Bridges" to listOf("bridge", "twitch"), "Filters & Cleanup" to listOf("filter", "hide", "compact", "spam", "xp"),
+            "Commands & Links" to listOf("command", "wiki", "waypoint", "coord"))
+        groupBy(dungeon, "Puzzles" to listOf("puzzle", "solver", "blaze", "tic", "boulder", "ice fill", "creeper", "teleport", "bomb", "water"),
+            "Timers & Score" to listOf("timer", "pace", "score", "overflow", "freeze"), "Highlights & Alerts" to listOf("highlight", "alert", "hp", "skull", "deathmite"))
+        groupBy(floor7, "Terminals & Devices" to listOf("terminal", "simon", "arrow", "melody", "device"),
+            "Bosses & Relics" to listOf("storm", "wither", "necron", "goldor", "maxor", "relic", "rag", "lever", "veno"))
+        groupBy(invStorage, "Storage" to listOf("storage", "backpack", "container", "wardrobe", "loadout"),
+            "Slots & Clicks" to listOf("slot", "click", "bind", "lock"), "Inventory" to listOf("inventory", "equipment", "potion", "search", "level", "enchant"))
+        groupBy(slayer, "Slayer QOL" to listOf("qol"), "Timers & Trackers" to listOf("timer", "tracker", "profit", "stats", "carry", "best", "summon", "countdown"),
+            "Alerts" to listOf("alert", "warning", "spawn", "cocoon"), "Highlights" to listOf("highlight", "indicator", "names"))
+        columns.firstOrNull { it.name == "Fishing" }?.let { groupBy(it, "Alerts" to listOf("alert", "warning"),
+            "Trackers & HUDs" to listOf("tracker", "hud", "timer", "count", "overlay", "bobbin", "lilypad"), "World & Creatures" to listOf("world", "hotspot", "wormhole", "creature", "trophy", "box", "totem")) }
         for (c in columns) { if (c === general) continue; val m = c.features.filter { it.name == "Waypoint Routes" }; c.features.removeAll(m); general.features.addAll(m) }
         for (c in columns) {
             if (c === cheats) continue
@@ -3061,9 +3085,35 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cardH(): Int = if (listView) 26 else CARD_TALL
     private fun gridCols(): Int = if (listView) 1 else Math.max(1, (gx1() - cx0() + CARD_GAP) / (CARD_MIN_W + CARD_GAP))
     private fun cardW(): Int { val n = gridCols(); return (gx1() - cx0() - (n - 1) * CARD_GAP) / n }
-    private fun cardX(i: Int): Int = cx0() + (i % gridCols()) * (cardW() + CARD_GAP)
-    private fun cardY(i: Int): Int = cyTop() + (i / gridCols()) * (cardH() + CARD_GAP) - gridScroll
-    private fun gridMax(n: Int): Int = Math.max(0, ((n + gridCols() - 1) / gridCols()) * (cardH() + CARD_GAP) - (cyBot() - cyTop()))
+    private class GridLayout(val xs: IntArray, val ys: IntArray, val heads: List<Pair<String, Int>>, val total: Int)
+    private var layoutKey = 0
+    private var layoutCache: GridLayout? = null
+    private fun layout(): GridLayout {
+        val items = exItems(); val nc = gridCols()
+        val heads = searchText.isEmpty() && !allMode
+        var key = items.fold(17) { h, f -> h * 31 + f.name.hashCode() * 7 + (f.group?.hashCode() ?: 0) }
+        key = key * 31 + nc; key = key * 31 + cardH(); key = key * 31 + cardW(); key = key * 31 + cx0(); key = key * 31 + (if (heads) 1 else 0)
+        layoutCache?.let { if (key == layoutKey) return it }
+        val xs = IntArray(items.size); val ys = IntArray(items.size); val hs = ArrayList<Pair<String, Int>>()
+        val rowH = cardH() + CARD_GAP
+        var y = 0; var c = 0; var last: String? = null
+        for ((i, f) in items.withIndex()) {
+            val g = if (heads) f.group else null
+            if (g != null && g != last) {
+                if (c != 0) { y += rowH; c = 0 }
+                hs.add(g to y); y += GROUP_HEAD_H
+            }
+            if (heads) last = f.group
+            xs[i] = cx0() + c * (cardW() + CARD_GAP); ys[i] = y
+            c++
+            if (c == nc) { c = 0; y += rowH }
+        }
+        if (c != 0) y += rowH
+        return GridLayout(xs, ys, hs, y).also { layoutCache = it; layoutKey = key }
+    }
+    private fun cardX(i: Int): Int = layout().xs.getOrElse(i) { cx0() }
+    private fun cardY(i: Int): Int = cyTop() + layout().ys.getOrElse(i) { 0 } - gridScroll
+    private fun gridMax(n: Int): Int = Math.max(0, layout().total - (cyBot() - cyTop()))
     private fun detTop(): Int = cyTop() - HEADER_H + 24
     private fun descLines(f: Feature): List<String> = descFor(f.name).let { if (it.isEmpty()) emptyList() else wrapText(it, detW() - 20, DESC_SIZE) }
     private fun descH(f: Feature): Int = descLines(f).let { if (it.isEmpty()) 0 else it.size * WRAP_LINE_H + 6 }
@@ -3107,12 +3157,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val cText = ScreenTheme.textOn(cardBg); val cSub = ScreenTheme.subtextOn(cardBg)
         UiRecorder.pushScissor(cx0().toFloat(), cyTop().toFloat(), (gx1() - cx0()).toFloat(), (cyBot() - cyTop()).toFloat())
         try {
-            val rowH = cardH() + CARD_GAP; val nc = gridCols()
-            val first = Math.max(0, (gridScroll - 12) / rowH) * nc
-            val last = Math.min(items.size, ((gridScroll + (cyBot() - cyTop())) / rowH + 2) * nc)
+            val first = 0
+            val last = items.size
+            for ((hText, hy) in layout().heads) {
+                val y = cyTop() + hy - gridScroll
+                if (y + GROUP_HEAD_H < cyTop() || y > cyBot()) continue
+                UiRecorder.textBold(hText, cx0().toFloat() + 2f, (y + 4).toFloat(), 1.05f * NVG_BASE_TEXT_SIZE, TEXT_COLOR)
+                UiRecorder.fillRect(cx0().toFloat(), (y + GROUP_HEAD_H - 4).toFloat(), (gx1() - cx0()).toFloat(), 1f, ScreenTheme.ink(0x1F))
+            }
             for (i in first until last) {
                 val f = items[i]
-                val p = if (searchText.isEmpty()) anim(openedAt, Math.min(i - first, 90) * 12) else 1f
+                val p = if (searchText.isEmpty()) anim(openedAt, Math.min(i, 40) * 12) else 1f
                 val x = cardX(i); val y = cardY(i) + Math.round((1f - p) * 10f)
                 if (y + cardH() < cyTop() || y > cyBot()) continue
                 val on = f.hasMaster() && f.get!!()
@@ -3512,6 +3567,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         constructor(name: String, owner: Class<*>, key: String) : this(name, SettingRef(owner, key, false))
         constructor(name: String, r: SettingRef<Boolean>) : this(name, { r.get() }, { r.set(it) })
 
+        var group: String? = null
         val sub: MutableList<Setting> = ArrayList()
         val expandAnim = Easing.Anim(250)
         init { if (get != null) FeatureMasters.map.putIfAbsent(name, get) }
@@ -4495,6 +4551,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val CARD_MIN_W = 150
         private const val CARD_TALL = 46
         private const val CARD_GAP = 4
+        private const val GROUP_HEAD_H = 24
         private const val DET_W = 196
         private const val DET_W_MIN = 150
         private val COLUMN_SUBTITLES = mapOf(
