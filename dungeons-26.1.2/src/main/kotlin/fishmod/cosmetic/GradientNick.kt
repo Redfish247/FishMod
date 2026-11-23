@@ -88,6 +88,18 @@ object GradientNick {
         return out.toString()
     }
 
+    // samples n colours along the looped stops, shifted by phase (0..1)
+    @JvmStatic
+    fun shifted(stops: Array<IntArray>, phase: Double, n: Int): Array<IntArray> {
+        if (stops.size < 2 || n < 2) return stops
+        val loop = stops + arrayOf(stops[0])
+        return Array(n) { k ->
+            val u = ((k.toDouble() / (n - 1) + phase) % 1.0) * (loop.size - 1)
+            val seg = Math.min(Math.floor(u).toInt(), loop.size - 2)
+            mixOklab(loop[seg], loop[seg + 1], u - seg)
+        }
+    }
+
     private fun mixOklab(a: IntArray, b: IntArray, t: Double): IntArray {
         val la = toOklab(a)
         val lb = toOklab(b)
