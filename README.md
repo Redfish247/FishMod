@@ -76,6 +76,7 @@ FishMod builds on these open-source projects. Thanks to their authors.
 | [Odin](https://github.com/odtheking/Odin) | Reference for some dungeon solvers and utilities | see project |
 | [SkyHanni](https://github.com/hannibal002/SkyHanni) | Reference for some Rift, garden and mining helpers | see project |
 | [NotEnoughUpdates repo](https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO) | Item data | see project |
+| [Inter](https://github.com/rsms/inter) | UI font | OFL-1.1 ([copy](dungeons-26.1.2/LICENSE_inter-OFL.txt)) |
 
 ## License
 
