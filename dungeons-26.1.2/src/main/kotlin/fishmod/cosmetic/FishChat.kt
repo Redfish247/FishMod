@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component
 
 object FishChat {
     private const val MAX_LEN = 200
+    private const val DISCORD_URL = "https://discord.gg/3mSuQUB8kk"
     private const val MIN_GAP_MS = 1500L
     private var lastSent = 0L
 
@@ -67,6 +68,17 @@ object FishChat {
                         .append(Component.literal("Click this message to disable it.").withStyle {
                             it.withColor(ChatFormatting.YELLOW).withUnderlined(true)
                                 .withClickEvent(net.minecraft.network.chat.ClickEvent.RunCommand("/fcoff"))
+                        })
+                )
+            }
+            if (fromDiscord && !FishSettings.fishChatDiscordNoticeShown) {
+                FishSettings.fishChatDiscordNoticeShown = true
+                try { fishmod.utils.config.FishConfig.manager.save() } catch (_: Throwable) {}
+                FishUtil.addChatMessage(
+                    Component.literal("[FishMod] That message came from the FishMod Discord. FishMod chat links Minecraft and the Discord server, so anyone using /fc here can talk with people there. Join to chat back: ").withStyle(ChatFormatting.AQUA)
+                        .append(Component.literal(DISCORD_URL).withStyle {
+                            it.withColor(ChatFormatting.YELLOW).withUnderlined(true)
+                                .withClickEvent(net.minecraft.network.chat.ClickEvent.OpenUrl(java.net.URI.create(DISCORD_URL)))
                         })
                 )
             }
