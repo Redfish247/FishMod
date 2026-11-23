@@ -2801,7 +2801,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             icon(b.id, b.x + b.w / 2f, b.y + b.h / 2f, if (can) TEXT_COLOR else fa(SUBTEXT_COLOR, 0.45f))
         }
         val s = searchRect()
-        val cx = left() + 92; val cw = s[0] - 8 - cx
+        val cx = left() + 92; val cw = s[0] - 3 - cx
         UiRecorder.roundedRectRing(cx.toFloat(), s[1].toFloat(), cw.toFloat(), s[3].toFloat(), 6f, 1f, ScreenTheme.ink(0x16), ScreenTheme.ink(0x2E))
         crumbRects.clear()
         val cs = 0.85f * NVG_BASE_TEXT_SIZE
@@ -2824,14 +2824,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         UiRecorder.roundedRectRing(s[0].toFloat(), s[1].toFloat(), s[2].toFloat(), s[3].toFloat(), 6f, 1f, ScreenTheme.ink(0x16), if (searchFocused) ACCENT else ScreenTheme.ink(0x2E))
         var field = searchField
         if (field == null) {
-            field = EditBox(this.font, s[0] + 8, s[1] + 4, s[2] - 16, s[3] - 8, Component.empty())
+            field = EditBox(this.font, s[0] + 8, s[1] + 4, s[2] - 30, s[3] - 8, Component.empty())
             field.setMaxLength(48)
             field.setBordered(false)
             field.setResponder { t -> searchText = t; gridScroll = 0; if (t.isNotEmpty()) page = null; openedAt = System.currentTimeMillis() }
             searchField = field
-        } else { field.setX(s[0] + 8); field.setY(s[1] + 4); field.setWidth(s[2] - 16) }
+        } else { field.setX(s[0] + 8); field.setY(s[1] + 4); field.setWidth(s[2] - 30) }
         if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search categories and features", (s[0] + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
-        else nvgTextFieldContent(field, s[0] + 8, s[1] + 4, s[2] - 16, s[3] - 8, 8f)
+        else nvgTextFieldContent(field, s[0] + 8, s[1] + 4, s[2] - 30, s[3] - 8, 8f)
+        run {
+            val ic = if (searchFocused) TEXT_COLOR else SUBTEXT_COLOR
+            val gx = (s[0] + s[2] - 20).toFloat(); val gy = s[1] + s[3] / 2f - 6f
+            UiRecorder.roundedRectRing(gx, gy, 8f, 8f, 4f, 1.4f, 0x00000000, ic)
+            UiRecorder.line(gx + 7f, gy + 7f, gx + 11f, gy + 11f, 1.6f, ic)
+        }
         val all = columns.sumOf { it.features.count { f -> f.hasMaster() } }
         val on = columns.sumOf { it.features.count { f -> f.hasMaster() && f.get!!() } }
         val sy = bottom() - STATUS_H + 7
@@ -2937,7 +2943,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     UiRecorder.text(tot, x + w - 8 - UiRecorder.textWidth(tot, ns2), y + (NAV_ROW - ns2) / 2f, ns2, SUBTEXT_COLOR)
                     continue
                 }
-                if (c == null) { UiRecorder.text(r.first, (x + 8).toFloat(), y + 7f, 8.2f, SUBTEXT_COLOR); continue }
+                if (c == null) { UiRecorder.textBold(r.first, (x + 8).toFloat(), y + 7f, 8.2f, TEXT_COLOR); continue }
                 val open = !allMode && !isFolded(c)
                 val hv = mx in x..x + w && my in y until y + NAV_ROW && my in navTop()..navBot()
                 if (hv) statusHint = if (c.name in pinned) "Right-click to unpin ${c.name}" else "Right-click to pin ${c.name}"
