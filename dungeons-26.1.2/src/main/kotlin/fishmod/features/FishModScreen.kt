@@ -1131,6 +1131,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 ColorDefaults.of(FishSettings::class.java, "nickColorEnd")))
             // scrolls the gradient colours over time (local render only, not chat history)
             f.sub.add(ToggleSetting("Animate Colors", "Cycle the gradient colors over time instead of keeping them still", "nickColorAnimated"))
+            f.sub.add(SliderIntSetting("Animation Speed %", "100% = default speed", "nickColorSpeed", 25, 300, 25))
             f.sub.add(SubcategoryHeader("Modes"))
             f.sub.add(SubcategoryHeader("SOLID: 1 color"))
             f.sub.add(SubcategoryHeader("GRADIENT: start → end"))
