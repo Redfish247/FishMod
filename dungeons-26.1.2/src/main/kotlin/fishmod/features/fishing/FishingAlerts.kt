@@ -144,6 +144,7 @@ object FishingAlerts {
 
     fun describe(name: String): String? = when (name) {
         "Fishing Alerts" -> "Titles and sounds for catches, drops, hotspots, deployables and bait (all off by default)"
+        "Rare Drop Animation" -> "Totem-style pop-up of the item when a drop you ticked below comes in, anywhere in Skyblock"
         "Fishing Share" -> "Opt-in sharing of big catches to party chat; nothing is sent unless ticked"
         "Compact Catch Messages" -> "Shortens the Double Hook line; spawn lines have their own toggle"
         else -> null
