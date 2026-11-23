@@ -309,6 +309,7 @@ object SlayerManager {
     private fun setState(next: State) {
         if (next == state) return
         val prev = state
+        fishmod.utils.debug.FishTrace.log("slayer") { "state $prev -> $next type=$type tier=$tier progress=$progress" }
         state = next
         when (next) {
             State.BOSS_SPAWNED -> {
@@ -326,6 +327,7 @@ object SlayerManager {
     }
 
     private fun onQuestChange(newType: SlayerType, newTier: Int) {
+        fishmod.utils.debug.FishTrace.log("slayer") { "quest change $type T$tier -> $newType T$newTier" }
         type = newType
         tier = newTier
         progress = null
@@ -364,6 +366,7 @@ object SlayerManager {
     }
 
     private fun onQuestFailed() {
+        fishmod.utils.debug.FishTrace.log("slayer") { "quest FAILED state=$state type=$type tier=$tier" }
         if (state == State.BOSS_SPAWNED || state == State.COCOONED) fishmod.features.achievements.AchStore.max("secret.slayerEscape", 1)
         SlayerTimer.reset()
         state = State.GRINDING
@@ -380,6 +383,7 @@ object SlayerManager {
     }
 
     private fun endQuest() {
+        fishmod.utils.debug.FishTrace.log("slayer") { "quest ended type=$type tier=$tier state=$state" }
         type = null
         tier = 0
         questMissScans = 0

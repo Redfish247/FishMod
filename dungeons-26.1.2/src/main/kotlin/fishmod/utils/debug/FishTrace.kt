@@ -10,7 +10,7 @@ import java.util.concurrent.Executors
 /** Category trace log for dev debugging: /fmdev trace <cat|all|off|chat>. Writes logs/fishmod-trace.log. */
 object FishTrace {
 
-    val CATEGORIES = listOf("scan", "room", "door", "map", "score", "boss", "p3", "term", "dragon", "solver", "secret", "chat", "party", "run", "loot")
+    val CATEGORIES = listOf("scan", "room", "door", "map", "score", "boss", "p3", "term", "dragon", "solver", "secret", "chat", "party", "run", "loot", "net", "loc", "fishing", "slayer", "kuudra", "diana", "mining", "garden", "rift")
 
     private val enabled = ConcurrentHashMap.newKeySet<String>()
     @Volatile var toChat = false

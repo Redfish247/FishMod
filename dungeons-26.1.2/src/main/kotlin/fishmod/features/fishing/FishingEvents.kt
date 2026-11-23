@@ -72,6 +72,7 @@ object FishingEvents {
     }
 
     private fun debug(msg: String) {
+        fishmod.utils.debug.FishTrace.log("fishing") { msg }
         if (FishingSettings.fishingDebug) FishMsg.send("§7[Fishing] $msg")
     }
 }

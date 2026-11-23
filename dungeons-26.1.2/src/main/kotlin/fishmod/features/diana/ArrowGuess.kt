@@ -174,6 +174,7 @@ object ArrowGuess {
 
     internal fun addGuess(picked: List<BlockPos>) {
         if (picked.isEmpty() || entries.any { it.cands.drop(it.idx) == picked }) return
+        DianaTest.log("arrow guess added: ${picked.take(5)} (n=${picked.size})")
         entries.add(Entry(picked.toMutableList()))
         DianaWaypoints.add(Waypoint(picked[0], WpType.ARROW, "Guess"))
         if (DianaSettings.dianaSubGuesses) {
