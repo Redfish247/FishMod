@@ -54,10 +54,12 @@ object GoldorSection {
     }
 
     private fun debug(msg: String) {
+        fishmod.utils.debug.FishTrace.log("p3") { msg }
         if (FishDebug.termInfo) FishUtil.addChatMessage(Component.literal("§7[P3] §f$msg"))
     }
 
     private fun onPhase() {
+        fishmod.utils.debug.FishTrace.log("p3") { "phase=${BossPhase.getPhase()} terms=${BossPhase.inTerminals()} tunnel=${BossPhase.inGoldorTunnel()} section=$currentSection" }
         if (FishDebug.termInfo) {
             FishDebug.LOGGER.info("[GoldorSection] phase={} terms={} tunnel={} section={}",
                 BossPhase.getPhase(), BossPhase.inTerminals(), BossPhase.inGoldorTunnel(), currentSection)

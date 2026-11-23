@@ -36,6 +36,7 @@ object PartyMemberTracker {
         if (!raw.contains("arty")) return
         run {
             val stripped = FishConstants.STRIP_COLOR_REGEX.replace(raw, "")
+            fishmod.utils.debug.FishTrace.log("party") { "party line: '$stripped'" }
             JOIN.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
             INVITE.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
             CHAT.matcher(stripped).let { if (it.find()) remember(it.group(1)) }

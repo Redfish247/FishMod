@@ -25,6 +25,7 @@ object RoomSecrets {
         val idx = MapVec2i(player.blockX, player.blockZ).index()
         if (idx < 0) return
         val room = Scan.roomsList[idx].owner ?: return
+        fishmod.utils.debug.FishTrace.change("secret", "roomSecrets") { "room '${room.data?.name}' secrets ${m.groupValues[1]}/${m.groupValues[2]} at (${player.blockX},${player.blockZ})" }
         room.secretsFound = m.groupValues[1].toInt()
     }
 }

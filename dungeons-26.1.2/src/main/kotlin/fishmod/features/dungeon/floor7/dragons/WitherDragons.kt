@@ -128,6 +128,7 @@ object WitherDragons {
     }
 
     fun onDragonsSpawning(spawning: List<WitherDragon>) {
+        fishmod.utils.debug.FishTrace.log("dragon") { "spawning ${spawning.map { it.name }} on=${on()} priority=${priorityDragon.name}" }
         if (!on()) return
         val prio = priorityDragon
         if (FishSettings.witherDragonsSpawnAlert && prio != WitherDragon.NONE) {

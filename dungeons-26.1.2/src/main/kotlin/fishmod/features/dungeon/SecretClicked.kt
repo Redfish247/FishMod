@@ -193,6 +193,7 @@ object SecretClicked {
         val block = level.getBlockState(pos).block
         val secret = block is ChestBlock || block is LeverBlock ||
             (block is AbstractSkullBlock && SecretDrops.isSecretSkull(level, pos))
+        fishmod.utils.debug.FishTrace.log("secret") { "interact $pos block=${block.descriptionId} secret=$secret" }
         if (!secret) {
             if (block is AbstractSkullBlock) { pendingSkull = pos.immutable(); pendingSkullAt = System.currentTimeMillis() }
             return

@@ -87,6 +87,7 @@ object TerminalSolver {
         lastType = null
         if (!FishDiag.check(lastOpenedMs > 0L, "TerminalSolver.11") { "terminal $type done but open time never recorded" }) return
         val secs = (System.currentTimeMillis() - lastOpenedMs) / 1000.0
+        fishmod.utils.debug.FishTrace.log("term") { "own terminal done type=$type secs=$secs practice=${fishmod.utils.dungeon.PracticeMode.active}" }
         if (secs > 60.0 || fishmod.utils.dungeon.PracticeMode.active) return
         fishmod.features.dungeon.PbMessages.announce(FishSettings.pbMessagesTerminals, "term:${type.name}",
             Component.literal("§b${termName(type)} Terminal"), secs)
@@ -157,6 +158,7 @@ object TerminalSolver {
         if (slot.container is Inventory) return false
         if (!simActive && System.currentTimeMillis() - term.timeOpened < FishSettings.terminalFirstClickProtMs) return true
         val right = button == 1
+        fishmod.utils.debug.FishTrace.log("term") { "click slot=${slot.index} button=$button type=${term.type} allowed=${term.canClick(slot.index, right)} solution=${term.solution.take(6)} sinceOpen=${System.currentTimeMillis() - term.timeOpened}ms" }
         if (FishSettings.terminalBlockWrongClicks && !term.canClick(slot.index, right)) return true
 
         if (FishSettings.terminalMiddleClickGui && !simActive && button != 2) {
@@ -296,6 +298,7 @@ object TerminalSolver {
     }
 
     private fun debug(msg: String) {
+        fishmod.utils.debug.FishTrace.log("term") { msg }
         if (FishDebug.termInfo) FishUtil.addChatMessage(Component.literal("§b[term] §7$msg"))
     }
 }

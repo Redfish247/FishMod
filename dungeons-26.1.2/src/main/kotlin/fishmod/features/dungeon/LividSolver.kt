@@ -80,6 +80,7 @@ object LividSolver {
             if (!state.isAir) FishDiag.fail("LividSolver.3", "unknown block at livid wool pos: ${state.block}")
             return
         }
+        fishmod.utils.debug.FishTrace.log("solver") { "livid wool at $pos = ${hit.name} (current=${current.name})" }
         if (hit != current) {
             current = hit
             FishUtil.addChatMessage(Component.literal("§b[Livid] §7real Livid: §${hit.colorCode}${hit.entityName}"))

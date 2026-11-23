@@ -53,6 +53,7 @@ class Room(
             else -> state = State.DISCOVERED
         }
 
+        if (state != old) fishmod.utils.debug.FishTrace.log("room") { "'${data?.name}' $old -> $state (color=$color tile=$placement type=$type)" }
         return if (state == old) null else StateUpdated(this, old, state)
     }
 
