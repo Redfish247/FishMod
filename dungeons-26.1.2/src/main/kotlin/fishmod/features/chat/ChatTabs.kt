@@ -49,7 +49,8 @@ object ChatTabs {
     fun matches(line: Component): Boolean {
         val p = selected.prefix ?: return true
         val s = TextStrip.plain(line.string).trimStart()
-        return s.startsWith(p) || SWITCHED.containsMatchIn(s)
+        // Guild Bridge Bot rewrites guild lines to "Bridge >"; keep them in the Guild tab
+        return s.startsWith(p) || (selected == Tab.GUILD && s.startsWith("Bridge >")) || SWITCHED.containsMatchIn(s)
     }
 
     private val SWITCHED = Regex("^You are now in the [A-Z-]+ channel")
