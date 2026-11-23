@@ -53,8 +53,10 @@ object MiscReminders {
             if (!SkyblockLocation.inSkyblock()) FishUtil.forceTitle(Component.literal("§aKick cooldown over"), Component.literal("§7You can rejoin SkyBlock"), 2500)
         }
         if (S.cookieWarning && cookieCheckAt in 1..now) {
-            cookieCheckAt = 0
-            if (SkyblockLocation.inSkyblock() && now - cookieWarnedAt > 30 * 60_000 && cookieInactive()) {
+            val inSb = SkyblockLocation.inSkyblock()
+            // Slow join: keep retrying for 25 s until SkyBlock is detected
+            if (inSb || now - cookieCheckAt > 25_000) cookieCheckAt = 0
+            if (inSb && now - cookieWarnedAt > 30 * 60_000 && cookieInactive()) {
                 cookieWarnedAt = now
                 FishUtil.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§cYour Booster Cookie buff is not active!"))
             }
