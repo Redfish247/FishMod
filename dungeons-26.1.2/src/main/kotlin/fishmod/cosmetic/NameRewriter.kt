@@ -8,6 +8,24 @@ import java.util.Optional
 
 object NameRewriter {
 
+    /** Applies your own nick and other players' resolved nicks to a component (same swap the GUI text hook does). */
+    @JvmStatic
+    fun swapNick(text: Component?): Component? {
+        if (text == null) return null
+        if (!NickState.isActive() && RemoteNicks.isEmpty()) return text
+        return try {
+            var out: Component? = text
+            if (NickState.isActive()) {
+                val real = NickState.realName()
+                if (real.isNotEmpty() && out!!.string.contains(real)) out = replaceName(out, real, NickState.asComponent())
+            }
+            RemoteNicks.applyResolvedOnly(out)
+        } catch (t: Throwable) {
+            fishmod.utils.debug.FishDiag.fail("NameRewriter.swapNick", "nick swap failed", t)
+            text
+        }
+    }
+
     @JvmStatic
     fun replaceName(original: Component?, realName: String?, replacement: Component): Component? {
         if (original == null || realName == null || realName.isEmpty()) return original
