@@ -32,7 +32,7 @@ object SunGeckoHelper {
 
     private fun inChamber(): Boolean = Rift.inRift() && Rift.area().contains("Time Chamber", true)
 
-    private fun reset() { hp = 0; maxHp = 0; bossId = -1; firstPhase = true; combo = 1; hits = ""; lastHit = 0L; mods.clear() }
+    private fun reset() { hp = 0; maxHp = 0; bossId = -1; firstPhase = true; combo = 1; hits = ""; lastHit = 0L; mods.clear(); scanning = false }
 
     fun init() {
         FishEvents.chat.register { text ->
