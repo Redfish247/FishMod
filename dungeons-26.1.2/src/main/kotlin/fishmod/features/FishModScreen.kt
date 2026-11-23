@@ -1121,7 +1121,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Name Color",
+            val f = Feature("Custom Name Color",
                 { NickState.isActive() },
                 { v -> if (!v) NickState.reset() else NickState.applyFromSettings() })
             val name = LimitedInputSetting("Custom Name", "", 18,
@@ -1147,6 +1147,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { FishSettings.nickColorEnd },
                 { v -> FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings() },
                 ColorDefaults.of(FishSettings::class.java, "nickColorEnd")))
+            // scrolls the gradient colours over time (local render only, not chat history)
+            f.sub.add(ToggleSetting("Animate Colors", "Cycle the gradient colors over time instead of keeping them still", "nickColorAnimated"))
             f.sub.add(SubcategoryHeader("Modes"))
             f.sub.add(SubcategoryHeader("SOLID: 1 color"))
             f.sub.add(SubcategoryHeader("GRADIENT: start → end"))
@@ -1219,7 +1221,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Custom Crosshair", "crosshairEnabled")
             f.sub.add(SubcategoryHeader("Replaces the vanilla crosshair with a built-in preset or a PNG from config/FishMod/crosshairs/"))
-            f.sub.add(DropdownSetting("Type", "", arrayOf("Preset", "Image"),
+            f.sub.add(DropdownSetting("Type", "", arrayOf("Preset", "Image", "Custom"),
                 { FishSettings.crosshairMode },
                 { v -> FishSettings.crosshairMode = v }))
             f.sub.add(DropdownSetting("Preset", "", fishmod.features.cosmetics.CustomCrosshair.PRESETS,
@@ -1242,7 +1244,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { if (FishSettings.crosshairImageSelection in crosshairImageNames) FishSettings.crosshairImageSelection else crosshairImageNames[0] },
                 { v -> FishSettings.crosshairImageSelection = v })
                 .gatedBy { FishSettings.crosshairMode == "Image" })
-            f.sub.add(ColorPickerSetting("Color", "Tint applied to the crosshair", "crosshairColor"))
+            f.sub.add(ButtonSetting("Draw Crosshair", "Open a 16x16 grid to draw your own crosshair") {
+                FishDiag.guard("FishModScreen.crosshairEditor", "open crosshair editor failed") { net.minecraft.client.Minecraft.getInstance().showScreen(fishmod.features.cosmetics.CrosshairEditorScreen(net.minecraft.client.Minecraft.getInstance().curScreen)) }
+            }.gatedBy { FishSettings.crosshairMode == "Custom" })
+            f.sub.add(ColorPickerSetting("Color", "Tint applied to the crosshair", "crosshairColor").gatedBy { FishSettings.crosshairMode != "Custom" })
             f.sub.add(SliderDoubleSetting("Scale", "", "crosshairScale", 0.25, 4.0))
             f.sub.add(ToggleSetting("Hide in F3", "", "crosshairHideInF3"))
             cosmetics.features.add(f)
@@ -2219,7 +2224,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayer.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayer.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
             end.features.add(endAlerts)
             end.features.add(Feature("Endstone Protector Stage", fishmod.features.slayer.EndAlertSettings::class.java, "protectorHud"))
-            end.features.add(Feature("End Node Tracker", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeTracker").also { it.sub.add(ButtonSetting("Reset", "", "Reset", Runnable { fishmod.features.end.EndTrackers.reset() })) })
+            end.features.add(Feature("End Node Finder", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeFinder").also { it.sub.add(ColorPickerSetting("Color", "", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeFinderColor")) })
             end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayer.EndAlertSettings::class.java, "endstoneProtectorAlert"))
             end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayer.EndAlertSettings::class.java, "zealotHud"))
             slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
@@ -2277,10 +2282,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
             val profit = Feature("Profit Tracker", "slayerProfitEnabled")
             profit.sub.add(SubcategoryHeader("SkyHanni-style: prices real drops for coins/hr  ·  drag with Edit HUD"))
-            profit.sub.add(SubcategoryHeader("With chat open: click the mode line to switch  ·  left-click a row to hide it  ·  right-click the title to reset"))
+            profit.sub.add(SubcategoryHeader("With chat open: left-click a row to hide it  ·  right-click the title to reset"))
             profit.sub.add(DropdownSetting("Display", "Total = all-time (saved); This Session = since this launch", arrayOf("Total", "This Session"),
                 { FishSettings.slayerProfitDisplayMode },
-                { v -> FishSettings.slayerProfitDisplayMode = v }))
+                { v -> fishmod.features.slayer.SlayerProfitTracker.setMode(v) }))
             profit.sub.add(SliderIntSetting("Drop Rows", "Max item rows shown (highest value first); the rest fold into one row", "slayerProfitLines", 3, 30, 1))
             profit.sub.add(SliderIntSetting("Hide Below (coins)", "Rows worth less than this fold into the \"N more items\" row (0 = show all)", "slayerProfitMinValue", 0, 1_000_000, 10_000))
             profit.sub.add(ToggleSetting("Count Mob Kill Coins", "Count small purse gains while grinding as a \"Mob Kill Coins\" drop row + profit", "slayerProfitCountKillCoins"))
@@ -2410,9 +2415,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(dungeonMap, "Dungeon Map", "Info HUD", "Door Highlight", "Score Messages")
         order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
         order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
-        order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Tracker")
+        order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Finder")
         order(visuals, "No Fog", "Classic Skyblock Items", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
-        order(cosmetics, "Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
+        order(cosmetics, "Custom Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
         columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin and Legion Hud", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
         columns.firstOrNull { it.name == "Diana" }?.let { order(it, "Burrow Guessing", "Rare Mobs", "Diana Warp", "Diana Tracker", "Mythos Mob HP", "Diana Announcers", "Diana Party Commands") }
         fun groupBy(c: Column, vararg groups: Pair<String, List<String>>) {
@@ -4888,7 +4893,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Crystal Respawn" -> "Crystal spawn countdown + reminder"
                 "Section Count" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
-                "Name Color" -> "Recolor your username gradient"
+                "Custom Name Color" -> "Recolor your username gradient, optionally animated"
                 "Nametag" -> "Show your own above-head nametag"
                 "Player Size" -> "Resize your model (render only)"
                 "Party Commands" -> "Dot-commands usable in party chat"
@@ -4959,7 +4964,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Nametag Stats" -> "Networth, skill and Catacombs stats on nametags"
                 "Skyblock Level Colors" -> "Recolours the SkyBlock level badge by level"
                 "Badges" -> "Small icons beside player names"
-                "Custom Crosshair" -> "Replace the crosshair with a preset or your own image"
+                "Custom Crosshair" -> "Replace the crosshair with a preset, your own image or a 16x16 drawing"
                 "Force Others' Size" -> "Draws everyone else at one size"
                 "Command Access List" -> "Who can trigger party actions like .kick and .warp"
                 "Kick List" -> "Auto-kick listed players when you lead the party"
@@ -5036,7 +5041,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Boss Timer" -> "Slayer boss kill time and PB"
                 "Slayer QOL" -> "Egg sacs, yang glyphs, boss stats HUD, Inferno attunement colors and boss phases"
                 "Endstone Protector Stage" -> "HUD with the Protector stage and kills left, from the tab list"
-                "End Node Tracker" -> "Ender nodes mined and what they gave, with nodes per hour"
+                "End Node Finder" -> "Highlight Ender Node blocks in The End"
                 "Boss Phases" -> "Attack and phase cues on slayer bosses"
                 "Boss Damage Indicator" -> "HP label on non-slayer bosses"
                 "Dragon Profit Tracker" -> "Dragon kills, your eyes, essence and loot picked up after each dragon, with profit"
