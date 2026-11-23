@@ -3142,8 +3142,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val track = cyBot() - cyTop(); val h = Mth.clamp(track * track / (track + max), 16, track)
         return intArrayOf(cyTop() + ((track - h).toLong() * Mth.clamp(gridScroll, 0, max) / max).toInt(), h)
     }
-    // Bar centred in the right margin so the gap to the window edge matches the gap to the content
-    private fun gridBarX(): Int = cx1() + (MARGIN - 3) / 2
+    // Bar sits in the right margin, a third of the way from the content
+    private fun gridBarX(): Int = cx1() + (MARGIN - 3) / 3
     private fun gridBarHit(mx: Int, my: Int): Boolean = page == null && mx in gridBarX() - 2..gridBarX() + 5 && my in cyTop()..cyBot() && gridMax(exItems().size) > 0
     private fun dragGridBar(my: Int) {
         val n = exItems().size; val t = gridThumb(n) ?: return; val max = gridMax(n)
