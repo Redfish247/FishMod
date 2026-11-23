@@ -82,6 +82,7 @@ object Corpses {
             seenTicks[e.uuid] = n
             if (n < 2) continue
             announced += e.uuid
+            fishmod.utils.debug.FishTrace.log("mining") { "corpse seen type=$type at ${e.blockPosition()} dist=${"%.0f".format(Math.sqrt(target.distanceToSqr(eye)))}" }
             val msg = S.miningCorpseFormat.replace("{x}", e.x.roundToInt().toString()).replace("{y}", (e.y.roundToInt() + 1).toString())
                 .replace("{z}", e.z.roundToInt().toString()).replace("{type}", type.display)
             announce(msg)

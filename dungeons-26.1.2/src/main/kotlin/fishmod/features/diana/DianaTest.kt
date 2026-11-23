@@ -13,7 +13,10 @@ object DianaTest {
     private val LOG = LoggerFactory.getLogger("FishMod/DianaTest")
     private val CLICK = Regex("""^\[fmtest] click (-?\d+) (-?\d+) (-?\d+)$""")
 
-    fun log(msg: String) { if (Diana.testMode) LOG.info(msg) }
+    fun log(msg: String) {
+        fishmod.utils.debug.FishTrace.log("diana") { msg }
+        if (Diana.testMode) LOG.info(msg)
+    }
 
     fun init() {
         LOG.info("Diana test mode on")

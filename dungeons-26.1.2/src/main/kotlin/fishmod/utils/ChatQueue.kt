@@ -47,6 +47,7 @@ object ChatQueue {
         if (System.currentTimeMillis() - lastSentAt < MIN_GAP_MS) return
 
         val cmd = synchronized(pending) { pending.pollFirst() } ?: return
+        fishmod.utils.debug.FishTrace.log("net") { "chatqueue send '/$cmd' (queued=${pending.size})" }
         mc.connection!!.sendCommand(cmd)
         lastSentAt = System.currentTimeMillis()
         lastSentText = cmd

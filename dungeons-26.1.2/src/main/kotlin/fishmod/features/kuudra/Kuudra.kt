@@ -89,6 +89,7 @@ object Kuudra {
     }
 
     private fun reset() {
+        fishmod.utils.debug.FishTrace.log("kuudra") { "reset (phase=$phase tier=$tier)" }
         KuudraRequeue.reset()
         Supply.entries.forEach { it.active = true }
         giants.clear(); piles.clear(); players.clear(); freshers.clear(); supplyTimes.clear()
@@ -169,6 +170,7 @@ object Kuudra {
     }
 
     private fun setPhase(p: Int) {
+        fishmod.utils.debug.FishTrace.log("kuudra") { "phase $phase -> $p (ignored=${p <= phase}) tier=$tier supplies=$supplies builders=$builders buildPct=$buildPct" }
         if (p <= phase) return
         val t = now()
         if (phase == 0) phaseStart[0] = t
@@ -185,6 +187,7 @@ object Kuudra {
 
     private fun endRun() {
         val t = now()
+        fishmod.utils.debug.FishTrace.log("kuudra") { "run end tier=$tier total=${fmt(t - phaseStart[0])}" }
         phaseStart[4] = t
         if (phaseStart[3] > 0) KuudraHuds.onSplit(3, t - phaseStart[3])
         KuudraHuds.onEnd(t - phaseStart[0])
