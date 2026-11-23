@@ -490,7 +490,7 @@ object SkyItemList {
         val t = System.currentTimeMillis()
         val dots = ".".repeat(((t / 400) % 4).toInt())
         val cx = px + pw / 2
-        val cy = py + ph / 3
+        val cy = py + ph / 2 - 9
         val head = ((t / 90) % 8).toInt()
         val accent = FishSettings.skyItemListAccentColor and 0xFFFFFF
         val ring = arrayOf(0 to -9, 6 to -6, 9 to 0, 6 to 6, 0 to 9, -6 to 6, -9 to 0, -6 to -6)
