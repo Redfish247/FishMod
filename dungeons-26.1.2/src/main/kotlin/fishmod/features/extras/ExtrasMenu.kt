@@ -107,9 +107,6 @@ object ExtrasMenu {
         todo.sub.add(ColorPickerSetting("Title Color", "", S::class.java, "todoHudTitleColor"))
         todo.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "todoHudColor"))
         col.features.add(todo)
-        val bp = Feature("Backpack Preview", S::class.java, "backpackPreview")
-        bp.sub.add(ColorPickerSetting("Panel Tint", "Tints the chest-style panel; white = vanilla", S::class.java, "backpackPreviewTint"))
-        col.features.add(bp)
         val skill = Feature("Skill Progress HUD", S::class.java, "skillHud")
         skill.sub.add(SliderIntSetting("Hide After (s)", "Hide when no skill XP for this long", S::class.java, "skillHudHideSeconds", 10, 600, 10))
         skill.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "skillHudColor"))
@@ -175,7 +172,6 @@ object ExtrasMenu {
         "Command Tab Complete" -> "Tab suggests /warp names, lobby players for /p, /msg, /ah etc., bazaar items for /bz, item names for /ahs, and /viewrecipe ids"
         "Unfocused FPS Saver" -> "Caps FPS while Minecraft is not the focused window"
         "Custom Todos" -> "Todo list HUD; /fmtodo add <text>, /fmtodo done <n>, /fmtodo clear"
-        "Backpack Preview" -> "Storage menu: hover an ender chest page or backpack to see its contents (open each once; only when Storage Overlay is off)"
         "Skill Progress HUD" -> "Last skill XP popup: progress to next level, XP/h and ETA; move in the HUD editor"
         "Item Pickup Log" -> "HUD of items gained or lost in your inventory over the last few seconds"
         "Command Tooltip in Chat" -> "Hovering clickable chat shows the command it runs or suggests"
