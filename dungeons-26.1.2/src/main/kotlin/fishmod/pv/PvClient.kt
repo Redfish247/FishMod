@@ -76,7 +76,6 @@ object PvClient {
 			}
 		) }
 
-		PlayerInteractPvOpener.register()
 		HypixelProfileSpyButton.register()
 		// Inject /pv clicks on party / friends-list lines that Hypixel left non-clickable.
 		// Does not remap existing SocialOptions (avoids chat color bleach).
