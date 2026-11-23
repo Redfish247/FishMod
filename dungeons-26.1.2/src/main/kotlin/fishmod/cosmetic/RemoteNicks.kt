@@ -15,7 +15,6 @@ object RemoteNicks {
 
     private val styledByName: MutableMap<String, Component> = ConcurrentHashMap()
 
-    // Bumped on every styledByName change so cached rewrites go stale
     @Volatile private var version = 0
 
     private class Memo(val input: Component, val ver: Int, val str: String, val own: String?, val out: Component)
@@ -197,14 +196,12 @@ object RemoteNicks {
     private fun rewrite(text: Component, s0: String, own: String?): Component {
         var s = s0
         var out = text
-        // Look up the line's name-like tokens instead of scanning every known nick
         val hits = LinkedHashSet<String>()
         val m = IGN_PAT.matcher(if (s.indexOf('§') >= 0) TextStrip.plain(s) else s)
         while (m.find()) { val n = m.group(1); if (styledByName.containsKey(n)) hits += n }
         if (hits.isEmpty()) return text
         for (k in hits) {
             val v = styledByName[k] ?: continue
-            // Own name is already swapped locally; the server copy can be stale
             if (k == own) continue
             if (s.contains(k)) {
                 val replaced = NameRewriter.replaceName(out, k, v) ?: continue
