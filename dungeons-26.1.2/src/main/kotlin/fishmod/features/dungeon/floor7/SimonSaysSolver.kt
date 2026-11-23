@@ -52,6 +52,7 @@ object SimonSaysSolver {
     @JvmField var lastRoundCompleteMs: Long = 0L
 
     private fun dbg(msg: String) {
+        fishmod.utils.debug.FishTrace.log("solver") { "[SS] $msg" }
         if (FishDebug.ssDebug) FishUtil.addChatMessage(Component.literal("§7[SS] §f$msg"))
     }
 

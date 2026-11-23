@@ -62,6 +62,7 @@ object DungeonScore {
                 parseSidebar(mc)
                 DungeonPlayers.updateRoster(mc)
                 score = calculateScore()
+                fishmod.utils.debug.FishTrace.change("score", "score") { "score=$score secrets=$secretsFound ($secretsPercent%) rooms=$completedRooms cleared=$percentCleared% puzzles=$puzzlesCompleted/$puzzleCount crypts=$crypts deaths=$deaths mimic=$mimicKilled prince=$princeKilled paul=$paul" }
                 ScoreMessages.update(mc, score)
                 paul = MayorApi.isPaulDungeonBonusActive()
             }
@@ -101,6 +102,7 @@ object DungeonScore {
     fun onChatMessage(msg: String?) {
         if (msg == null) return
         val clean = TextStrip.plainAmp(msg)
+        fishmod.utils.debug.FishTrace.log("score") { "chat: '$clean'" }
         if (PRINCE_FALLS.matcher(clean).matches()) princeKilled = true
 
         val lower = clean.lowercase()

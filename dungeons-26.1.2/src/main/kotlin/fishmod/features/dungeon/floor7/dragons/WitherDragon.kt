@@ -40,6 +40,7 @@ enum class WitherDragon(
 
     fun setAlive(id: Int, tick: Long) {
         FishDiag.check(this != NONE, "WitherDragon.2") { "setAlive called on NONE dragon (id=$id)" }
+        fishmod.utils.debug.FishTrace.log("dragon") { "$name ALIVE id=$id tick=$tick (was $state)" }
         state = WitherDragonState.ALIVE
         timeToSpawn = 100
         entityId = id
@@ -52,6 +53,7 @@ enum class WitherDragon(
     fun setDead(silent: Boolean, tick: Long) {
         if (state == WitherDragonState.DEAD) return
         if (!silent) FishDiag.check(tick >= spawnedTick, "WitherDragon.1") { "$name died before spawn (tick=$tick spawned=$spawnedTick)" }
+        fishmod.utils.debug.FishTrace.log("dragon") { "$name DEAD silent=$silent tick=$tick spawned=$spawnedTick hp=$health arrows=$arrowsHit" }
         state = WitherDragonState.DEAD
         timeToSpawn = 100
         entityId = null

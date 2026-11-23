@@ -57,6 +57,7 @@ object DragonCheck {
             it.state == WitherDragonState.SPAWNING &&
                 v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
         }
+        fishmod.utils.debug.FishTrace.log("dragon") { "dragonSpawn id=${p.id} pos=$v matchedSpawning=${inBox?.name ?: "none"} states=${WitherDragon.real.map { "${it.name}:${it.state}" }}" }
         if (fishmod.utils.debug.FishDebug.dragonDebug) {
             modMessage("&7dragonSpawn id=${p.id} pos=${v} matched=${inBox?.name ?: "none"}")
         }
@@ -92,6 +93,7 @@ object DragonCheck {
             modMessage("&7dragonUpdate ${d.name} ids=${p.packedItems().map { it.id() }} hp=${hp ?: "none"}")
         }
         if (hp == null) return
+        fishmod.utils.debug.FishTrace.change("dragon", "hp-${d.name}") { "hp=${"%.0f".format(hp)}" }
         d.health = hp
         if (hp <= 0f && d.state != WitherDragonState.DEAD) d.setDead(false, tick)
     }
