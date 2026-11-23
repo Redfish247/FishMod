@@ -7,6 +7,9 @@ import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.network.chat.Component
+import net.minecraft.world.phys.Vec3
+import fishmod.utils.rendering.FishDraw
+import fishmod.utils.rendering.RenderHooks
 
 object SlayerExtras {
 
@@ -16,7 +19,6 @@ object SlayerExtras {
     private val RECALL = Regex("^The Seraph recalled your (\\d+) summoned allies!$")
 
     private var cocoonAt = 0L
-    private var lastShown = -1
 
     fun init() {
         FishEvents.chat.register { text ->
@@ -26,19 +28,24 @@ object SlayerExtras {
             false
         }
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
+        RenderHooks.GIZMO.register { _ ->
+            try { renderCocoon() } catch (e: Exception) { FishDiag.fail("SlayerExtras.2", "cocoon timer render failed", e) }
+        }
     }
 
     private fun onTick() {
-        if (!S.cocoonTimer) { cocoonAt = 0L; lastShown = -1; return }
-        val cocooned = SlayerManager.state == SlayerManager.State.COCOONED
-        if (!cocooned) { cocoonAt = 0L; lastShown = -1; return }
-        val now = System.currentTimeMillis()
-        if (cocoonAt == 0L) cocoonAt = now
-        val left = ((COCOON_MS - (now - cocoonAt) + 999) / 1000).toInt()
-        if (left == lastShown || left < 0) return
-        lastShown = left
-        if (left == 0) title("§d§lCOCOON BURST", "§7Kill the boss", 1200)
-        else title("§d§lCOCOON §f${left}s", "§7Boss bursts out soon", 1100)
+        if (!S.cocoonTimer || SlayerManager.state != SlayerManager.State.COCOONED) { cocoonAt = 0L; return }
+        if (cocoonAt == 0L) cocoonAt = System.currentTimeMillis()
+    }
+
+    private fun renderCocoon() {
+        if (!S.cocoonTimer || cocoonAt == 0L) return
+        val boss = SlayerManager.bossEntity ?: return
+        val left = (COCOON_MS - (System.currentTimeMillis() - cocoonAt)) / 1000.0
+        if (left < 0) return
+        val name = SlayerManager.type?.displayName ?: "Boss"
+        FishDraw.gizmoText(Component.literal("§d$name §f" + String.format("%.1f", left) + "s"),
+            Vec3(boss.x, boss.y + boss.bbHeight + 0.6, boss.z), 1.4f, -0x1)
     }
 
     private fun title(main: String, sub: String, ms: Int) {
