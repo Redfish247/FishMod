@@ -2790,6 +2790,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         try {
             renderContent(ctx, vmx, vmy)
             renderChrome(ctx, vmx, vmy)
+            renderViewPopup(vmx, vmy)
             statusHint = null
             renderHoverTooltip(ctx)
         } catch (t: Throwable) {
@@ -2821,7 +2822,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val TAB_H = 25
     private val CMD_Y get() = top() + 33
     private val ADDR_Y get() = top() + 60
-    private var listView = false
+    // Explorer-style view modes: label, card min width, card height (0..3 = cards, 4 = List, 5 = Details)
+    private val viewLabels = arrayOf("Extra large cards", "Large cards", "Medium cards", "Small cards", "List", "Details")
+    private val viewMinW = intArrayOf(260, 190, 150, 110)
+    private var viewMode = 2
+    private var viewOpen = false
+    private val listView get() = viewMode >= 4
+    private fun viewPopup(): IntArray { val b = cmdButtons().first { it.id == "view" }; return intArrayOf(b.x + b.w - 130, b.y + b.h + 4, 130, viewLabels.size * 18 + 8) }
+    private fun viewItemAt(mx: Int, my: Int): Int { val p = viewPopup(); if (mx !in p[0]..p[0] + p[2] || my < p[1] + 4) return -1; val i = (my - p[1] - 4) / 18; return if (i in viewLabels.indices) i else -1 }
+    private fun renderViewPopup(mx: Int, my: Int) {
+        if (!viewOpen) return
+        val p = viewPopup()
+        UiRecorder.dropShadow(p[0].toFloat(), p[1].toFloat(), p[2].toFloat(), p[3].toFloat(), 6f, 8f, 0x60000000)
+        UiRecorder.fillRoundedRect(p[0].toFloat(), p[1].toFloat(), p[2].toFloat(), p[3].toFloat(), 6f, ScreenTheme.over(cardFill(), ScreenTheme.windowBg() or 0xFF000000.toInt()) or 0xFF000000.toInt())
+        UiRecorder.roundedRectRing(p[0].toFloat(), p[1].toFloat(), p[2].toFloat(), p[3].toFloat(), 6f, 1f, 0, ScreenTheme.ink(0x33))
+        val hi = viewItemAt(mx, my)
+        val ts = 0.85f * NVG_BASE_TEXT_SIZE
+        for ((i, l) in viewLabels.withIndex()) {
+            val y = p[1] + 4 + i * 18
+            if (i == hi) UiRecorder.fillRoundedRect((p[0] + 3).toFloat(), y.toFloat(), (p[2] - 6).toFloat(), 18f, 4f, ROW_HOVER)
+            if (i == viewMode) UiRecorder.fillRoundedRect((p[0] + 9).toFloat(), y + 7f, 4f, 4f, 2f, TEXT_COLOR)
+            UiRecorder.text(l, (p[0] + 22).toFloat(), y + (18 - ts) / 2f, ts, TEXT_COLOR)
+        }
+    }
     private class Btn(val id: String, val label: String, val x: Int, val y: Int, val w: Int, val h: Int)
     private fun cmdButtons(): List<Btn> {
         val out = ArrayList<Btn>()
@@ -2831,10 +2854,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val w = sw(this.font, label, 0.85f) + 18
             out.add(Btn(id, label, x, CMD_Y, w, 22)); x += w + 2
         }
-        val gw = 40
-        val sx0 = right() - 10 - (gw * 2 + 6)
-        out.add(Btn("grid", "Grid", sx0 + 3, CMD_Y + 3, gw, 16))
-        out.add(Btn("list", "List", sx0 + 3 + gw, CMD_Y + 3, gw, 16))
+        out.add(Btn("view", "View", right() - 10 - 64, CMD_Y + 3, 64, 16))
         return out
     }
     private fun winButtons(): List<Btn> = listOf("min" to "–", "max" to "□", "close" to "✕").mapIndexed { i, (id, l) -> Btn(id, l, right() - 36 * (3 - i), top(), 36, 28) }
@@ -2864,16 +2884,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             icon(b.id, b.x + b.w / 2f, b.y + b.h / 2f, if (h && b.id == "close") 0xFFFFFFFF.toInt() else TEXT_COLOR)
         }
         for (b in cmdButtons()) {
-            val on = (b.id == "grid" && !listView) || (b.id == "list" && listView)
             val h = hov(b, mx, my)
             val a = hover("c" + b.id, h)
-            if (b.id == "grid" || b.id == "list") {
-                if (b.id == "grid") UiRecorder.fillRoundedRect((b.x - 3).toFloat(), (b.y - 3).toFloat(), (b.w * 2 + 6).toFloat(), (b.h + 6).toFloat(), 6f, cardFill())
-                val va = hover("v" + b.id, on)
-                UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, fa(ACCENT, va))
-                if (!on && a > 0f) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, fa(ROW_HOVER, a))
+            if (b.id == "view") {
+                UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, cardFill())
+                if (a > 0f || viewOpen) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 5f, fa(ROW_HOVER, if (viewOpen) 1f else a))
                 val segBg = ScreenTheme.over(cardFill(), ScreenTheme.windowBg() or 0xFF000000.toInt())
-                ctext(b.label, b.x, b.y, b.w, b.h, 0.85f, if (va > 0.5f) ScreenTheme.textOn(ACCENT) else ScreenTheme.textOn(segBg))
+                ctext(b.label, b.x - 6, b.y, b.w, b.h, 0.85f, ScreenTheme.textOn(segBg))
+                drawChevron(ctx, b.x + b.w - 11, b.y + b.h / 2, viewOpen, ScreenTheme.subtextOn(segBg))
                 continue
             } else if (a > 0f || (b.id == page)) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 6f, fa(ROW_HOVER, if (b.id == page) 1f else a))
             val c = if (b.id == "reset" && resetArmed) 0xFFE05A5A.toInt() else TEXT_COLOR
@@ -2936,6 +2954,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun chromeClick(mx: Int, my: Int): Boolean {
+        val wasViewOpen = viewOpen
+        if (wasViewOpen) {
+            viewOpen = false
+            val vi = viewItemAt(mx, my)
+            if (vi >= 0) { viewMode = vi; page = null; gridScroll = 0; openedAt = System.currentTimeMillis(); return true }
+        }
         val s = searchRect()
         searchFocused = mx in s[0]..s[0] + s[2] && my in s[1]..s[1] + s[3]
         searchField?.setFocused(searchFocused)
@@ -2955,8 +2979,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "credits" -> openPage("credits")
                 "reset" -> if (resetArmed) { resetAllColumns(); resetArmed = false } else { resetArmed = true; resetArmedAt = System.currentTimeMillis() }
                 "look" -> columns.firstOrNull { c -> c.features.any { it.name == "UI Customization" } }?.let { c -> toggleFold(c); selected = c.features.first { it.name == "UI Customization" }; selAt = System.currentTimeMillis() }
-                "grid" -> { page = null; listView = false; openedAt = System.currentTimeMillis() }
-                "list" -> { page = null; listView = true; openedAt = System.currentTimeMillis() }
+                "view" -> viewOpen = !wasViewOpen
             }
             return true
         }
@@ -3106,8 +3129,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun selGutter(): Int = Math.max(COLUMN_GUTTER, 3 + 2 * SB_GAP)
     private fun gx1(): Int = if (selected != null) cx1() - detW() - selGutter() else cx1()
     private fun cardFill(): Int = (Math.round(FishSettings.fmCardAlpha.coerceIn(0, 100) * 2.55f) shl 24) or (FishSettings.fmCardColor and 0xFFFFFF)
-    private fun cardH(): Int = if (listView) 26 else CARD_TALL
-    private fun gridCols(): Int = if (listView) 1 else Math.max(1, (gx1() - cx0() + CARD_GAP) / (CARD_MIN_W + CARD_GAP))
+    private fun cardH(): Int = if (viewMode == 4) 22 else if (listView) 26 else CARD_TALL
+    private fun gridCols(): Int = if (listView) 1 else Math.max(1, (gx1() - cx0() + CARD_GAP) / (viewMinW[viewMode] + CARD_GAP))
     private fun cardW(): Int { val n = gridCols(); return (gx1() - cx0() - (n - 1) * CARD_GAP) / n }
     private class GridLayout(val xs: IntArray, val ys: IntArray, val heads: List<Pair<String, Int>>, val total: Int)
     private var layoutKey = 0
@@ -3219,7 +3242,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val d = descFor(f.name)
                 if (listView) {
                     sst(ctx, this.font, ellipsize(f.name, 200), x + 10, y + (cardH() - 11) / 2, fa(if (on || !f.hasMaster()) cText else cSub, p), 1f)
-                    if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 270, 0.8f), x + 220, y + (cardH() - 8) / 2, fa(cSub, p), 0.8f)
+                    if (d.isNotEmpty() && viewMode == 5) sst(ctx, this.font, ellipsize(d, cw - 270, 0.8f), x + 220, y + (cardH() - 8) / 2, fa(cSub, p), 0.8f)
                 } else {
                     sst(ctx, this.font, ellipsize(f.name, cw - 44), x + 8, y + 7, fa(if (on || !f.hasMaster()) cText else cSub, p), 1f)
                     if (d.isNotEmpty()) sst(ctx, this.font, ellipsize(d, cw - 20, 0.8f), x + 8, y + 25, fa(cSub, p), 0.8f)
@@ -4612,7 +4635,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val CARD_RADIUS = 7
         private const val HEADER_H = 36
         private const val STATUS_H = 22
-        private const val CARD_MIN_W = 150
         private const val CARD_TALL = 46
         private const val CARD_GAP = 4
         private const val GROUP_HEAD_H = 24
