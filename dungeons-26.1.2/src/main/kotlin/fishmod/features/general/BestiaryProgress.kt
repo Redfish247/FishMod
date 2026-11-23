@@ -101,6 +101,6 @@ object BestiaryProgress {
     fun lines(): List<String> {
         if (maxMilestone <= 0) return emptyList()
         val pct = 100.0 * milestone / maxMilestone
-        return listOf("§7Bestiary: §d$milestone§7/§d$maxMilestone §7(${String.format("%.1f", pct)}%)")
+        return listOf("§7Bestiary: §d$milestone§7/§d$maxMilestone §7(${String.format(java.util.Locale.US, "%.1f", pct)}%)")
     }
 }

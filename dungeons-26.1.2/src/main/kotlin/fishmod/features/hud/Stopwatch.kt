@@ -132,14 +132,18 @@ object Stopwatch {
         FishEvents.worldChange.register { fire(Trigger.WORLD_CHANGE); false }
         FishEvents.locationChange.register { _ -> fire(Trigger.AREA_CHANGE); false }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
-            if (enabled && screen is AbstractContainerScreen<*>) {
+            // AFTER_INIT also fires on window resize; only fire once per screen instance
+            if (enabled && screen is AbstractContainerScreen<*> && screen !== lastOpenScreen) {
+                lastOpenScreen = screen
                 val title = fishmod.utils.TextStrip.plain(screen.title.string)
                 if (TerminalType.values().any { title.startsWith(it.windowPrefix) }) fire(Trigger.TERMINAL_OPEN)
                 fire(Trigger.GUI_OPEN, title)
-                ScreenEvents.remove(screen).register { fire(Trigger.GUI_CLOSE) }
+                ScreenEvents.remove(screen).register { lastOpenScreen = null; fire(Trigger.GUI_CLOSE) }
             }
         }
     }
+
+    private var lastOpenScreen: Any? = null
 
     private fun key(name: String): KeyMapping = KeyMappingHelper.registerKeyMapping(
         KeyMapping(name, fishmod.compat.GLFW.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, FishKeys.category())
@@ -241,7 +245,7 @@ object Stopwatch {
         val d = decimals.coerceIn(0, 3)
         val secs = ns / 1e9
         val m = (secs / 60).toInt()
-        val s = DEC_FMT[d].format(secs - m * 60)
+        val s = DEC_FMT[d].format(java.util.Locale.US, secs - m * 60)
         return if (m > 0) "$m:" + (if (s.substringBefore('.').length < 2) "0$s" else s) else s
     }
 
