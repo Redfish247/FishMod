@@ -244,7 +244,7 @@ object FarmingProfitTracker {
         out += "${Garden.legacy(S.gardenProfitColor)}§lFarming Profit §7(${S.gardenProfitCategory}, ${S.gardenProfitMode})"
         if (scroll > 0) out += "§8  ▲ $scroll more"
         for (r in rows.drop(scroll).take(max)) {
-            val v = if (r.value > 0) "§6${Garden.short(r.value)} §7(${Garden.short(perHour(r.value, t))}/h)" else ""
+            val v = if (r.value > 0) "§6${Garden.short(r.value)}" else ""
             out += ProfitTrackerKit.rowLine(r, v, ProfitTrackerKit.rarityColor(idOf(r.name)), S.gardenProfitShowSources)
         }
         val below = rows.size - scroll - max
