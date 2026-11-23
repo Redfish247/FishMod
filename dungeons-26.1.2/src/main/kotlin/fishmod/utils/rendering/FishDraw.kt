@@ -29,7 +29,6 @@ object FishDraw {
 
     private const val TEXT_SCALE = 0.025f
 
-
     @JvmStatic
     fun toFloats(argb: Int): FloatArray {
         val r = ((argb shr 16) and 0xFF) / 255f
@@ -87,7 +86,6 @@ object FishDraw {
         redirectedQuads.add(r); redirectedQuads.add(g); redirectedQuads.add(b); redirectedQuads.add(a)
     }
 
-    // Branch per vertex instead of a capturing lambda per box (was one allocation per draw call).
     private fun quadVertex(consumer: VertexConsumer, pose: PoseStack.Pose, x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, a: Float) {
         if (quadsToFillLayer) redirectSink.v(pose, x, y, z, r, g, b, a)
         else consumer.addVertex(pose, x, y, z).setColor(r, g, b, a)
@@ -208,19 +206,16 @@ object FishDraw {
     @JvmStatic
     fun safeViewDistance(): Double = maxOf(32.0, Minecraft.getInstance().options.getEffectiveRenderDistance() * 16 * 0.8)
 
-    // Camera forward vector, compute once per render hook.
     @JvmStatic
     fun lookDir(): Vec3 {
         val cam = Minecraft.getInstance().cam
         return Vec3.directionFromRotation(cam.xRot(), cam.yRot())
     }
 
-    // True when the point is more than slack blocks behind the camera plane (never visible).
     @JvmStatic
     fun behindCamera(x: Double, y: Double, z: Double, eye: Vec3, look: Vec3, slack: Double): Boolean =
         (x - eye.x) * look.x + (y - eye.y) * look.y + (z - eye.z) * look.z < -slack
 
-    // True when the whole box is behind the camera plane (never visible).
     @JvmStatic
     fun boxBehindCamera(b: AABB, eye: Vec3, look: Vec3): Boolean {
         val hx = (b.maxX - b.minX) / 2; val hy = (b.maxY - b.minY) / 2; val hz = (b.maxZ - b.minZ) / 2
@@ -229,7 +224,6 @@ object FishDraw {
 
     private val distLabels = HashMap<String, Int2ObjectOpenHashMap<Component>>()
 
-    // Cached "label §7(Nm)" component per label and integer distance.
     @JvmStatic
     fun distLabel(label: String, dist: Int): Component {
         if (distLabels.size > 512) distLabels.clear()
@@ -616,11 +610,9 @@ object FishDraw {
         return formatNumber(num, Floor7Settings.bossHpCapitalized)
     }
 
-    // Last result, reused because the inventory search bar asks for the same value every frame.
     private class FormatMemo(val num: Float, val caps: Boolean, val out: String)
     @Volatile private var lastFormat: FormatMemo? = null
 
-    // thresholds avoid "1000.0K" rollover
     internal fun formatNumber(num: Float, caps: Boolean): String {
         val memo = lastFormat
         if (memo != null && memo.num == num && memo.caps == caps) return memo.out

@@ -201,7 +201,6 @@ object UiFont {
 
     private var upload: ByteBuffer? = null
 
-    // R8 atlas pixels if glyphs were baked since the last upload, else null; buffer is reused
     fun takeDirtyAtlas(): ByteBuffer? {
         if (!dirty) return null
         dirty = false

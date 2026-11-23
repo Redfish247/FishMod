@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.multiplayer.ClientLevel
 import java.lang.ref.WeakReference
 
-// One shared reset hook: fires worldChange on level swap and on disconnect.
 object WorldReset {
     private var last: WeakReference<ClientLevel>? = null
 

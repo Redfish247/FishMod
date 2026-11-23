@@ -194,7 +194,6 @@ public class FishKeys {
         restoreKeybindBackup();
 
         ClientTickEvents.END_CLIENT_TICK.register(FishKeys::checkInputs);
-        // Flush on exit so a rebind/unbind in the last 2s isn't reverted by the stale backup.
         ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> syncKeybindBackup());
     }
 

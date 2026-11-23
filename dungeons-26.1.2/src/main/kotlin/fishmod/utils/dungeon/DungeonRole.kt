@@ -25,7 +25,6 @@ enum class DungeonRole(val letter: String, private val colorSetting: () -> Int) 
 
     companion object {
         private const val ROLES = "(Archer|Berserk|Healer|Mage|Tank)"
-        // own class from chat: picked in the lobby, solo-class buff, or the "[Mage]" style prefix
         private val OWN_ROLE_LINES = listOf(
             Regex("You have selected the $ROLES Dungeon Class!"),
             Regex("Your $ROLES stats are doubled because you are the only player using this class!")
@@ -63,12 +62,10 @@ enum class DungeonRole(val letter: String, private val colorSetting: () -> Int) 
         }
 
         private fun readOwnRole(line: String) {
-            // cheap reject before the regexes: all patterns need '[' first or "Class!"/"doubled"
             if (!line.startsWith("[") && !line.contains("Class!") && !line.contains("doubled")) return
             for (r in OWN_ROLE_LINES) {
                 r.find(line)?.let { currentClass = parse(it.groupValues[1]); return }
             }
-            // the chat prefix only fills a gap, it never overrides mid-run
             if (currentClass == null) CHAT_PREFIX.find(line)?.let { currentClass = parse(it.groupValues[1]) }
         }
 

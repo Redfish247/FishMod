@@ -19,10 +19,6 @@ import java.nio.file.Files
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * In-game bug reports / suggestions and deduplicated auto error reports, sent to the test board inbox.
- * Sends only: kind, title, text, dedup key, mod + MC version, area, recent FishDiag lines for bugs only (player name scrubbed).
- */
 object BoardReport {
 
     private const val ENDPOINT = "https://fishmod.dev/api/report"
@@ -92,7 +88,6 @@ object BoardReport {
         }
     }
 
-    // Code + exception type + first FishMod frame (no line number, so it survives version bumps).
     private fun dedupKey(code: String, t: Throwable?): String {
         if (t == null) return code
         val frame = t.stackTrace.firstOrNull { it.className.startsWith("fishmod.") }
