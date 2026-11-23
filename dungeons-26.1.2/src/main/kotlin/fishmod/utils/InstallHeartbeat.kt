@@ -12,11 +12,14 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.MutableComponent
 import java.net.URI
 
 object InstallHeartbeat {
 
     private const val BORDER_WIDTH = 53
+    private const val TWITCH_URL = "https://www.twitch.tv/redfish2471"
+    private const val YOUTUBE_URL = "https://www.youtube.com/@RedFish2471"
 
     private val modVersion: String = FabricLoader.getInstance()
         .getModContainer("fishmod-dungeons")
@@ -93,12 +96,22 @@ object InstallHeartbeat {
         if (!text.isNullOrBlank()) FishUtil.addChatMessage(Component.literal(text).withStyle(ChatFormatting.WHITE))
         if (!discordUrl.isNullOrBlank()) {
             FishUtil.addChatMessage(Component.literal(""))
-            FishUtil.addChatMessage(linkLine("Discord link", discordUrl))
+            FishUtil.addChatMessage(Component.literal("want something added to the mod? run ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal("/fm suggest [suggestion]").withStyle(ChatFormatting.WHITE)))
+            FishUtil.addChatMessage(Component.literal("find a bug? run ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal("/fm bug [Explain]").withStyle(ChatFormatting.WHITE)))
+            FishUtil.addChatMessage(
+                linkLine("Discord", discordUrl)
+                    .append(Component.literal("  |  ").withStyle(ChatFormatting.GRAY))
+                    .append(linkLine("Twitch", TWITCH_URL))
+                    .append(Component.literal("  |  ").withStyle(ChatFormatting.GRAY))
+                    .append(linkLine("YouTube", YOUTUBE_URL))
+            )
         }
         FishUtil.addChatMessage(border())
     }
 
-    private fun linkLine(label: String, url: String): Component =
+    private fun linkLine(label: String, url: String): MutableComponent =
         Component.literal(label).withStyle { style ->
             try {
                 style.withColor(ChatFormatting.BLUE)
