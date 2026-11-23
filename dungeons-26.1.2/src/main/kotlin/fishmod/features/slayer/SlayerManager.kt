@@ -114,6 +114,7 @@ object SlayerManager {
     fun anyEnabled(): Boolean = FishSettings.slayerAnyEnabled() || EndAlertSettings.noQuestWarning ||
         EndAlertSettings.cocoonTimer || EndAlertSettings.eggSacHighlight || EndAlertSettings.yangGlyphTracer
 
+    @JvmStatic
     fun isActiveSlayer(): Boolean = hasActiveQuest() && SkyblockLocation.inSkyblock()
 
     @JvmStatic
