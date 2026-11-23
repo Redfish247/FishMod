@@ -820,7 +820,6 @@ class MuseumPage {
 		private const val LIST_ICON = 19
 		private const val LIST_ROW_GAP = 3
 		private const val ITEM_SLOT_BG = 0x1CFFFFFF
-		private const val ITEM_SLOT_BORDER = 0x00FFFFFF
 		private const val ENABLED = 0xFF55FF55.toInt()
 		private const val DISABLED = 0xFF555555.toInt()
 		private const val SCROLL_STEP = (SLOT + SLOT_GAP) * 3

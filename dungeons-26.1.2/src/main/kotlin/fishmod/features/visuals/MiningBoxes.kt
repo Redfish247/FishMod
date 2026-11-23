@@ -23,6 +23,7 @@ object MiningBoxes {
 
     @JvmStatic
     fun init() {
+        fishmod.utils.events.FishEvents.worldChange.register { corpses = emptyList(); ghosts = emptyList(); false }
         ClientTickEvents.END_CLIENT_TICK.register { _ ->
             FishDiag.guard("MiningBoxes.1", "mining box scan threw") { scan() }
         }

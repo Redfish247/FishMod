@@ -50,9 +50,9 @@ object RemoteScales {
                 return null
             }
             if (x.isNaN() || y.isNaN() || z.isNaN()) return null
-            x = clamp(x)
-            y = clamp(y)
-            z = clamp(z)
+            x = PlayerSize.clamp(x)
+            y = PlayerSize.clamp(y)
+            z = PlayerSize.clamp(z)
             if (x <= 0f || y <= 0f || z <= 0f) return null
             if (x == 1.0f && y == 1.0f && z == 1.0f) return null
             return floatArrayOf(x, y, z)
@@ -61,6 +61,4 @@ object RemoteScales {
             return null
         }
     }
-
-    private fun clamp(s: Float): Float = maxOf(PlayerSize.MIN, minOf(PlayerSize.MAX, s))
 }

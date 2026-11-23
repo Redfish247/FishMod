@@ -6,6 +6,8 @@ import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.debug.FishDiag
 
 object ScreenTheme {
+    /** Opaque panel fill: tinted on purpose, UiRecorder.remap turns pure greys see-through with the Background Alpha setting. */
+    val SOLID_PANEL = 0xFF11121F.toInt()
     var ACCENT = 0xFFD6D6D6.toInt()
     var ACCENT_HOVER = 0xFFFFFFFF.toInt()
     val CARD_BG = 0xFF171717.toInt()
@@ -23,6 +25,7 @@ object ScreenTheme {
     fun isLight(c: Int): Boolean = luma(c) > 0.18f
     // text on an accent fill, judged on the accent as it shows over the window
     fun onAccent(): Int = if (isLight(over(ACCENT, windowBg() or 0xFF000000.toInt()))) 0xFF141414.toInt() else 0xFFEDEDED.toInt()
+    fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean = mx >= x && mx <= x + w && my >= y && my <= y + h
     fun textOn(bg: Int): Int = if (isLight(bg)) 0xFF141414.toInt() else 0xFFF2F2F2.toInt()
     fun subtextOn(bg: Int): Int = if (isLight(bg)) 0xFF4A4A4A.toInt() else 0xFFA8A8A8.toInt()
     // Source-over blend of fg on bg (opaque result alpha kept from bg)
@@ -55,6 +58,28 @@ object ScreenTheme {
         return (newA shl 24) or (color and 0x00FFFFFF)
     }
 
+    private class Corner(val inset: IntArray, val coverage: DoubleArray)
+    private val cornerTables = arrayOfNulls<Corner>(65)
+
+    // Per-radius corner insets and edge coverage, computed once instead of a sqrt per row per call
+    private fun cornerTable(rr: Int): Corner {
+        if (rr >= cornerTables.size) return buildCorner(rr)
+        return cornerTables[rr] ?: buildCorner(rr).also { cornerTables[rr] = it }
+    }
+
+    private fun buildCorner(rr: Int): Corner {
+        val inset = IntArray(rr)
+        val coverage = DoubleArray(rr)
+        for (i in 0 until rr) {
+            val dy = (rr - i).toDouble() - 0.5
+            val dxExact = Math.sqrt(Math.max(0.0, rr.toDouble() * rr - dy * dy))
+            val dxFloor = Math.floor(dxExact).toInt()
+            coverage[i] = dxExact - dxFloor
+            inset[i] = rr - dxFloor
+        }
+        return Corner(inset, coverage)
+    }
+
     fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
         if (w <= 0 || h <= 0) return
         val rr = Math.max(0, Math.min(r, Math.min(w, h) / 2))
@@ -62,12 +87,10 @@ object ScreenTheme {
         ctx.fill(x + rr, y, x + w - rr, y + h, color)
         ctx.fill(x, y + rr, x + rr, y + h - rr, color)
         ctx.fill(x + w - rr, y + rr, x + w, y + h - rr, color)
+        val corner = cornerTable(rr)
         for (i in 0 until rr) {
-            val dy = (rr - i).toDouble() - 0.5
-            val dxExact = Math.sqrt(Math.max(0.0, rr.toDouble() * rr - dy * dy))
-            val dxFloor = Math.floor(dxExact).toInt()
-            val coverage = dxExact - dxFloor
-            val inset = rr - dxFloor
+            val coverage = corner.coverage[i]
+            val inset = corner.inset[i]
             val topY = y + i
             val botY = y + h - 1 - i
             ctx.fill(x + inset, topY, x + rr, topY + 1, color)
@@ -257,7 +280,7 @@ object ScreenTheme {
         tx = tx.coerceAtLeast(4f)
         val ty = (my - 12f * u).coerceAtMost(screenH - h - 4f).coerceAtLeast(4f)
         UiRecorder.dropShadow(tx, ty, w, h, 5f * u, 6f * u, 0x66000000)
-        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, 0xFF131313.toInt(), FIELD_BORDER_DEFAULT)
+        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, SOLID_PANEL, FIELD_BORDER_DEFAULT)
         var ly = ty + pad
         for ((i, rs) in runs.withIndex()) {
             var px = tx + pad

@@ -88,7 +88,6 @@ object ExtrasMenu {
 
         col.features.add(Feature("Booster Cookie Warning", S::class.java, "cookieWarning"))
         col.features.add(Feature("No Bits Available Warning", S::class.java, "bitsWarning"))
-        col.features.add(Feature("Bazaar Search + Price Graph", S::class.java, "bazaarSearch"))
         val ahc = Feature("AH Buy Price Check", S::class.java, "ahPriceCheck")
         ahc.sub.add(SliderIntSetting("Warn Above %", "Red warning when the cost is this much over lowest BIN", S::class.java, "ahPriceCheckWarnPct", 0, 200, 5))
         col.features.add(ahc)
@@ -174,7 +173,6 @@ object ExtrasMenu {
         "Chat Coord Waypoints" -> "Waypoints from Patcher-style x: y: z: coords in chat"
         "Booster Cookie Warning" -> "Chat warning on joining SkyBlock when your Cookie Buff is not active"
         "No Bits Available Warning" -> "Title + chat when your cookie's Bits Available run out (open the Booster Cookie menu once to sync)"
-        "Bazaar Search + Price Graph" -> "/fmbz <item>: buy/sell prices and a 7-day price graph in chat"
         "AH Buy Price Check" -> "Confirm Purchase menu: hover Confirm to compare the cost with the item's lowest BIN"
         "Command Tab Complete" -> "Tab suggests /warp names, lobby players for /p, /msg, /ah etc., bazaar items for /bz, item names for /ahs, and /viewrecipe ids"
         "Unfocused FPS Saver" -> "Caps FPS while Minecraft is not the focused window"
@@ -194,6 +192,21 @@ object ExtrasMenu {
         "Middle Click Fix" -> "SkyBlock menus: middle click on a menu item acts as a left click"
         "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
         "Item Star Count" -> "Dungeon star count (1-10) in the slot corner of starred items"
+        "Fairy Soul Waypoints" -> "Boxes uncollected fairy souls on this island"
+        "Hoppity Hunt Summary" -> "Chat tally of eggs, new rabbits and duplicates this session"
+        "Trick or Treat Chest Alert" -> "Title when a Trick or Treat chest spawns"
+        "Auction Outbid Alert" -> "Title and sound when someone outbids you on the AH"
+        "Trevor the Trapper Helper" -> "Line to Trevor's hint area, then to where the animal was last seen"
+        "Gift Tracker HUD" -> "Winter gifts opened this session: tiers, coins, North Stars"
+        "Compact Teleport Pad Names" -> "Private-island teleport pads show only their destination"
+        "Hoppity Egg Waypoints" -> "Boxes visible Hoppity's Hunt chocolate eggs"
+        "Stacking Enchant Progress" -> "Tooltip line with progress to the next level of Expertise, Compact, Cultivating and similar"
+        "Hidden Jerry Highlight" -> "Outlines your own Hidden Jerries in their colour"
+        "Reindrake Alert + Warp Link" -> "Title and a clickable /warp winter when a Reindrake spawns"
+        "Carnival Zombie Shootout Outlines" -> "Outlines carnival zombies by helmet tier"
+        "Stray Rabbit Alert" -> "Sound when a Stray Rabbit spawns"
+        "HotM / HotF Helper" -> "Perk levels on Heart of the Mountain/Forest, plus powder or whispers under the cost"
+        "Moonglade Beacon Solver" -> "Highlights the matching selectors in Moonglade Beacon menus"
         else -> null
     }
 }

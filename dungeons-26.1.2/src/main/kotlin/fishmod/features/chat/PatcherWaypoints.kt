@@ -9,7 +9,6 @@ import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
-import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
@@ -59,15 +58,21 @@ object PatcherWaypoints {
         val eye = Minecraft.getInstance().cam.position()
         val argb = S.patcherWaypointColor
         val rgb = argb and 0xFFFFFF
+        val look = FishDraw.lookDir()
+        val beam = S.patcherWaypointBeam
         for (w in list) {
+            val behind = FishDraw.behindCamera(w.pos.x, w.pos.y + 0.5, w.pos.z, eye, look, 2.0)
+            // A tall beam can still cross the view when the base is behind the camera
+            if (behind && !beam) continue
             val center = w.pos.add(0.0, 0.5, 0.0)
             val d = center.distanceTo(eye)
             val (c, k) = FishDraw.pullIn(center, eye)
-            FishDraw.fillBox(ps, vc, AABB.ofSize(c, k, k, k), (0x66 shl 24) or rgb)
-            if (S.patcherWaypointBeam) FishDraw.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
+            if (!behind) FishDraw.fillBox(ps, vc, AABB.ofSize(c, k, k, k), (0x66 shl 24) or rgb)
+            if (beam) FishDraw.fillBox(ps, vc, AABB.ofSize(c.add(0.0, k * 100.5, 0.0), k * 0.4, k * 200, k * 0.4), (0x40 shl 24) or rgb)
+            if (behind) continue
             val (tp, pk) = FishDraw.pullIn(Vec3(w.pos.x, w.pos.y + 1.5 + d / 25.0, w.pos.z), eye)
             val px = (S.patcherWaypointTextScale * maxOf(0.035, d * 0.0035) * pk).toFloat()
-            FishDraw.renderSeeThroughText(ctx, ps, Component.literal("${w.label} §7(${d.toInt()}m)"), tp, px, argb or (0xFF shl 24), true)
+            FishDraw.renderSeeThroughText(ctx, ps, FishDraw.distLabel(w.label, d.toInt()), tp, px, argb or (0xFF shl 24), true)
         }
     }
 }

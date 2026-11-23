@@ -6,7 +6,9 @@ import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.components.CommandSuggestions;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -16,12 +18,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ChatScreen.class)
 public abstract class ChatTabsMixin extends Screen {
 
+    @Shadow private CommandSuggestions commandSuggestions;
+
     protected ChatTabsMixin(Component title) {
         super(title);
     }
 
+    // the command suggestion popup covers the tabs, so they step aside while it is open
+    private boolean fishmod$suggestionsOpen() {
+        return commandSuggestions != null && commandSuggestions.isVisible();
+    }
+
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$drawChatTabs(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+        if (fishmod$suggestionsOpen()) return;
         try {
             ChatTabs.render(context, this.height, mouseX, mouseY);
         } catch (Throwable t) {
@@ -31,6 +41,7 @@ public abstract class ChatTabsMixin extends Screen {
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void fishmod$clickChatTabs(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+        if (fishmod$suggestionsOpen()) return;
         try {
             if (ChatTabs.click(this.height, click.x(), click.y(), click.button())) cir.setReturnValue(true);
         } catch (Throwable t) {

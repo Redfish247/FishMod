@@ -142,7 +142,6 @@ class MiscStatsSnapshot private constructor(
         val greenCandy: Long,
         val purpleCandy: Long,
         val festivals: Int,
-        val bestFestivalCandy: Long,
         val bestFestivalYear: Int,
         val batsSpawned: Long,
         val bestFestivalPoints: Long,
@@ -158,7 +157,7 @@ class MiscStatsSnapshot private constructor(
 
         companion object {
             @JvmStatic
-            fun empty(): SeasonalStats = SeasonalStats(0L, 0L, 0L, 0L, 0L, 0L, 0, 0L, 0, 0L, 0L, 0L, 0L, 0L)
+            fun empty(): SeasonalStats = SeasonalStats(0L, 0L, 0L, 0L, 0L, 0L, 0, 0, 0L, 0L, 0L, 0L, 0L)
         }
     }
 
@@ -273,7 +272,6 @@ class MiscStatsSnapshot private constructor(
             val spooky = Leveling.obj(stats.get("spooky"))
             val bats = Leveling.obj(spooky?.get("bats_spawned"))
             var festivals = 0
-            var bestCandy = 0L
             var bestYear = 0
             var bestPoints = 0L
             var bestGreen = 0L
@@ -294,7 +292,6 @@ class MiscStatsSnapshot private constructor(
                         bestPoints = points
                         bestGreen = green
                         bestPurple = purple
-                        bestCandy = total
                         bestYear = key.substring("spooky_festival_".length).toIntOrNull() ?: 0
                     }
                 }
@@ -307,7 +304,6 @@ class MiscStatsSnapshot private constructor(
                 longOf(candy, "green_candy"),
                 longOf(candy, "purple_candy"),
                 festivals,
-                bestCandy,
                 bestYear,
                 longOf(bats, "total"),
                 bestPoints,
