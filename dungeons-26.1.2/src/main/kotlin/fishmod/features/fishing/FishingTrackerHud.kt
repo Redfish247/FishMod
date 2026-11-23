@@ -98,7 +98,6 @@ object FishingTrackerLines {
         return out
     }
 
-    // One area's block (shared by the in-game tracker and the HUD editor example)
     @JvmStatic
     fun areaBlock(a: AreaDef, b: FishingBucket, total: Boolean, cap: Int, sessionMs: Long): List<String> {
         val out = ArrayList<String>()
@@ -126,7 +125,6 @@ object FishingTrackerHud {
     private fun total() = S.fishingTrackerMode == "Total"
     private fun cap() = S.fishingTrackerLines.coerceIn(1, 30)
 
-    // Example data for the HUD editor previews (fed through the same FishingTrackerLines builders)
     private const val EX_MS = 5_025_000L
 
     private fun exBucket(): FishingBucket = FishingBucket().apply {

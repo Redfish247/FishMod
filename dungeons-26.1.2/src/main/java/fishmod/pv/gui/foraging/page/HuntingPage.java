@@ -256,7 +256,6 @@ public final class HuntingPage {
 		return Math.max(3, Math.min(5, (rw + SLOT_GAP) / (SLOT + SLOT_GAP)));
 	}
 
-	/** Height {@link #drawToolkit} needs for these slot groups (one entry per slot), matching its row breaks. */
 	static int toolkitHeight(int lineHeight, List<String> slotGroups, int cols) {
 		int h = lineHeight + 3 + STAT_ROW + 3;
 		if (slotGroups.isEmpty()) {

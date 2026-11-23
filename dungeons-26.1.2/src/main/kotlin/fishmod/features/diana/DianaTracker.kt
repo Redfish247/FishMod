@@ -108,7 +108,6 @@ object DianaTracker {
     )
     private val NO_PRICE = setOf("TOTAL_BURROWS", "COINS", "SHURIKENS_USED")
 
-    // SkyBlock item id for a tracker key (Chimera is a book, shards/dye are prefixed)
     fun itemId(k: String): String = k.removeSuffix("_LS").let { PRICE_ID[it] ?: if (it == "MYTHOLOGICAL_DYE") "DYE_MYTHOLOGICAL" else it }
 
     private val STACK_DROPS = setOf("ENCHANTED_GOLD", "ENCHANTED_ANCIENT_CLAW", "ANCIENT_CLAW")
@@ -357,7 +356,6 @@ object DianaTracker {
         }
     }
 
-    // Drops whose message can be edited in the Diana Messages popup; blank setting = default template
     val EDITABLE = listOf("CHIMERA", "MANTI_CORE", "FATEFUL_STINGER", "BRAIN_FOOD", "SHIMMERING_WOOL")
 
     fun drop(key: String): Drop = DROP_BY_KEY.getValue(key)
@@ -371,7 +369,6 @@ object DianaTracker {
     private val EMPTY_MF = Regex("\\s*\\(\\+%? ✯ Magic Find\\)")
     private val SPACE_CODES_SPACE = Regex(""" +((?:§.)+) +""")
 
-    // Fills a drop template; empty MF / price brackets are dropped so the line stays clean
     fun fillTemplate(tpl: String, mf: Int, ls: Boolean, count: Long, pct: Double, price: Double, took: Int): String {
         var t = tpl
         if (mf <= 0) t = t.replace(MF_PART, "")
@@ -633,7 +630,6 @@ object DianaTracker {
         for ((k, n) in sbo.items) t.items[k] = (t.items[k] ?: 0L) + n
         for ((k, n) in sbo.mobs) t.mobs[k] = (t.mobs[k] ?: 0L) + n
         t.timeMs += sbo.timeMs
-        // Past years FishMod doesn't already have are added; the list is kept sorted by year
         var added = 0
         read("pastDianaEvents.json")?.getAsJsonArray("events")?.forEach { e ->
             val ev = fromSbo(e.asJsonObject)
@@ -712,7 +708,7 @@ object DianaTracker {
     fun short(v: Double): String {
         val a = abs(v)
         return when {
-            a >= 999_995_000.0 -> "%.2fB".format(v / 1e9) // thresholds avoid "1000.0K" rollover
+            a >= 999_995_000.0 -> "%.2fB".format(v / 1e9)
             a >= 999_950.0 -> "%.2fM".format(v / 1e6)
             a >= 999.5 -> "%.1fK".format(v / 1e3)
             else -> "%.0f".format(v)

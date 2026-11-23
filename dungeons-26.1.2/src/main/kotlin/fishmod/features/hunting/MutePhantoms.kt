@@ -4,7 +4,6 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.events.FishEvents
 import fishmod.features.fishing.FishingWorldSettings as W
 
-// Silence phantom sounds on Galatea and the Safari (idea from Skyblocker)
 object MutePhantoms {
     fun init() {
         FishEvents.sound.register { snd, _, _ ->

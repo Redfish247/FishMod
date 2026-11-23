@@ -41,7 +41,7 @@ object SlayerManager {
     private val MINIBOSS_CHAT = Pattern.compile("SLAYER MINI-?BOSS (.+?) has spawned!")
 
     private val PCT = Pattern.compile("(\\d{1,3})%")
-    private val FRACTION = Pattern.compile("\\(?([\\d,.]+[kKmMbB]?)\\s*/\\s*([\\d,.]+[kKmMbB]?)\\)?") // k/m/b suffix on high tiers
+    private val FRACTION = Pattern.compile("\\(?([\\d,.]+[kKmMbB]?)\\s*/\\s*([\\d,.]+[kKmMbB]?)\\)?")
 
     private val PURSE = Pattern.compile("(?:Purse|Piggy):\\s*([\\d,]+)")
 
@@ -85,7 +85,6 @@ object SlayerManager {
     )
 
     @Volatile private var correctArea: Boolean = false
-    // sticky until island change, so walking past a sub-area edge doesn't hide the HUDs
     private var areaLatched = false
 
     private fun updateAreaMatch(lines: List<String>) {
@@ -112,6 +111,10 @@ object SlayerManager {
     fun onQuestIsland(): Boolean = type?.let { onSlayerIsland(it) } ?: false
 
     @JvmStatic
+    fun anyEnabled(): Boolean = FishSettings.slayerAnyEnabled() || EndAlertSettings.noQuestWarning ||
+        EndAlertSettings.cocoonTimer || EndAlertSettings.eggSacHighlight || EndAlertSettings.yangGlyphTracer
+
+    @JvmStatic
     fun isActiveSlayer(): Boolean = hasActiveQuest() && SkyblockLocation.inSkyblock()
 
     @JvmStatic
@@ -128,7 +131,7 @@ object SlayerManager {
         SlayerHuds.initInventory()
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
-            if (!FishSettings.slayerAnyEnabled()) {
+            if (!anyEnabled()) {
                 if (state != State.NONE || type != null) fullReset()
                 return@EndTick
             }
@@ -155,8 +158,9 @@ object SlayerManager {
         }
 
         FishEvents.chat.register { text ->
-            if (!FishSettings.slayerAnyEnabled()) return@register false
+            if (!anyEnabled()) return@register false
             val s = text.chatPlain.trim()
+            if ("SLAYER" !in s) return@register false
             val now = System.currentTimeMillis()
             try { when {
                 QUEST_STARTED.matcher(s).find() -> {

@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as S
 
-// Session tracker for opened winter gifts: count by tier, coins and North Stars
 object GiftTracker {
     // from SkyHanni (GiftProfitTracker), colour codes stripped
     private val GIFT = Regex("""^(COMMON|RARE|SWEET|SANTA TIER|PARTY TIER)! (.+) gift with .+!$""")
@@ -38,6 +37,9 @@ object GiftTracker {
         }
         FishHudEditor.register("Gift Tracker", { S.giftHudX }, { S.giftHudX = it }, { S.giftHudY }, { S.giftHudY = it }, 140, 40,
             { S.giftHudScale }, { S.giftHudScale = it })
+        fishmod.features.HudPreview.register("Gift Tracker") {
+            fishmod.features.HudPreview.text(listOf("§cGifts opened: §f12", "§7COMMON: §f7", "§7RARE: §f4", "§7SWEET: §f1", "§6Coins: §f48.5k", "§dNorth Stars: §f3"), 10, color = S.giftHudColor)
+        }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "gift_tracker_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("GiftTracker.1", "gift hud render failed", t) }
         }

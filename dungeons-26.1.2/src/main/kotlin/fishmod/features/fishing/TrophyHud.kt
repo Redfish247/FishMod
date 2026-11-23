@@ -5,7 +5,6 @@ import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import fishmod.features.fishing.FishingWorldSettings as W
 
-// Session trophy fish counts per fish and tier (reuses FishingAlertText.trophy)
 object TrophyHud {
     private val counts = LinkedHashMap<String, IntArray>()
 

@@ -26,7 +26,6 @@ object SocialLinks {
 		fun label(): String = label
 	}
 
-	/** Always the viewed player and their selected profile, never the logged-in account. */
 	@JvmRecord
 	data class Target(val uuid: UUID?, val name: String?, val profileId: String?, val profileName: String?)
 

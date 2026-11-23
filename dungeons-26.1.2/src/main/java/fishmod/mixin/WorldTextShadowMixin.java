@@ -12,12 +12,12 @@ public abstract class WorldTextShadowMixin {
     @ModifyArg(method = "renderTranslucent", require = 0, index = 4, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/Font;drawInBatch(Lnet/minecraft/network/chat/Component;FFIZLorg/joml/Matrix4fc;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)V"))
     private boolean fishmod$shadowComp(boolean shadow) {
-        return shadow || FishSettings.worldTextShadow((Object) this instanceof NameTagFeatureRenderer);
+        return shadow || FishSettings.worldTextShadow(true);
     }
 
     @ModifyArg(method = "renderTranslucent", require = 0, index = 4, at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/Font;drawInBatch(Lnet/minecraft/util/FormattedCharSequence;FFIZLorg/joml/Matrix4fc;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)V"))
     private boolean fishmod$shadowSeq(boolean shadow) {
-        return shadow || FishSettings.worldTextShadow((Object) this instanceof NameTagFeatureRenderer);
+        return shadow || FishSettings.worldTextShadow(true);
     }
 }

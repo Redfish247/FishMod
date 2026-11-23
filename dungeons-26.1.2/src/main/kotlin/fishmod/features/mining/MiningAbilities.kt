@@ -15,7 +15,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.HitResult
 import fishmod.features.mining.MiningSettings as S
 
-// Ability-ready title, Pickobulus preview (Skyblocker algorithm), Maniac Miner block counter, SkyMall perk
 object MiningAbilities {
 
     private val ABILITIES = setOf("Pickobulus", "Mining Speed Boost", "Maniac Miner", "Gemstone Infusion", "Sheer Force",
@@ -112,7 +111,6 @@ object MiningAbilities {
         val level = mc.level ?: return
         Mining.tabLine("Pickobulus:")?.let { if (it != "Pickobulus: Available") { pickError = "§cOn cooldown: " + it.removePrefix("Pickobulus: "); return } }
         if (!holdingPickobulus()) return
-        // Eye height + 0.53625 offset per Skyblocker
         val start = p.position().add(0.0, p.eyeHeight + 0.53625, 0.0)
         val hit = level.clip(ClipContext(start, start.add(p.forward.scale(20.0)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
         if (hit.type != HitResult.Type.BLOCK) { pickError = "§7Not looking at a block"; return }

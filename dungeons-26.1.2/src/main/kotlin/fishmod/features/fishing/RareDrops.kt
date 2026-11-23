@@ -96,20 +96,21 @@ object RareDrops {
         return RareDrop(RareDropKind.PET, pet, id, m.groupValues[3].toIntOrNull() ?: 0, price(id), false, rarity, plain)
     }
 
+    private fun isOwn(who: String, own: String) = who.trim().substringAfterLast(' ').equals(own, true)
+
     private fun parseDye(plain: String, own: String?): RareDrop? {
         val m = DYE_RE.matchEntire(plain) ?: return null
-        if (own == null || !m.groupValues[1].contains(own)) return null
+        if (own == null || !isOwn(m.groupValues[1], own)) return null
         val info = DYE_BY_NAME[m.groupValues[2]]
         return RareDrop(RareDropKind.DYE, m.groupValues[2], info?.id, 0, price(info?.id), false, null, plain)
     }
 
     private fun parsePhoenix(plain: String, own: String?): RareDrop? {
         val m = PHOENIX_RE.matchEntire(plain) ?: return null
-        if (own == null || !m.groupValues[1].contains(own)) return null
+        if (own == null || !isOwn(m.groupValues[1], own)) return null
         return RareDrop(RareDropKind.PHOENIX, "Phoenix", null, 0, 0.0, true, null, plain)
     }
 
-    // Overridable so unit tests never touch the price caches
     @JvmField var priceFn: (String) -> Double = { ItemPricer.price(it) }
 
     private fun price(id: String?): Double = if (id == null) 0.0 else priceFn(id)

@@ -74,7 +74,6 @@ object QuizHud {
 
     private fun label(stage: Int, ticks: Int) = "§dQuiz §7(§f$stage/3§7): §b" + fishmod.utils.Fmt.f1(ticks / 20.0) + "s"
 
-    // Example data: question 2, 4.2s left
     private fun registerPreview() {
         HudPreview.register(NAME) { HudPreview.text(listOf(label(2, 84))) }
     }

@@ -44,11 +44,10 @@ object ExperimentSolver {
             if (game == Game.NONE || !FishSettings.experimentSolverEnabled) return@register
             val slot = DrawHooks.currentSlot ?: return@register
             if (slot.container is Inventory) return@register
-            // Superpairs: keep showing a revealed item after the card flips back
             if (game == Game.PAIRS) {
                 val seen = pairsSeen[slot.index]
                 if (seen != null && (isGlass(slot.item) || isPane(slot.item))) {
-                    ctx.fill(x, y, x + 16, y + 16, 0xFF8B8B8B.toInt()) // cover the glass card
+                    ctx.fill(x, y, x + 16, y + 16, 0xFF8B8B8B.toInt())
                     ctx.item(seen, x, y)
                 }
             }
@@ -57,7 +56,6 @@ object ExperimentSolver {
         }
     }
 
-    // Remembered Superpairs item under a glass card, for the hover tooltip
     @JvmStatic
     fun tooltipFor(slot: Slot?): ItemStack? {
         if (game != Game.PAIRS || !FishSettings.experimentSolverEnabled || slot == null || slot.container is Inventory) return null

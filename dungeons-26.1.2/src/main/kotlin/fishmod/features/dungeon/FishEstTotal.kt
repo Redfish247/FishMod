@@ -150,7 +150,6 @@ object FishEstTotal {
         finally { pose.popMatrix() }
     }
 
-    // HUD editor example: the real rows over the Splits example (M7 history/averages, example lag)
     @JvmStatic
     fun example(): HudExample? {
         val splits = BossPhase.exampleSplits()

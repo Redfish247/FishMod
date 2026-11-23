@@ -32,7 +32,6 @@ class DungeonPage {
 	private val zones = ArrayList<HoverZone>()
 	private val overlay = DungeonCalcOverlay()
 
-	// Calculator rows are never laid out since the panel was removed; commands still run the calcs.
 	private val cataRow = CalcRow()
 	private val classRow = CalcRow()
 
@@ -612,7 +611,6 @@ class DungeonPage {
 
 		private fun isClassChar(c: Char): Boolean = c in '0'..'9' || c in 'a'..'z' || c in 'A'..'Z' || c == ' '
 
-		/** Digits plus optional `C`/`cata` prefix for overflow targets like `C55`. */
 		private fun isCataChar(c: Char): Boolean = c in '0'..'9' || c in 'a'..'z' || c in 'A'..'Z'
 
 		private fun hitButton(row: CalcRow, mx: Double, my: Double): Boolean =

@@ -10,7 +10,6 @@ object FishHudLayer {
     @JvmField var inModHud = false
     @JvmField var inTab = false
 
-    // Layers drawn in-world or under the crosshair; never hidden by tab
     private val TAB_EXEMPT = setOf("custom_crosshair","dungeon_waypoints_overlay", "cooldown_overlay_hotbar")
 
     private class Box { var x0 = Int.MAX_VALUE; var y0 = Int.MAX_VALUE; var x1 = Int.MIN_VALUE; var y1 = Int.MIN_VALUE
@@ -60,7 +59,7 @@ object FishHudLayer {
         val frame = Box()
         return HudElement { ctx, tick ->
             if (!exempt && FishSettings.hideHudsUnderTab && tabOpen() && box.hits(tabBox)) return@HudElement
-            if (!exempt && panelOpen() && box.hits(panelBox)) return@HudElement
+            if (!exempt && panelSeenMs != 0L && panelOpen() && box.hits(panelBox)) return@HudElement
             val prev = inModHud
             val prevBox = cur
             inModHud = true

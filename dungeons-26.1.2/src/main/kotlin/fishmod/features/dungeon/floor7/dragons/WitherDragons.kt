@@ -227,7 +227,6 @@ object WitherDragons {
     private fun drawHudLines(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, lines: List<String>) =
         lines.forEachIndexed { i, line -> ctx.text(font, line, 0, i * (font.lineHeight + 1), -1, true) }
 
-    // Editor example: two spawning dragons through the same line format and draw
     private fun exampleLines() = listOf(hudLine("1. ", WitherDragon.RED, 62), hudLine("2. ", WitherDragon.BLUE, 84))
 
     private fun hudExample(): HudExample {

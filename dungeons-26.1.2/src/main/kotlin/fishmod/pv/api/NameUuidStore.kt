@@ -24,8 +24,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object NameUuidStore {
-    // Mojang holds a changed name for 37 days before anyone else can claim it, so a
-    // shorter TTL can never map a name to the wrong account.
     private val TTL_MS = TimeUnit.DAYS.toMillis(30)
     private const val MAX_ENTRIES = 2000
     private val FILE: Path = ProfileViewer.DIR.resolve("name-uuid-cache.json")

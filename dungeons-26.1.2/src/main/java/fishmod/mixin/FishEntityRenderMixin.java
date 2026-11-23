@@ -203,7 +203,6 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
         }
     }
 
-    // Pet tags have no ❤; mob tags ("[Lv5] Zombie 100/100❤") never match
     @org.spongepowered.asm.mixin.Unique
     private static final java.util.regex.Pattern fishmod$PET_LEVEL = java.util.regex.Pattern.compile("^\\s*\\[(?:Lvl? ?)?\\d+]\\s*(?=[^❤]+$)");
 
@@ -218,7 +217,6 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             if (dmg != original) return dmg;
         }
         if (FishSettings.petNametagHideLevel && entity instanceof ArmorStand) {
-            // Same Component instance until the tag changes, so cache the rewrite per stand
             Component[] hit = fishmod$PET_CACHE.get(entity.getId());
             if (hit != null && hit[0] == original) return hit[1];
             String plain = ChatFormatting.stripFormatting(original.getString());

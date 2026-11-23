@@ -242,14 +242,12 @@ public final class ForagingOverviewPage {
 		}
 
 		int bottom = y + h - PAD;
-		// Header + talisman + one row of songs must fit, otherwise skip rather than spill off the panel.
 		int needed = ForagingUi.SEP_GAP + font.lineHeight * 2 + 6 + ICON + 3;
 		if (ly + needed <= bottom) {
 			ly = ForagingUi.sectionSeparator(g, font, x, ly, w);
 			drawMelodySection(g, font, snapshot, lx, ly, lw, bottom);
 		}
 	}
-
 
 	private void drawMelodySection(
 		GuiGraphicsExtractor g, Font font, ForagingSnapshot snapshot,

@@ -47,7 +47,6 @@ object SpotifyLyricsHud {
     private val titleMarq = Marq()
     private val lyricMarq = Marq()
 
-    // Fixed-width window over text longer than the cap, looping with a pause at the start
     private class Marq {
         var src = ""; var cap = 0; var fixedW = 0; var scroll = false; var loopW = 0; var startMs = 0L
         fun set(s: String, c: Int, mc: Minecraft) {
@@ -86,7 +85,6 @@ object SpotifyLyricsHud {
         Runtime.getRuntime().addShutdownHook(Thread { stop() })
     }
 
-    // Set before the reader thread starts so per-frame draw() can't spawn a second helper
     @Volatile private var running = false
     private var nextStartMs = 0L
     private val isWindows = System.getProperty("os.name", "").startsWith("Windows")
@@ -126,7 +124,6 @@ object SpotifyLyricsHud {
     } catch (_: Throwable) { null }
 
     private val SYNCED_LINE = Regex("""\[(\d+):(\d+(?:\.\d+)?)]\s*(.*)""")
-    // One worker; fast track skips queue instead of stacking threads
     private val lyricsPool = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "fishmod-lyrics").apply { isDaemon = true } }
 
     private fun parseSynced(s: String): List<Line> {
@@ -156,7 +153,6 @@ object SpotifyLyricsHud {
     private fun currentLyric(): String {
         val l = lyrics ?: return ""
         val at = playMs + FishSettings.spotifyLyricsLyricOffset
-        // Lines are sorted by ms in parseSynced; find the last line at or before 'at'
         var lo = 0
         var hi = l.size - 1
         var idx = -1
@@ -192,7 +188,6 @@ object SpotifyLyricsHud {
     private fun boxH(hasLyric: Boolean): Int =
         if (!hasLyric) H else if (FishSettings.spotifyLyricsConnected) PAD_Y * 2 + 9 + 11 else H * 2 + GAP
 
-    // Draws at the current pose origin; used by the live HUD and the HUD editor example
     private fun body(ctx: GuiGraphicsExtractor, mc: Minecraft, tm: Marq, lm: Marq, shown: String, lyric: String, playing: Boolean) {
         val cap = FishSettings.spotifyLyricsMaxChars.coerceIn(8, 80)
         val now = System.currentTimeMillis()
@@ -226,7 +221,6 @@ object SpotifyLyricsHud {
     private const val PV_LYRIC = "Last night I had a dream about you"
     private fun pvLyric() = if (FishSettings.spotifyLyricsLyrics) PV_LYRIC else ""
 
-    // HUD editor example
     @JvmStatic fun drawPreview(ctx: GuiGraphicsExtractor) = body(ctx, Minecraft.getInstance(), pvT, pvL, PV_TITLE, pvLyric(), true)
     @JvmStatic fun previewSize(): IntArray {
         val mc = Minecraft.getInstance()

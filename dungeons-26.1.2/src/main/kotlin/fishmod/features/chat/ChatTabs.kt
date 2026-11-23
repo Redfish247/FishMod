@@ -12,7 +12,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-// Chat channel tabs on top of the chat history (fishmod.dev #599); filter only, never sends /chat
 object ChatTabs {
     enum class Tab(val label: String, val prefix: String?) {
         ALL("All", null),
@@ -53,12 +52,10 @@ object ChatTabs {
         return s.startsWith(p) || SWITCHED.containsMatchIn(s)
     }
 
-    // Hypixel's /chat confirmation stays visible on every tab
     private val SWITCHED = Regex("^You are now in the [A-Z-]+ channel")
 
     private fun tabs(): List<Tab> = Tab.entries.filter { it.enabled() }
 
-    // Top edge of the visible chat lines (same geometry as Copy Chat)
     private fun chatTop(screenH: Int): Int {
         val chat = Minecraft.getInstance().hud?.chat ?: return screenH - 14
         val inv = chat as FishChatInvoker

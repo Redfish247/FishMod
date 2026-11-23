@@ -70,7 +70,6 @@ class InventorySnapshot @JvmOverloads constructor(
 		@get:JvmName("equippedColumn") val equippedColumn: Int = equippedColumn
 	}
 
-	/** One accessory tuning template (non-zero stats only). */
 	class TuningTemplate(@get:JvmName("slot") val slot: Int, stats: List<StatPoint>?) {
 		@get:JvmName("stats") val stats: List<StatPoint> = if (stats == null) listOf() else java.util.List.copyOf(stats)
 	}

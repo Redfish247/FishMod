@@ -95,7 +95,6 @@ class DungeonCalcOverlay {
 		if (!open || view == null) {
 			return false
 		}
-		// Scroll whenever the panel is open and content may overflow (not only average views).
 		scroll = maxOf(0, scroll - Math.round(delta * 12).toInt())
 		return true
 	}

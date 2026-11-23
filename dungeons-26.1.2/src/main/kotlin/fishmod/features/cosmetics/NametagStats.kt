@@ -52,16 +52,25 @@ object NametagStats {
     private fun canKick(now: Long): Boolean =
         inFlight.get() < MAX_INFLIGHT && now - lastKick >= KICK_SPACING_MS
 
+    private var memoName: String? = null
+    private var memoValid = false
+    private var memoKey = ""
+
     @JvmStatic
     fun linesFor(name: String): List<Component>? {
         if (!SkyblockLocation.inSkyblock()) return null
-        if (!VALID_IGN.matches(name)) return null
+        if (name != memoName) {
+            memoValid = VALID_IGN.matches(name)
+            memoKey = if (memoValid) name.lowercase() else ""
+            memoName = name
+        }
+        if (!memoValid) return null
         fishmod.features.rift.RiftNametag.override(name)?.let { return it.ifEmpty { null } }
         if (!FishSettings.nametagStatsEnabled) return null
 
         val hub = SkyblockLocation.inDungeonHub()
         if (cache.size > MAX_ENTRIES) pruneExpired()
-        val e = cache.computeIfAbsent(name.lowercase()) { Entry() }
+        val e = cache.computeIfAbsent(memoKey) { Entry() }
         val now = System.currentTimeMillis()
         val showNw = FishSettings.nametagStatsShowNetworth
         val showSkill = FishSettings.nametagStatsShowSkillAvg

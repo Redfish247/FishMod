@@ -105,7 +105,6 @@ object ScoreMessages {
         fadeStartMs = displayUntilMs - Math.min(FADE_MS, DURATION_MS)
     }
 
-    // The title the player's settings would show (300 first, else 270), with an example time; null if none
     private fun previewText(): String? {
         val raw = when {
             DungeonMapSettings.mapScore300Title && DungeonMapSettings.mapScore300TitleText.isNotBlank() -> DungeonMapSettings.mapScore300TitleText
@@ -118,7 +117,6 @@ object ScoreMessages {
     @JvmStatic
     fun previewWidth(): Int = Minecraft.getInstance().font.width(previewText() ?: "300 Score")
 
-    // Example: the live title draw, centred on the box like in game
     fun registerPreview() {
         fishmod.features.HudPreview.register("Dungeon Score Title") {
             val text = previewText() ?: return@register null

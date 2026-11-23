@@ -25,7 +25,6 @@ object Fishing {
         return SkyblockLocation.getCurrentLocation() in FISHING_WORLDS
     }
 
-    // Trackers only count in Skyblock, outside dungeons, with a fishing rod in hand
     @JvmStatic fun holdingRod(): Boolean {
         val p = Minecraft.getInstance().player ?: return false
         return p.mainHandItem.item is FishingRodItem || p.offhandItem.item is FishingRodItem

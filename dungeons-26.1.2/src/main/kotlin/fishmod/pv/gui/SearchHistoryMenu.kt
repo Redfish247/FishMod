@@ -42,7 +42,6 @@ class SearchHistoryMenu(
 
 	fun isOpen(): Boolean = open
 
-	/** Open and actually showing something; an empty or fully filtered history never draws. */
 	fun isVisible(): Boolean = open && entries().isNotEmpty()
 
 	fun open() {

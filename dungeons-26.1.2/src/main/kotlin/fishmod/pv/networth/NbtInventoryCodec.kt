@@ -54,7 +54,7 @@ internal object NbtInventoryCodec {
 
     private fun readRoot(encoded: String): CompoundTag? {
         val bytes = Base64.getDecoder().decode(encoded)
-        return ByteArrayInputStream(bytes).use { NbtIo.readCompressed(it, NbtAccounter.unlimitedHeap()) }
+        return ByteArrayInputStream(bytes).use { NbtIo.readCompressed(it, NbtAccounter.create(64L * 1024 * 1024)) }
     }
 
     @JvmStatic

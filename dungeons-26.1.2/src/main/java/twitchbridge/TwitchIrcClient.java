@@ -36,7 +36,6 @@ public final class TwitchIrcClient {
 		this(config, channel, false);
 	}
 
-	// quiet: skip the "connected to" line on the first connect (login auto-connect)
 	public TwitchIrcClient(TwitchBridgeConfig config, String channel, boolean quiet) {
 		this.config = config;
 		this.channel = channel.toLowerCase(Locale.ROOT);
@@ -107,7 +106,9 @@ public final class TwitchIrcClient {
 	private void connectAndListen() throws IOException, InterruptedException {
 		String nick = "justinfan" + ThreadLocalRandom.current().nextInt(10_000, 99_999);
 
-		Socket s = SSLSocketFactory.getDefault().createSocket(HOST, PORT);
+		Socket raw = new Socket();
+		raw.connect(new java.net.InetSocketAddress(HOST, PORT), 10_000);
+		Socket s = ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket(raw, HOST, PORT, true);
 		socket = s;
 		if (!started) { closeSocketQuietly(); return; }
 

@@ -5,6 +5,7 @@ import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishUtil
 import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
+import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -13,7 +14,6 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
 import fishmod.features.fishing.FishingWorldSettings as W
 
-// Own sea creatures: kill timer in chat and cap warning (catch line then matching nametag, idea from Skyblocker)
 object OwnSeaCreatures {
     private class Live(val name: String, val born: Long, var pos: Vec3)
     private val live = LinkedHashMap<Int, Live>()
@@ -22,6 +22,7 @@ object OwnSeaCreatures {
     private var tick = 0
 
     fun init() {
+        FishEvents.worldChange.register { live.clear(); pending.clear(); warned = false; false }
         FishingEvents.seaCreature.register { e ->
             if (W.scKillTimer || W.scCap) repeat(e.count) { pending.add(e.creature to e.atMs) }
             false
@@ -45,7 +46,6 @@ object OwnSeaCreatures {
             val e = level.getEntity(id)
             if (e != null && e.isAlive) { c.pos = e.position(); continue }
             it.remove()
-            // only count it as killed when we were close enough to see it go
             if (W.scKillTimer && pl.position().distanceTo(c.pos) < 24) FishUtil.addChatMessage(Component.literal("§b" + c.name + " §7took §e" + "%.1f".format((now - c.born) / 1000.0) + "s §7to die."))
         }
         if (pending.isNotEmpty()) for (s in level.getEntitiesOfClass(ArmorStand::class.java, pl.boundingBox.inflate(40.0))) {

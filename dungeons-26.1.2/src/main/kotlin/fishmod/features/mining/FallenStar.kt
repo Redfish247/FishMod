@@ -4,7 +4,6 @@ import fishmod.utils.events.chatRaw
 import fishmod.utils.events.FishEvents
 import fishmod.features.mining.MiningSettings as S
 
-// Title when a Fallen Star crashes in the Dwarven Mines
 object FallenStar {
     private val CRASH = Regex("^✯ A Fallen Star has crashed at (.+?)! Nearby ore and Powder drops are amplified!$")
 

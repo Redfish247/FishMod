@@ -1,15 +1,14 @@
 package fishmod.features.chat
 
+import fishmod.utils.events.chatPlain
 import fishmod.features.extras.*
 
 import fishmod.utils.FishUtil
-import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Copies the action bar "+5 SkyBlock XP (Reason) (n/100)" popup into chat
 object SkyblockXpChat {
     private val XP = Regex("\\+(\\d+) SkyBlock XP \\(([^)]+)\\) \\((\\d+)/100\\)")
     private var last = ""
@@ -19,7 +18,7 @@ object SkyblockXpChat {
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (!overlay || !S.sbXpChat) return@register
             try {
-                val m = XP.find(TextStrip.plain(msg.string)) ?: return@register
+                val m = XP.find(msg.chatPlain) ?: return@register
                 val now = System.currentTimeMillis()
                 if (m.value == last && now - lastMs < 5000) return@register
                 last = m.value; lastMs = now

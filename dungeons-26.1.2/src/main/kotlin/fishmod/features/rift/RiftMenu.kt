@@ -164,6 +164,7 @@ object RiftMenu {
         "Timite Expiry Timer" -> "Countdown on blue Timite panes in their last 6 seconds"
         "Sun Gecko Helper" -> "Time Chamber HUD: Sun Gecko HP (with Revival phase), combo hits, combo timer, modifiers"
         "Living Cave Defense Blocks" -> "Box, line and Break! on Auto* mob defense blocks"
+        "Half-Eaten Cave Hay Warning" -> "Warns when you stand on cleared hay that regrows, boxes cleared cells"
         else -> null
     }
 }

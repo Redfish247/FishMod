@@ -30,10 +30,6 @@ enum class InventoryPane(
 	LOADOUTS(null, null, Items.NAME_TAG, "fishmod.pv.inv.loadouts"),
 	SACKS("POCKET_SACK_IN_A_SACK", null, Items.BUNDLE, "fishmod.pv.inv.sacks"),
 	FISHING_BAG(null, null, Items.FISHING_ROD, "fishmod.pv.inv.fishing_bag"),
-	/**
-	 * Hypixel items API ships a broken shared placeholder skin for potion bags -
-	 * use the bundled SkyCrypt render instead.
-	 */
 	POTION_BAG(null, "textures/gui/inventories/potion_bag.png", Items.POTION, "fishmod.pv.inv.potion_bag"),
 	QUIVER(null, null, Items.ARROW, "fishmod.pv.inv.quiver"),
 	ACCESSORY_BAG(null, "textures/gui/inventories/accessory_bag.png", Items.GOLDEN_APPLE, "fishmod.pv.inv.accessory_bag"),
@@ -62,7 +58,6 @@ enum class InventoryPane(
 	fun label(): Component = Component.translatable(langKey)
 
 	fun visibleOn(snapshot: InventorySnapshot?): Boolean {
-		// Fishing Bag was removed from the game; still decoded for networth but never shown.
 		if (this == FISHING_BAG) {
 			return false
 		}

@@ -6,6 +6,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 
 class Door(val pos: MapVec2i, type: Type, val rooms: MutableList<Room.Tile>) {
 
+    @JvmField var renderBox: net.minecraft.world.phys.AABB? = null
+
     enum class Type { BLOOD, NORMAL, WITHER }
 
     var type: Type = type

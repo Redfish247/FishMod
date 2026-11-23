@@ -68,7 +68,6 @@ object Http {
         return CLIENT.send(builder.build(), HttpResponse.BodyHandlers.ofString())
     }
 
-    // Throws IOException on non-2xx or blank body.
     @JvmStatic
     @JvmOverloads
     @Throws(IOException::class, InterruptedException::class)

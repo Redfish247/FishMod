@@ -33,7 +33,6 @@ object FusionKeys {
     private fun reg(id: String): KeyMapping = KeyMappingHelper.registerKeyMapping(
         KeyMapping(id, fishmod.compat.GLFW.KEYSYM, InputConstants.UNKNOWN.value, FishKeys.category()))
 
-    // Old saves hold "key.keyboard.-1"; 26.3 crashes reading key -1 on world load, so reset those to unbound
     private fun fixNegativeKeys(mc: Minecraft) {
         var changed = false
         for (km in mc.options.keyMappings) if (km.saveString().startsWith("key.keyboard.-")) { km.setKey(InputConstants.UNKNOWN); changed = true }

@@ -51,7 +51,6 @@ object RiftParkour {
         if (!Rift.inRift()) return
         val me = Minecraft.getInstance().player ?: return
         if (S.riftParkour) for (co in COURSES) {
-            // Only inside the course's own room (bounds + small margin), never through walls from outside
             if (!co.inRoom(me.x, me.y, me.z)) { co.idx = -1; continue }
             val near = co.pts.indices.minByOrNull { me.distanceToSqr(co.pts[it][0] + 0.0, co.pts[it][1] + 0.0, co.pts[it][2] + 0.0) } ?: continue
             val n = co.pts[near]

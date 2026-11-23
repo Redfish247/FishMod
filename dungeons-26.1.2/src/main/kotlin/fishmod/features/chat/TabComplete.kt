@@ -14,9 +14,7 @@ import fishmod.features.dungeon.trackers.CroesusPrices
 import net.minecraft.client.Minecraft
 import java.util.Locale
 
-// Client-side Tab suggestions for Hypixel commands the server doesn't complete
 object TabComplete {
-    // Only warps already in the repo (DianaWarp hub warps)
     private val WARPS = listOf("hub", "castle", "wizard", "crypt", "stonks", "da", "taylor", "museum")
     private val PLAYER_CMDS = setOf("p", "party", "pv", "msg", "w", "tell", "visit", "invite", "trade", "ah", "f", "friend", "g")
     private val PARTY_SUBS = setOf("kick", "transfer", "promote", "demote", "invite")
@@ -28,7 +26,6 @@ object TabComplete {
     private val FLOORS = listOf("e") + (1..7).map { "f$it" } + (1..7).map { "m$it" }
     private val WS = Regex("\\s+")
 
-    // .cmd / !cmd: Tab fills the command name, then the argument keys shown by PartyCommandHint
     @JvmStatic
     fun partySuggest(text: String): Suggestions? {
         if (!FishSettings.partyCommandsEnabled || !FishSettings.pcArgHints) return null
@@ -48,7 +45,6 @@ object TabComplete {
             val done = text.substring(base + sp + 1, start).trim().split(WS).filter { it.isNotEmpty() }
             val slot = if (done.isEmpty()) 0 else done.size - 1 + PartyCommandHandler.hintSlotsForFirstArg(cmd, done[0])
             if (slot >= usage.size) return null
-            // An optional leading player can be skipped, so offer the next argument too
             pool = argOptions(usage[slot]) + if (usage[slot].contains("empty for yourself") && slot + 1 < usage.size) argOptions(usage[slot + 1]) else emptyList()
         }
         val frag = text.substring(start).lowercase(Locale.ROOT)
@@ -89,7 +85,6 @@ object TabComplete {
         return b.build()
     }
 
-    // /bz and /ahs take a multi-word item name, so the fragment is everything after the command
     private fun itemNames(text: String): Suggestions? {
         val sp = text.indexOf(' ')
         val cmd = text.substring(1, sp).lowercase(Locale.ROOT)
@@ -107,7 +102,6 @@ object TabComplete {
         return b.build()
     }
 
-    // Tab-list players in this lobby (party mates, nearby players), minus yourself and NPC entries
     private fun players(): List<String> {
         val mc = Minecraft.getInstance()
         val self = mc.player?.gameProfile?.name()

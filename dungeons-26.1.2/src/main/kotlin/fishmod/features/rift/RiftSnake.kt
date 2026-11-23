@@ -30,13 +30,11 @@ object RiftSnake {
     private val snakes = ArrayList<Snake>()
     private val added = java.util.concurrent.ConcurrentLinkedQueue<BlockPos>()
     private val removed = java.util.concurrent.ConcurrentLinkedQueue<BlockPos>()
-    // Colour-fade stages the server also sends; they are not snake blocks and must not count as the tail leaving
     private val FADE = setOf(
         CB.BLUE_STAINED_GLASS, CB.LIGHT_BLUE_STAINED_GLASS,
         CB.CYAN_TERRACOTTA, CB.BLUE_TERRACOTTA, CB.LIGHT_BLUE_TERRACOTTA,
     )
 
-    // Recent block updates by type, for /fm rift debug
     private val seen = java.util.concurrent.ConcurrentLinkedQueue<Pair<Long, String>>()
     fun debug(): String {
         val now = System.currentTimeMillis(); seen.removeIf { now - it.first > 15_000L }
@@ -53,7 +51,7 @@ object RiftSnake {
             false
         }
         FishEvents.worldChange.register { snakes.clear(); added.clear(); removed.clear(); false }
-        ClientTickEvents.END_CLIENT_TICK.register { try { tick() } catch (_: Throwable) { snakes.clear() } }
+        ClientTickEvents.END_CLIENT_TICK.register { try { tick() } catch (t: Throwable) { snakes.clear(); fishmod.utils.debug.FishDiag.fail("RiftSnake.1", "snake tick failed", t) } }
         RenderHooks.GIZMO.register { _ -> render() }
     }
 

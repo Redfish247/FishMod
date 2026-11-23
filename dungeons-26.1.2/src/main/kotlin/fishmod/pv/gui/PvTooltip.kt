@@ -16,13 +16,6 @@ import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 import net.minecraft.world.item.ItemStack
 
-/**
- * Shared profile-viewer tooltip template.
- *
- * Use [Line.title], [Line.divider], [Line.row], [Line.meta],
- * and [Line.action] so Networth / Weight / Username History (and future tips)
- * share title rules, right-aligned values, muted secondary text, and section dividers.
- */
 object PvTooltip {
 	private const val PAD = 8
 	private const val ROW_GAP = 10
@@ -33,7 +26,6 @@ object PvTooltip {
 	private const val PAN_STEP = 20
 	private const val PAN_ACTIVE_MS = 250L
 
-	// Tips bigger than the screen can be panned with the wheel; reset whenever a different tip shows.
 	private var panLines: List<Line>? = null
 	private var panX = 0
 	private var panY = 0
@@ -188,7 +180,6 @@ object PvTooltip {
 		drawStyled(g, font, lines.map { lineFromComponent(it) }, mouseX, mouseY, screenW, screenH)
 	}
 
-	/** Expand a lore/name Component into coloured spans (never flatten with getString). */
 	private fun lineFromComponent(line: Component?): Line {
 		if (line == null) {
 			return Line.blank()
@@ -349,10 +340,6 @@ object PvTooltip {
 		return maxScroll
 	}
 
-	/**
-	 * Pans the tooltip drawn last frame when it doesn't fit on screen. Returns false (so the page
-	 * scrolls as usual) when no tooltip is showing or it already fits along that axis.
-	 */
 	@JvmStatic
 	fun panOverflow(scrollY: Double, horizontal: Boolean): Boolean {
 		if (scrollY == 0.0 || panLines == null || System.currentTimeMillis() - panDrawnAt > PAN_ACTIVE_MS) {
@@ -503,7 +490,6 @@ object PvTooltip {
 					drawSpans(g, font, line.meta, valueColRight + META_GAP, ty)
 				}
 			}
-			// Slight indent so instructions don't read as data rows.
 			Kind.ACTION -> drawSpans(g, font, line.left, innerLeft + 4, ty)
 			Kind.TEXT, Kind.META -> {
 				drawIcon(g, font, line, innerLeft, ty)

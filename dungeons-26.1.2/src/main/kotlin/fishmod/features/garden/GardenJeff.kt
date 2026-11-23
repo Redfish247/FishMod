@@ -30,7 +30,6 @@ object GardenJeff {
         return lines { chip -> slots.firstOrNull { GardenExtras.name(it.item).contains(chip, true) }?.item?.let { Garden.lore(it) } ?: emptyList() }
     }
 
-    // loreOf(chip) = that chip's menu lore; shared with the HUD editor example
     private fun lines(loreOf: (String) -> List<String>): List<String> {
         val head = Garden.legacy(X.gardenJeffColor) + "§lJeff Buy Order"
         val out = arrayListOf(head)

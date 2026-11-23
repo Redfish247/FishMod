@@ -36,6 +36,7 @@ object ArrowsDevice {
         BlockPos(68, 128, 50), BlockPos(66, 128, 50), BlockPos(64, 128, 50),
         BlockPos(68, 126, 50), BlockPos(66, 126, 50), BlockPos(64, 126, 50),
     )
+    private val devicePositionSet: Set<BlockPos> = devicePositions.toHashSet()
     private val roomBoundingBox = AABB(20.0, 100.0, 30.0, 89.0, 151.0, 51.0)
     private val deviceCompleteRegex = Regex("^(.{1,16}) completed a device! \\((\\d)/(\\d)\\)$")
 
@@ -119,8 +120,8 @@ object ArrowsDevice {
     }
 
     private fun onBlock(pos: BlockPos, state: BlockState) {
-        if (!FishSettings.arrowsDeviceEnabled || !inP3() || pos !in devicePositions) {
-            if (pos in devicePositions) prev[pos.asLong()] = state.block
+        if (!FishSettings.arrowsDeviceEnabled || !inP3() || pos !in devicePositionSet) {
+            if (pos in devicePositionSet) prev[pos.asLong()] = state.block
             return
         }
         val old = prev.put(pos.asLong(), state.block)

@@ -51,11 +51,9 @@ object SoundManager {
 
     @JvmStatic
     fun preset(name: String?): SoundEvent {
-        // "Ping" is the old default of three alert sounds and always meant pling
         if (name.isNullOrBlank() || name.trim().equals("Ping", ignoreCase = true)) return SoundEvents.NOTE_BLOCK_PLING.value()
         PRESETS[name]?.let { return resolve(it) }
         PRESETS.entries.firstOrNull { it.key.equals(name.trim(), ignoreCase = true) }?.let { return resolve(it.value) }
-        // ids are lowercase; hand-typed names like "Ping" or "Note Pling" must not hit the invalid-id path
         val norm = name.trim().lowercase().replace(' ', '_')
         val id = FishDiag.notNull(Identifier.tryParse(if (':' in norm) norm else "minecraft:$norm"), "SoundManager.2") { "invalid sound id '$name'" }
         val fromRegistry: SoundEvent? =
@@ -66,7 +64,6 @@ object SoundManager {
 
     private val warned = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
-    // Short names like "pling" -> block.note_block.pling (any vanilla id ending in ".pling")
     private fun shortName(path: String): SoundEvent? {
         if ('.' in path) return null
         val key = BuiltInRegistries.SOUND_EVENT.keySet().firstOrNull { it.namespace == "minecraft" && it.path.endsWith(".$path") } ?: return null
@@ -143,7 +140,4 @@ object SoundManager {
     fun ping(key: String? = null, debounceMs: Long = 0L): Boolean =
         play(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 2f, key, debounceMs)
 
-
-    @JvmStatic
-    fun reset() = lastPlayed.clear()
 }

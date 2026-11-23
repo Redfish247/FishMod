@@ -21,7 +21,6 @@ object EssenceShopCosts {
 	@Volatile
 	private var costs: Map<String, IntArray>? = null
 
-	/** Cost of each tier (index 0 = tier 1), or null when the repo doesn't list the perk. */
 	@JvmStatic
 	fun costs(perkId: String?): IntArray? {
 		if (perkId == null) return null

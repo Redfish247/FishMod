@@ -28,14 +28,12 @@ object FishingAlertSettings {
     @ConfigValue @JvmField var alertSound: String = "Ping"
     @ConfigValue @JvmField var alertSoundVolume: Int = 100
 
-    // Share: opt-in, off by default, never automatic for hotspots
     @ConfigValue @JvmField var shareEnabled: Boolean = false
     @ConfigValue @JvmField var shareCreatures: String = ""
     @ConfigValue @JvmField var shareParty: Boolean = true
     @ConfigValue @JvmField var shareWorldBossAll: Boolean = false
     @ConfigValue @JvmField var shareDrops: Boolean = false
     @ConfigValue @JvmField var shareDropMinPrice: Int = 10_000_000
-    // Show clickable [Share] buttons when a hotspot is found (never auto-sends)
     @ConfigValue @JvmField var shareHotspot: Boolean = false
 
     @ConfigValue @JvmField var tCreatureX: Int = -1

@@ -369,7 +369,6 @@ object CroesusPrices {
             .thenAccept { r ->
                 try {
                     if (r.statusCode() != 200) {
-                        // HTTP 403/429/5xx is Hypixel/Cloudflare side: log + back off, no auto-report
                         FishDebug.LOGGER.warn("[CroesusPrices] bazaar status={} - backing off {}m", r.statusCode(), FAIL_TTL_MS / 60000)
                         lastBazaar = failStamp()
                         return@thenAccept
@@ -399,7 +398,6 @@ object CroesusPrices {
                     lastBazaar = System.currentTimeMillis()
                     FishDebug.LOGGER.debug("[CroesusPrices] bazaar loaded {} entries", bazaar.size)
                 } catch (ex: com.google.gson.JsonParseException) {
-                    // truncated/garbled download (connection cut mid-body): back off, no auto-report
                     FishDebug.LOGGER.warn("[CroesusPrices] bazaar body malformed ({} chars): {}", r.body().length, ex.message)
                     lastBazaar = failStamp()
                 } catch (ex: Exception) {

@@ -9,14 +9,12 @@ import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.component.CustomData
 
-// Hypixel's animated-dye equipment packets drop the item uuid on your own worn armour, so customs flicker; put the last seen uuid back.
 object WornUuidRestore {
 
     private val SLOTS = arrayOf(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET)
     private val lastItem = arrayOfNulls<Item>(SLOTS.size)
     private val lastUuid = arrayOfNulls<String>(SLOTS.size)
     private val emptyTicks = IntArray(SLOTS.size)
-    // Keep the uuid through short empty gaps (world/island joins) so the first uuid-less packets after a join are fixed too.
     private const val FORGET_AFTER_TICKS = 200
 
     @JvmStatic

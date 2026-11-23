@@ -10,7 +10,6 @@ object FishingAlertsWorld {
     private const val TICK_EVERY = 10
     private var tick = 0
 
-    // Hotspot found: last two ids so a close hotspot does not re-alert
     private val seenHotspots = ArrayDeque<Int>()
     private var trackedId = -1
     private var trackedPerk = ""
