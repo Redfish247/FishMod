@@ -1,0 +1,90 @@
+name: Build FishMod jars
+
+# Manual: Actions tab -> "Build FishMod jars" -> Run workflow.
+# Pick a branch/tag/commit and which Minecraft versions to build.
+# Jars land in the run's Artifacts section (kept 14 days). Nothing is published.
+# CLI: gh workflow run build.yml -f ref=main -f targets="26.1.2,26.2"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit SHA to build
+        required: true
+        default: main
+      targets:
+        description: 'Versions, comma separated: 26.1.2, 26.2, 26.3 (or "all" for 26.1.2 + 26.2)'
+        required: true
+        default: "26.1.2,26.2"
+      mod_version:
+        description: Optional mod_version override (e.g. 1.8.08). The -<mc> suffix is added for you.
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Work out gradle tasks
+        id: plan
+        env:
+          TARGETS: ${{ inputs.targets }}
+        run: |
+          set -euo pipefail
+          t=$(echo "$TARGETS" | tr 'A-Z' 'a-z' | tr -d ' ')
+          [ "$t" = "all" ] && t="26.1.2,26.2"
+          tasks=""; flags=""
+          IFS=',' read -ra arr <<< "$t"
+          for v in "${arr[@]}"; do
+            case "$v" in
+              26.1.2|26.2) tasks="$tasks :dungeons-$v:build" ;;
+              26.3) tasks="$tasks :dungeons-26.3:build"; flags="-Pwith263" ;;
+              *) echo "Unknown target '$v'"; exit 1 ;;
+            esac
+          done
+          echo "tasks=$tasks" >> "$GITHUB_OUTPUT"
+          echo "flags=$flags" >> "$GITHUB_OUTPUT"
+
+      - name: Apply version override
+        if: inputs.mod_version != ''
+        env:
+          VER: ${{ inputs.mod_version }}
+        run: |
+          set -euo pipefail
+          for f in dungeons-*/gradle.properties; do
+            mc=$(grep '^minecraft_version=' "$f" | cut -d= -f2)
+            sed -i "s/^mod_version=.*/mod_version=${VER}-${mc}/" "$f"
+          done
+
+      - name: Build
+        run: ./gradlew ${{ steps.plan.outputs.flags }} ${{ steps.plan.outputs.tasks }} --no-daemon
+
+      - name: Collect jars
+        run: |
+          mkdir -p out
+          for d in dungeons-26.1.2 dungeons-26.2 dungeons-26.3; do
+            [ -d "$d/build/libs" ] || continue
+            find "$d/build/libs" -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' -exec cp {} out/ \;
+          done
+          ls -l out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FishMod-${{ github.run_number }}
+          path: out/*.jar
+          retention-days: 14
+          if-no-files-found: error
