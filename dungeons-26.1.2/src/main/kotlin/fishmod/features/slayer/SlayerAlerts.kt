@@ -19,6 +19,7 @@ object SlayerAlerts {
     fun init() {
         EndAlerts.init()
         SlayerMiniHighlight.init()
+        SlayerQol.init()
         SlayerExtras.init()
         SlayerMore.init()
         GroundItemNames.init()
