@@ -247,7 +247,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
                 }
             }
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("FishScreenMixin.16", "container mouseScrolled hooks failed", t);
+            fishmod.utils.debug.FishDiag.fail("FishScreenMixin.21", "container mouseScrolled hooks failed", t);
         }
     }
 
