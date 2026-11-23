@@ -28,10 +28,6 @@ object UserColorStore {
         save()
     }
 
-    @JvmStatic fun remove(argb: Int) {
-        if (data.colors.remove(argb)) save()
-    }
-
     private fun load() {
         val file = File(FILE_PATH)
         if (!file.exists()) return

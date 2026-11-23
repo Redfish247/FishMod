@@ -59,16 +59,6 @@ object PlayerSize {
     }
 
     @JvmStatic
-    fun localSelfValue(): FloatArray {
-        if (!FishSettings.playerSizeEnabled) return IDENTITY
-        return floatArrayOf(
-            floorPos(FishSettings.playerSizeScaleX.toFloat()),
-            floorPos(FishSettings.playerSizeScaleY.toFloat()),
-            floorPos(FishSettings.playerSizeScaleZ.toFloat())
-        )
-    }
-
-    @JvmStatic
     fun ownShareValue(): FloatArray {
         if (!FishSettings.playerSizeEnabled) return IDENTITY
         return floatArrayOf(
