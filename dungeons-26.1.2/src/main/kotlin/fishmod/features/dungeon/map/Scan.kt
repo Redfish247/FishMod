@@ -94,6 +94,7 @@ object Scan {
 
     @JvmStatic
     fun reset() {
+        fishmod.utils.debug.FishTrace.log("scan") { "Scan reset (had ${rooms.size} rooms)" }
         rooms.clear()
         missedCores.clear()
         pendingCores.fill(0)
@@ -119,6 +120,7 @@ object Scan {
             FishDiag.check(RoomData.isLoaded(), "Scan.2") { "rooms.json still not loaded after loadRoomData()" }
         }
 
+        fishmod.utils.debug.FishTrace.change("scan", "scanState") { "loadedAll=$loadedAllRooms rooms=${rooms.size} doors=${doors.size} mapSize=${DungeonMap.getMapSize()}" }
         if (loadedAllRooms) {
             scanWorldDoors(world)
             recomputeSecrets()
@@ -144,6 +146,7 @@ object Scan {
                     }
                 }
 
+                if (all && !loadedAllRooms) fishmod.utils.debug.FishTrace.log("scan") { "all rooms loaded: ${rooms.size} rooms, ${doors.size} doors, secrets=$allSecrets" }
                 loadedAllRooms = all
             }
 
@@ -253,11 +256,13 @@ object Scan {
                     val idx = place.roomListIndex()
                     val stable = pendingCores[idx] == coreHash
                     pendingCores[idx] = coreHash
+                    fishmod.utils.debug.FishTrace.log("room") { "core cell ($x,$z) hash=$coreHash h=$height UNKNOWN stable=$stable" }
                     if (!stable || !missedCores.add(coreHash)) continue
                     if (loggedMissingCores.add(coreHash)) fishmod.utils.debug.FishDebug.LOGGER.debug("[Scan] no room data for core hash={} cell=({},{}) height={} roomsLoaded={}", coreHash, x, z, height, RoomData.isLoaded())
                     continue
                 }
 
+                fishmod.utils.debug.FishTrace.log("room") { "core cell ($x,$z) hash=$coreHash h=$height -> '${rd.name}' ${rd.type} ${rd.shape}" }
                 var found: Room? = null
                 for (r in ArrayList(rooms)) {
                     val d = r.data

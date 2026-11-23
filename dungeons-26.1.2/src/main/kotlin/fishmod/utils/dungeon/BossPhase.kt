@@ -72,6 +72,7 @@ object BossPhase {
         if (floor != null) return
         val key = fishmod.features.dungeon.map.DungeonState.currentFloorKey() ?: return
         floor = key
+        fishmod.utils.debug.FishTrace.log("boss") { "floor detected key=$key inFloor7=${key.contains("7")}" }
 
         currentSplits = FLOOR_SPLITS[floor]
         FishDiag.check(currentSplits != null, "BossPhase.1") { "no split definitions for floor key '$key' (have ${FLOOR_SPLITS.keys})" }
@@ -100,11 +101,13 @@ object BossPhase {
     private const val P3_START = "[BOSS] Goldor: Who dares trespass into my domain?"
 
     private fun fireP3Start(reason: String) {
+        fishmod.utils.debug.FishTrace.log("boss") { "P3 fallback: $reason" }
         fishmod.utils.debug.FishDebug.LOGGER.info("[Phase] P3 fallback: $reason")
         FishEvents.chat.invoke { it.onGameMessage(Component.literal(P3_START)) }
     }
 
     private fun fireP5Start(reason: String) {
+        fishmod.utils.debug.FishTrace.log("boss") { "P5 fallback: $reason" }
         fishmod.utils.debug.FishDebug.LOGGER.info("[Phase] P5 fallback: $reason")
         FishEvents.chat.invoke { it.onGameMessage(Component.literal(P5_START)) }
     }
@@ -116,6 +119,7 @@ object BossPhase {
     fun midRun(): Boolean = floor != null && currentPhase >= 0 && !runOver && !PracticeMode.active
 
     private fun reset() {
+        fishmod.utils.debug.FishTrace.log("boss") { "reset floor=$floor phase=$currentPhase" }
         currentSplits = null
         floor = null
         currentPhase = -1
@@ -156,11 +160,13 @@ object BossPhase {
                 }
 
                 FishDiag.check(i + 1 >= currentPhase, "BossPhase.5") { "phase went backwards $currentPhase -> ${i + 1} floor=$floor split=${currentSplit.name}" }
+                fishmod.utils.debug.FishTrace.log("boss") { "split ended '${currentSplit.name}' ${currentPhase} -> ${i + 1} msg='$string'" }
                 currentPhase = i + 1
                 FishDiag.guard("BossPhase.6", "ON_PHASE_CHANGE listeners") { FishEvents.phaseChange.invoke(PhaseHook::onPhaseChange) }
             }
 
             if (currentSplit.started() && currentPhase == -1) {
+                fishmod.utils.debug.FishTrace.log("boss") { "split started '${currentSplit.name}' phase=$i msg='$string'" }
                 currentPhase = i
                 FishDiag.guard("BossPhase.7", "ON_PHASE_CHANGE listeners (run start)") { FishEvents.phaseChange.invoke(PhaseHook::onPhaseChange) }
             }
@@ -174,6 +180,7 @@ object BossPhase {
         if (inP2()) {
             if (string == "[BOSS] Storm: I should have known that I stood no chance.") {
                 stormDead = true
+                fishmod.utils.debug.FishTrace.log("boss") { "storm dead" }
             }
         }
 
@@ -195,6 +202,7 @@ object BossPhase {
 
     private fun endRun() {
         runOver = true
+        fishmod.utils.debug.FishTrace.log("run") { "run end floor=$floor phase=$currentPhase" }
         currentPhase = currentSplits?.size ?: 0
         FishDiag.check(currentSplits != null, "BossPhase.10") { "run end message with no splits loaded floor=$floor" }
         TickScheduler.scheduleTask(Runnable {

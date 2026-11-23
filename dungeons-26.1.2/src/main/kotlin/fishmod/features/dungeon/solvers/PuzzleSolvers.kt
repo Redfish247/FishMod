@@ -126,6 +126,7 @@ object PuzzleSolvers {
 
     @JvmStatic
     fun onPuzzleComplete(puzzleName: String) {
+        fishmod.utils.debug.FishTrace.log("solver") { "puzzle complete: $puzzleName" }
         fishmod.utils.FishUtil.addChatMessage(
             net.minecraft.network.chat.Component.literal("§b[Puzzle] §a$puzzleName solved"))
     }

@@ -142,6 +142,20 @@ object FishDebug {
                     FishConstants.SUCCESS
                 })
 
+                .then(ClientCommands.literal("trace")
+                    .executes { FishUtil.addChatMessage(Component.literal(FishTrace.status() + " | cats: " + FishTrace.CATEGORIES.joinToString(" ") + " | all off chat | file: " + FishTrace.logPath())); FishConstants.SUCCESS }
+                    .then(ClientCommands.argument("cat", StringArgumentType.word()).executes { ctx ->
+                        when (val c = StringArgumentType.getString(ctx, "cat")) {
+                            "all" -> FishTrace.allOn()
+                            "off" -> FishTrace.allOff()
+                            "chat" -> FishTrace.toChat = !FishTrace.toChat
+                            in FishTrace.CATEGORIES -> FishTrace.set(c, !FishTrace.on(c))
+                            else -> FishUtil.addChatMessage(Component.literal("Unknown category: $c"))
+                        }
+                        FishUtil.addChatMessage(Component.literal(FishTrace.status()))
+                        FishConstants.SUCCESS
+                    }))
+
                 .then(ClientCommands.literal("ssDebug").executes { _ ->
                     ssDebug = !ssDebug
                     FishUtil.addChatMessage(Component.literal("Simon Says debug: ").append(FishUtil.getStatusText(ssDebug)))

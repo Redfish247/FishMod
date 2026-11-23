@@ -52,12 +52,14 @@ object DungeonState {
         val fm = ENTERED_FLOOR.matcher(msg)
         if (fm.find()) {
             val f = parseRomanFloor(fm.group(2))
+            fishmod.utils.debug.FishTrace.log("run") { "entered floor msg: floor=$f master=${fm.group(1) != null}" }
             if (f >= 0) { chatFloor = f; chatMaster = fm.group(1) != null }
             else FishDiag.fail("DungeonState.1", "couldn't parse floor from entered message: '${fm.group(2)}'")
         }
 
         for (b in BOSS_ENTRY) {
             if (msg == b) {
+                fishmod.utils.debug.FishTrace.log("run") { "boss entry: '$msg'" }
                 inBoss = true
                 return
             }
@@ -66,13 +68,17 @@ object DungeonState {
         val s = TextStrip.plainAmp(msg)
         if (WITHER_KEY_CLAIM.matcher(s).matches() || s == "A Wither Key was picked up!") {
             witherKeys++
+            fishmod.utils.debug.FishTrace.log("run") { "wither key +1 -> $witherKeys" }
         } else if (WITHER_DOOR_OPEN.matcher(s).matches()) {
             witherKeys = maxOf(0, witherKeys - 1)
+            fishmod.utils.debug.FishTrace.log("run") { "wither door open, keys=$witherKeys" }
         } else if (BLOOD_KEY_CLAIM.matcher(s).matches() || s == "A Blood Key was picked up!") {
             bloodKey = true
+            fishmod.utils.debug.FishTrace.log("run") { "blood key picked up" }
         } else if (s == "The BLOOD DOOR has been opened!") {
             bloodKey = false
             bloodOpened = true
+            fishmod.utils.debug.FishTrace.log("run") { "blood door opened" }
         }
     }
 
@@ -100,6 +106,7 @@ object DungeonState {
 
     @JvmStatic
     fun reset() {
+        fishmod.utils.debug.FishTrace.log("run") { "DungeonState reset" }
         inBoss = false
         chatFloor = -1
         chatMaster = false
