@@ -307,6 +307,7 @@ object FishSettings {
     @ConfigValue @JvmField var nickColorEnd: Int = 0xFF5555FF.toInt()
     @ConfigValue @JvmField var nickCustomName: String = ""
     @ConfigValue @JvmField var nickColorMode: String = "GRADIENT"
+    @ConfigValue @JvmField var nickColorAnimated: Boolean = false
 
     @ConfigValue @JvmField var nickPreviewEnabled: Boolean = false
     @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
@@ -336,6 +337,7 @@ object FishSettings {
     @ConfigValue @JvmField var crosshairMode: String = "Preset"
     @ConfigValue @JvmField var crosshairImageSelection: String = "No image"
     @ConfigValue @JvmField var crosshairPreset: String = "Cross"
+    @ConfigValue @JvmField var crosshairPixels: String = ""
     @ConfigValue @JvmField var crosshairColor: Int = 0xFFFFFFFF.toInt()
     @ConfigValue @JvmField var crosshairScale: Double = 1.0
     @ConfigValue @JvmField var crosshairHideInF3: Boolean = true
