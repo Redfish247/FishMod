@@ -2856,7 +2856,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cmdButtons(): List<Btn> {
         val out = ArrayList<Btn>()
         var x = left() + 10
-        for ((id, label) in listOf("hud" to "Edit HUD", "|" to "", "report" to "Report", "credits" to "Credits", "reset" to (if (resetArmed) "Confirm?" else "Reset"), "|" to "", "look" to "Appearance")) {
+        for ((id, label) in listOf("hud" to "Edit HUD", "|" to "", "report" to "Report", "credits" to "Credits", "reset" to (if (resetArmed) "Confirm?" else "Reset"), "|" to "", "look" to "Appearance", "conflicts" to conflictsLabel())) {
             if (id == "|") { x += 9; continue }
             val w = sw(this.font, label, 0.85f) + 18
             out.add(Btn(id, label, x, CMD_Y, w, 22)); x += w + 2
@@ -2901,7 +2901,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 drawChevron(ctx, b.x + b.w - 11, b.y + b.h / 2, viewOpen, ScreenTheme.subtextOn(segBg))
                 continue
             } else if (a > 0f || (b.id == page)) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 6f, fa(ROW_HOVER, if (b.id == page) 1f else a))
-            val c = if (b.id == "reset" && resetArmed) 0xFFE05A5A.toInt() else TEXT_COLOR
+            val c = if (b.id == "conflicts") 0xFFFF5555.toInt() else if (b.id == "reset" && resetArmed) 0xFFE05A5A.toInt() else TEXT_COLOR
             ctext(b.label, b.x, b.y, b.w, b.h, 0.85f, c)
         }
         var sx = left() + 10 + sw(this.font, "Edit HUD", 0.85f) + 22
@@ -2984,6 +2984,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "hud" -> Minecraft.getInstance().showScreen(FishHudEditor(this))
                 "report" -> openPage("report")
                 "credits" -> openPage("credits")
+                "conflicts" -> openPage("conflicts")
                 "reset" -> if (resetArmed) { resetAllColumns(); resetArmed = false } else { resetArmed = true; resetArmedAt = System.currentTimeMillis() }
                 "look" -> columns.firstOrNull { c -> c.features.any { it.name == "UI Customization" } }?.let { c -> toggleFold(c); selected = c.features.first { it.name == "UI Customization" }; selAt = System.currentTimeMillis() }
                 "view" -> viewOpen = !wasViewOpen
@@ -3005,9 +3006,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var page: String? = null
     private val creditsPage by lazy { CreditsPage() }
     private val reportPage by lazy { ReportPage(this.font) }
+    private val conflictsPage by lazy {
+        ConflictsPage {
+            columns.flatMap { c -> c.features }.filter { it.get != null && it.set != null }
+                .map { f -> fishmod.compat.conflicts.FishFeatureRef(f.name, f.get!!, f.set!!) }.distinctBy { it.name }
+        }
+    }
+    private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n > 0) "Conflicts ($n)" else "Conflicts" }
     private fun openPage(p: String) { page = p; selected = null; openedAt = System.currentTimeMillis() }
     private fun goHome() { page = null; allMode = true; selected = null; gridScroll = 0; if (searchText.isNotEmpty()) { searchField?.value = ""; searchText = "" }; openedAt = System.currentTimeMillis() }
-    private fun pageTitle(): String = if (page == "report") "Report to RedFish" else "Credits"
+    private fun pageTitle(): String = when (page) { "report" -> "Report to RedFish"; "conflicts" -> "Mod Conflicts"; else -> "Credits" }
 
     private fun crumbs(): List<Pair<String, (() -> Unit)?>> {
         val out = ArrayList<Pair<String, (() -> Unit)?>>()
@@ -3219,6 +3227,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val pp = anim(openedAt, 0, 220); val oy = Math.round((1f - pp) * 10f)
             UiRecorder.textBold(pageTitle(), cx0().toFloat(), (pt + 5 + oy).toFloat(), 1.25f * NVG_BASE_TEXT_SIZE, fa(TEXT_COLOR, pp))
             if (page == "credits") creditsPage.render(cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
+            else if (page == "conflicts") conflictsPage.render(ctx, cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
             else reportPage.render(cx0(), pt + 32 + oy, cx1() - cx0(), cyBot() - pt - 32, mouseX, mouseY)
             return
         }
@@ -3479,7 +3488,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (navClick(mx, my, btn)) return true
 
         if (page != null) {
-            if (page == "report") { if (!reportPage.click(mx, my)) reportPage.focused = -1 } else creditsPage.click(mx, my)
+            if (page == "report") { if (!reportPage.click(mx, my)) reportPage.focused = -1 } else if (page == "conflicts") conflictsPage.click(mx, my) else creditsPage.click(mx, my)
             return true
         }
         if (my >= headerTop && my <= cyBot()) return exClick(mx, my, btn)
@@ -3555,6 +3564,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return true
         }
         if (page == "credits") { creditsPage.scrollBy(verticalAmount); return true }
+        if (page == "conflicts") { conflictsPage.scrollBy(verticalAmount); return true }
         val f = selected
         val dir = if (verticalAmount > 0) -1 else 1
         if (f != null && mouseX >= cx1() - detW()) {
