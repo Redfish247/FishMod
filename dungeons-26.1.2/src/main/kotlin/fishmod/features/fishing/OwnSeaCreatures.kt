@@ -5,6 +5,7 @@ import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishUtil
 import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
+import fishmod.utils.events.FishEvents
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -22,6 +23,7 @@ object OwnSeaCreatures {
     private var tick = 0
 
     fun init() {
+        FishEvents.worldChange.register { live.clear(); pending.clear(); warned = false; false }
         FishingEvents.seaCreature.register { e ->
             if (W.scKillTimer || W.scCap) repeat(e.count) { pending.add(e.creature to e.atMs) }
             false
