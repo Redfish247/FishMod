@@ -71,10 +71,15 @@ object AchLeaderboard {
         }
     }
 
+    private var lastKeyCheck = 0L
+
     fun onTick(mc: Minecraft) {
         if (mc.player == null) return
         val now = System.currentTimeMillis()
-        if (!submitting && now - lastSubmit > SUBMIT_GAP_MS && SkyblockLocation.inSkyblock() && key() != lastSubmittedKey) submit(false)
+        if (!submitting && now - lastSubmit > SUBMIT_GAP_MS && now - lastKeyCheck > 1000L && SkyblockLocation.inSkyblock()) {
+            lastKeyCheck = now // key() sums every achievement, so check at most once a second
+            if (key() != lastSubmittedKey) submit(false)
+        }
         val gap = if (offline) FETCH_RETRY_MS else FETCH_GAP_MS
         if (!fetching && now - wantedAt < 3000 && (now - lastFetch > gap || (limit() > loadedLimit && now - lastFetch > 3000))) fetch()
     }
