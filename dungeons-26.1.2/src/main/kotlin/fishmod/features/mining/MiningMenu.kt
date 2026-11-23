@@ -120,7 +120,8 @@ object MiningMenu {
         ghost.sub.add(ButtonSetting("Reset Counts", "", "Reset") { GhostCounter.reset() })
         col.features.add(ghost)
 
-        val route = Feature("Ordered Waypoints", S::class.java, "route")
+        val route = Feature("Waypoint Routes", S::class.java, "route")
+        route.sub.add(SubcategoryHeader("Your own route of points, walked in order. Also /fm routes add|remove|restart|clear|toggle"))
         route.sub.add(ButtonSetting("Add Point Here", "Adds the block under you", "Add") { OrderedWaypoints.addHere() })
         route.sub.add(ButtonSetting("Remove Last Point", "", "Remove") { OrderedWaypoints.removeLast() })
         route.sub.add(ButtonSetting("Restart Route", "", "Restart") { OrderedWaypoints.index = 0 })
@@ -144,7 +145,7 @@ object MiningMenu {
         "Powder Chest Overlay" -> "Boxes and lines to Crystal Hollows treasure chests"
         "Corpse Announcer" -> "Party chat once per corpse you see in a mineshaft"
         "Mineshaft Timer" -> "HUD with time spent in the current mineshaft"
-        "Ordered Waypoints" -> "Your own route of points, walked in order (works anywhere)"
+        "Waypoint Routes" -> "Your own route of points, walked in order (works anywhere)"
         "Metal Detector Solver" -> "Mines of Divan: stand still with the detector to narrow down the treasure spot"
         "Ghost Counter" -> "The Mist HUD: ghost kills (needs Bestiary tab widget), kills/h, sorrows, bags of cash, MF drops"
         "Mute High Heat" -> "Crystal Hollows: mute the panting sound at 90+ heat"
