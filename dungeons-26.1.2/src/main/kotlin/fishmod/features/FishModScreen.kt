@@ -2264,10 +2264,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
             val profit = Feature("Profit Tracker", "slayerProfitEnabled")
             profit.sub.add(SubcategoryHeader("SkyHanni-style: prices real drops for coins/hr  ·  drag with Edit HUD"))
-            profit.sub.add(SubcategoryHeader("With chat open: click the mode line to switch  ·  left-click a row to hide it  ·  right-click the title to reset"))
+            profit.sub.add(SubcategoryHeader("With chat open: left-click a row to hide it  ·  right-click the title to reset"))
             profit.sub.add(DropdownSetting("Display", "Total = all-time (saved); This Session = since this launch", arrayOf("Total", "This Session"),
                 { FishSettings.slayerProfitDisplayMode },
-                { v -> FishSettings.slayerProfitDisplayMode = v }))
+                { v -> fishmod.features.slayer.SlayerProfitTracker.setMode(v) }))
             profit.sub.add(SliderIntSetting("Drop Rows", "Max item rows shown (highest value first); the rest fold into one row", "slayerProfitLines", 3, 30, 1))
             profit.sub.add(SliderIntSetting("Hide Below (coins)", "Rows worth less than this fold into the \"N more items\" row (0 = show all)", "slayerProfitMinValue", 0, 1_000_000, 10_000))
             profit.sub.add(ToggleSetting("Count Mob Kill Coins", "Count small purse gains while grinding as a \"Mob Kill Coins\" drop row + profit", "slayerProfitCountKillCoins"))

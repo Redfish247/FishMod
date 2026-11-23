@@ -323,11 +323,6 @@ object SlayerHuds {
             if (my < profitRowTop[i] || my > profitRowBot[i]) continue
             val tag = profitRowTag[i]
             when {
-                tag == "mode" -> {
-                    SlayerProfitTracker.cycleMode()
-                    fishmod.utils.config.FishConfig.manager.save()
-                    return true
-                }
                 tag == "title" -> if (button == 1) { SlayerProfitTracker.armOrConfirmReset(); return true }
                 tag.startsWith("item:") -> if (button == 0) {
                     SlayerProfitTracker.toggleHidden(type, tier, tag.substring(5)); return true
