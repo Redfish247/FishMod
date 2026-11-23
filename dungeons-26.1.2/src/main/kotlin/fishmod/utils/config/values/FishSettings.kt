@@ -1114,6 +1114,8 @@ object FishSettings {
 
     @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
+    @ConfigValue @JvmField var slayerPhaseThroughWalls: Boolean = true
+    @ConfigValue @JvmField var slayerPhaseTextScale: Int = 60
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHpLabel: Boolean = false

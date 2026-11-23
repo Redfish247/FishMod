@@ -109,6 +109,7 @@ object CroesusRewardParser {
 
         val guess = clean.uppercase().replace(NON_ID_CHARS, "").trim().replace(WHITESPACE, "_")
         if (guess.isNotEmpty() && ItemsDb.get(guess) != null) return arrayOf(guess, "1")
+        if (clean.endsWith(" Shard")) return arrayOf(fishmod.features.hunting.ShardTracker.id(clean), "1")
 
         return arrayOf("false", "Could not find item ID for line \"$clean\"")
     }
