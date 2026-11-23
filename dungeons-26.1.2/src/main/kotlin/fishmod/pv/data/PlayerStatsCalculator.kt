@@ -614,6 +614,8 @@ object PlayerStatsCalculator {
             for (line in lore) {
                 val clean = stripFormatting(line)
                 if (clean.isBlank()) continue
+                // Every DISPLAY regex needs ": +" or ": -".
+                if (!clean.contains(": +") && !clean.contains(": -")) continue
                 for (def in DISPLAY) {
                     val value = def.regex.find(clean)?.groupValues?.get(1)?.toDoubleOrNull() ?: continue
                     add(totals, def.id, value)
