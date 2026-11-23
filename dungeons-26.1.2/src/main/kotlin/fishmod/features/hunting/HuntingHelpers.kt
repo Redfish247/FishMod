@@ -83,7 +83,7 @@ object HuntingHelpers {
         val now = System.currentTimeMillis()
         if (now - lastReel < 1500) return
         lastReel = now
-        AlertTitles.show(Component.literal("§eREEL"), Component.empty(), 1000)
+        if (W.lassoPopup) AlertTitles.show(Component.literal("§eREEL"), Component.empty(), 1000)
         SoundManager.play(SoundManager.preset(W.lassoSound), 1f)
     }
 

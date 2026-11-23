@@ -117,6 +117,7 @@ object FishingAlerts {
         a.sub.add(ToggleSetting("Deployable Expiring", "Totem, Black Hole, Umberella, lanterns and flux orbs", S::class.java, "alertDeployable"))
         a.sub.add(SliderIntSetting("Expiry Seconds", "Alert when this many seconds remain", S::class.java, "alertDeployableSecs", 5, 300, 5).gatedBy { S.alertDeployable })
         a.sub.add(ToggleSetting("Bait", "Alert when bait changes or runs low", S::class.java, "alertBait"))
+        a.sub.add(ToggleSetting("No Bait", "Alert when you cast with no bait in the last hotbar slot", S::class.java, "alertNoBait"))
         a.sub.add(SliderIntSetting("Low Bait Count", "", S::class.java, "alertBaitLow", 1, 64).gatedBy { S.alertBait })
         a.sub.add(SoundSearchSetting("Alert Sound", "Sound for every alert except creatures", { S.alertSound }, { v -> S.alertSound = v }, { S.alertSoundVolume }).gatedBy { (S.alertRareDrop || S.alertHotspotFound || S.alertHotspotGone || S.alertWormholeGone || S.alertNewTrophy || S.alertDeployable || S.alertBait) })
         a.sub.add(SliderIntSetting("Alert Volume %", "", S::class.java, "alertSoundVolume", 0, 500, 5).gatedBy { (S.alertRareDrop || S.alertHotspotFound || S.alertHotspotGone || S.alertWormholeGone || S.alertNewTrophy || S.alertDeployable || S.alertBait) })
