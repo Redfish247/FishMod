@@ -161,6 +161,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         general.features.add(Feature("FishMod Chat (/fc)", "fishChatEnabled"))
         run {
+            val f = Feature("Rare Drop Animation", "rareDropAnim")
+            for ((cat, drops) in fishmod.features.general.RareDropAnimation.CATEGORIES) {
+                f.sub.add(SubcategoryHeader(cat, true))
+                for (n in drops)
+                    f.sub.add(ToggleSetting(n, "", { fishmod.features.general.RareDropAnimation.isOn(n) }, { v -> fishmod.features.general.RareDropAnimation.setOn(n, v) }))
+            }
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Debug Reports", "debugReports")
             f.sub.add(ToggleSetting("Chat Notice", "Short chat line with a copy button when something breaks (max once a minute)", "debugChatNotices"))
             general.features.add(f)
