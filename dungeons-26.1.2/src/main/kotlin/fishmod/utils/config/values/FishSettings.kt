@@ -33,6 +33,9 @@ object FishSettings {
     @ConfigValue @JvmField var fmFoldedColumns: String = ""
     @ConfigValue @JvmField var fmSidebarFolders: String = ""
     @ConfigValue @JvmField var fmPinned: String = "General"
+    @ConfigValue @JvmField var fmWindowMax: Boolean = false
+    @ConfigValue @JvmField var fmSidebarW: Int = 150
+    @ConfigValue @JvmField var fmDetailW: Int = 0
     @ConfigValue @JvmField var fmUiAnimations: Boolean = true
     @ConfigValue @JvmField var fmThemeV2: Boolean = false
     @ConfigValue @JvmField var fmCardColor: Int = 0xFFFFFFFF.toInt()
@@ -45,6 +48,9 @@ object FishSettings {
     @ConfigValue @JvmField var fmBgPreset: String = "Graphite"
     @ConfigValue @JvmField var fmBgCustomColor: Int = 0xFF14181D.toInt()
     @ConfigValue @JvmField var fmBgAlpha: Int = 100
+    @ConfigValue @JvmField var fmSwitchColorMode: String = "Accent"
+    @ConfigValue @JvmField var fmSwitchOnColor: Int = 0xFF3DDC84.toInt()
+    @ConfigValue @JvmField var fmSwitchOffColor: Int = 0xFF6B6B6B.toInt()
     @ConfigValue @JvmField var fmDropDurationMs: Int = 450
     @ConfigValue @JvmField var fmStaggerDelayMs: Int = 60
     @ConfigValue @JvmField var fmExitStyle: String = "Floor Fall"

@@ -15,7 +15,6 @@ import fishmod.pv.gui.inventories.SkyBlockItemFactory
 import fishmod.pv.networth.InventoryDecoder
 import java.time.Instant
 import java.time.format.DateTimeParseException
-import java.util.Collections
 import java.util.Locale
 import java.util.UUID
 
@@ -63,15 +62,11 @@ class AuctionSnapshot private constructor(
 		val highestBid: Long,
 		val won: Long,
 		val created: Long,
-		val goldSpent: Long,
-		val goldEarned: Long,
 		val fees: Long,
-		val totalSold: Map<String, Long>,
-		val totalBought: Map<String, Long>
 	) {
 		companion object {
 			@JvmStatic
-			fun empty(): Stats = Stats(0L, 0L, 0L, 0L, 0L, 0L, 0L, mapOf(), mapOf())
+			fun empty(): Stats = Stats(0L, 0L, 0L, 0L, 0L)
 
 			@JvmStatic
 			fun fromMember(member: JsonObject?): Stats {
@@ -92,44 +87,8 @@ class AuctionSnapshot private constructor(
 					longVal(a, "highest_bid"),
 					longVal(a, "won"),
 					longVal(a, "created"),
-					longVal(a, "gold_spent"),
-					longVal(a, "gold_earned"),
 					longVal(a, "fees"),
-					// LinkedHashMap - Map.copyOf does not preserve encounter order.
-					Collections.unmodifiableMap(rarityMap(a, "total_sold")),
-					Collections.unmodifiableMap(rarityMap(a, "total_bought"))
 				)
-			}
-
-			private fun rarityMap(root: JsonObject?, key: String): LinkedHashMap<String, Long> {
-				val out = LinkedHashMap<String, Long>()
-				for (rarity in RARITY_ORDER.reversed()) {
-					out[rarity] = 0L
-				}
-				if (root == null || !root.has(key) || !root.get(key).isJsonObject) {
-					return out
-				}
-				val obj = root.getAsJsonObject(key)
-				for (rarity in RARITY_ORDER) {
-					var n = longVal(obj, rarity)
-					if (n <= 0L) {
-						n = longVal(obj, rarity.lowercase(Locale.ROOT))
-					}
-					if (n > 0L) {
-						out[rarity] = n
-					}
-				}
-				for (rawKey in obj.keySet()) {
-					val k = rawKey?.uppercase(Locale.ROOT) ?: ""
-					if (k.isBlank() || out.containsKey(k)) {
-						continue
-					}
-					val n = longVal(obj, rawKey)
-					if (n > 0L) {
-						out[k] = n
-					}
-				}
-				return out
 			}
 		}
 	}
@@ -177,10 +136,6 @@ class AuctionSnapshot private constructor(
 	fun withStats(stats: Stats?): AuctionSnapshot = rebuild(stats = stats)
 
 	companion object {
-		private val RARITY_ORDER = arrayOf(
-			"COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "SPECIAL", "VERY_SPECIAL", "ULTIMATE"
-		)
-
 		@JvmStatic
 		fun empty(): AuctionSnapshot = AuctionSnapshot(null, listOf(), listOf(), listOf(), Stats.empty(), 0, 0, false, false)
 
@@ -195,40 +150,11 @@ class AuctionSnapshot private constructor(
 			profileId?.let { normalizeId(it) } ?: ""
 		)
 
-		private fun roman(n: Int): String = when (n.coerceIn(0, 10)) {
-			1 -> "I"
-			2 -> "II"
-			3 -> "III"
-			4 -> "IV"
-			5 -> "V"
-			6 -> "VI"
-			7 -> "VII"
-			8 -> "VIII"
-			9 -> "IX"
-			10 -> "X"
-			else -> n.toString()
-		}
-
 		private fun obj(root: JsonObject?, key: String?): JsonObject? {
 			if (root == null || key == null || !root.has(key) || !root.get(key).isJsonObject) {
 				return null
 			}
 			return root.getAsJsonObject(key)
-		}
-
-		private fun intVal(obj: JsonObject?, key: String?): Int {
-			if (obj == null || key == null || !obj.has(key) || obj.get(key).isJsonNull) {
-				return 0
-			}
-			return try {
-				obj.get(key).asInt
-			} catch (ignored: RuntimeException) {
-				try {
-					obj.get(key).asDouble.toInt()
-				} catch (ignored2: RuntimeException) {
-					0
-				}
-			}
 		}
 
 		@JvmStatic

@@ -234,9 +234,15 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
         )
 
+        // Same names and order as the FishModScreen columns; categories without HUDs are hidden
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
+            "HUD & Overlays" to listOf(
+                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
+                "Spotify", "Stopwatch", "Achievement Popup", "Arrow HUD",
+            ),
+            "Party & Social" to listOf("Party Finder List"),
             "Dungeons" to listOf(
-                "Run Splits", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
+                "Run Splits", "Est. Total (follows Splits)", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
                 "Spirit Bear", "Mask & Phoenix Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
             ),
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
@@ -247,24 +253,26 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Melody Callout", "Section Cleared", "Storm Over Alert", "Veno Stack Count", "Players Leaped",
                 "Relic Countdown", "Necron Drag Timer", "Necron Drop Lava/Platform",
             ),
-            "HUD & Overlays" to listOf(
-                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
-                "Spotify", "Stopwatch", "Achievement Popup", "Arrow HUD",
-            ),
-            "Party & Social" to listOf("Party Finder List"),
-            "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries", "Slayer RNG Meter"),
+            "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries", "Slayer RNG Meter", "Broodmother", "Summonings", "Zealot Counter"),
+            "The End" to listOf("Dragon Profit"),
+            "Hunting & Foraging" to listOf("Foraging Tracker", "Treecapitator Cooldown", "Shard Tracker", "Fusion: Cancel", "Fusion: Confirm", "Fusion: Repeat"),
             "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title", "Crown of Avarice"),
-            "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
+            "Fishing" to listOf("Fishing Sea Creatures", "Fishing Profit", "Fishing Efficiency", "Barn Fishing Timer", "Fishing Festival", "Fishing Area Tracker",
+                "Fishing Creature Alert", "Fishing Rare Drop Alert", "Fishing Hotspot Alert", "Fishing Wormhole Alert", "Fishing Trophy Alert", "Fishing Deployable Alert", "Fishing Bait Alert",
+                "Current Bait", "Golden Fish Timer", "Sea Creature Count", "Totem of Corruption", "Trophy Fish HUD"),
+            "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions", "Ghost Counter", "Mineshaft Timer"),
             "Farming" to listOf(
                 "Visitor Timer", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
                 "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
-                "Log Book", "Sensitivity", "Mooshroom Cow Perk",
+                "Log Book", "Sensitivity", "Mooshroom Cow Perk", "Farming Speed", "Mantid Bonus", "Wheat", "Yaw / Pitch",
             ),
-            "Fishing" to listOf("Fishing Sea Creatures", "Fishing Profit", "Fishing Efficiency", "Barn Fishing Timer", "Fishing Festival", "Fishing Area Tracker",
-                "Fishing Creature Alert", "Fishing Rare Drop Alert", "Fishing Hotspot Alert", "Fishing Wormhole Alert", "Fishing Trophy Alert", "Fishing Deployable Alert", "Fishing Bait Alert"),
-            "Rift" to listOf("Rift Guide"),
-            "Alert Titles" to AlertTitles.NAMES,
             "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
+            "Rift" to listOf("Rift Guide", "Rift Timer", "Vermin Tracker", "Agaricus Cap Timer", "Bacte Helper", "Berberis Highlighter", "Blood Effigy Spots", "Burger Warning",
+                "Caducous Stem Highlighter", "Colosseum Kill Zone Warning", "Crux Helper", "Fleespook Tracker", "Half-Eaten Cave Hay Warning", "Leech Supreme Helper",
+                "Mirrorverse Parkour", "Punchcard Marker", "Rift Nametag Stats", "Snake Helper", "Sun Gecko Helper", "Vampire Slayer Helper"),
+            "Events" to listOf("SkyBlock Date", "Gift Tracker"),
+            "Alerts & Reminders" to AlertTitles.NAMES,
+            "Extras" to listOf("Item Pickup Log", "Skill Progress", "Todos"),
         )
 
         const val SCOREBOARD_W = 118
@@ -297,10 +305,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         private val TEXT get() = ScreenTheme.TEXT_COLOR
         private val SUBTEXT get() = ScreenTheme.SUBTEXT_COLOR
-        private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private val GUIDE = 0xFFFF4FB0.toInt()
         private val GRID_LINE = 0x14FFFFFF
-        private val SIDE_BG = 0xFF131313.toInt()
+        private val SIDE_BG get() = ScreenTheme.SOLID_PANEL
         private val ROW_HOV = 0x1AFFFFFF
         private val ROW_PICKED = 0x26D6D6D6
         private val HOVER_OUTLINE = 0xB3FFFFFF.toInt()
@@ -354,6 +361,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var resetArmed = false
     private var sideOpen = false
     private var sideScroll = 0
+    private val expandedGroups = HashSet<String>()
 
     private var k = 1f
     private fun refreshK() { k = UiScale.userScale(this) }
@@ -370,11 +378,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val offW = UiRecorder.textWidth("off", 5.5f) + 6f
             val pickW = UiRecorder.textWidth("pick all", 5.5f)
             var w = 8f + UiRecorder.textWidth("Pick HUDs to move", 7.5f) + 1f
-            w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to pick it all", 6f))
+            w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to fold, \"pick all\" to pick it", 6f))
             w = Math.max(w, 8f + UiRecorder.textWidth("Shift/Ctrl-click to add more", 6f))
             for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 7.5f))
             for (g in GROUPS.map { it.first } + listOf("Other", "No HUDs match")) {
-                w = Math.max(w, 8f + UiRecorder.textWidth(g.uppercase(), 6f) + 1f + 6f + pickW)
+                w = Math.max(w, 8f + UiRecorder.textWidth(g, 7f) + 10f + 6f + pickW)
             }
             for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 7.5f) + 4f + offW)
             sideWCache = Math.max(SIDE_W_MIN, Math.min(SIDE_W_MAX, Math.ceil(w + 10.0).toInt()))
@@ -419,6 +427,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var cachedRowsQuery: String? = null
     private var cachedRowsAt = 0L
 
+    private fun sideQ(): String = search.value.trim()
+
     private fun sidebarRows(): List<Row> {
         val q = search.value.trim().lowercase()
         val now = System.currentTimeMillis()
@@ -438,7 +448,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val hit = if (q.isEmpty() || g.lowercase().contains(q)) items else items.filter { it.name().lowercase().contains(q) }
             if (hit.isEmpty()) return
             body += Row.Header(g, hit)
-            hit.forEach { body += Row.Hud(it) }
+            // groups start collapsed; searching opens every match
+            if (q.isNotEmpty() || g in expandedGroups) hit.forEach { body += Row.Hud(it) }
         }
         for ((g, names) in GROUPS) {
             val items = names.mapNotNull { n -> avail.firstOrNull { it.name() == n && it !in grouped } }
@@ -447,7 +458,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
         addGroup("Other", avail.filter { it !in grouped })
 
-        val matches = body.filterIsInstance<Row.Hud>().map { it.e }
+        val matches = body.filterIsInstance<Row.Header>().flatMap { it.items }
         val rows = ArrayList<Row>()
         if (matches.isNotEmpty()) {
             rows += Row.Action(if (q.isEmpty()) "Show all" else "Show all matches") {
@@ -844,7 +855,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         } else {
             ScreenTheme.nTextFieldContent(search, searchFocused, 6, SEARCH_Y, sw, SEARCH_H, 6.5f)
         }
-        UiRecorder.text("Click a category to pick it all", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
+        UiRecorder.text("Click a category to fold, \"pick all\" to pick it", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
         UiRecorder.text("Shift/Ctrl-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
 
         UiRecorder.pushScissor(0f, SIDE_TOP.toFloat(), sideW - 1f, sh - SIDE_TOP - 5f)
@@ -864,8 +875,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                             UiRecorder.text(tag, sideW - 9f - UiRecorder.textWidth(tag, 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
                         }
                         val all = clickable && row.items.all { it.name() in picked }
-                        val c = if (!clickable) 0xFF5A5A5A.toInt() else if (all) ACCENT_HOVER else ACCENT
-                        UiRecorder.textBold(row.text.uppercase(), 8f, yf + (SIDE_ROW - 6f) / 2f, 6f, c)
+                        val c = if (!clickable) 0xFF7C828A.toInt() else if (all) TEXT else LABEL
+                        if (clickable) UiRecorder.chevron(7f, yf + SIDE_ROW / 2f, sideQ().isNotEmpty() || row.text in expandedGroups, c)
+                        else UiRecorder.text("no HUDs", sideW - 9f - UiRecorder.textWidth("no HUDs", 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, 0xFF5F656C.toInt())
+                        UiRecorder.textBold(row.text, 17f, yf + (SIDE_ROW - 7f) / 2f, 7f, c)
                     }
                     is Row.Action -> {
                         if (hov) rowBg(yf, ROW_HOV)
@@ -921,7 +934,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             focusSearch(false)
             when (val row = rowAt(cmy)) {
                 is Row.Action -> row.run()
-                is Row.Header -> pickGroup(row.items, shiftDown())
+                is Row.Header -> {
+                    // right-hand "pick all" tag picks the group, anywhere else folds it
+                    if (cmx >= sideW - 9f - UiRecorder.textWidth("pick all", 5.5f) - 4f) pickGroup(row.items, shiftDown())
+                    else if (row.items.isNotEmpty() && !expandedGroups.remove(row.text)) expandedGroups += row.text
+                    cachedRowsQuery = null
+                }
                 is Row.Hud -> {
                     if (shiftDown()) {
                         if (!picked.remove(row.e.name())) { picked += row.e.name(); selected = row.e }

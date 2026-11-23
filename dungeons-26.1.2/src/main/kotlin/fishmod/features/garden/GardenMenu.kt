@@ -190,6 +190,8 @@ object GardenMenu {
         "Composter HUD" -> "Composter widget from the tab list"
         "Jacob's Contest HUD" -> "Jacob's Contest widget from the tab list"
         "Rare Crop Tracker" -> "Counts RARE CROP drops"
+        "Help Carrolyn" -> "Hints on Carrolyn items, right-click for a warp to the Crimson Isle"
+        "Garden Keybinds" -> "Your own keys act as vanilla ones while farming in a plot"
         else -> GardenMilestoneMenu.describe(name) ?: GardenExtrasMenu.describe(name)
     }
 }

@@ -447,6 +447,10 @@ object HypixelApiClient {
                     PLAYER_CACHE.remove(e.key)
                     true
                 }
+                while (PLAYER_CACHED_AT.size >= 64) {
+                    val oldest = PLAYER_CACHED_AT.entries.minByOrNull { it.value }?.key ?: break
+                    PLAYER_CACHED_AT.remove(oldest); PLAYER_CACHE.remove(oldest)
+                }
                 PLAYER_CACHE[id] = player
                 PLAYER_CACHED_AT[id] = now
                 player

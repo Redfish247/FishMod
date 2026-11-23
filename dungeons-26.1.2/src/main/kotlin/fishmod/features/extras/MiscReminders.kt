@@ -40,6 +40,7 @@ object MiscReminders {
         ClientTickEvents.END_CLIENT_TICK.register { if (++tickN % 20 == 0) try { tick() } catch (t: Throwable) { FishDiag.fail("MiscReminders.1", "tick failed", t) } }
         FishHudEditor.register("SkyBlock Date", { S.sbDateHudX }, { S.sbDateHudX = it }, { S.sbDateHudY }, { S.sbDateHudY = it }, 130, 10,
             { S.sbDateHudScale }, { S.sbDateHudScale = it })
+        fishmod.features.HudPreview.register("SkyBlock Date") { fishmod.features.HudPreview.text(listOf(dateText())) }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "sb_date_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("MiscReminders.2", "date hud render failed", t) }
         }

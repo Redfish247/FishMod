@@ -521,6 +521,7 @@ object SkyItemList {
         else if (RecipeViewer.recipesFor(id).isNotEmpty()) lines.add(Component.literal("§eLeft Click: View Recipe"))
         lines.add(Component.literal(if (favs.contains(id)) "§eRight Click: Remove Favorite" else "§eRight Click: Add Favorite"))
         if (!npc) lines.add(Component.literal(if (onBazaar(id)) "§eShift-Left Click: Open in Bazaar" else "§eShift-Left Click: Open in Auction House"))
+        if (!npc && MarketScreen.hasHistory(id)) lines.add(Component.literal("§eMiddle Click: Price History"))
         return lines
     }
 
@@ -587,6 +588,7 @@ object SkyItemList {
             else if (Minecraft.getInstance().hasShiftDown()) openMarket(id)
             else if (RecipeViewer.recipesFor(id).isNotEmpty()) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(RecipeScreen(id, screen)) } }
             1 -> { if (!favs.remove(id)) favs.add(id); saveFavs(); val keep = scroll; refilter(); scroll = keep }
+            2 -> if (!isNpc(id) && MarketScreen.hasHistory(id)) Minecraft.getInstance().let { mc -> mc.execute { mc.showScreen(MarketScreen(id, screen)) } }
         }
         return true
     }

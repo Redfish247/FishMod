@@ -693,31 +693,6 @@ public class HypixelApi {
             .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.26", "fetchProfilesSilent request future failed", e); callback.onData(failedData()); return null; });
     }
 
-    public static void fetchSelectedMember(String uuidStr, java.util.function.Consumer<JsonObject> cb) {
-        HttpRequest req;
-        try {
-            req = proxyGet("/skyblock/profiles?uuid=" + uuidStr, 10);
-        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach1", "fetchSelectedMember build failed", e); cb.accept(null); return; }
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-            .thenAccept(resp -> {
-                if (friendlyProxyError(resp) != null) { cb.accept(null); return; }
-                try {
-                    JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    if (!root.has("success") || !root.get("success").getAsBoolean() || !root.has("profiles") || !root.get("profiles").isJsonArray()) { cb.accept(null); return; }
-                    for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
-                        JsonObject profile = profileEl.getAsJsonObject();
-                        if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
-                        JsonObject members = profile.getAsJsonObject("members");
-                        if (members == null || !members.has(uuidStr)) continue;
-                        cb.accept(members.getAsJsonObject(uuidStr));
-                        return;
-                    }
-                    cb.accept(null);
-                } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach2", "fetchSelectedMember parse failed", e); cb.accept(null); }
-            })
-            .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach3", "fetchSelectedMember request failed", e); cb.accept(null); return null; });
-    }
-
     public static void fetchSelectedProfile(String uuidStr, java.util.function.Consumer<JsonObject> cb) {
         HttpRequest req;
         try {

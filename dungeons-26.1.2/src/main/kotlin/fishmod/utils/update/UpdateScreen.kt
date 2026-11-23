@@ -26,7 +26,6 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         private const val CARD = 0xFF1C1C1C.toInt()
         private const val CARD_HOVER = 0xFF232323.toInt()
         private const val LOG_BG = 0xFF0E0E0E.toInt()
-        private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
         private const val SUCCESS = 0xFF4FD08A.toInt()
         private const val LOG_SIZE = 6.5f
         private const val LOG_LINE = 9
@@ -205,7 +204,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         when {
             !canInstall -> {
                 ScreenTheme.nRoundedRect(updateX, by, updateW, btnH, btnH / 2, fade(if (hov) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT, p))
-                centered("Open page", updateX + updateW / 2, by, fade(ON_ACCENT, p))
+                centered("Open page", updateX + updateW / 2, by, fade(ScreenTheme.onAccent(), p))
             }
             state == DS.DOWNLOADING -> {
                 if (UpdateManager.downloadProgress.isNaN()) FishDiag.fail("UpdateScreen.5", "download progress is NaN")
@@ -226,7 +225,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
             }
             else -> {
                 ScreenTheme.nRoundedRect(updateX, by, updateW, btnH, btnH / 2, fade(if (hov) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT, p))
-                centered("Update", updateX + updateW / 2, by, fade(ON_ACCENT, p))
+                centered("Update", updateX + updateW / 2, by, fade(ScreenTheme.onAccent(), p))
             }
         }
     }

@@ -25,7 +25,6 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
         private const val CARD = 0xFF1C1C1C.toInt()
         private const val CARD_HOVER = 0xFF232323.toInt()
         private const val PREVIEW_BG = 0xFF0E0E0E.toInt()
-        private val ON_ACCENT get() = fishmod.features.ScreenTheme.onAccent()
     }
 
     private lateinit var field: EditBox
@@ -68,13 +67,12 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
         }
     }
 
-    private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx <= x + w && my >= y && my <= y + h
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val mx = UiScale.vx(click.x())
         val my = UiScale.vx(click.y())
-        if (inside(mx, my, addX, btnY, addW, btnH)) { submit(); return true }
-        if (inside(mx, my, cancelX, btnY, cancelW, btnH)) { onClose(); return true }
+        if (ScreenTheme.inside(mx, my, addX, btnY, addW, btnH)) { submit(); return true }
+        if (ScreenTheme.inside(mx, my, cancelX, btnY, cancelW, btnH)) { onClose(); return true }
         return super.mouseClicked(click, doubled)
     }
 
@@ -142,13 +140,13 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
         UiRecorder.textBold(label, cx - lw / 2f, ly + 2.5f, 8f, col)
         UiRecorder.fillRect(cx - 1f, ly + 16f, 2f, 16f, (col and 0x00FFFFFF) or 0x99000000.toInt())
 
-        val cHov = inside(mx, my, cancelX, btnY, cancelW, btnH)
+        val cHov = ScreenTheme.inside(mx, my, cancelX, btnY, cancelW, btnH)
         ScreenTheme.nRoundedRectRing(cancelX, btnY, cancelW, btnH, btnH / 2, 1, if (cHov) CARD_HOVER else CARD, BORDER)
         centered("Cancel", cancelX + cancelW / 2, btnY, if (cHov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR)
 
-        val aHov = inside(mx, my, addX, btnY, addW, btnH)
+        val aHov = ScreenTheme.inside(mx, my, addX, btnY, addW, btnH)
         ScreenTheme.nRoundedRect(addX, btnY, addW, btnH, btnH / 2, if (aHov) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT)
-        centered("Add waypoint", addX + addW / 2, btnY, ON_ACCENT)
+        centered("Add waypoint", addX + addW / 2, btnY, ScreenTheme.onAccent())
     }
 
     private fun centered(s: String, cx: Int, y: Int, color: Int) {

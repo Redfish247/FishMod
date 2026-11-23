@@ -39,7 +39,7 @@ object Garden {
         GardenAddons.init()
     }
 
-    fun strip(s: String) = Mining.strip(s)
+    fun strip(s: String) = fishmod.utils.TextStrip.plain(s)
 
     fun lore(stack: ItemStack): List<String> =
         stack.get(DataComponents.LORE)?.lines()?.map { strip(it.string) } ?: emptyList()

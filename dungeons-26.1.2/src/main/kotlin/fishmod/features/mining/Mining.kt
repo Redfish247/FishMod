@@ -7,7 +7,6 @@ import fishmod.compat.hudHidden
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.FishHudEditor
-import fishmod.utils.FishConstants
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishUtil
 import fishmod.utils.TabListCache
@@ -170,7 +169,7 @@ object Mining {
         return r
     }
 
-    fun strip(s: String) = s.replace(FishConstants.STRIP_COLOR_REGEX, "")
+    fun strip(s: String) = fishmod.utils.TextStrip.plain(s)
 
     fun title(text: String, sub: String, ms: Int, sound: Boolean = false) {
         FishUtil.forceTitle(Component.literal(text), Component.literal(sub), ms)
