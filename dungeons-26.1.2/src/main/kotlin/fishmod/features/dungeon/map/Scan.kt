@@ -49,7 +49,6 @@ object Scan {
     var allSecrets: Int = 0
 
     @JvmField
-    var puzzles: MutableList<Room> = ArrayList()
 
     @JvmField
     var chest: BlockPos? = null
@@ -106,7 +105,6 @@ object Scan {
         loadedAllRooms = false
         blood = null
         allSecrets = 0
-        puzzles = ArrayList()
         chest = null
         shouldScan = false
         lastScanMs = 0L
@@ -129,12 +127,6 @@ object Scan {
             recomputeSecrets()
         } else {
             scanRooms(world)
-            val puz = ArrayList<Room>()
-            for (r in ArrayList(rooms)) {
-                if (r.type == Room.Type.PUZZLE) puz.add(r)
-            }
-            puzzles = puz
-
             scanRoomRotations(world)
             scanWorldDoors(world)
 
