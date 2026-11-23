@@ -1,7 +1,9 @@
 package fishmod.cosmetic
 
+import com.google.gson.JsonParser
 import com.mojang.blaze3d.platform.NativeImage
 import fishmod.compat.hud
+import fishmod.utils.HypixelApi
 import fishmod.mixin.FishChatInvoker
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
@@ -47,7 +49,7 @@ object ChatImagePreview {
     private const val SHOW_MAX_W = 260
     private const val SHOW_MAX_H = 200
 
-    private val TRUSTED_HOSTS = arrayOf("discordapp.com", "discordapp.net", "imgur.com", "tenor.com", "giphy.com")
+    private val TRUSTED_HOSTS = arrayOf("discordapp.com", "discordapp.net", "imgur.com", "tenor.com", "giphy.com", "klipy.com")
     private val IMAGE_EXT = Regex("(?i)\\.(png|jpe?g|gif)$")
     private val OG_IMAGE_A = Regex("<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']", RegexOption.IGNORE_CASE)
     private val OG_IMAGE_B = Regex("<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:image[\"']", RegexOption.IGNORE_CASE)
@@ -86,11 +88,17 @@ object ChatImagePreview {
         return TRUSTED_HOSTS.any { h == it || h.endsWith(".$it") }
     }
 
+    private fun isKlipyPage(uri: URI): Boolean {
+        val h = uri.host?.lowercase() ?: return false
+        return (h == "klipy.com" || h == "www.klipy.com") && (uri.path ?: "").startsWith("/gifs/")
+    }
+
     private fun isPage(uri: URI): Boolean {
         val h = uri.host?.lowercase() ?: return false
         val p = uri.path ?: ""
         return ((h == "tenor.com" || h == "www.tenor.com") && p.startsWith("/view/")) ||
-            ((h == "giphy.com" || h == "www.giphy.com") && p.startsWith("/gifs/"))
+            ((h == "giphy.com" || h == "www.giphy.com") && p.startsWith("/gifs/")) ||
+            isKlipyPage(uri)
     }
 
     /** True for https links to an allowlisted host that are an image file or a Tenor/Giphy page. */
@@ -99,17 +107,6 @@ object ChatImagePreview {
         val uri = try { URI.create(url) } catch (_: Throwable) { return false }
         if (!"https".equals(uri.scheme, true) || !hostTrusted(uri.host)) return false
         return isPage(uri) || IMAGE_EXT.containsMatchIn(uri.path ?: "")
-    }
-
-    /**
-     * GIF pages we label [Image] but can't preview: Klipy sits behind a Cloudflare challenge that only lets
-     * link-preview crawlers through, and we don't impersonate those. Hover says it opens in the browser.
-     */
-    @JvmStatic
-    fun isUnpreviewableGifPage(url: String): Boolean {
-        val uri = try { URI.create(url) } catch (_: Throwable) { return false }
-        val h = uri.host?.lowercase() ?: return false
-        return (h == "klipy.com" || h == "www.klipy.com") && (uri.path ?: "").startsWith("/gifs/")
     }
 
     // ---- hover detection ----
@@ -197,8 +194,9 @@ object ChatImagePreview {
     // ---- loading (worker threads) ----
 
     private fun start(url: String, e: Entry) {
+        val caller = Minecraft.getInstance().player?.uuid?.toString()?.replace("-", "") ?: ""
         pool.execute {
-            try { load(url, e) } catch (t: Throwable) {
+            try { load(url, e, caller) } catch (t: Throwable) {
                 e.error = (t.message ?: t.javaClass.simpleName).take(40)
                 e.state = 2
                 FishDiag.fail("ChatImagePreview.2", "chat image load failed: ${describe(url)}", t)
@@ -227,9 +225,26 @@ object ChatImagePreview {
         }
     }
 
-    private fun load(url: String, e: Entry) {
+    /** Klipy pages are behind a bot challenge; the FishMod worker looks the slug up with Klipy's official API. */
+    private fun resolveKlipy(uri: URI, caller: String): String {
+        val slug = (uri.path ?: "").removePrefix("/gifs/").trim('/').substringBefore('/').lowercase()
+        if (!Regex("[a-z0-9][a-z0-9-]{0,119}").matches(slug)) throw IOException("bad Klipy link")
+        val req = HttpRequest.newBuilder(URI.create("https://fishmod.dev/klipy?slug=$slug"))
+            .header("X-FishMod-Token", HypixelApi.MOD_TOKEN).header("X-FishMod-Caller", caller)
+            .header("User-Agent", "Mozilla/5.0").timeout(Duration.ofSeconds(10)).GET().build()
+        val res = http.send(req, HttpResponse.BodyHandlers.ofString())
+        val root = try { JsonParser.parseString(res.body()).asJsonObject } catch (_: Throwable) { throw IOException("HTTP ${res.statusCode()}") }
+        if (res.statusCode() != 200) throw IOException(root.get("cause")?.takeIf { !it.isJsonNull }?.asString ?: "HTTP ${res.statusCode()}")
+        return root.get("url")?.takeIf { !it.isJsonNull }?.asString ?: throw IOException("no gif found")
+    }
+
+    private fun load(url: String, e: Entry, caller: String) {
         var imageUrl = url
-        if (isPage(URI.create(url))) {
+        val pageUri = URI.create(url)
+        if (isKlipyPage(pageUri)) {
+            imageUrl = resolveKlipy(pageUri, caller)
+            if (!isPreviewable(imageUrl)) throw IOException("unsupported image")
+        } else if (isPage(pageUri)) {
             val html = String(fetch(url, 1_500_000), Charsets.UTF_8)
             val found = (OG_IMAGE_A.find(html) ?: OG_IMAGE_B.find(html))?.groupValues?.get(1)?.replace("&amp;", "&")
                 ?: throw IOException("no image on page")
