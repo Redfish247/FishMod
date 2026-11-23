@@ -466,7 +466,7 @@ object RouteRecorder {
         fun run(f: () -> Unit) = Command<FabricClientCommandSource> { f(); 1 }
         fun named(lit: String, f: (String) -> Unit) = ClientCommands.literal(lit)
             .then(ClientCommands.argument("name", StringArgumentType.word()).executes { c -> f(StringArgumentType.getString(c, "name")); 1 })
-        return ClientCommands.literal("route")
+        return ClientCommands.literal("dungeonroute")
             .executes(run(::status))
             .then(ClientCommands.literal("record").executes(run(::record)))
             .then(ClientCommands.literal("stop").executes(run(::stop)))
@@ -486,7 +486,7 @@ object RouteRecorder {
     fun record() {
         steps.clear(); progress = 0; pendingPearl = null; pendingBreaks.clear(); enteredRoute = false
         mode = Mode.RECORDING
-        msg("§aRecording. §7Etherwarps, pearls, superbooms, dungeonbreaker, chests, secrets, items and bats are logged. §f/fm route stop §7when done.")
+        msg("§aRecording. §7Etherwarps, pearls, superbooms, dungeonbreaker, chests, secrets, items and bats are logged. §f/fm dungeonroute stop §7when done.")
     }
 
     @JvmStatic
@@ -494,7 +494,7 @@ object RouteRecorder {
         mode = Mode.IDLE
         val room = routeRoom()
         if (room != null && steps.isNotEmpty()) save(room)
-        msg("§eStopped. §7${steps.size} steps" + (if (room != null) ", saved to §f$room§7. It loads whenever you enter that room." else ". §f/fm route save <name> §7to keep it."))
+        msg("§eStopped. §7${steps.size} steps" + (if (room != null) ", saved to §f$room§7. It loads whenever you enter that room." else ". §f/fm dungeonroute save <name> §7to keep it."))
     }
 
     @JvmStatic
@@ -549,7 +549,7 @@ object RouteRecorder {
             if (list == null) { FishDiag.fail("RouteRecorder.10", "route file ${f.fileName} parsed to null"); if (!quiet) msg("§cLoad failed: empty file"); return false }
             FishDiag.check(list.all { (it.world as IntArray?)?.size == 3 && (it.local?.size ?: 3) == 3 }, "RouteRecorder.11") { "route ${f.fileName} has malformed coords" }
             steps.clear(); steps.addAll(list); progress = 0; mode = Mode.IDLE; liveWorld = false; dirty = false; enteredRoute = false
-            if (!quiet) msg("§aLoaded ${steps.size} steps. §f/fm route play §7to follow.")
+            if (!quiet) msg("§aLoaded ${steps.size} steps. §f/fm dungeonroute play §7to follow.")
             return true
         } catch (t: Throwable) {
             FishDiag.fail("RouteRecorder.12", "route load failed for '$name'", t)
