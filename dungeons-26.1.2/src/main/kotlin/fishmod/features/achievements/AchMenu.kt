@@ -12,6 +12,7 @@ import fishmod.features.FishModScreen.LabelSetting
 import fishmod.features.FishModScreen.SliderDoubleSetting
 import fishmod.features.FishModScreen.SliderIntSetting
 import fishmod.features.FishModScreen.SoundSearchSetting
+import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.achievements.AchSettings as S
 
@@ -44,7 +45,9 @@ object AchMenu {
         main.sub.add(ToggleSetting("Hide Untracked", "Hide ones FishMod can't track yet", S::class.java, "achHideUntracked"))
         col.features.add(main)
 
-        val lb = Feature("Leaderboard Board", S::class.java, "achLbEnabled")
+        val lb = main
+        lb.sub.add(SubcategoryHeader("Leaderboard Board"))
+        lb.sub.add(ToggleSetting("Leaderboard Board", "In-world top 10 of achievement points or secrets at a spot you set", S::class.java, "achLbEnabled"))
         lb.sub.add(LabelSetting("In-world top 10", "Shows within 48 blocks of the spot; /fm ach lb here [points|secrets] sets it to your feet"))
         lb.sub.add(InputDoubleSetting("Points X", "", { S.achPtsX }, { v -> S.achPtsX = v }))
         lb.sub.add(InputDoubleSetting("Points Y", "", { S.achPtsY }, { v -> S.achPtsY = v }))
@@ -58,7 +61,6 @@ object AchMenu {
         lb.sub.add(ButtonSetting("Points Board To Me", "Same as /fm ach lb here points", "Here") { AchLeaderboard.here(false) })
         lb.sub.add(ButtonSetting("Secrets Board To Me", "Same as /fm ach lb here secrets", "Here") { AchLeaderboard.here(true) })
         lb.sub.add(ButtonSetting("Submit Score", "Send your totals now", "Submit") { AchLeaderboard.submit(true) })
-        col.features.add(lb)
 
         refresh()
         return col
@@ -73,8 +75,7 @@ object AchMenu {
     }
 
     fun describe(name: String): String? = when (name) {
-        "Achievements" -> "Unlock toasts, API sync and settings"
-        "Leaderboard Board" -> "In-world top 10 of achievement points or secrets at a spot you set"
+        "Achievements" -> "Unlock toasts, API sync, settings and the in-world leaderboard"
         else -> null
     }
 }
