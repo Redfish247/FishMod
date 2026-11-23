@@ -3189,6 +3189,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val DONE_H = 32
     private fun detBot(): Int = cyBot() - DONE_H
     private fun detMax(f: Feature): Int = Math.max(0, descH(f) + f.naturalSubHeight() - (detBot() - detTop()))
+    // Settings (detail panel) scrollbar: thumb as [y, h]; null when the settings fit
+    private var detBarGrab = -1
+    private fun detThumb(f: Feature): IntArray? {
+        val max = detMax(f); if (max <= 0) return null
+        val track = detBot() - detTop(); val h = Mth.clamp(track * track / (track + max), 16, track)
+        return intArrayOf(detTop() + ((track - h).toLong() * Mth.clamp(detScroll, 0, max) / max).toInt(), h)
+    }
+    private fun detBarHit(mx: Int, my: Int): Boolean { val f = selected ?: return false; return page == null && mx in cx1() - 8..cx1() - 1 && my in detTop()..detBot() && detMax(f) > 0 }
+    private fun dragDetBar(my: Int) {
+        val f = selected ?: return; val t = detThumb(f) ?: return; val max = detMax(f)
+        detScroll = Mth.clamp(((my - detBarGrab - detTop()).toLong() * max / Math.max(1, detBot() - detTop() - t[1])).toInt(), 0, max)
+    }
     private fun scrollArrow(up: Boolean, cx: Float, cy: Float) {
         UiRecorder.fillRoundedRect(cx - 7f, cy - 7f, 14f, 14f, 7f, ScreenTheme.ink(0x30))
         UiRecorder.roundedRectRing(cx - 7f, cy - 7f, 14f, 14f, 7f, 1f, 0, ACCENT)
@@ -3305,6 +3317,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val detMidX = (dx0 + dx1) / 2f
             if (detScroll > 0) scrollArrow(true, detMidX, detTop() + 12f)
             if (detScroll < detMax(f)) scrollArrow(false, detMidX, detBot() - 12f)
+            detThumb(f)?.let { t ->
+                val bx = (dx1 - 6).toFloat()
+                UiRecorder.fillRoundedRect(bx, detTop().toFloat(), 3f, (detBot() - detTop()).toFloat(), 1.5f, ScreenTheme.ink(0x10))
+                UiRecorder.fillRoundedRect(bx, t[0].toFloat(), 3f, t[1].toFloat(), 1.5f, ScreenTheme.ink(if (detBarGrab >= 0 || detBarHit(mouseX, mouseY)) 0x70 else 0x40))
+            }
         } finally { UiRecorder.popScissor() }
     }
 
@@ -3454,6 +3471,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             gridBarGrab = if (my in t[0]..t[0] + t[1]) my - t[0] else t[1] / 2
             dragGridBar(my); return true
         }
+        if (btn == 0 && detBarHit(mx, my)) {
+            val t = detThumb(selected!!)!!
+            detBarGrab = if (my in t[0]..t[0] + t[1]) my - t[0] else t[1] / 2
+            dragDetBar(my); return true
+        }
         if (btn == 0 && detDividerHit(mx, my)) { detDrag = true; return true }
         if (navClick(mx, my, btn)) return true
 
@@ -3476,6 +3498,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         if (resizeMask != 0) { applyResize(vx(click.x()), vx(click.y())); return true }
         if (gridBarGrab >= 0) { dragGridBar(vx(click.y())); return true }
+        if (detBarGrab >= 0) { dragDetBar(vx(click.y())); return true }
         if (detDrag) { FishSettings.fmDetailW = (cx1() - vx(click.x()) - 2).coerceIn(DET_W_MIN, Math.max(DET_W_MIN, (winW() * 0.6f).toInt())); return true }
         if (sbDrag) { FishSettings.fmSidebarW = (vx(click.x()) - stackX0() - 6).coerceIn(STACK_W_MIN, STACK_W_MAX); return true }
         if (navPress != null) {
@@ -3502,6 +3525,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (resizeMask != 0) { resizeMask = 0; resizeFrom = null; return true }
         if (sbDrag) { sbDrag = false; return true }
         if (gridBarGrab >= 0) { gridBarGrab = -1; return true }
+        if (detBarGrab >= 0) { detBarGrab = -1; return true }
         if (detDrag) { detDrag = false; return true }
         if (winDrag != null) { winDrag = null; return true }
         navPress?.let { c ->

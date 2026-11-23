@@ -1,7 +1,9 @@
 package fishmod.features.general
 
 import com.google.gson.JsonParser
-import fishmod.features.hud.NeuItems
+import fishmod.pv.gui.inventories.NeuItemResolver
+import fishmod.pv.gui.inventories.SkyBlockItemFactory
+import fishmod.pv.neu.NeuRepoCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
@@ -79,14 +81,18 @@ object RareDropAnimation {
         val name = dropName(plain, Minecraft.getInstance().user.name) ?: return
         val listed = BY_NORM[norm(name)] ?: return
         if (listed.none { isOn(it) }) return
-        play(name)
+        play(name, plain.startsWith("PET DROP!"))
     }
 
-    private fun play(name: String) {
-        val mc = Minecraft.getInstance()
-        mc.execute {
-            FishDiag.guard("RareDropAnimation.1", "rare drop animation failed for $name") {
-                mc.gameRenderer.displayItemActivation(stackFor(name))
+    private fun play(name: String, pet: Boolean) {
+        // item lookup may fetch from the NEU repo, so resolve off the render thread first
+        fishmod.utils.IoExecutor.execute {
+            val stack = FishDiag.guard("RareDropAnimation.3", "rare drop icon lookup failed for $name") { stackFor(name, pet) } ?: fallback(name)
+            val mc = Minecraft.getInstance()
+            mc.execute {
+                FishDiag.guard("RareDropAnimation.1", "rare drop animation failed for $name") {
+                    mc.gameRenderer.displayItemActivation(stack)
+                }
             }
         }
     }
@@ -97,15 +103,41 @@ object RareDropAnimation {
         val listed = BY_NORM[norm(name)] ?: return "§c[RareDrop] '$name' is not in the list, so it would not animate"
         val master = if (FishSettings.rareDropAnim) "" else " §e(master switch is off, real drops will not animate)"
         if (listed.none { isOn(it) }) return "§c[RareDrop] '$name' is unticked in the menu, so it would not animate$master"
-        play(name)
+        play(name, CATEGORIES.any { it.first.contains("Pets") && it.second.any { d -> norm(d) == norm(name) } } || norm(name) in PET_NAMES)
         return "§a[RareDrop] playing '$name'$master"
     }
 
-    private fun stackFor(name: String): ItemStack {
-        NeuItems.ensureLoaded()
-        if (!NeuItems.ready()) return ItemStack(Items.NETHER_STAR)
-        val e = NeuItems.search(name, 20).firstOrNull { it.name.equals(name, true) }
-        if (e != null) return NeuItems.icon(e)
-        return ItemStack(if (TRAIL_NUM.containsMatchIn(name) || name.matches(Regex(""".*\s\d+$"""))) Items.ENCHANTED_BOOK else Items.NETHER_STAR)
+    private val PET_NAMES = setOf("ender dragon", "golem", "enderman", "slug")
+
+    private fun snake(n: String) = n.uppercase().replace("'", "").replace(Regex("[^A-Z0-9]+"), "_").trim('_')
+
+    private fun fallback(name: String) = ItemStack(if (TRAIL_NUM.containsMatchIn(name) || name.matches(Regex(""".*\s\d+$"""))) Items.ENCHANTED_BOOK else Items.NETHER_STAR)
+
+    /** SkyBlock ids to try for a drop name, best first: NEU display name, then derived ids (dye, book, pet, plain). */
+    private fun candidates(name: String, pet: Boolean): List<String> {
+        val out = LinkedHashSet<String>()
+        if (pet) out.add("PET_" + snake(name))
+        NeuRepoCache.idsForDisplayName(name).filterNot { it.contains(';') }.forEach { out.add(it) }
+        val sn = snake(name)
+        if (name.endsWith(" Dye", true)) out.add("DYE_" + snake(name.dropLast(4)))
+        val n = norm(name)
+        val sp = n.lastIndexOf(' ')
+        if (sp > 0 && n.substring(sp + 1).all { it.isDigit() }) {
+            val base = snake(n.substring(0, sp)); val lvl = n.substring(sp + 1)
+            out.add("ENCHANTMENT_${base}_$lvl"); out.add("ENCHANTMENT_ULTIMATE_${base}_$lvl")
+        }
+        out.add(sn); out.add("PET_$sn")
+        return out.toList()
+    }
+
+    private fun stackFor(name: String, pet: Boolean): ItemStack {
+        NeuRepoCache.ensureLoadedBlocking()
+        for (id in candidates(name, pet)) {
+            // fetch synchronously (we are off the render thread) so iconStack finds it already cached; PET_x expands to x;0..5
+            if (NeuItemResolver.candidates(id).none { NeuRepoCache.getOrFetch(it) != null }) continue
+            val st = SkyBlockItemFactory.iconStack(id)
+            if (!st.isEmpty && !st.`is`(Items.PAPER)) return st
+        }
+        return fallback(name)
     }
 }
