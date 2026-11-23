@@ -868,7 +868,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Dungeon Routes", "routeRecorderEnabled")
-            f.sub.add(LabelSetting("/fm route record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
+            f.sub.add(LabelSetting("/fm dungeonroute record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
             f.sub.add(ToggleSetting("Auto Load Per Room", "Saved route plays when you enter its room", "routeAutoLoad"))
             f.sub.add(ToggleSetting("Waypoints Through Walls", "Etherwarp, pearl, break, superboom", "routeThroughWalls"))
             f.sub.add(ToggleSetting("Secrets Through Walls", "Chest, lever/skull, item, bat", "routeSecretsThroughWalls"))
