@@ -33,7 +33,7 @@ object OwnSeaCreatures {
         MiningHuds.reg("Sea Creature Count", "fishing_sc_count", 90, 10,
             { W.scCapX }, { W.scCapX = it }, { W.scCapY }, { W.scCapY = it }, { W.scCapScale }, { W.scCapScale = it },
             { W.scCap && W.scCapHud && live.isNotEmpty() }, { W.scCap && W.scCapHud },
-            example = { listOf("§bCreatures\t§a4/" + W.scCapMax) }, lines = { listOf("§bCreatures\t" + (if (live.size >= W.scCapMax) "§c" else "§a") + live.size + "/" + W.scCapMax) + (if (W.scServerCap) listOf("§bServer	" + (if (server >= W.scServerMax) "§c" else "§a") + server + "/" + W.scServerMax) else emptyList<String>()) })
+            example = { listOf("§bCreatures\t§a4/" + W.scCapMax) }, lines = { listOf("§bCreatures\t" + (if (live.size >= W.scCapMax) "§c" else "§a") + live.size + "/" + W.scCapMax) + (if (W.scServerCap) listOf("§bServer\t" + (if (server >= W.scServerMax) "§c" else "§a") + server + "/" + W.scServerMax) else emptyList<String>()) })
     }
 
     private fun onTick() {
