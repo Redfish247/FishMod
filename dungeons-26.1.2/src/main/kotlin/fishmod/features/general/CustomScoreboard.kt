@@ -346,7 +346,7 @@ object CustomScoreboard {
         val showBits = bits != null && FishSettings.sbSectionBits
         val showMotes = motes != null && FishSettings.sbSectionMotes
         if (showBits && showMotes) {
-            money.add(Component.literal("§fBits/Motes: §b${num(BITS.find(bits!!.s)!!.groupValues[1])}§7/§5${num(MOTES.find(motes!!.s)!!.groupValues[1])}"))
+            money.add(Component.literal("§fBits/Motes: §b${BITS.find(bits!!.s)!!.groupValues[1]}§7/§5${MOTES.find(motes!!.s)!!.groupValues[1]}"))
         } else if (showBits) money.add(kv(bits!!.s, "§b"))
         else if (showMotes) money.add(kv(motes!!.s, "§5"))
         val gems = take { ScoreboardSection.GEMS.matches(bare(it.s)) }?.let { bare(it.s) } ?: (if (ex) null else tabValue(TAB_GEMS))?.let { "Gems: $it" }
@@ -359,7 +359,7 @@ object CustomScoreboard {
         }
         if (others.none { it.first == ScoreboardSection.SOULFLOW })
             (if (ex) "12,345" else tabValue(TAB_SOULFLOW))?.let { others.add(ScoreboardSection.SOULFLOW to Raw(kv("Soulflow: $it", "§3"), "Soulflow: $it")) }
-        if (FishSettings.sbSectionOther) others.sortedBy { it.first.ordinal }.forEach { money.add(compact(it.second, ChatFormatting.WHITE)) }
+        if (FishSettings.sbSectionOther) others.sortedBy { it.first.ordinal }.forEach { money.add(it.second.c) }
         groups.add(money)
 
         val slayerIdx = raw.indices.firstOrNull { !used[it] && raw[it].s.equals("Slayer Quest", true) }
@@ -368,7 +368,7 @@ object CustomScoreboard {
             var i = slayerIdx
             while (i < raw.size && i <= slayerIdx + 2 && raw[i].s.isNotEmpty()) {
                 used[i] = true
-                slayer.add(if (i == slayerIdx) Component.literal("§fSlayer Quest") else compact(raw[i], ChatFormatting.GRAY))
+                slayer.add(if (i == slayerIdx) Component.literal("§fSlayer Quest") else raw[i].c)
                 i++
             }
             if (FishSettings.sbSectionSlayer) groups.add(slayer)
@@ -382,7 +382,7 @@ object CustomScoreboard {
             val sec = if (r.s.startsWith("- ") && last != null) last else ScoreboardSection.classify(r.s)
             last = sec
             if (sec == ScoreboardSection.POWDER || sec == ScoreboardSection.PARTY) continue
-            if (FishSettings.sbSectionOther) area.add(compact(r, ChatFormatting.WHITE))
+            if (FishSettings.sbSectionOther) area.add(r.c)
         }
         groups.add(area)
 
@@ -415,7 +415,7 @@ object CustomScoreboard {
     private fun kv(s: String, col: String): Component {
         val i = s.indexOf(':')
         if (i < 0) return Component.literal("§f$s")
-        return Component.literal("§f${s.substring(0, i)}: $col${num(s.substring(i + 1).trim())}")
+        return Component.literal("§f${s.substring(0, i)}: $col${s.substring(i + 1).trim()}")
     }
 
     private val LEADING_GLYPHS = Regex("""^[^\p{L}\p{N}]+""")
@@ -423,11 +423,6 @@ object CustomScoreboard {
     private val TRAILING_GLYPHS = Regex("""[^\p{L}\p{N}]+$""")
     // Also drops trailing weather/emoji glyphs ("4:30pm ☀") so date/time still match (#605)
     private fun core(s: String): String = bare(s).replace(TRAILING_GLYPHS, "").trim()
-
-    private fun num(s: String): String = s
-
-    @Suppress("UNUSED_PARAMETER")
-    private fun compact(r: Raw, color: ChatFormatting): Component = r.c
 
     private var lastLevel: Component? = null
     private var lastLevelAt = 0L
@@ -475,7 +470,7 @@ object CustomScoreboard {
         val out = ArrayList<Component>()
         for ((k, col) in listOf("Mithril" to "§2", "Gemstone" to "§d", "Glacite" to "§b")) {
             val v = found[k] ?: continue
-            out.add(Component.literal(" §7- §f$k: $col${num(v)}"))
+            out.add(Component.literal(" §7- §f$k: $col$v"))
         }
         if (out.isNotEmpty()) out.add(0, Component.literal("§fPowder"))
         return out
