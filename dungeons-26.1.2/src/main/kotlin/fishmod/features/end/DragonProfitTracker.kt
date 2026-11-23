@@ -133,11 +133,9 @@ object DragonProfitTracker {
         out.add("§7Summoning Eyes §f$eyesPlaced" + if (eyeCost > 0) " §7(§c-${sh(eyeCost)}§7)" else "")
         out.add("§7Playtime §f" + fishmod.features.diana.DianaTracker.fmtTime(activeMs))
         val pc = if (profit < 0) "§c" else "§6"
-        out.add("§eProfit $pc${signed(profit)} §7($pc${signed(rate(profit))}§7/h)")
+        out.add("§eProfit $pc${sh(profit)} §7($pc${sh(rate(profit))}§7/h)")
         return out
     }
 
     private fun rate(v: Double) = ProfitTrackerKit.perHour(v, activeMs)
-
-    private fun signed(v: Double) = (if (v < 0) "-" else "") + sh(Math.abs(v))
 }
