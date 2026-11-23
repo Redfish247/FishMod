@@ -203,8 +203,9 @@ object SlayerCarryTracker {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.slayerCarryHudX.toFloat(), FishSettings.slayerCarryHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        HudPreview.drawText(ctx, lines, FishConstants.TEXT_HEIGHT + 2)
-        ctx.pose().popMatrix()
+        try {
+            HudPreview.drawText(ctx, lines, FishConstants.TEXT_HEIGHT + 2)
+        } finally { ctx.pose().popMatrix() }
     }
 
     private fun carryLines(list: Collection<Carry>): List<String> {
