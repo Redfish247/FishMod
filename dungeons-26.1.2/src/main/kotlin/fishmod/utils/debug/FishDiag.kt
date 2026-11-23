@@ -51,6 +51,12 @@ object FishDiag {
     inline fun <T> guard(code: String, message: String, block: () -> T): T? =
         try { block() } catch (t: Throwable) { fail(code, message, t); null }
 
+    /** Waits briefly for queued log lines to hit disk (before a crash kills the process). */
+    @JvmStatic
+    fun flushNow() {
+        try { writer.submit {}.get(1500, java.util.concurrent.TimeUnit.MILLISECONDS) } catch (_: Throwable) {}
+    }
+
     @JvmStatic
     fun count(): Int = counts.size
 
