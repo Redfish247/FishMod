@@ -61,12 +61,41 @@ object NickState {
                 )
             }
         }
+        animBase = ProfanityFilter.censor(stripped)
+        animStops = stops
         set(FishDiag.guard("NickState.2", "gradient nick build failed for '$stripped' mode=$mode") { GradientNick.build(stripped, stops) } ?: stripped)
+    }
+
+    // source text + colour stops kept for the animated mode
+    @Volatile private var animBase: String? = null
+    @Volatile private var animStops: Array<IntArray> = emptyArray()
+    @Volatile private var animParsed = Parsed(null, Component.empty())
+    @Volatile private var animBucket = -1L
+    private const val ANIM_PERIOD_MS = 3000L
+    private const val ANIM_STEP_MS = 50L
+
+    // per-frame animated component, rebuilt every ANIM_STEP_MS; null when animation does not apply
+    private fun animatedComponent(n: String): Component? {
+        if (!fishmod.utils.config.values.FishSettings.nickColorAnimated) return null
+        val base = animBase ?: return null
+        val stops = animStops
+        if (stops.size < 2) return null
+        val now = System.currentTimeMillis()
+        val bucket = now / ANIM_STEP_MS
+        val cached = animParsed
+        if (bucket == animBucket && cached.raw == n) return cached.component
+        val phase = (now % ANIM_PERIOD_MS).toDouble() / ANIM_PERIOD_MS
+        val raw = FishDiag.guard("NickState.4", "animated nick build failed") { GradientNick.build(base, GradientNick.shifted(stops, phase, 12)) } ?: return null
+        val component = FishDiag.guard("NickState.5", "animated nick parse failed") { parse(raw) } ?: return null
+        animParsed = Parsed(n, component)
+        animBucket = bucket
+        return component
     }
 
     @JvmStatic
     fun reset() {
         nick = null
+        animBase = null
         NickData.save(null)
         scheduleUpload()
     }
@@ -102,6 +131,7 @@ object NickState {
     @JvmStatic
     fun asComponent(): Component {
         val n = nick
+        if (n != null) animatedComponent(n)?.let { return it }
         val p = parsed
         if (p.raw == n) return p.component
         val component = FishDiag.guard("NickState.3", "nick parse failed for '$n'") { parse(n) } ?: Component.literal(n ?: "")
