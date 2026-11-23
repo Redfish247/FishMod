@@ -190,10 +190,18 @@ object ChatImagePreview {
             try { load(url, e) } catch (t: Throwable) {
                 e.error = (t.message ?: t.javaClass.simpleName).take(40)
                 e.state = 2
-                FishDiag.fail("ChatImagePreview.2", "chat image load failed for host ${try { URI.create(url).host } catch (_: Throwable) { "?" }}", t)
+                FishDiag.fail("ChatImagePreview.2", "chat image load failed: ${describe(url)}", t)
             }
         }
     }
+
+    /** Host, path and query shape only (never the signed query values), for debug reports. */
+    private fun describe(url: String): String = try {
+        val u = URI.create(url)
+        val q = u.rawQuery ?: ""
+        val keys = q.split('&').filter { it.isNotEmpty() }.joinToString(",") { it.substringBefore('=') }
+        "${u.host}${u.rawPath} (url ${url.length} chars, query keys [$keys], endsWith& ${url.endsWith("&")})"
+    } catch (_: Throwable) { "unparseable url (${url.length} chars)" }
 
     private fun fetch(url: String, maxBytes: Int): ByteArray {
         val uri = URI.create(url)
