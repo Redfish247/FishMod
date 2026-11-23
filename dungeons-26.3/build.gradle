@@ -95,7 +95,7 @@ processResources {
 	inputs.property "version", project.version
 	inputs.property "minecraftDep", project.findProperty("minecraft_dep") ?: "~26.3"
 	inputs.property "modrinthSlug", project.findProperty('modrinth_slug') ?: 'fishmod'
-	inputs.property "githubRepo", project.findProperty('github_repo') ?: 'Redfish247/FishModDungeons'
+	inputs.property "githubRepo", project.findProperty('github_repo') ?: 'Redfish247/FishMod'
 
 	filesMatching("fabric.mod.json") {
 		expand inputs.properties
