@@ -17,13 +17,22 @@ object NickState {
     private val LEGACY_FORMAT_CODE = Regex("[&§][klmnorKLMNOR]")
     private val HEX_INLINE = Regex("[0-9a-fA-F]{6}")
 
+    @Volatile private var uploadPending = false
+
+    // Debounce: colour-picker drags call set() per change, so coalesce the POST.
+    private fun scheduleUpload() {
+        if (uploadPending) return
+        uploadPending = true
+        fishmod.utils.TickScheduler.scheduleTask({ uploadPending = false; RemoteNicks.uploadOwn() }, 15)
+    }
+
     @JvmStatic
     fun set(name: String?) {
         var n = name
         if (n != null && n.isNotEmpty()) n = ProfanityFilter.censor(n)
         nick = if (n != null && n.isNotEmpty()) n else null
         NickData.save(nick)
-        RemoteNicks.uploadOwn()
+        scheduleUpload()
     }
 
     @JvmStatic
@@ -60,7 +69,7 @@ object NickState {
     fun reset() {
         nick = null
         NickData.save(null)
-        RemoteNicks.uploadOwn()
+        scheduleUpload()
     }
 
     @JvmStatic
