@@ -53,7 +53,7 @@ object RiftSnake {
             false
         }
         FishEvents.worldChange.register { snakes.clear(); added.clear(); removed.clear(); false }
-        ClientTickEvents.END_CLIENT_TICK.register { try { tick() } catch (_: Throwable) { snakes.clear() } }
+        ClientTickEvents.END_CLIENT_TICK.register { try { tick() } catch (t: Throwable) { snakes.clear(); fishmod.utils.debug.FishDiag.fail("RiftSnake.1", "snake tick failed", t) } }
         RenderHooks.GIZMO.register { _ -> render() }
     }
 
