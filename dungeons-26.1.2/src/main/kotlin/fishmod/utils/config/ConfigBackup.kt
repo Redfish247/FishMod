@@ -30,7 +30,6 @@ object ConfigBackup {
         }
     }
 
-    // Temp then move: a crash or full disk mid-write keeps the old file.
     @JvmStatic
     fun writeAtomic(file: File, bytes: ByteArray) {
         file.absoluteFile.parentFile?.mkdirs()

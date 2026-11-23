@@ -119,7 +119,6 @@ object FishDebug {
 
         dispatcher.register(
             ClientCommands.literal("fmdev")
-                // Dev accounts only: bisect/skyblock/location fake or disable live state
                 .requires { fishmod.utils.DevOnly.isDev() }
                 .then(ClientCommands.literal("runInfo").executes { _ ->
                     sendRunInfo()

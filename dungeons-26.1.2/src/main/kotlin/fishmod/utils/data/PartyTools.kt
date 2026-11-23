@@ -25,7 +25,6 @@ object PartyTools {
 
     @JvmStatic
     fun init() {
-        // A party from the previous server must not linger after leaving
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             inParty = false; memberMap = null; leaderUuid = null; grabbedTime = 0
         }
@@ -69,14 +68,12 @@ object PartyTools {
     @JvmStatic
     fun sendPacket() {
         if (System.currentTimeMillis() - grabbedTime < MIN_DELAY) return
-        // off Hypixel the Mod API can't answer; just wait quietly
         if (!onHypixel()) { grabbedTime = System.currentTimeMillis() - MIN_DELAY + 5_000; return }
         if (INSTANCE.sendPacket(ServerboundPartyInfoPacket())) {
             grabbedTime = System.currentTimeMillis()
             retryDelay = 10_000L
             warned = false
         } else {
-            // not registered yet (handshake pending): back off, log once, never an error report
             if (!warned) { FishDebug.LOGGER.info("Hypixel Mod API not ready for party info, retrying with backoff"); warned = true }
             grabbedTime = System.currentTimeMillis() - MIN_DELAY + retryDelay
             retryDelay = minOf(retryDelay * 2, MIN_DELAY.toLong())

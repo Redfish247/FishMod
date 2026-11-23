@@ -59,10 +59,8 @@ object BossPhase {
             false
         }
 
-        // Repeat Dungeon location packets from the same server never reach here (SkyblockLocation.changeLocation drops them mid-run)
         FishEvents.locationChange.register { _ -> reset(); false }
 
-        // A new dungeon instance is a new level; reset so the repeat-location guard can't carry the old run over
         FishEvents.worldChange.register { reset(); false }
 
         FishEvents.chat.register(BossPhase::parseGameMessage)
@@ -81,12 +79,10 @@ object BossPhase {
         if (floor!!.contains("7")) inFloor7 = true
     }
 
-    // Alpha doesn't send Necron's death line; NecronDeath (boss bar) ends P4, relic spawn / WK line are backups
     @JvmStatic
     fun onRelicSpawn() {
         if (awaitingNecronDeath()) fireP5Start("relics spawned")
     }
-
 
     private var sawNecronBar = false
 
@@ -116,7 +112,6 @@ object BossPhase {
     private const val P5_START = "[BOSS] Necron: All this, for nothing..."
     private const val WK_FIRST_LINE = "[BOSS] Wither King: You... again?"
 
-    // A run is live: first split started, not finished. A repeat Dungeon location packet must not reset it.
     @JvmStatic
     fun midRun(): Boolean = floor != null && currentPhase >= 0 && !runOver && !PracticeMode.active
 
@@ -453,7 +448,6 @@ object BossPhase {
         return visible
     }
 
-    // HUD editor example: an M7 run frozen mid-Terminals, from the real split definitions
     private val EXAMPLE_SPLITS: List<RunSplit> by lazy {
         val tpl = FLOOR_SPLITS["M7"] ?: return@lazy emptyList()
         val reached = tpl.indexOfFirst { it.name == "Terminals" }
@@ -469,7 +463,6 @@ object BossPhase {
     @JvmStatic
     fun exampleSplits(): List<RunSplit> = EXAMPLE_SPLITS
 
-    /** Rows the editor's Run Splits example shows (Est. Total sits below them). */
     @JvmStatic
     fun previewRowCount(): Int = visibleRows(EXAMPLE_SPLITS).coerceAtLeast(0)
 

@@ -44,7 +44,6 @@ enum class SkyblockLocation(val label: String) {
         private fun key(s: String) = s.lowercase().replace('_', ' ').replace("'", "")
         private val BY_MAP: Map<String, SkyblockLocation> = entries.associateBy { key(it.label) } + ("catacombs" to DUNGEON)
 
-        // Volatile: packet gates read these on the netty thread
         @Volatile private var here: SkyblockLocation = UNKNOWN
         @Volatile private var onSkyblock = false
         private var since = System.currentTimeMillis()
@@ -69,7 +68,6 @@ enum class SkyblockLocation(val label: String) {
                 }
             }
             api.subscribeToEventPacket(ClientboundLocationPacket::class.java)
-            // Leaving the server clears stale SkyBlock state
             ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
                 onSkyblock = false
                 currentMode = ""
@@ -87,7 +85,6 @@ enum class SkyblockLocation(val label: String) {
 
         @JvmStatic
         fun changeLocation(location: SkyblockLocation, sameServer: Boolean = false) {
-            // Hypixel re-sends the Dungeon location mid-run from the same server; listeners reset run state on it (timers, lag, P3 flags)
             val repeat = sameServer && location == DUNGEON && here == DUNGEON && BossPhase.midRun()
             here = location
             if (repeat) {
@@ -111,7 +108,6 @@ enum class SkyblockLocation(val label: String) {
         @JvmStatic
         fun inDungeonHub(): Boolean = onSkyblock && here == DUNGEON_HUB
 
-        // FishDebug-only: lets singleplayer test worlds pretend to be on SkyBlock (/fm debug skyblock on).
         @JvmStatic
         fun devSetSkyblock(on: Boolean) { onSkyblock = on }
 

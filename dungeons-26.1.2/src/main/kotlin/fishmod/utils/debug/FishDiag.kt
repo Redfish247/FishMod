@@ -13,10 +13,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * Silent-until-broken diagnostics. Every call site has a unique code (`ClassName.N`) so a pasted
- * report points straight at the line. Nothing is logged unless something actually goes wrong.
- */
 object FishDiag {
 
     class Entry(val code: String, val message: String, val error: String?, val time: String, val context: String)
@@ -52,7 +48,6 @@ object FishDiag {
         return value
     }
 
-    /** Runs [block]; on throw, logs and returns null instead of crashing the caller. */
     inline fun <T> guard(code: String, message: String, block: () -> T): T? =
         try { block() } catch (t: Throwable) { fail(code, message, t); null }
 
@@ -162,7 +157,6 @@ object FishDiag {
     @JvmStatic
     fun logPath(): String = logFile.absolutePath
 
-    // Timeouts / dropped connections are the network, not a bug.
     private fun isTransientNetwork(t: Throwable?): Boolean {
         var c = t
         var depth = 0
@@ -182,7 +176,6 @@ object FishDiag {
         return false
     }
 
-    // Full disk is the player's machine, not a bug: local log only.
     private fun isDiskFull(t: Throwable?): Boolean {
         var c = t
         var depth = 0

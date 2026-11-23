@@ -30,7 +30,6 @@ object UiRenderer {
     private var fbW = 1
     private val scissors = ArrayDeque<FloatArray>()
 
-    // Draw segments split at scissor changes: first vertex, count, scissor x/y/w/h (w < 0 = none)
     private var segs = IntArray(6 * 64)
     private var nSeg = 0
     private var segStart = 0
@@ -42,7 +41,6 @@ object UiRenderer {
     @JvmStatic
     fun paint(screenW: Int, screenH: Int, scale: Float) {
         if (noUi) return
-        // After repeated failures, back off for 5s then retry instead of killing every menu for the session
         if (failed) {
             if (System.currentTimeMillis() - failedAt < backoffMs) return
             failed = false; consecutiveFailures = 0
@@ -55,7 +53,6 @@ object UiRenderer {
             viewW = win.width / pixelRatio; viewH = win.height / pixelRatio
             fbH = win.height; fbW = win.width
             scissors.clear()
-            // A paint that threw mid-replay leaves stale floats behind; drop them or they draw in place of this frame's.
             buf.clear()
             verts = 0; nSeg = 0; segStart = 0; curScissor[2] = -1
             if (!(scale > 0f)) FishDiag.fail("UiRenderer.7", "UI paint with invalid scale $scale")
@@ -69,12 +66,10 @@ object UiRenderer {
             consecutiveFailures = 0; backoffMs = 5000L
         } catch (t: Throwable) {
             UiFont.markAtlasLost()
-            // Report only the first failure of each backoff round so a broken driver can't spam the board
             if (consecutiveFailures == 0 && backoffMs == 5000L) FishDiag.fail("UiRenderer.9", "UI paint failed", t)
             if (++consecutiveFailures >= 3) {
                 failed = true; failedAt = System.currentTimeMillis()
                 if (backoffMs == 5000L) FishDiag.fail("UiRenderer.10", "UI renderer paused after 3 consecutive paint failures")
-                // Double the pause each round (max 5 min) when the failure keeps recurring
                 backoffMs = Math.min(backoffMs * 2, 300_000L)
             }
             if (!failLogged) {
@@ -87,7 +82,6 @@ object UiRenderer {
         }
     }
 
-    // Close the current segment so later vertices can use a different scissor
     private fun cut() {
         if (verts == segStart) return
         if (segs.size < (nSeg + 1) * 6) segs = segs.copyOf(segs.size * 2)
@@ -231,7 +225,6 @@ object UiRenderer {
     private fun applyScissor() {
         val s = scissors.lastOrNull()
         if (s == null) { curScissor[2] = -1; return }
-        // GPU API rejects scissors outside the target (GL clipped silently), so clamp to the framebuffer
         val x0 = Math.floor((s[0] * pixelRatio).toDouble()).toInt().coerceIn(0, fbW)
         val x1 = Math.ceil((s[2] * pixelRatio).toDouble()).toInt().coerceIn(0, fbW)
         val y0 = Math.floor((s[1] * pixelRatio).toDouble()).toInt().coerceIn(0, fbH)

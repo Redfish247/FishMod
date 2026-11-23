@@ -25,7 +25,6 @@ object TrailBezier {
         return doubleArrayOf(eval(cx, t), eval(cy, t), eval(cz, t))
     }
 
-    // Distance of the first control point from the start, from the launch pitch implied by the start tangent
     @JvmStatic
     fun controlDistance(dx: Double, dy: Double, dz: Double): Double {
         val pitch0 = -atan2(dy, sqrt(dx * dx + dz * dz))
@@ -40,7 +39,6 @@ object TrailBezier {
 
     private fun eval(c: DoubleArray, t: Double) = c[0] + c[1] * t + c[2] * t * t + c[3] * t * t * t
 
-    // Least-squares cubic over sample index; coefficients low-to-high
     private fun fit(ys: DoubleArray, count: Int): DoubleArray? {
         val n = 4
         val a = Array(n) { DoubleArray(n + 1) }
