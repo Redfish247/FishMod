@@ -60,6 +60,10 @@ object NeuRepoCache {
 
 	private val ITEMS: MutableMap<String, JsonObject> = ConcurrentHashMap()
 	private val MISS: MutableMap<String, Boolean> = ConcurrentHashMap()
+	// Keys with a queued/running prefetch, and keys that failed recently (retry after RETRY_MS).
+	private val INFLIGHT: MutableSet<String> = ConcurrentHashMap.newKeySet()
+	private val FAILED_AT: MutableMap<String, Long> = ConcurrentHashMap()
+	private const val RETRY_MS = 60_000L
 	private val FULL_LOAD_STARTED = AtomicBoolean(false)
 	private val REFRESH_IN_FLIGHT = AtomicBoolean(false)
 	private val FULL_LOAD_LOCK = Object()
@@ -324,7 +328,20 @@ object NeuRepoCache {
 			if (id.isNullOrBlank()) continue
 			val key = id.uppercase(Locale.ROOT)
 			if (ITEMS.containsKey(key) || MISS.containsKey(key)) continue
-			EXECUTOR.execute { fetchOne(key) }
+			val failedAt = FAILED_AT[key]
+			if (failedAt != null && System.currentTimeMillis() - failedAt < RETRY_MS) continue
+			if (!INFLIGHT.add(key)) continue
+			try {
+				EXECUTOR.execute {
+					try {
+						if (fetchOne(key) == null && !MISS.containsKey(key)) FAILED_AT[key] = System.currentTimeMillis()
+					} finally {
+						INFLIGHT.remove(key)
+					}
+				}
+			} catch (exception: Exception) {
+				INFLIGHT.remove(key)
+			}
 		}
 	}
 
