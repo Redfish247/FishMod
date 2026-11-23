@@ -21,7 +21,7 @@ object UiScale {
 
     @JvmStatic
     fun userScale(screen: net.minecraft.client.gui.screens.Screen? = Minecraft.getInstance().curScreen): Float {
-        if (!FishSettings.guiSettings || screen == null) return 1f
+        if (screen == null) return 1f
         val pct = when (screen) {
             is fishmod.features.FishModScreen -> FishSettings.guiScaleMain
             is fishmod.features.hud.ChatCommandsScreen -> FishSettings.guiScaleChatCommands
@@ -32,6 +32,12 @@ object UiScale {
             is fishmod.features.hud.AuctionPriceScreen -> FishSettings.guiScaleAuction
             is fishmod.features.dungeon.DungeonWaypointTitleScreen -> FishSettings.guiScaleWaypoint
             is fishmod.features.diana.DianaPastEventsScreen -> FishSettings.guiScaleDianaProfit
+            is fishmod.features.diana.DianaMessagesScreen -> FishSettings.guiScaleDianaMessages
+            is fishmod.features.achievements.AchScreen -> FishSettings.guiScaleAchievements
+            is fishmod.features.general.InventoryButtonEditScreen -> FishSettings.guiScaleInvButtons
+            is fishmod.features.hud.MarketScreen -> FishSettings.guiScaleMarket
+            is fishmod.features.hud.RecipeScreen -> FishSettings.guiScaleRecipe
+            is fishmod.utils.update.UpdateScreen -> FishSettings.guiScaleUpdate
             else -> 100
         }
         return pct.coerceIn(50, 150) / 100f

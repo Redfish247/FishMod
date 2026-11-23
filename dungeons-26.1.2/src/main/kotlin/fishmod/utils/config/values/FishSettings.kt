@@ -60,7 +60,6 @@ object FishSettings {
     @ConfigValue @JvmField var fmRowColor: Int = 0xFFD6D6D6.toInt()
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
     @ConfigValue @JvmField var fmRowBgAlpha: Int = 100
-    @ConfigValue @JvmField var guiSettings: Boolean = false
     @ConfigValue @JvmField var debugReports: Boolean = true
     @ConfigValue @JvmField var debugChatNotices: Boolean = false
     @ConfigValue @JvmField var updateNotice: Boolean = true
@@ -83,6 +82,12 @@ object FishSettings {
     @ConfigValue @JvmField var guiScaleCredits: Int = 100
     @ConfigValue @JvmField var guiScaleProfileViewer: Int = 100
     @ConfigValue @JvmField var guiScaleDianaProfit: Int = 100
+    @ConfigValue @JvmField var guiScaleDianaMessages: Int = 100
+    @ConfigValue @JvmField var guiScaleAchievements: Int = 100
+    @ConfigValue @JvmField var guiScaleInvButtons: Int = 100
+    @ConfigValue @JvmField var guiScaleMarket: Int = 100
+    @ConfigValue @JvmField var guiScaleRecipe: Int = 100
+    @ConfigValue @JvmField var guiScaleUpdate: Int = 100
 
     @ConfigValue @JvmField var petXpTamingLevel: Int = 0
     @ConfigValue @JvmField var petXpBeastmasterBonus: Int = 0
