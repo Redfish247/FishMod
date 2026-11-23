@@ -2206,7 +2206,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayer.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayer.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
             end.features.add(endAlerts)
             end.features.add(Feature("Endstone Protector Stage", fishmod.features.slayer.EndAlertSettings::class.java, "protectorHud"))
-            end.features.add(Feature("End Node Tracker", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeTracker").also { it.sub.add(ButtonSetting("Reset", "", "Reset", Runnable { fishmod.features.end.EndTrackers.reset() })) })
+            end.features.add(Feature("End Node Finder", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeFinder").also { it.sub.add(ColorPickerSetting("Color", "", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeFinderColor")) })
             end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayer.EndAlertSettings::class.java, "endstoneProtectorAlert"))
             end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayer.EndAlertSettings::class.java, "zealotHud"))
             slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
@@ -2397,7 +2397,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(dungeonMap, "Dungeon Map", "Info HUD", "Door Highlight", "Score Messages")
         order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
         order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
-        order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Tracker")
+        order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Finder")
         order(visuals, "No Fog", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
         order(cosmetics, "Custom Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
         columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin and Legion Hud", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
@@ -4987,7 +4987,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Boss Timer" -> "Slayer boss kill time and PB"
                 "Slayer QOL" -> "Egg sacs, yang glyphs, boss stats HUD, Inferno attunement colors and boss phases"
                 "Endstone Protector Stage" -> "HUD with the Protector stage and kills left, from the tab list"
-                "End Node Tracker" -> "Ender nodes mined and what they gave, with nodes per hour"
+                "End Node Finder" -> "Highlight Ender Node blocks in The End"
                 "Boss Phases" -> "Attack and phase cues on slayer bosses"
                 "Boss Damage Indicator" -> "HP label on non-slayer bosses"
                 "Dragon Profit Tracker" -> "Dragon kills, your eyes, essence and loot picked up after each dragon, with profit"
