@@ -898,7 +898,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         private var lastValue: Boolean? = null
         override fun render(ctx: DrawContext, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: TextRenderer) {
             val on = getter()
-            if (lastValue == null) { lastValue = on; knobAnim.setTarget(on) }
+            if (lastValue == null) { lastValue = on; knobAnim.snap(on) }
             else if (lastValue != on) { lastValue = on; knobAnim.setTarget(on) }
             val tx = rightX - W - 2
             val ty = sy + (ITEM_HEIGHT - PILL_H) / 2
