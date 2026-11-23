@@ -77,7 +77,7 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaStatsMessage: Boolean = true
     @ConfigValue @JvmField var dianaCrownCounter: Boolean = true
     @ConfigValue @JvmField var dianaCrownMilestones: Boolean = true
-    @ConfigValue @JvmField var dianaCrownHud: Boolean = true
+    @ConfigValue @JvmField var dianaCrownHud: Boolean = false
     @ConfigValue @JvmField var dianaCrownHudFullNumber: Boolean = true
     @ConfigValue @JvmField var dianaCrownHudX: Int = 10
     @ConfigValue @JvmField var dianaCrownHudY: Int = 120
