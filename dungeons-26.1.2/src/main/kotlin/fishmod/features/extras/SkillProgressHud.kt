@@ -11,9 +11,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as S
 
-// Last skill XP action bar popup: progress, XP/h and ETA to next level
 object SkillProgressHud {
-    // Same popup shape ActionBarCleaner hides: "+12.5 Combat (1,234/5,000)"
     private val POPUP = Regex("\\+([\\d,.]+) ([A-Za-z ]+?) \\(([\\d,.]+[kMB]?)/([\\d,.]+[kMB]?)\\)")
     private const val WINDOW_MS = 5 * 60_000L
 

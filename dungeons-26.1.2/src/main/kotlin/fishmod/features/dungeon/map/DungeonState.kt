@@ -154,6 +154,8 @@ object DungeonState {
     }
 
     private var sidebarLevel: Any? = null
+
+    init { fishmod.utils.events.FishEvents.worldChange.register { sidebarLevel = null; false } }
     private var sidebarAt = 0L
     private var sidebarFloor = -1
     private var sidebarMaster = false

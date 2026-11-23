@@ -8,7 +8,6 @@ import fishmod.utils.events.chatPlain
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.network.chat.Component
 
-// Cocoon burst countdown + Seraph summons recall alert
 object SlayerExtras {
 
     // from SkyHanni (SlayerApi: cocoons burst after 5s)
@@ -30,7 +29,7 @@ object SlayerExtras {
     }
 
     private fun onTick() {
-        if (!S.cocoonTimer) { cocoonAt = 0L; lastShown = -1; return } // stale start time would skew the next cocoon
+        if (!S.cocoonTimer) { cocoonAt = 0L; lastShown = -1; return }
         val cocooned = SlayerManager.state == SlayerManager.State.COCOONED
         if (!cocooned) { cocoonAt = 0L; lastShown = -1; return }
         val now = System.currentTimeMillis()

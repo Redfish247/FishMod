@@ -105,7 +105,7 @@ internal object ProfileHomeParser {
         if (leveling != null) {
             Leveling.num(leveling.get("experience"))?.let { experience ->
                 sbLevel = floor(experience / 100f).toInt()
-                sbXp = Math.round(experience % 100f)
+                sbXp = (experience % 100f).toInt()
             }
         }
         val emblems = parseEmblems(leveling)

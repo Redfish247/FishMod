@@ -32,7 +32,6 @@ object FishingEvents {
     @JvmStatic
     fun init() {
         FishEvents.chat.register { c ->
-            // setting first, then plain string, then prefix tests, regex last
             if (!Fishing.active()) return@register false
             handle(c.chatPlain)
             false

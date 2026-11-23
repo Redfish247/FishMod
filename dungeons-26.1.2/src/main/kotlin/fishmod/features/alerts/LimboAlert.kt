@@ -19,7 +19,6 @@ object LimboAlert {
                 if (s.startsWith("You were spawned in Limbo") || s.startsWith("You are AFK. Move around to return from AFK")
                     || s == "You are currently in Limbo") fire()
             }
-            // Hypixel's line, seen in Eli's logs; party echoes start with "Party >" so they never match
             if (S.restartAlert && text.chatPlain.trim().startsWith("[Important] This server will restart soon")) restart()
             false
         }

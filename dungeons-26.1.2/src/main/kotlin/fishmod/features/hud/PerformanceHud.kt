@@ -39,14 +39,12 @@ object PerformanceHud {
             { FishSettings.clockHudScale }, { v -> FishSettings.clockHudScale = v },
             { FishSettings.perfHudEnabled && clockDetached() }
         )
-        // Example values (fps 144, tps 19.9, ping 42) through the real line builder
         HudPreview.register(NAME) { block(lines(144, 19.9, 42)).takeIf { it.isNotEmpty() }?.let { HudPreview.text(it, LINE_H) } }
         HudPreview.register(CLOCK_NAME) { if (clockDetached()) HudPreview.text(listOf(clockText())) else null }
     }
 
     private fun lines(mc: Minecraft): List<String> = lines(mc.fps, PartyCommandHandler.currentTps(), ping(mc))
 
-    // Shared by the in-game HUD (live values) and the HUD editor example (fixed values)
     private fun lines(fps: Int, tps: Double, ping: Int): List<String> {
         val label = "§7"
         val out = ArrayList<String>(3)

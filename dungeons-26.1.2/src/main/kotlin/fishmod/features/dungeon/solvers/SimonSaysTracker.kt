@@ -22,7 +22,6 @@ import fishmod.utils.debug.FishDiag
 
 object SimonSaysTracker {
 
-
     private val DEVICE_BOX = AABB(
         106.65, 120.0, 92.70,
         110.70, 126.0, 95.30
@@ -370,7 +369,6 @@ object SimonSaysTracker {
     private fun drawLabel(ctx: GuiGraphicsExtractor, text: String, color: Int) =
         ctx.text(Minecraft.getInstance().font, labelOf(text, color), 0, 0, -1, true)
 
-    // Example data: round 3, else the first state whose line is enabled
     private fun registerPreview() {
         fishmod.features.HudPreview.register("Simon Says") {
             val (text, color) = textFor(3, false) ?: textFor(SS_ROUNDS, false)

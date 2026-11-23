@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// Caps FPS while the game window is not focused.
 @Mixin(FramerateLimitTracker.class)
 public class UnfocusedFpsMixin {
     @Inject(method = "getFramerateLimit", at = @At("RETURN"), cancellable = true)

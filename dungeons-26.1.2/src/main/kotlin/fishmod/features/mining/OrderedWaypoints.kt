@@ -11,7 +11,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import fishmod.features.mining.MiningSettings as S
 
-// User-made route: walk to each point in order, the next one lights up when you reach it
 object OrderedWaypoints {
     var index = 0
 

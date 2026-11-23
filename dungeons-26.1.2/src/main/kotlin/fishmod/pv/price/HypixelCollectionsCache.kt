@@ -132,7 +132,6 @@ object HypixelCollectionsCache {
 			refresh(true)
 		} catch (exception: Exception) {
 			ProfileViewer.LOGGER.warn("Failed to refresh Hypixel collections", exception)
-			// Startup can run before session auth works; don't wait for the 12h refresh.
 			if (!isReady() && RETRY_PENDING.compareAndSet(false, true)) {
 				EXECUTOR.schedule({
 					RETRY_PENDING.set(false)

@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap
 internal object ProfileCoopIndex {
     private val COOP_MEMBER_NAMES = ConcurrentHashMap<String, String>()
 
-    // Names are tiny; hard cap only guards against unbounded growth.
     private fun capNames() { if (COOP_MEMBER_NAMES.size > 4096) COOP_MEMBER_NAMES.clear() }
 
     @JvmStatic

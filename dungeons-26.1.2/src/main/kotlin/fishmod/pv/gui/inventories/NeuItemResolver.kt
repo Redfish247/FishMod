@@ -118,7 +118,6 @@ object NeuItemResolver {
 		if (LegacyMaterialMap.isPlayerSkull(itemId, damage)) {
 			val skull = ItemStack(Items.PLAYER_HEAD)
 			SkullTextureApplier.applyFromNbt(skull, nbt)
-			// Never cache / return a bare Steve head - let Hypixel fallback or callers skip.
 			return if (SkullTextureApplier.isTexturedPlayerHead(skull)) skull else null
 		}
 		if (LegacyMaterialMap.isLegacySkull(itemId)) {

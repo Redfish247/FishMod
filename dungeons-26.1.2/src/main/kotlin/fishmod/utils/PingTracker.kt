@@ -2,6 +2,10 @@ package fishmod.utils
 
 object PingTracker {
 
+    init {
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> reset() }
+    }
+
     @Volatile
     private var latestMs: Int = -1
     @Volatile

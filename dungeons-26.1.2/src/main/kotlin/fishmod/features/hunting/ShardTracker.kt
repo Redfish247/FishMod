@@ -7,7 +7,6 @@ import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import fishmod.features.fishing.FishingWorldSettings as W
 
-// Shard profit tracker: session time, shards/hour, captures, bazaar value (formats from Eli's logs)
 object ShardTracker {
     private val counts = LinkedHashMap<String, Int>()
     private val CAUGHT = Regex("^You caught an? (.+?) and gained (?:a|(\\d+)x) (.+?) Shard!$")
@@ -17,7 +16,6 @@ object ShardTracker {
     private val CHARM = Regex("^CHARM! You charmed the (.+?) and received (\\d+) (.+?) Shards?!$")
     private val LOOT_SHARE = Regex("^LOOT SHARE You received (\\d+) (.+?) Shards? for assisting .+!$")
     private val CONTRIB = Regex("^SHARD! Your contribution earned you the (.+?) Shard!$")
-    // a lone "sent to Hunting Box" line is a drop with no other message; skip it after a counted gain or bazaar buy
     private val SENT = Regex("^You sent an? (.+?) Shard to your Hunting Box\\.$")
     private val COUNT_SUFFIX = Regex(" \\(\\d+\\)$")
     private const val BAZAAR_BUY = "[Bazaar] Bought "
@@ -68,7 +66,6 @@ object ShardTracker {
     private fun add(name: String, n: Int) {
         val now = System.currentTimeMillis()
         if (startMs == 0L) startMs = now
-        // idle gaps over 5 minutes don't count towards session time
         else activeMs += minOf(now - lastGainMs, 300_000L)
         lastGainMs = now
         counts[name] = (counts[name] ?: 0) + n
@@ -86,7 +83,6 @@ object ShardTracker {
         val total = counts.values.sum()
         val out = arrayListOf("§dShard Tracker", "§7Time\t§f" + time(activeMs),
             "§7Shards\t§a$total §7(" + perHour(total.toDouble()) + "/h)", "§7Captured\t§a$captured")
-        // price each shard once per render, not per sort comparison
         val rows = counts.map { (name, n) -> Triple(name, n, if (W.shardTrackerProfit) price(name) * n else n.toDouble()) }
         val profit = rows.sumOf { it.third }
         if (W.shardTrackerProfit) out += "§7Profit\t§6" + FishingAlertText.fmtCoins(profit) + " §7(" + perHour(profit) + "/h)"

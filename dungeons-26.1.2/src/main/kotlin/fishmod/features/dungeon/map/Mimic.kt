@@ -39,7 +39,6 @@ object Mimic {
                             val world = FishDiag.notNull(room.offset(local), "Mimic.1") { "room '${data?.name}' rotated ${room.rotation} but has no clay pos" } ?: continue
                             val be: BlockEntity? = mc.level!!.getBlockEntity(world)
                             if (be is TrappedChestBlockEntity) {
-                                room.setMimic(true)
                                 Scan.chest = world
                                 return@EndLevelTick
                             }

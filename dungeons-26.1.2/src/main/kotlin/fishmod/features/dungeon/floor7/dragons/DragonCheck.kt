@@ -21,7 +21,7 @@ import fishmod.utils.debug.FishDiag
 
 object DragonCheck {
 
-    private val HEALTH_TOKEN = Regex("\\d+(?:\\.\\d+)?[bBmMkK]?") // suffix optional so a bare "0" can match
+    private val HEALTH_TOKEN = Regex("\\d+(?:\\.\\d+)?[bBmMkK]?")
     private const val HEALTH_DATA_ID = 9
 
     fun handleSpawnPacket(p: ClientboundLevelParticlesPacket, tick: Long) {
@@ -42,7 +42,6 @@ object DragonCheck {
                 anyNew = true
             }
         }
-        // Off-pad flames happen on Hypixel; report only while debugging dragons
         if (fishmod.utils.debug.FishDebug.dragonDebug && !anyNew && WitherDragon.real.none { (p.x in it.xRange && p.z in it.zRange) || (p.x in it.box.minX..it.box.maxX && p.z in it.box.minZ..it.box.maxZ) }) FishDiag.fail("DragonCheck.1", "dragon spawn particle at unknown spot ${p.x},${p.z}")
         if (spawning.isNotEmpty()) {
             WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
@@ -75,7 +74,6 @@ object DragonCheck {
             it.state == WitherDragonState.ALIVE && v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
         }
         if (alive != null) { alive.entityId = p.id; alive.entity = null; return }
-        // Stray dragon entity matching no pit: not a tracking fault, log only (#569).
         if (fishmod.utils.debug.FishDebug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: no dragon expected at $v (states=${WitherDragon.real.map { it.state }})")
     }
 

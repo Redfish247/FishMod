@@ -82,7 +82,6 @@ internal object ResponseCache {
         }
     }
 
-    // Once per session: delete expired files for keys that are never read again.
     private fun pruneExpired() {
         val cutoff = System.currentTimeMillis() - TTL_MS
         Files.list(DIR).use { files ->

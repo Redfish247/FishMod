@@ -118,7 +118,6 @@ class GardenSnapshot(
 	@JvmRecord
 	data class PersonalBest(val id: String, val name: String, val amount: Long)
 
-	/** {@code position} is Hypixel's 0-based claimed position; -1 when the contest was never claimed. */
 	@JvmRecord
 	data class ContestEntry(
 		val crop: String, val cropName: String, val iconId: String, val collected: Long, val medal: String,
@@ -127,7 +126,6 @@ class GardenSnapshot(
 		fun placement(): Int = if (position >= 0) position + 1 else 0
 	}
 
-	/** Best recorded 1-based placement (0 = none); unplaced contests were never claimed, so their rank is unknown. */
 	@JvmRecord
 	data class CropPlacement(val best: Int, val participants: Int, val contests: Int, val unplaced: Int)
 
@@ -157,7 +155,6 @@ class GardenSnapshot(
 		val loaded: Boolean, val loading: Boolean, val error: String, val total: Double, val bonus: Double,
 		val cropWeight: Map<String, Double>, val bonusWeight: Map<String, Double>
 	) {
-		/** Display total: Elite totalWeight, or crop+bonus if total looks incomplete. */
 		fun displayTotal(): Double {
 			val parts = cropWeight.values.sum() + bonus
 			return if (total + 0.05 < parts) parts else total
@@ -939,7 +936,6 @@ class GardenSnapshot(
 				}
 			}
 			ids.addAll(analyzedSet)
-			// Dead Plant is what a failed mutation leaves behind; the API lists it as discovered but it can't be analyzed.
 			ids.remove("DEAD_PLANT")
 			val rows = ids.map { id ->
 				GreenhouseRow(id, GardenData.prettyGreenhouse(id), GardenData.greenhouseIconId(id), id in analyzedSet)
@@ -949,7 +945,6 @@ class GardenSnapshot(
 			)
 		}
 
-		/** Raw API ids - do not pretty-print (greenhouse crops are not visitors). */
 		private fun rawStringList(el: JsonElement?): List<String> {
 			if (el == null || !el.isJsonArray) {
 				return listOf()

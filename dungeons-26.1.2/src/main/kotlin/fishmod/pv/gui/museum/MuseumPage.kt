@@ -56,7 +56,6 @@ class MuseumPage {
 		fun coveredByHigherTier(): Boolean = !coveredBy.isNullOrBlank()
 	}
 
-	/** Per-slot draw data resolved once instead of every frame. */
 	private class SlotView(val iconId: String, val rarityArgb: Int)
 
 	private class CheapRow(val donationId: String, val iconId: String, val name: String, val nameColor: Int, val price: Double)
@@ -84,6 +83,8 @@ class MuseumPage {
 	private var totalCount = 0
 	private var appraisal: Boolean? = null
 	private var cacheDirty = true
+	private var awaitingItems = false
+	private var nextItemsCheckMs = 0L
 
 	private var gridScroll = 0
 	private var gridMaxScroll = 0
@@ -151,7 +152,6 @@ class MuseumPage {
 
 	fun applyMuseum(member: JsonObject?) {
 		val next = member ?: JsonObject()
-		// Same cached member instance: skip dirty/scroll reset so we do not re-decode every frame.
 		if (state == LoadState.READY && museumMember === next) {
 			return
 		}
@@ -529,6 +529,13 @@ class MuseumPage {
 	}
 
 	private fun ensureCache() {
+		if (!cacheDirty && awaitingItems) {
+			val now = System.currentTimeMillis()
+			if (now >= nextItemsCheckMs) {
+				nextItemsCheckMs = now + 1000L
+				if (HypixelItemsCache.allItems().isEmpty()) HypixelItemsCache.requestIfEmpty() else cacheDirty = true
+			}
+		}
 		if (!cacheDirty) {
 			return
 		}
@@ -545,8 +552,10 @@ class MuseumPage {
 			return
 		}
 		rebuildCache()
-		cacheDirty = HypixelItemsCache.allItems().isEmpty()
-		if (cacheDirty) {
+		cacheDirty = false
+		awaitingItems = HypixelItemsCache.allItems().isEmpty()
+		if (awaitingItems) {
+			nextItemsCheckMs = System.currentTimeMillis() + 1000L
 			HypixelItemsCache.requestIfEmpty()
 		}
 	}
@@ -643,7 +652,6 @@ class MuseumPage {
 		weakMissingIds.clear()
 	}
 
-	/** Lightweight icon only - never builds full lore stacks for the grid unless needed for skulls. */
 	private fun iconAt(slot: Slot): ItemStack {
 		iconByIndex[slot]?.let { return it }
 		if (slot.missing) {

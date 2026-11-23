@@ -91,7 +91,6 @@ object RemoteItems {
 
     private fun uploadIfChanged(mc: Minecraft) {
         if (!FishSettings.remoteItemsEnabled || mc.player == null) return
-        // A failed upload backs off (10 s doubling to ~2.5 min) so a worker outage isn't hit every 5 s
         if (System.currentTimeMillis() < retryAt) return
         val payload = buildOwnPayload(mc)
         if (payload == lastUploaded) return
@@ -108,7 +107,7 @@ object RemoteItems {
     @JvmStatic
     fun acceptItems(queried: Set<String>, payloads: Map<String, String>) {
         if (!FishSettings.remoteItemsEnabled) { clearAll(); return }
-        // drop players who left the tab so the map doesn't grow across lobbies
+        for (gone in byPlayer.keys.filter { it !in queried }) ItemCustomizationStore.clearRemotePlayer("fmr:$gone:")
         byPlayer.keys.retainAll(queried)
         for (u in queried) {
             val payload = payloads[u]
@@ -125,7 +124,7 @@ object RemoteItems {
         val out = HashMap<String, Custom>()
         try {
             for (e in JsonParser.parseString(json).asJsonArray) {
-                try { // one bad entry must not drop the rest
+                try {
                     val o = e.asJsonObject
                     val v = o.get("v")?.asString ?: continue
                     val animated = o.get("a")?.takeIf { it.isJsonObject }?.let { GSON.fromJson(it, AnimatedDye::class.java) }

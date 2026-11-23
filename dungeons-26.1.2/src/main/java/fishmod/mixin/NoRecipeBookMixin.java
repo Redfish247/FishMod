@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// With the recipe book hidden, the panel never draws, never reports open and ignores toggles.
 @Mixin(RecipeBookComponent.class)
 public class NoRecipeBookMixin {
 

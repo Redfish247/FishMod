@@ -53,7 +53,6 @@ class KuudraPage {
 	private var kuudraW = 0
 	private var kuudraH = 0
 
-	// Per-card caches so lore parsing and dyed icon copies don't run every frame.
 	private var cachedCard: CrimsonKuudraCard? = null
 	private val loreCache = IdentityHashMap<List<String>, List<Component>>()
 	private val armorIcons = IdentityHashMap<CrimsonKuudraCard.ArmorPiece, ItemStack>()
@@ -367,7 +366,6 @@ class KuudraPage {
 			LegendPart(missing, KuudraChecklistColumn.COLOR_MISSING),
 		)
 
-		/** Widest legend that fits beside the title, shortening labels instead of clipping; empty if nothing fits. */
 		@JvmStatic
 		fun headerLegend(available: Int, width: ToIntFunction<String>): List<LegendPart> =
 			LEGENDS.firstOrNull { parts -> parts.sumOf { width.applyAsInt(it.text) } <= available } ?: listOf()

@@ -74,7 +74,6 @@ object RiftVampire {
         }
     }
 
-    // Hypixel shows "Bloodfiend III 1,554/1,800♥"; the entity's own health isn't the boss HP
     private val HP = Regex("Bloodfiend [IVX]+ ([\\d.,]+[kM]?)/([\\d.,]+[kM]?)")
 
     private fun num(s: String): Double? {

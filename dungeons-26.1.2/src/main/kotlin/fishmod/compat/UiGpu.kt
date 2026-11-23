@@ -21,7 +21,6 @@ import java.nio.ByteBuffer
 import java.util.Optional
 import java.util.OptionalInt
 
-// Draws UiRenderer's SDF batch through Mojang's GPU API so it works on any graphics backend
 object UiGpu {
     private val ATTRS = listOf("PosLocal", "HalfUv", "Radius", "ColorA", "ColorB", "Params")
 
@@ -32,7 +31,6 @@ object UiGpu {
     private var atlasView: GpuTextureView? = null
     private val uni: ByteBuffer = MemoryUtil.memCalloc(16)
 
-    // 26.1.2 vertex elements are a global id table; take free high ids for our six vec4s
     private val elements by lazy { vec4Elements() }
 
     private fun vec4Elements(): List<VertexFormatElement> {
@@ -111,11 +109,9 @@ object UiGpu {
         }
     }
 
-    // Backends reject scissors past the target edge; clamp to the real target size
     private fun scissor(pass: com.mojang.blaze3d.systems.RenderPass, s: IntArray, o: Int, tw: Int, th: Int): Boolean {
         val x0 = s[o + 2].coerceIn(0, tw); val y0 = s[o + 3].coerceIn(0, th)
         val x1 = (s[o + 2] + s[o + 4]).coerceIn(x0, tw); val y1 = (s[o + 3] + s[o + 5]).coerceIn(y0, th)
-        // Empty clip = nothing visible; backends reject 0-size scissors
         if (x1 <= x0 || y1 <= y0) return false
         pass.enableScissor(x0, y0, x1 - x0, y1 - y0)
         return true

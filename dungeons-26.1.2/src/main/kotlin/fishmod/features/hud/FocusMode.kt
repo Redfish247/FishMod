@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.resources.Identifier
 
-// Hold Left Alt to see only the item name in tooltips.
 object FocusMode {
 
     private val PRICE_PHASE = Identifier.fromNamespaceAndPath("fishmod", "item_price_tooltip_last")

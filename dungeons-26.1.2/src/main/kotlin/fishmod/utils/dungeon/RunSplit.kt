@@ -161,7 +161,6 @@ class RunSplit(
 
     private var frozenReal: Double = -1.0
 
-    /** HUD editor example state: a frozen time, either still running (live) or finished. */
     fun setExample(seconds: Double, live: Boolean, pace: Int = 0) {
         frozenReal = seconds
         tick = (seconds * 20).toInt()

@@ -45,7 +45,6 @@ object GardenData {
 	private val CAMEL_BOUNDARY = Regex("([a-z])([A-Z])")
 	private val WORD_SEPARATORS = Regex("[\\s_]+")
 
-	/** Garden caps at 15; past that, every 10,000 XP (the cost of levels 11-15) is one overflow level. */
 	internal const val GARDEN_OVERFLOW_STEP = 10_000L
 
 	@JvmField
@@ -119,7 +118,6 @@ object GardenData {
 		}
 		visitorIds = java.util.List.copyOf(visitors)
 		visitorRarities = java.util.Map.copyOf(rarities)
-		// Publish last so readers never see root set with tables still empty.
 		root = parsed
 	}
 
@@ -172,7 +170,6 @@ object GardenData {
 		return progressFromCumulative(gardenXp, maxOf(0L, Math.round(xp)))
 	}
 
-	/** Overflow level progress past the Garden cap, or null below max. */
 	@JvmStatic
 	fun gardenOverflow(xp: Double): LevelProgress? = overflowFrom(gardenLevel(xp), GARDEN_OVERFLOW_STEP)
 
@@ -401,7 +398,6 @@ object GardenData {
 		return titleCase(id.replace('_', ' '))
 	}
 
-	/** Prefer SkyBlock item id; keep mutations as-is (do not remap through crop tables). */
 	@JvmStatic
 	fun greenhouseIconId(id: String?): String {
 		if (id.isNullOrBlank()) {

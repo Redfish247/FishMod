@@ -89,7 +89,6 @@ object SpiritBear {
 
     private fun label(body: String) = "§cBear: $body"
 
-    // Example data: 18 of the 25 floor-4 lanterns
     private fun registerPreview() {
         HudPreview.register(NAME) { HudPreview.text(listOf(label(bodyText(18, 25, -1)))) }
     }

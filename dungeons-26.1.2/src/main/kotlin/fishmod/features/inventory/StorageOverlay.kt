@@ -205,18 +205,18 @@ object StorageOverlay {
 
     private val MULTI_SPACE = Regex(" {2,}")
 
-    // Drop glyphs the UI font can't draw (they'd render as boxes)
-    private fun displayable(s: String): String {
+    private val displayableCache = HashMap<String, String>()
+    private fun displayable(s: String): String = displayableCache.getOrPut(s) {
+        if (displayableCache.size > 512) displayableCache.clear()
         val sb = StringBuilder()
         s.codePoints().forEach { cp -> if (glyphOk.getOrPut(cp) { fishmod.utils.rendering.UiFont.canDisplay(cp) }) sb.appendCodePoint(cp) }
-        return sb.toString().replace(MULTI_SPACE, " ").trim()
+        sb.toString().replace(MULTI_SPACE, " ").trim()
     }
     private var sidebarW = 0
     private var sidebarScroll = 0
     private var sidebarRowsMax = 0
     private var sidebarTotal = ""
 
-    // Fixed-width panel left of the storage grid; never resizes, so the grid stays put
     private fun drawValueSidebar(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>, smx: Int, smy: Int) {
         if (sidebarW <= 0) return
         val rows = fishmod.features.inventory.ContainerValue.storageRows(screen)
@@ -613,7 +613,6 @@ object StorageOverlay {
     private var carriedLayer: Triple<ItemStack, Int, Int>? = null
     private var tooltipLayer: Triple<ItemStack, Int, Int>? = null
 
-    // Held item and vanilla tooltip go in their own GUI pass after the UI paint so panels never cover them.
     @JvmStatic
     fun extractCarriedLayer(state: net.minecraft.client.renderer.state.gui.GuiRenderState): Boolean {
         val tip = tooltipLayer

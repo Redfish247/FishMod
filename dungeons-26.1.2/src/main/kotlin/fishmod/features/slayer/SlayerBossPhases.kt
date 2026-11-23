@@ -287,7 +287,6 @@ object SlayerBossPhases {
 
     @JvmStatic fun hidesNametag(id: Int): Boolean = id >= 0 && id == hiddenStandId
 
-    // HP label (current/max, colour by %), time since spawn, optional nametag hide
     private fun buildLabels(mc: Minecraft, boss: LivingEntity) {
         if (boss.id != bossSeenId) { bossSeenId = boss.id; bossSeenNanos = System.nanoTime() }
         val hp = if (hpBossId == boss.id) lastHp else 0.0

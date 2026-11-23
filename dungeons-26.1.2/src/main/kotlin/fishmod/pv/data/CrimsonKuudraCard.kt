@@ -16,7 +16,6 @@ import fishmod.pv.networth.NbtAttrs
 import java.util.Locale
 import kotlin.math.floor
 
-/** Derived Kuudra party-card stats (score, skills, gear checks, armor). */
 class CrimsonKuudraCard private constructor(
 	@get:JvmName("kuudraScore") val kuudraScore: Double,
 	@get:JvmName("kuudraLevel") val kuudraLevel: Int,

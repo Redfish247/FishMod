@@ -144,7 +144,6 @@ object PrestigeLevelColors {
     }
 
     private val LEVEL_PREFIX = Regex("""^\s{0,2}\[(\d{1,4})[^\[\]\d]{0,4}]""")
-    // Only the sender's level at the start of a line (after an optional channel tag), never pet levels mid-message
     private val LEVEL_ANYWHERE = Regex("""^\s{0,2}(?:(?:Party|Guild|Co-op|Officer) > )?\[(\d{1,4})[^\[\]\d]{0,4}]""")
 
     @JvmStatic
@@ -156,7 +155,6 @@ object PrestigeLevelColors {
         return recolor(c, LEVEL_ANYWHERE, live = true)
     }
 
-    // Fixed pool: one shared colour per (tier, digit count, digit index), so memory never grows
     private class LiveKey(@JvmField val tier: Tier, @JvmField val spread: Float)
     private val liveKeys = IdentityHashMap<TextColor, LiveKey>()
     private val liveColors = arrayOfNulls<TextColor>(TIERS.size * 10)
@@ -175,7 +173,6 @@ object PrestigeLevelColors {
 
     private fun digitSpan(): Float = if (FishSettings.prestigeColorsAnimStyle.equals("FLOW", true)) 0.6f else 0.05f
 
-    // Swaps shared digit colours for the current animation frame while a chat line is drawn
     @JvmStatic
     fun animateLine(seq: FormattedCharSequence?): FormattedCharSequence? {
         if (seq == null || liveKeys.isEmpty() || !FishSettings.prestigeColorsEnabled) return seq

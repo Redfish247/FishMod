@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// Chat channel tab buttons above the input (fishmod.dev #599)
 @Mixin(ChatScreen.class)
 public abstract class ChatTabsMixin extends Screen {
 
@@ -24,7 +23,6 @@ public abstract class ChatTabsMixin extends Screen {
         super(title);
     }
 
-    // the command suggestion popup covers the tabs, so they step aside while it is open
     private boolean fishmod$suggestionsOpen() {
         return commandSuggestions != null && commandSuggestions.isVisible();
     }

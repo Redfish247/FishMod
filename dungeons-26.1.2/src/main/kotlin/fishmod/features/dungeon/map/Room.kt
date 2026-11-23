@@ -27,13 +27,6 @@ class Room(
     var specialTile: Boolean = false
     var rushRoom: Boolean = false
     var secretsFound: Int = 0
-    var mimic: Boolean = false
-        private set
-
-    fun setMimic(b: Boolean) {
-        mimic = b
-    }
-
     fun updateState(placement: MapVec2i, color: Int): StateUpdated? {
         if (state == State.GREEN && data != null && data!!.name == "Golden Oasis") {
             return null

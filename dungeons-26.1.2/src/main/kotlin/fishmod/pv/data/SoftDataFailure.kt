@@ -12,17 +12,6 @@ import fishmod.pv.ProfileViewer
 import java.util.concurrent.CompletionException
 import java.util.concurrent.ExecutionException
 
-/**
- * Expected failures while reading flaky Hypixel / repo JSON shapes.
- *
- * [NullPointerException] is treated as soft on purpose: third-party JSON often
- * drops fields that callers then dereference unguarded. That should empty a tab, not
- * fail the whole future. Keep genuine internal bugs loud by avoiding bare
- * `SoftDataFailure` wraps around non-parse code.
- *
- * [CompletionException] / [ExecutionException] unwrap to their cause so a
- * soft parse error wrapped by a future still counts as soft.
- */
 object SoftDataFailure {
     @JvmStatic
     fun isSoft(throwable: Throwable?): Boolean = when (unwrap(throwable)) {

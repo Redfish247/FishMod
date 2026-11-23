@@ -4,7 +4,6 @@ import fishmod.utils.events.interfaces.PacketHook;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 
-/** Packet types ON_PACKET listeners handle; add new ones here or the listener never sees them. */
 public final class PacketFilter {
     private static final Class<?>[] WANTED_TYPES = {
         net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket.class,
@@ -42,7 +41,6 @@ public final class PacketFilter {
 
     private PacketFilter() {}
 
-    /** Typed listener; gate must be a cheap thread-safe read (runs on the netty thread). Listeners are never unregistered. */
     public static void register(Class<?>[] types, BooleanSupplier gate, PacketHook hook) {
         SUBS.add(new Sub(types, gate));
         FishEvents.packet.register(hook);

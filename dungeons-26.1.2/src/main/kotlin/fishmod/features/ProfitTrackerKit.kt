@@ -98,7 +98,6 @@ object ProfitTrackerKit {
 
     private val FISHING_SACKS = arrayOf("Fishing", "Enchanted Fishing", "Lava Fishing", "Bait", "Bronze Trophy Fishing", "Silver Trophy Fishing")
 
-    // Fishing loot on a non-fishing island: item stocked by a fishing sack while a rod was cast recently and ownActivityMs (last own-activity time) is stale
     fun isFishingLeak(id: String?, now: Long, ownActivityMs: Long): Boolean {
         if (!fishmod.features.fishing.FishingTrackerStore.castRecent(now)) return false
         if (now - ownActivityMs < 5_000L) return false

@@ -16,12 +16,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Skyblocker-style slot text (book level, pet level, minion tier, cake year) + obtained date tooltip
 object ItemOverlays {
     private val PET_LVL = Regex("\\[Lvl (\\d+)]")
     private val MINION_TIER = Regex("_GENERATOR_(\\d+)$")
     private class PetInfo(val nameC: Component, val lvl: String?, val max: Int)
-    // Parsed pet level per stack, valid while the stack's name component is the same object
     private val petCache = java.util.WeakHashMap<ItemStack, PetInfo>()
     private val OLD_STAMP = SimpleDateFormat("M/d/yy h:mm a", Locale.US)
     private val OUT_DATE = SimpleDateFormat("MMM d, yyyy", Locale.US)

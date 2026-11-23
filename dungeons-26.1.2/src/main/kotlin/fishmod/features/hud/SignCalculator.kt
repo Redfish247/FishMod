@@ -36,7 +36,6 @@ object SignCalculator {
     private fun messages(screen: AbstractSignEditScreen): Array<String>? =
         (screen as? AbstractSignEditScreenAccessor)?.`fishmod$getMessages`()?.takeIf { it.isNotEmpty() }
 
-    // Only Hypixel's input signs (line 2 is the ^^^ arrows); a sign the player places and writes "3-1" on must stay as typed
     private fun isInputSign(msgs: Array<String>): Boolean =
         msgs.size > 1 && msgs[1].contains("^^^")
 

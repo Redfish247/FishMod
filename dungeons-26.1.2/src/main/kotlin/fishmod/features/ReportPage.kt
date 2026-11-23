@@ -10,7 +10,6 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.network.chat.Component
 import fishmod.compat.GLFW
 
-// "Report to RedFish" bug / feature request form, drawn as a page inside the /fm window; sent to the test board inbox.
 class ReportPage(private val font: Font) {
 
     companion object {
@@ -51,7 +50,6 @@ class ReportPage(private val font: Font) {
         y += FIELD_H + 6 + 16
         UiRecorder.text("Details", x.toFloat(), y.toFloat(), 9.6f, ScreenTheme.TEXT_COLOR)
         y += 15
-        // the details box takes the rest of the page above the footer row
         val dh = Math.max(FIELD_H + 6, bottom - 34 - y)
         details = field(details, 500, x, y, inner).also { box("details", it, x, y, inner, dh, focused == 1, if (bug) "Where, when, what you expected" else "Any details") }
         y += dh + 10
@@ -106,7 +104,6 @@ class ReportPage(private val font: Font) {
         return true
     }
 
-    // true when the page used the key; Escape is left to the screen
     fun key(input: KeyEvent): Boolean {
         if (focused < 0 || input.key() == GLFW.GLFW_KEY_ESCAPE) return false
         if (input.key() == GLFW.GLFW_KEY_TAB) { focused = 1 - focused; return true }

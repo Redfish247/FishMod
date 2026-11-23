@@ -44,7 +44,6 @@ import net.minecraft.world.item.Items
 class InventoryPage {
 	private var snapshot: InventorySnapshot = InventorySnapshot.empty()
 	private var pane = InventoryPane.INVENTORY
-	/** When on Sacks: `null` = sack menu; otherwise index into [InventorySnapshot.sacks]. */
 	private var openSackIndex: Int? = null
 	private val pageIndex = EnumMap<InventoryPane, Int>(InventoryPane::class.java)
 	private var loadoutsPerPage = 2
@@ -59,8 +58,6 @@ class InventoryPage {
 	private var gemScroll = 0
 	private var gemMaxScroll = 0
 	private var gemHoverTip: List<Component>? = null
-	private var gemHoverX = 0
-	private var gemHoverY = 0
 
 	private var accessoryPowersFace = false
 	private var accessoryFlipTarget = false
@@ -85,7 +82,6 @@ class InventoryPage {
 	private var missingHoverTip: List<Component>? = null
 	private var loadoutHoverTip: List<Component>? = null
 	private var sackValueHoverTip: List<Component>? = null
-	/** Sack menu icons keyed by page so the stack cache doesn't grow every frame. */
 	private val sackMenuSlots = IdentityHashMap<InventorySnapshot.Page, InventorySnapshot.Slot>()
 	private val valueOverlay = ItemValueOverlay()
 	private var sackValuesCache: List<SackValue>? = null
@@ -435,7 +431,6 @@ class InventoryPage {
 		)
 	}
 
-	/** Drawn after the right button panel so tips are never covered by it. */
 	fun renderTooltip(g: GuiGraphicsExtractor, font: Font, mouseX: Int, mouseY: Int, screenW: Int, screenH: Int) {
 		if (valueOverlay.isOpen()) {
 			return
@@ -836,7 +831,6 @@ class InventoryPage {
 		}
 	}
 
-	/** Top-right "Missing" / "Accessory Bag" toggle. Returns its width so titles can avoid it. */
 	private fun drawAccessoryViewToggle(
 		g: GuiGraphicsExtractor, font: Font, rightX: Int, y: Int, mouseX: Int, mouseY: Int, clickable: Boolean
 	): Int {
@@ -879,7 +873,6 @@ class InventoryPage {
 			return null
 		}
 		val owned = ArrayList<String>()
-		// Accessories count as owned anywhere the player keeps them, not just the bag.
 		val panes = listOf(InventoryPane.ACCESSORY_BAG, InventoryPane.INVENTORY, InventoryPane.ENDER_CHEST,
 			InventoryPane.BACKPACKS, InventoryPane.PERSONAL_VAULT)
 		for (bagPage in panes.flatMap { pagesFor(it) }) {
@@ -1404,8 +1397,6 @@ class InventoryPage {
 				hoveredSlot = null
 				hoveredStack = ItemStack.EMPTY
 				gemHoverTip = tip
-				gemHoverX = mouseX
-				gemHoverY = mouseY
 			}
 		}
 	}

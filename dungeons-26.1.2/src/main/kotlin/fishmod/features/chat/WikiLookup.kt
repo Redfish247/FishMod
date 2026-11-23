@@ -15,7 +15,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import fishmod.features.extras.ExtrasSettings as S
 
-// /wiki [item name]: clickable unofficial SkyBlock wiki search link, no arg = held item
 object WikiLookup {
     fun init() {
         ClientCommandRegistrationCallback.EVENT.register { d, _ ->
@@ -30,7 +29,6 @@ object WikiLookup {
         if (!S.wikiCommand) { FishUtil.addChatMessage(Component.literal("§7Wiki Lookup is off in the Extras tab.")); return }
         val query = arg?.trim()?.takeIf { it.isNotEmpty() } ?: held()
         if (query == null) { FishUtil.addChatMessage(Component.literal("§cHold an item or use /wiki <item name>.")); return }
-        // official wiki shut down; domain from Skyblocker (ItemRepository.getWikiLink), MediaWiki search page
         val url = "https://hypixelskyblock.minecraft.wiki/w/Special:Search?search=" + URLEncoder.encode(query, StandardCharsets.UTF_8)
         val link = Component.literal("§b§n$query").withStyle { it.withClickEvent(ClickEvent.OpenUrl(URI.create(url))) }
         FishUtil.addChatMessage(Component.literal("§aWiki: ").append(link).append(Component.literal(" §7(click to open)")))

@@ -16,9 +16,7 @@ object RiftBurger {
 
     // SkyHanni ShowMotesNpcSellPrice.burgerPattern: chat "You have N Grubber Stacks"
     private val STACKS_CHAT = Regex("You have (\\d) Grubber Stacks")
-    // Skyblocker McGrubberUpdater.ORB_PICKUP: orb gives 5 motes + 60 per stack
     private val ORB = Regex("ORB! Picked up \\+(\\d+) Motes, recovered \\+2ф Rift Time!")
-    // Skyblocker McGrubberUpdater.MCGRUBBER_PROGRESS: /sblevels item lore, 20% per stack
     private val PROGRESS = Regex("Total Progress: (\\d+)%")
 
     private const val GRUBBER_TITLE = "Motes Grubber"

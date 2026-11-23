@@ -23,7 +23,6 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
 
-/** Price history for one item: bazaar (daily) or auction house (hourly), drawn as a line graph. Data: SkyCofl public API. */
 class MarketScreen(private val id: String, private val parent: Screen?) : Screen(Component.literal("Market")), HasUiOverlay {
 
     private class Series(val label: String, val color: Int, val values: DoubleArray)
@@ -52,7 +51,6 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         private val BINS = ConcurrentHashMap<String, BinState>()
         private val PROBE = ConcurrentHashMap<String, Boolean>()
 
-        /** Whether the item has price history (bazaar, or any AH history in the last month). Starts one cached lookup on first ask; false until it answers. */
         @JvmStatic
         fun hasHistory(id: String): Boolean {
             val pet = PET_RE.matchEntire(id)?.takeIf { NeuRepo.get(id)?.get("displayname")?.asString?.contains("[Lvl") == true }
@@ -187,7 +185,6 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
         return Data(LongArray(rows.size) { rows[it].first }, listOf(Series("Average", GREEN, col("avg")), Series("Lowest", CYAN, col("min")), Series("Highest", RED, col("max"))), vol)
     }
 
-    /** Last N points of the loaded data for the selected range. */
     private fun visible(d: Data): Pair<Int, Int> {
         val n = d.times.size
         val keep = if (bazaar) (if (BZ_RANGES[range].fine != null) n else BZ_RANGES[range].days) else n
@@ -263,7 +260,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
             val y = rowY(r)
             if (inside(mx, my, px + GX + 2, y - 1, GW - 4, ROW_H)) UiRecorder.fillRect((px + GX + 2).toFloat(), (y - 1).toFloat(), (GW - 4).toFloat(), ROW_H.toFloat(), ScreenTheme.ink(40))
             UiRecorder.text("#${scroll + r + 1}", x, y.toFloat(), 7.5f, ScreenTheme.SUBTEXT_COLOR)
-            UiRecorder.textBold("%,d".format(b.price), x + 24, y.toFloat(), 7.5f, GOLD)
+            UiRecorder.textBold("%,d".format(java.util.Locale.US, b.price), x + 24, y.toFloat(), 7.5f, GOLD)
             val info = listOf(if (b.count > 1) "x${b.count}" else "", b.reforge, b.tier.lowercase().replaceFirstChar { it.uppercase() }).filter { it.isNotEmpty() }.joinToString(" · ")
             UiRecorder.text(info, x + 120, y.toFloat(), 7.5f, ScreenTheme.TEXT_COLOR)
             val t = timeLeft(b.endMs)
@@ -292,7 +289,7 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
             stat("Instant Buy", coins(buy), GOLD, x1, y1)
             stat("Instant Sell", coins(sell), GOLD, x2, y1)
             stat("Spread", coins(buy - sell), GOLD, x1, y2)
-            stat("Margin", if (sell > 0) "%.1f%%".format((buy - sell) / sell * 100) else "-", GOLD, x2, y2)
+            stat("Margin", if (sell > 0) "%.1f%%".format(java.util.Locale.US, (buy - sell) / sell * 100) else "-", GOLD, x2, y2)
         } else {
             val d = (CACHE[key()] as? State.Ready)?.data
             val last = { s: Int -> d?.series?.getOrNull(s)?.values?.lastOrNull() }
@@ -300,11 +297,11 @@ class MarketScreen(private val id: String, private val parent: Screen?) : Screen
             stat("Lowest BIN", bin?.let { coins(it) } ?: "-", GOLD, x1, y1)
             stat("Latest Average", last(0)?.let { coins(it) } ?: "-", GOLD, x2, y1)
             stat("Range Low", d?.series?.getOrNull(1)?.values?.filter { it > 0 }?.minOrNull()?.let { coins(it) } ?: "-", GOLD, x1, y2)
-            stat("Sales in Range", d?.let { "%,d".format(it.volume) } ?: "-", GOLD, x2, y2)
+            stat("Sales in Range", d?.let { "%,d".format(java.util.Locale.US, it.volume) } ?: "-", GOLD, x2, y2)
         }
     }
 
-    private fun coins(v: Double) = if (v >= 1000) "${"%,.1f".format(v)} coins" else "${"%,.0f".format(v)} coins"
+    private fun coins(v: Double) = if (v >= 1000) "${"%,.1f".format(java.util.Locale.US, v)} coins" else "${"%,.0f".format(java.util.Locale.US, v)} coins"
 
     private fun graphRange(d: Data): Triple<Int, Int, Pair<Double, Double>> {
         val (from, to) = visible(d)

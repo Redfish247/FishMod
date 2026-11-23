@@ -13,7 +13,6 @@ import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-// Done/total for the current P3 section, optionally with the last thing that was completed.
 object SectionCountHud {
 
     private const val DEFAULT_TOTAL = 7

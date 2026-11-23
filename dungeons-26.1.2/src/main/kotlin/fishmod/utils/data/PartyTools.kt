@@ -14,9 +14,9 @@ object PartyTools {
     private val INSTANCE: HypixelModAPI = HypixelModAPI.getInstance()
 
     private var grabbedTime: Long = 0
-    private var memberMap: Map<UUID, ClientboundPartyInfoPacket.PartyMember>? = null
-    private var inParty = false
-    private var leaderUuid: UUID? = null
+    @Volatile private var memberMap: Map<UUID, ClientboundPartyInfoPacket.PartyMember>? = null
+    @Volatile private var inParty = false
+    @Volatile private var leaderUuid: UUID? = null
 
     @JvmStatic
     @Volatile
@@ -25,6 +25,9 @@ object PartyTools {
 
     @JvmStatic
     fun init() {
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+            inParty = false; memberMap = null; leaderUuid = null; grabbedTime = 0
+        }
         INSTANCE.createHandler(ClientboundPartyInfoPacket::class.java) { packet ->
             try {
                 if (FishDebug.termInfo) FishDebug.LOGGER.info("party info packet in")
@@ -65,14 +68,12 @@ object PartyTools {
     @JvmStatic
     fun sendPacket() {
         if (System.currentTimeMillis() - grabbedTime < MIN_DELAY) return
-        // off Hypixel the Mod API can't answer; just wait quietly
         if (!onHypixel()) { grabbedTime = System.currentTimeMillis() - MIN_DELAY + 5_000; return }
         if (INSTANCE.sendPacket(ServerboundPartyInfoPacket())) {
             grabbedTime = System.currentTimeMillis()
             retryDelay = 10_000L
             warned = false
         } else {
-            // not registered yet (handshake pending): back off, log once, never an error report
             if (!warned) { FishDebug.LOGGER.info("Hypixel Mod API not ready for party info, retrying with backoff"); warned = true }
             grabbedTime = System.currentTimeMillis() - MIN_DELAY + retryDelay
             retryDelay = minOf(retryDelay * 2, MIN_DELAY.toLong())

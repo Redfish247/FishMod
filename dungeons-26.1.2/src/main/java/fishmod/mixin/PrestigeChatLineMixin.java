@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(GuiMessage.Line.class)
 public abstract class PrestigeChatLineMixin {
 
-    // Animates level digits when the line is read for drawing; chat is never rebuilt
     @ModifyReturnValue(method = "content", at = @At("RETURN"), require = 0)
     private FormattedCharSequence fishmod$animatePrestige(FormattedCharSequence original) {
         try {

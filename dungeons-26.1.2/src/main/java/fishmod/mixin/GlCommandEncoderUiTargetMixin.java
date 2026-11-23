@@ -12,7 +12,6 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.function.Supplier;
 
-// Remembers the last full-size colour target so the UI layer draws where the GUI went (backend-neutral)
 @Mixin(CommandEncoder.class)
 public class GlCommandEncoderUiTargetMixin {
 
