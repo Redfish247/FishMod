@@ -2300,6 +2300,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         take(itemsCol, setOf("Item Tooltip","Recipe Viewer","Item List","Auto BIN Price","Sign Calculator","AH Buy Price Check","Bazaar Search + Price Graph"), hud, extrasCol)
         take(petsCol, setOf("Pet HUD","Pet Swap Title","Hide Pet Nametag Level","Pet Keybinds"), hud, invStorage)
         take(dungeon, setOf("Catacombs Overflow Levels","Fire Freeze Timer"), hud)
+        columns.add(cosmetics)
         columns.add(general)
         columns.add(chatCol)
         columns.add(invStorage)
@@ -2327,12 +2328,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(extrasCol)
         columns.add(fishmod.features.achievements.AchMenu.column())
         columns.add(visuals)
-        columns.add(cosmetics)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
     }
 
     private fun applySavedColumnOrder() {
-        if (FishSettings.fmColumnOrderV < 2) { FishSettings.fmColumnOrderV = 2; FishSettings.fmColumnOrder = ""; return }
+        if (FishSettings.fmColumnOrderV < 3) { FishSettings.fmColumnOrderV = 3; FishSettings.fmColumnOrder = ""; return }
         val saved = FishSettings.fmColumnOrder
         if (saved.isBlank()) return
         val byName = columns.associateBy { it.name }
