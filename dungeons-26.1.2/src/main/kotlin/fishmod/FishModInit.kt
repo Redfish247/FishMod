@@ -1546,6 +1546,7 @@ class FishModInit : ClientModInitializer {
         safeInit("Keybinds") { FishKeys.init() }
         safeInit("CustomEvents") { EventDispatch.init() }
         safeInit("Debug") { FishDebug.init() }
+        safeInit("CrashWatch") { fishmod.utils.debug.FishCrashWatch.init() }
         safeInit("Location") { SkyblockLocation.init() }
         safeInit("Phase") { BossPhase.init() }
         safeInit("PracticeMode") { fishmod.utils.dungeon.PracticeMode.init() }
