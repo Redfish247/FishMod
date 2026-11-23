@@ -18,6 +18,7 @@ object SlayerAlerts {
     @JvmStatic
     fun init() {
         EndAlerts.init()
+        fishmod.features.end.EndTrackers.init()
         SlayerMiniHighlight.init()
         SlayerQol.init()
         SlayerExtras.init()
