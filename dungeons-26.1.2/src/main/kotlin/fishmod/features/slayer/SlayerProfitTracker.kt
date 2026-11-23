@@ -237,8 +237,9 @@ object SlayerProfitTracker {
     }
 
     @JvmStatic
-    fun cycleMode() {
-        FishSettings.slayerProfitDisplayMode = if (sessionMode()) "Total" else "This Session"
+    // set from the /fm Display dropdown (the HUD mode line was removed)
+    fun setMode(v: String) {
+        FishSettings.slayerProfitDisplayMode = v
         resetArmedAt = 0L
         displayCache = null
     }
@@ -463,10 +464,6 @@ object SlayerProfitTracker {
         val rc = if (pph < 0) "§c" else "§7"
         out.add(DisplayRow("§eProfit $pc${sh(p)} §7($rc${sh(pph)}§7/h)", "", "profit"))
 
-        if (interactive) {
-            val sw = if (sessionMode()) "§7[ §7Total §8| §a§lThis Session §7]" else "§7[ §a§lTotal §8| §7This Session §7]"
-            out.add(DisplayRow("§7Mode: $sw", "", "mode"))
-        }
         return out
     }
 
