@@ -467,13 +467,22 @@ object SkyItemList {
         ctx.item(ItemStack(item), 0, 0); pose.popMatrix()
     }
 
+    // Thin pixel chevron (v when closed, ^ when open), cx = centre x, y = top row
+    private fun drawChevron(ctx: GuiGraphicsExtractor, cx: Int, y: Int, open: Boolean, color: Int) {
+        for (i in 0..3) {
+            val row = if (open) 3 - i else i
+            ctx.fill(cx - 3 + row, y + i, cx - 1 + row, y + i + 1, color)
+            ctx.fill(cx + 2 - row, y + i, cx + 4 - row, y + i + 1, color)
+        }
+    }
+
     private fun drawDropdown(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, mx: Int, my: Int, accent: Int) {
         val x0 = px + 2; val x1 = px + pw - 2
         ctx.fill(x0, py + 2, x1, py + 16, 0xCC101010.toInt())
-        ctx.fill(x0, py + 15, x1, py + 16, accent)
+        ctx.fill(x0, py + 15, x1, py + 16, fishmod.features.ScreenTheme.ACCENT)
         smallIcon(ctx, CAT_ICONS[selCat], x0 + 2, py + 4)
         ctx.text(font, CAT_NAMES[selCat], x0 + 15, py + 5, fishmod.features.ScreenTheme.TEXT_COLOR, false)
-        ctx.text(font, if (ddOpen) "▲" else "▼", x1 - 10, py + 5, 0xFFAAAAAA.toInt(), false)
+        drawChevron(ctx, x1 - 8, py + 8, ddOpen, fishmod.features.ScreenTheme.SUBTEXT_COLOR)
         if (!ddOpen) return
         val hov = ddRowAt(mx.toDouble(), my.toDouble())
         ctx.fill(x0, py + 16, x1, py + 16 + TAB_ORDER.size * DD_ROW + 1, 0xF0101010.toInt())
