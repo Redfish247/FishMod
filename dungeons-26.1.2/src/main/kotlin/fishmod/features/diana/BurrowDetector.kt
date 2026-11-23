@@ -118,6 +118,7 @@ object BurrowDetector {
     }
 
     fun register(pos: BlockPos, kind: BurrowType) {
+        DianaTest.log("burrow register $pos kind=$kind existing=${DianaWaypoints.at(pos, WpType.BURROW) != null}")
         val existing = DianaWaypoints.at(pos, WpType.BURROW)
         if (existing != null) {
             if (existing.burrowType != kind && kind != BurrowType.START) { existing.burrowType = kind; existing.label = kind.label }
@@ -132,6 +133,7 @@ object BurrowDetector {
     }
 
     private fun onDugOut(pos: BlockPos) {
+        DianaTest.log("burrow dug out $pos")
         DianaWaypoints.markRemoved(pos)
         DianaWaypoints.removeAt(pos, WpType.BURROW, WpType.GUESS, WpType.ARROW, WpType.SUB)
         DianaWaypoints.removeSubsNear(pos)
@@ -145,6 +147,7 @@ object BurrowDetector {
 
     private fun onChat(s: String) {
         if (s.contains("Griffin")) DianaTest.log("burrow chat: '$s'")
+        fishmod.utils.debug.FishTrace.log("diana") { "chat: '$s'" }
         if (CHAIN_DONE.matches(s)) {
             prune(); chains.pollFirst()
             refresh(death = false, expected = 2, type = null)

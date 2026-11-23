@@ -92,6 +92,7 @@ enum class SkyblockLocation(val label: String) {
                 return
             }
             since = System.currentTimeMillis()
+            fishmod.utils.debug.FishTrace.log("loc") { "location -> $here sameServer=$sameServer repeat=$repeat" }
             FishDebug.sendDebugMessage(Component.literal("Island: $here"))
             FishDiag.guard("SkyblockLocation.3", "location change listener threw for ${location.label}") {
                 FishEvents.locationChange.invoke { it.onLocationChange(here) }

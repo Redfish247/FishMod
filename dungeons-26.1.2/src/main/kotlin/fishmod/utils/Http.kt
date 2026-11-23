@@ -42,6 +42,7 @@ object Http {
             f.whenComplete { r, t ->
                 release()
                 val cause = (t as? java.util.concurrent.CompletionException)?.cause ?: t
+                fishmod.utils.debug.FishTrace.log("net") { "http ${req.method()} ${req.uri().host}${req.uri().path} try=$n -> ${r?.statusCode() ?: "ERR ${cause?.javaClass?.simpleName}: ${cause?.message?.take(80)}"}" }
                 when {
                     t == null -> out.complete(r)
                     cause is IOException && n < MAX_RETRIES ->
