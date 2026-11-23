@@ -55,7 +55,8 @@ object FishChat {
 
     fun receive(root: JsonObject) {
         if (!FishSettings.fishChatEnabled) return
-        val name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() } ?: return
+        var name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() } ?: return
+        if (root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "discord") name = name.replace(Regex("^\s*\(D\)\s*"), "").ifBlank { "Discord" }
         val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
         val fromDiscord = root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "discord"
         val clean = ProfanityFilter.censor(text) ?: text
