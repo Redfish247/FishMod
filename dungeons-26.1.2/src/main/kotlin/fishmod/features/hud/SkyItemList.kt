@@ -24,8 +24,8 @@ object SkyItemList {
     private const val CELL = 20
     private const val PAD = 3
     private const val RGAP = 0
-    private const val HEAD_H = 8
-    private const val FOOT_H = 2
+    private const val HEAD_H = 22
+    private const val FOOT_H = 14
     private const val TAB_COLS = 1
     private const val TAB_CELL = 18
     private const val TAB_W = TAB_COLS * TAB_CELL
@@ -263,6 +263,7 @@ object SkyItemList {
     private var selectAll = false
     private var focused = false
     private var scroll = 0
+    private var ddOpen = false
     private var favOnly = false
 
     private val favFile get() = net.fabricmc.loader.api.FabricLoader.getInstance().configDir.resolve("FishMod").resolve("item-list-favorites.txt")
@@ -415,16 +416,12 @@ object SkyItemList {
             if (i == hoverIdx) { ctx.fill(cx, cy, cx + CELL - 1, cy + CELL - 1, argb(FishSettings.skyItemListAccentColor, 35)); hover = i }
             fishmod.features.visuals.ItemRarityHotbar.suppress = true
             try { ctx.item(RecipeViewer.stackFor(ids[shown[i]]), cx + 2, cy + 2) } finally { fishmod.features.visuals.ItemRarityHotbar.suppress = false }
-            if (favs.contains(ids[shown[i]])) ctx.fill(cx + CELL - 6, cy + 1, cx + CELL - 2, cy + 5, 0xFFFFD83A.toInt())
+            if (favs.contains(ids[shown[i]])) ctx.text(font, "★", cx + CELL - 8, cy + 1, 0xFFFFD83A.toInt(), true)
         }
-        val ms = maxScroll()
-        if (ms > 0) {
-            val trackH = rowsVis * CELL
-            val barH = (trackH * rowsVis / (rowsVis + ms)).coerceAtLeast(10)
-            val barY = py + HEAD_H + (trackH - barH) * scroll / ms
-            ctx.fill(gridRight() - 2, barY, gridRight(), barY + barH, accent)
-        }
+        drawFooter(ctx, font, mx, my, accent)
         val tabHover = drawTabs(ctx, mx, my)
+        drawDropdown(ctx, font, mx, my, accent)
+        if (ddOpen) return
         if (tabHover >= 0) {
             ctx.setTooltipForNextFrame(font, Component.literal(CAT_NAMES[tabHover]), mx, my)
             ctx.extractDeferredElements(mx, my, 0f)
@@ -441,6 +438,54 @@ object SkyItemList {
     }
 
     private fun gridRight() = px + pw - TAB_W
+
+    private fun pageCount() = ((maxScroll() + rowsVis) / rowsVis).coerceAtLeast(1)
+    private fun curPage() = (scroll / rowsVis).coerceIn(0, pageCount() - 1)
+    private fun setPage(p: Int) { scroll = (p.coerceIn(0, pageCount() - 1) * rowsVis).coerceAtMost(maxScroll()) }
+    private const val BTN_W = 24
+    private fun footY() = py + ph - FOOT_H + 1
+    private fun inPrev(mx: Double, my: Double) = mx >= px + PAD && mx < px + PAD + BTN_W && my >= footY() && my < footY() + FOOT_H - 2
+    private fun inNext(mx: Double, my: Double) = mx >= gridRight() - BTN_W && mx < gridRight() && my >= footY() && my < footY() + FOOT_H - 2
+    private fun inDd(mx: Double, my: Double) = mx >= px + 2 && mx < px + pw - 2 && my >= py + 2 && my < py + 16
+    private const val DD_ROW = 10
+    private fun ddRowAt(mx: Double, my: Double): Int {
+        if (!ddOpen || mx < px + 2 || mx >= px + pw - 2 || my < py + 16) return -1
+        val r = ((my - py - 16) / DD_ROW).toInt()
+        return if (r in TAB_ORDER.indices) r else -1
+    }
+
+    private fun drawFooter(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, mx: Int, my: Int, accent: Int) {
+        val pages = pageCount(); val cur = curPage()
+        val y = footY(); val h = FOOT_H - 2
+        val lx = px + PAD; val rx = gridRight() - BTN_W
+        val ph0 = inPrev(mx.toDouble(), my.toDouble()); val nh = inNext(mx.toDouble(), my.toDouble())
+        ctx.fill(lx, y, lx + BTN_W, y + h, if (ph0 && cur > 0) argb(FishSettings.skyItemListAccentColor, 55) else 0x66000000)
+        ctx.fill(rx, y, rx + BTN_W, y + h, if (nh && cur < pages - 1) argb(FishSettings.skyItemListAccentColor, 55) else 0x66000000)
+        val on0 = if (cur > 0) 0xFFFFFFFF.toInt() else 0xFF666666.toInt()
+        val on1 = if (cur < pages - 1) 0xFFFFFFFF.toInt() else 0xFF666666.toInt()
+        ctx.text(font, "<", lx + (BTN_W - font.width("<")) / 2, y + 2, on0, false)
+        ctx.text(font, ">", rx + (BTN_W - font.width(">")) / 2, y + 2, on1, false)
+        val t = "${cur + 1}/$pages"
+        ctx.text(font, t, (lx + rx + BTN_W - font.width(t)) / 2, y + 2, fishmod.features.ScreenTheme.TEXT_COLOR, false)
+    }
+
+    private fun drawDropdown(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, mx: Int, my: Int, accent: Int) {
+        val x0 = px + 2; val x1 = px + pw - 2
+        ctx.fill(x0, py + 2, x1, py + 16, 0xCC101010.toInt())
+        ctx.fill(x0, py + 15, x1, py + 16, accent)
+        ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[selCat]), x0, py + 0)
+        ctx.text(font, CAT_NAMES[selCat], x0 + 16, py + 5, fishmod.features.ScreenTheme.TEXT_COLOR, false)
+        ctx.text(font, if (ddOpen) "▲" else "▼", x1 - 10, py + 5, 0xFFAAAAAA.toInt(), false)
+        if (!ddOpen) return
+        val hov = ddRowAt(mx.toDouble(), my.toDouble())
+        ctx.fill(x0, py + 16, x1, py + 16 + TAB_ORDER.size * DD_ROW + 1, 0xF0101010.toInt())
+        for ((r, i) in TAB_ORDER.withIndex()) {
+            val y = py + 16 + r * DD_ROW
+            if (r == hov) ctx.fill(x0, y, x1, y + DD_ROW, argb(FishSettings.skyItemListAccentColor, 45))
+            ctx.text(font, CAT_NAMES[i], x0 + 4, y + 1, if (i == selCat) accent else fishmod.features.ScreenTheme.TEXT_COLOR, false)
+        }
+    }
+
 
     private fun drawLoading(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, label: String) {
         val t = System.currentTimeMillis()
@@ -568,19 +613,25 @@ object SkyItemList {
     fun onClick(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
         if (!on() || hiddenFor(screen) || !layout(screen)) return false
         val x = click.x(); val y = click.y()
-        if (!inPanel(x, y)) { focused = false; selectAll = false; return false }
+        if (!inPanel(x, y)) { ddOpen = false; focused = false; selectAll = false; return false }
         focused = false; selectAll = false
         if (!built) return true
+        if (GLFW.btn(click) == 0) {
+            if (ddOpen) {
+                val r = ddRowAt(x, y)
+                if (r >= 0) { selCat = TAB_ORDER[r]; refilter() }
+                ddOpen = false
+                return true
+            }
+            if (inDd(x, y)) { ddOpen = true; return true }
+            if (inPrev(x, y)) { setPage(curPage() - 1); return true }
+            if (inNext(x, y)) { setPage(curPage() + 1); return true }
+        }
         val t = tabAt(x, y)
         if (t >= 0) {
             val n = if (t == selCat) 0 else t
             if (GLFW.btn(click) == 0 && n != selCat) { selCat = n; refilter() }
             else if (GLFW.btn(click) == 0) { selCat = 0; refilter() }
-            return true
-        }
-        if (GLFW.btn(click) == 0 && maxScroll() > 0 && x >= gridRight() - 8 && x < gridRight() && y >= py + HEAD_H && y < py + HEAD_H + rowsVis * CELL) {
-            sbDrag = true
-            sbSet(y)
             return true
         }
         val c = cellAt(x, y)
@@ -615,6 +666,7 @@ object SkyItemList {
 
     @JvmStatic
     fun onClosed() {
+        ddOpen = false
         sbDrag = false
         focused = false
     }
@@ -630,7 +682,7 @@ object SkyItemList {
     fun onScroll(mx: Double, my: Double, v: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!on() || hiddenFor(screen) || !built || !layout(screen) || !inPanel(mx, my)) return false
         if (mx >= gridRight()) { tabScroll = (tabScroll + if (v > 0) -1 else 1).coerceIn(0, tabMaxScroll()); return true }
-        scroll = (scroll + if (v > 0) -1 else 1).coerceIn(0, maxScroll())
+        setPage(curPage() + if (v > 0) -1 else 1)
         return true
     }
 
