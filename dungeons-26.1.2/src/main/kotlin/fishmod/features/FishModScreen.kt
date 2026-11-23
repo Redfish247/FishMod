@@ -2293,7 +2293,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val petsCol = Column("Pets")
         fun take(to: Column, names: Set<String>, vararg from: Column) { for (c in from) { val m = c.features.filter { it.name in names }; c.features.removeAll(m); to.features.addAll(m) } }
         take(chatCol, setOf("Chat","Chat Filter","FishMod Chat (/fc)","Messages from RedFish","Mod Prefix","Guild Bridge Bot","Twitch Bridge","Chat Coord Waypoints","Command Tooltip in Chat","Compact Bestiary","SkyBlock XP in Chat","Command Tab Complete","Wiki Lookup"), general, extrasCol)
-        take(invStorage, setOf("Inventory Buttons","Inventory Equipment","Hide Inventory Potion Effects","Wardrobe/Loadout Hotkeys","Pet Keybinds","Slot Binds","Slot Locking","Inventory Search","Backpack Preview","Fix Double Clicks","Middle Click Fix","Stacking Enchant Progress","Item Level Overlay","Item Star Count"), general, extrasCol)
+        take(invStorage, setOf("Inventory Buttons","Inventory Equipment","Hide Inventory Potion Effects","Wardrobe/Loadout Hotkeys","Pet Keybinds","Slot Binds","Slot Locking","Inventory Search","Backpack Preview","Fix Double Clicks","Middle Click Fix","Stacking Enchant Progress","Item Level Overlay"), general, extrasCol)
         take(eventsCol, setOf("Calendar Real Times","SkyBlock Date HUD","Hoppity Hunt Summary","Hoppity Egg Waypoints","Stray Rabbit Alert","Trick or Treat Chest Alert","Gift Tracker HUD","Hidden Jerry Highlight","Reindrake Alert + Warp Link","Carnival Zombie Shootout Outlines","Fairy Soul Waypoints"), extrasCol)
         take(alertsCol, setOf("Limbo Alert","Server Restart Alert","Booster Cookie Warning","No Bits Available Warning","Kick Cooldown Timer","Order Filled Alert","Auction Outbid Alert","Party Join Sound","Vanquisher Party Share","Quiver Warning"), extrasCol)
         take(visitorsCol, setOf("Visitor Timer","Visitor Arrival Alert","Visitor Shopping List","Visitor Menu Info","Visitor Rare Reward Warning","Visitor Stats","Help Carrolyn","Pest Spawn Title","Pest Finder","Pest Timer HUD"), farmCol)
@@ -3481,7 +3481,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     class SubcategoryHeader(name: String) : Setting(name, "") {
-        private fun w(t: String) = Math.ceil(UiRecorder.textWidth(if (note()) t else t.uppercase(), size()).toDouble()).toInt()
+        private fun w(t: String) = Math.ceil((if (note()) UiRecorder.textWidth(t, size()) else UiRecorder.textWidthBold(t.uppercase(), size())).toDouble()).toInt()
 
         private var lastW = DET_W - 20
         private var linesW = -1
@@ -3500,11 +3500,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val h = getHeight()
             val lines = linesFor(lastW)
             val note = note(); val sz = size()
-            val c = if (note) (if (ScreenTheme.lightBg()) 0xFF3A3A3A.toInt() else 0xFFB4B4B4.toInt()) else SUBTEXT_COLOR
+            // Section titles: bold, pure white (near-black on light theme) for readability
+            val c = if (note) (if (ScreenTheme.lightBg()) 0xFF3A3A3A.toInt() else 0xFFB4B4B4.toInt()) else (if (ScreenTheme.lightBg()) 0xFF141414.toInt() else 0xFFFFFFFF.toInt())
+            fun draw(s: String, y: Float) = if (note) UiRecorder.text(s, (leftX + 2).toFloat(), y, sz, c) else UiRecorder.textBold(s.uppercase(), (leftX + 2).toFloat(), y, sz, c)
             if (lines.size <= 1) {
-                UiRecorder.text(lines.getOrElse(0) { name }.let { if (note) it else it.uppercase() }, (leftX + 2).toFloat(), sy + (h - sz) / 2f + 1f, sz, c)
+                draw(lines.getOrElse(0) { name }, sy + (h - sz) / 2f + 1f)
             } else {
-                for ((i, l) in lines.withIndex()) UiRecorder.text(if (note) l else l.uppercase(), (leftX + 2).toFloat(), (sy + 4 + i * 10).toFloat(), sz, c)
+                for ((i, l) in lines.withIndex()) draw(l, (sy + 4 + i * 10).toFloat())
             }
         }
 
