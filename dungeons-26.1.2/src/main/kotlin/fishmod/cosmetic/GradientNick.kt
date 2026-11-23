@@ -100,6 +100,18 @@ object GradientNick {
         }
     }
 
+    /** Packed RGB of the gradient over [stops] at position t (0..1), same maths as [build] uses per letter. */
+    @JvmStatic
+    fun sampleRgb(stops: Array<IntArray>, t: Double): Int {
+        if (stops.isEmpty()) return 0xFFFFFF
+        if (stops.size == 1) return ((stops[0][0] and 0xFF) shl 16) or ((stops[0][1] and 0xFF) shl 8) or (stops[0][2] and 0xFF)
+        val scaled = t.coerceIn(0.0, 1.0) * (stops.size - 1)
+        var seg = Math.floor(scaled).toInt()
+        if (seg >= stops.size - 1) seg = stops.size - 2
+        val c = mixOklab(stops[seg], stops[seg + 1], scaled - seg)
+        return ((c[0] and 0xFF) shl 16) or ((c[1] and 0xFF) shl 8) or (c[2] and 0xFF)
+    }
+
     private fun mixOklab(a: IntArray, b: IntArray, t: Double): IntArray {
         val la = toOklab(a)
         val lb = toOklab(b)

@@ -29,7 +29,7 @@ public abstract class CosmeticChatMixin {
         if (NickState.isActive()) {
             String real = NickState.realName();
             if (!real.isEmpty() && out.getString().contains(real))
-                out = NameRewriter.replaceName(out, real, NickState.asComponent());
+                out = NameRewriter.replaceName(out, real, NickState.asChatComponent());
         }
         out = fishmod.cosmetic.RemoteNicks.apply(out);
         if (fishmod.utils.config.values.FishSettings.prestigeColorsEnabled
