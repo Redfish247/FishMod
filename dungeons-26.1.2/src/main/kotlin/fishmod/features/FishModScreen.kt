@@ -546,6 +546,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Custom Scoreboard", "customScoreboardEnabled")
             f.sub.add(SliderIntSetting("Opacity %", "", "customScoreboardOpacity", 0, 100))
             f.sub.add(SliderIntSetting("Corner Radius", "", "customScoreboardRadius", 0, 10))
+            val sbImages = fishmod.features.dungeon.map.MapImageLoader.getImageNames().toTypedArray()
+            f.sub.add(DropdownSetting("Background Image", "PNGs from the map images folder", sbImages,
+                { if (FishSettings.customScoreboardImage in sbImages) FishSettings.customScoreboardImage else fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE },
+                { v -> FishSettings.customScoreboardImage = if (v == fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) "" else v }))
+            f.sub.add(SliderIntSetting("Image Alpha", "", "customScoreboardImageAlpha", 0, 255)
+                .gatedBy { FishSettings.customScoreboardImage.isNotEmpty() })
+            f.sub.add(ButtonSetting("Open Images Folder", "") {
+                try {
+                    fishmod.features.dungeon.map.MapImageLoader.init()
+                    fishmod.compat.GLFW.openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
+                } catch (e: Exception) {
+                    FishDiag.fail("FishModScreen.36", "open scoreboard images folder failed", e)
+                }
+            })
             f.sub.add(DropdownSetting("Position", "Custom = HUD editor spot",
                 arrayOf("Custom", "Top Left", "Middle Left", "Bottom Left", "Top Right", "Middle Right", "Bottom Right"),
                 { FishSettings.customScoreboardAnchor },
