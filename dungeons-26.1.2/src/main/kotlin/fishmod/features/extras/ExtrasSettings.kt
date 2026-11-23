@@ -50,7 +50,7 @@ object ExtrasSettings {
     @ConfigValue @JvmField var overlayPetLevel: Boolean = true
     @ConfigValue @JvmField var overlayPetHideMax: Boolean = false
     @ConfigValue @JvmField var overlayMinionTier: Boolean = true
-    @ConfigValue @JvmField var overlayItemStars: Boolean = false
+    @ConfigValue @JvmField var overlayItemStars: Boolean = true
     @ConfigValue @JvmField var overlayCakeYear: Boolean = true
     @ConfigValue @JvmField var overlayTextColor: Int = 0xFFFFFFFF.toInt()
     @ConfigValue @JvmField var obtainedDateTooltip: Boolean = false
