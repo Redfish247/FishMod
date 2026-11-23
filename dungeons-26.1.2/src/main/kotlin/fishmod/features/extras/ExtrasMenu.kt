@@ -80,11 +80,9 @@ object ExtrasMenu {
         lvl.sub.add(ToggleSetting("Hide Max Pet Level", "Skip the overlay on max-level pets", S::class.java, "overlayPetHideMax"))
         lvl.sub.add(ToggleSetting("Minion Tier", "", S::class.java, "overlayMinionTier"))
         lvl.sub.add(ToggleSetting("Cake Year", "New Year Cakes", S::class.java, "overlayCakeYear"))
+        lvl.sub.add(ToggleSetting("Star Count", "Dungeon stars (1-10) on starred items", S::class.java, "overlayItemStars"))
         lvl.sub.add(ColorPickerSetting("Text Color", "", S::class.java, "overlayTextColor"))
         col.features.add(lvl)
-        val stars = Feature("Item Star Count", S::class.java, "overlayItemStars")
-        stars.sub.add(ColorPickerSetting("Text Color", "Shared with Item Level Overlay", S::class.java, "overlayTextColor"))
-        col.features.add(stars)
 
         col.features.add(Feature("Booster Cookie Warning", S::class.java, "cookieWarning"))
         col.features.add(Feature("No Bits Available Warning", S::class.java, "bitsWarning"))
@@ -190,8 +188,7 @@ object ExtrasMenu {
         "Vanquisher Party Share" -> "Sends your coords to party chat when a Vanquisher spawns nearby"
         "Fix Double Clicks" -> "SkyBlock menus: a double click counts as a normal click, not collect-all"
         "Middle Click Fix" -> "SkyBlock menus: middle click on a menu item acts as a left click"
-        "Item Level Overlay" -> "Book level, pet level, minion tier and cake year in the slot corner"
-        "Item Star Count" -> "Dungeon star count (1-10) in the slot corner of starred items"
+        "Item Level Overlay" -> "Book level, pet level, minion tier, cake year and dungeon stars in the slot corner"
         "Fairy Soul Waypoints" -> "Boxes uncollected fairy souls on this island"
         "Hoppity Hunt Summary" -> "Chat tally of eggs, new rabbits and duplicates this session"
         "Trick or Treat Chest Alert" -> "Title when a Trick or Treat chest spawns"
