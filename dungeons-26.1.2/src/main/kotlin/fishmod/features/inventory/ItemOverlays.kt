@@ -27,7 +27,7 @@ object ItemOverlays {
     @JvmStatic
     fun init() {
         DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
-            if (!(S.overlayItemLevels || S.overlayItemStars) || !SkyblockLocation.inSkyblock()) return@register
+            if (!S.overlayItemLevels || !SkyblockLocation.inSkyblock()) return@register
             try { draw(ctx, stack, x, y) } catch (t: Throwable) { FishDiag.fail("ItemOverlays.1", "item overlay draw failed", t) }
         }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
@@ -61,7 +61,7 @@ object ItemOverlays {
             if (S.overlayPetHideMax && lvl.toInt() >= info.max) return null
             return lvl
         }
-        if (S.overlayItemStars) {
+        if (lv && S.overlayItemStars) {
             val stars = maxOf(tag.getIntOr("upgrade_level", 0), tag.getIntOr("dungeon_item_level", 0))
             if (stars > 0) return stars.toString()
         }
