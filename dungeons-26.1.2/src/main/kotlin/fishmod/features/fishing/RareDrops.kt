@@ -49,6 +49,13 @@ object RareDrops {
         d("Bone Dye", "DYE_BONE"),
     )
 
+    // names for the per-drop alert toggles (wiki rare fishing drops), pets by chat name
+    @JvmField val ALERT_NAMES: List<String> = (ITEMS.map { it.name } + listOf("Flash 1", "Pyroclasm 6") + DYES.map { it.name } +
+        listOf("Flying Fish", "Megalodon", "Squid", "Phoenix")).distinct()
+
+    @JvmStatic fun alertKey(d: RareDrop): String =
+        (ITEMS + BOOKS + DYES).firstOrNull { d.itemId != null && it.id == d.itemId }?.name ?: d.itemName
+
     private const val RARE = "RARE DROP! "
     private const val PET = "PET DROP! "
 
