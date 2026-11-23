@@ -1,7 +1,8 @@
 package fishmod.features.hunting
 
 import fishmod.features.dungeon.trackers.CroesusPrices
-import fishmod.features.fishing.FishingAlertText
+import fishmod.features.ProfitTrackerKit
+import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
@@ -44,8 +45,8 @@ object ShardTracker {
             { W.shardTrackerX }, { W.shardTrackerX = it }, { W.shardTrackerY }, { W.shardTrackerY = it },
             { W.shardTrackerScale }, { W.shardTrackerScale = it },
             { W.shardTracker && counts.isNotEmpty() && System.currentTimeMillis() - lastGainMs < 60_000 }, { W.shardTracker },
-            example = { listOf("§dShard Tracker", "§7Time\t§f12m 5s", "§7Shards\t§a13 §7(64/h)", "§7Captured\t§a9",
-                "§7Profit\t§61.2M §7(5.9M/h)", "§fTepid\t§a8 §7(§6400k§7)", "§fHoneybuzz\t§a5 §7(§6800k§7)") }, lines = ::lines)
+            example = { listOf("§d§lShard Tracker", "§6800k §7(3.9M/h)\t§7| §9Honeybuzz §f5", "§6400k §7(2M/h)\t§7| §fTepid §f8",
+                "§7Shards §f13 §7(§f64§7/h)", "§7Captured §f9", "§7Playtime §f12m 5s", "§eProfit §61.2M §7(5.9M/h)") }, lines = ::lines)
     }
 
     fun reset() { counts.clear(); captured = 0; startMs = 0L; activeMs = 0L; lastGainMs = 0L; lastOtherMs = 0L }
@@ -71,24 +72,29 @@ object ShardTracker {
         counts[name] = (counts[name] ?: 0) + n
     }
 
-    private fun id(name: String): String { val k = name.lowercase(); return ID_FIX[k] ?: "SHARD_" + name.uppercase().replace(' ', '_') }
+    // shared shard name -> bazaar id (used by slayer and Kuudra trackers too)
+    @JvmStatic fun id(name: String): String { val n = name.removeSuffix(" Shard"); val k = n.lowercase(); return ID_FIX[k] ?: "SHARD_" + n.uppercase().replace(' ', '_') }
 
     private fun price(name: String) = CroesusPrices.bazaarPrice(id(name), true) ?: 0.0
 
-    private fun perHour(v: Double) = if (activeMs < 60_000) "-" else FishingAlertText.fmtCoins(v * 3_600_000.0 / activeMs)
+    private fun rate(v: Double) = ProfitTrackerKit.perHour(v, activeMs)
 
     private fun time(ms: Long): String { val s = ms / 1000; return if (s >= 3600) "${s / 3600}h ${s % 3600 / 60}m" else "${s / 60}m ${s % 60}s" }
 
     private fun lines(): List<String> {
         val total = counts.values.sum()
-        val out = arrayListOf("§dShard Tracker", "§7Time\t§f" + time(activeMs),
-            "§7Shards\t§a$total §7(" + perHour(total.toDouble()) + "/h)", "§7Captured\t§a$captured")
-        val rows = counts.map { (name, n) -> Triple(name, n, if (W.shardTrackerProfit) price(name) * n else n.toDouble()) }
-        val profit = rows.sumOf { it.third }
-        if (W.shardTrackerProfit) out += "§7Profit\t§6" + FishingAlertText.fmtCoins(profit) + " §7(" + perHour(profit) + "/h)"
-        rows.sortedByDescending { it.third }.take(W.shardTrackerRows).forEach { (name, n, value) ->
-            out += "§f$name\t§a$n" + if (W.shardTrackerProfit) " §7(§6" + FishingAlertText.fmtCoins(value) + "§7)" else ""
+        val profitOn = W.shardTrackerProfit
+        val rows = counts.map { (name, n) -> Triple(name, n, if (profitOn) price(name) * n else n.toDouble()) }
+        val profit = if (profitOn) rows.sumOf { it.third } else 0.0
+        val out = arrayListOf("§d§lShard Tracker")
+        rows.sortedByDescending { it.third }.take(W.shardTrackerRows).forEach { (name, n, v) ->
+            val value = if (profitOn && v > 0) "§6" + Mining.short(v) + " §7(" + Mining.short(rate(v)) + "/h)" else ""
+            out += value + "\t§7| " + (ProfitTrackerKit.rarityColor(id(name)) ?: "§f") + name + " §f" + "%,d".format(n)
         }
+        out += "§7Shards §f" + "%,d".format(total) + (if (activeMs < 60_000) "" else " §7(§f" + Mining.short(rate(total.toDouble())) + "§7/h)")
+        out += "§7Captured §f" + "%,d".format(captured)
+        out += "§7Playtime §f" + time(activeMs)
+        if (profitOn) out += "§eProfit §6" + Mining.short(profit) + " §7(" + Mining.short(rate(profit)) + "/h)"
         return out
     }
 }
