@@ -109,6 +109,7 @@ object RemoteItems {
     fun acceptItems(queried: Set<String>, payloads: Map<String, String>) {
         if (!FishSettings.remoteItemsEnabled) { clearAll(); return }
         // drop players who left the tab so the map doesn't grow across lobbies
+        for (gone in byPlayer.keys.filter { it !in queried }) ItemCustomizationStore.clearRemotePlayer("fmr:$gone:")
         byPlayer.keys.retainAll(queried)
         for (u in queried) {
             val payload = payloads[u]
