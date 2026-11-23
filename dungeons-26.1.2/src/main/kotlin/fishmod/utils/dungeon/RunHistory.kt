@@ -6,7 +6,6 @@ import com.google.gson.reflect.TypeToken
 import fishmod.utils.debug.FishDiag
 import java.io.File
 import java.io.FileReader
-import java.io.FileWriter
 import java.lang.reflect.Type
 
 object RunHistory {
@@ -92,6 +91,7 @@ object RunHistory {
                 }
             } catch (e: Exception) {
                 fishmod.utils.debug.FishDebug.LOGGER.warn("[RunHistory] load failed: {}", e.toString())
+                fishmod.utils.SafeFiles.quarantine(file, e)
                 FishDiag.fail("RunHistory.4", "load $FILE_PATH", e)
             }
             if (FishDiag.guard("RunHistory.5", "prune invalid run history") { pruneInvalid() } == true) save()
@@ -124,9 +124,7 @@ object RunHistory {
         val json = synchronized(lock) { statsCache.clear(); GSON.toJson(data) }
         writeExecutor.execute {
             try {
-                val file = File(FILE_PATH)
-                file.parentFile?.mkdirs()
-                FileWriter(file).use { writer -> writer.write(json) }
+                fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json)
             } catch (e: Exception) {
                 fishmod.utils.debug.FishDebug.LOGGER.warn("[RunHistory] save failed: {}", e.toString())
                 FishDiag.fail("RunHistory.6", "save $FILE_PATH", e)
