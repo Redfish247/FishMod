@@ -161,6 +161,7 @@ object SlayerManager {
         FishEvents.chat.register { text ->
             if (!anyEnabled()) return@register false
             val s = text.chatPlain.trim()
+            if ("SLAYER" !in s) return@register false // every pattern below needs it
             val now = System.currentTimeMillis()
             try { when {
                 QUEST_STARTED.matcher(s).find() -> {
