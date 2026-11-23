@@ -13,12 +13,12 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
 object ChatTabs {
-    enum class Tab(val label: String, val channel: String, val prefix: String?) {
-        ALL("All", "all", null),
-        PARTY("Party", "party", "Party >"),
-        GUILD("Guild", "guild", "Guild >"),
-        OFFICER("Officer", "officer", "Officer >"),
-        COOP("Co-op", "coop", "Co-op >");
+    enum class Tab(val label: String, val prefix: String?) {
+        ALL("All", null),
+        PARTY("Party", "Party >"),
+        GUILD("Guild", "Guild >"),
+        OFFICER("Officer", "Officer >"),
+        COOP("Co-op", "Co-op >");
 
         fun enabled(): Boolean = when (this) {
             ALL -> true
@@ -100,11 +100,6 @@ object ChatTabs {
         }
         val t = hit ?: return false
         select(t)
-        if (FishSettings.chatTabsSwitchChannel) {
-            FishDiag.guard("ChatTabs.1", "chat tab /chat ${t.channel} failed") {
-                Minecraft.getInstance().connection?.sendCommand("chat ${t.channel}")
-            }
-        }
         return true
     }
 
