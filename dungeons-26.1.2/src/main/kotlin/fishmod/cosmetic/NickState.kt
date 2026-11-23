@@ -84,7 +84,9 @@ object NickState {
         val bucket = now / ANIM_STEP_MS
         val cached = animParsed
         if (bucket == animBucket && cached.raw == n) return cached.component
-        val phase = (now % ANIM_PERIOD_MS).toDouble() / ANIM_PERIOD_MS
+        // speed % scales the cycle length; 1 - x flips the scroll direction
+        val period = (ANIM_PERIOD_MS * 100 / fishmod.utils.config.values.FishSettings.nickColorSpeed.coerceIn(25, 300)).coerceAtLeast(1L)
+        val phase = 1.0 - (now % period).toDouble() / period
         val raw = FishDiag.guard("NickState.4", "animated nick build failed") { GradientNick.build(base, GradientNick.shifted(stops, phase, 12)) } ?: return null
         val component = FishDiag.guard("NickState.5", "animated nick parse failed") { parse(raw) } ?: return null
         animParsed = Parsed(n, component)
