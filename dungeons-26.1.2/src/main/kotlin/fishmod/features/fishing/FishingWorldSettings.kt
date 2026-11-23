@@ -86,6 +86,9 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var rareHighlight: Boolean = false
     @ConfigValue @JvmField var rareHighlightColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var rareHp: Boolean = false
+    @ConfigValue @JvmField var rareHpBar: Boolean = false
+    @ConfigValue @JvmField var scServerCap: Boolean = true
+    @ConfigValue @JvmField var scServerMax: Int = 30
     @ConfigValue @JvmField var rareImmunity: Boolean = false
 
     @ConfigValue @JvmField var hideOtherHooks: Boolean = false
