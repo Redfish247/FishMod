@@ -502,7 +502,22 @@ object SkyItemList {
 
     private val PET_ID = Regex("^([A-Z0-9_]+);([0-5])$")
 
+    private var tipId: String? = null
+    private var tipFav = false
+    private var tipAt = 0L
+    private var tipLines: List<Component> = emptyList()
+
+    // Rebuilding runs every tooltip callback; reuse the result for 1 s per hovered id
     private fun tooltipLines(id: String, stack: ItemStack): List<Component> {
+        val now = System.currentTimeMillis()
+        val fav = favs.contains(id)
+        if (id == tipId && fav == tipFav && now - tipAt < 1000) return tipLines
+        val built = buildTooltipLines(id, stack)
+        tipId = id; tipFav = fav; tipAt = now; tipLines = built
+        return built
+    }
+
+    private fun buildTooltipLines(id: String, stack: ItemStack): List<Component> {
         val tagged = stack.copy()
         val petTier = PET_ID.matchEntire(id)?.takeIf { NeuRepo.get(id)?.get("displayname")?.asString?.contains("[Lvl") == true }
         val tag = net.minecraft.nbt.CompoundTag()
