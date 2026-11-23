@@ -18,6 +18,14 @@ object FishingMenu {
         core.sub.add(ToggleSetting("Debug Catch Log", "Print each detected catch or drop to chat", S::class.java, "fishingDebug"))
         col.features.add(core)
         col.features.add(Feature("Current Bait HUD", FishingWorldSettings::class.java, "baitHud"))
+        run {
+            val f = Feature("Bobbin & Legion", null, null)
+            f.sub.add(ToggleSetting("Bobbin Time Bobbers", "HUD with the bobbers within 10 blocks (Bobbin' Time armor)", FishingWorldSettings::class.java, "bobbinHud"))
+            f.sub.add(ToggleSetting("Legion Players", "HUD with the players within 30 blocks (Legion armor)", FishingWorldSettings::class.java, "legionHud"))
+            f.sub.add(ToggleSetting("Only With Armor Perk", "Hide the HUDs unless your armor has the perk", FishingWorldSettings::class.java, "overlayNeedArmor"))
+            col.features.add(f)
+        }
+        col.features.add(Feature("Lilypad Size", FishingWorldSettings::class.java, "lilypadSize"))
         col.features.add(Feature("Rod Cast Timer", FishingWorldSettings::class.java, "rodTimer"))
         col.features.add(Feature("Golden Fish Timer", FishingWorldSettings::class.java, "goldenFishTimer"))
         val totem = Feature("Totem of Corruption Overlay", FishingWorldSettings::class.java, "totemOverlay")
@@ -86,6 +94,8 @@ object FishingMenu {
     }
 
     fun describe(name: String): String? = FishingAlerts.describe(name) ?: FishingTrackers.describe(name) ?: FishingWorld.describe(name) ?: when (name) {
+        "Bobbin & Legion" -> "Bobber count (Bobbin' Time) and nearby player count (Legion) HUDs"
+        "Lilypad Size" -> "Lotus Atoll: size of a lilypad as a percent, shown for 5s after it changes"
         "Rod Cast Timer" -> "Shows how long your rod has been cast, above the bobber"
         "Current Bait HUD" -> "Bait in your last hotbar slot and how much is left"
         "Shard Tracker" -> "Shard profit HUD: time, shards/hour, captures and bazaar value; shows for 60s after a shard"
