@@ -3517,7 +3517,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private var lines: List<String> = emptyList()
         private fun linesFor(maxW: Int): List<String> { if (maxW != linesW) { linesW = maxW; lines = wrap(name, maxW) }; return lines }
         private fun note() = name.length > 24
-        private fun size() = if (note()) 8.4f else 7.6f
+        private fun size() = if (note()) 8.4f else 9.4f
 
         override fun getHeight(): Int {
             val n = linesFor(lastW).size
@@ -4495,7 +4495,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val SLIDER_BOX = 40
         private const val INPUT_W = 62
         private const val INPUT_H = 15
-        private const val SUBCAT_HEIGHT = 15
+        private const val SUBCAT_HEIGHT = 19
         private const val SUBCAT_HEIGHT_2 = 25
         private const val SLIDER_ROW_H = 27
         private const val SLIDER_CTRL_Y = 16
