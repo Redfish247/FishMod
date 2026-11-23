@@ -462,11 +462,11 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.31", "fishmod.features.hud.ItemQualityTooltip.init() failed") { fishmod.features.hud.ItemQualityTooltip.init() }
         FishDiag.guard("FishModInit.31b", "fishmod.features.hud.ExoticTooltip.init() failed") { fishmod.features.hud.ExoticTooltip.init() }
         FishDiag.guard("FishModInit.31c", "fishmod.features.hud.OriginalNameTooltip.init() failed") { fishmod.features.hud.OriginalNameTooltip.init() }
-        FishDiag.guard("FishModInit.31b", "fishmod.features.inventory.ItemOverlays.init() failed") { fishmod.features.inventory.ItemOverlays.init() }
+        FishDiag.guard("FishModInit.31d", "fishmod.features.inventory.ItemOverlays.init() failed") { fishmod.features.inventory.ItemOverlays.init() }
         FishDiag.guard("FishModInit.32", "fishmod.features.hud.ItemPriceTooltip.init() failed") { fishmod.features.hud.ItemPriceTooltip.init() }
         FishDiag.guard("FishModInit.32b", "fishmod.features.hud.RecipeViewer.init() failed") { fishmod.features.hud.RecipeViewer.init() }
         FishDiag.guard("FishModInit.32c", "fishmod.features.hud.SkyItemList.init() failed") { fishmod.features.hud.SkyItemList.init() }
-        FishDiag.guard("FishModInit.32c", "fishmod.features.hud.TooltipPinBottom.init() failed") { fishmod.features.hud.TooltipPinBottom.init() }
+        FishDiag.guard("FishModInit.32d", "fishmod.features.hud.TooltipPinBottom.init() failed") { fishmod.features.hud.TooltipPinBottom.init() }
         FishDiag.guard("FishModInit.33", "fishmod.features.inventory.ContainerValue.init() failed") { fishmod.features.inventory.ContainerValue.init() }
         FishDiag.guard("FishModInit.34", "fishmod.features.hud.AuctionPriceAutofill.init() failed") { fishmod.features.hud.AuctionPriceAutofill.init() }
         FishDiag.guard("FishModInit.34b", "fishmod.features.hud.SignCalculator.init() failed") { fishmod.features.hud.SignCalculator.init() }
