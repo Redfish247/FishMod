@@ -3481,7 +3481,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     class SubcategoryHeader(name: String) : Setting(name, "") {
-        private fun w(t: String) = Math.ceil(UiRecorder.textWidth(if (note()) t else t.uppercase(), size()).toDouble()).toInt()
+        private fun w(t: String) = Math.ceil((if (note()) UiRecorder.textWidth(t, size()) else UiRecorder.textWidthBold(t.uppercase(), size())).toDouble()).toInt()
 
         private var lastW = DET_W - 20
         private var linesW = -1
@@ -3500,11 +3500,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val h = getHeight()
             val lines = linesFor(lastW)
             val note = note(); val sz = size()
-            val c = if (note) (if (ScreenTheme.lightBg()) 0xFF3A3A3A.toInt() else 0xFFB4B4B4.toInt()) else SUBTEXT_COLOR
+            // Section titles: bold, pure white (near-black on light theme) for readability
+            val c = if (note) (if (ScreenTheme.lightBg()) 0xFF3A3A3A.toInt() else 0xFFB4B4B4.toInt()) else (if (ScreenTheme.lightBg()) 0xFF141414.toInt() else 0xFFFFFFFF.toInt())
+            fun draw(s: String, y: Float) = if (note) UiRecorder.text(s, (leftX + 2).toFloat(), y, sz, c) else UiRecorder.textBold(s.uppercase(), (leftX + 2).toFloat(), y, sz, c)
             if (lines.size <= 1) {
-                UiRecorder.text(lines.getOrElse(0) { name }.let { if (note) it else it.uppercase() }, (leftX + 2).toFloat(), sy + (h - sz) / 2f + 1f, sz, c)
+                draw(lines.getOrElse(0) { name }, sy + (h - sz) / 2f + 1f)
             } else {
-                for ((i, l) in lines.withIndex()) UiRecorder.text(if (note) l else l.uppercase(), (leftX + 2).toFloat(), (sy + 4 + i * 10).toFloat(), sz, c)
+                for ((i, l) in lines.withIndex()) draw(l, (sy + 4 + i * 10).toFloat())
             }
         }
 
