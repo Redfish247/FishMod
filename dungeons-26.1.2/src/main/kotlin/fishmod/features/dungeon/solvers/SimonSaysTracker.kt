@@ -75,7 +75,7 @@ object SimonSaysTracker {
         fishmod.utils.events.FishEvents.locationChange.register { reset(); false }
 
         fishmod.utils.events.FishEvents.chat.register { message ->
-            if (!FishSettings.simonSaysEnabled) return@register false
+            if (!FishSettings.simonSaysMasterEnabled || !FishSettings.simonSaysEnabled) return@register false
             try { onChat(message.chatRaw) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.1", "SS tracker chat handler threw (round=$round)", e) }
             false
         }
@@ -141,13 +141,13 @@ object SimonSaysTracker {
             { FishSettings.simonSaysHudY }, { v -> FishSettings.simonSaysHudY = v },
             110, 14,
             { FishSettings.simonSaysHudScale }, { v -> FishSettings.simonSaysHudScale = v },
-            java.util.function.BooleanSupplier { FishSettings.simonSaysEnabled && FishSettings.simonSaysHudEnabled },
-            java.util.function.BooleanSupplier { FishSettings.simonSaysEnabled && FishSettings.simonSaysHudEnabled }
+            java.util.function.BooleanSupplier { FishSettings.simonSaysMasterEnabled && FishSettings.simonSaysEnabled && FishSettings.simonSaysHudEnabled },
+            java.util.function.BooleanSupplier { FishSettings.simonSaysMasterEnabled && FishSettings.simonSaysEnabled && FishSettings.simonSaysHudEnabled }
         )
     }
 
     private fun tick(client: Minecraft) {
-        if (!FishSettings.simonSaysEnabled || client.player == null || client.level == null) {
+        if (!FishSettings.simonSaysMasterEnabled || !FishSettings.simonSaysEnabled || client.player == null || client.level == null) {
             atDevice = false; deviceCenter = null; reset(); return
         }
 
@@ -232,7 +232,7 @@ object SimonSaysTracker {
 
     @JvmStatic
     fun onTitle(title: String?) {
-        if (!FishSettings.simonSaysEnabled || title == null) return
+        if (!FishSettings.simonSaysMasterEnabled || !FishSettings.simonSaysEnabled || title == null) return
         val s = title.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").lowercase()
         if (s.contains("device") && s.contains("complete")) tryComplete()
     }
@@ -335,7 +335,7 @@ object SimonSaysTracker {
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tc: DeltaTracker) {
-        if (!FishSettings.simonSaysEnabled || !FishSettings.simonSaysHudEnabled) return
+        if (!FishSettings.simonSaysMasterEnabled || !FishSettings.simonSaysEnabled || !FishSettings.simonSaysHudEnabled) return
         val now = System.currentTimeMillis()
         val showReset = round <= 0 && FishSettings.ssProgressShowReset && resetAtMs > 0 && now - resetAtMs < 3000
         if (round <= 0 && !showReset) return

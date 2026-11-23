@@ -29,7 +29,7 @@ object BackpackPreview {
     }
 
     private fun render(screen: AbstractContainerScreen<*>, ctx: GuiGraphicsExtractor, mx: Int, my: Int) {
-        if (!X.backpackPreview || FishSettings.storageOverlayEnabled || StoragePage.inRift()) return
+        if (!FishSettings.storageFeatureEnabled || !X.backpackPreview || FishSettings.storageOverlayEnabled || StoragePage.inRift()) return
         if (fishmod.utils.ScreenTitle.plain(screen) != "Storage") return
         val slot = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`() ?: return
         val idx = StoragePage.overviewIndex(slot.index) ?: return

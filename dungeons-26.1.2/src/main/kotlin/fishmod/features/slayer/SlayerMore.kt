@@ -5,6 +5,7 @@ import fishmod.features.FishHudEditor
 import fishmod.features.HudExample
 import fishmod.features.HudPreview
 import fishmod.features.slayer.EndAlertSettings as S
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.FishUtil
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.TabListCache
@@ -113,13 +114,13 @@ object SlayerMore {
         val type = SlayerManager.type
         val boss = SlayerManager.bossEntity
 
-        if (S.eggSacHighlight && type == SlayerType.TARANTULA) {
+        if (FishSettings.slayerQolEnabled && S.eggSacHighlight && type == SlayerType.TARANTULA) {
             eggs = level.getEntitiesOfClass(ArmorStand::class.java, player.boundingBox.inflate(32.0)) {
                 it.hasCustomName() && EGG_SAC.matches(TextStrip.plain(it.customName!!.string).trim())
             }
         } else if (eggs.isNotEmpty()) eggs = emptyList()
 
-        if (S.yangGlyphTracer && type == SlayerType.VOIDGLOOM && boss != null) {
+        if (FishSettings.slayerQolEnabled && S.yangGlyphTracer && type == SlayerType.VOIDGLOOM && boss != null) {
             // from NoFrills (BeaconTracer): beacon-helmet stand near boss, then beacon block where it lands
             level.getEntitiesOfClass(ArmorStand::class.java, boss.boundingBox.inflate(4.0, 3.0, 4.0)) {
                 it.getItemBySlot(EquipmentSlot.HEAD).`is`(Items.BEACON)
@@ -191,6 +192,7 @@ object SlayerMore {
     }
 
     private fun render3d() {
+        if (!FishSettings.slayerQolEnabled) return
         if (S.eggSacHighlight) for (e in eggs) {
             if (e.isRemoved) continue
             val p = e.position()

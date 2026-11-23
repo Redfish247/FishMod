@@ -24,7 +24,7 @@ object MeleeHitSound {
         fishmod.utils.events.FishEvents.worldChange.register { target = null; seenSplashes.clear(); false }
         AttackEntityCallback.EVENT.register { player, level, _, entity, _ ->
             if (level.isClientSide) lastHitMs = System.currentTimeMillis()
-            if (level.isClientSide && FishSettings.meleeHitSoundEnabled && entity is LivingEntity && !entity.isDeadOrDying) {
+            if (level.isClientSide && FishSettings.hitSoundsEnabled && FishSettings.meleeHitSoundEnabled && entity is LivingEntity && !entity.isDeadOrDying) {
                 target = entity
                 lastHurt = entity.hurtTime
                 level.getEntitiesOfClass(ArmorStand::class.java, entity.boundingBox.inflate(3.0)).forEach { seenSplashes.add(it.id) }
@@ -65,7 +65,7 @@ object MeleeHitSound {
 
     @JvmStatic
     fun onLocalSound(instance: SoundInstance): Boolean {
-        if (!FishSettings.meleeHitSoundEnabled || !FishSettings.meleeHitSoundSuppress) return false
+        if (!FishSettings.hitSoundsEnabled || !FishSettings.meleeHitSoundEnabled || !FishSettings.meleeHitSoundSuppress) return false
         if (!instance.identifier.path.startsWith("entity.player.attack.")) return false
         return System.currentTimeMillis() - lastHitMs < 1000
     }
