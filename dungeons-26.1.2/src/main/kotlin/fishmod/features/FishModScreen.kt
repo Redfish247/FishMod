@@ -3779,10 +3779,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val slw = rightX - leftX - 4 - SLIDER_BOX
             val sly = sy + SLIDER_CTRL_Y
             val pct = if (max > min) Mth.clamp((cur() - min).toFloat() / (max - min), 0f, 1f) else 0f
-            pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
-            if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
-            disc(ctx, slx + fillW.coerceIn(4, slw - 4), sly + SLIDER_H / 2, 4, TEXT_COLOR)
+            sliderBar(slx, sly, slw, fillW)
             val bx = slx + slw + 6
             val by = sly + SLIDER_H / 2 - 6
             roundedRectRing(ctx, bx, by, SLIDER_BOX - 6, 12, 3, 1, ScreenTheme.ink(0x14), if (typing != null) ACCENT else ScreenTheme.ink(0x26))
@@ -3820,10 +3818,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val slw = rightX - leftX - 4 - SLIDER_BOX
             val sly = sy + SLIDER_CTRL_Y
             val pct = if (max > min) Mth.clamp(((getter() - min) / (max - min)).toFloat(), 0f, 1f) else 0f
-            pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
-            if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
-            disc(ctx, slx + fillW.coerceIn(4, slw - 4), sly + SLIDER_H / 2, 4, TEXT_COLOR)
+            sliderBar(slx, sly, slw, fillW)
             val bx = slx + slw + 6
             val by = sly + SLIDER_H / 2 - 6
             roundedRectRing(ctx, bx, by, SLIDER_BOX - 6, 12, 3, 1, ScreenTheme.ink(0x14), if (typing != null) ACCENT else ScreenTheme.ink(0x26))
@@ -4723,6 +4719,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         fun pill(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
             val h = y2 - y1
             roundedRect(ctx, x1, y1, x2 - x1, h, h / 2, color)
+        }
+
+        // Snaps bar/knob to whole real pixels so every slider row renders identically at fractional UI scales
+        fun sliderBar(slx: Int, sly: Int, slw: Int, fillW: Int) {
+            val f = fishmod.utils.rendering.UiScale.factor()
+            val hPx = Math.max(1, Math.round(SLIDER_H * f))
+            val y = Math.round(sly * f) / f
+            val h = hPx / f
+            UiRecorder.fillRoundedRect(slx.toFloat(), y, slw.toFloat(), h, h / 2f, SLIDER_BG)
+            if (fillW > 0) UiRecorder.fillRoundedRect(slx.toFloat(), y, Math.max(fillW, SLIDER_H).toFloat(), h, h / 2f, SLIDER_FILL)
+            UiRecorder.disc((slx + fillW.coerceIn(4, slw - 4)).toFloat(), y + h / 2f, 4f, TEXT_COLOR)
         }
 
         fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) {
