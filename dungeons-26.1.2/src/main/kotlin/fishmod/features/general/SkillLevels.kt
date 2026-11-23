@@ -88,5 +88,5 @@ object SkillLevels {
     }
 
     @JvmStatic
-    fun lines(): List<String> = levels.map { (name, lvl) -> "§7$name: §b" + String.format("%.1f", lvl) }
+    fun lines(): List<String> = levels.map { (name, lvl) -> "§7$name: §b" + String.format(java.util.Locale.US, "%.1f", lvl) }
 }
