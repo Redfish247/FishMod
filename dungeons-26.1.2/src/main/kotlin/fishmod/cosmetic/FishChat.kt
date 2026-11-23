@@ -93,18 +93,7 @@ object FishChat {
     }
 
     private val URL_RE = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE)
-    private val IMAGE_EXT_RE = Regex("(?i)^https?://[^\\s?#]+\\.(png|jpe?g|gif|webp)([?#].*)?$")
-    private val IMAGE_HOSTS = arrayOf("cdn.discordapp.com", "media.discordapp.net", "media.tenor.com", "media.giphy.com", "i.imgur.com")
-
-    private fun isImageUrl(url: String): Boolean {
-        if (IMAGE_EXT_RE.matches(url)) return true
-        val uri = try { java.net.URI.create(url) } catch (_: Throwable) { return false }
-        val host = uri.host?.lowercase() ?: return false
-        val path = uri.path ?: ""
-        return host in IMAGE_HOSTS || (host.endsWith("tenor.com") && path.startsWith("/view/")) || (host.endsWith("giphy.com") && path.startsWith("/gifs/"))
-    }
-
-    /** Message text with every http(s) link made clickable; image/GIF links show as [Image] with the URL on hover. */
+    /** Message text with every http(s) link made clickable; image/GIF links from trusted hosts show as [Image] and preview on hover. */
     private fun linkify(text: String): Component {
         val out = Component.empty()
         var last = 0
@@ -113,12 +102,14 @@ object FishChat {
             if (url.length <= "https://".length) continue
             val uri = try { java.net.URI.create(url) } catch (_: Throwable) { continue }
             if (m.range.first > last) out.append(Component.literal(text.substring(last, m.range.first)).withStyle(ChatFormatting.WHITE))
-            val image = isImageUrl(url)
+            val image = ChatImagePreview.isPreviewable(url)
             val label = if (image) "[Image]" else url
             out.append(Component.literal(label).withStyle {
-                it.withColor(if (image) ChatFormatting.GREEN else ChatFormatting.AQUA).withUnderlined(true)
+                var s = it.withColor(if (image) ChatFormatting.GREEN else ChatFormatting.AQUA).withUnderlined(true)
                     .withClickEvent(net.minecraft.network.chat.ClickEvent.OpenUrl(uri))
-                    .withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal("§7Click to open\n§f$url")))
+                // Image links get the picture preview on hover (ChatImagePreview) instead of a text tooltip.
+                if (!image) s = s.withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal("§7Click to open\n§f$url")))
+                s
             })
             last = m.range.first + url.length
         }
