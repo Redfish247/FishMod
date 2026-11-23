@@ -58,7 +58,8 @@ object SkyBlockIconRenderer {
 
 	@JvmStatic
 	fun draw(g: GuiGraphicsExtractor?, skyblockId: String?, itemModelOverride: String?, x: Int, y: Int, size: Int) {
-		val stack = if (skyblockId.isNullOrBlank()) ItemStack.EMPTY else SkyBlockItemFactory.iconStack(skyblockId)
+		// Null stack lets cachedStack use the id-keyed cache instead of rebuilding a stack per frame.
+		val stack = if (skyblockId.isNullOrBlank()) ItemStack.EMPTY else null
 		draw(g, stack, skyblockId, itemModelOverride, x, y, size)
 	}
 
