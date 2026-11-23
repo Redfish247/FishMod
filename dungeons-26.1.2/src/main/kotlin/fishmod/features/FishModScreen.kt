@@ -277,7 +277,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("  Guild Tab", "", "chatTabGuild").gatedBy { FishSettings.chatTabs })
             f.sub.add(ToggleSetting("  Officer Tab", "", "chatTabOfficer").gatedBy { FishSettings.chatTabs })
             f.sub.add(ToggleSetting("  Co-op Tab", "", "chatTabCoop").gatedBy { FishSettings.chatTabs })
-            f.sub.add(ToggleSetting("Switch Channel On Click", "Clicking a tab sends one /chat <channel>", "chatTabsSwitchChannel").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Tab Background", "", FishSettings::class.java, "chatTabsBgColor").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Tab Hover", "", FishSettings::class.java, "chatTabsHoverColor").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Selected Tab", "", FishSettings::class.java, "chatTabsSelectedColor").gatedBy { FishSettings.chatTabs })
