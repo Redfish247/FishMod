@@ -6,6 +6,7 @@ import fishmod.utils.HypixelApi
 import fishmod.utils.FishUtil
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.ChatFormatting
@@ -16,6 +17,7 @@ import java.net.URI
 import java.net.http.WebSocket
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 object CosmeticLive {
     private const val URL = "wss://fishmod.dev/live"
@@ -51,6 +53,21 @@ object CosmeticLive {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("CosmeticLive.1", "live cosmetics tick failed") { tick(mc) } }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> close() }
+        ClientLifecycleEvents.CLIENT_STOPPING.register { shutdown() }
+    }
+
+    /**
+     * Game is closing: tell the worker so it announces the leave straight away ("bye"), then close the socket
+     * cleanly. A killed socket otherwise lingers server-side until it times out. Not used for world/server
+     * changes (those reconnect, and the worker waits a short grace before announcing a leave).
+     */
+    @JvmStatic
+    fun shutdown() {
+        val s = ws ?: return
+        ws = null
+        ready = false
+        try { s.sendText("{\"t\":\"bye\"}", true).orTimeout(800, TimeUnit.MILLISECONDS).join() } catch (_: Throwable) {}
+        try { s.sendClose(WebSocket.NORMAL_CLOSURE, "bye").orTimeout(800, TimeUnit.MILLISECONDS).join() } catch (_: Throwable) { try { s.abort() } catch (_: Throwable) {} }
     }
 
     private fun wanted(): Boolean =
