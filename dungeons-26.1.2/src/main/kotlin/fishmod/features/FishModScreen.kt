@@ -338,6 +338,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Sound Manager", null, null)
             val SR = fishmod.utils.sound.SoundRules
             f.sub.add(SubcategoryHeader("Global"))
+            f.sub.add(ToggleSetting("Master Volume", "Scale every FishMod feature cue", "soundMasterEnabled"))
+            f.sub.add(SliderIntSetting("Master Volume %", "Applied to every FishMod feature cue", "soundMasterVolume", 0, 100))
             f.sub.add(ToggleSetting("Mono Audio", "Plays all game sound equally in both ears", "monoAudioEnabled"))
             f.sub.add(SubcategoryHeader("Edit Any Game Sound"))
             f.sub.add(SoundSearchSetting("Sound To Edit", "Search any game sound, then set its volume below",
@@ -486,11 +488,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Auto Sprint", "autoSprintEnabled")
             f.sub.add(ToggleSetting("Dungeons Only", "", "autoSprintDungeonOnly"))
-            general.features.add(f)
-        }
-        run {
-            val f = Feature("Sound Manager", "soundMasterEnabled")
-            f.sub.add(SliderIntSetting("Master Volume %", "Applied to every FishMod feature cue", "soundMasterVolume", 0, 100))
             general.features.add(f)
         }
         run {
@@ -2362,6 +2359,27 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(fishmod.features.achievements.AchMenu.column())
         columns.add(visuals)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
+        fun order(c: Column, vararg names: String) {
+            val rank = names.withIndex().associate { it.value to it.index }
+            val sorted = c.features.withIndex().sortedWith(compareBy({ rank[it.value.name] ?: Int.MAX_VALUE }, { it.index })).map { it.value }
+            c.features.clear(); c.features.addAll(sorted)
+        }
+        order(chatCol, "Chat", "FishMod Chat (/fc)", "Chat Filter", "Mod Prefix", "Command Tooltip in Chat", "Chat Coord Waypoints", "Command Tab Complete")
+        order(invStorage, "Storage Overlay", "Inventory Search", "Slot Locking", "Slot Binds", "Inventory Buttons", "Wardrobe/Loadout Hotkeys", "Pet Keybinds", "Container Value", "Inventory Equipment", "Hide Inventory Potion Effects")
+        order(hud, "Performance HUD", "Action Bar", "Cooldown Overlay", "Stopwatch", "Spotify", "Soulflow HUD", "Text Shadow", "Tac Timer", "Spring Boots", "Loadout Title")
+        order(itemsCol, "Item Tooltip", "Item List", "Auto BIN Price", "Recipe Viewer", "AH Buy Price Check", "Bazaar Search + Price Graph", "Sign Calculator")
+        order(petsCol, "Pet HUD", "Pet Swap Title", "Pet Keybinds", "Hide Pet Nametag Level")
+        order(party, "Party Commands", "Command Access List", "Chat Channels", "Kick List", "Party Finder Menu", "Party Finder Join Stats", "Party Finder List", "Party Finder Auto Kick")
+        order(dungeon, "Puzzle Solvers", "Puzzle Overlay", "Secret Overlay", "Dungeon Routes", "Waypoints", "Player Highlight", "Starred Mob Highlight", "Key & Room Timer", "Run Splits", "Boss Health Numbers", "Leap", "Dungeon Breaker", "Extra Stats", "Mimic", "Death Counter", "Party HP HUD", "Teammate Low HP Alert", "Auto Requeue", "Blessing Display", "Secret Clicked", "Positional Messages", "Livid Solver")
+        order(dungeonTrackers, "Session Stats", "Loot Tracker", "Croesus Profit", "PB Pace", "Croesus Highlights")
+        order(dungeonMap, "Dungeon Map", "Info HUD", "Door Highlight", "Score Messages")
+        order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
+        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
+        order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Tracker")
+        order(visuals, "No Fog", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
+        order(cosmetics, "Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
+        columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin & Legion", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
+        columns.firstOrNull { it.name == "Diana" }?.let { order(it, "Burrow Guessing", "Rare Mobs", "Diana Warp", "Diana Tracker", "Mythos Mob HP", "Diana Announcers", "Diana Party Commands") }
         fun groupBy(c: Column, vararg groups: Pair<String, List<String>>) {
             val rest = ArrayList(c.features); val out = ArrayList<Feature>(); var used = 0
             for ((label, keys) in groups) {
@@ -2387,6 +2405,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.firstOrNull { it.name == "Fishing" }?.let { groupBy(it, "Alerts" to listOf("alert", "warning"),
             "Trackers & HUDs" to listOf("tracker", "hud", "timer", "count", "overlay", "bobbin", "lilypad"), "World & Creatures" to listOf("world", "hotspot", "wormhole", "creature", "trophy", "box", "totem")) }
         for (c in columns) { if (c === general) continue; val m = c.features.filter { it.name == "Waypoint Routes" }; c.features.removeAll(m); general.features.addAll(m) }
+        order(general, "UI Customization", "Custom Tab", "Custom Scoreboard", "Profile Viewer", "Waypoint Routes", "Zoom", "Auto Sprint", "Sound Manager", "Hit Sounds", "Enchant Colors", "Update Notice", "GUI Settings", "Ragnarock", "Gyro Helper", "No Cursor Reset", "Disable Front-Facing Camera", "Board Reports", "Debug Reports")
         for (c in columns) {
             if (c === cheats) continue
             for (f in c.features) {
@@ -3610,7 +3629,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private var lines: List<String> = emptyList()
         private fun linesFor(maxW: Int): List<String> { if (maxW != linesW) { linesW = maxW; lines = wrap(name, maxW) }; return lines }
         private fun note() = name.length > 24
-        private fun size() = if (note()) 8.4f else 9.4f
+        private fun size() = if (note()) 8.4f else 11.5f
 
         override fun getHeight(): Int {
             val n = linesFor(lastW).size
@@ -4591,7 +4610,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val SLIDER_BOX = 40
         private const val INPUT_W = 62
         private const val INPUT_H = 15
-        private const val SUBCAT_HEIGHT = 19
+        private const val SUBCAT_HEIGHT = 24
         private const val SUBCAT_HEIGHT_2 = 25
         private const val SLIDER_ROW_H = 27
         private const val SLIDER_CTRL_Y = 16
