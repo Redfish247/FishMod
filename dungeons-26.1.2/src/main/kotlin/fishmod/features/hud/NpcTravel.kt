@@ -64,7 +64,7 @@ object NpcTravel {
                 val t = target ?: return@register
                 val p = Minecraft.getInstance().player
                 if (p == null || SkyblockLocation.currentMode != mode || System.currentTimeMillis() - setAt > TTL_MS || p.position().distanceTo(t) < 3.0) {
-                    target = null
+                    target = null; npcCache = null
                     return@register
                 }
                 val rgb = (if (fromWarp) FishSettings.npcWarpHighlightColor else COLOR) and 0xFFFFFF
@@ -95,7 +95,20 @@ object NpcTravel {
         pending = null
     }
 
+    private var npcCache: Entity? = null
+    private var npcCacheAt = 0L
+    private var npcCacheFor: Vec3? = null
+
+    // Entity scan at most every 500 ms per target
     private fun findNpc(t: Vec3): Entity? {
+        val now = System.currentTimeMillis()
+        if (npcCacheFor == t && now - npcCacheAt < 500 && npcCache?.isRemoved != true) return npcCache
+        val found = scanNpc(t)
+        npcCache = found; npcCacheAt = now; npcCacheFor = t
+        return found
+    }
+
+    private fun scanNpc(t: Vec3): Entity? {
         val lvl = Minecraft.getInstance().level ?: return null
         val me = Minecraft.getInstance().player
         return lvl.getEntitiesOfClass(LivingEntity::class.java, AABB(t.x - 2.5, t.y - 2.0, t.z - 2.5, t.x + 2.5, t.y + 3.0, t.z + 2.5)) { it !== me && it !is ArmorStand && !it.isInvisible }
