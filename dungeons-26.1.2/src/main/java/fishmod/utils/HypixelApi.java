@@ -2149,7 +2149,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                             JsonObject o = el.getAsJsonObject();
                             String color = o.has("color") ? o.get("color").getAsString() : "#FFFFFF";
                             int rgb;
-                            try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.110", "fetchBadgeDefs failed", e); rgb = 0xFFFFFF; }
+                            try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.133", "fetchBadgeDefs failed", e); rgb = 0xFFFFFF; }
                             String symbol = o.has("symbol") ? o.get("symbol").getAsString() : "";
                             symbol = symbol.replaceAll("[\\uFE00-\\uFE0F\\u200D]", "");
                             out.add(new fishmod.cosmetic.badge.BadgeDef(
@@ -2204,7 +2204,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
         HttpRequest req;
         try {
             req = proxyGet("/skyblock/profiles?uuid=" + uuid, 10);
-        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.114", "getLocalMember failed", e);
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.134", "getLocalMember failed", e);
             finishLocalMemberFetch(null, false);
             cb.accept(null);
             return;
