@@ -15,6 +15,9 @@ object SlayerMiniHighlight {
 
     @Volatile private var glow: Map<Int, Int> = emptyMap()
     private var tick = 0
+    // mob id -> scans left; keeps the outline through brief nametag/mob desyncs
+    private val hold = HashMap<Int, Int>()
+    private const val HOLD_SCANS = 8
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> onTick(mc) }
@@ -34,6 +37,7 @@ object SlayerMiniHighlight {
         val type = SlayerManager.type
         if (!S.slayerMiniHighlight || level == null || player == null || type == null) {
             if (glow.isNotEmpty()) glow = emptyMap()
+            hold.clear()
             return
         }
         try {
@@ -47,7 +51,7 @@ object SlayerMiniHighlight {
                 } else if (e is LivingEntity && e !is Player && e.isAlive) mobs.add(e)
             }
             val color = S.slayerMiniHighlightColor or 0xFF000000.toInt()
-            val out = HashMap<Int, Int>()
+            val matched = HashSet<Int>()
             for (s in stands) {
                 var best: LivingEntity? = null
                 var bd = 4.0
@@ -57,9 +61,13 @@ object SlayerMiniHighlight {
                     val d = dx * dx + dz * dz + dy * dy
                     if (d < bd) { bd = d; best = m }
                 }
-                if (best != null) out[best.id] = color
+                if (best != null) matched.add(best.id)
             }
-            glow = out
+            val alive = mobs.mapTo(HashSet()) { it.id }
+            hold.entries.removeIf { (id, left) -> id !in alive || left <= 1 }
+            hold.replaceAll { _, left -> left - 1 }
+            for (id in matched) hold[id] = HOLD_SCANS
+            glow = hold.keys.associateWith { color }
         } catch (t: Throwable) {
             FishDiag.fail("SlayerMiniHighlight.1", "miniboss highlight scan failed", t)
         }
