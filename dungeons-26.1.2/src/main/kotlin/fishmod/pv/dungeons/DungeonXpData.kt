@@ -41,7 +41,6 @@ object DungeonXpData {
 		}
 	}
 
-	// Fills the fields before loaded is published so other threads never see a half-loaded table.
 	private fun load(): Boolean {
 		val root = RepoData.dungeonsXp() ?: return false
 		root.get("expert_ring_bonus")?.takeIf { it.isJsonPrimitive }?.let { ringBonus = it.asDouble }

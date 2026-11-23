@@ -412,9 +412,6 @@ object PlayerStatsCalculator {
 
         val tuning = obj(storage.get("tuning"))
         if (tuning != null) {
-            // Hypixel does not expose which template is equipped. Prefer the lowest
-            // slot index with points (slot_0 is the primary Maxwell template). Picking
-            // "most points" wrongly selects an alternate preset (e.g. CD instead of SPD).
             var best: JsonObject? = null
             var bestIndex = Int.MAX_VALUE
             for ((key, value) in tuning.entrySet()) {
@@ -614,7 +611,6 @@ object PlayerStatsCalculator {
             for (line in lore) {
                 val clean = stripFormatting(line)
                 if (clean.isBlank()) continue
-                // Every DISPLAY regex needs ": +" or ": -".
                 if (!clean.contains(": +") && !clean.contains(": -")) continue
                 for (def in DISPLAY) {
                     val value = def.regex.find(clean)?.groupValues?.get(1)?.toDoubleOrNull() ?: continue

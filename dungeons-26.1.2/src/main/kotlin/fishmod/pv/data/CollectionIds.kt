@@ -80,7 +80,6 @@ object CollectionIds {
 		"MELON" to "MELON"
 	)
 
-	// Memo: called per collection item per frame; ids are a small fixed set.
 	private val LOOKUP_CACHE = ConcurrentHashMap<String, List<String>>()
 
 	@JvmStatic

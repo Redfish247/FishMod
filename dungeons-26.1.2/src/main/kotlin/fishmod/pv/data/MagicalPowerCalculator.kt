@@ -156,8 +156,6 @@ object MagicalPowerCalculator {
         for (i in lore.indices.reversed()) {
             val line = lore[i]
             if (line.isNullOrBlank()) continue
-            // Rarity line looks like "§d§l§ka§r §d§lMYTHIC ACCESSORY §d§l§ka". Match on the spaced text:
-            // normalizeTier underscores it first, and "MYTHIC_ACCESSORY" never matches a word boundary.
             val plain = TextStrip.plain(line).uppercase()
             if (!plain.contains("ACCESSORY") && !plain.contains("HATCESSORY")) continue
             return LORE_RARITY.find(plain)?.groupValues?.get(1)?.replace(' ', '_') ?: ""

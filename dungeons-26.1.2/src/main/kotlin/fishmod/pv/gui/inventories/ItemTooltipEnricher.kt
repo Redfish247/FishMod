@@ -115,7 +115,6 @@ object ItemTooltipEnricher {
 			return
 		}
 		val coins = FormatUtil.shortCoins(Math.round(value).toDouble())
-		// Fixed colours so this line does not steal the rarity / name colour.
 		val estimated = Component.literal("Estimated value: ")
 			.withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false))
 			.append(Component.literal(coins).withStyle(Style.EMPTY.withColor(ChatFormatting.GOLD).withItalic(false)))

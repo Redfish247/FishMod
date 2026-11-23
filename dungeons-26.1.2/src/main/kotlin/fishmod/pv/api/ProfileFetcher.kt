@@ -69,7 +69,6 @@ object ProfileFetcher {
     private val MINECRAFT_NAME = Regex("[A-Za-z0-9_]{1,16}")
     private val CORRELATION_ID = Regex("[A-Za-z0-9._:-]{1,80}")
 
-    /** Post-core enrichment / profile-switch parsing (bounded; avoids parse-pool deadlock). */
     private val ENRICH_EXECUTOR: ExecutorService = Executors.newFixedThreadPool(3, PvExecutors.daemon("FishPV-Enrich"))
     private val ACTIVE_ENRICH_LOCK = Any()
 
@@ -208,11 +207,6 @@ object ProfileFetcher {
     fun fetch(playerName: String?): CompletableFuture<LoadedProfile> =
         fetch(playerName, null, null, UUID.randomUUID().toString(), System.nanoTime())
 
-    /**
-     * Loads the home/core profile first (enough for Home + dismiss loading egg), then publishes
-     * a fully enriched profile through `onUpdate`. Fatal failures return `!ok()` and
-     * never become a successful core load.
-     */
     @JvmStatic
     fun fetch(playerName: String?, onUpdate: Consumer<LoadedProfile>?): CompletableFuture<LoadedProfile> =
         fetch(playerName, null, onUpdate, UUID.randomUUID().toString(), System.nanoTime())
@@ -225,10 +219,6 @@ object ProfileFetcher {
         requestStartedNanos: Long
     ): CompletableFuture<LoadedProfile> = fetch(playerName, null, onUpdate, correlationId, requestStartedNanos)
 
-    /**
-     * `preferredProfileId` keeps a co-op member switch on the same SkyBlock profile instead of
-     * the member's own selected one. Falls back to their selected profile if they aren't in it.
-     */
     @JvmStatic
     fun fetch(
         playerName: String?,
@@ -453,10 +443,6 @@ object ProfileFetcher {
         session.start()
     }
 
-    /**
-     * Async re-parse for profile switching. Publishes core first when `onUpdate` is set,
-     * then enrichment. Caller must ignore stale results via its own generation counter.
-     */
     @JvmStatic
     fun switchToProfile(
         name: String,
@@ -484,8 +470,6 @@ object ProfileFetcher {
         return coreFuture
     }
 
-    // Hypixel auctions and Cofl history are per player, not per profile, so profile
-    // switches reuse the last player's requests instead of fetching them again.
     private class PlayerAuctionFutures(
         val uuid: UUID,
         val createdAtMillis: Long,
@@ -536,7 +520,6 @@ object ProfileFetcher {
 
     private fun putCache(key: String?, profile: LoadedProfile?) {
         if (key.isNullOrBlank() || profile == null || !profile.ok()) return
-        // drop expired profiles so viewed players don't pile up for the whole session
         CACHE.values.removeIf { !it.fresh() }
         CACHE[key] = CacheEntry(profile, System.currentTimeMillis() + CACHE_TTL_MS)
     }
@@ -629,7 +612,6 @@ object ProfileFetcher {
 
     private val NETWORTH_LISTENERS = CopyOnWriteArrayList<Consumer<LoadedProfile>>()
 
-    /** Registers a listener for deferred networth refreshes (screen generation must filter stale). */
     @JvmStatic
     fun addNetworthListener(listener: Consumer<LoadedProfile>?) {
         if (listener != null) NETWORTH_LISTENERS.addIfAbsent(listener)

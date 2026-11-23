@@ -27,11 +27,6 @@ object ProfileViewerOpener {
 	@Volatile
 	private var openDelayTicks = 0
 
-	/**
-	 * Chat clicks on a [Style]: Hypixel profile hover/click, or our `/pv`
-	 * [ClickEvent.RunCommand]. Handles SuggestCommand / Custom / hover-only names
-	 * that never reach [tryHandleChatCommand].
-	 */
 	@JvmStatic
 	fun tryHandleStyle(style: Style?): Boolean {
 		if (style == null || !FishSettings.profileViewerEnabled) {
@@ -64,8 +59,6 @@ object ProfileViewerOpener {
 			handleTypedArg(trimmed.substring(3).trim())
 			return true
 		}
-		// Hypixel name clicks stay on the original Component (keeps chat colors).
-		// Open the profile viewer instead of forwarding SocialOptions / viewprofile to the server.
 		val hypixelName = ChatClickProcessor.usernameFromCommand(trimmed)
 		if (hypixelName != null) {
 			open(hypixelName)
@@ -116,7 +109,6 @@ object ProfileViewerOpener {
 		pendingName = if (name.isNullOrBlank()) client.player?.gameProfile?.name() else name.trim()
 		pendingTab = tab
 		pendingSub = sub
-		// Defer past chat close so ChatScreen does not immediately replace us.
 		openDelayTicks = 2
 	}
 

@@ -547,7 +547,6 @@ class HomePage(private var snapshot: ProfileSnapshot?) {
 			return (a shl 24) or (argb and 0x00FFFFFF)
 		}
 
-		/** GUI screens do not keep `options.keyShift` updated; poll GLFW instead. */
 		fun leftShiftDown(): Boolean {
 			val mc = Minecraft.getInstance() ?: return false
 			val window = mc.window ?: return false

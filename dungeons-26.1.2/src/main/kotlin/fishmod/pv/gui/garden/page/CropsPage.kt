@@ -205,8 +205,6 @@ class CropsPage {
 		private const val PLOT_LOCKED = 0x1CFFFFFF
 		private const val PLOT_BARN = 0xFF3A2C1E.toInt()
 
-		// Header totals the coin value of the crops still needed; Copper can't be bought so it stays in the tooltip.
-		// A "+" marks a lower bound when some items have no price, "?" when none do.
 		@JvmStatic
 		fun costToMaxLabel(
 			total: GardenCosts.ComposterRemaining, price: ToDoubleFunction<String>, width: ToIntFunction<String>, avail: Int

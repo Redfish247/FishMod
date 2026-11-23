@@ -245,7 +245,6 @@ object PetLoreResolver {
         petnumsCache?.let { return it }
         synchronized(this) {
             petnumsCache?.let { return it }
-            // Repo may not be downloaded yet: retry later instead of caching empty forever.
             val now = System.currentTimeMillis()
             if (now < petnumsRetryAt) return EMPTY_PETNUMS
             val loaded = loadPetnums()

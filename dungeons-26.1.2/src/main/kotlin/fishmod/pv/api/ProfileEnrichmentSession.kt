@@ -310,8 +310,6 @@ internal class ProfileEnrichmentSession(
         publish(merge(current, events = events))
     }
 
-    // Active listings come from Vyriv in ~200ms; Coflnet history can take seconds, so it
-    // joins later as its own job instead of holding the loop.
     private fun runAuctions() {
         val historyReady = soldFut.isDone && bidsFut.isDone
         publishAuctions(historyReady)

@@ -64,7 +64,6 @@ object Leveling {
 			return floor(level.toDouble()).toInt()
 		}
 
-		/** Soft-cap level for skill bar labels. Overflow stays hover-only. */
 		fun cappedLevel(): Int = if (maxed) maxLevel else floor(level.toDouble()).toInt()
 
 		fun hoverText(): String {
@@ -93,7 +92,6 @@ object Leveling {
 		}
 
 		fun skillHoverLines(name: String?): List<PvTooltip.Line> {
-			// Match Hypixel Skills menu: title is the soft cap, overflow is listed separately.
 			val lines = ArrayList<PvTooltip.Line>(6)
 			lines.add(PvTooltip.Line.of(skillTitle(name), PvDraw.COLOR_ACCENT))
 			for ((label, value) in skillHoverRows()) {
@@ -146,7 +144,6 @@ object Leveling {
 			return text
 		}
 
-		/** e.g. {@code Revenant 9 - 1,240,000 / 2,000,000 XP} or overflow when maxed. */
 		fun slayerHover(name: String?): String {
 			val tier = floor(level.toDouble()).toInt()
 			if (maxed) {
@@ -389,7 +386,6 @@ object Leveling {
 		return (maxLevel + overflowXp / maxXpForLevel).toFloat()
 	}
 
-	/** XP for one overflow level past the soft cap (repeats the last capped step). */
 	private fun overflowStepXp(table: JsonArray?, levelCap: Int, cumulative: Boolean): Float {
 		if (table == null || table.isEmpty || levelCap <= 0) {
 			return 0f
@@ -547,13 +543,6 @@ object Leveling {
 		return base
 	}
 
-	/**
-	 * Extra Foraging levels past the base soft cap (50 → up to 57).
-	 *
-	 * <p>Uses {@code SKILL_FORAGING_extra_level_cap} when present, and also recomputes from
-	 * Fig/Mangrove/Helix IX collections + Heart of the Forest (same approach as Skyblocker),
-	 * taking the higher of the two so a stale API field cannot under-report the in-game cap.
-	 */
 	@JvmStatic
 	fun foragingExtraLevelCap(member: JsonObject?): Int {
 		val fromApi = foragingExtraLevelCapFromApi(member)
@@ -571,10 +560,6 @@ object Leveling {
 		return maxOf(0, Math.round(extra))
 	}
 
-	/**
-	 * Skyblocker-style recompute: +1 per Fig/Mangrove/Helix collection IX, +2 Agatha
-	 * once any foraging-cap progress exists, +2 when HOTF level is at least 4 (Miria).
-	 */
 	private fun foragingExtraLevelCapFromProgress(member: JsonObject?): Int {
 		var collections = 0
 		if (collectionTierAtLeast(member, "FIG_LOG", 9)) {
@@ -589,7 +574,6 @@ object Leveling {
 		val hotf = hotfLevel(member)
 		val api = foragingExtraLevelCapFromApi(member)
 		var extra = collections
-		// Agatha shop pair. Skyblocker always adds these once foraging-cap progress exists.
 		if (collections > 0 || hotf > 0 || api > 0) {
 			extra += 2
 		}
@@ -606,7 +590,6 @@ object Leveling {
 		if (unlockedCollectionTier(member, collectionId) >= minTier) {
 			return true
 		}
-		// Fallback: derive tier from collection amounts when unlocked_coll_tiers is incomplete.
 		val collection = obj(member.get("collection")) ?: return false
 		val amount = numDouble(collection.get(collectionId)) ?: numDouble(collection.get(collectionId.uppercase(Locale.ROOT)))
 		if (amount == null || amount <= 0.0) {
@@ -653,7 +636,6 @@ object Leveling {
 			if (!upper.startsWith(prefix)) {
 				continue
 			}
-			// Malformed tier suffixes are ignored.
 			upper.substring(prefix.length).toIntOrNull()?.let { best = maxOf(best, it) }
 		}
 		return best

@@ -18,7 +18,6 @@ object AbiphoneCosts {
 	private val ITEM: Pattern = Pattern.compile("^([0-9]+)x (.+)$", Pattern.CASE_INSENSITIVE)
 	private val TRAILING_PAREN = Regex("\\s*\\(.*\\)\\s*$")
 
-	/** coins is null when the requirement can't be priced. */
 	@JvmRecord
 	data class Estimate(val coins: Double?) {
 		fun known(): Boolean = coins != null

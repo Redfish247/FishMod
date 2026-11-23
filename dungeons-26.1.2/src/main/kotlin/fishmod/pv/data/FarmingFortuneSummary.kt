@@ -17,7 +17,6 @@ import fishmod.pv.networth.NbtAttrs
 import java.util.EnumMap
 import java.util.Locale
 
-/** Groups the estimate into short page labels; the full sources stay available for tooltips. Never changes totals. */
 object FarmingFortuneSummary {
 	enum class Category(@get:JvmName("label") val label: String) {
 		SKILLS("Skills"), GARDEN("Garden"), SHARDS("Shards"), ACCESSORIES("Accessories")
@@ -57,7 +56,6 @@ object FarmingFortuneSummary {
 		"Firefly and Lunar Moth shards" to "solar_power"
 	)
 
-	/** Permanent bonuses in fixed category order, skipping empty categories. Totals add up to {@code permanentTotal}. */
 	@JvmStatic
 	fun permanentGroups(est: FarmingFortuneEstimate, garden: Garden): List<Group> {
 		val byCategory = EnumMap<Category, MutableList<Line>>(Category::class.java)
@@ -74,7 +72,6 @@ object FarmingFortuneSummary {
 		return out
 	}
 
-	/** Unrecognised sources land in Garden so a new bonus is never dropped from the page. */
 	@JvmStatic
 	fun category(label: String?): Category = CATEGORIES[label] ?: Category.GARDEN
 

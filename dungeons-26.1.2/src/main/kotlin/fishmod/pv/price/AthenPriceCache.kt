@@ -51,7 +51,6 @@ object AthenPriceCache {
 		return prices[itemId.uppercase(Locale.ROOT)]
 	}
 
-	/** Instant / bazaar sell-side price only — never AH LBIN. */
 	@JvmStatic
 	fun getBazaar(itemId: String?): Double? {
 		start()
@@ -71,7 +70,6 @@ object AthenPriceCache {
 		val root = Http.getJson(PRICES_URI.toString(), TIMEOUT).asJsonObject
 		val next = ConcurrentHashMap<String, Double>()
 		val nextBazaar = ConcurrentHashMap<String, Double>()
-		// Bazaar first so materials use IB/sell — AH LBIN must not stomp sack prices.
 		loadBazaar(root.getAsJsonObject("bazaar"), next, nextBazaar)
 		loadAuctionHouse(root.getAsJsonObject("auction_house"), next)
 		if (next.isNotEmpty()) {
