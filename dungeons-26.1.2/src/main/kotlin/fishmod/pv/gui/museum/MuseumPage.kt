@@ -84,6 +84,8 @@ class MuseumPage {
 	private var totalCount = 0
 	private var appraisal: Boolean? = null
 	private var cacheDirty = true
+	private var awaitingItems = false
+	private var nextItemsCheckMs = 0L
 
 	private var gridScroll = 0
 	private var gridMaxScroll = 0
@@ -529,6 +531,13 @@ class MuseumPage {
 	}
 
 	private fun ensureCache() {
+		if (!cacheDirty && awaitingItems) {
+			val now = System.currentTimeMillis()
+			if (now >= nextItemsCheckMs) {
+				nextItemsCheckMs = now + 1000L
+				if (HypixelItemsCache.allItems().isEmpty()) HypixelItemsCache.requestIfEmpty() else cacheDirty = true
+			}
+		}
 		if (!cacheDirty) {
 			return
 		}
@@ -545,8 +554,10 @@ class MuseumPage {
 			return
 		}
 		rebuildCache()
-		cacheDirty = HypixelItemsCache.allItems().isEmpty()
-		if (cacheDirty) {
+		cacheDirty = false
+		awaitingItems = HypixelItemsCache.allItems().isEmpty()
+		if (awaitingItems) {
+			nextItemsCheckMs = System.currentTimeMillis() + 1000L
 			HypixelItemsCache.requestIfEmpty()
 		}
 	}
