@@ -5,6 +5,7 @@ import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.BossPhase
 import fishmod.utils.dungeon.PracticeMode
 import fishmod.utils.events.FishEvents
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.hypixel.modapi.HypixelModAPI
 import net.hypixel.modapi.packet.impl.clientbound.event.ClientboundLocationPacket
 import net.minecraft.network.chat.Component
@@ -68,6 +69,13 @@ enum class SkyblockLocation(val label: String) {
                 }
             }
             api.subscribeToEventPacket(ClientboundLocationPacket::class.java)
+            // Leaving the server clears stale SkyBlock state
+            ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+                onSkyblock = false
+                currentMode = ""
+                lastServerName = null
+                if (here != UNKNOWN) changeLocation(UNKNOWN)
+            }
         }
 
         @JvmStatic
