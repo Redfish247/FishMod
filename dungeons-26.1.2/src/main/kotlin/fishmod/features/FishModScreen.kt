@@ -2368,10 +2368,28 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         FishSettings.fmFoldedColumns = foldedColumns.joinToString(",")
     }
 
+    // tabs persist across /fm reopen; lazy because tab fields init after the init block
+    private fun loadTabs() {
+        if (tabsLoaded) return
+        tabsLoaded = true
+        tabs.clear()
+        for (n in FishSettings.fmTabs.split(",")) if (n.isNotBlank() && colByName(n) != null) tabs.add(n)
+        if (tabs.isEmpty()) return
+        ti = FishSettings.fmTabIndex.coerceIn(0, tabs.size - 1)
+        columns.firstOrNull { !isFolded(it) }?.let { tabs[ti] = it.name }
+        hist.add(tabs[ti]); hi = 0
+    }
+
+    private fun saveTabs() {
+        FishSettings.fmTabs = tabs.joinToString(",")
+        FishSettings.fmTabIndex = ti
+    }
+
     private fun isFolded(c: Column): Boolean = c.name in foldedColumns
 
     // Explorer: one column open at a time
     private fun toggleFold(c: Column, push: Boolean = true) {
+        loadTabs()
         for (o in columns) if (o !== c) foldedColumns.add(o.name)
         foldedColumns.remove(c.name)
         saveFoldedColumns()
@@ -2380,12 +2398,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         selected = null; gridScroll = 0; detScroll = 0
         openedAt = System.currentTimeMillis()
         if (tabs.isEmpty()) tabs.add(c.name) else tabs[ti] = c.name
+        saveTabs()
         if (push) { while (hist.size > hi + 1) hist.removeAt(hist.size - 1); hist.add(c.name); hi = hist.size - 1 }
     }
 
     // Tabs, back/forward history and card animation state
     private val tabs = ArrayList<String>()
     private var ti = 0
+    private var tabsLoaded = false
     private val hist = ArrayList<String>()
     private var hi = -1
     private var openedAt = System.currentTimeMillis()
@@ -2406,6 +2426,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return out
     }
     private fun renderTabs(mx: Int, my: Int) {
+        loadTabs()
         if (tabs.isEmpty()) visibleColumns().firstOrNull()?.let { tabs.add(it.name); hist.add(it.name); hi = 0 }
         val r = tabRects()
         val y = TAB_Y
@@ -2435,6 +2456,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 tabs.size > 1 && mx >= r[0] + r[1] - 16 -> { tabs.removeAt(i); if (ti >= i && ti > 0) ti--; colByName(tabs[ti])?.let { toggleFold(it) } }
                 else -> { ti = i; colByName(tabs[i])?.let { toggleFold(it) } }
             }
+            saveTabs()
             return true
         }
         return false
