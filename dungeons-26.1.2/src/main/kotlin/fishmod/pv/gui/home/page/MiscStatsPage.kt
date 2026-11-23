@@ -188,7 +188,6 @@ class MiscStatsPage {
 
 		val hovering = hit(mx.toDouble(), my.toDouble(), x, y, w, h)
 			&& !hit(mx.toDouble(), my.toDouble(), guildBtnX, guildBtnY, guildBtnW, guildBtnH)
-		// Only the profile face draws the guild button; a stale hitbox would swallow flip clicks.
 		guildBtnW = 0
 		var showExtras = leftExtrasFace
 		var slideDx = 0F
@@ -660,7 +659,6 @@ class MiscStatsPage {
 			"garden_fortune" to 10
 		)
 
-		/** Prefer SkyBlock / pack texture, then skull stack, then vanilla, never blank paper. */
 		fun drawCommunityIcon(g: GuiGraphicsExtractor, upgrade: String?, x: Int, y: Int, size: Int) {
 			val sbId = communitySkyblockId(upgrade)
 			if (sbId.isNotBlank()) {

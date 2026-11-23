@@ -110,9 +110,7 @@ class ProfileViewerScreen @JvmOverloads constructor(
 	private var loadCorrelationId: String? = null
 	private var loadStartedNanos = 0L
 	private var firstVisibleLogged = false
-	/** Set when fetch fails (e.g. unknown IGN). Shown instead of infinite loading. */
 	private var loadError: String? = null
-	/** Bumps on each fetch/switch so stale async results cannot overwrite newer state. */
 	private var loadGeneration = 0
 	private val networthListener = Consumer<ProfileFetcher.LoadedProfile> { onDeferredNetworth(it) }
 	private var breakScheduled = false
@@ -415,7 +413,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		graphics.pose().popMatrix()
 
 		if (dataReady && (socialsMenu.isOpen() || searchHistory.isVisible())) {
-			// Last stratum so the tip and scale slider can't draw over the popup.
 			graphics.nextStratum()
 			graphics.pose().pushMatrix()
 			graphics.pose().translate(viewport.offsetX, viewport.offsetY)
@@ -1011,7 +1008,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		if (PvTooltip.panOverflow(if (scrollX != 0.0) scrollX else scrollY, horizontal)) {
 			return true
 		}
-		// Shift expands some tips (networth) taller than the screen; with no sideways overflow the wheel pans vertically.
 		if (horizontal && scrollX == 0.0 && PvTooltip.panOverflow(scrollY, false)) {
 			return true
 		}
@@ -1085,8 +1081,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 			) {
 				return true
 			}
-			// Screen arrow-key focus navigation would otherwise steal these
-			// into the inventory/player search boxes.
 			return true
 		}
 		if (uiInteractive() && homeOverview && homePage.slayerKeyPressed(key)) {
@@ -1194,7 +1188,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 
 		fun isDirectionalKey(key: Int): Boolean = key == fishmod.compat.GLFW.GLFW_KEY_RIGHT || key == fishmod.compat.GLFW.GLFW_KEY_LEFT || key == fishmod.compat.GLFW.GLFW_KEY_DOWN || key == fishmod.compat.GLFW.GLFW_KEY_UP
 
-		// Screens don't keep options.keyShift updated; poll GLFW instead.
 		fun shiftDown(): Boolean {
 			val window = Minecraft.getInstance()?.window ?: return false
 			return fishmod.compat.GLFW.keyDown(window, InputConstants.KEY_LSHIFT) ||

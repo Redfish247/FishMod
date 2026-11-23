@@ -244,7 +244,6 @@ public final class AttributeShardsPage {
 
 		List<ForagingSnapshot.AttributeShardRow> notMaxed = new ArrayList<>();
 		for (ForagingSnapshot.AttributeShardRow row : rows) {
-			// Reptiloid cannot realistically be maxed and Chameleon cannot be syphoned, so neither counts as "not maxed".
 			String sid = row.stackId() == null ? "" : row.stackId().toUpperCase(java.util.Locale.ROOT);
 			boolean skip = row.name() != null && (row.name().equalsIgnoreCase("Reptiloid") || row.name().equalsIgnoreCase("Chameleon"))
 				|| sid.contains("REPTILOID") || sid.contains("CHAMELEON");

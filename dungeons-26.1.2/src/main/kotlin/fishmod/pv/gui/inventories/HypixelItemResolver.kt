@@ -74,10 +74,6 @@ object HypixelItemResolver {
 		return null
 	}
 
-	/**
-	 * Hypixel's items API reuses one DiscordApp placeholder skin for potion/talisman bags (and similar).
-	 * Those heads never look like the real menu icons.
-	 */
 	@JvmStatic
 	fun isBrokenHypixelPlaceholderSkin(skinValue: String?): Boolean {
 		if (skinValue.isNullOrBlank()) {

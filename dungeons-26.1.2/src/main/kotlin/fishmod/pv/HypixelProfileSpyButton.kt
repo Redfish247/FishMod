@@ -25,7 +25,6 @@ object HypixelProfileSpyButton {
 	private val TITLE_PROFILE = Regex("^([A-Za-z0-9_]{3,16})'s Profile$")
 	private val TITLE_NAME = Regex("^([A-Za-z0-9_]{3,16})$")
 	private const val SLOT = 16
-	// Built once on first draw instead of every frame.
 	private var icon: ItemStack? = null
 
 	private class Target(val player: String, val x: Int, val y: Int)

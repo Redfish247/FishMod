@@ -56,7 +56,6 @@ class MuseumPage {
 		fun coveredByHigherTier(): Boolean = !coveredBy.isNullOrBlank()
 	}
 
-	/** Per-slot draw data resolved once instead of every frame. */
 	private class SlotView(val iconId: String, val rarityArgb: Int)
 
 	private class CheapRow(val donationId: String, val iconId: String, val name: String, val nameColor: Int, val price: Double)
@@ -153,7 +152,6 @@ class MuseumPage {
 
 	fun applyMuseum(member: JsonObject?) {
 		val next = member ?: JsonObject()
-		// Same cached member instance: skip dirty/scroll reset so we do not re-decode every frame.
 		if (state == LoadState.READY && museumMember === next) {
 			return
 		}
@@ -654,7 +652,6 @@ class MuseumPage {
 		weakMissingIds.clear()
 	}
 
-	/** Lightweight icon only - never builds full lore stacks for the grid unless needed for skulls. */
 	private fun iconAt(slot: Slot): ItemStack {
 		iconByIndex[slot]?.let { return it }
 		if (slot.missing) {

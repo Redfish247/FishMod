@@ -43,10 +43,6 @@ object CrimsonUi {
 	private val SECTION_CODE = Regex("§.")
 	private val AMP_CODE = Regex("&[0-9a-fk-or]")
 
-	/**
-	 * Draw an item at native 16×16 when possible (avoids fuzzy downscales).
-	 * Only scales when the target box is smaller than 16px.
-	 */
 	@JvmStatic
 	fun drawItemIcon(g: GuiGraphicsExtractor, icon: ItemStack?, x: Int, y: Int, size: Int) {
 		if (icon == null || icon.isEmpty) {

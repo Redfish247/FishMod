@@ -27,10 +27,6 @@ object MinionCosts {
         fun label(): String = label
     }
 
-    /**
-     * Materials to craft `tier` from the previous tier. The previous-tier minion itself is
-     * excluded so summing tiers never prices a minion twice.
-     */
     class TierCost(tier: Int, coins: Double, unpriced: List<String>?, noRecipe: Boolean) {
         @get:JvmName("tier") val tier: Int = tier
         @get:JvmName("coins") val coins: Double = coins

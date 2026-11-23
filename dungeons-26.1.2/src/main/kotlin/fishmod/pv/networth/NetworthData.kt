@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap
 import net.minecraft.client.Minecraft
 
 object NetworthData {
-    // applicationWorth is published last so a non-null read implies the rest are loaded.
     @Volatile
     private var applicationWorth: JsonObject? = null
     @Volatile
@@ -28,7 +27,6 @@ object NetworthData {
     @Volatile
     private var reforges: Map<String, String> = emptyMap()
 
-    // Derived collections are built once per load; callers only read them.
     private val memo = ConcurrentHashMap<String, Any>()
 
     @Suppress("UNCHECKED_CAST")

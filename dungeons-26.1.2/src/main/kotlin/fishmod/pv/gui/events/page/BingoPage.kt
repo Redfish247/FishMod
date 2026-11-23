@@ -37,7 +37,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
 class BingoPage {
-	// Goal tooltips per goals list; done-state is fixed for a given snapshot.
 	private var tipGoals: List<EventsSnapshot.BingoGoal>? = null
 	private var tipCompleted: Set<String> = setOf()
 	private val tipCache = IdentityHashMap<EventsSnapshot.BingoGoal, List<PvTooltip.Line>>()
