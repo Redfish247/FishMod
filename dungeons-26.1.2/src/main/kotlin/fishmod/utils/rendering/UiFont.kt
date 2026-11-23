@@ -19,6 +19,15 @@ object UiFont {
     private var failed = false
     private var ascent = 0
 
+    // Main UI font: first installed system sans-serif (no bundled font)
+    private val PRIMARY_PATHS = listOf(
+        "C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/arial.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Helvetica.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+    )
+
     private class Fallback(val info: STBTTFontinfo, val data: ByteBuffer, val unitRatio: Float)
     private val FALLBACK_PATHS = listOf(
         "C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/seguisym.ttf", "C:/Windows/Fonts/ebrima.ttf",
@@ -41,7 +50,8 @@ object UiFont {
         if (loaded) return true
         if (failed) return false
         try {
-            val bytes = UiFont::class.java.getResourceAsStream("/assets/fishmod/fonts/Inter-Regular.ttf")!!.use { it.readAllBytes() }
+            val file = PRIMARY_PATHS.map { java.io.File(it) }.firstOrNull { it.isFile } ?: throw IllegalStateException("no system sans-serif font found")
+            val bytes = file.readBytes()
             val buf = MemoryUtil.memAlloc(bytes.size).put(bytes).flip()
             fontData = buf
             if (!STBTruetype.stbtt_InitFont(info, buf)) throw IllegalStateException("stbtt_InitFont failed")
@@ -49,13 +59,13 @@ object UiFont {
                 val a = st.mallocInt(1); val d = st.mallocInt(1); val g = st.mallocInt(1)
                 STBTruetype.stbtt_GetFontVMetrics(info, a, d, g)
                 ascent = a[0]
-                if (ascent <= 0) FishDiag.fail("UiFont.2", "Inter font reports non-positive ascent ${a[0]}")
+                if (ascent <= 0) FishDiag.fail("UiFont.2", "UI font reports non-positive ascent ${a[0]}")
             }
             loaded = true
         } catch (t: Throwable) {
             failed = true
-            fishmod.utils.debug.FishDebug.LOGGER.error("[UiFont] failed to load Inter", t)
-            FishDiag.fail("UiFont.1", "load bundled Inter font", t)
+            fishmod.utils.debug.FishDebug.LOGGER.error("[UiFont] failed to load system UI font", t)
+            FishDiag.fail("UiFont.1", "load system UI font", t)
         }
         return loaded
     }
@@ -129,9 +139,9 @@ object UiFont {
                 FishDiag.fail("UiFont.3", "stbtt_InitFont rejected fallback font $path")
                 fi.free(); MemoryUtil.memFree(buf); return null
             }
-            val interScale = STBTruetype.stbtt_ScaleForPixelHeight(info, 1f)
-            if (!(interScale > 0f)) FishDiag.fail("UiFont.4", "Inter scale invalid ($interScale) while loading fallback $path")
-            return Fallback(fi, buf, STBTruetype.stbtt_ScaleForPixelHeight(fi, 1f) / interScale)
+            val baseScale = STBTruetype.stbtt_ScaleForPixelHeight(info, 1f)
+            if (!(baseScale > 0f)) FishDiag.fail("UiFont.4", "UI font scale invalid ($baseScale) while loading fallback $path")
+            return Fallback(fi, buf, STBTruetype.stbtt_ScaleForPixelHeight(fi, 1f) / baseScale)
         } catch (t: Throwable) {
             fishmod.utils.debug.FishDebug.LOGGER.warn("[UiFont] fallback font $path failed: $t")
             FishDiag.fail("UiFont.5", "load fallback font $path", t)
