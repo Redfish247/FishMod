@@ -20,6 +20,9 @@ object InstallHeartbeat {
     private const val BORDER_WIDTH = 53
     private const val TWITCH_URL = "https://www.twitch.tv/redfish2471"
     private const val YOUTUBE_URL = "https://www.youtube.com/@RedFish2471"
+    private const val DISCORD_COLOR = 0x5865F2
+    private const val TWITCH_COLOR = 0x9146FF
+    private const val YOUTUBE_COLOR = 0xFF0000
 
     private val modVersion: String = FabricLoader.getInstance()
         .getModContainer("fishmod-dungeons")
@@ -100,26 +103,27 @@ object InstallHeartbeat {
                 .append(Component.literal("/fm suggest [suggestion]").withStyle(ChatFormatting.WHITE)))
             FishUtil.addChatMessage(Component.literal("find a bug? run ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal("/fm bug [Explain]").withStyle(ChatFormatting.WHITE)))
+            FishUtil.addChatMessage(Component.literal(""))
             FishUtil.addChatMessage(
-                linkLine("Discord", discordUrl)
+                linkLine("Discord", discordUrl, DISCORD_COLOR)
                     .append(Component.literal("  |  ").withStyle(ChatFormatting.GRAY))
-                    .append(linkLine("Twitch", TWITCH_URL))
+                    .append(linkLine("Twitch", TWITCH_URL, TWITCH_COLOR))
                     .append(Component.literal("  |  ").withStyle(ChatFormatting.GRAY))
-                    .append(linkLine("YouTube", YOUTUBE_URL))
+                    .append(linkLine("YouTube", YOUTUBE_URL, YOUTUBE_COLOR))
             )
         }
         FishUtil.addChatMessage(border())
     }
 
-    private fun linkLine(label: String, url: String): MutableComponent =
+    private fun linkLine(label: String, url: String, color: Int): MutableComponent =
         Component.literal(label).withStyle { style ->
             try {
-                style.withColor(ChatFormatting.BLUE)
+                style.withColor(color)
                     .withClickEvent(ClickEvent.OpenUrl(URI.create(url)))
                     .withHoverEvent(HoverEvent.ShowText(Component.literal(url)))
             } catch (e: Exception) {
                 FishDiag.fail("InstallHeartbeat.3", "bad welcome link url '$url'", e)
-                style.withColor(ChatFormatting.BLUE)
+                style.withColor(color)
             }
         }
 }
