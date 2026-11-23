@@ -1048,6 +1048,8 @@ object FishSettings {
     @ConfigValue @JvmField var sbSectionServer: Boolean = true
     @ConfigValue @JvmField var customScoreboardAnchor: String = "Custom"
     @ConfigValue @JvmField var customScoreboardRadius: Int = 0
+    @ConfigValue @JvmField var customScoreboardImage: String = ""
+    @ConfigValue @JvmField var customScoreboardImageAlpha: Int = 255
     @ConfigValue @JvmField var sbSectionLevel: Boolean = true
     @ConfigValue @JvmField var sbSectionMayor: Boolean = true
     @ConfigValue @JvmField var sbSectionFooter: Boolean = true

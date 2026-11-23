@@ -121,7 +121,7 @@ object MiningMenu {
         col.features.add(ghost)
 
         val route = Feature("Waypoint Routes", S::class.java, "route")
-        route.sub.add(SubcategoryHeader("Your own route of points, walked in order. Also /fm routes add|remove|restart|clear|toggle"))
+        route.sub.add(SubcategoryHeader("Your own route of points, walked in order. Also /fm routes add|remove|restart|clear|toggle|record|stop"))
         route.sub.add(ButtonSetting("Add Point Here", "Adds the block under you", "Add") { OrderedWaypoints.addHere() })
         route.sub.add(ButtonSetting("Remove Last Point", "", "Remove") { OrderedWaypoints.removeLast() })
         route.sub.add(ButtonSetting("Restart Route", "", "Restart") { OrderedWaypoints.index = 0 })
