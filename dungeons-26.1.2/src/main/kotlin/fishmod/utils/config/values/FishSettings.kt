@@ -30,6 +30,8 @@ object FishSettings {
     @ConfigValue @JvmField var fmColumnOrder: String = ""
     @ConfigValue @JvmField var fmColumnOrderV: Int = 0
     @ConfigValue @JvmField var fmFoldedColumns: String = ""
+    @ConfigValue @JvmField var fmTabs: String = ""
+    @ConfigValue @JvmField var fmTabIndex: Int = 0
     @ConfigValue @JvmField var fmSidebarFolders: String = ""
     @ConfigValue @JvmField var fmPinned: String = "General"
     @ConfigValue @JvmField var fmWindowMax: Boolean = false
