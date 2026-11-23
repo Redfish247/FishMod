@@ -13,7 +13,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// AH "Confirm Purchase": compares the cost with the item's lowest BIN on the confirm button tooltip
 object AhPriceCheck {
     // from NoFrills (PriceTooltips): menu title + "Cost: " lore line on the confirm button
     private const val TITLE = "Confirm Purchase"

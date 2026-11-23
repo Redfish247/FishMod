@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.component.DataComponents
 import fishmod.features.fishing.FishingWorldSettings as W
 
-// HUD with the bait in the last hotbar slot and how much is left
 object BaitHud {
     private var name: String? = null
     private var left: Int? = null

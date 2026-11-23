@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.resources.Identifier
 
-// Diana's own movable titles, so the warp title and rare mob alerts never replace each other (or vanilla titles)
 object DianaTitles {
 
     private class Slot(

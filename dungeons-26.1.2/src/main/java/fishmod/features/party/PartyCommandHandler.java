@@ -51,7 +51,6 @@ public class PartyCommandHandler {
             lastTickMs = now;
             return false;
         });
-        // Don't count the world-swap gap as one huge tick.
         FishEvents.worldChange.register(() -> { lastTickMs = -1; return false; });
 
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
@@ -62,7 +61,6 @@ public class PartyCommandHandler {
 
     private static final String CMD_ALT =
             "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|chim|chimera|chimls|inq|inqs|inquis|king|manti|sphinx|core|stinger|wool|food|relic|relics|stick|sticks|hilt|since|burrow|burrows|mob|mobs|profit|playtime|mf|diana|holding|help|\\?|e|[fm][1-7]|t[1-5]";
-    // Argument keys shown as ghost text in the chat input (#536); keep in sync with the switch in onPartyCommand
     private static final String P = "<player (empty for yourself)>";
     private static final String FLOOR_M7 = "<floor (empty for m7)>";
     public static final java.util.Map<String, String[]> USAGE = new java.util.LinkedHashMap<>();
@@ -317,7 +315,6 @@ public class PartyCommandHandler {
         if (fragment == null || fragment.isBlank()) return fragment;
         String tracked = fishmod.features.dungeon.PartyMemberTracker.resolve(fragment);
         if (tracked != null) return tracked;
-        // roster known but no match: a lobby player is not a party member, send the fragment as typed
         if (fishmod.features.dungeon.PartyMemberTracker.hasMembers()) return fragment;
         if (mc.getConnection() == null) return fragment;
         String frag = fragment.toLowerCase();
@@ -810,7 +807,6 @@ public class PartyCommandHandler {
     private static void sendHolding(Minecraft mc, String responder) {
         if (mc.player == null) return;
         var stack = mc.player.getMainHandItem();
-        // plain text only: server chat commands can't carry item hover data
         String name = stack.isEmpty() ? "nothing" : HypixelApi.STRIP_COLOR.matcher(stack.getHoverName().getString()).replaceAll("");
         sendCmd(mc, responder, "Holding: " + name + (stack.getCount() > 1 ? " x" + stack.getCount() : ""));
     }

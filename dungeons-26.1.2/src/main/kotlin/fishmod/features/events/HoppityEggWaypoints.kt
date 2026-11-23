@@ -16,9 +16,7 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import fishmod.features.extras.ExtrasSettings as S
 
-// Waypoints on visible Hoppity's Hunt chocolate eggs (head on an invisible, unnamed armor stand)
 object HoppityEggWaypoints {
-    // from Skyblocker (EggFinder.EggType): skin hash -> label
     private val EGGS = mapOf(
         "a49333d85b8a315d0336eb2df37d8a714ca24c51b8c6074f1b5b927deb516c24" to "§6Breakfast Egg",
         "7ae6d2d31d8167bcaf95293b68a4acd872d66e751db5a34f2cbc6766a0356d0a" to "§9Lunch Egg",

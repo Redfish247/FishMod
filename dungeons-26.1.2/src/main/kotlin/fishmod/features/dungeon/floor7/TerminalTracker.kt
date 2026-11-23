@@ -171,7 +171,6 @@ object TerminalTracker {
         drawLines(context, font, buildLines(st, cur), component.scaledX, component.scaledY)
     }
 
-    // Editor example: a mid-run state (section 2) through the same line builder and draw
     @JvmStatic
     fun example(): HudExample {
         val font = Minecraft.getInstance().font

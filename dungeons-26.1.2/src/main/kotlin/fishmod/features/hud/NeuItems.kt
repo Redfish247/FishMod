@@ -48,7 +48,6 @@ object NeuItems {
 
     @JvmStatic
     fun ensureLoaded() {
-        // Retry a failed load after 60 s so reopening the screen can recover
         if (started && failed && !loading && System.currentTimeMillis() - failedAt > 60_000L) started = false
         if (started) return
         started = true
@@ -116,7 +115,6 @@ object NeuItems {
         return out.takeIf { it.isNotEmpty() }
     }
 
-    // #588: most helmet/dragon skins (WISE_BABY, PROTECTOR_SHIMMER) lack SKIN in the id; match the lore too
     private fun isSkin(id: String, o: com.google.gson.JsonObject): Boolean {
         if (id.endsWith("BARN_SKIN")) return false
         if (id.contains("SKIN")) return true

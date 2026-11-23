@@ -96,7 +96,6 @@ object MushroomCowPerk {
         return hudLines(total, perSec)
     }
 
-    // total < 0 = not synced yet; perSec <= 0 hides the ETA; shared with the HUD editor example
     private fun hudLines(total: Double, perSec: Double): List<String> {
         val c = Garden.legacy(S.gardenMushroomColor)
         if (total < 0) return listOf("$c§lMooshroom Cow Perk", "§cOpen §e/cropmilestones §cto sync")

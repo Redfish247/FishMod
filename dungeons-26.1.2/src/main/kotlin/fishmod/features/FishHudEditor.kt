@@ -70,7 +70,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ENTRIES.add(e)
         }
 
-        /** Draws a HUD's example at its configured spot for the config screen's shift preview; false if it has none. */
         @JvmStatic
         fun drawPreview(ctx: GuiGraphicsExtractor, name: String): Boolean {
             val e = ENTRIES.firstOrNull { it.name() == name } ?: return false
@@ -234,7 +233,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
         )
 
-        // Same names and order as the FishModScreen columns; categories without HUDs are hidden
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
             "HUD & Overlays" to listOf(
                 "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
@@ -448,7 +446,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val hit = if (q.isEmpty() || g.lowercase().contains(q)) items else items.filter { it.name().lowercase().contains(q) }
             if (hit.isEmpty()) return
             body += Row.Header(g, hit)
-            // groups start collapsed; searching opens every match
             if (q.isNotEmpty() || g in expandedGroups) hit.forEach { body += Row.Hud(it) }
         }
         for ((g, names) in GROUPS) {
@@ -477,14 +474,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         selected = items.first()
     }
 
-    // Shift or Ctrl held = add/remove from the pick instead of replacing it
     private fun shiftDown(): Boolean {
         val w = Minecraft.getInstance().window
         return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT) ||
             fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_CONTROL) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_CONTROL)
     }
 
-    // Examples are rebuilt at most every 200ms (hit-tests ask for sizes many times a frame)
     private class CachedExample(val at: Long, val ex: HudExample?)
     private val exampleCache = HashMap<String, CachedExample>()
 
@@ -627,7 +622,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun anyBoxUnder(mx: Int, my: Int): HudEntry? = shown().lastOrNull { inBox(it, mx, my) }
 
-    // Beside the box (right, or left near the screen edge) so the name tag above/below and the resize grip never cover it
     private fun eyeX(e: HudEntry): Int { val r = e.getX().asInt + sw(e) + 3; return if (r + EYE_W <= this.width) r else e.getX().asInt - EYE_W - 3 }
     private fun eyeY(e: HudEntry) = e.getY().asInt
     private fun eyeShown(e: HudEntry, hover: HudEntry?) = frozen(e) || e === selected || e === hover
@@ -935,7 +929,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             when (val row = rowAt(cmy)) {
                 is Row.Action -> row.run()
                 is Row.Header -> {
-                    // right-hand "pick all" tag picks the group, anywhere else folds it
                     if (cmx >= sideW - 9f - UiRecorder.textWidth("pick all", 5.5f) - 4f) pickGroup(row.items, shiftDown())
                     else if (row.items.isNotEmpty() && !expandedGroups.remove(row.text)) expandedGroups += row.text
                     cachedRowsQuery = null

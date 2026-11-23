@@ -14,7 +14,6 @@ import java.util.regex.PatternSyntaxException
 
 object ChatFilter {
 
-
     private val FRIEND_JOIN_LEAVE: Pattern = Pattern.compile("Friend > \\S+ (?:joined|left)\\.")
 
     // from SkyHanni (ChatFilter skymall/lottery lists)
@@ -118,7 +117,6 @@ object ChatFilter {
         return customEntries.any { it.matches(s) }
     }
 
-    // Copies hide-only Chat Notification rules into Custom Messages and disables the originals.
     @JvmStatic
     fun importNotificationHides() {
         val rules = fishmod.features.extras.ChatRuleStore.rules().filter {

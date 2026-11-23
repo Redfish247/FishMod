@@ -10,7 +10,6 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 
-// Hides non-rare sea creatures (mob + nametag stand) while fishing; names matched like RareMobHighlight.
 object CommonSeaCreatureHider {
     private val BY_LEN = SeaCreatures.ALL.sortedByDescending { it.name.length }
     @Volatile private var hidden: Set<Int> = emptySet()

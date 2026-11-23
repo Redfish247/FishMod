@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as S
 
-// Session tracker for opened winter gifts: count by tier, coins and North Stars
 object GiftTracker {
     // from SkyHanni (GiftProfitTracker), colour codes stripped
     private val GIFT = Regex("""^(COMMON|RARE|SWEET|SANTA TIER|PARTY TIER)! (.+) gift with .+!$""")

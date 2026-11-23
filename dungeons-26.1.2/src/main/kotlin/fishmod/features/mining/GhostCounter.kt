@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.monster.Creeper
 import fishmod.features.slayer.BossToolsSettings as S
 
-// Ghost HUD in The Mist (left-aligned): kills, sorrows, bags of cash, magic find drops, kills/h
 object GhostCounter {
     // from SkyHanni (GhostTracker patterns)
     private val DROP = Regex("RARE DROP! (.+) \\(\\+(\\d+)%? ✯ Magic Find\\)")
@@ -71,7 +70,6 @@ object GhostCounter {
         lastBestiary = n
     }
 
-    // Fallback when the Ghost bestiary tab widget is off: count ghost deaths within 10 blocks
     private fun scanDeaths() {
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return

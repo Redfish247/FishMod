@@ -139,7 +139,6 @@ object DungeonBreaker {
         return "§cCharges: $col$cur§7/§e$max§c⸕"
     }
 
-    // Example data: 17 of 20 charges
     private fun registerPreview() {
         fishmod.features.HudPreview.register("Dungeon Breaker") { fishmod.features.HudPreview.text(listOf(label(17, 20))) }
     }

@@ -14,7 +14,6 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.monster.Creeper
 
-// Glacite corpse highlight + Dwarven Mines ghost box (ghosts = charged creepers)
 object MiningBoxes {
 
     private var corpses: List<Entity> = emptyList()

@@ -96,7 +96,6 @@ object RareDrops {
         return RareDrop(RareDropKind.PET, pet, id, m.groupValues[3].toIntOrNull() ?: 0, price(id), false, rarity, plain)
     }
 
-    // Last token of "[MVP+] Name" must equal our name, so "Ann" does not match "Joanna"
     private fun isOwn(who: String, own: String) = who.trim().substringAfterLast(' ').equals(own, true)
 
     private fun parseDye(plain: String, own: String?): RareDrop? {
@@ -112,7 +111,6 @@ object RareDrops {
         return RareDrop(RareDropKind.PHOENIX, "Phoenix", null, 0, 0.0, true, null, plain)
     }
 
-    // Overridable so unit tests never touch the price caches
     @JvmField var priceFn: (String) -> Double = { ItemPricer.price(it) }
 
     private fun price(id: String?): Double = if (id == null) 0.0 else priceFn(id)

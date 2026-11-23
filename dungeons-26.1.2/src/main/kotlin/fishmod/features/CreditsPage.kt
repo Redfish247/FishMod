@@ -148,7 +148,6 @@ class CreditsPage {
             while (i < CREDITS.size) {
                 val row = (i until Math.min(i + n, CREDITS.size)).map { CREDITS[it] }
                 val rowH = row.maxOf { cardHeight(it, cw) }
-                // skip rows outside the view
                 if (cy + rowH >= y && cy <= y + h) for ((j, c) in row.withIndex()) drawCard(x + j * (cw + GAP), cy, cw, rowH, c)
                 cy += rowH + GAP
                 i += n
@@ -165,7 +164,6 @@ class CreditsPage {
     private fun drawCreator(x: Int, y: Int, w: Int, mx: Int, my: Int) {
         val accent = ScreenTheme.ACCENT
         UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), CREATOR_H.toFloat(), 8f, ScreenTheme.ink(0x0C))
-        // flat rounded tint: the old square gradient poked past the rounded corners
         UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), CREATOR_H.toFloat(), 8f, (0x1A shl 24) or (accent and 0xFFFFFF))
         ScreenTheme.nRoundedRectRing(x, y, w, CREATOR_H, 8, 1, 0, (0x59 shl 24) or (accent and 0xFFFFFF))
 

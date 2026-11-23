@@ -31,7 +31,6 @@ object TPMazeSolver {
 
     fun tpPacket(packet: ClientboundPlayerPositionPacket, before: PositionMoveRotation?) {
         val from = before?.position
-        // Hypixel can send relative yaw/pitch; resolve against the pre-teleport pose
         val change = if (before != null) PositionMoveRotation.calculateAbsolute(before, packet.change, packet.relatives) else packet.change
         val pos = change.position
         if (OdinScan.currentRoomName != "Teleport Maze" || pos.x % 0.5 != 0.0 || pos.y != 69.5 ||
@@ -68,7 +67,6 @@ object TPMazeSolver {
                     32.0, pos, yaw, pitch,
                 ) && player?.boundingBox?.let { pb -> !AABB(it).inflate(0.5, 0.0, 0.5).intersects(pb) } != false
         }
-        // Never filter down to nothing: keep the last guess instead of blanking every pad
         if (narrowed.isNotEmpty()) correctPortals = narrowed
         else FishDiag.fail("TPMazeSolver.2", "tp maze filter emptied at $pos yaw=$yaw pitch=$pitch kept=${correctPortals.size}")
     }

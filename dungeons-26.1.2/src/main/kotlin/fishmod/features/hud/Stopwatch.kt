@@ -132,7 +132,6 @@ object Stopwatch {
         FishEvents.worldChange.register { fire(Trigger.WORLD_CHANGE); false }
         FishEvents.locationChange.register { _ -> fire(Trigger.AREA_CHANGE); false }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
-            // AFTER_INIT also fires on window resize; only fire once per screen instance
             if (enabled && screen is AbstractContainerScreen<*> && screen !== lastOpenScreen) {
                 lastOpenScreen = screen
                 val title = fishmod.utils.TextStrip.plain(screen.title.string)
@@ -150,7 +149,6 @@ object Stopwatch {
     )
 
     private fun tick(mc: Minecraft) {
-        // FishKeys: drain clicks even when disabled so they don't pile up
         val toggle = toggleKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
         val split = splitKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
         val reset = resetKey?.let { var n = false; while (it.consumeClick()) n = true; n } ?: false
@@ -294,10 +292,8 @@ object Stopwatch {
     private val EX_SPLITS = listOf(31_200_000_000L, 41_140_000_000L)
     private val EX_HISTORY = listOf(70_010_000_000L, 68_900_000_000L, 66_500_000_000L)
 
-    // Example splits only when splits can happen (split trigger or key set)
     private fun exSplits(): List<Long> = if (splitTrigger != Trigger.NONE || splitKey?.isUnbound == false) EX_SPLITS else emptyList()
 
-    // Same rows as render() on example data, so the drag box matches the in-game size
     private fun exampleSize(): Pair<Int, Int> {
         val font = Minecraft.getInstance().font
         var w = font.width(prefix) + font.width(fmt(EX_NS))

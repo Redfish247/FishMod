@@ -76,7 +76,6 @@ object MapInfoHud {
         }
     }
 
-    // Example: the real pieces with example values, laid out like the non-tied block (origin = left edge)
     fun registerPreview() {
         fishmod.features.HudPreview.register("Dungeon Map Info") {
             val font = Minecraft.getInstance().font
@@ -89,7 +88,6 @@ object MapInfoHud {
         }
     }
 
-    // Example block width at scale 1 (same measure as the example)
     private fun exampleW(): Int {
         val font = Minecraft.getInstance().font
         return maxOf(font.width(line1(EXAMPLE)), font.width(line2(EXAMPLE)))
@@ -141,7 +139,6 @@ object MapInfoHud {
         return sb.toString()
     }
 
-    /** The numbers the info lines show; live from DungeonScore or example data for the editor. */
     private class Info(
         val secrets: Int, val needed: Int, val tail: Int, val score: Int,
         val deaths: Int, val mimic: Boolean, val prince: Boolean, val crypts: Int,

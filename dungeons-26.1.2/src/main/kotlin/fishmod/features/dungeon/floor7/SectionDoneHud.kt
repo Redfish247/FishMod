@@ -8,7 +8,6 @@ import fishmod.utils.rendering.FishDraw
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-// One-second banner whenever a P3 section is cleared.
 object SectionDoneHud {
 
     private const val SHOW_MS = 1000L

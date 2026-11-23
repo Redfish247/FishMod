@@ -30,7 +30,6 @@ object ItemCustomizationStore {
 
     private var data = Data()
 
-    // Other players' shared customs, keyed by a synthetic uuid (see RemoteItems); never persisted.
     private val remote = Data()
 
     @JvmStatic fun setRemote(uuid: String, name: String?, model: String?, dye: Int?, animated: AnimatedDye?, trim: ArmorTrimId?) {

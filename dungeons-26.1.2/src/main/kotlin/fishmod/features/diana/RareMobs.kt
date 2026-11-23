@@ -129,7 +129,6 @@ object RareMobs {
         hpLines = emptyList(); noShuriken = false
     }
 
-
     private fun strip(s: String) = fishmod.utils.TextStrip.plain(s)
 
     private fun parseHp(raw: String): Double? {
@@ -210,7 +209,6 @@ object RareMobs {
         for (l in deathListeners) runCatching { l(name, dist <= 30) }
     }
 
-
     private fun scanStand(stand: ArmorStand, rare: RareMob) {
         val pos = stand.position()
         if (DianaWaypoints.rareMobNear(pos, 60.0)) return
@@ -239,7 +237,6 @@ object RareMobs {
             if (n >= 20) { DianaWaypoints.remove(w); missingTicks.remove(w) } else missingTicks[w] = n
         }
     }
-
 
     private fun onChat(msg: String) {
         if (!DianaSettings.dianaRareMobs) return
@@ -307,7 +304,6 @@ object RareMobs {
         }
     }
 
-
     private fun notify(rare: RareMob, from: String, force: Boolean = false) {
         val now = System.currentTimeMillis()
         if (!force && now - (lastNotify[rare] ?: 0L) < 3000) return
@@ -317,7 +313,6 @@ object RareMobs {
         playSound()
     }
 
-    // Main + subtitle of the rare mob alert title (also the HUD editor example)
     fun alertText(rare: RareMob, from: String): Pair<String, String> =
         "§6§l<§b§l§kO§6§l> ${rare.code}§l${rare.short.uppercase()}! §6§l<§b§l§kO§6§l>" to (if (from.isEmpty()) "" else "§7$from")
 
@@ -331,13 +326,11 @@ object RareMobs {
         Minecraft.getInstance().execute { DianaTitles.rareAlert(t, sub) }
     }
 
-
     @JvmStatic
     fun glowColor(e: Entity): Int {
         if (glow.isEmpty() || !DianaSettings.dianaRareMobs || !DianaSettings.dianaHighlightRareMobs) return EntityRenderState.NO_OUTLINE
         return glow[e.id] ?: EntityRenderState.NO_OUTLINE
     }
-
 
     private fun renderHud(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()

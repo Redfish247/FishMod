@@ -37,7 +37,6 @@ object Pests {
     private var kills = 0
     private var tick = 0
     private var lastScreen: Any? = null
-    // Vacuum trail is the same Bezier particle path as the spade/radar: shared Trail + TrailBezier solve
     private val trail = fishmod.features.fishing.HotspotMatch.Trail()
     private var lastTrail = 0L
     private var dirty = false
@@ -52,7 +51,6 @@ object Pests {
     private fun solveGuess() {
         dirty = false
         val r = trail.solve() ?: return
-        // Garden is 5x5 plots of 96 around 0,0; anything outside is a bad fit
         if (kotlin.math.abs(r[0]) > 260 || kotlin.math.abs(r[2]) > 260) return
         // Unclamped Y, as SkyHanni does (#604)
         guess = Vec3(r[0], r[1], r[2]); guessShown = -1
@@ -66,7 +64,6 @@ object Pests {
         FishEvents.particle.register { p ->
             if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.speed == 0f && Garden.inGarden() && holdingVacuum()) {
                 val now = System.currentTimeMillis()
-                // New vacuum use: fresh trail, drop the old guess
                 if (now - lastTrail > fishmod.features.fishing.HotspotMatch.NEW_TRAIL_GAP_MS) clearGuess()
                 lastTrail = now
                 // SkyHanni: trail must start within 5 blocks of the player; far stray particles can't seed it
@@ -91,7 +88,6 @@ object Pests {
             if (!S.gardenPestFinder || !Garden.inGarden()) return@register
             val now = System.currentTimeMillis()
             remembered.entries.removeIf { now - it.value > 6 * 60_000L }
-            // tab list is authoritative; the chat memory only applies while the sidebar still shows live pests
             val plots = if (tabPlots.isNotEmpty()) tabPlots.toSet() else if (alive > 0) remembered.keys else emptySet()
             val start = Mining.lineStart()
             val g = guess
@@ -115,7 +111,6 @@ object Pests {
                 if (S.gardenPestFinderLine && guess == null) FishDraw.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestLineColor, 100), 2f)
             }
         }
-        // Distance label, same style as the radar/spade guess
         RenderHooks.GIZMO.register { _ ->
             val gp = guess ?: return@register
             if (!S.gardenPestFinder || !Garden.inGarden()) return@register
@@ -137,7 +132,6 @@ object Pests {
         }
     }
 
-    // Shared by the in-game HUD and the HUD editor example
     private fun pestLines(alive: Int, cooldown: String, plotLabels: List<String>, spray: String, bonus: String): List<String> {
         val out = arrayListOf("${Garden.legacy(S.gardenPestHudColor)}§lPests §f$alive")
         if (cooldown.isNotEmpty()) out += "§7Cooldown: " + (if (cooldown.contains("READY", true)) "§a" else "§e") + cooldown
@@ -169,7 +163,6 @@ object Pests {
 
     fun profitValue(): Double = drops.entries.sumOf { (k, v) -> Garden.priceOf(k) * v }
     fun killCount(): Int = kills
-
 
     private fun scrapePlots(screen: Any?) {
         val scr = screen as? AbstractContainerScreen<*> ?: run { lastScreen = null; return }

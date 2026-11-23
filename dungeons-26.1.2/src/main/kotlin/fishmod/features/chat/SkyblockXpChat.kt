@@ -9,7 +9,6 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Copies the action bar "+5 SkyBlock XP (Reason) (n/100)" popup into chat
 object SkyblockXpChat {
     private val XP = Regex("\\+(\\d+) SkyBlock XP \\(([^)]+)\\) \\((\\d+)/100\\)")
     private var last = ""

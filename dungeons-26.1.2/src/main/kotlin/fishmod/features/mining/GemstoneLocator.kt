@@ -52,7 +52,6 @@ object GemstoneLocator {
             for (pd in paths) {
                 val argb = Mining.alpha(pd.gem.rgb, 100)
                 val floor = pd.floor
-                // Skip a first point that's behind you so the line doesn't double back
                 val dropped = floor.size > 1 && floor[1].distanceToSqr(feet) < floor[0].distanceToSqr(floor[1])
                 val curve = pd.curve(feet.add(0.0, 0.1, 0.0), dropped)
                 FishDraw.gizmoRibbon(curve, S.miningGemLineWidth * 0.05, argb) { it.distanceToSqr(feet) < 20.0 * 20.0 }
@@ -60,14 +59,12 @@ object GemstoneLocator {
         }
     }
 
-    // Path floor points plus the smoothed tail, which does not depend on the player's position
     private class PathData(val gem: Gem, pts: List<Vec3>) {
         val floor: List<Vec3> = pts.map { it.add(0.0, -1.9, 0.0) }
         private val dropFloor: List<Vec3> = floor.drop(1)
         private val tail: List<Vec3> = tailOf(floor)
         private val dropTail: List<Vec3> = tailOf(dropFloor)
 
-        // Same result as smooth(listOf(start) + floor), only the first two segments are recomputed
         fun curve(start: Vec3, dropped: Boolean): List<Vec3> {
             val v = if (dropped) dropFloor else floor
             if (v.size < 2) return smooth(listOf(start) + v)
@@ -82,7 +79,6 @@ object GemstoneLocator {
             if (v.size >= 3) smooth(v).drop(8) else if (v.isEmpty()) emptyList() else listOf(v.last())
     }
 
-    // Catmull-Rom through the points so corners curve instead of snapping
     private fun smooth(p: List<Vec3>, steps: Int = 8): List<Vec3> {
         if (p.size < 3) return p
         val out = ArrayList<Vec3>()

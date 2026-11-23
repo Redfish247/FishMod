@@ -96,7 +96,6 @@ object KuudraExtras {
         }
         RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.3", "kuudra extras fill render failed") { fills(ps, vc) }
-            // screenLine emits quads: draw on the QUADS buffer, DEBUG_LINES turns them into corner ticks
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.4", "kuudra extras line render failed") { lines(ps, vc) }
         }
     }
