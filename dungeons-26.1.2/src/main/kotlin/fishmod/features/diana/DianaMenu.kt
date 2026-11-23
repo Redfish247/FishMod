@@ -129,11 +129,11 @@ object DianaMenu {
             col.features.add(f)
         }
         col.features.add(Feature("Sphinx Solver", S::class.java, "dianaSphinxSolver"))
-        col.features.add(Feature("Crown of Avarice Counter", S::class.java, "dianaCrownCounter"))
-        col.features.add(Feature("Crown of Avarice Milestones", S::class.java, "dianaCrownMilestones"))
         run {
-            val f = Feature("Crown of Avarice Tracker", S::class.java, "dianaCrownHud")
+            val f = Feature("Crown of Avarice", S::class.java, "dianaCrownCounter")
+            f.sub.add(ToggleSetting("Tracker HUD", "HUD with crown coins (past 1B), coins/hour and time to max", S::class.java, "dianaCrownHud"))
             f.sub.add(ToggleSetting("Full Number", "Show the exact coin count instead of 7.92B", S::class.java, "dianaCrownHudFullNumber"))
+            f.sub.add(ToggleSetting("Milestones", "Chat message every 100M coins your crown collects", S::class.java, "dianaCrownMilestones"))
             col.features.add(f)
         }
 
@@ -162,7 +162,8 @@ object DianaMenu {
         style.sub.add(SliderIntSetting("Distance Cutoff", "Show distance beyond this, times dug within (0 = both)", S::class.java, "dianaDistanceCutoff", 0, 200))
         style.sub.add(ToggleSetting("Show Times Dug", "", S::class.java, "dianaShowTimesDug"))
         style.sub.add(SliderIntSetting("Line Width", "", S::class.java, "dianaLineWidth", 1, 10))
-        col.features.add(style)
+        guess.sub.add(SubcategoryHeader("Waypoint Style"))
+        guess.sub.addAll(style.sub)
 
         return col
     }
@@ -178,9 +179,7 @@ object DianaMenu {
         "Diana Party Commands" -> "!chim !inq !relic !stick !since !burrow !mob"
         "Diana Message Hider" -> "Hide spammy Diana chat"
         "Sphinx Solver" -> "Click anywhere in chat to answer the Sphinx"
-        "Crown of Avarice Counter" -> "Keep counting coins past 1B (/fm crown set <amount>)"
-        "Crown of Avarice Tracker" -> "HUD with crown coins (past 1B), coins/hour and time to max"
-        "Crown of Avarice Milestones" -> "Chat message every 100M coins your crown collects"
+        "Crown of Avarice" -> "Counts coins past 1B (/fm crown set <amount>), HUD and milestones"
         "Diana Waypoint Style" -> "Colors, opacity and text for Diana waypoints"
         "Share Rare Mobs" -> "Sends rare Diana mob coords to your party"
         "Receive Rare Mobs" -> "Waypoints from rare mob coords others send"
