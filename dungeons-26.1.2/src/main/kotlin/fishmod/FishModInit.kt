@@ -900,6 +900,20 @@ class FishModInit : ClientModInitializer {
                     )
             )
 
+            // /fmraredrop [name]: fakes a drop line through the real Rare Drop Animation path (no chat is sent)
+            dispatcher.register(
+                ClientCommands.literal("fmraredrop")
+                    .executes { FishUtil.addChatMessage(Component.literal(fishmod.features.general.RareDropAnimation.test(null))); FishConstants.SUCCESS }
+                    .then(
+                        ClientCommands.argument("name", StringArgumentType.greedyString())
+                            .suggests { _, b -> fishmod.features.general.RareDropAnimation.CATEGORIES.flatMap { it.second }.distinct().filter { it.startsWith(b.remaining, true) }.forEach { b.suggest(it) }; b.buildFuture() }
+                            .executes { ctx ->
+                                FishUtil.addChatMessage(Component.literal(fishmod.features.general.RareDropAnimation.test(StringArgumentType.getString(ctx, "name"))))
+                                FishConstants.SUCCESS
+                            }
+                    )
+            )
+
             dispatcher.register(
                 ClientCommands.literal("fmpet").executes { context ->
                     if (fishmod.utils.DevOnly.deny(context.source)) return@executes FishConstants.SUCCESS
