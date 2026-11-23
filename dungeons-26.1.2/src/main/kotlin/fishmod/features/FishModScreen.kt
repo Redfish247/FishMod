@@ -2356,6 +2356,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(fishmod.features.achievements.AchMenu.column())
         columns.add(visuals)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
+        for (c in columns) { if (c === general) continue; val m = c.features.filter { it.name == "Waypoint Routes" }; c.features.removeAll(m); general.features.addAll(m) }
         for (c in columns) {
             if (c === cheats) continue
             for (f in c.features) {

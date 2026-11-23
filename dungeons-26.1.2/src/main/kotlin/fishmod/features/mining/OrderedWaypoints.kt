@@ -30,6 +30,18 @@ object OrderedWaypoints {
     fun clear() { S.routePoints = ""; index = 0 }
     private fun msg(s: String) = Minecraft.getInstance().player?.sendSystemMessage(Component.literal("§b[Route] §f$s"))
 
+    fun command(): com.mojang.brigadier.builder.LiteralArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource> {
+        fun run(f: () -> Unit) = com.mojang.brigadier.Command<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource> { f(); 1 }
+        fun c(n: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource> = net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal(n)
+        return c("routes")
+            .executes(run { msg("${points().size} points, at #${index + 1}. /fm routes add|remove|restart|clear|toggle") })
+            .then(c("add").executes(run(::addHere)))
+            .then(c("remove").executes(run(::removeLast)))
+            .then(c("restart").executes(run { index = 0 }))
+            .then(c("clear").executes(run(::clear)))
+            .then(c("toggle").executes(run { S.route = !S.route; msg(if (S.route) "On" else "Off") }))
+    }
+
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!S.route) return@register

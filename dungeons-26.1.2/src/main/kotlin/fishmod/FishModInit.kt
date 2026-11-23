@@ -670,6 +670,7 @@ class FishModInit : ClientModInitializer {
                     .then(waypointSubcommand("waypoint"))
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
+                    .then(fishmod.features.mining.OrderedWaypoints.command())
                     .then(fishmod.features.dungeon.floor7.StormLbWaypoint.command())
                     .then(fishmod.features.dungeon.floor7.NecronDropPredict.command())
                     .then(fishmod.features.diana.Diana.command())
