@@ -513,6 +513,7 @@ object FishSettings {
     @ConfigValue @JvmField var noCursorResetMs: Int = 150
     @ConfigValue @JvmField var arrowFixEnabled: Boolean = false
     @ConfigValue @JvmField var monoAudioEnabled: Boolean = false
+    @ConfigValue @JvmField var soundRules: String = ""
     @ConfigValue @JvmField var swordBlockingEnabled: Boolean = false
 
     @ConfigValue @JvmField var actionBarEnabled: Boolean = false
