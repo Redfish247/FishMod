@@ -99,9 +99,9 @@ object InstallHeartbeat {
         if (!text.isNullOrBlank()) FishUtil.addChatMessage(Component.literal(text).withStyle(ChatFormatting.WHITE))
         if (!discordUrl.isNullOrBlank()) {
             FishUtil.addChatMessage(Component.literal(""))
-            FishUtil.addChatMessage(Component.literal("want something added to the mod? run ").withStyle(ChatFormatting.AQUA)
+            FishUtil.addChatMessage(Component.literal("Want something added to the mod? ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal("/fm suggest [suggestion]").withStyle(ChatFormatting.WHITE)))
-            FishUtil.addChatMessage(Component.literal("find a bug? run ").withStyle(ChatFormatting.AQUA)
+            FishUtil.addChatMessage(Component.literal("Find a bug? ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal("/fm bug [Explain]").withStyle(ChatFormatting.WHITE)))
             FishUtil.addChatMessage(Component.literal(""))
             FishUtil.addChatMessage(
