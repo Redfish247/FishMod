@@ -20,6 +20,8 @@ object OwnSeaCreatures {
     private val pending = ArrayList<Pair<SeaCreature, Long>>()
     private var warned = false
     private var tick = 0
+    @Volatile private var server = 0
+    private val ALL_NAMES = SeaCreatures.ALL.map { it.name }
 
     fun init() {
         FishEvents.worldChange.register { live.clear(); pending.clear(); warned = false; false }
@@ -31,7 +33,7 @@ object OwnSeaCreatures {
         MiningHuds.reg("Sea Creature Count", "fishing_sc_count", 90, 10,
             { W.scCapX }, { W.scCapX = it }, { W.scCapY }, { W.scCapY = it }, { W.scCapScale }, { W.scCapScale = it },
             { W.scCap && W.scCapHud && live.isNotEmpty() }, { W.scCap && W.scCapHud },
-            example = { listOf("§bCreatures\t§a4/" + W.scCapMax) }, lines = { listOf("§bCreatures\t" + (if (live.size >= W.scCapMax) "§c" else "§a") + live.size + "/" + W.scCapMax) })
+            example = { listOf("§bCreatures\t§a4/" + W.scCapMax) }, lines = { listOf("§bCreatures\t" + (if (live.size >= W.scCapMax) "§c" else "§a") + live.size + "/" + W.scCapMax) + (if (W.scServerCap) listOf("§bServer	" + (if (server >= W.scServerMax) "§c" else "§a") + server + "/" + W.scServerMax) else emptyList<String>()) })
     }
 
     private fun onTick() {
@@ -56,6 +58,14 @@ object OwnSeaCreatures {
             val p = pending.removeAt(i)
             live[s.id] = Live(p.first.name, p.second, s.position())
             if (pending.isEmpty()) break
+        }
+        if (W.scCap && W.scServerCap && tick % 10 == 0) {
+            var n = 0
+            for (s in level.getEntitiesOfClass(ArmorStand::class.java, pl.boundingBox.inflate(80.0))) {
+                val plain = s.customName?.let { TextStrip.plain(it.string) } ?: continue
+                if (plain.indexOf('❤') >= 0 && ALL_NAMES.any { plain.contains(it) }) n++
+            }
+            server = n
         }
         if (W.scCap) {
             if (live.size >= W.scCapMax && !warned) {

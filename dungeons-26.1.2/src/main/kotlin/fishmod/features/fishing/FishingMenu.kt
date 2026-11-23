@@ -35,6 +35,8 @@ object FishingMenu {
         col.features.add(Feature("Sea Creature Kill Timer", FishingWorldSettings::class.java, "scKillTimer"))
         val cap = Feature("Sea Creature Cap Warning", FishingWorldSettings::class.java, "scCap")
         cap.sub.add(SliderIntSetting("Cap", "Alive creatures that trigger the warning", { FishingWorldSettings.scCapMax }, { FishingWorldSettings.scCapMax = it }, 1, 60))
+        cap.sub.add(ToggleSetting("Server Count", "Also count every sea creature near you against the server cap", FishingWorldSettings::class.java, "scServerCap"))
+        cap.sub.add(SliderIntSetting("Server Cap", "", { FishingWorldSettings.scServerMax }, { FishingWorldSettings.scServerMax = it }, 10, 60))
         cap.sub.add(ToggleSetting("Count HUD", "Show your alive creature count", FishingWorldSettings::class.java, "scCapHud"))
         cap.sub.add(fishmod.features.FishModScreen.SoundSearchSetting("Sound", "", { FishingWorldSettings.scCapSound }, { v -> FishingWorldSettings.scCapSound = v }, { 100 }))
         col.features.add(cap)
