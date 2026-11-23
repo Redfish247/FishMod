@@ -317,6 +317,8 @@ public class PartyCommandHandler {
         if (fragment == null || fragment.isBlank()) return fragment;
         String tracked = fishmod.features.dungeon.PartyMemberTracker.resolve(fragment);
         if (tracked != null) return tracked;
+        // roster known but no match: a lobby player is not a party member, send the fragment as typed
+        if (fishmod.features.dungeon.PartyMemberTracker.hasMembers()) return fragment;
         if (mc.getConnection() == null) return fragment;
         String frag = fragment.toLowerCase();
         String bestPrefix = null;

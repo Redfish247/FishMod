@@ -7,14 +7,6 @@ object Easing {
         return if (x < 0.5f) 4f * x * x * x else 1f - Math.pow((-2f * x + 2f).toDouble(), 3.0).toFloat() / 2f
     }
 
-    @JvmStatic
-    fun easeOutBack(x: Float): Float {
-        val c1 = 1.70158f
-        val c3 = c1 + 1f
-        val d = x - 1f
-        return 1f + c3 * d * d * d + c1 * d * d
-    }
-
     class Anim(private val durationMs: Long) {
         private var target: Boolean = false
         private var startValue: Float = 0f

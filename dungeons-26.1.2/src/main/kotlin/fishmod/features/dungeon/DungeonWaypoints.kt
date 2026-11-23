@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.compat.cam
 import fishmod.compat.curScreen
 import fishmod.compat.showScreen
 
@@ -946,7 +947,10 @@ object DungeonWaypoints {
         for (g in cachedMergedOccluded) {
             if (g.filled) drawMergedFillGizmo(g) else drawMergedOutlineGizmo(g)
         }
+        val cullEye = mc.cam.position()
+        val cullLook = FishDraw.lookDir()
         for (w in buildSingles(throughWalls = false)) {
+            if (FishDraw.boxBehindCamera(w.box, cullEye, cullLook)) continue
             if (w.filled) FishDraw.gizmoBox(w.box.inflate(FACE_OFFSET), w.color, 0)
             else FishDraw.gizmoThickOutline(w.box, w.color, lineWidth)
         }
@@ -969,7 +973,10 @@ object DungeonWaypoints {
             for (g in cachedMergedThrough) {
                 if (g.filled) drawMergedFillThrough(matrices, vc, g) else drawMergedOutlineThrough(matrices, vc, g)
             }
+            val cullEye = mc.cam.position()
+            val cullLook = FishDraw.lookDir()
             for (w in buildSingles(throughWalls = true)) {
+                if (FishDraw.boxBehindCamera(w.box, cullEye, cullLook)) continue
                 val rgba = FishDraw.toFloats(w.color)
                 if (w.filled) FishDraw.renderFilled(matrices, vc, w.box.inflate(FACE_OFFSET), rgba)
                 else FishDraw.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)

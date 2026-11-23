@@ -3,7 +3,7 @@ package fishmod.features.hunting
 import fishmod.compat.curScreen
 import fishmod.features.ProfitTrackerKit
 import fishmod.features.dungeon.trackers.CroesusPrices
-import fishmod.features.fishing.FishingAlertText
+import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.TextStrip
@@ -60,8 +60,8 @@ object Foraging {
             { W.foragingTrackerX }, { W.foragingTrackerX = it }, { W.foragingTrackerY }, { W.foragingTrackerY = it },
             { W.foragingTrackerScale }, { W.foragingTrackerScale = it },
             { W.foragingTracker && items.isNotEmpty() && onIsland() }, { W.foragingTracker },
-            example = { listOf("§2Foraging Tracker", "§7Time\t§f20m 4s", "§7Logs\t§a4,210 §7(12.6k/h)", "§7Drops\t§a37",
-                "§7Coins\t§6410k §7(1.2M/h)", "§fFig Log\t§a4,210 §7(§6380k§7)") }, lines = ::lines)
+            example = { listOf("§2§lForaging Profit", "§6380k §7(1.1M/h)\t§7| §fFig Log §f4,210", "§630k §7(90k/h)\t§7| §5Sweep Booster §f37",
+                "§7Logs §f4,210 §7(§f12.6k§7/h)", "§7Drops §f37", "§7Playtime §f20m 4s", "§eProfit §6410k §7(1.2M/h)") }, lines = ::lines)
         MiningHuds.reg("Treecapitator Cooldown", "treecap_cooldown", 90, 10,
             { W.treecapX }, { W.treecapX = it }, { W.treecapY }, { W.treecapY = it },
             { W.treecapScale }, { W.treecapScale = it },
@@ -155,7 +155,7 @@ object Foraging {
 
     private fun price(id: String): Double = CroesusPrices.bazaarPrice(id, true) ?: ItemsDb.npcSellPriceFor(id)
 
-    private fun perHour(v: Double) = if (activeMs < 60_000) "-" else FishingAlertText.fmtCoins(v * 3_600_000.0 / activeMs)
+    private fun rate(v: Double) = ProfitTrackerKit.perHour(v, activeMs)
 
     private fun time(ms: Long): String { val s = ms / 1000; return if (s >= 3600) "${s / 3600}h ${s % 3600 / 60}m" else "${s / 60}m ${s % 60}s" }
 
@@ -163,14 +163,17 @@ object Foraging {
         val logs = items.entries.filter { isLog(it.key) }.sumOf { it.value }
         val drops = items.entries.filter { !isLog(it.key) }.sumOf { it.value }
         val coins = items.entries.sumOf { price(it.key) * it.value }
-        val out = arrayListOf("§2Foraging Tracker", "§7Time\t§f" + time(activeMs),
-            "§7Logs\t§a" + "%,d".format(logs) + " §7(" + perHour(logs.toDouble()) + "/h)", "§7Drops\t§a" + "%,d".format(drops),
-            "§7Coins\t§6" + FishingAlertText.fmtCoins(coins) + " §7(" + perHour(coins) + "/h)")
+        val out = arrayListOf("§2§lForaging Profit")
         // price each item once per render, not per sort comparison
         items.entries.map { Triple(it.key, it.value, price(it.key) * it.value) }.sortedByDescending { it.third }
             .take(W.foragingTrackerRows).forEach { (id, n, v) ->
-                out += "§f" + (names[id] ?: id) + "\t§a" + "%,d".format(n) + " §7(§6" + FishingAlertText.fmtCoins(v) + "§7)"
+                val value = if (v > 0) "§6" + Mining.short(v) + " §7(" + Mining.short(rate(v)) + "/h)" else ""
+                out += value + "\t§7| " + (ProfitTrackerKit.rarityColor(id) ?: "§f") + (names[id] ?: id) + " §f" + "%,d".format(n)
             }
+        out += "§7Logs §f" + "%,d".format(logs) + (if (activeMs < 60_000) "" else " §7(§f" + Mining.short(rate(logs.toDouble())) + "§7/h)")
+        out += "§7Drops §f" + "%,d".format(drops)
+        out += "§7Playtime §f" + time(activeMs)
+        out += "§eProfit §6" + Mining.short(coins) + " §7(" + Mining.short(rate(coins)) + "/h)"
         return out
     }
 }

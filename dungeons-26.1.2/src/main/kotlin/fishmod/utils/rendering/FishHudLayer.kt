@@ -60,7 +60,7 @@ object FishHudLayer {
         val frame = Box()
         return HudElement { ctx, tick ->
             if (!exempt && FishSettings.hideHudsUnderTab && tabOpen() && box.hits(tabBox)) return@HudElement
-            if (!exempt && panelOpen() && box.hits(panelBox)) return@HudElement
+            if (!exempt && panelSeenMs != 0L && panelOpen() && box.hits(panelBox)) return@HudElement
             val prev = inModHud
             val prevBox = cur
             inModHud = true

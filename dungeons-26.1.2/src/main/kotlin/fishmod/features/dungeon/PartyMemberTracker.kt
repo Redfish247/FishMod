@@ -33,6 +33,8 @@ object PartyMemberTracker {
     }
 
     private fun onChat(raw: String) {
+        // every pattern below needs the word "party"
+        if (!raw.contains("arty")) return
         run {
             val stripped = FishConstants.STRIP_COLOR_REGEX.replace(raw, "")
             JOIN.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
@@ -55,6 +57,11 @@ object PartyMemberTracker {
 
     @Synchronized
     private fun clear() = seen.clear()
+
+    // true once the party roster is known (anyone seen); then lobby players must not stand in for party members
+    @JvmStatic
+    @Synchronized
+    fun hasMembers(): Boolean = seen.isNotEmpty()
 
     @JvmStatic
     @Synchronized

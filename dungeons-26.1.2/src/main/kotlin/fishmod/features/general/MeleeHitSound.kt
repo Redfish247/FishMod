@@ -21,6 +21,7 @@ object MeleeHitSound {
     private val SPLASH = Regex("""^\D{0,3}[\d,.]+[kKmM]?\D{0,3}$""")
 
     fun init() {
+        fishmod.utils.events.FishEvents.worldChange.register { target = null; seenSplashes.clear(); false }
         AttackEntityCallback.EVENT.register { player, level, _, entity, _ ->
             if (level.isClientSide) lastHitMs = System.currentTimeMillis()
             if (level.isClientSide && FishSettings.meleeHitSoundEnabled && entity is LivingEntity && !entity.isDeadOrDying) {

@@ -24,12 +24,13 @@ data class ChatRule(
     var soundEnabled: Boolean = false
 ) {
     @Transient private var patternCache: Pattern? = null
-    @Transient private var patternKey: String? = null
+    @Transient private var patternFilter: String? = null
+    @Transient private var patternIcase: Boolean = true
 
     fun compiledPattern(): Pattern? {
-        val key = (if (ignoreCase) "i:" else "s:") + filter
-        if (key != patternKey) {
-            patternKey = key
+        if (filter != patternFilter || ignoreCase != patternIcase) {
+            patternFilter = filter
+            patternIcase = ignoreCase
             patternCache = try {
                 if (ignoreCase) Pattern.compile(filter, Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
                 else Pattern.compile(filter)
