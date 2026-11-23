@@ -473,6 +473,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Discord To Game Chat", "discordBotEnabled")
+            f.sub.add(SubcategoryHeader("Prints messages from a Discord channel into your game chat (needs a bot, not a webhook)"))
+            f.sub.add(InputSetting("Bot Token", "From your Discord application's Bot tab. Keep this private", "discordBotToken"))
+            f.sub.add(InputSetting("Channel ID", "Right-click the channel (Developer Mode on) > Copy Channel ID", "discordBotChannelId"))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Twitch Bridge",
                 { FishSettings.twitchBridgeEnabled },
                 { v -> twitchbridge.TwitchBridgeClient.setEnabled(v) })
