@@ -298,7 +298,7 @@ object SlayerProfitTracker {
             val lvl = fishmod.utils.data.Roman.toInt(m.groupValues[2])
             if (lvl > 0) return "RUNE_${idPart(m.groupValues[1])}_$lvl"
         }
-        SHARD_NAME.matchEntire(name)?.let { return "SHARD_${idPart(it.groupValues[1])}" }
+        SHARD_NAME.matchEntire(name)?.let { return fishmod.features.hunting.ShardTracker.id(it.groupValues[1]) }
         return null
     }
 
