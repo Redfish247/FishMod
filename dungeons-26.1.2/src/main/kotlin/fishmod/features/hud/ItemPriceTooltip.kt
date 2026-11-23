@@ -5,7 +5,6 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishUtil.abbr
 import fishmod.utils.networth.ItemsDb
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.ItemTools
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
@@ -48,7 +47,7 @@ object ItemPriceTooltip {
             }
 
             try {
-                val id = ItemTools.getId(stack) ?: return@ItemTooltipCallback
+                val id = ItemValue.priceId(stack) ?: return@ItemTooltipCallback
                 val count = stack.count
                 val built = ArrayList<Component>(4)
 
