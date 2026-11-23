@@ -17,7 +17,6 @@ import fishmod.features.garden.GardenSettings as S
 
 object GardenMenu {
 
-    // Known rare visitor rewards; the stored comma list keeps any custom entries too
     private val RARE_REWARDS = listOf(
         "Flowering Bouquet", "Overgrown Grass", "Green Bandana", "Dedication", "Music Rune", "Space Helmet",
         "Cultivating", "Replenish", "Delicate", "Copper Dye", "Jungle Key", "Fruit Bowl", "Harbinger Potion", "Pet Cake"
@@ -90,7 +89,6 @@ object GardenMenu {
         val pth = Feature("Pest Timer HUD", S::class.java, "gardenPestHud")
         pth.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::class.java, "gardenPestHudColor"))
         col.features.add(pth)
-
 
         val fp = Feature("Farming Profit Tracker", S::class.java, "gardenProfit")
         fp.sub.add(DropdownSetting("Category", "", FarmingProfitTracker.CATEGORIES, { S.gardenProfitCategory }, { v -> S.gardenProfitCategory = v }))

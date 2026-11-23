@@ -28,7 +28,6 @@ object FishSettings {
     @ConfigValue @JvmField var soulflowHudY: Int = 60
 
     @ConfigValue @JvmField var fmColumnOrder: String = ""
-    // bumps when the default sidebar order changes so old saved orders reset once
     @ConfigValue @JvmField var fmColumnOrderV: Int = 0
     @ConfigValue @JvmField var fmFoldedColumns: String = ""
     @ConfigValue @JvmField var fmSidebarFolders: String = ""
@@ -786,7 +785,6 @@ object FishSettings {
     @ConfigValue @JvmField var inventorySearchEnabled: Boolean = false
     @ConfigValue @JvmField var inventorySearchAlwaysShow: Boolean = false
     @ConfigValue @JvmField var inventorySearchHighlight: Boolean = true
-    // -1 = default spot (bottom centre, above the hotbar)
     @ConfigValue @JvmField var inventorySearchX: Int = -1
     @ConfigValue @JvmField var inventorySearchY: Int = -1
     @ConfigValue @JvmField var inventorySearchHighlightColor: Int = 0xFF55FF55.toInt()

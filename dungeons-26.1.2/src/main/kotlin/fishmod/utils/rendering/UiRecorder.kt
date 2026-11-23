@@ -42,7 +42,6 @@ object UiRecorder {
     @JvmStatic
     fun size(): Int = count
 
-    // Whole-frame transform applied on replay (scale about origin, offset in virtual px, alpha)
     private var xs = 1f
     private var xox = 0f
     private var xoy = 0f
@@ -127,8 +126,6 @@ object UiRecorder {
         }
     }
 
-    // While a FishMod screen draws, opaque neutral dark fills become overlays on the chosen window
-    // background, so section/card/field colours follow the /fm preset and opacity.
     @JvmField var themeOn = false
     @JvmStatic
     fun remap(c: Int): Int {
@@ -138,7 +135,6 @@ object UiRecorder {
         if (c == fishmod.features.ScreenTheme.windowBg() || a < 0xB0 || mx - mn > 12 || mx > 0xA0 || mx < 0x05) return c
         val d = mx - 0x16
         val wa = ((fishmod.features.ScreenTheme.windowBg() ushr 24) / 255f).coerceIn(0.15f, 1f)
-        // mid greys (borders, tracks, buttons) become lighter/darker tints of the theme, not fixed grey
         val oa = Math.round((Math.abs(d) * (if (mx > 0x48) 2 else 6)).coerceIn(6, if (mx > 0x48) 0x90 else 0x70) * wa)
         val light = fishmod.features.ScreenTheme.lightBg()
         val raise = d >= 0

@@ -19,7 +19,6 @@ object DungeonDeathCounter {
         FishEvents.chat.register { text ->
             if (!DungeonSettings.deathCounterHud || !SkyblockLocation.inDungeon()) return@register false
             val line = text.chatRaw.trim()
-            // Every dungeon death (incl. disconnects) ends with "became a ghost."
             if (line.startsWith("☠ ") && line.endsWith(" became a ghost.")) deaths++
             false
         }

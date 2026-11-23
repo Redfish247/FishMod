@@ -34,7 +34,6 @@ object FishingItemOverlays {
     }
 
     private fun draw(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
-        // Compare settings directly: a joined string key would allocate for every slot every frame
         if (W.trashBooks != cacheBooks || W.rodParts != cacheParts || W.thunderBottle != cacheBottle || W.trashBooksList != cacheList) {
             cacheBooks = W.trashBooks; cacheParts = W.rodParts; cacheBottle = W.thunderBottle; cacheList = W.trashBooksList
             cache.clear()

@@ -107,7 +107,6 @@ class MiscStatsSnapshot private constructor(
     @JvmRecord
     data class RaceTime(val mode: String, val ms: Long)
 
-    /** One race course; Dungeon Hub courses have several modes, the rest have one. */
     class RaceGroup(@get:JvmName("label") val label: String, @get:JvmName("bestMs") val bestMs: Long, modes: List<RaceTime>?) {
         @get:JvmName("modes") val modes: List<RaceTime> = modes?.toList() ?: emptyList()
     }

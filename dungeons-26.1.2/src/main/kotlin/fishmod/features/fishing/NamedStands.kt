@@ -3,7 +3,6 @@ package fishmod.features.fishing
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.world.entity.decoration.ArmorStand
 
-// One named-armor-stand scan per game tick, shared by the fishing scanners
 object NamedStands {
     private var level: ClientLevel? = null
     private var tick = Long.MIN_VALUE

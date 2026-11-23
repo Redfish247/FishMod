@@ -60,11 +60,6 @@ object CataXpCalculator {
 		return Result(needed, target, java.util.List.copyOf(top), mayorDisplay(data))
 	}
 
-	/**
-	 * SkyHelper-style Catacombs XP for an S+ run:
-	 * `base * (1 + ring + hecatomb) * (1 + experienced?) * mayor * (1 + global)`.
-	 * Experienced Floor Bonus (+50%) applies at 5+ completions on that floor.
-	 */
 	@JvmStatic
 	fun cataXpPerRun(
 		baseXp: Double,

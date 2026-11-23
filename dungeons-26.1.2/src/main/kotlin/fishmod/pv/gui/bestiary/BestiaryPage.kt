@@ -411,7 +411,6 @@ class BestiaryPage {
 			return 0xFF8A4A10.toInt()
 		}
 
-		/** `bogged_10` / `magma_cube_rider_90` → readable title case, level suffix dropped. */
 		@JvmStatic
 		fun prettyMobId(id: String?): String {
 			if (id.isNullOrBlank()) {

@@ -56,11 +56,6 @@ object FishUtil {
     }
 
     @JvmStatic
-    fun setTitle(text: Component) {
-        forceMainThread { INSTANCE.hud.setTitle(text) }
-    }
-
-    @JvmStatic
     fun forceTitle(title: Component, subtitle: Component) = fishmod.features.AlertTitles.show(title, subtitle, 3500)
 
     @JvmStatic

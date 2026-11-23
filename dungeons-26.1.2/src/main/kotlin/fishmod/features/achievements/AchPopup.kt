@@ -95,7 +95,6 @@ object AchPopup {
         return "$t..."
     }
 
-    // Recorder calls scaled by f: 1 in game (the paint scales), example scale / editor scale in the HUD editor
     private object R {
         @JvmField var f = 1f
         fun fillRoundedRect(x: Float, y: Float, w: Float, h: Float, r: Float, c: Int) = UiRecorder.fillRoundedRect(x * f, y * f, w * f, h * f, r * f, c)
@@ -148,7 +147,6 @@ object AchPopup {
         R.fillRoundedRect(cx - 4f, cy - 8f, 2f, 7f, 1f, a(0x80FFFFFF.toInt(), p))
     }
 
-    // Example: the real card via the UI recorder, positioned from the editor's pose (painted by the editor at its own UI scale)
     private fun registerPreview() {
         fishmod.features.HudPreview.register("Achievement Popup") {
             val card = Card("Example Achievement", "Example unlock - nothing is saved", 25, "Fishing")

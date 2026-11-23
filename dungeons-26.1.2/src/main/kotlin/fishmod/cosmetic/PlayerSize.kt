@@ -42,7 +42,6 @@ object PlayerSize {
         return RemoteScales.get(key) ?: IDENTITY
     }
 
-    // Shared arrays for the per-frame render path, rebuilt only when a setting changes (callers only read them)
     private var forcedFor = Float.NaN
     private var forcedScale = IDENTITY
     private var selfScale = IDENTITY
@@ -56,16 +55,6 @@ object PlayerSize {
         val z = floorPos(FishSettings.playerSizeScaleZ.toFloat())
         if (x != selfX || y != selfY || z != selfZ) { selfX = x; selfY = y; selfZ = z; selfScale = floatArrayOf(x, y, z) }
         return selfScale
-    }
-
-    @JvmStatic
-    fun localSelfValue(): FloatArray {
-        if (!FishSettings.playerSizeEnabled) return IDENTITY
-        return floatArrayOf(
-            floorPos(FishSettings.playerSizeScaleX.toFloat()),
-            floorPos(FishSettings.playerSizeScaleY.toFloat()),
-            floorPos(FishSettings.playerSizeScaleZ.toFloat())
-        )
     }
 
     @JvmStatic

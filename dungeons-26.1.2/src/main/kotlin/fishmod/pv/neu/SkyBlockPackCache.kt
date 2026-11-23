@@ -44,7 +44,6 @@ object SkyBlockPackCache {
 	@Volatile
 	private var ready = false
 
-	// Lets blocking waiters return instead of sitting out the full timeout after a failed load.
 	@Volatile
 	private var loadFailed = false
 
@@ -196,7 +195,6 @@ object SkyBlockPackCache {
 				out.add(file)
 				return
 			}
-			// Sometimes texture ids omit the item/ prefix or point at another model.
 			resolveRef(if (id.startsWith("${NS}item/")) id else "${NS}item/$rest", out, seen, depth + 1)
 			return
 		}

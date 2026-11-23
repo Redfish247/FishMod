@@ -139,7 +139,7 @@ object Kuudra {
             msg.contains("[NPC] Elle: OMG! Great work collecting my supplies!") -> setPhase(2)
             msg.contains("[NPC] Elle: Phew! The Ballista is finally ready!") -> setPhase(3)
             msg.contains("[NPC] Elle: POW! SURELY THAT'S IT!") -> setPhase(4)
-            msg.trim() == "DEFEAT" -> { if (phase in 1..4) { phase = 5; phaseStart[4] = now(); KuudraRequeue.onRunEnd() } }  // freeze splits on a wipe
+            msg.trim() == "DEFEAT" -> { if (phase in 1..4) { phase = 5; phaseStart[4] = now(); KuudraRequeue.onRunEnd() } }
             msg.trim() == "KUUDRA DOWN!" || msg.contains(END) -> { if (phase in 1..4) endRun() }
             msg.contains(PRE) -> onPre()
             msg.contains(NOT_AGAIN) -> checkPre()
@@ -186,7 +186,6 @@ object Kuudra {
     private fun endRun() {
         val t = now()
         phaseStart[4] = t
-        // kill-phase line can be missed (joined late), don't record a bogus split
         if (phaseStart[3] > 0) KuudraHuds.onSplit(3, t - phaseStart[3])
         KuudraHuds.onEnd(t - phaseStart[0])
         phase = 5

@@ -426,10 +426,6 @@ object KuudraGearChecks {
 		return armourGroup("DPS Terror", "INFERNAL_TERROR_CHESTPLATE", rows, false)
 	}
 
-	/**
-	 * Necrotic or Loving Kuudra-set pieces of any set and tier, Terror preferred. Wither Goggles also count in
-	 * the helmet slot. Ancient Terror never qualifies, so DPS and RCM can't claim the same piece.
-	 */
 	private fun rcm(input: Inputs): Group {
 		if (!input.inventoryKnown) {
 			return unknownArmour("RCM", "INFERNAL_TERROR_HELMET")
@@ -587,7 +583,6 @@ object KuudraGearChecks {
 	private fun armourGroup(title: String, iconId: String, rows: List<Entry>, informational: Boolean): Group =
 		Group(title, iconId, slotGroupStatus(rows), rows.count { it.stack != null }, rows, listOf(), informational)
 
-	/** Complete when every row is satisfied, missing when nothing is owned, otherwise incomplete. */
 	private fun slotGroupStatus(rows: List<Entry>): Status = when {
 		rows.any { it.status == Status.UNKNOWN } -> Status.UNKNOWN
 		rows.all { it.status == Status.COMPLETE } -> Status.COMPLETE
@@ -602,7 +597,6 @@ object KuudraGearChecks {
 		return Group(title, iconId, groupStatus(entries), entries.size, entries, checks, false)
 	}
 
-	/** Owned items are never "missing" as a group: the best copy decides between complete and incomplete. */
 	private fun groupStatus(entries: List<Entry>): Status = when {
 		entries.isEmpty() -> Status.MISSING
 		entries.any { it.status == Status.COMPLETE } -> Status.COMPLETE
@@ -800,7 +794,6 @@ object KuudraGearChecks {
 		else -> "Base"
 	}
 
-	/** Kuudra armour set name (e.g. {@code TERROR}) without tier prefix or slot suffix. */
 	internal fun kuudraSet(id: String): String {
 		val slot = slotOf(id)
 		if (slot.isEmpty() || !id.endsWith("_$slot")) {

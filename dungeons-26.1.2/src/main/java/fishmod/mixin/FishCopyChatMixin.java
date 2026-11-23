@@ -122,13 +122,14 @@ public class FishCopyChatMixin extends Screen {
         }
 
         if (!messages.get(endIndex).endOfEntry()) {
+            int boundary = messages.size() - 1;
             for (int i = endIndex + 1; i < messages.size(); i++) {
-                GuiMessage.Line chatHudLine = messages.get(i);
-                if (chatHudLine.endOfEntry()) {
-                    endIndex = i - 1;
+                if (messages.get(i).endOfEntry()) {
+                    boundary = i - 1;
                     break;
                 }
             }
+            endIndex = boundary;
         }
         StringBuilder builder = new StringBuilder();
         for (int i = endIndex; i >= startIndex; i--) {

@@ -17,13 +17,10 @@ import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
 import fishmod.features.mining.MiningSettings as S
 
-// Mines of Divan metal detector: narrows treasure spots from the action bar distance (logic and data from Skyblocker)
 object MetalDetector {
-    // from Skyblocker
     private val TREASURE = Regex("TREASURE: (\\d+\\.?\\d?)m")
     private val KEEPER = Regex("Keeper of (\\w+)")
     private val KEEPER_OFFSET = mapOf("Diamond" to Vec3i(33, 0, 3), "Lapis" to Vec3i(-33, 0, -3), "Emerald" to Vec3i(-3, 0, 33), "Gold" to Vec3i(3, 0, -33))
-    // from Skyblocker: chest offsets from the Mines of Divan centre
     private val CHESTS = intArrayOf(
         -38, -22, 26, 38, -22, -26, -40, -22, 18, -41, -20, 22, -5, -21, 16, 40, -22, -30, -42, -20, -28, -43, -22, -40,
         42, -19, -41, 43, -21, -16, -1, -22, -20, 6, -21, 28, 7, -21, 11, 7, -21, 22, -12, -21, -44, 12, -22, 31,
@@ -48,7 +45,6 @@ object MetalDetector {
             if (!S.miningMetalDetector || s.isEmpty() || s.size > 8 || !inDivan()) return@register
             FishDiag.guard("MetalDetector.2", "metal detector render threw") {
                 val c = S.miningMetalDetectorColor or 0xFF000000.toInt()
-                // from Skyblocker: the single answer is drawn one block down with a line to it
                 if (s.size == 1) {
                     val b = s[0].below()
                     FishDraw.gizmoBox(AABB(b), (c and 0x00FFFFFF) or 0x50000000, c, true)
@@ -72,7 +68,6 @@ object MetalDetector {
         if (center == null) findCenter()
         val pos = pl.position()
         val before = spots.size
-        // only trust a reading taken standing still
         if (dist == prevDist && pos == prevPos) update(dist, pos)
         if (spots.size != before) FishUtil.addChatMessage(Component.literal(
             if (spots.size == 1) "§aMetal Detector: treasure found." else if (spots.isEmpty()) "§cMetal Detector: no match, move and retry." else "§eMetal Detector: " + spots.size + " possible spots"))

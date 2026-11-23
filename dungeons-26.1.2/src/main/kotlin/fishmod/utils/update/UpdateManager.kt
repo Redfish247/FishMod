@@ -148,7 +148,6 @@ object UpdateManager {
         if (SkyblockLocation.inDungeon() || SkyblockLocation.`in`(SkyblockLocation.KUUDRA)) return
         val release = pendingRelease() ?: return
         if (!FishDiag.check(release.version.isNotEmpty(), "UpdateManager.4") { "pending release has empty version tag=${release.tag}" }) return
-        // Once per Hypixel login, never again while connected.
         shownThisLogin = true
         if (!FishSettings.updateNotice) return
         synchronized(lock) { state.lastShownAt = System.currentTimeMillis(); save() }
@@ -267,11 +266,9 @@ object UpdateManager {
             304 -> synchronized(lock) { state.lastCheckAt = now; state.nextCheckAt = 0; save() }
             404 -> synchronized(lock) { state.release = null; state.etag = null; state.lastCheckAt = now; save() }
             403, 429 -> {
-                // Rate limit is the player's IP quota, not a bug: back off silently.
                 synchronized(lock) { state.nextCheckAt = rateLimitResetAt(res, now); save() }
             }
             else -> {
-                // GitHub 5xx is their outage, not a bug: back off without a report.
                 if (res.statusCode() < 500) FishDiag.fail("UpdateManager.10", "GitHub release check HTTP ${res.statusCode()}")
                 synchronized(lock) { state.nextCheckAt = now + FAILURE_BACKOFF_MS; save() }
             }
@@ -424,7 +421,6 @@ object UpdateManager {
         return path.takeIf { Files.isRegularFile(it) && it.fileName.toString().endsWith(".jar") }
     }
 
-    // #614: ProcessHandle command is empty on some launchers/sandboxes; fall back to java.home
     private fun javaExecutable(): String? {
         ProcessHandle.current().info().command().orElse(null)?.takeIf { it.isNotBlank() }?.let { return it }
         val bin = Path.of(System.getProperty("java.home") ?: return null, "bin")

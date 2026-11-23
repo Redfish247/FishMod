@@ -36,6 +36,8 @@ object TabListCache {
 
     private fun tick(mc: Minecraft) {
         if (mc.player == null || mc.connection == null) {
+            lastSig = 0
+            lastIdentity = 0
             if (entries.isNotEmpty()) {
                 entries = emptyList()
                 version++

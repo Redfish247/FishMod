@@ -23,7 +23,6 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 
-// Deathmite/skull glow, skull hide, teammate HP alert + HUD, class level colour in tab
 object DungeonExtras {
 
     private const val HUD = "Party HP"
@@ -87,7 +86,6 @@ object DungeonExtras {
     @JvmStatic
     fun hideSkull(e: Entity): Boolean = S.skullHide && e is ArmorStand && skulls.contains(e.id)
 
-    // Rebuilds "[lvl] rank name (Class XX)" with the level coloured by tier
     @JvmStatic
     fun classTab(original: Component): Component {
         if (!S.classTabColor || !SkyblockLocation.inDungeon()) return original
@@ -97,7 +95,6 @@ object DungeonExtras {
         val (sb, rank, name, cls, lvl) = m.destructured
         val n = lvl.toIntOrNull() ?: fishmod.utils.data.Roman.toInt(lvl)
         val built = Component.literal("§8$sb ${if (rank.isEmpty()) "" else "$rank "}§f$name §f(§d$cls ${color(n)}$lvl§f)")
-        // Tab names repeat every frame; output depends only on the plain text.
         if (classTabCache.size >= 256) classTabCache.clear()
         classTabCache[plain] = built
         return built

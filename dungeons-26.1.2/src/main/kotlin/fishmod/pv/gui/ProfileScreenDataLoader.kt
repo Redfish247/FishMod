@@ -30,8 +30,6 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 	private var gardenContestsFetchStarted = false
 	private var gardenWeightFetchStarted = false
 	private var museumFetchStarted = false
-	private var usernameHistoryFetchStarted = false
-	private var statusFetchStarted = false
 	private var bingoFetchStarted = false
 	private var bingoFetchInFlight = false
 	private var bingoRetryAtMs = 0L
@@ -45,8 +43,6 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 		bingoFetchStarted = false
 		bingoFetchInFlight = false
 		bingoRetryAtMs = 0L
-		usernameHistoryFetchStarted = false
-		statusFetchStarted = false
 		playerRankFetchStarted = false
 	}
 
@@ -99,7 +95,6 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 		if (screen.homePage().usernameHistory().state == UsernameHistory.State.LOADING) {
 			return
 		}
-		usernameHistoryFetchStarted = true
 		screen.homePage().applyUsernameHistory(UsernameHistory.loading())
 		val generation = screen.loadGeneration()
 		HypixelApiClient.usernameHistory(uuid).whenComplete { opt, error ->
@@ -157,7 +152,6 @@ class ProfileScreenDataLoader(private val screen: ProfileViewerScreen) {
 		if (screen.homePage().playerStatus().state == PlayerStatus.State.LOADING) {
 			return
 		}
-		statusFetchStarted = true
 		screen.homePage().applyPlayerStatus(PlayerStatus.loading())
 		val generation = screen.loadGeneration()
 		HypixelApiClient.status(uuid).whenComplete { opt, error ->

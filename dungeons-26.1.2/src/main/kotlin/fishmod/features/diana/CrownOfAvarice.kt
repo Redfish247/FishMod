@@ -36,7 +36,6 @@ object CrownOfAvarice {
 
     private const val ID = "CROWN_OF_AVARICE"
     private const val CAP = 1_000_000_000L
-    // A maxed crown gives 2x coins instead of 5x, so each purse gain is scaled up by 2.5
     private const val SCALE = 2.5
     private const val COIN_WINDOW_MS = 3_000L
     private const val MAX_GAIN = 10_000_000L
@@ -57,8 +56,6 @@ object CrownOfAvarice {
     private const val MILESTONE = 100_000_000L
     private val lastSeen = HashMap<String, Long>()
 
-    // Coins/hour: only time with gains inside the AFK window counts
-    // Per crown, so swapping between crowns pauses one session instead of resetting it
     private class Session(var gained: Long = 0L, var activeMs: Long = 0L, var lastTotal: Long = -1L, var lastGainMs: Long = 0L, var lastTickMs: Long = 0L)
     private val sessions = HashMap<String, Session>()
 
@@ -102,7 +99,6 @@ object CrownOfAvarice {
         val cur = total(helmet) ?: itemCoins(helmet)
         val now = System.currentTimeMillis()
         val r = sessions.getOrPut(uuidOf(helmet) ?: "crown") { Session(lastTotal = cur, lastTickMs = now) }
-        // Gap since this crown was last worn doesn't count
         val worn = now - r.lastTickMs <= 2_000L
         if (worn && r.lastGainMs > 0 && now - r.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L) r.activeMs += now - r.lastTickMs
         r.lastTickMs = now
@@ -181,7 +177,6 @@ object CrownOfAvarice {
         val p = mc.player ?: return
         checkMilestone(p.getItemBySlot(EquipmentSlot.HEAD))
         trackRate(p.getItemBySlot(EquipmentSlot.HEAD))
-        // Skip the scoreboard scan while off; reset so re-enabling doesn't count a stale gain
         if (!DianaSettings.dianaCrownCounter) { lastPurse = -1L; return }
         val purse = readPurse(mc)
         val prev = lastPurse

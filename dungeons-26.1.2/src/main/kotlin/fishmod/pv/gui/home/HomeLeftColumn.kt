@@ -563,7 +563,6 @@ class HomeLeftColumn {
 		@JvmStatic
 		fun statusBoxWidth(boxW: Int): Int = minOf(boxW, maxOf(48, boxW - 8))
 
-		// Full label stays in the hover tooltip; the box itself never grows.
 		@JvmStatic
 		fun statusText(width: (String) -> Int, label: String?, statusW: Int): String =
 			trimToWidth(width, label, maxOf(8, statusW - 8))

@@ -153,10 +153,6 @@ class MiningSnapshot private constructor(
         return if (duration <= 0L) 0L else process.startTimeMs + duration
     }
 
-    /**
-     * Nucleus completions: minimum `total_placed` among the five Crystal Hollows
-     * gemstone crystals (SkyCrypt-style). Jade alone can over-count when other gems lag.
-     */
     fun nucleusRuns(): Long {
         var min = Long.MAX_VALUE
         var any = false
@@ -241,7 +237,6 @@ class MiningSnapshot private constructor(
             val gemstone = powder(core, "gemstone")
             val glacite = powder(core, "glacite")
 
-            // Prefer skill_tree even when 0 so we do not resurrect stale mining_core.tokens_spent.
             val tokensSpent = SkillTreePresets.selectedTokensSpent(skillTree, "mining") ?: intOf(core, "tokens_spent")
 
             val treeAbility = Leveling.obj(skillTree?.get("selected_ability"))

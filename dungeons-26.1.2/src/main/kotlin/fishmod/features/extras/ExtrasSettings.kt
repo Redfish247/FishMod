@@ -33,7 +33,6 @@ object ExtrasSettings {
     @ConfigValue @JvmField var partyJoinVolume: Int = 100
     @ConfigValue @JvmField var partyJoinTitle: Boolean = false
 
-    // Patcher waypoints
     @ConfigValue @JvmField var patcherWaypoints: Boolean = false
     @ConfigValue @JvmField var patcherWaypointColor: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var patcherWaypointSeconds: Int = 60

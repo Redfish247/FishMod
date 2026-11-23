@@ -124,7 +124,6 @@ class GardenOverviewPage {
 			ly += font.lineHeight + 3
 			val cols = minOf(5, maxOf(4, (lw + CHIP_GAP) / (CHIP_CELL + CHIP_GAP)))
 			val rowsNeeded = maxOf(1, (chips.size + cols - 1) / cols)
-			// Leave room for farming toolkit below; shrink row height so every chip fits (do not clip to 1 row).
 			val toolkitReserve = 52
 			val avail = maxOf(CHIP_CELL + font.lineHeight + 2, (y + h - PAD - toolkitReserve) - ly)
 			val naturalCellH = CHIP_CELL + font.lineHeight + 2

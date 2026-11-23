@@ -13,10 +13,8 @@ import fishmod.utils.events.chatPlain
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 
-// Session dragon profit: kills per type, your eyes, essence and items picked up after a dragon dies
 object DragonProfitTracker {
 
-    // from Eli's logs
     private val SPAWN = Regex("^☬ The (\\w+) Dragon has spawned!$")
     private val DOWN = Regex("^(\\w+) DRAGON DOWN!$")
     private val ESSENCE = Regex("^\\+(\\d+) Dragon Essence$")
@@ -88,7 +86,6 @@ object DragonProfitTracker {
         return m
     }
 
-    // Items gained in the inventory during the loot window count as dragon loot
     private fun scanInventory(mc: Minecraft) {
         val p = mc.player ?: return
         val now = inventoryCounts(p)

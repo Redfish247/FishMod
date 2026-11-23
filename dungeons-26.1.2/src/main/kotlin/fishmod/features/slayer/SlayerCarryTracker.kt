@@ -28,7 +28,6 @@ object SlayerCarryTracker {
 
     private class Watched(val ign: String, val stand: net.minecraft.world.entity.Entity, var pos: Vec3, var boss: String)
 
-    // Owner tag: "Spawned by: X" (old) or "X's SLAYER BOSS" / "Xs' SLAYER BOSS" (seen 2026-11-20)
     private val SPAWNED_BY_RE = Regex("""Spawned by: (\w+)|^\W*(\w+)'s? SLAYER BOSS""")
     private const val OWNER_RANGE_SQ = 8.0 * 8.0
     private const val COUNT_RANGE_SQ = 32.0 * 32.0
@@ -40,7 +39,6 @@ object SlayerCarryTracker {
     private val watched = HashMap<Int, Watched>()
     private val seen = HashSet<Int>()
     private val tries = HashMap<Int, Int>()
-    // negative cache: entity id -> name component already known not to be a boss label
     private val skip = HashMap<Int, net.minecraft.network.chat.Component>()
     private var level: Any? = null
     private var tick = 0
@@ -82,7 +80,6 @@ object SlayerCarryTracker {
             if (skip[e.id] === comp) continue
             val boss = bossLabel(comp.string)
             if (boss == null) { skip[e.id] = comp; continue }
-            // "Spawned by" stand can load after the boss name: retry ~5s, nearest-player guess only on the last try
             val n = (tries[e.id] ?: 0) + 1
             val o = owner(lvl, e, n >= 20)
             if (o == null && n < 20) { tries[e.id] = n; continue }
@@ -95,7 +92,6 @@ object SlayerCarryTracker {
         if (skip.size > 4096) skip.clear()
     }
 
-    // Tracked ign, "" = someone else's boss (final), null = owner not known yet
     private fun owner(lvl: net.minecraft.client.multiplayer.ClientLevel, boss: net.minecraft.world.entity.Entity, last: Boolean): String? {
         for (o in lvl.getEntities(boss, boss.boundingBox.inflate(1.5, 4.0, 1.5))) {
             val n = o.customName?.string ?: continue
@@ -141,7 +137,6 @@ object SlayerCarryTracker {
         carries.clear(); watched.clear(); save()
         FishUtil.addChatMessage(Component.literal("§b[FM] §fLeft the slayer area, cleared $n carr${if (n == 1) "y" else "ies"}"))
     }
-
 
     @JvmStatic
     fun debug() {
@@ -192,7 +187,6 @@ object SlayerCarryTracker {
         for (c in carries.values) FishUtil.addChatMessage(Component.literal("§b[FM] §e${c.ign} §7${c.boss} §a${c.done}§7/§f${if (c.total > 0) c.total else "∞"}"))
     }
 
-
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerCarryHudEnabled || carries.isEmpty()) return
@@ -203,8 +197,9 @@ object SlayerCarryTracker {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.slayerCarryHudX.toFloat(), FishSettings.slayerCarryHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        HudPreview.drawText(ctx, lines, FishConstants.TEXT_HEIGHT + 2)
-        ctx.pose().popMatrix()
+        try {
+            HudPreview.drawText(ctx, lines, FishConstants.TEXT_HEIGHT + 2)
+        } finally { ctx.pose().popMatrix() }
     }
 
     private fun carryLines(list: Collection<Carry>): List<String> {
@@ -224,7 +219,6 @@ object SlayerCarryTracker {
             HudPreview.text(carryLines(listOf(Carry("ExampleOne", 3, 10, boss), Carry("ExampleTwo", 5, 5, boss))), FishConstants.TEXT_HEIGHT + 2)
         }
     }
-
 
     private fun load() {
         if (!FILE.exists()) return

@@ -13,7 +13,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import kotlin.math.roundToInt
 
-/** Masonry grid of titled cards, used by the trial skill overviews. Scrolls when it doesn't fit. */
 class SummaryCards {
 	sealed interface Item
 

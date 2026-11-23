@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 
-// Opt-in sharing of big catches. Everything off by default; hotspot sharing is click-only, never automatic.
 object FishingShare {
     val bigMobs: List<SeaCreature> by lazy { SeaCreatures.ALL.filter { it.rare }.sortedBy { it.name } }
 

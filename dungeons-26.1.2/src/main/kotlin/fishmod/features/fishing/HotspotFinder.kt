@@ -48,7 +48,6 @@ object HotspotFinder {
     private var tick = 0
     private const val RADAR_USE_WINDOW_MS = 60_000L
     private var lastRadarUseMs = 0L
-    // Last solved trail, kept to log the error when the real stand shows up (debug only)
     private var calibGuess = false
     private var calibX = 0.0
     private var calibY = 0.0
@@ -92,7 +91,6 @@ object HotspotFinder {
 
     private fun onFlame(x: Double, y: Double, z: Double, count: Int, speed: Float) {
         val now = System.currentTimeMillis()
-        // Flames from other players' radars or other sources must not make a guess
         if (!radarRecentlyUsed(now)) return
         val fresh = trail.size == 0 || now - trail.lastMs > HotspotMatch.NEW_TRAIL_GAP_MS
         if (fresh) { debugCount = 0; if (W.hotspotDebug) debugRadarUse() }
@@ -109,7 +107,6 @@ object HotspotFinder {
         FishMsg.send("§7[Hotspot] new flame trail, main hand '${held.hoverName.string}' id=${ItemTools.getId(held)}")
     }
 
-    // Solve the trail whenever new points arrived (at most once per tick)
     private fun solve(level: net.minecraft.world.level.Level, now: Long) {
         dirty = false
         val r = trail.solve() ?: return

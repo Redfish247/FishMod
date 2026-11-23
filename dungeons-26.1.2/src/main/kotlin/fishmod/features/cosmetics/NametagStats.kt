@@ -52,7 +52,6 @@ object NametagStats {
     private fun canKick(now: Long): Boolean =
         inFlight.get() < MAX_INFLIGHT && now - lastKick >= KICK_SPACING_MS
 
-    // Last name checked: the local player is asked every frame, so skip the regex and lowercase for a repeat
     private var memoName: String? = null
     private var memoValid = false
     private var memoKey = ""

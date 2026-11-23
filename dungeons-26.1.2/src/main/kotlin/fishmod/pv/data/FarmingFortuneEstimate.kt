@@ -14,11 +14,6 @@ import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.floor
 
-/**
- * Farming Fortune for the best farming setup found on the profile. The API only has what was last saved, so this
- * is an estimate built from item lore plus the permanent bonuses below (checked against EliteFarmers'
- * FarmingWeight constants). Sources the API doesn't expose are listed as unavailable instead of guessed.
- */
 class FarmingFortuneEstimate private constructor(
 	internal val inputs: Inputs,
 	armour: List<Piece>,
@@ -99,10 +94,6 @@ class FarmingFortuneEstimate private constructor(
 		}
 	}
 
-	/**
-	 * {@code toolkit} holds tools still stored in the toolkit; slots marked in use are skipped because the tool is in
-	 * the inventory. {@code toolkitUnreadable} lists crops whose slot had data that didn't decode.
-	 */
 	internal data class Inputs(
 		val inventoryKnown: Boolean,
 		val toolkitKnown: Boolean,
@@ -284,7 +275,6 @@ class FarmingFortuneEstimate private constructor(
 		return out
 	}
 
-	/** Temporary and situational bonuses for {@code crop} at {@code nowMs}. Never part of a total. */
 	fun temporary(crop: String?, garden: Garden, nowMs: Long): List<FarmingFortuneTemporary.Source> =
 		FarmingFortuneTemporary.sources(this, crop, garden, nowMs)
 

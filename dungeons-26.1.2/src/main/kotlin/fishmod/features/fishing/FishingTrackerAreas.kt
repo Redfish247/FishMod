@@ -13,7 +13,6 @@ object FishingTrackerMath {
     private val TREASURE_RE = Regex("""^\S? ?(GOOD JUNK|GREAT JUNK|OUTSTANDING JUNK|GOOD|GREAT|OUTSTANDING|MUSICAL) CATCH!""")
     private val DICE_RE = Regex("""^Your (High Class )?Archfiend Dice rolled a (\d+)!""")
 
-    // Idle gaps longer than this do not count as fishing time
     const val ACTIVE_GAP_MS = 300_000L
 
     @JvmStatic fun activeDelta(lastAt: Long, now: Long): Long = if (lastAt <= 0L) 0L else (now - lastAt).coerceIn(0L, ACTIVE_GAP_MS)

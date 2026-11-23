@@ -34,9 +34,9 @@ object AnimatedDyeAnimator {
             if (dye.delay > 0) {
                 if (dye.cycleBack) {
                     onBackCycle = true
-                    progress = dye.delay / dye.duration
+                    progress = dye.delay / dye.duration.coerceAtLeast(0.01f)
                 } else {
-                    progress = 1 - dye.delay / dye.duration
+                    progress = 1 - dye.delay / dye.duration.coerceAtLeast(0.01f)
                 }
                 progress = progress.coerceIn(0f, 1f)
             }
@@ -55,7 +55,7 @@ object AnimatedDyeAnimator {
         val current = if (state.onBackCycle) dye.keyframes[keyframe + 1] else dye.keyframes[keyframe]
         val next = if (state.onBackCycle) dye.keyframes[keyframe] else dye.keyframes[keyframe + 1]
 
-        var colorProgress = (state.progress - current.time) / (next.time - current.time)
+        var colorProgress = if (next.time == current.time) 1f else (state.progress - current.time) / (next.time - current.time)
         colorProgress = colorProgress.coerceIn(0f, 1f)
 
         val color = lerpArgb(current.color, next.color, colorProgress)
@@ -64,7 +64,7 @@ object AnimatedDyeAnimator {
     }
 
     private fun update(state: State, dye: ItemCustomizationStore.AnimatedDye, deltaTicks: Float) {
-        val v = deltaTicks * 0.05f / dye.duration
+        val v = deltaTicks * 0.05f / dye.duration.coerceAtLeast(0.01f)
         if (state.onBackCycle) {
             state.progress -= v
             if (state.progress <= 0f) {

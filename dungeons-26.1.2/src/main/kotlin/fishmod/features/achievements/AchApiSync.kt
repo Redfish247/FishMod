@@ -198,7 +198,7 @@ object AchApiSync {
         val hotmXp = maxOf(num(m, "skill_tree.experience.mining"), num(m, "mining_core.experience"))
         put("mining.hotm", (HOTM_XP.indexOfLast { hotmXp >= it } + 1).toDouble())
         put("mining.powder", listOf("mithril", "gemstone", "glacite").sumOf { num(m, "mining_core.powder_$it") + num(m, "mining_core.powder_spent_$it") })
-        put("mining.corpses", obj(m, "glacite_player_data.corpses_looted")?.entrySet()?.sumOf { it.value.asDouble } ?: 0.0)
+        put("mining.corpses", sumNums(obj(m, "glacite_player_data.corpses_looted")))
         put("mining.mineshafts", num(m, "glacite_player_data.mineshafts_entered"))
 
         val kills = obj(m, "bestiary.kills")
@@ -236,7 +236,7 @@ object AchApiSync {
         val nether = obj(m, "nether_island_player_data")
         if (el(nether, "selected_faction")?.asString?.isNotBlank() == true) put("crimson.faction", 1.0)
         put("crimson.rep", maxOf(num(nether, "mages_reputation"), num(nether, "barbarians_reputation")))
-        val dojo = obj(nether, "dojo")?.entrySet()?.filter { it.key.startsWith("dojo_points_") }?.sumOf { it.value.asDouble } ?: 0.0
+        val dojo = obj(nether, "dojo")?.entrySet()?.filter { it.key.startsWith("dojo_points_") }?.sumOf { sumNums(it.value) } ?: 0.0
         if (dojo >= 7000) put("crimson.dojoBlack", 1.0)
         var kt = 0.0
         KUUDRA_TIERS.forEachIndexed { i, t -> val c = num(nether, "kuudra_completed_tiers.$t"); kt += c; put("kuudra.t${i + 1}", c) }

@@ -20,14 +20,12 @@ public class PacketErrorGuardMixin {
             MixinGuard.fail("PacketErrorGuardMixin." + name, "FishMod threw while handling " + name + ", kept the connection", exception);
             ci.cancel();
         } catch (Throwable ignored) {
-            // never make the vanilla error path worse
         }
     }
 
     @Unique
     private static boolean fishmod$isOurs(Throwable t) {
         for (int depth = 0; t != null && depth < 8; depth++, t = t.getCause()) {
-            // Owner = first mod frame from the top; our packet wrapper sits under every handler (fishmod.dev #619).
             for (StackTraceElement e : t.getStackTrace()) {
                 String cls = e.getClassName();
                 String m = e.getMethodName();

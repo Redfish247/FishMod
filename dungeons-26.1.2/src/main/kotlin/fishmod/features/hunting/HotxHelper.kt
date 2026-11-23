@@ -16,9 +16,7 @@ import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 import fishmod.features.extras.ExtrasSettings as S
 
-// Heart of the Mountain / Forest: perk level tint + number, and your powder/whispers under the cost
 object HotxHelper {
-    // from Skyblocker (HotmPerkLevelAdder / HotfPerkLevelAdder): menu titles
     private val TITLE = Regex("^Heart of the (Mountain|Forest)$")
     // from SkyHanni (HotxHandler): first lore line "Level N", missing means maxed; locked perks end with these
     private val LEVEL = Regex("^Level (\\d+)")
@@ -97,7 +95,6 @@ object HotxHelper {
         lines.add(i + 2, Component.literal("§7You have $color" + "%,d".format(have) + " §7" + m.groupValues[2]))
     }
 
-    // null = not a perk or still locked
     private fun perkLevel(st: ItemStack): Pair<Int, Int>? {
         val max = (if (hotm) HOTM_MAX else HOTF_MAX)[TextStrip.plain(st.hoverName.string).trim()] ?: return null
         val raw = st.get(DataComponents.LORE)?.lines() ?: return null

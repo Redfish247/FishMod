@@ -18,7 +18,6 @@ object PartyFinderPanel {
     private val LEVEL_REQ = Regex("Dungeon Level Required:\\s*(\\d+)")
     private val FLOOR = Regex("Floor:\\s*(?:Floor\\s+)?(\\w+)")
     private val MEMBERS = Regex("Members:\\s*\\(?(\\d+)\\s*/\\s*(\\d+)")
-    // Unanchored: title may carry a rank prefix like "[MVP+] Name's Party"
     private val LEADER = Regex("(\\w{1,16})['’]s? Party$")
     private val NAME = Regex("\\w{1,16}")
     private val PB_LINE = Regex("^(\\d+):(\\d{2})\\s+S\\+?$")
@@ -246,7 +245,6 @@ object PartyFinderPanel {
         ctx.text(font, clip(font, line2, PANEL_W - 14), panelX + 10, ry + 12, -1, true)
     }
 
-    // Example data: fake leaders and notes, no PB lookups; the player's filters apply like in game
     private fun registerPreview() {
         fishmod.features.HudPreview.register("Party Finder List") {
             val all = listOf(

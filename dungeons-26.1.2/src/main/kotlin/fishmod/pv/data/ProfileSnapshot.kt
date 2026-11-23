@@ -167,10 +167,6 @@ class ProfileSnapshot(
 
     fun skillsLoaded(): Boolean = skills.any { it.xpHover != LOADING_HOVER }
 
-    /**
-     * Average over every entry in [skills]. Runecrafting and Social are cosmetic and live outside
-     * that list, so they never count; unlevelled skills count as 0 like the in-game Skill Avg.
-     */
     fun skillAverage(withProgress: Boolean): Double {
         if (skills.isEmpty()) return 0.0
         var sum = 0.0

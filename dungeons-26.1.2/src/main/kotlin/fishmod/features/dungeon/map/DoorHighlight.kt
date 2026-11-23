@@ -194,7 +194,6 @@ object DoorHighlight {
     private var cullLook: Vec3 = Vec3.ZERO
 
     private fun doorBox(box: net.minecraft.world.phys.AABB, fill: Int, line: Int) {
-        // A door box fully behind the camera can't be seen
         if (FishDraw.behindCamera(box.minX + 1.5, box.minY + 2.0, box.minZ + 1.5, cullEye, cullLook, 4.0)) return
         FishDraw.gizmoBox(box, fill, 0)
         FishDraw.gizmoThickOutline(box, line, doorWidth())
