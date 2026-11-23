@@ -520,7 +520,8 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
         field(filterTestField, rx, by + 10, rw - 118, 18, "Paste a chat message")
         val test = TextStrip.plain(filterTestField.value).trim()
         if (test.isNotEmpty()) {
-            fishmod.utils.config.values.FishSettings.cfCustomPatterns = ChatFilter.encode(filterRows.map { it.entry })
+            val enc = ChatFilter.encode(filterRows.map { it.entry })
+            if (enc != fishmod.utils.config.values.FishSettings.cfCustomPatterns) fishmod.utils.config.values.FishSettings.cfCustomPatterns = enc
             val why = ChatFilter.reason(test)
             chip(clipText(why?.let { "hidden: $it" } ?: "shown", 104, 6.5f), rx + rw - 110, by + 13, if (why != null) ACCENT else DIM)
         }
