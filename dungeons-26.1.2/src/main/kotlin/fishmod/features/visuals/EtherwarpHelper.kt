@@ -35,6 +35,8 @@ object EtherwarpHelper {
 
     @JvmStatic
     fun init() {
+        // Drop the cached level ref so the old world can be collected
+        FishEvents.worldChange.register { guessBp = null; guessState = null; guessLevel = null; guessCache = null; false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             target = null
             if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpShowGuess) return@register
