@@ -26,10 +26,6 @@ object SkyItemList {
     private const val RGAP = 0
     private const val HEAD_H = 22
     private const val FOOT_H = 14
-    private const val TAB_COLS = 1
-    private const val TAB_CELL = 18
-    private const val TAB_W = TAB_COLS * TAB_CELL
-    private const val TAB_H = TAB_CELL
 
     private var ids: Array<String> = emptyArray()
     private var hay: Array<String> = emptyArray()
@@ -350,10 +346,10 @@ object SkyItemList {
         val sw = mc.window.guiScaledWidth
         val sh = mc.window.guiScaledHeight
         val acc = screen as HandledScreenAccessor
-        val avail = (sw * 3 / 5 - PAD - RGAP - TAB_W) / CELL
+        val avail = (sw * 3 / 5 - PAD - RGAP) / CELL
         cols = minOf(FishSettings.skyItemListColumns, avail)
         if (cols < 2) return false
-        pw = PAD + RGAP + cols * CELL + TAB_W
+        pw = PAD + RGAP + cols * CELL
         px = sw - pw
         py = 0
         ph = sh
@@ -400,7 +396,7 @@ object SkyItemList {
 
         if (shownCount == 0) {
             val m = if (query.isEmpty()) "No items in this category" else "No items match \"$query\""
-            ctx.text(font, m, px + (pw - TAB_W - font.width(m)) / 2, py + ph / 3, fishmod.features.ScreenTheme.SUBTEXT_COLOR, false)
+            ctx.text(font, m, px + (pw - font.width(m)) / 2, py + ph / 3, fishmod.features.ScreenTheme.SUBTEXT_COLOR, false)
         }
         scroll = scroll.coerceIn(0, maxScroll())
         var hover = -1
@@ -419,13 +415,9 @@ object SkyItemList {
             if (favs.contains(ids[shown[i]])) ctx.text(font, "★", cx + CELL - 8, cy + 1, 0xFFFFD83A.toInt(), true)
         }
         drawFooter(ctx, font, mx, my, accent)
-        val tabHover = drawTabs(ctx, mx, my)
         drawDropdown(ctx, font, mx, my, accent)
         if (ddOpen) return
-        if (tabHover >= 0) {
-            ctx.setTooltipForNextFrame(font, Component.literal(CAT_NAMES[tabHover]), mx, my)
-            ctx.extractDeferredElements(mx, my, 0f)
-        } else if (hover >= 0) {
+        if (hover >= 0) {
             val id = ids[shown[hover]]
             val stack = RecipeViewer.stackFor(id)
             val tip = tooltipLines(id, stack)
@@ -437,7 +429,7 @@ object SkyItemList {
         }
     }
 
-    private fun gridRight() = px + pw - TAB_W
+    private fun gridRight() = px + pw
 
     private fun pageCount() = ((maxScroll() + rowsVis) / rowsVis).coerceAtLeast(1)
     private fun curPage() = (scroll / rowsVis).coerceIn(0, pageCount() - 1)
@@ -490,7 +482,7 @@ object SkyItemList {
     private fun drawLoading(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, label: String) {
         val t = System.currentTimeMillis()
         val dots = ".".repeat(((t / 400) % 4).toInt())
-        val cx = px + (pw - TAB_W) / 2
+        val cx = px + pw / 2
         val cy = py + ph / 3
         val head = ((t / 90) % 8).toInt()
         val accent = FishSettings.skyItemListAccentColor and 0xFFFFFF
@@ -502,36 +494,6 @@ object SkyItemList {
         }
         val w = font.width(label + "...")
         ctx.text(font, label + dots, cx - w / 2, cy + 18, fishmod.features.ScreenTheme.TEXT_COLOR, false)
-    }
-
-    private var tabScroll = 0
-    private fun tabRows() = ((ph - HEAD_H - 2) / TAB_H).coerceAtLeast(1)
-    private fun tabMaxScroll() = (TAB_ORDER.size - tabRows()).coerceAtLeast(0)
-
-    private fun tabAt(mx: Double, my: Double): Int {
-        if (mx < gridRight() || mx >= px + pw) return -1
-        if (my < py + HEAD_H) return -1
-        val row = ((my - py - HEAD_H) / TAB_H).toInt()
-        val slot = row + tabScroll
-        return if (row in 0 until tabRows() && slot in TAB_ORDER.indices) TAB_ORDER[slot] else -1
-    }
-
-    private fun drawTabs(ctx: GuiGraphicsExtractor, mx: Int, my: Int): Int {
-        val hov = tabAt(mx.toDouble(), my.toDouble())
-        val x0 = gridRight()
-        tabScroll = tabScroll.coerceIn(0, tabMaxScroll())
-        if (FishSettings.skyItemListBgOn) ctx.fill(x0, py, px + pw, py + ph, argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListBgOpacity / 2))
-        for ((slot, i) in TAB_ORDER.withIndex()) {
-            val row = slot - tabScroll
-            if (row < 0 || row >= tabRows()) continue
-            val tx = x0
-            val y0 = py + HEAD_H + row * TAB_H
-            val sel = i == selCat
-            if (sel || i == hov) ctx.fill(tx, y0, tx + TAB_CELL - 1, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else 0x40FFFFFF)
-            fishmod.features.visuals.ItemRarityHotbar.suppress = true
-            try { ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[i]), tx + 1, y0 + 1) } finally { fishmod.features.visuals.ItemRarityHotbar.suppress = false }
-        }
-        return hov
     }
 
     private val PET_ID = Regex("^([A-Z0-9_]+);([0-5])$")
@@ -627,13 +589,6 @@ object SkyItemList {
             if (inPrev(x, y)) { setPage(curPage() - 1); return true }
             if (inNext(x, y)) { setPage(curPage() + 1); return true }
         }
-        val t = tabAt(x, y)
-        if (t >= 0) {
-            val n = if (t == selCat) 0 else t
-            if (GLFW.btn(click) == 0 && n != selCat) { selCat = n; refilter() }
-            else if (GLFW.btn(click) == 0) { selCat = 0; refilter() }
-            return true
-        }
         val c = cellAt(x, y)
         if (c < 0) return true
         val id = ids[shown[c]]
@@ -681,7 +636,6 @@ object SkyItemList {
     @JvmStatic
     fun onScroll(mx: Double, my: Double, v: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!on() || hiddenFor(screen) || !built || !layout(screen) || !inPanel(mx, my)) return false
-        if (mx >= gridRight()) { tabScroll = (tabScroll + if (v > 0) -1 else 1).coerceIn(0, tabMaxScroll()); return true }
         setPage(curPage() + if (v > 0) -1 else 1)
         return true
     }
