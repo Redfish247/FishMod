@@ -14,6 +14,7 @@ import fishmod.pv.ProfileViewer
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ConcurrentHashMap
 import net.minecraft.client.Minecraft
 
 object NetworthData {
@@ -26,6 +27,12 @@ object NetworthData {
     private var misc: JsonObject = JsonObject()
     @Volatile
     private var reforges: Map<String, String> = emptyMap()
+
+    // Derived collections are built once per load; callers only read them.
+    private val memo = ConcurrentHashMap<String, Any>()
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T : Any> memo(key: String, build: () -> T): T = memo.getOrPut(key) { build() } as T
 
     @JvmStatic
     fun ensureLoaded() {
@@ -50,6 +57,7 @@ object NetworthData {
             if (value.isJsonPrimitive) map[key] = value.asString
         }
         reforges = map.toMap()
+        memo.clear()
         applicationWorth = aw
     }
 
@@ -59,9 +67,9 @@ object NetworthData {
         return if (el != null && el.isJsonPrimitive) el.asDouble else fallback
     }
 
-    private fun miscList(key: String): MutableList<String> {
+    private fun miscList(key: String): List<String> {
         ensureLoaded()
-        return stringList(misc.get(key))
+        return memo("misc:$key") { stringList(misc.get(key)) }
     }
 
     @JvmStatic
@@ -88,38 +96,40 @@ object NetworthData {
     @JvmStatic
     fun blockedCandyPets(): Set<String> {
         ensureLoaded()
-        return HashSet(stringList(pets.get("BLOCKED_CANDY_REDUCE_PETS")))
+        return memo("blockedCandy") { HashSet(stringList(pets.get("BLOCKED_CANDY_REDUCE_PETS"))) }
     }
 
     @JvmStatic
     fun soulboundPets(): Set<String> {
         ensureLoaded()
-        return HashSet(stringList(pets.get("SOULBOUND_PETS")))
+        return memo("soulbound") { HashSet(stringList(pets.get("SOULBOUND_PETS"))) }
     }
 
     @JvmStatic
     fun specialLevels(): Map<String, Int> {
         ensureLoaded()
-        return intMap(pets, "SPECIAL_LEVELS")
+        return memo("specialLevels") { intMap(pets, "SPECIAL_LEVELS") }
     }
 
     @JvmStatic
     fun rarityOffset(): Map<String, Int> {
         ensureLoaded()
-        return intMap(pets, "RARITY_OFFSET")
+        return memo("rarityOffset") { intMap(pets, "RARITY_OFFSET") }
     }
 
     @JvmStatic
     fun petLevels(): List<Int> {
         ensureLoaded()
-        val arr = if (pets.has("LEVELS")) pets.getAsJsonArray("LEVELS") else null
-        return arr?.mapTo(ArrayList()) { it.asInt } ?: ArrayList()
+        return memo("petLevels") {
+            val arr = if (pets.has("LEVELS")) pets.getAsJsonArray("LEVELS") else null
+            arr?.mapTo(ArrayList<Int>()) { it.asInt } ?: ArrayList<Int>()
+        }
     }
 
     @JvmStatic
     fun tiers(): List<String> {
         ensureLoaded()
-        return stringList(pets.get("TIERS"))
+        return memo("tiers") { stringList(pets.get("TIERS")) }
     }
 
     @JvmStatic
@@ -131,16 +141,18 @@ object NetworthData {
     @JvmStatic
     fun ignoredEnchants(): Map<String, Int> {
         ensureLoaded()
-        return intMap(misc, "IGNORED_ENCHANTMENTS")
+        return memo("ignoredEnchants") { intMap(misc, "IGNORED_ENCHANTMENTS") }
     }
 
     @JvmStatic
     fun blockedEnchants(): Map<String, List<String>> {
         ensureLoaded()
-        val out = HashMap<String, List<String>>()
-        val obj = if (misc.has("BLOCKED_ENCHANTMENTS")) misc.getAsJsonObject("BLOCKED_ENCHANTMENTS") else null
-        obj?.entrySet()?.forEach { (key, value) -> out[key] = stringList(value) }
-        return out
+        return memo("blockedEnchants") {
+            val out = HashMap<String, List<String>>()
+            val obj = if (misc.has("BLOCKED_ENCHANTMENTS")) misc.getAsJsonObject("BLOCKED_ENCHANTMENTS") else null
+            obj?.entrySet()?.forEach { (key, value) -> out[key] = stringList(value) }
+            out
+        }
     }
 
     private fun intMap(root: JsonObject, key: String): MutableMap<String, Int> {
