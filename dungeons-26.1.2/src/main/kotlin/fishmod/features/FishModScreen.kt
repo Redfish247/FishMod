@@ -461,6 +461,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Discord Chat Relay", "discordChatEnabled")
+            f.sub.add(SubcategoryHeader("Posts in-game chat to your Discord webhook (pings are blocked)"))
+            f.sub.add(InputSetting("Webhook URL", "Discord channel > Integrations > Webhooks > Copy URL. Keep it private", "discordWebhookUrl"))
+            f.sub.add(ToggleSetting("Guild Chat", "Send Guild > messages", "discordGuild"))
+            f.sub.add(ToggleSetting("Officer Chat", "Send Officer > messages", "discordOfficer"))
+            f.sub.add(ToggleSetting("Party Chat", "Send Party > messages", "discordParty"))
+            f.sub.add(ToggleSetting("Private Messages", "Send From/To messages (off = stays private)", "discordDms"))
+            f.sub.add(InputSetting("Blocked Words", "Comma separated, whole word, any case. Messages with these are filtered", "discordBlockedWords"))
+            f.sub.add(ToggleSetting("Censor Instead Of Drop", "On = replace the word with ***, off = skip the whole message", "discordCensor"))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Twitch Bridge",
                 { FishSettings.twitchBridgeEnabled },
                 { v -> twitchbridge.TwitchBridgeClient.setEnabled(v) })
