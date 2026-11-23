@@ -93,10 +93,16 @@ object CustomScoreboard {
     private fun drawBoard(ctx: GuiGraphicsExtractor, tr: net.minecraft.client.gui.Font, b: Built, x1: Int, y0: Int, gs: Int) {
         val x2 = x1 + b.width
         val totalH = b.totalH
-        ctx.pose().pushMatrix()
-        ctx.pose().scale(1f / gs, 1f / gs)
-        fishmod.features.ScreenTheme.roundedRect(ctx, (x1 - 2) * gs, y0 * gs, (b.width + 4) * gs, totalH * gs, FishSettings.customScoreboardRadius * gs, bgColor())
-        ctx.pose().popMatrix()
+        val img = FishSettings.customScoreboardImage.takeIf { it.isNotEmpty() }?.let { fishmod.features.dungeon.map.MapImageLoader.getImageId(it) }
+        if (img != null) {
+            val tint = (FishSettings.customScoreboardImageAlpha.coerceIn(0, 255) shl 24) or 0xFFFFFF
+            ctx.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, img, x1 - 2, y0, 0.0f, 0.0f, b.width + 4, totalH, b.width + 4, totalH, tint)
+        } else {
+            ctx.pose().pushMatrix()
+            ctx.pose().scale(1f / gs, 1f / gs)
+            fishmod.features.ScreenTheme.roundedRect(ctx, (x1 - 2) * gs, y0 * gs, (b.width + 4) * gs, totalH * gs, FishSettings.customScoreboardRadius * gs, bgColor())
+            ctx.pose().popMatrix()
+        }
         if (FishSettings.sbSectionTitle) ctx.centeredText(tr, b.title, (x1 + x2) / 2, y0 + 1, 0xFFFFFFFF.toInt())
         var y = y0 + b.top
         for (l in b.lines) {
