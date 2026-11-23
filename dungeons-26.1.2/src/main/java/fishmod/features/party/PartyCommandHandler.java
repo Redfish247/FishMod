@@ -55,7 +55,7 @@ public class PartyCommandHandler {
         FishEvents.worldChange.register(() -> { lastTickMs = -1; return false; });
 
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
-            if (!overlay) onServerChat(fishmod.utils.HypixelApi.STRIP_COLOR.matcher(message.getString()).replaceAll(""));
+            if (!overlay && (FishSettings.chatParty || FishSettings.chatGuild || FishSettings.chatPrivate || FishSettings.chatAll)) onServerChat(fishmod.utils.HypixelApi.STRIP_COLOR.matcher(message.getString()).replaceAll(""));
             return true;
         });
     }
@@ -112,7 +112,7 @@ public class PartyCommandHandler {
             if (FishSettings.chatPrivate && (tryDispatch(MSG_CMD, plain, null, "msg ") || tryDispatch(TO_CMD, plain, null, "msg "))) return;
             if (FishSettings.chatAll) tryDispatch(ALL_CMD, plain, "ac ", null);
         } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("ChatHudMixin.1", "chat command dispatch failed", t);
+            fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.13", "chat command dispatch failed", t);
         }
     }
 
@@ -124,7 +124,7 @@ public class PartyCommandHandler {
         String cmd = m.group(2);
         String responder = (dmPrefix != null) ? dmPrefix + matchedName + " " : channelResponder;
         if (matchedName == null || cmd == null) {
-            fishmod.utils.debug.FishDiag.fail("ChatHudMixin.2", "party cmd regex matched without name/cmd: " + plain);
+            fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.14", "party cmd regex matched without name/cmd: " + plain);
         }
         onPartyCommand(matchedName, cmd, m.group(3), m.group(4), m.group(5), responder);
         return true;
