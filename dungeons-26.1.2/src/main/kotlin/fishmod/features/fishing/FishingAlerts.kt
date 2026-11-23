@@ -38,7 +38,7 @@ object FishingAlerts {
 
     private fun onDrop(d: RareDrop) {
         if (!Fishing.active()) return
-        if (S.fishingAlerts && S.alertRareDrop && d.price >= S.alertDropMinPrice) {
+        if (S.fishingAlerts && S.alertRareDrop && RareDrops.alertKey(d) !in S.alertDropOff.split(',')) {
             val (m, sub) = dropTitle(d.itemName, d.price)
             title(FishingTitles.DROP, m, sub)
             sound(S.alertSound, S.alertSoundVolume)
@@ -109,7 +109,8 @@ object FishingAlerts {
         a.sub.add(SoundSearchSetting("Creature Sound", "Type to search every game sound", { S.alertScSound }, { v -> S.alertScSound = v }, { S.alertScVolume }).gatedBy { S.alertSeaCreature })
         a.sub.add(SliderIntSetting("Creature Volume %", "", S::class.java, "alertScVolume", 0, 500, 5).gatedBy { S.alertSeaCreature })
         a.sub.add(ToggleSetting("Rare Drop", "Title with the item and its price", S::class.java, "alertRareDrop"))
-        a.sub.add(InputIntSetting("Min Drop Price", "Only alert for drops worth at least this many coins (0 = all)", S::class.java, "alertDropMinPrice").gatedBy { S.alertRareDrop })
+        a.sub.add(SubcategoryHeader("Alert For These Drops"))
+        for (n in RareDrops.ALERT_NAMES) a.sub.add(ToggleSetting(n, "", { n !in S.alertDropOff.split(',') }, { v -> val st = S.alertDropOff.split(',').filter { it.isNotEmpty() }.toMutableSet(); if (v) st.remove(n) else st.add(n); S.alertDropOff = st.joinToString(",") }).gatedBy { S.alertRareDrop })
         a.sub.add(ToggleSetting("Hotspot Found", "Title when you get close to a hotspot", S::class.java, "alertHotspotFound"))
         a.sub.add(ToggleSetting("Hotspot Gone", "Title when the hotspot you fished in despawns", S::class.java, "alertHotspotGone"))
         a.sub.add(ToggleSetting("Wormhole Gone", "Lotus Atoll and Crimson Isle", S::class.java, "alertWormholeGone"))
