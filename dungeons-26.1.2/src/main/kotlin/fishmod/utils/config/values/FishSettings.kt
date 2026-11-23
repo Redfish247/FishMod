@@ -336,6 +336,7 @@ object FishSettings {
     @ConfigValue @JvmField var crosshairMode: String = "Preset"
     @ConfigValue @JvmField var crosshairImageSelection: String = "No image"
     @ConfigValue @JvmField var crosshairPreset: String = "Cross"
+    @ConfigValue @JvmField var crosshairPixels: String = ""
     @ConfigValue @JvmField var crosshairColor: Int = 0xFFFFFFFF.toInt()
     @ConfigValue @JvmField var crosshairScale: Double = 1.0
     @ConfigValue @JvmField var crosshairHideInF3: Boolean = true

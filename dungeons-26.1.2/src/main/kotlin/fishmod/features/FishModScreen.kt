@@ -1201,7 +1201,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Custom Crosshair", "crosshairEnabled")
             f.sub.add(SubcategoryHeader("Replaces the vanilla crosshair with a built-in preset or a PNG from config/FishMod/crosshairs/"))
-            f.sub.add(DropdownSetting("Type", "", arrayOf("Preset", "Image"),
+            f.sub.add(DropdownSetting("Type", "", arrayOf("Preset", "Image", "Custom"),
                 { FishSettings.crosshairMode },
                 { v -> FishSettings.crosshairMode = v }))
             f.sub.add(DropdownSetting("Preset", "", fishmod.features.cosmetics.CustomCrosshair.PRESETS,
@@ -1224,7 +1224,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { if (FishSettings.crosshairImageSelection in crosshairImageNames) FishSettings.crosshairImageSelection else crosshairImageNames[0] },
                 { v -> FishSettings.crosshairImageSelection = v })
                 .gatedBy { FishSettings.crosshairMode == "Image" })
-            f.sub.add(ColorPickerSetting("Color", "Tint applied to the crosshair", "crosshairColor"))
+            f.sub.add(ButtonSetting("Draw Crosshair", "Open a 16x16 grid to draw your own crosshair") {
+                FishDiag.guard("FishModScreen.crosshairEditor", "open crosshair editor failed") { net.minecraft.client.Minecraft.getInstance().showScreen(fishmod.features.cosmetics.CrosshairEditorScreen(net.minecraft.client.Minecraft.getInstance().curScreen)) }
+            }.gatedBy { FishSettings.crosshairMode == "Custom" })
+            f.sub.add(ColorPickerSetting("Color", "Tint applied to the crosshair", "crosshairColor").gatedBy { FishSettings.crosshairMode != "Custom" })
             f.sub.add(SliderDoubleSetting("Scale", "", "crosshairScale", 0.25, 4.0))
             f.sub.add(ToggleSetting("Hide in F3", "", "crosshairHideInF3"))
             cosmetics.features.add(f)
@@ -4905,7 +4908,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Nametag Stats" -> "Networth, skill and Catacombs stats on nametags"
                 "Skyblock Level Colors" -> "Recolours the SkyBlock level badge by level"
                 "Badges" -> "Small icons beside player names"
-                "Custom Crosshair" -> "Replace the crosshair with a preset or your own image"
+                "Custom Crosshair" -> "Replace the crosshair with a preset, your own image or a 16x16 drawing"
                 "Force Others' Size" -> "Draws everyone else at one size"
                 "Command Access List" -> "Who can trigger party actions like .kick and .warp"
                 "Kick List" -> "Auto-kick listed players when you lead the party"
