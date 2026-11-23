@@ -22,6 +22,9 @@ object CompactChat {
 
     @JvmStatic
     fun tryCompact(message: Component, hud: ChatComponent, ci: CallbackInfo): Boolean {
+        // FishChat lines (the "[FC] " prefix is set in FishChat.receive) are never stacked: two people sending
+        // the same image or text are two messages, and a "(2)" tail would also end up inside link text.
+        if (message.string.startsWith("[FC] ")) return false
         val incoming = stripKey(message.string)
         if (incoming.isEmpty()) return false
 
