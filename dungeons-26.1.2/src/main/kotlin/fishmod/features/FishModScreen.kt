@@ -335,7 +335,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         general.features.add(Feature("Arrow Fix (shortbow pullback)", "arrowFixEnabled"))
         general.features.add(Feature("Mono Audio", "monoAudioEnabled"))
-        general.features.add(Feature("Sword Blocking", "swordBlockingEnabled"))
         general.features.add(Feature("Disable Front-Facing Camera", "disableFrontFacingCamera"))
         run {
             val f = Feature("Ragnarock", "ragnarockEnabled")
@@ -365,6 +364,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Ignore Haste", "Swing speed isn't affected by Haste", "animIgnoreHaste"))
             f.sub.add(ToggleSetting("No Equip Animation", "", "animNoEquip"))
             f.sub.add(ToggleSetting("No Hand Movement", "Stop the item bobbing when you look around", "animNoHandMove"))
+            f.sub.add(ToggleSetting("Sword Blocking", "Old-style sword blocking animation", "swordBlockingEnabled"))
             visuals.features.add(f)
         }
         run {
@@ -1272,19 +1272,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             party.features.add(f)
         }
         run {
-            val f = Feature("Kick List", { FishSettings.pcKickListEnabled }, { v -> FishSettings.pcKickListEnabled = v })
-            f.sub.add(SubcategoryHeader("Anyone on this list is auto-kicked from your party whenever you're leader"))
-            f.sub.add(ButtonSetting("Manage List", "Add/remove names, or /fm kicklist", "Open", Runnable {
-                Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.KICK, Minecraft.getInstance().curScreen))
-            }))
-            party.features.add(f)
-        }
-        run {
             val f = Feature("Chat Channels", null, null)
             f.sub.add(ToggleSetting("Personal Messages", "", "chatPrivate"))
             f.sub.add(ToggleSetting("Party", "", "chatParty"))
             f.sub.add(ToggleSetting("Guild", "", "chatGuild"))
             f.sub.add(ToggleSetting("All", "", "chatAll"))
+            party.features.add(f)
+        }
+        run {
+            val f = Feature("Kick List", { FishSettings.pcKickListEnabled }, { v -> FishSettings.pcKickListEnabled = v })
+            f.sub.add(SubcategoryHeader("Anyone on this list is auto-kicked from your party whenever you're leader"))
+            f.sub.add(ButtonSetting("Manage List", "Add/remove names, or /fm kicklist", "Open", Runnable {
+                Minecraft.getInstance().showScreen(fishmod.features.party.PartyLootScreen(fishmod.features.party.PartyLootScreen.Tab.KICK, Minecraft.getInstance().curScreen))
+            }))
             party.features.add(f)
         }
         party.features.add(Feature("Party Finder Join Stats", "pfStatsEnabled"))
@@ -2294,8 +2294,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         take(alertsCol, setOf("Limbo Alert","Server Restart Alert","Booster Cookie Warning","No Bits Available Warning","Kick Cooldown Timer","Order Filled Alert","Auction Outbid Alert","Party Join Sound","Vanquisher Party Share","Quiver Warning"), extrasCol)
         take(visitorsCol, setOf("Visitor Timer","Visitor Arrival Alert","Visitor Shopping List","Visitor Menu Info","Visitor Rare Reward Warning","Visitor Stats","Help Carrolyn","Pest Spawn Title","Pest Finder","Pest Timer HUD"), farmCol)
         take(huntCol, setOf("HotM / HotF Helper","Moonglade Beacon Solver"), extrasCol)
-        take(itemsCol, setOf("Item Tooltip","Recipe Viewer","Item List","Auto BIN Price","Sign Calculator","Anita Medal Profit","AH Buy Price Check","Bazaar Search + Price Graph"), hud, extrasCol)
-        take(petsCol, setOf("Pet HUD","Pet Swap Title","Hide Pet Nametag Level","Soulflow HUD","Pet Keybinds"), hud, invStorage)
+        take(farmCol, setOf("Anita Medal Profit"), hud)
+        take(huntCol, setOf("Huntaxe Lock"), general)
+        take(visuals, setOf("Arrow Fix (shortbow pullback)"), general)
+        take(itemsCol, setOf("Item Tooltip","Recipe Viewer","Item List","Auto BIN Price","Sign Calculator","AH Buy Price Check","Bazaar Search + Price Graph"), hud, extrasCol)
+        take(petsCol, setOf("Pet HUD","Pet Swap Title","Hide Pet Nametag Level","Pet Keybinds"), hud, invStorage)
         take(dungeon, setOf("Catacombs Overflow Levels","Fire Freeze Timer"), hud)
         columns.add(general)
         columns.add(chatCol)
