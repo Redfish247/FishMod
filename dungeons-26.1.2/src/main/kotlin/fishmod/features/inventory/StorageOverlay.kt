@@ -206,10 +206,12 @@ object StorageOverlay {
     private val MULTI_SPACE = Regex(" {2,}")
 
     // Drop glyphs the UI font can't draw (they'd render as boxes)
-    private fun displayable(s: String): String {
+    private val displayableCache = HashMap<String, String>()
+    private fun displayable(s: String): String = displayableCache.getOrPut(s) {
+        if (displayableCache.size > 512) displayableCache.clear()
         val sb = StringBuilder()
         s.codePoints().forEach { cp -> if (glyphOk.getOrPut(cp) { fishmod.utils.rendering.UiFont.canDisplay(cp) }) sb.appendCodePoint(cp) }
-        return sb.toString().replace(MULTI_SPACE, " ").trim()
+        sb.toString().replace(MULTI_SPACE, " ").trim()
     }
     private var sidebarW = 0
     private var sidebarScroll = 0
