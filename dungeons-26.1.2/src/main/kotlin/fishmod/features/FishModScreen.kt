@@ -564,6 +564,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Custom Scoreboard", "customScoreboardEnabled")
             f.sub.add(SliderIntSetting("Opacity %", "", "customScoreboardOpacity", 0, 100))
             f.sub.add(SliderIntSetting("Corner Radius", "", "customScoreboardRadius", 0, 10))
+            val sbImages = fishmod.features.dungeon.map.MapImageLoader.getImageNames().toTypedArray()
+            f.sub.add(DropdownSetting("Background Image", "PNGs from the map images folder", sbImages,
+                { if (FishSettings.customScoreboardImage in sbImages) FishSettings.customScoreboardImage else fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE },
+                { v -> FishSettings.customScoreboardImage = if (v == fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) "" else v }))
+            f.sub.add(SliderIntSetting("Image Alpha", "", "customScoreboardImageAlpha", 0, 255)
+                .gatedBy { FishSettings.customScoreboardImage.isNotEmpty() })
+            f.sub.add(ButtonSetting("Open Images Folder", "") {
+                try {
+                    fishmod.features.dungeon.map.MapImageLoader.init()
+                    fishmod.compat.GLFW.openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
+                } catch (e: Exception) {
+                    FishDiag.fail("FishModScreen.36", "open scoreboard images folder failed", e)
+                }
+            })
             f.sub.add(DropdownSetting("Position", "Custom = HUD editor spot",
                 arrayOf("Custom", "Top Left", "Middle Left", "Bottom Left", "Top Right", "Middle Right", "Bottom Right"),
                 { FishSettings.customScoreboardAnchor },
@@ -872,7 +886,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Dungeon Routes", "routeRecorderEnabled")
-            f.sub.add(LabelSetting("/fm route record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
+            f.sub.add(LabelSetting("/fm dungeonroute record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
             f.sub.add(ToggleSetting("Auto Load Per Room", "Saved route plays when you enter its room", "routeAutoLoad"))
             f.sub.add(ToggleSetting("Waypoints Through Walls", "Etherwarp, pearl, break, superboom", "routeThroughWalls"))
             f.sub.add(ToggleSetting("Secrets Through Walls", "Chest, lever/skull, item, bat", "routeSecretsThroughWalls"))
@@ -2954,8 +2968,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             field.setResponder { t -> searchText = t; gridScroll = 0; if (t.isNotEmpty()) page = null; openedAt = System.currentTimeMillis() }
             searchField = field
         } else { field.setX(s[0] + 8); field.setY(s[1] + 4); field.setWidth(s[2] - 30) }
-        if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search categories and features", (s[0] + 8).toFloat(), s[1] + (s[3] - 0.85f * NVG_BASE_TEXT_SIZE) / 2f, 0.85f * NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
-        else nvgTextFieldContent(field, s[0] + 8, s[1] + 4, s[2] - 30, s[3] - 8, 8f)
+        if (searchText.isEmpty() && !searchFocused) UiRecorder.text("Search categories and features", (s[0] + 11).toFloat(), s[1] + (s[3] - NVG_BASE_TEXT_SIZE) / 2f, NVG_BASE_TEXT_SIZE, SUBTEXT_COLOR)
+        else nvgTextFieldContent(field, s[0] + 8, s[1] + 4, s[2] - 30, s[3] - 8, NVG_BASE_TEXT_SIZE)
         run {
             val ic = if (searchFocused) TEXT_COLOR else SUBTEXT_COLOR
             val gx = (s[0] + s[2] - 20).toFloat(); val gy = s[1] + s[3] / 2f - 6f
