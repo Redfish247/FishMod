@@ -58,7 +58,7 @@ object ChatNickRefresher {
         if (NickState.isActive()) {
             val real = NickState.realName()
             if (real.isNotEmpty() && out.string.contains(real))
-                out = NameRewriter.replaceName(out, real, NickState.asComponent()) ?: out
+                out = NameRewriter.replaceName(out, real, NickState.asChatComponent()) ?: out
         }
         return RemoteNicks.applyResolvedOnly(out) ?: out
     }
