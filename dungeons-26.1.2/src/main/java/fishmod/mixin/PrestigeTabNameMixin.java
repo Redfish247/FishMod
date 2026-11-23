@@ -23,7 +23,7 @@ public class PrestigeTabNameMixin {
         try {
             return fishmod.cosmetic.NameDecorCache.TAB.get(id, original, () -> {
                 Component out = original;
-                if (prestige) out = PrestigeLevelColors.colorizeLevelPrefix(out);
+                if (prestige) out = PrestigeLevelColors.colorizeLevelPrefixStatic(out);
                 if (badges) out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, id.toString().replace("-", ""));
                 return out;
             });
