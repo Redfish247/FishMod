@@ -62,7 +62,7 @@ object Pests {
 
     fun init() {
         FishEvents.chat.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.chatRaw).trim()); false }
-        FishEvents.worldChange.register { tabPlots = emptyList(); clearGuess(); false }
+        FishEvents.worldChange.register { tabPlots = emptyList(); remembered.clear(); clearGuess(); false }
         FishEvents.particle.register { p ->
             if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.speed == 0f && Garden.inGarden() && holdingVacuum()) {
                 val now = System.currentTimeMillis()
