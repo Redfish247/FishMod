@@ -57,6 +57,7 @@ object RiftDreadfarm {
 
     private fun onParticle(type: net.minecraft.core.particles.ParticleType<*>, at: Vec3) {
         if (type !== ParticleTypes.FIREWORK) return
+        if (!(S.riftBerberis || S.riftAgaricus) || !Rift.inRift()) return // debug queue is only pruned in the Rift tick
         seenTimes.add(System.currentTimeMillis()); particleSeen++
         lastFirework = "${Fmt.f1(at.x)},${Fmt.f1(at.y)},${Fmt.f1(at.z)}"
         // Gate as SkyHanni RiftWiltedBerberisHelper: Dreadfarm + FARMING_WAND; unknown/blank area is allowed
