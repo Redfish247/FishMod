@@ -6,6 +6,7 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var fishingWorld: Boolean = false
 
     @ConfigValue @JvmField var baitHud: Boolean = false
+    @ConfigValue @JvmField var rodTimer: Boolean = false
     @ConfigValue @JvmField var baitHudX: Int = 5
     @ConfigValue @JvmField var baitHudY: Int = 100
     @ConfigValue @JvmField var baitHudScale: Double = 1.0

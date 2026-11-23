@@ -17,6 +17,7 @@ object FishingWorld {
     @JvmStatic
     fun init() {
         HookTimer.init()
+        RodTimer.init()
         WormholeFinder.init()
         HotspotFinder.init()
         RareMobHighlight.init()
