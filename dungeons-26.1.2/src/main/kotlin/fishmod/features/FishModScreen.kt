@@ -2188,6 +2188,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             endAlerts.sub.add(SubcategoryHeader("Title when a Superior Dragon spawns"))
             endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayer.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayer.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
             end.features.add(endAlerts)
+            end.features.add(Feature("Endstone Protector Stage", fishmod.features.slayer.EndAlertSettings::class.java, "protectorHud"))
+            end.features.add(Feature("End Node Tracker", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeTracker").also { it.sub.add(ButtonSetting("Reset", "", "Reset", Runnable { fishmod.features.end.EndTrackers.reset() })) })
             end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayer.EndAlertSettings::class.java, "endstoneProtectorAlert"))
             end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayer.EndAlertSettings::class.java, "zealotHud"))
             slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
@@ -4814,6 +4816,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Carry Tracker HUD" -> "Tracks slayer carries per player"
                 "Profit Tracker" -> "Slayer drops and coins per hour"
                 "Boss Timer" -> "Slayer boss kill time and PB"
+                "Endstone Protector Stage" -> "HUD with the Protector stage and kills left, from the tab list"
+                "End Node Tracker" -> "Ender nodes mined and what they gave, with nodes per hour"
                 "Boss Phases" -> "Attack and phase cues on slayer bosses"
                 "Boss Damage Indicator" -> "HP label on non-slayer bosses"
                 "Dragon Profit Tracker" -> "Dragon kills, your eyes, essence and loot picked up after each dragon, with profit"
