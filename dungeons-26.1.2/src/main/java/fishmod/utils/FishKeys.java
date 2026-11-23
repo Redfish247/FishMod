@@ -215,7 +215,12 @@ public class FishKeys {
                 KeyMapping kb = TRACKED.get(id);
                 if (kb == null || keyName.isEmpty()) continue;
                 if (!kb.saveString().equals(keyName)) {
-                    kb.setKey(InputConstants.getKey(keyName));
+                    try {
+                        kb.setKey(InputConstants.getKey(keyName));
+                    } catch (RuntimeException ex) {
+                        fishmod.utils.debug.FishDiag.fail("FishKeys.5", "unknown key name in keybind backup: " + keyName);
+                        continue;
+                    }
                     changed = true;
                 }
             }
