@@ -188,8 +188,9 @@ object SlayerHuds {
             ctx.pose().pushMatrix()
             ctx.pose().translate(x.toFloat(), y.toFloat())
             ctx.pose().scale(sc, sc)
-            drawRng(ctx, text)
-            ctx.pose().popMatrix()
+            try {
+                drawRng(ctx, text)
+            } finally { ctx.pose().popMatrix() }
         } catch (e: Exception) {
             FishDiag.fail("SlayerHuds.10", "slayer RNG HUD render failed (type=${SlayerManager.type})", e)
         }
@@ -260,8 +261,9 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        drawProfit(ctx, rows)
-        ctx.pose().popMatrix()
+        try {
+            drawProfit(ctx, rows)
+        } finally { ctx.pose().popMatrix() }
 
         profitFrameMs = System.currentTimeMillis()
         profitLeft = x.toDouble()
@@ -400,8 +402,9 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        drawLines(ctx, lines)
-        ctx.pose().popMatrix()
+        try {
+            drawLines(ctx, lines)
+        } finally { ctx.pose().popMatrix() }
     }
 
     private fun fmt(v: Double): String = fishmod.utils.Fmt.grouped(v.toLong())
