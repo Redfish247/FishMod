@@ -71,7 +71,7 @@ object SlayerQol {
             }
             return best
         }
-        if (S.attuneHighlight && type == SlayerType.BLAZE) {
+        if (S.attuneHighlight && type == SlayerType.INFERNO) {
             val g = HashMap<Int, Int>()
             for (s in stands) {
                 val plain = TextStrip.plain(s.customName!!.string).uppercase()
