@@ -1950,8 +1950,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             cheats.features.add(f)
         }
 
+        val dmFeat = Feature("Dungeon Map", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapEnabled")
         run {
-            val f = Feature("Enable Map", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapEnabled")
+            val f = dmFeat
             f.sub.add(ColorPickerSetting("Background Color", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapBackgroundColor"))
             f.sub.add(SliderIntSetting("Background Opacity %", "",
                 { ((fishmod.utils.config.values.DungeonMapSettings.mapBackgroundColor ushr 24) and 0xFF) * 100 / 255 },
@@ -1972,10 +1973,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Center Text", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapTextCenter"))
             f.sub.add(ToggleSetting("Ugly Question Marks", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapUglyQuestionMarks"))
             f.sub.add(ToggleSetting("Show Room Secrets", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapShowRoomSecrets"))
-            dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Background Image", { fishmod.utils.config.values.DungeonMapSettings.mapImageSelection.isNotEmpty() },
+            val f = dmFeat
+            f.sub.add(SubcategoryHeader("Background Image"))
+            f.sub.add(ToggleSetting("Background Image", "Picture behind the dungeon map", { fishmod.utils.config.values.DungeonMapSettings.mapImageSelection.isNotEmpty() },
                 { v ->
                     val s = fishmod.utils.config.values.DungeonMapSettings
                     if (v) {
@@ -1988,7 +1990,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                         if (s.mapImageSelection.isNotEmpty()) s.mapImageLastSelection = s.mapImageSelection
                         s.mapImageSelection = ""
                     }
-                })
+                }))
             f.sub.add(ButtonSetting("Open Images Folder", "") {
                 try {
                     fishmod.features.dungeon.map.MapImageLoader.init()
@@ -2008,7 +2010,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     if (v != fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) fishmod.utils.config.values.DungeonMapSettings.mapImageLastSelection = v
                 }))
             f.sub.add(SliderIntSetting("Image Alpha", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapImageAlpha", 0, 255))
-            dungeonMap.features.add(f)
         }
         run {
             val f = Feature("Info HUD", { fishmod.utils.config.values.DungeonMapSettings.mapInfoEnabled == true },
@@ -2028,7 +2029,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Player Heads", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapPlayerHeadsEnabled")
+            val f = dmFeat
+            f.sub.add(SubcategoryHeader("Player Heads"))
+            f.sub.add(ToggleSetting("Player Heads", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapPlayerHeadsEnabled"))
             f.sub.add(ColorPickerSetting("Head Background", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapPlayerHeadBackground"))
             f.sub.add(ColorPickerSetting("Own Head Background", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapPlayerHeadOwnBackground"))
             f.sub.add(SliderIntSetting("Outline Size", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapPlayerHeadBackgroundSize", 0, 5))
@@ -2040,10 +2043,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling = v / 100.0f },
                 0, 150))
             f.sub.add(ColorPickerSetting("Name Color", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapPlayerNameColor"))
-            dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRoomAdditionsEnabled")
+            val f = dmFeat
+            f.sub.add(SubcategoryHeader("Room Additions"))
+            f.sub.add(ToggleSetting("Room Additions", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRoomAdditionsEnabled"))
             f.sub.add(ToggleSetting("Prince Crown Icon", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRoomAdditionsPrince"))
             f.sub.add(ToggleSetting("Room Checkmarks", "Corner checkmark when a named room is cleared, recoloured when all secrets are done", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRoomAdditionsChecks"))
             f.sub.add(ColorPickerSetting("Cleared Check", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRoomCheckClearedColor"))
@@ -2052,10 +2056,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { (fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier = v / 100.0f },
                 0, 100))
-            dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Door Colors", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapDoorGay")
+            val f = dmFeat
+            f.sub.add(SubcategoryHeader("Door Colors"))
+            f.sub.add(ToggleSetting("Door Colors", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapDoorGay"))
             f.sub.add(SliderDoubleSetting("Door Thickness", "",
                 { fishmod.utils.config.values.DungeonMapSettings.mapDoorThickness.toDouble() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapDoorThickness = v.toFloat() },
@@ -2070,7 +2075,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Entrance", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapEntranceDoorColor"))
             f.sub.add(ColorPickerSetting("Fairy", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapFairyDoorColor"))
             f.sub.add(ColorPickerSetting("Rare", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRareDoorColor"))
-            dungeonMap.features.add(f)
         }
         run {
             val f = Feature("Door Highlight", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapDoorHighlightEnabled")
@@ -2091,7 +2095,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Room Colors", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRoomColorsEnabled")
+            val f = dmFeat
+            f.sub.add(SubcategoryHeader("Room Colors"))
+            f.sub.add(ToggleSetting("Room Colors", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRoomColorsEnabled"))
             f.sub.add(ColorPickerSetting("Unopened", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapUnopenedRoomColor"))
             f.sub.add(ColorPickerSetting("Blood", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapBloodRoomColor"))
             f.sub.add(ColorPickerSetting("Normal", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapNormalRoomColor"))
@@ -2101,8 +2107,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Entrance", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapEntranceRoomColor"))
             f.sub.add(ColorPickerSetting("Fairy", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapFairyRoomColor"))
             f.sub.add(ColorPickerSetting("Rare", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapRareRoomColor"))
-            dungeonMap.features.add(f)
         }
+        dungeonMap.features.add(0, dmFeat)
         run {
             val f = Feature("Score Messages", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapScoreMessages")
             f.sub.add(ToggleSetting("Score Missing Msg (1min, to party)", "", fishmod.utils.config.values.DungeonMapSettings::class.java, "mapScoreMissingMsg"))
@@ -4724,14 +4730,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Relic Slot 9 Scroll Lock" -> "Blocks hotbar scrolling off slot 9 during relics"
                 "Relic Times" -> "Place time and placer of each M7 relic"
                 "Wither Dragons" -> "M7 dragon spawn timers and priority"
-                "Enable Map" -> "Shows the dungeon map"
-                "Background Image" -> "Picture behind the dungeon map"
+                "Dungeon Map" -> "Shows the dungeon map"
                 "Info HUD" -> "Score and secrets under the map"
-                "Player Heads" -> "Player heads on the dungeon map"
-                "Room Additions" -> "Checkmarks and icons on map rooms"
-                "Door Colors" -> "Colours map doors by type"
                 "Door Highlight" -> "Highlights wither and blood doors in the world"
-                "Room Colors" -> "Colours map rooms by type"
                 "Score Messages" -> "Party and title messages at 270 and 300 score"
                 "Mini/Boss Spawn Alert" -> "Alert when a slayer miniboss or boss spawns"
                 "Cocoon Alert" -> "Alert when a slayer boss gets cocooned"
