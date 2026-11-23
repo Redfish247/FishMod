@@ -133,20 +133,23 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Feature Opacity %", "0% invisible - 100% solid", "fmCardAlpha", 0, 100))
             f.sub.add(SubcategoryHeader("Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
-            general.features.add(f)
-        }
-        run {
-            val f = Feature("GUI Settings", "guiSettings")
-            f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", "guiScaleMain", 50, 150, 5))
-            f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", "guiScaleChatCommands", 50, 150, 5))
-            f.sub.add(SliderIntSetting("Party & Loot Scale %", "100% = default size", "guiScalePartyLoot", 50, 150, 5))
-            f.sub.add(SliderIntSetting("HUD Editor Scale %", "100% = default size", "guiScaleHudEditor", 50, 150, 5))
-            f.sub.add(SliderIntSetting("Item Customize Scale %", "100% = default size", "guiScaleItemCustomize", 50, 150, 5))
-            f.sub.add(SliderIntSetting("Storage Viewer Scale %", "100% = default size", "guiScaleStorage", 50, 150, 5))
-            f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", "guiScaleAuction", 50, 150, 5))
-            f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", "guiScaleWaypoint", 50, 150, 5))
-            f.sub.add(SliderIntSetting("Profile Viewer Scale %", "100% = default size", "guiScaleProfileViewer", 50, 150, 5))
-            f.sub.add(SliderIntSetting("Diana Profit Scale %", "100% = default size", "guiScaleDianaProfit", 50, 150, 5))
+            f.sub.add(SubcategoryHeader("GUI Scale"))
+            f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", "guiScaleMain", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", "guiScaleChatCommands", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Party & Loot Scale %", "100% = default size", "guiScalePartyLoot", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("HUD Editor Scale %", "100% = default size", "guiScaleHudEditor", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Item Customize Scale %", "100% = default size", "guiScaleItemCustomize", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Storage Viewer Scale %", "100% = default size", "guiScaleStorage", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", "guiScaleAuction", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", "guiScaleWaypoint", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Profile Viewer Scale %", "100% = default size", "guiScaleProfileViewer", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Diana Profit Scale %", "100% = default size", "guiScaleDianaProfit", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Diana Messages Scale %", "100% = default size", "guiScaleDianaMessages", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Achievements Scale %", "100% = default size", "guiScaleAchievements", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Inventory Button Editor Scale %", "100% = default size", "guiScaleInvButtons", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Market Scale %", "100% = default size", "guiScaleMarket", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Recipe Viewer Scale %", "100% = default size", "guiScaleRecipe", 50, 150, 5).deferred())
+            f.sub.add(SliderIntSetting("Update Window Scale %", "100% = default size", "guiScaleUpdate", 50, 150, 5).deferred())
             general.features.add(f)
         }
         run {
@@ -2331,8 +2334,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         take(dungeon, setOf("Catacombs Overflow Levels","Fire Freeze Timer"), hud)
         take(floor7, setOf("Simon Says","Arrow Align","Arrows Device","Terminal Solver"), solvers)
         dungeon.features.addAll(solvers.features); solvers.features.clear()
-        columns.add(cosmetics)
         columns.add(general)
+        columns.add(cosmetics)
         columns.add(chatCol)
         columns.add(invStorage)
         columns.add(itemsCol)
@@ -2405,7 +2408,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.firstOrNull { it.name == "Fishing" }?.let { groupBy(it, "Alerts" to listOf("alert", "warning"),
             "Trackers & HUDs" to listOf("tracker", "hud", "timer", "count", "overlay", "bobbin", "lilypad"), "World & Creatures" to listOf("world", "hotspot", "wormhole", "creature", "trophy", "box", "totem")) }
         for (c in columns) { if (c === general) continue; val m = c.features.filter { it.name == "Waypoint Routes" }; c.features.removeAll(m); general.features.addAll(m) }
-        order(general, "UI Customization", "Custom Tab", "Custom Scoreboard", "Profile Viewer", "Waypoint Routes", "Zoom", "Auto Sprint", "Sound Manager", "Hit Sounds", "Enchant Colors", "Update Notice", "GUI Settings", "Ragnarock", "Gyro Helper", "No Cursor Reset", "Disable Front-Facing Camera", "Board Reports", "Debug Reports")
+        order(general, "UI Customization", "Custom Tab", "Custom Scoreboard", "Profile Viewer", "Waypoint Routes", "Zoom", "Auto Sprint", "Sound Manager", "Hit Sounds", "Enchant Colors", "Update Notice", "Ragnarock", "Gyro Helper", "No Cursor Reset", "Disable Front-Facing Camera", "Board Reports", "Debug Reports")
         for (c in columns) {
             if (c === cheats) continue
             for (f in c.features) {
@@ -2418,7 +2421,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun applySavedColumnOrder() {
-        if (FishSettings.fmColumnOrderV < 3) { FishSettings.fmColumnOrderV = 3; FishSettings.fmColumnOrder = ""; return }
+        if (FishSettings.fmColumnOrderV < 4) { FishSettings.fmColumnOrderV = 4; FishSettings.fmColumnOrder = ""; return }
         val saved = FishSettings.fmColumnOrder
         if (saved.isBlank()) return
         val byName = columns.associateBy { it.name }
@@ -3473,6 +3476,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             navPress = null; navDragging = false
             return true
         }
+        (activeSlider as? SliderIntSetting)?.commitPending()
         activeSlider = null
 
         return super.mouseReleased(click)
@@ -3728,6 +3732,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             FishDiag.check(max > min, "FishModScreen.31") { "int slider '$name' has empty range $min..$max" }
         }
 
+        // deferred = value only applies when the mouse is released (live UI rescale while dragging made the slider jitter)
+        private var deferred = false
+        private var pending: Int? = null
+        fun deferred(): SliderIntSetting { deferred = true; return this }
+        private fun cur(): Int = pending ?: getter()
+        fun commitPending() { pending?.let { setter(it) }; pending = null }
+
         private fun snap(v: Int): Int {
             if (step <= 1) return v.coerceIn(min, max)
             return (min + Math.round((v - min).toFloat() / step) * step).coerceIn(min, max)
@@ -3739,7 +3750,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val slx = leftX + 2
             val slw = rightX - leftX - 4 - SLIDER_BOX
             val sly = sy + SLIDER_CTRL_Y
-            val pct = if (max > min) Mth.clamp((getter() - min).toFloat() / (max - min), 0f, 1f) else 0f
+            val pct = if (max > min) Mth.clamp((cur() - min).toFloat() / (max - min), 0f, 1f) else 0f
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
@@ -3747,7 +3758,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val bx = slx + slw + 6
             val by = sly + SLIDER_H / 2 - 6
             roundedRectRing(ctx, bx, by, SLIDER_BOX - 6, 12, 3, 1, ScreenTheme.ink(0x14), if (typing != null) ACCENT else ScreenTheme.ink(0x26))
-            val v = typing ?: getter().toString()
+            val v = typing ?: cur().toString()
             val vs = NVG_BASE_TEXT_SIZE * 0.72f
             UiRecorder.text(v + (if (typing != null && (System.currentTimeMillis() / 500) % 2 == 0L) "|" else ""), bx + (SLIDER_BOX - 6 - UiRecorder.textWidth(v, vs)) / 2f, by + (12 - vs) / 2f, vs, TEXT_COLOR)
         }
@@ -3760,7 +3771,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         fun commitTyping() { typing?.toIntOrNull()?.let { setter(snap(it)) }; typing = null }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
-            setter(snap(min + (pct * (max - min)).toInt()))
+            val v = snap(min + (pct * (max - min)).toInt())
+            if (deferred) pending = v else setter(v)
         }
     }
 
@@ -4737,7 +4749,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"
-                "GUI Settings" -> "Size of each FishMod screen"
                 "Inventory Buttons" -> "Clickable command buttons in your inventory"
                 "Smart Copy Chat" -> "Right-click a chat line to copy it"
                 "Custom Tab" -> "Custom tab list and tab perks"
@@ -4791,7 +4802,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Party Finder List" -> "Scrollable party summary beside the menu; hover a row to highlight its head"
                 "Party Finder Auto Kick" -> "As leader, kick joiners who miss the S+ PB / secrets bar"
                 "Container Value" -> "No-background value list + total beside the open container / storage overlay"
-                "UI Customization" -> "Colours, opacity and background of the FishMod menu"
+                "UI Customization" -> "Colours, opacity and background of the FishMod menu, plus the size of each FishMod screen"
                 "Update Notice" -> "Tells you when a new FishMod version is out"
                 "FishMod Chat (/fc)" -> "Chat with other FishMod users through /fc"
                 "Debug Reports" -> "Short chat notice with a copy button when something breaks"
