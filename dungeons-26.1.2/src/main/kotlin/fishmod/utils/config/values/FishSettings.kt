@@ -637,6 +637,10 @@ object FishSettings {
     @ConfigValue @JvmField var lavaToWaterHideFog: Boolean = true
 
     @ConfigValue @JvmField var noFogEnabled: Boolean = false
+    @ConfigValue @JvmField var classicItemsEnabled: Boolean = false
+    @ConfigValue @JvmField var classicItemModels: Boolean = true
+    @ConfigValue @JvmField var classicItemHeads: Boolean = true
+    @ConfigValue @JvmField var classicTooltips: Boolean = true
     @ConfigValue @JvmField var customWaterEnabled: Boolean = false
     @ConfigValue @JvmField var customWaterColor: Int = 0xFF3F76E4.toInt()
     @ConfigValue @JvmField var forceOthersSizeEnabled: Boolean = false

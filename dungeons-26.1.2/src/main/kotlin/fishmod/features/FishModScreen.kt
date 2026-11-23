@@ -422,6 +422,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         visuals.features.add(Feature("No Fog", "noFogEnabled"))
         run {
+            val f = Feature("Classic Skyblock Items", "classicItemsEnabled")
+            f.sub.add(ToggleSetting("Vanilla Item Models", "Swap Hypixel custom item models for the plain vanilla model of that SkyBlock item", "classicItemModels"))
+            f.sub.add(ToggleSetting("Classic Head Textures", "Use the old head texture for SkyBlock items the pack turns into heads", "classicItemHeads"))
+            f.sub.add(ToggleSetting("Vanilla Tooltips", "Remove the custom SkyBlock tooltip frame and background", "classicTooltips"))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Corpse Highlight", "corpseHighlightEnabled")
             f.sub.add(SubcategoryHeader("Boxes Glacite Mineshaft corpses through walls"))
             f.sub.add(ColorPickerSetting("Colour", "", "corpseHighlightColor"))
@@ -2388,7 +2395,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
         order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
         order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Tracker")
-        order(visuals, "No Fog", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
+        order(visuals, "No Fog", "Classic Skyblock Items", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
         order(cosmetics, "Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
         columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin and Legion Hud", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
         columns.firstOrNull { it.name == "Diana" }?.let { order(it, "Burrow Guessing", "Rare Mobs", "Diana Warp", "Diana Tracker", "Mythos Mob HP", "Diana Announcers", "Diana Party Commands") }
@@ -4899,6 +4906,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Etherwarp Helper" -> "Shows where an etherwarp will land"
                 "Lava To Water" -> "Makes lava look like water"
                 "No Fog" -> "Removes fog in the world, nether, underwater and in lava"
+                "Classic Skyblock Items" -> "Shows SkyBlock items with vanilla models and heads instead of the Hypixel resource pack ones"
                 "Corpse Highlight" -> "Boxes Glacite Mineshaft corpses through walls"
                 "Ghost Box" -> "Boxes ghosts in the Dwarven Mines"
                 "Custom Water Colour" -> "Pick your own water colour"
