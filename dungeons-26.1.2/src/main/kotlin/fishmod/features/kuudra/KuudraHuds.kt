@@ -1,5 +1,6 @@
 package fishmod.features.kuudra
 
+import fishmod.features.ProfitTrackerKit
 import fishmod.features.mining.Mining
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishMsg
@@ -87,11 +88,17 @@ object KuudraHuds {
 
     private fun profitLines(bk: KuudraLoot.Book): List<String> {
         val prof = bk.value - bk.cost
-        val out = arrayListOf("§6§lKuudra Loot §7(${S.kuudraProfitMode})",
-            "§fProfit: " + (if (prof >= 0) "§a" else "§c") + Mining.short(prof),
-            "§7${bk.chests} paid chests" + if (bk.chests > 0) ", " + Mining.short(prof / bk.chests) + "/chest" else "")
-        val items = bk.items.values.sortedByDescending { it.value }.take(S.kuudraProfitRows)
-        for (it in items) out += "§a${Mining.short(it.value)}\t§f${it.count}x ${it.name}"
+        val out = arrayListOf("§6§lKuudra Profit §7(${S.kuudraProfitMode})")
+        for (it in bk.items.values.sortedByDescending { it.value }.take(S.kuudraProfitRows)) {
+            val name = fishmod.utils.TextStrip.plain(it.name)
+            val color = ProfitTrackerKit.rarityColor(fishmod.utils.networth.ItemsDb.idFor(name)) ?: "§f"
+            out += (if (it.value > 0) "§6${Mining.short(it.value)}" else "") + "\t§7| $color$name §f" + "%,d".format(it.count)
+        }
+        out += "§7Paid Chests §f" + "%,d".format(bk.chests)
+        if (bk.cost > 0) out += "§7Key Costs §c-" + Mining.short(bk.cost)
+        val pc = if (prof < 0) "§c" else "§6"
+        val per = if (bk.chests > 0) " §7($pc${Mining.short(prof / bk.chests)}§7/chest)" else ""
+        out += "§eProfit $pc${Mining.short(prof)}$per"
         return out
     }
 
