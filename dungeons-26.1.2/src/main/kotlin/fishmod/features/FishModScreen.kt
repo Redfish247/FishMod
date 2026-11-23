@@ -2687,7 +2687,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         refreshVisibleCacheIfStale()
         val out = ArrayList<Column>()
         for (c in columns) {
-            if (c === cheats) continue
             val matches = visibleFeatures(c).isNotEmpty()
             if (visibleCacheSearch!!.isEmpty()) { if (!isFolded(c)) out.add(c) }
             else if (matches) out.add(c)
