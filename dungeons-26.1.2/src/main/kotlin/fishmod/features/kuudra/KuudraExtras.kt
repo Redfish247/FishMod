@@ -178,15 +178,17 @@ object KuudraExtras {
         if (sp != null && S.kuudraStunStyle != "Outline") FishDraw.fillBox(ps, vc, podBox(sp), Mining.alpha(S.kuudraStunColor, 25))
     }
 
+    private const val ICHOR_N = 64
+    private val ICHOR_COS = DoubleArray(ICHOR_N + 1) { cos(2 * Math.PI * it / ICHOR_N) }
+    private val ICHOR_SIN = DoubleArray(ICHOR_N + 1) { sin(2 * Math.PI * it / ICHOR_N) }
+
     private fun lines(ps: PoseStack, vc: VertexConsumer) {
         val t = now()
         pools.removeAll { it.until <= t }
         if (S.kuudraBossMaster && S.kuudraIchorArea) for (p in pools) {
-            val n = 64
-            for (i in 0 until n) {
-                val a0 = 2 * Math.PI * i / n; val a1 = 2 * Math.PI * (i + 1) / n
-                FishDraw.screenLine(ps, vc, Vec3(p.center.x + 8 * cos(a0), p.center.y, p.center.z + 8 * sin(a0)),
-                    Vec3(p.center.x + 8 * cos(a1), p.center.y, p.center.z + 8 * sin(a1)), S.kuudraIchorColor, 2f)
+            for (i in 0 until ICHOR_N) {
+                FishDraw.screenLine(ps, vc, Vec3(p.center.x + 8 * ICHOR_COS[i], p.center.y, p.center.z + 8 * ICHOR_SIN[i]),
+                    Vec3(p.center.x + 8 * ICHOR_COS[i + 1], p.center.y, p.center.z + 8 * ICHOR_SIN[i + 1]), S.kuudraIchorColor, 2f)
             }
         }
         val sp = stunPos()
