@@ -90,6 +90,9 @@ object InstallHeartbeat {
         )
     }
 
+    // /fmdev welcome: replay the welcome box without touching hasSeenWelcomeMessage
+    fun testWelcome() = sendWelcomeBox("Test welcome text.", "https://discord.gg/3mSuQUB8kk")
+
     private fun border(): Component =
         Component.literal(" ".repeat(BORDER_WIDTH)).withStyle(ChatFormatting.AQUA, ChatFormatting.STRIKETHROUGH)
 
