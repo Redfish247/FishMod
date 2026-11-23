@@ -48,8 +48,6 @@ object Scan {
     var allSecrets: Int = 0
 
     @JvmField
-
-    @JvmField
     var chest: BlockPos? = null
 
     private var shouldScan = false
