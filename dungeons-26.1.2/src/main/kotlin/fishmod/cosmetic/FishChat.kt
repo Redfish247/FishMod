@@ -10,7 +10,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-// /fc <message> (alias /fmchat): chat with every other FishMod user over the live cosmetics socket. Never touches Hypixel chat.
 object FishChat {
     private const val MAX_LEN = 200
     private const val MIN_GAP_MS = 1500L

@@ -42,7 +42,6 @@ object PlayerSize {
         return RemoteScales.get(key) ?: IDENTITY
     }
 
-    // Shared arrays for the per-frame render path, rebuilt only when a setting changes (callers only read them)
     private var forcedFor = Float.NaN
     private var forcedScale = IDENTITY
     private var selfScale = IDENTITY

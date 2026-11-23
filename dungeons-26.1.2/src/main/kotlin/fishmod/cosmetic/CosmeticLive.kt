@@ -78,7 +78,6 @@ object CosmeticLive {
                 retryAt = now + 1_000L
                 return
             }
-            // shared send path: a ping racing a chat send must not throw into the tick guard
             if (now - lastPing >= PING_MS) { lastPing = now; sendText("ping") }
             return
         }

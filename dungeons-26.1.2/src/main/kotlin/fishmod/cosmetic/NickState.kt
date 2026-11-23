@@ -19,7 +19,6 @@ object NickState {
 
     @Volatile private var uploadPending = false
 
-    // Debounce: colour-picker drags call set() per change, so coalesce the POST.
     private fun scheduleUpload() {
         if (uploadPending) return
         uploadPending = true
