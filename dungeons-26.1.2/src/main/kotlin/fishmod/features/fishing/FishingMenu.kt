@@ -73,6 +73,7 @@ object FishingMenu {
         col.features.add(ib)
         val la = Feature("Lasso Reel Alert", FishingWorldSettings::class.java, "lassoAlert")
         la.sub.add(fishmod.features.FishModScreen.SoundSearchSetting("Sound", "", { FishingWorldSettings.lassoSound }, { v -> FishingWorldSettings.lassoSound = v }, { 100 }))
+        la.sub.add(ToggleSetting("Show Popup", "Off = sound only", FishingWorldSettings::class.java, "lassoPopup"))
         col.features.add(la)
         val hive = Feature("Honeyhive Reminder", fishmod.features.mining.MiningSettings::class.java, "foragingHoneyhive")
         hive.sub.add(fishmod.features.FishModScreen.SliderIntSetting("Remind After (min)", "Minutes after you loot a honeyhive", fishmod.features.mining.MiningSettings::class.java, "foragingHoneyhiveMin", 5, 180))

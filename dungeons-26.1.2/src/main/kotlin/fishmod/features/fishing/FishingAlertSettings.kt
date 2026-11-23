@@ -24,6 +24,7 @@ object FishingAlertSettings {
 
     @ConfigValue @JvmField var alertBait: Boolean = false
     @ConfigValue @JvmField var alertBaitLow: Int = 16
+    @ConfigValue @JvmField var alertNoBait: Boolean = false
 
     @ConfigValue @JvmField var alertSound: String = "Ping"
     @ConfigValue @JvmField var alertSoundVolume: Int = 100

@@ -29,7 +29,7 @@ object FishingAlertsWorld {
         }
     }
 
-    private fun anyOn() = S.alertHotspotFound || S.alertHotspotGone || S.alertDeployable || S.alertBait || (S.shareEnabled && S.shareHotspot)
+    private fun anyOn() = S.alertHotspotFound || S.alertHotspotGone || S.alertDeployable || S.alertBait || S.alertNoBait || (S.shareEnabled && S.shareHotspot)
 
     private fun reset() {
         seenHotspots.clear(); trackedId = -1; trackedPos = null; goneAt = 0L
@@ -78,6 +78,7 @@ object FishingAlertsWorld {
         }
         if (S.alertDeployable) scanDeployables(stands, pos, player.name.string)
         if (S.alertBait) scanBait(player)
+        if (S.alertNoBait) scanNoBait(player)
     }
 
     internal fun perkBelow(hot: ArmorStand, stands: List<ArmorStand>): String {
@@ -147,6 +148,16 @@ object FishingAlertsWorld {
 
     private fun expiring(name: String) =
         FishingAlerts.notify(FishingTitles.DEPLOYABLE, FishingAlerts.deployableTitle(name), "Your $name expires soon.")
+
+    private var noBaitWarned = false
+    private fun scanNoBait(player: net.minecraft.client.player.LocalPlayer) {
+        if (player.fishing == null) { noBaitWarned = false; return }
+        if (noBaitWarned) return
+        val name = player.inventory.getItem(8).let { if (it.isEmpty) "" else it.hoverName.string }
+        if (name.contains("Bait") || name.contains("Obfuscated")) return
+        noBaitWarned = true
+        FishingAlerts.notify(FishingTitles.BAIT, "§c§lNo bait", "§7Nothing in your last hotbar slot", "No bait equipped.")
+    }
 
     private fun scanBait(player: net.minecraft.client.player.LocalPlayer) {
         if (player.fishing == null) return
