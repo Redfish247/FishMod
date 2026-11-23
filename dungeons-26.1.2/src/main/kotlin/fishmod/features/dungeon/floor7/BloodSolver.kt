@@ -131,7 +131,7 @@ object BloodSolver {
                 in 1..21 -> 24
                 else -> seconds + 3
             }
-            FishUtil.addChatMessage(Component.literal("§bWatcher will move in §e${"%.2f".format(moveTicks / 20f)}s§b."))
+            FishUtil.addChatMessage(Component.literal("§bWatcher will move in §e${String.format(java.util.Locale.US, "%.2f", moveTicks / 20f)}s§b."))
             TickScheduler.scheduleTask(Runnable { FishUtil.forceTitle(Component.literal("§c§lKill Mobs"), Component.empty()) }, moveTicks)
         }
 
@@ -141,7 +141,7 @@ object BloodSolver {
             else if (seconds < 25) SoundEvents.WARDEN_DEATH else SoundEvents.VILLAGER_DEATH
             repeat(5) { TickScheduler.scheduleSound(sound, 0.25f, 1f) }
             FishUtil.forceTitle(Component.literal(title), Component.empty())
-            if (Floor7Settings.bloodSolverSpeedAlertParty) FishUtil.executeCommand("pc $title")
+            if (Floor7Settings.bloodSolverSpeedAlertParty) fishmod.utils.ChatQueue.enqueue("pc " + fishmod.utils.TextStrip.plain(title))
         }
     }
 
