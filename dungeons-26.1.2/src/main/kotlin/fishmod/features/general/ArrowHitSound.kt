@@ -10,7 +10,7 @@ object ArrowHitSound {
 
     @JvmStatic
     fun onLocalSound(instance: SoundInstance): Boolean {
-        if (!FishSettings.arrowHitSoundEnabled) return false
+        if (!FishSettings.hitSoundsEnabled || !FishSettings.arrowHitSoundEnabled) return false
         if (instance.identifier != SoundEvents.ARROW_HIT_PLAYER.location) return false
 
         FishDiag.guard("ArrowHitSound.1", "arrow hit sound '${FishSettings.arrowHitSoundName}' failed") {

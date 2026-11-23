@@ -75,7 +75,7 @@ object ExperimentProfitTracker {
             { FishSettings.expProfitHudY }, { v -> FishSettings.expProfitHudY = v },
             160, 14 * 8,
             { FishSettings.expProfitHudScale }, { v -> FishSettings.expProfitHudScale = v },
-            { FishSettings.expProfitEnabled },
+            { FishSettings.experimentTableEnabled && FishSettings.expProfitEnabled },
         )
         registerExample()
         ProfitTrackerKit.registerEdit("experimenttracker", "experiment profit", XCat.EXP, XCat.entries.toTypedArray(), { data.drops.keys.map { "EXP|$it" } }) { _, n, v ->
@@ -84,14 +84,14 @@ object ExperimentProfitTracker {
             changed()
         }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (FishSettings.expProfitEnabled && ++scanTick % 10 == 0) nearTable = scanTable(mc)
+            if (FishSettings.experimentTableEnabled && FishSettings.expProfitEnabled && ++scanTick % 10 == 0) nearTable = scanTable(mc)
             val s = mc.curScreen ?: return@register
-            if (FishSettings.expProfitEnabled && TABLE_SCREEN.containsMatchIn(fishmod.utils.ScreenTitle.plain(s))) {
+            if (FishSettings.experimentTableEnabled && FishSettings.expProfitEnabled && TABLE_SCREEN.containsMatchIn(fishmod.utils.ScreenTitle.plain(s))) {
                 lastTableMs = System.currentTimeMillis()
             }
         }
         FishEvents.chat.register { text ->
-            if (FishSettings.expProfitEnabled) FishDiag.guard("ExperimentProfitTracker.1", "experiment chat parse failed") {
+            if (FishSettings.experimentTableEnabled && FishSettings.expProfitEnabled) FishDiag.guard("ExperimentProfitTracker.1", "experiment chat parse failed") {
                 onChat(text.chatPlain.trim(), text)
             }
             false
@@ -201,7 +201,7 @@ object ExperimentProfitTracker {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!FishSettings.expProfitEnabled) return
+        if (!FishSettings.experimentTableEnabled || !FishSettings.expProfitEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
         if (FishSettings.expProfitOnlyIsland && fishmod.utils.SkyblockLocation.getCurrentLocation() != fishmod.utils.SkyblockLocation.PRIVATE_ISLAND) return

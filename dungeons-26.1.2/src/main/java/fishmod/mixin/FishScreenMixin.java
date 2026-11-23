@@ -42,7 +42,7 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
             try { fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.2", "LeapMenu.render failed", t); }
         }
         try { fishmod.features.party.PartyFinderPanel.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.3", "PartyFinderPanel.render failed", t); }
-        if (FishSettings.storageOverlayEnabled) {
+        if (FishSettings.storageFeatureEnabled && FishSettings.storageOverlayEnabled) {
             try { fishmod.features.inventory.StorageOverlay.render(context, mouseX, mouseY, self); } catch (Throwable t) { FishDiag.fail("FishScreenMixin.4", "StorageOverlay.render failed", t); }
         }
         if (FishSettings.croesusProfitEnabled || FishSettings.croesusHighlightEnabled) {

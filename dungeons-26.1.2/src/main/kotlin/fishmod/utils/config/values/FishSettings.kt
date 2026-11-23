@@ -197,7 +197,6 @@ object FishSettings {
 
     @ConfigValue @JvmField var bridgeBotEnabled: Boolean = false
     @ConfigValue @JvmField var bridgeBotName: String = ""
-    @ConfigValue @JvmField var discordChatEnabled: Boolean = false
     @ConfigValue @JvmField var discordWebhookUrl: String = ""
     @ConfigValue @JvmField var discordGuild: Boolean = true
     @ConfigValue @JvmField var discordOfficer: Boolean = false
@@ -499,6 +498,7 @@ object FishSettings {
     @ConfigValue @JvmField var timeChangerMode: String = "Day"
 
     @ConfigValue @JvmField var arrowHitSoundEnabled: Boolean = false
+    @ConfigValue @JvmField var hitSoundsEnabled: Boolean = true
     @ConfigValue @JvmField var arrowHitSoundSuppress: Boolean = false
     @ConfigValue @JvmField var arrowHitSoundName: String = "Note: Harp"
     @ConfigValue @JvmField var arrowHitSoundVolume: Int = 100
@@ -562,6 +562,7 @@ object FishSettings {
     @ConfigValue @JvmField var animNoHandMove: Boolean = false
 
     @ConfigValue @JvmField var storageOverlayEnabled: Boolean = false
+    @ConfigValue @JvmField var storageFeatureEnabled: Boolean = true
     @ConfigValue @JvmField var storageViewerColumns: Int = 3
     @ConfigValue @JvmField var storageMaxHeight: Int = 360
     @ConfigValue @JvmField var storageHideNonMatching: Boolean = false
@@ -701,6 +702,7 @@ object FishSettings {
     @ConfigValue @JvmField var melodyMessageProgress: Boolean = false
 
     @ConfigValue @JvmField var simonSolverEnabled: Boolean = false
+    @ConfigValue @JvmField var simonSaysMasterEnabled: Boolean = true
     @ConfigValue @JvmField var simonSolverDepth: Boolean = false
     @ConfigValue @JvmField var simonSolverColor1: Int = 0x8055FF55.toInt()
     @ConfigValue @JvmField var simonSolverColor2: Int = 0x80FFAA00.toInt()
@@ -1112,6 +1114,7 @@ object FishSettings {
     @ConfigValue @JvmField var anitaProfitEnabled: Boolean = false
     @ConfigValue @JvmField var expProfitEnabled: Boolean = false
     @ConfigValue @JvmField var experimentSolverEnabled: Boolean = false
+    @ConfigValue @JvmField var experimentTableEnabled: Boolean = true
     @ConfigValue @JvmField var expProfitOnlyIsland: Boolean = true
     @ConfigValue @JvmField var expProfitLines: Int = 10
     @ConfigValue @JvmField var expProfitHudX: Int = 10
@@ -1124,6 +1127,7 @@ object FishSettings {
     @ConfigValue @JvmField var slayerCarryHudScale: Double = 1.0
 
     @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerQolEnabled: Boolean = true
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseThroughWalls: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTextScale: Int = 60

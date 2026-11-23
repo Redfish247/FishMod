@@ -45,7 +45,7 @@ object SimonSaysSolver {
         lastLanternTick = -1
     }
 
-    private fun inP3(): Boolean = FishSettings.simonSolverEnabled && try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.1", "BossPhase.inP3 threw", t); false }
+    private fun inP3(): Boolean = FishSettings.simonSaysMasterEnabled && FishSettings.simonSolverEnabled && try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.1", "BossPhase.inP3 threw", t); false }
 
     private fun trackingActive(): Boolean = try { BossPhase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.2", "BossPhase.inP3 threw (tracking)", t); false }
 
