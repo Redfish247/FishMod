@@ -35,7 +35,8 @@ object DungeonMap {
     @JvmStatic
     fun anyFeatureEnabled(): Boolean {
         val s = DungeonMapSettings
-        return s.mapEnabled || s.mapInfoEnabled == true || s.mapScoreMessages
+        val f = fishmod.utils.config.values.FishSettings
+        return s.mapEnabled || s.mapInfoEnabled == true || s.mapScoreMessages || f.puzzleSolversEnabled || f.roomTimerEnabled || f.routeRecorderEnabled
     }
 
     @JvmStatic
