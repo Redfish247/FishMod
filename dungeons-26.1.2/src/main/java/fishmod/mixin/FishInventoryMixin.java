@@ -64,7 +64,6 @@ public abstract class FishInventoryMixin extends AbstractRecipeBookScreen<Invent
         return super.mouseDragged(click, dx, dy);
     }
 
-    // InventoryScreen defines mouseReleased itself, so inject instead of overriding
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
     private void fishmod$releaseButtons(MouseButtonEvent click, CallbackInfoReturnable<Boolean> cir) {
         if (InvShortcutButtons.release()) cir.setReturnValue(true);

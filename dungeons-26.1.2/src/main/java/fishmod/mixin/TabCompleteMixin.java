@@ -23,11 +23,9 @@ public abstract class TabCompleteMixin {
         try {
             String text = this.input.getValue();
             if (this.input.getCursorPosition() != text.length()) return;
-            // .cmd/!cmd args win over vanilla's chat player-name list
             Suggestions party = TabComplete.partySuggest(text);
             if (party != null) { this.pendingSuggestions = CompletableFuture.completedFuture(party); return; }
             CompletableFuture<Suggestions> p = this.pendingSuggestions;
-            // Keep vanilla/server suggestions when they already have results
             if (p != null && p.isDone() && !p.isCompletedExceptionally() && !p.join().isEmpty()) return;
             Suggestions ours = TabComplete.suggest(text);
             if (ours != null) this.pendingSuggestions = CompletableFuture.completedFuture(ours);

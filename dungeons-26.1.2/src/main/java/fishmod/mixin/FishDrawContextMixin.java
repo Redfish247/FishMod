@@ -57,14 +57,12 @@ public class FishDrawContextMixin {
         float ox = fishmod.features.hud.ScrollableTooltip.offsetX;
         float oy = fishmod.features.hud.ScrollableTooltip.offsetY;
         boolean on = fishmod.features.hud.ScrollableTooltip.isEnabled() && (scale != 1f || ox != 0f || oy != 0f);
-        // taller than the screen: shrink to fit, keeping the top 4px from the edge
         float est = 12f;
         for (ClientTooltipComponent c : lines) est += c.getHeight(font);
         if (lines.size() > 1) est += 2f;
         int shh = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledHeight();
         int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
         boolean fit = est > shh - 8;
-        // short tooltip whose top would be above the screen (mouse near the top): push it down to 4px
         int liftY = 0;
         if (!fit) {
             int top0 = positioner.positionTooltip(sww, shh, xo, yo, 100, (int) est - 12).y() - 6;
@@ -125,7 +123,6 @@ public class FishDrawContextMixin {
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("TAIL"))
     private void fishmod$itemScaleDown(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci,
                            @Share("fishmod$headScaled") LocalBooleanRef scaled) {
-        // Pop only what HEAD pushed, so a mid-frame toggle can't unbalance the pose stack.
         if (scaled.get()) {
             pose.popMatrix();
         }

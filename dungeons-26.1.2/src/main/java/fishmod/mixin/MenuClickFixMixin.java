@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// SkyBlock menus: double-click collect and middle click become one plain left click.
 @Mixin(AbstractContainerScreen.class)
 public abstract class MenuClickFixMixin {
     @Shadow protected abstract void slotClicked(Slot slot, int slotId, int button, ContainerInput input);
