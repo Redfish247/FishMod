@@ -426,6 +426,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Vanilla Item Models", "Swap Hypixel custom item models for the plain vanilla model of that SkyBlock item", "classicItemModels"))
             f.sub.add(ToggleSetting("Classic Head Textures", "Use the old head texture for SkyBlock items the pack turns into heads", "classicItemHeads"))
             f.sub.add(ToggleSetting("Vanilla Tooltips", "Remove the custom SkyBlock tooltip frame and background", "classicTooltips"))
+            f.sub.add(ToggleSetting("Load Pack Locally", "Download the SkyBlock pack once and keep it cached instead of applying the server pack on every join", { FishSettings.classicLocalPack }, { v -> FishSettings.classicLocalPack = v; fishmod.features.visuals.ClassicPack.reload() }))
+            f.sub.add(ToggleSetting("OG Text Colors", "Use the normal Minecraft text colours instead of the SkyBlock pack colour shaders", { FishSettings.classicOgColors }, { v -> FishSettings.classicOgColors = v; fishmod.features.visuals.ClassicPack.reload() }))
             visuals.features.add(f)
         }
         run {
