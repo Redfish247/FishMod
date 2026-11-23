@@ -22,10 +22,22 @@ object ItemValue {
         return fishmod.pv.networth.PetWorth.value(o, true)
     }
 
+    // Single-enchant books price as ENCHANTMENT_<NAME>_<LVL>; everything else uses its SkyBlock id.
+    @JvmStatic
+    fun priceId(stack: ItemStack): String? {
+        val id = ItemTools.getId(stack) ?: return null
+        if (id != "ENCHANTED_BOOK") return id
+        val ench = stack.fishmodCustomDataTag()?.getCompound("enchantments")?.orElse(null) ?: return id
+        val key = ench.keySet().singleOrNull() ?: return id
+        val lvl = ench.getIntOr(key, 0).takeIf { it > 0 } ?: return id
+        return "ENCHANTMENT_${key.uppercase()}_$lvl"
+    }
+
     private fun estimateInner(stack: ItemStack): Double {
         if (stack.isEmpty) return 0.0
-        val id = ItemTools.getId(stack) ?: return 0.0
+        val id = priceId(stack) ?: return 0.0
         if (id == "PET") return petValue(stack)
+        if (id.startsWith("ENCHANTMENT_")) return CroesusPrices.price(id)
         val mods = ModifierValue.calc(stack)
         FishDiag.check(!mods.isNaN() && mods >= 0.0, "ItemValue.2") { "modifier value $mods for $id" }
         val tag = stack.fishmodCustomDataTag()
