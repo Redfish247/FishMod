@@ -2866,6 +2866,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val out = ArrayList<Btn>()
         var x = left() + 10
         for ((id, label) in listOf("hud" to "Edit HUD", "|" to "", "report" to "Report", "credits" to "Credits", "reset" to (if (resetArmed) "Confirm?" else "Reset"), "|" to "", "look" to "Appearance", "conflicts" to conflictsLabel())) {
+            if (id == "conflicts" && label.isEmpty()) continue
             if (id == "|") { x += 9; continue }
             val w = sw(this.font, label, 0.85f) + 18
             out.add(Btn(id, label, x, CMD_Y, w, 22)); x += w + 2
@@ -3021,7 +3022,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 .map { f -> fishmod.compat.conflicts.FishFeatureRef(f.name, f.get!!, f.set!!) }.distinctBy { it.name }
         }
     }
-    private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n > 0) "Conflicts ($n)" else "Conflicts" }
+    // empty label = no conflicts (or scan not finished yet): the button is not shown at all
+    private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n > 0) "Conflicts ($n)" else "" }
     private fun openPage(p: String) { page = p; selected = null; openedAt = System.currentTimeMillis() }
     private fun goHome() { page = null; allMode = true; selected = null; gridScroll = 0; if (searchText.isNotEmpty()) { searchField?.value = ""; searchText = "" }; openedAt = System.currentTimeMillis() }
     private fun pageTitle(): String = when (page) { "report" -> "Report to RedFish"; "conflicts" -> "Mod Conflicts"; else -> "Credits" }
