@@ -104,7 +104,6 @@ object MayorApi {
             try {
                 val code = resp.statusCode()
                 if (code !in 200..299) {
-                    // Cloudflare/HTML error body (e.g. "error code: 1020"): never parse it
                     val snippet = resp.body().orEmpty().take(80).replace(Regex("\\s+"), " ")
                     FishDebug.LOGGER.warn("MayorApi: HTTP {} - {}", code, snippet)
                     if (!httpErrorReported) {
@@ -154,7 +153,7 @@ object MayorApi {
     }
 
     private fun parseMayorLine(root: JsonObject): String? {
-        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return null // null/non-object mayor must not throw
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return null
         val name = (mayor.get("name") ?: mayor.get("key"))?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
             ?.replaceFirstChar { it.uppercaseChar() } ?: return null
         val perk = runCatching { mayor.getAsJsonArray("perks")?.firstOrNull()?.asJsonObject?.get("name")?.asString }.getOrNull()

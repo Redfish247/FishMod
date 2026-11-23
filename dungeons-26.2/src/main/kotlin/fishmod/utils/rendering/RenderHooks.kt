@@ -53,7 +53,6 @@ object RenderHooks {
         }
     }
 
-    // Vanilla gizmos are drawn after terrain and translucent targets, so highlights can't be covered by water, glass or leaves.
     private fun gizmoOverlays(ctx: LevelRenderContext) {
         val ps = PoseStack()
         val fills = newRec()
