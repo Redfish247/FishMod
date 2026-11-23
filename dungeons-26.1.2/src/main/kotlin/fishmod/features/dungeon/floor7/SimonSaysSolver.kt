@@ -100,6 +100,7 @@ object SimonSaysSolver {
 
             if (FishSettings.simonSolverBlockWrong &&
                 Minecraft.getInstance().player?.isShiftKeyDown == false &&
+                clickInOrder.isNotEmpty() &&
                 lantern != clickInOrder.getOrNull(clickNeeded)
             ) return@UseBlockCallback InteractionResult.FAIL
 
