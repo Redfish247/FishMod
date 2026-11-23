@@ -125,6 +125,11 @@ object FishDebug {
                     FishConstants.SUCCESS
                 })
 
+                .then(ClientCommands.literal("welcome").executes { _ ->
+                    fishmod.utils.InstallHeartbeat.testWelcome()
+                    FishConstants.SUCCESS
+                })
+
                 .then(ClientCommands.literal("debug").executes { _ ->
                     sendDebug = !sendDebug
                     FishUtil.addChatMessage(Component.literal("Debug chat: ").append(FishUtil.getStatusText(sendDebug)))
