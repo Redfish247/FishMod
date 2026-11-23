@@ -3030,7 +3030,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun detTop(): Int = cyTop() - HEADER_H + 24
     private fun descLines(f: Feature): List<String> = descFor(f.name).let { if (it.isEmpty()) emptyList() else wrapText(it, detW() - 20, DESC_SIZE) }
     private fun descH(f: Feature): Int = descLines(f).let { if (it.isEmpty()) 0 else it.size * WRAP_LINE_H + 6 }
-    private fun detMax(f: Feature): Int = Math.max(0, descH(f) + f.naturalSubHeight() - (cyBot() - detTop()))
+    private val DONE_H = 32
+    private fun detBot(): Int = cyBot() - DONE_H
+    private fun detMax(f: Feature): Int = Math.max(0, descH(f) + f.naturalSubHeight() - (detBot() - detTop()))
+    private fun scrollArrow(up: Boolean, cx: Float, cy: Float) {
+        UiRecorder.fillRoundedRect(cx - 7f, cy - 7f, 14f, 14f, 7f, ScreenTheme.ink(0x30))
+        UiRecorder.roundedRectRing(cx - 7f, cy - 7f, 14f, 14f, 7f, 1f, 0, ACCENT)
+        val c = TEXT_COLOR; val d = if (up) -1f else 1f
+        UiRecorder.line(cx, cy + 3f * d, cx, cy - 3f * d, 1.2f, c)
+        UiRecorder.line(cx, cy + 3f * d, cx - 2.5f, cy + 0.5f * d, 1.2f, c)
+        UiRecorder.line(cx, cy + 3f * d, cx + 2.5f, cy + 0.5f * d, 1.2f, c)
+    }
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val sbx = stackX0() + stackW() + 6
@@ -3090,6 +3100,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
         } finally { UiRecorder.popScissor() }
         if (gridMax(items.size) > gridScroll) { val bg = ScreenTheme.windowBg(); UiRecorder.fillRectVGradient(cx0().toFloat(), (cyBot() - 18).toFloat(), (gx1() - cx0()).toFloat(), 18f, bg and 0xFFFFFF, bg) }
+        if (gridScroll > 0) scrollArrow(true, (gx1() - 14).toFloat(), (cyTop() + 12).toFloat())
+        if (gridScroll < gridMax(items.size)) scrollArrow(false, (gx1() - 14).toFloat(), (cyBot() - 12).toFloat())
         if (items.isEmpty() && col != null) sst(ctx, this.font, "No features match", cx0(), cyTop() + 8, SUBTEXT_COLOR, 1f)
         val f = selected ?: return
         val sp = anim(selAt, 0, 220)
@@ -3102,24 +3114,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             UiRecorder.fillRoundedRect(dx0.toFloat(), ht.toFloat(), dw.toFloat(), (cyBot() - ht).toFloat(), CARD_RADIUS.toFloat(), fa(ScreenTheme.ink(0x0F), sp))
             val hs = 1.25f * NVG_BASE_TEXT_SIZE
             var name = f.name
-            while (name.length > 1 && UiRecorder.textWidthBold(name, hs) > dw - 84) name = name.dropLast(1)
+            while (name.length > 1 && UiRecorder.textWidthBold(name, hs) > dw - 60) name = name.dropLast(1)
             if (name != f.name) name = name.dropLast(1) + "…"
             UiRecorder.textBold(name, (dx0 + 10).toFloat(), (ht + 5).toFloat(), hs, fa(TEXT_COLOR, sp))
             if (f.hasMaster()) {
                 val on = f.get!!()
-                drawTogglePill(ctx, dx1 - 58, ht + 6, 26, 14, on, knobP(f.name, on), mouseX in dx1 - 60..dx1 - 30 && mouseY in ht + 4..ht + 22, sp)
+                drawTogglePill(ctx, dx1 - 34, ht + 6, 26, 14, on, knobP(f.name, on), mouseX in dx1 - 36..dx1 - 6 && mouseY in ht + 4..ht + 22, sp)
             }
-            val xh = mouseX >= dx1 - 20 && mouseY in ht..ht + 20
-            icon("x", dx1 - 12f, ht + 11f, fa(if (xh) TEXT_COLOR else SUBTEXT_COLOR, sp))
             detScroll = Mth.clamp(detScroll, 0, detMax(f))
-            UiRecorder.pushScissor(dx0.toFloat(), detTop().toFloat(), dw.toFloat(), (cyBot() - detTop()).toFloat())
+            UiRecorder.pushScissor(dx0.toFloat(), detTop().toFloat(), dw.toFloat(), (detBot() - detTop()).toFloat())
             try {
                 val dl = descLines(f)
                 for ((i, l) in dl.withIndex()) UiRecorder.text(l, (dx0 + 10).toFloat(), (detTop() - detScroll + i * WRAP_LINE_H).toFloat(), DESC_SIZE, fa(SUBTEXT_COLOR, sp))
                 val subTop = detTop() - detScroll + descH(f)
                 if (f.sub.isEmpty()) sst(ctx, this.font, "No settings", dx0 + 12, subTop + 6, SUBTEXT_COLOR, 0.9f)
-                else renderSubPanel(ctx, f, dx0, dx1, subTop, f.naturalSubHeight(), mouseX, if (mouseY >= detTop()) mouseY else -10000, detTop(), cyBot())
+                else renderSubPanel(ctx, f, dx0, dx1, subTop, f.naturalSubHeight(), mouseX, if (mouseY >= detTop() && mouseY < detBot()) mouseY else -10000, detTop(), detBot())
             } finally { UiRecorder.popScissor() }
+            val bx = dx0 + 8; val bw = dw - 16; val by = detBot() + 5; val bh = DONE_H - 10
+            val bh2 = mouseX in bx..bx + bw && mouseY in by..by + bh
+            UiRecorder.fillRoundedRect(bx.toFloat(), by.toFloat(), bw.toFloat(), bh.toFloat(), 6f, fa(if (bh2) ACCENT else ScreenTheme.ink(0x1C), sp))
+            val bl = "Done"
+            UiRecorder.textBold(bl, bx + (bw - UiRecorder.textWidthBold(bl, NVG_BASE_TEXT_SIZE)) / 2f, by + (bh - NVG_BASE_TEXT_SIZE) / 2f, NVG_BASE_TEXT_SIZE, fa(if (bh2) ScreenTheme.textOn(ACCENT) else TEXT_COLOR, sp))
+            if (detScroll > 0) scrollArrow(true, dx1 - 18f, detTop() + 12f)
+            if (detScroll < detMax(f)) scrollArrow(false, dx1 - 18f, detBot() - 12f)
         } finally { UiRecorder.popScissor() }
     }
 
@@ -3151,12 +3168,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (my < cyTop() && mx < gx1()) { selected = null; return true }
         val f = selected
         if (f != null && mx >= cx1() - detW()) {
-            if (mx >= cx1() - 20 && my <= cyTop() - HEADER_H + 20) { selected = null; return true }
-            if (f.hasMaster() && mx in cx1() - 60..cx1() - 30 && my in cyTop() - HEADER_H + 4..cyTop() - HEADER_H + 22) {
+            if (my >= detBot()) { selected = null; return true }
+            if (f.hasMaster() && mx in cx1() - 36..cx1() - 6 && my in cyTop() - HEADER_H + 4..cyTop() - HEADER_H + 22) {
                 try { f.set!!(!f.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${f.name}' failed", t) }
                 return true
             }
-            if (my >= detTop()) subClick(f, cx1() - detW(), cx1(), detTop() - detScroll + descH(f), mx, my, btn)
+            if (my >= detTop() && my < detBot()) subClick(f, cx1() - detW(), cx1(), detTop() - detScroll + descH(f), mx, my, btn)
             return true
         }
         if (my < cyTop() || mx > gx1()) return true
