@@ -112,6 +112,10 @@ object SlayerManager {
     fun onQuestIsland(): Boolean = type?.let { onSlayerIsland(it) } ?: false
 
     @JvmStatic
+    // slayerAnyEnabled() plus the extras that read quest type/boss
+    fun anyEnabled(): Boolean = FishSettings.slayerAnyEnabled() || EndAlertSettings.noQuestWarning ||
+        EndAlertSettings.cocoonTimer || EndAlertSettings.eggSacHighlight || EndAlertSettings.yangGlyphTracer
+
     fun isActiveSlayer(): Boolean = hasActiveQuest() && SkyblockLocation.inSkyblock()
 
     @JvmStatic
@@ -128,7 +132,7 @@ object SlayerManager {
         SlayerHuds.initInventory()
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
-            if (!FishSettings.slayerAnyEnabled()) {
+            if (!anyEnabled()) {
                 if (state != State.NONE || type != null) fullReset()
                 return@EndTick
             }
@@ -155,7 +159,7 @@ object SlayerManager {
         }
 
         FishEvents.chat.register { text ->
-            if (!FishSettings.slayerAnyEnabled()) return@register false
+            if (!anyEnabled()) return@register false
             val s = text.chatPlain.trim()
             val now = System.currentTimeMillis()
             try { when {
