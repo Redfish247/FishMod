@@ -139,7 +139,6 @@ object CosmeticLive {
     }
 
     private fun dashboardMessage(root: JsonObject) {
-        if (!FishSettings.dashboardMessagesEnabled) return
         val id = root.get("id")?.takeIf { !it.isJsonNull }?.asLong ?: return
         val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.take(256)?.takeIf { it.isNotBlank() } ?: return
         val from = root.get("from")?.takeIf { !it.isJsonNull }?.asString?.take(32)?.takeIf { it.isNotBlank() } ?: "FishMod"
