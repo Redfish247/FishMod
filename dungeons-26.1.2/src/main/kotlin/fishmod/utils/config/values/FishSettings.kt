@@ -310,6 +310,7 @@ object FishSettings {
     @ConfigValue @JvmField var nickCustomName: String = ""
     @ConfigValue @JvmField var nickColorMode: String = "GRADIENT"
     @ConfigValue @JvmField var nickColorAnimated: Boolean = false
+    @ConfigValue @JvmField var nickColorSpeed: Int = 100
 
     @ConfigValue @JvmField var nickPreviewEnabled: Boolean = false
     @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
