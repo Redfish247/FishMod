@@ -629,7 +629,6 @@ object HypixelApiClient {
                     String(bytes, StandardCharsets.UTF_8),
                     TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos)
                 )
-                if (allowReauth) return getJson(url, false, allowStreamRetry, RequestTiming.retry(timing.correlationId), 0)
                 lastFailure = "HTTP 401"
                 ProfileViewer.LOGGER.warn("Hypixel GET {} unauthorized after re-auth", url)
                 return Optional.empty()
