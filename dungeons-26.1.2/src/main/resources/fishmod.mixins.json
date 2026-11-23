@@ -11,6 +11,9 @@
   },
   "client": [
     "FishConnectionMixin",
+    "ClassicItemModelMixin",
+    "ClassicHeadMixin",
+    "ClassicTooltipMixin",
     "FishEntityMixin",
     "FishItemStackMixin",
     "SlotLockDropMixin",
