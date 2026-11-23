@@ -29,7 +29,7 @@ object FishingWorld {
     private fun refresh() {
         val on = FishingSettings.fishing && W.fishingWorld
         anyHookTimer = on && W.hookTimer
-        anyRare = on && (W.rareHighlight || W.rareHp || W.rareImmunity)
+        anyRare = on && (W.rareHighlight || W.rareHp || W.rareHpBar || W.rareImmunity)
         anyOn = on && (W.hookTimer || W.rareHighlight || W.hideOtherHooks || W.hidePlayersNearBobber || W.hideCommonCreatures)
     }
 
@@ -44,6 +44,7 @@ object FishingWorld {
         world.sub.add(ToggleSetting("Highlight Rare Creatures", "Glow rare sea creatures", W::class.java, "rareHighlight"))
         world.sub.add(ColorPickerSetting("Highlight Color", "", W::class.java, "rareHighlightColor").gatedBy { W.rareHighlight })
         world.sub.add(ToggleSetting("Rare Creature HP", "Show HP above rare sea creatures", W::class.java, "rareHp"))
+        world.sub.add(ToggleSetting("Rare Creature HP Bar", "Colored health bar and percent above rare sea creatures", W::class.java, "rareHpBar"))
         world.sub.add(ToggleSetting("Spawn Immunity Timer", "Show the 5 s spawn immunity countdown", W::class.java, "rareImmunity"))
         world.sub.add(ToggleSetting("Hide Other Hooks", "Do not render other players' fishing hooks", W::class.java, "hideOtherHooks"))
         world.sub.add(ToggleSetting("Hide Players Near Bobber", "Do not render players close to your hook", W::class.java, "hidePlayersNearBobber"))

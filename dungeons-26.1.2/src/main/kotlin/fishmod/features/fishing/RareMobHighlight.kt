@@ -90,6 +90,14 @@ object RareMobHighlight {
                 }
                 val sb = StringBuilder()
                 if (W.rareHp && m != null) sb.append("§c").append(m.groupValues[1]).append("§7/§a").append(m.groupValues[2]).append("§c❤")
+                if (W.rareHpBar && m != null) {
+                    val cur = parse(m.groupValues[1]); val max = parse(m.groupValues[2])
+                    val pct = if (max > 0) (cur / max).coerceIn(0.0, 1.0) else 0.0
+                    val n = Math.round(pct * 10).toInt()
+                    val c = if (pct > 0.6) "§a" else if (pct > 0.3) "§e" else "§c"
+                    if (sb.isNotEmpty()) sb.append(" ")
+                    sb.append(c).append("█".repeat(n)).append("§8").append("█".repeat(10 - n)).append(" ").append(c).append((pct * 100).toInt()).append("%")
+                }
                 if (W.rareImmunity && sc.immunity) {
                     val left = 100 - s.tickCount
                     if (left > 0) { if (sb.isNotEmpty()) sb.append(" "); sb.append("§eImmune ").append(fishmod.utils.Fmt.f1(left / 20.0)).append("s") }
