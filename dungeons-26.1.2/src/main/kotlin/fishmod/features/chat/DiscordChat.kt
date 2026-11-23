@@ -57,7 +57,7 @@ object DiscordChat {
     @JvmStatic
     fun init() {
         ClientReceiveMessageEvents.GAME.register { message, overlay ->
-            if (overlay || !FishSettings.discordChatEnabled) return@register
+            if (overlay) return@register
             val url = FishSettings.discordWebhookUrl.trim()
             if (!validWebhook(url)) return@register
             val plain = TextStrip.plain(message.string).trim()
