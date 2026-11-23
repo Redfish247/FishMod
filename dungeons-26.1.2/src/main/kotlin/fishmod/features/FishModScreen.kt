@@ -2718,7 +2718,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val alpha = Mth.clamp(Math.round(FishSettings.fmButtonAlpha * 2.55f), 0, 255)
         ACCENT = (alpha shl 24) or rgb
         ACCENT_HOVER = brighten(ACCENT, 28)
-        ScreenTheme.ACCENT = ACCENT; ScreenTheme.ACCENT_HOVER = ACCENT_HOVER
 
         val btnAlpha = Mth.clamp(Math.round(FishSettings.fmRowBgAlpha * 2.55f), 0, 255)
         ROW_BUTTON = (btnAlpha shl 24) or (brighten(cardBgRgb(), 10) and 0xFFFFFF)

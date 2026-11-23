@@ -7,8 +7,17 @@ import fishmod.utils.debug.FishDiag
 
 object ScreenTheme {
     val SOLID_PANEL = 0xFF11121F.toInt()
-    var ACCENT = 0xFFD6D6D6.toInt()
-    var ACCENT_HOVER = 0xFFFFFFFF.toInt()
+    // Computed from settings so standalone windows match the menu accent without FishModScreen having been opened
+    val ACCENT: Int get() {
+        val s = fishmod.utils.config.values.FishSettings
+        val alpha = Math.max(0, Math.min(255, Math.round(s.fmButtonAlpha * 2.55f)))
+        return (alpha shl 24) or (s.fmButtonColor and 0xFFFFFF)
+    }
+    val ACCENT_HOVER: Int get() {
+        val c = ACCENT
+        fun up(sh: Int) = Math.min(255, ((c ushr sh) and 0xFF) + 28)
+        return (c and 0xFF000000.toInt()) or (up(16) shl 16) or (up(8) shl 8) or up(0)
+    }
     val CARD_BG = 0xFF171717.toInt()
     private var lbC = 0; private var lbV = false
     fun lightBg(): Boolean { val c = windowBg(); if (c != lbC) { lbC = c; lbV = isLight(c) }; return lbV }
