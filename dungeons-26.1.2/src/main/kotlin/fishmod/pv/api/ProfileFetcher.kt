@@ -300,6 +300,9 @@ object ProfileFetcher {
                                 auctionFuts.auction, auctionFuts.sold, auctionFuts.bids, onUpdate
                             )
                         }
+                    }.exceptionally { error ->
+                        ProfileViewer.LOGGER.warn("Profile enrichment start failed", error)
+                        null
                     }
                     coreFuture
                 }
@@ -474,6 +477,9 @@ object ProfileFetcher {
                 core, nameKey(name), root, electionFut,
                 auctionFuts.auction, auctionFuts.sold, auctionFuts.bids, onUpdate
             )
+        }.exceptionally { error ->
+            ProfileViewer.LOGGER.warn("Profile enrichment start failed", error)
+            null
         }
         return coreFuture
     }
