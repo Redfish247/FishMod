@@ -149,6 +149,10 @@ object PrestigeLevelColors {
     @JvmStatic
     fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX)
 
+    // Time-independent colours so tab results can be cached instead of rebuilt every 100ms
+    @JvmStatic
+    fun colorizeLevelPrefixStatic(c: Component?): Component? = recolor(c, LEVEL_PREFIX, live = true)
+
     @JvmStatic
     fun colorizeChatLevel(c: Component?): Component? {
         if (!FishSettings.prestigeColorsChat) return c
