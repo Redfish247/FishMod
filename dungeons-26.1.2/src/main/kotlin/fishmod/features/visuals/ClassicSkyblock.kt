@@ -65,6 +65,21 @@ object ClassicSkyblock {
     /** The vanilla look for [id], or null while the data is still loading. */
     private fun resolve(id: String): Resolved? {
         resolved[id]?.let { return it }
+        // 0) Noamm's list (built from an older NEU repo): the exact old look, when it knows the item
+        ClassicItemData.start()
+        when (ClassicItemData.state) {
+            ClassicItemData.State.READY -> ClassicItemData.get(id)?.let { e ->
+                try {
+                    val model = Identifier.parse(e.model)
+                    val profile = e.texture?.let { headProfile(it, id) }
+                    if (!(model.path == "player_head" && profile == null)) return remember(id, Resolved(model, profile))
+                } catch (t: Throwable) {
+                    FishDiag.fail("ClassicSkyblock.4", "old item entry unusable for $id", t)
+                }
+            }
+            ClassicItemData.State.FAILED -> {}
+            else -> return null   // still downloading/parsing, keep the pack model for now and retry next frame
+        }
         ensureData()
         val def: JsonObject = HypixelItemsCache.get(id) ?: return null
         try {
@@ -109,11 +124,51 @@ object ClassicSkyblock {
     fun modelFor(stack: ItemStack, current: Identifier): Identifier? {
         if (!FishSettings.classicItemsEnabled || !FishSettings.classicItemModels) return null
         if (current.namespace != PACK_NS) return null
-        val id = skyblockId(stack) ?: return null
+        val tag = stack.get(DataComponents.CUSTOM_DATA)?.copyTag() ?: return null
+        val id = tag.getString("id").orElse(null)?.replace(":", "-")
+        if (id == null) return if (tag.contains("quiver_arrow")) modelOf(Items.ARROW) else null
         val r = resolve(id) ?: return null
         // a head model with the head textures turned off would render as Steve: keep the pack model instead
         if (r.profile != null && !FishSettings.classicItemHeads) return null
-        return r.model
+        val base = r.model ?: return null
+        return dynamicModel(id, stack, tag, current, base)
+    }
+
+    private val ATTUNED = mapOf(
+        "FIREDUST_DAGGER" to (1 to Items.GOLDEN_SWORD), "BURSTFIRE_DAGGER" to (1 to Items.GOLDEN_SWORD), "HEARTFIRE_DAGGER" to (1 to Items.GOLDEN_SWORD),
+        "MAWDUST_DAGGER" to (3 to Items.DIAMOND_SWORD), "BURSTMAW_DAGGER" to (3 to Items.DIAMOND_SWORD), "HEARTMAW_DAGGER" to (3 to Items.DIAMOND_SWORD),
+    )
+    private val KATANAS = setOf("VOIDEDGE_KATANA", "VORPAL_KATANA", "ATOMSPLIT_KATANA")
+    private val FUNGI = setOf("FUNGI_CUTTER", "FUNGI_CUTTER_2", "FUNGI_CUTTER_3")
+
+    /** Items whose look depends on their state (attune mode, cooldown, ...), like Pack Disabler's DynamicItemModels. */
+    private fun dynamicModel(id: String, stack: ItemStack, tag: net.minecraft.nbt.CompoundTag, current: Identifier, base: Identifier): Identifier {
+        try {
+            if (id == "CARNIVAL_SHOVEL") {
+                val item = when (current.path.substringAfterLast('/')) {
+                    "carnival_shovel_iron" -> Items.IRON_SHOVEL
+                    "carnival_shovel_gold" -> Items.GOLDEN_SHOVEL
+                    "carnival_shovel_diamond" -> Items.DIAMOND_SHOVEL
+                    else -> return base
+                }
+                return modelOf(item) ?: base
+            }
+            ATTUNED[id]?.let { (mode, item) -> return if (tag.getInt("td_attune_mode").orElse(-1) == mode) (modelOf(item) ?: base) else base }
+            if (id in KATANAS) {
+                val cd = net.minecraft.client.Minecraft.getInstance().player?.cooldowns?.isOnCooldown(stack) == true
+                return if (cd) (modelOf(Items.GOLDEN_SWORD) ?: base) else base
+            }
+            if (id in FUNGI) {
+                return when (tag.getString("fungi_cutter_mode").orElse(null)) {
+                    "RED" -> modelOf(Items.RED_MUSHROOM) ?: base
+                    "BROWN" -> modelOf(Items.BROWN_MUSHROOM) ?: base
+                    else -> base
+                }
+            }
+        } catch (t: Throwable) {
+            FishDiag.fail("ClassicSkyblock.5", "dynamic model failed for $id", t)
+        }
+        return base
     }
 
     /** Head texture to use for a SkyBlock item that the pack renders as a head, or null. */
@@ -121,8 +176,22 @@ object ClassicSkyblock {
     fun profileFor(stack: ItemStack): ResolvableProfile? {
         if (!FishSettings.classicItemsEnabled || !FishSettings.classicItemHeads) return null
         if (stack.isEmpty || stack.`is`(Items.PLAYER_HEAD)) return null
-        val id = skyblockId(stack) ?: return null
+        val tag = stack.get(DataComponents.CUSTOM_DATA)?.copyTag() ?: return null
+        val id = tag.getString("id").orElse(null)?.replace(":", "-") ?: return null
+        val skin = tag.getString("skin").orElse(null)?.replace(":", "-")
+        if (skin != null) skinProfile(skin)?.let { return it }
         return resolve(id)?.profile
+    }
+
+    private val skinProfiles = ConcurrentHashMap<String, java.util.Optional<ResolvableProfile>>()
+
+    /** Head texture of an item skin (custom_data `skin`), when the old item list knows it. */
+    private fun skinProfile(skin: String): ResolvableProfile? {
+        skinProfiles[skin]?.let { return it.orElse(null) }
+        if (ClassicItemData.state != ClassicItemData.State.READY) return null
+        val p = ClassicItemData.get(skin)?.texture?.let { headProfile(it, skin) }
+        skinProfiles[skin] = java.util.Optional.ofNullable(p)
+        return p
     }
 
     @JvmStatic
