@@ -59,8 +59,6 @@ class InventoryPage {
 	private var gemScroll = 0
 	private var gemMaxScroll = 0
 	private var gemHoverTip: List<Component>? = null
-	private var gemHoverX = 0
-	private var gemHoverY = 0
 
 	private var accessoryPowersFace = false
 	private var accessoryFlipTarget = false
@@ -1404,8 +1402,6 @@ class InventoryPage {
 				hoveredSlot = null
 				hoveredStack = ItemStack.EMPTY
 				gemHoverTip = tip
-				gemHoverX = mouseX
-				gemHoverY = mouseY
 			}
 		}
 	}

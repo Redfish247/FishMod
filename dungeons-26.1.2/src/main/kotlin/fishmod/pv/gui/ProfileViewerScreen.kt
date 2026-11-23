@@ -103,7 +103,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 	private val searchHistory = SearchHistoryMenu({ PvConfig.searchHistory() }, { openSearchedPlayer(it) })
 	private var recordSearch = false
 	private var scaleViewport: ProfileViewerScale.Viewport? = null
-	private var sliderViewport: ProfileViewerScale.Viewport? = null
 
 	private var tab: PvTab = initialTab ?: PvTab.HOME
 	private var fetchStarted = false
@@ -354,7 +353,6 @@ class ProfileViewerScreen @JvmOverloads constructor(
 		val slider = ProfileViewerScale.viewport(
 			screenWidth, screenHeight, framebufferWidth, framebufferHeight, guiScale, 100, null
 		)
-		sliderViewport = slider
 		val virtualWidth = slider.virtualWidth
 		val virtualHeight = slider.virtualHeight
 		scaleSlider.layoutViewport(virtualWidth, virtualHeight)
