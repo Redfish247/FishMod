@@ -585,7 +585,6 @@ class FishModInit : ClientModInitializer {
             { try { Math.round(BossPhase.runSplitsBox.scaledX * BossPhase.runSplitsBox.scale) } catch (t: Throwable) { FishDiag.fail("FishModInit.108", "Est. Total x lookup failed", t); 0 } },
             {
                 try {
-                    // outside a run the editor shows the example Splits rows; drawn at the Splits scale
                     Math.round((BossPhase.runSplitsBox.scaledY + FishConstants.TEXT_HEIGHT * BossPhase.getVisibleRowCount().let { if (it > 0) it else BossPhase.previewRowCount() } + 8) * BossPhase.runSplitsBox.scale)
                 } catch (t: Throwable) {
                     FishDiag.fail("FishModInit.109", "Est. Total y lookup failed", t)
@@ -1559,7 +1558,6 @@ class FishModInit : ClientModInitializer {
     }
 }
 
-// /fm debug and /fm debug report: copy the FishDiag report
 private fun debugReport() {
     val mc = Minecraft.getInstance()
     val n = fishmod.utils.debug.FishDiag.count()
