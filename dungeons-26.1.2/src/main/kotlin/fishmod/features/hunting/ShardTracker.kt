@@ -72,7 +72,8 @@ object ShardTracker {
         counts[name] = (counts[name] ?: 0) + n
     }
 
-    private fun id(name: String): String { val k = name.lowercase(); return ID_FIX[k] ?: "SHARD_" + name.uppercase().replace(' ', '_') }
+    // shared shard name -> bazaar id (used by slayer and Kuudra trackers too)
+    @JvmStatic fun id(name: String): String { val n = name.removeSuffix(" Shard"); val k = n.lowercase(); return ID_FIX[k] ?: "SHARD_" + n.uppercase().replace(' ', '_') }
 
     private fun price(name: String) = CroesusPrices.bazaarPrice(id(name), true) ?: 0.0
 
