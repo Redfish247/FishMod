@@ -288,6 +288,18 @@ object SlayerProfitTracker {
     private val RUNE_NAME = Regex("^(.+) Rune ([IVX]+)$")
     private val SHARD_NAME = Regex("^(.+) Shard$")
 
+    // rune display name -> id part where they differ (NEU repo: ZOMBIE_SLAYER_RUNE = Pestilence Rune)
+    private val RUNE_ALIAS = mapOf("PESTILENCE" to "ZOMBIE_SLAYER")
+    private val RUNE_ID = Regex("^RUNE_(.+)_(\\d+)$")
+
+    // try RUNE_X_N, then the NEU form X_RUNE;N
+    private fun unitPrice(id: String): Double {
+        val p = CroesusPrices.price(id)
+        if (p > 0) return p
+        val m = RUNE_ID.matchEntire(id) ?: return p
+        return CroesusPrices.price("${m.groupValues[1]}_RUNE;${m.groupValues[2]}")
+    }
+
     private val NON_ID = Regex("[^A-Z0-9]+")
     private fun idPart(s: String) = s.uppercase().replace("'", "").replace(NON_ID, "_").trim('_')
 
@@ -296,9 +308,9 @@ object SlayerProfitTracker {
         ItemsDb.idFor(name)?.let { return it }
         RUNE_NAME.matchEntire(name)?.let { m ->
             val lvl = fishmod.utils.data.Roman.toInt(m.groupValues[2])
-            if (lvl > 0) return "RUNE_${idPart(m.groupValues[1])}_$lvl"
+            if (lvl > 0) return "RUNE_${idPart(m.groupValues[1]).let { RUNE_ALIAS[it] ?: it }}_$lvl"
         }
-        SHARD_NAME.matchEntire(name)?.let { return "SHARD_${idPart(it.groupValues[1])}" }
+        SHARD_NAME.matchEntire(name)?.let { return fishmod.features.hunting.ShardTracker.id(it.groupValues[1]) }
         return null
     }
 
@@ -309,7 +321,7 @@ object SlayerProfitTracker {
         val out = ArrayList<Row>(snap.size + 1)
         for ((name, count) in snap) {
             val id = idFor(name)
-            val unit = if (id != null) CroesusPrices.price(id) else 0.0
+            val unit = if (id != null) unitPrice(id) else 0.0
             if (unit.isNaN()) FishDiag.fail("SlayerProfitTracker.12", "price NaN for slayer drop $name ($id)")
             out.add(Row(name, count, unit * count, id != null && unit > 0, id = id))
         }
@@ -328,7 +340,7 @@ object SlayerProfitTracker {
     fun allProfit(sessionOnly: Boolean): Double {
         val snap = synchronized(lock) { (if (sessionOnly) session else total).values.map { Triple(HashMap(it.drops), it.spawnCost, it.mobKillCoins) } }
         return snap.sumOf { (drops, cost, mkc) ->
-            drops.entries.sumOf { (n, c) -> (idFor(n)?.let { CroesusPrices.price(it) } ?: 0.0) * c } + mkc - cost
+            drops.entries.sumOf { (n, c) -> (idFor(n)?.let { unitPrice(it) } ?: 0.0) * c } + mkc - cost
         }
     }
 
