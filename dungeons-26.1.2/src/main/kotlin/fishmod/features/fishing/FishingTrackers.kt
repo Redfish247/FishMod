@@ -58,7 +58,7 @@ object FishingTrackers {
             }
             false
         }
-        FishEvents.worldChange.register(WorldHook { pendingDrops.clear(); if (on()) FishingTrackerStore.onWorldChange(); false })
+        FishEvents.worldChange.register(WorldHook { pendingDrops.clear(); if (S.fishingTrackers && Fishing.enabled()) FishingTrackerStore.onWorldChange(); false })
 
         ClientTickEvents.END_CLIENT_TICK.register {
             while (pauseKey.consumeClick()) {
