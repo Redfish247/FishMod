@@ -101,6 +101,17 @@ object ChatImagePreview {
         return isPage(uri) || IMAGE_EXT.containsMatchIn(uri.path ?: "")
     }
 
+    /**
+     * GIF pages we label [Image] but can't preview: Klipy sits behind a Cloudflare challenge that only lets
+     * link-preview crawlers through, and we don't impersonate those. Hover says it opens in the browser.
+     */
+    @JvmStatic
+    fun isUnpreviewableGifPage(url: String): Boolean {
+        val uri = try { URI.create(url) } catch (_: Throwable) { return false }
+        val h = uri.host?.lowercase() ?: return false
+        return (h == "klipy.com" || h == "www.klipy.com") && (uri.path ?: "").startsWith("/gifs/")
+    }
+
     // ---- hover detection ----
 
     private fun styleAt(ctx: GuiGraphicsExtractor, mc: Minecraft, mx: Int, my: Int): Style? {
