@@ -18,6 +18,7 @@ object FishingMenu {
         core.sub.add(ToggleSetting("Debug Catch Log", "Print each detected catch or drop to chat", S::class.java, "fishingDebug"))
         col.features.add(core)
         col.features.add(Feature("Current Bait HUD", FishingWorldSettings::class.java, "baitHud"))
+        col.features.add(Feature("Rod Cast Timer", FishingWorldSettings::class.java, "rodTimer"))
         col.features.add(Feature("Golden Fish Timer", FishingWorldSettings::class.java, "goldenFishTimer"))
         val totem = Feature("Totem of Corruption Overlay", FishingWorldSettings::class.java, "totemOverlay")
         totem.sub.add(ToggleSetting("Range Ring", "Draw the 16-block effect radius", FishingWorldSettings::class.java, "totemRing"))
@@ -83,6 +84,7 @@ object FishingMenu {
     }
 
     fun describe(name: String): String? = FishingAlerts.describe(name) ?: FishingTrackers.describe(name) ?: FishingWorld.describe(name) ?: when (name) {
+        "Rod Cast Timer" -> "Shows how long your rod has been cast, above the bobber"
         "Current Bait HUD" -> "Bait in your last hotbar slot and how much is left"
         "Shard Tracker" -> "Shard profit HUD: time, shards/hour, captures and bazaar value; shows for 60s after a shard"
         "Foraging Tracker" -> "Logs and drops per hour plus coin value while chopping trees"
