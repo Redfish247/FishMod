@@ -102,17 +102,13 @@ object FishChat {
             if (url.length <= "https://".length) continue
             val uri = try { java.net.URI.create(url) } catch (_: Throwable) { continue }
             if (m.range.first > last) out.append(Component.literal(text.substring(last, m.range.first)).withStyle(ChatFormatting.WHITE))
-            val preview = ChatImagePreview.isPreviewable(url)
-            val image = preview || ChatImagePreview.isUnpreviewableGifPage(url)
+            val image = ChatImagePreview.isPreviewable(url)
             val label = if (image) "[Image]" else url
             out.append(Component.literal(label).withStyle {
                 var s = it.withColor(if (image) ChatFormatting.GREEN else ChatFormatting.AQUA).withUnderlined(true)
                     .withClickEvent(net.minecraft.network.chat.ClickEvent.OpenUrl(uri))
-                // Previewable image links show the picture on hover (ChatImagePreview) instead of a text tooltip.
-                if (!preview) {
-                    val tip = if (image) "§7GIF: click to open in your browser\n§f$url" else "§7Click to open\n§f$url"
-                    s = s.withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal(tip)))
-                }
+                // Image links show the picture on hover (ChatImagePreview) instead of a text tooltip.
+                if (!image) s = s.withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal("§7Click to open\n§f$url")))
                 s
             })
             last = m.range.first + url.length
