@@ -24,6 +24,8 @@ object CustomCrosshair {
                     val (texId, halfExtent) = CrosshairPresetTextures.getTexture(FishSettings.crosshairPreset, FishSettings.crosshairScale)
                     val size = halfExtent * 2 + 1
                     g.blit(RenderPipelines.GUI_TEXTURED, texId, cx - halfExtent, cy - halfExtent, 0.0f, 0.0f, size, size, size, size, FishSettings.crosshairColor)
+                } else if (FishSettings.crosshairMode == "Custom") {
+                    drawPixels(g, cx, cy)
                 } else {
                     val imgId = CrosshairImageLoader.getImageId(FishSettings.crosshairImageSelection)
                     val size = CrosshairImageLoader.getImageSize(FishSettings.crosshairImageSelection)
@@ -40,12 +42,29 @@ object CustomCrosshair {
         }
     }
 
+    // draws the 16x16 hand-drawn grid centred on (cx, cy), each cell scaled by crosshairScale
+    private fun drawPixels(g: net.minecraft.client.gui.GuiGraphicsExtractor, cx: Int, cy: Int) {
+        val px = CrosshairPixels.get()
+        val n = CrosshairPixels.SIZE
+        val cell = Math.max(1, Math.round(FishSettings.crosshairScale).toInt())
+        val x0 = cx - n * cell / 2
+        val y0 = cy - n * cell / 2
+        for (i in 0 until n * n) {
+            val c = px[i]
+            if ((c ushr 24) == 0) continue
+            val x = x0 + (i % n) * cell
+            val y = y0 + (i / n) * cell
+            g.fill(x, y, x + cell, y + cell, c)
+        }
+    }
+
     @JvmStatic
     fun active(mc: Minecraft): Boolean {
         if (!FishSettings.crosshairEnabled || mc.hudHidden) return false
         if (!mc.options.cameraType.isFirstPerson) return false
         if (FishSettings.crosshairHideInF3 && mc.debugOverlay != null && mc.debugOverlay.showDebugScreen()) return false
         if (FishSettings.crosshairMode == "Preset") return true
+        if (FishSettings.crosshairMode == "Custom") return !CrosshairPixels.isEmpty()
         val sel = FishSettings.crosshairImageSelection
         return sel.isNotEmpty() && sel != CrosshairImageLoader.NO_IMAGE && CrosshairImageLoader.getImageId(sel) != null
     }
