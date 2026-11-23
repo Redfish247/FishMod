@@ -45,7 +45,6 @@ object RiftHay {
                 val key = pos.asLong()
                 if (level.getBlockState(pos).block == Blocks.HAY_BLOCK) {
                     if (seen.size < 20000) seen.add(key)
-                    // Measured for the debug line only: last clear-to-refill gap
                     cleared.remove(key)?.let { t -> (System.currentTimeMillis() - t).takeIf { it in 1000L..120000L }?.let { learnedMs = it } }
                 } else if (key in seen) cleared.putIfAbsent(key, System.currentTimeMillis())
             }

@@ -17,7 +17,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import java.io.File
 
-// Every FishUtil.forceTitle alert drawn as its own movable HUD slot (keyed by the calling feature's class) instead of the vanilla title.
 object AlertTitles {
     private class Def(val key: String, val name: String, val exMain: String, val exSub: String = "")
 
@@ -117,7 +116,6 @@ object AlertTitles {
     private fun sx(s: Slot): Int = if (s.x >= 0) s.x else ((Minecraft.getInstance().window.guiScaledWidth - W * s.scale) / 2).toInt()
     private fun sy(s: Slot): Int = if (s.y >= 0) s.y else Minecraft.getInstance().window.guiScaledHeight / 2 - 60
 
-    // Title block at the origin, shared by the in-game draw and the editor example
     private fun render(ctx: GuiGraphicsExtractor, main: Component, sub: Component, color: Int) {
         val font = Minecraft.getInstance().font
         val pose = ctx.pose()

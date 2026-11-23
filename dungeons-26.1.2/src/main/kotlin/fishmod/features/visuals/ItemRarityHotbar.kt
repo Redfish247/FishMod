@@ -46,7 +46,6 @@ object ItemRarityHotbar {
 
         val holder = stack as? RarityTierCache
         if (holder == null) {
-            // Logged once, not per slot per frame
             if (!warnedNoMixin) {
                 warnedNoMixin = true
                 FishDiag.fail("ItemRarityHotbar.1", "ItemStack missing RarityTierCache mixin: ${stack.javaClass.name}")
@@ -64,7 +63,6 @@ object ItemRarityHotbar {
         }
     }
 
-    // last known rarity per skyblock uuid, for re-sent stacks (animated dyes) whose lore is briefly missing
     private val rarityByUuid = HashMap<String, RarityTier>()
 
     private fun scanRarity(stack: ItemStack): RarityTier {
@@ -79,7 +77,6 @@ object ItemRarityHotbar {
     private fun getTintColor(rarity: RarityTier): Int {
         val rgb = if (VisualSettings.itemRarityHypixelColors) HYPIXEL[rarity] ?: (rarity.color and 0xFFFFFF)
                   else rarity.color and 0xFFFFFF
-        // #578: no screen open = hotbar, can use its own opacity
         val hotbar = VisualSettings.itemRaritySeparateHotbar && net.minecraft.client.Minecraft.getInstance().curScreen == null
         val pct = if (hotbar) VisualSettings.itemRarityHotbarOpacity else VisualSettings.itemRarityOpacity
         val alpha = pct.coerceIn(0, 100) * 255 / 100

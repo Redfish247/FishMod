@@ -41,7 +41,7 @@ object SlayerManager {
     private val MINIBOSS_CHAT = Pattern.compile("SLAYER MINI-?BOSS (.+?) has spawned!")
 
     private val PCT = Pattern.compile("(\\d{1,3})%")
-    private val FRACTION = Pattern.compile("\\(?([\\d,.]+[kKmMbB]?)\\s*/\\s*([\\d,.]+[kKmMbB]?)\\)?") // k/m/b suffix on high tiers
+    private val FRACTION = Pattern.compile("\\(?([\\d,.]+[kKmMbB]?)\\s*/\\s*([\\d,.]+[kKmMbB]?)\\)?")
 
     private val PURSE = Pattern.compile("(?:Purse|Piggy):\\s*([\\d,]+)")
 
@@ -85,7 +85,6 @@ object SlayerManager {
     )
 
     @Volatile private var correctArea: Boolean = false
-    // sticky until island change, so walking past a sub-area edge doesn't hide the HUDs
     private var areaLatched = false
 
     private fun updateAreaMatch(lines: List<String>) {
@@ -112,7 +111,6 @@ object SlayerManager {
     fun onQuestIsland(): Boolean = type?.let { onSlayerIsland(it) } ?: false
 
     @JvmStatic
-    // slayerAnyEnabled() plus the extras that read quest type/boss
     fun anyEnabled(): Boolean = FishSettings.slayerAnyEnabled() || EndAlertSettings.noQuestWarning ||
         EndAlertSettings.cocoonTimer || EndAlertSettings.eggSacHighlight || EndAlertSettings.yangGlyphTracer
 
@@ -161,7 +159,7 @@ object SlayerManager {
         FishEvents.chat.register { text ->
             if (!anyEnabled()) return@register false
             val s = text.chatPlain.trim()
-            if ("SLAYER" !in s) return@register false // every pattern below needs it
+            if ("SLAYER" !in s) return@register false
             val now = System.currentTimeMillis()
             try { when {
                 QUEST_STARTED.matcher(s).find() -> {

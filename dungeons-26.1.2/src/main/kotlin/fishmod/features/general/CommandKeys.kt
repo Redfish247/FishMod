@@ -60,7 +60,6 @@ object CommandKeys {
         if (entries.isEmpty()) return
 
         if (client.player == null) { held.clear(); return }
-        // keys pressed in a screen (e.g. typing /bz) stay held so closing it doesn't fire them
         val inScreen = client.curScreen != null
 
         for (e in entries) {

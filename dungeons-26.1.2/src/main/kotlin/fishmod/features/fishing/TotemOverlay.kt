@@ -14,7 +14,6 @@ import fishmod.features.fishing.FishingWorldSettings as W
 
 // Totem of Corruption: HUD with time left/owner and its 16-block range ring (stand layout as in FishingAlertsWorld, range from SkyHanni)
 object TotemOverlay {
-    // Ring points are built once per scan, not per rendered frame
     private class Totem(val pos: Vec3, val timer: String, val owner: String) {
         val ring: List<Vec3> = (0..48).map { i ->
             val a = i * Math.PI * 2 / 48

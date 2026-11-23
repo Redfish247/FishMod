@@ -13,7 +13,6 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.item.Items
 import fishmod.features.extras.ExtrasSettings as S
 
-// Carnival Zombie Shootout: outlines zombies by helmet tier (diamond = most points)
 object CarnivalShootout {
     // from SkyHanni (CarnivalZombieShootout): start/end lines and helmet -> colour
     private const val START = "[NPC] Carnival Cowboy: Good luck, pal!"
@@ -35,7 +34,6 @@ object CarnivalShootout {
             }
             false
         }
-        // a warp mid-game would otherwise keep outlining helmeted zombies elsewhere
         FishEvents.worldChange.register { active = false; glow = emptyMap(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (++tick % 2 != 0) return@register

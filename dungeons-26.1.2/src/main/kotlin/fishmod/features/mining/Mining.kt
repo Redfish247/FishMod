@@ -30,7 +30,6 @@ import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 
-// Shared mining state: island/area gating, block breaks, sidebar/tab helpers, init of all mining parts
 object Mining {
 
     fun interface BreakListener { fun onBreak(pos: BlockPos, old: BlockState, original: Boolean) }
@@ -80,7 +79,6 @@ object Mining {
     }
 
     private var sidebarVersion = -1
-    // Location line: icon may be ⏣, ф or a custom-font glyph (same set as CustomScoreboard), with stray leading chars
     private val AREA_LINE = Regex("""^\W*?[⏣фൠ]\s*(.+)$""")
 
     private fun onTick(mc: Minecraft) {
@@ -218,7 +216,6 @@ object MiningHuds {
         pose.popMatrix()
     }
 
-    // The text block at the origin (shared by the in-game draw and the HUD editor example)
     fun drawLines(ctx: GuiGraphicsExtractor, lines: List<String>) {
         val font = Minecraft.getInstance().font
         val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
@@ -244,9 +241,7 @@ object MiningHuds {
         if (c == null) ctx.text(font, l, x, y, -1, true) else ctx.text(font, Component.literal(l.substring(7)).withColor(c), x, y, -1, true)
     }
 
-    // No lines = nothing drawn in game, so no example either
     fun exampleOf(lines: List<String>) = if (lines.isEmpty()) null else fishmod.features.HudExample(linesWidth(lines), fishmod.features.HudPreview.textHeight(lines.size)) { ctx -> drawLines(ctx, lines) }
 
-    // HUD editor example: the real line drawing fed with example lines
     fun registerExample(name: String, lines: () -> List<String>) = fishmod.features.HudPreview.register(name) { exampleOf(lines()) }
 }

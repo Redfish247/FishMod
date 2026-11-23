@@ -23,11 +23,9 @@ import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 import fishmod.features.fishing.FishingWorldSettings as W
 
-// Foraging: profit tracker (inventory + sack gains after chopping logs) and Treecapitator cooldown HUD
 object Foraging {
     private val ISLANDS = setOf(SkyblockLocation.HUB, SkyblockLocation.THE_PARK, SkyblockLocation.GALATEA,
         SkyblockLocation.MOONGLADE_MARSH, SkyblockLocation.TORRHUS_CANYON, SkyblockLocation.LOTUS_ATOLL)
-    // from Skyblocker (ItemCooldowns): axes with the tree-felling cooldown
     private val AXES = setOf("TREECAPITATOR_AXE", "JUNGLE_AXE", "FIG_AXE", "FIGSTONE_AXE")
     private val SACK_LINE = Regex("([+-])([\\d,]+) ([^(\n]+)")
     private const val GAIN_WINDOW_MS = 3_000L
@@ -51,7 +49,6 @@ object Foraging {
             false
         }
         FishEvents.worldChange.register { snap = null; target = null; if (W.foragingTrackerResetOnSwap) reset(); false }
-        // from Skyblocker (ItemCooldowns): right-click use also starts the cooldown
         UseItemCallback.EVENT.register(UseItemCallback { player, _, _ ->
             if (W.treecapTimer && heldAxe(player.mainHandItem.let { ItemTools.getId(it) })) startCooldown()
             InteractionResult.PASS
@@ -89,7 +86,6 @@ object Foraging {
         if (!W.foragingTracker && !W.treecapTimer) return
         if (!onIsland()) { snap = null; return }
         val now = System.currentTimeMillis()
-        // log chop = a log we were hitting turns into something else
         val t = target
         if (t != null && !level.getBlockState(t).`is`(BlockTags.LOGS)) {
             target = null
@@ -113,7 +109,6 @@ object Foraging {
             if (st.isEmpty) continue
             val id = ItemTools.getId(st) ?: continue
             cur[id] = (cur[id] ?: 0) + st.count
-            // hoverName string work only once per item id, not every tick
             if (id !in names) names[id] = TextStrip.plain(st.hoverName.string)
         }
         val prev = snap
@@ -122,7 +117,6 @@ object Foraging {
         for ((id, n) in cur) { val d = n - (prev[id] ?: 0); if (d > 0) add(id, d.toLong()) }
     }
 
-    // [Sacks] hover lists stocked items; count those that landed shortly after chopping
     private fun onSacks(text: Component) {
         if (!onIsland() || System.currentTimeMillis() - lastChopMs > SACK_WINDOW_MS) return
         val hovers = LinkedHashSet<String>()
@@ -145,7 +139,6 @@ object Foraging {
     private fun add(id: String, n: Long) {
         val now = System.currentTimeMillis()
         if (startMs == 0L) startMs = now
-        // idle gaps over 60s don't count towards session time
         else activeMs += minOf(now - lastGainMs, 60_000L)
         lastGainMs = now
         items[id] = (items[id] ?: 0L) + n
@@ -164,7 +157,6 @@ object Foraging {
         val drops = items.entries.filter { !isLog(it.key) }.sumOf { it.value }
         val coins = items.entries.sumOf { price(it.key) * it.value }
         val out = arrayListOf("§2§lForaging Profit")
-        // price each item once per render, not per sort comparison
         items.entries.map { Triple(it.key, it.value, price(it.key) * it.value) }.sortedByDescending { it.third }
             .take(W.foragingTrackerRows).forEach { (id, n, v) ->
                 val value = if (v > 0) "§6" + Mining.short(v) + " §7(" + Mining.short(rate(v)) + "/h)" else ""

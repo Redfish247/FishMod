@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as S
 
-// HUD of recent inventory gains/losses, like "+3 Enchanted Gold"
 object ItemPickupLog {
     private class Entry(var delta: Int, var at: Long)
 
@@ -48,7 +47,6 @@ object ItemPickupLog {
         }
         val prev = last
         last = now
-        // Menus move items around: only rebase while one is open
         if (prev == null || mc.curScreen != null) return
         val t = System.currentTimeMillis()
         for (k in prev.keys + now.keys) {

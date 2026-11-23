@@ -32,7 +32,6 @@ object InvSearchBar {
     private var searchTerm = ""
     private var parsedValue = Double.NaN
 
-    // Hidden while the storage overlay is open; it has its own search
     private fun on() = FishSettings.inventorySearchEnabled && !fishmod.compat.BladeCompat.active && !storageOpen()
 
     private fun storageOpen(): Boolean {
@@ -45,7 +44,6 @@ object InvSearchBar {
     private fun posX(): Int = if (FishSettings.inventorySearchX < 0) defX() else FishSettings.inventorySearchX
     private fun posY(): Int = if (FishSettings.inventorySearchY < 0) defY() else FishSettings.inventorySearchY
 
-    // Text the item list filters by; empty while the bar is off or hidden
     @JvmStatic
     fun term(): String = if (on() && shouldDisplay()) searchTerm else ""
 
@@ -112,7 +110,6 @@ object InvSearchBar {
         }
     }
 
-    // Own text draw (the vanilla one sits high and ignores the theme); returns the x where the text ends
     private fun drawValue(ctx: GuiGraphicsExtractor, font: Font, bar: EditBox): Int {
         val v = bar.value
         val avail = bar.width - 4
@@ -130,7 +127,6 @@ object InvSearchBar {
         return tx + font.width(shown)
     }
 
-    // Rounded themed box with a search icon; accent ring while focused
     private fun drawFrame(ctx: GuiGraphicsExtractor, x: Int, y: Int, bar: EditBox) {
         val fill = (0xCC shl 24) or (ScreenTheme.surface(0x0C) and 0xFFFFFF)
         val ring = if (bar.isFocused) ScreenTheme.over((0x90 shl 24) or (ScreenTheme.ACCENT and 0xFFFFFF), ScreenTheme.surface(0x2E)) else ScreenTheme.surface(0x2E)

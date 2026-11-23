@@ -25,7 +25,6 @@ object TunnelGraph {
 
     fun ensureLoaded() {
         if (loading || (nodes.isNotEmpty() && System.currentTimeMillis() - FILE.lastModified() < REFRESH_MS)) return
-        // A failed fetch leaves the file stale; don't retry every few ticks
         val now = System.currentTimeMillis()
         if (now - lastAttemptMs < 5 * 60_000L) return
         lastAttemptMs = now
@@ -49,7 +48,6 @@ object TunnelGraph {
         val root = JsonParser.parseString(json).asJsonObject
         val byId = HashMap<Int, Node>()
         for ((k, v) in root.entrySet()) runCatching {
-            // skip a malformed node instead of dropping the whole graph
             val o = v.asJsonObject
             val p = o.get("Position").asString.split(":").map { it.toDouble() }
             val name = o.get("Name")?.asString?.let { Mining.strip(it) } ?: ""

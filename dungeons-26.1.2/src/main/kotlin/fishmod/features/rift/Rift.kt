@@ -61,7 +61,6 @@ object Rift {
 
     private fun say(t: String) = fishmod.utils.FishUtil.addChatMessage(net.minecraft.network.chat.Component.literal(t))
 
-    // /fm rift debug: local-only state dump
     private fun debugDump() {
         val mc = Minecraft.getInstance(); val me = mc.player ?: return
         say("§6[Rift debug] inRift=${inRift()} area='${area()}'")

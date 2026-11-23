@@ -58,7 +58,6 @@ object GardenWidgets {
 
     private val RARE_CROP = Regex("^(?:VERY )?RARE CROP!")
 
-    // Alert title + sub for a stripped rare crop chat line (also the HUD editor example)
     fun rareCropAlert(s: String): Pair<String, String> {
         val rest = s.replace(RARE_CROP, "").trim()
         val name = rest.substringBefore(" (").trim()

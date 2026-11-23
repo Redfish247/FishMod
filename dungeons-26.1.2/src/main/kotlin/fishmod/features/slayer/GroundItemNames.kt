@@ -14,7 +14,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.phys.Vec3
 
-// Shows the stack name and count above dropped items
 object GroundItemNames {
 
     private class Entry(val e: ItemEntity, var count: Int, var label: Component)
@@ -42,7 +41,6 @@ object GroundItemNames {
                 for (en in list) {
                     val e = en.e
                     if (e.isRemoved) continue
-                    // skip labels behind the camera
                     if ((e.x - eye.x) * look.x + (e.y - eye.y) * look.y + (e.z - eye.z) * look.z < 0) continue
                     FishDraw.renderText(ctx, ps, en.label, Vec3(e.x, e.y + 0.8, e.z), scale)
                 }
@@ -65,7 +63,6 @@ object GroundItemNames {
                 if (c.count != st.count) { c.count = st.count; c.label = label(e) }
                 seen.add(e.id); out.add(c); continue
             }
-            // Cosmetic items (rune eggs, particle items) float, fly or have no Skyblock id
             if (e.isNoGravity || e.isInvisible) continue
             if (!e.onGround() && e.tickCount < 40) continue
             if (ItemTools.getId(st) == null) continue
@@ -78,7 +75,6 @@ object GroundItemNames {
         visible = out
     }
 
-    // Display-case items: glass directly above or beside the item's block
     private fun inGlassCase(level: Level, e: ItemEntity): Boolean {
         val p = e.blockPosition()
         for (n in arrayOf(p.above(), p.north(), p.south(), p.east(), p.west())) {
@@ -87,7 +83,6 @@ object GroundItemNames {
         return false
     }
 
-    // Showcase items are server-placed at the exact block centre; real drops scatter
     private fun blockCentered(e: ItemEntity): Boolean {
         fun c(v: Double) = Math.abs(v - Math.floor(v) - 0.5) < 0.01
         return c(e.x) && c(e.z)

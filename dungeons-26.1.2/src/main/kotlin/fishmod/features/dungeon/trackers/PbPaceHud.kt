@@ -83,7 +83,6 @@ object PbPaceHud {
         return out
     }
 
-    // Example data: obviously fake floor/split/times
     fun registerPreview() {
         HudPreview.register("PB Pace") { HudPreview.text(lines("m7", "Storm", 1.24, true, 3.87), FishConstants.TEXT_HEIGHT + 1) }
     }

@@ -50,7 +50,6 @@ object RiftGuide {
         }
     }
 
-    // Example data: one fake guide page with fake task names, built like rebuild()
     private fun registerPreview() {
         fishmod.features.HudPreview.register(NAME) {
             val shown = rows.ifEmpty { listOf("#§e§lExample Page", "Example task one", "Example task two", "Example task three") }

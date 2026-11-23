@@ -13,7 +13,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
-// Last class milestone from "<Class> Milestone ❸: You have ..." chat
 object DungeonMilestoneHud {
 
     private const val NAME = "Dungeon Milestone"

@@ -50,7 +50,6 @@ object ArrowHud {
         FishEvents.worldChange.register { reset(); false }
     }
 
-    // Drop the last quiver state so a new world does not show the old count
     private fun reset() {
         type = "Unknown"; count = -1L; rarityRgb = 0; extra = 0L
         warnedLow = false; warnedOut = false
@@ -153,7 +152,6 @@ object ArrowHud {
         return Component.literal(type).withColor(if (S.arrowHudRarity && rarityRgb != 0) rarityRgb else S.arrowHudColor and 0xFFFFFF).append(Component.literal(" §7x$n")).append(Component.literal(if (S.arrowHudExtra && extra > 0) " §8(+${fishmod.utils.Fmt.grouped(extra)} extra)" else ""))
     }
 
-    // Example data: a common arrow stack with extra loose arrows
     private fun registerPreview() {
         fishmod.features.HudPreview.register("Arrow HUD") {
             val c = label("Flint Arrow", 1284, 0xFFFFFF, 256)

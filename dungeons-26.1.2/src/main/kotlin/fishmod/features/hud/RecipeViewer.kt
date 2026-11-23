@@ -51,7 +51,6 @@ object RecipeViewer {
 
     @JvmStatic
     fun init() {
-        // Release the hovered slot (-> player -> level) on world change
         fishmod.utils.events.FishEvents.worldChange.register { holdSlot = null; holdId = null; false }
         ItemTooltipCallback.EVENT.addPhaseOrdering(net.fabricmc.fabric.api.event.Event.DEFAULT_PHASE, LAST_PHASE)
         ItemTooltipCallback.EVENT.register(LAST_PHASE, ItemTooltipCallback { stack, _, _, lines ->

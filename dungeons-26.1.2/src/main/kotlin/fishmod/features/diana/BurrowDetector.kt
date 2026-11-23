@@ -68,7 +68,6 @@ object BurrowDetector {
         }
         if (Diana.inHub() && DIG_SOUNDS.any { (snd, p) -> id == snd && abs(pitch - p) < 0.02f }) return DianaSettings.dianaMuteHypixelDug
         if (id != DIG_DING || !Diana.inHub()) return false
-        // Pitch climbs per burrow; mob/treasure burrows take two breaks at the same pitch, anything past that is a post-mob cooldown smack
         val now = System.currentTimeMillis()
         samePitchCount = if (pitch != lastDingPitch || now - lastDingMs > 20_000) 1 else samePitchCount + 1
         val fresh = samePitchCount <= 2
@@ -78,8 +77,6 @@ object BurrowDetector {
         return DianaSettings.dianaMuteHypixelDug
     }
 
-    // Covers every dig line incl. the (4/4) chain end; debounced so loot lines on the same dig don't double up
-    // Each break posts its own line (mob/loot, then the n/10 line ~2s later); 500ms only merges same-dig loot lines
     @Volatile var lastDigMs = 0L; private set
 
     private fun dugSound(s: String) {

@@ -14,7 +14,6 @@ object PetSwapTitle {
 
     private val AUTOPET = Regex("""Autopet equipped your \[Lvl\s*\d+]\s*(.+?)!""")
     private val SUMMON = Regex("""You summoned your\s+(.+?)!""")
-    // Level/overflow tags like "[Lvl 100]" or "(+12)" around the name
     private val TAGS = Regex("""\[[^\]]*]|\([^)]*\)""")
     private val SPACES = Regex("""\s+""")
 

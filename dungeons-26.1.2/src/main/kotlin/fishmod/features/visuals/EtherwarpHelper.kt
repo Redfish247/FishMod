@@ -35,7 +35,6 @@ object EtherwarpHelper {
 
     @JvmStatic
     fun init() {
-        // Drop the cached level ref so the old world can be collected
         FishEvents.worldChange.register { guessBp = null; guessState = null; guessLevel = null; guessCache = null; false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             target = null
@@ -119,7 +118,6 @@ object EtherwarpHelper {
         val lvl = Minecraft.getInstance().level ?: return null
         val full = FishSettings.etherwarpFullBlock
         val st = lvl.getBlockState(bp)
-        // Same target, block state, shape mode and level: reuse the boxes
         if (bp == guessBp && st === guessState && full == guessFull && lvl === guessLevel) return guessCache
 
         val local: List<AABB> = if (full) {

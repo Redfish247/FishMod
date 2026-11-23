@@ -122,7 +122,6 @@ object CompactTab {
         val header = entries[0]
         val rest = entries.subList(1, entries.size)
         val mode = FishSettings.compactTabSortMode
-        // Memoized per entry: the comparator would otherwise re-run the regexes on every compare
         val strippedMemo = HashMap<PlayerInfo, String>()
         val rawMemo = HashMap<PlayerInfo, String>()
         val levelMemo = HashMap<PlayerInfo, Int>()
@@ -391,7 +390,6 @@ object CompactTab {
             var r = 0
             while (r < entries.size && r < rows) {
                 val e = entries[r]
-                // Decorated name cached per model (rebuilt at most 1 s apart)
                 var dn = decorated[e]
                 if (dn == null) {
                     dn = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeLevelPrefix(e.tabListDisplayName)

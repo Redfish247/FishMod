@@ -16,7 +16,6 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 
-// Item list NPC click: waypoint when on the NPC's island, otherwise a chat message with a click-to-warp link.
 object NpcTravel {
 
     private const val COLOR = 0xFF55FFFF.toInt()
@@ -79,7 +78,6 @@ object NpcTravel {
 
     private fun isBaseCamp(y: Double, z: Double) = y <= 140.0 && z >= 100.0
 
-    // Arms a highlight that activates once the player lands on the NPC's island (no command sent here).
     private fun arm(pos: Vec3, name: String, island: String, base: Boolean) {
         if (!FishSettings.npcWarpHighlight) return
         pending = pos; pendingLabel = "§b$name"; pendingMode = island; pendingBase = base; pendingAt = System.currentTimeMillis()
@@ -99,7 +97,6 @@ object NpcTravel {
     private var npcCacheAt = 0L
     private var npcCacheFor: Vec3? = null
 
-    // Entity scan at most every 500 ms per target
     private fun findNpc(t: Vec3): Entity? {
         val now = System.currentTimeMillis()
         if (npcCacheFor == t && now - npcCacheAt < 500 && npcCache?.isRemoved != true) return npcCache

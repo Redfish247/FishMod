@@ -379,7 +379,6 @@ object PetHud {
         'b' to RarityTier.DIVINE, 'c' to RarityTier.SPECIAL
     )
 
-    // Component.string drops styles, so rebuild § codes from the style tree.
     private fun legacyOf(c: net.minecraft.network.chat.Component): String {
         val sb = StringBuilder()
         c.visit({ style, text ->

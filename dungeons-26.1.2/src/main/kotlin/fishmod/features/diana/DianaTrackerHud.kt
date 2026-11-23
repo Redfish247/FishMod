@@ -46,14 +46,12 @@ object DianaTrackerHud {
         Stat("DAEDALUS_STICK", "§6", "Minotaurs since Stick"),
     )
 
-    // id null = header, never hideable; tail + tailX = value column then aligned item text
     private class Row(val id: String?, val text: String, val tail: String? = null, val tailX: Int = 0) {
         fun width(font: net.minecraft.client.gui.Font): Int =
             if (tail == null) font.width(text) else tailX + font.width(tail)
     }
     private class Hud(val gx: () -> Int, val gy: () -> Int, val gs: () -> Double, val on: () -> Boolean, val make: () -> List<Row>)
 
-    // Where the row builders read their numbers: the live tracker, or fixed example data for the HUD editor
     private class Src(
         val tracker: (String) -> DianaTracker.Tracker?, val price: (String) -> Double, val paused: Boolean,
         val since: (String) -> Int, val mf: (String) -> Int, val example: Boolean = false,

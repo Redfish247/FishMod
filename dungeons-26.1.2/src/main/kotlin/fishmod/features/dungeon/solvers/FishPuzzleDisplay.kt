@@ -81,7 +81,6 @@ object FishPuzzleDisplay {
 
     private val EXAMPLE = listOf("Puzzles: (3)", "Creeper Beams: [✔]", "Ice Path: [✦]", "???: [✦]")
 
-    // HUD editor example: the real render over example tab lines; box is the text, like in game
     @JvmStatic
     fun example(): HudExample =
         HudPreview.component(puzzleHud, ::render, HudPreview.textWidth(EXAMPLE), HudPreview.textHeight(EXAMPLE.size, FishConstants.TEXT_HEIGHT))

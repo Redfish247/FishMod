@@ -16,7 +16,6 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as X
 
-// Hover a page in the Storage menu to see its cached contents (only when the storage overlay is off)
 object BackpackPreview {
     private val CHEST: Identifier = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png")
 
@@ -38,7 +37,6 @@ object BackpackPreview {
         val stacks = inv.stacks
         if (stacks.isEmpty()) return
         val rows = ((stacks.size + 8) / 9).coerceIn(1, 6)
-        // Vanilla chest panel: header, one strip per row, bottom border
         val w = 176
         val h = 17 + rows * 18 + 7
         val x = (if (mx + 12 + w <= screen.width) mx + 12 else mx - 12 - w).coerceIn(2, (screen.width - w - 2).coerceAtLeast(2))

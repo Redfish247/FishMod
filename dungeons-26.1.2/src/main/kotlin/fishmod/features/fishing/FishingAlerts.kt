@@ -21,7 +21,6 @@ object FishingAlerts {
         FishingEvents.seaCreature.register { e -> onCatch(e); false }
         FishingEvents.rareDrop.register { d -> onDrop(d); false }
         FishEvents.chat.register { c ->
-            // setting first, then the cheap prefix tests inside, regex last
             if (S.fishingAlerts && (S.alertWormholeGone || S.alertNewTrophy) && Fishing.active()) onChat(c.chatPlain)
             false
         }
@@ -60,7 +59,6 @@ object FishingAlerts {
         }
     }
 
-    // Title texts (also used by the HUD editor examples)
     fun creatureTitle(sc: SeaCreature, count: Int) = "§${sc.rarity.code}§l${sc.name.uppercase()}!" to (if (count > 1) "§7x$count" else "")
 
     fun dropTitle(item: String, price: Double) =
@@ -103,7 +101,6 @@ object FishingAlerts {
         }
         return null
     }
-
 
     fun addMenu(col: Column) {
         val a = Feature("Fishing Alerts", S::class.java, "fishingAlerts")

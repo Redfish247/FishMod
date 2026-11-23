@@ -75,7 +75,6 @@ object SkyItemList {
     private val GEM_PREFIX = Regex("^(ENCHANTED|REFINED|ROUGH|FLAWED|FINE|FLAWLESS|PERFECT)_")
     private val GEM_SUFFIX = Regex("_(BLOCK|ORE|GEM|INGOT|CUBE)$")
     private val STAR_ORDER = listOf("FIRST_MASTER_STAR", "SECOND_MASTER_STAR", "THIRD_MASTER_STAR", "FOURTH_MASTER_STAR", "FIFTH_MASTER_STAR")
-    // Rare dungeon drops go first, junk consumables last
     private val RNG_DROP = Regex("HYPERION|VALKYRIE|SCYLLA|ASTRAEA|NECRON_BLADE|NECRON_HANDLE|_SCROLL$|DARK_CLAYMORE|GIANTS_SWORD|TERMINATOR|JUJU|LAST_BREATH|SHADOW_FURY|LIVID_DAGGER|FLOWER_OF_TRUTH|BOUQUET_OF_LIES|SPIRIT_|BONZO_STAFF|BONZO_MASK|ICE_SPRAY|BAT_WAND|STONE_BLADE|THORNS_BOOTS|MASTER_SKULL|DUNGEONBREAKER|FELTHORN_REAPER|BONE_BOOMERANG|ADAPTIVE_BLADE|SOULWEAVER|SCARF_")
     private val METAL_FAMS = setOf("UMBER", "TUNGSTEN", "MITHRIL", "TITANIUM")
     private val GEM_TIERS = listOf("ROUGH", "FLAWED", "FINE", "FLAWLESS", "PERFECT")
@@ -102,7 +101,6 @@ object SkyItemList {
             val ore = id.endsWith("_ORE")
             val block = id.endsWith("_BLOCK") || id.endsWith("_CUBE")
             val metal = fam in METAL_FAMS
-            // ore blocks, plain materials, enchanted, enchanted blocks, gemstones, umber/tungsten/mithril/titanium, glacite
             val group = when {
                 pre != null && pre in GEM_TIERS -> 4
                 ore -> 0
@@ -137,7 +135,6 @@ object SkyItemList {
         }
         4 -> {
             val w = kindOf(id).split(' ').toSet()
-            // tool type, then rarity, then name (index order)
             Triple(when {
                 "PICKAXE" in w -> 0
                 "DRILL" in w -> 1
@@ -286,7 +283,6 @@ object SkyItemList {
     @JvmStatic
     fun init() {
         NpcTravel.init()
-        // Warm the repo + index on join so the first open is instant
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ -> if (on()) ensureBuilt() }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is AbstractContainerScreen<*>) return@AfterInit
@@ -300,12 +296,10 @@ object SkyItemList {
 
     private fun hiddenFor(screen: AbstractContainerScreen<*>) = fishmod.features.inventory.StorageOverlay.isActive(screen) || fishmod.features.dungeon.LeapMenu.isActive(screen) || isTerminal(screen)
 
-    // F7 terminals: same title prefixes the terminal solver matches
     private fun isTerminal(screen: AbstractContainerScreen<*>): Boolean { val t = screen.title.string; return fishmod.features.dungeon.floor7.terminal.TerminalType.entries.any { t.startsWith(it.windowPrefix) } }
 
     @JvmStatic fun panelActive() = on() && System.currentTimeMillis() - fishmod.utils.rendering.FishHudLayer.panelSeenMs() < 150
 
-    // Index is built off-thread (#603); render shows "Loading items..." until ready
     private fun ensureBuilt(): Boolean {
         if (built) return true
         CroesusPrices.refreshIfStale()
@@ -399,7 +393,6 @@ object SkyItemList {
             drawLoading(ctx, font, if (NeuRepo.isLoaded()) "Building item list" else "Loading item data")
             return
         }
-        // search comes from the inventory search bar
         val bq = fishmod.features.inventory.InvSearchBar.term()
         if (bq != query) { query = bq; needRefilter = true }
         if (needRefilter) { needRefilter = false; refilter() }
@@ -439,7 +432,6 @@ object SkyItemList {
             val id = ids[shown[hover]]
             val stack = RecipeViewer.stackFor(id)
             val tip = tooltipLines(id, stack)
-            // Sit the tooltip right against the hovered cell's left edge
             val tw = tip.maxOfOrNull { font.width(it) } ?: 0
             val cellX = px + PAD + ((hover - first) % cols) * CELL
             val tx = if (cellX - tw - 18 < 0) mx else cellX - tw - 18
@@ -450,7 +442,6 @@ object SkyItemList {
 
     private fun gridRight() = px + pw - TAB_W
 
-    // Spinner (ring of dots, one bright and trailing) with a label, centred in the grid area
     private fun drawLoading(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, label: String) {
         val t = System.currentTimeMillis()
         val dots = ".".repeat(((t / 400) % 4).toInt())
@@ -484,7 +475,6 @@ object SkyItemList {
         val hov = tabAt(mx.toDouble(), my.toDouble())
         val x0 = gridRight()
         tabScroll = tabScroll.coerceIn(0, tabMaxScroll())
-        // dark strip behind the whole sidebar, top to bottom
         if (FishSettings.skyItemListBgOn) ctx.fill(x0, py, px + pw, py + ph, argb(FishSettings.skyItemListBgColor, FishSettings.skyItemListBgOpacity / 2))
         for ((slot, i) in TAB_ORDER.withIndex()) {
             val row = slot - tabScroll
@@ -492,7 +482,6 @@ object SkyItemList {
             val tx = x0
             val y0 = py + HEAD_H + row * TAB_H
             val sel = i == selCat
-            // no per-cell fill on idle tabs so the sidebar is one even see-through strip top to bottom
             if (sel || i == hov) ctx.fill(tx, y0, tx + TAB_CELL - 1, y0 + TAB_H - 1, if (sel) argb(FishSettings.skyItemListAccentColor, 40) else 0x40FFFFFF)
             fishmod.features.visuals.ItemRarityHotbar.suppress = true
             try { ctx.item(net.minecraft.world.item.ItemStack(CAT_ICONS[i]), tx + 1, y0 + 1) } finally { fishmod.features.visuals.ItemRarityHotbar.suppress = false }
@@ -507,7 +496,6 @@ object SkyItemList {
     private var tipAt = 0L
     private var tipLines: List<Component> = emptyList()
 
-    // Rebuilding runs every tooltip callback; reuse the result for 1 s per hovered id
     private fun tooltipLines(id: String, stack: ItemStack): List<Component> {
         val now = System.currentTimeMillis()
         val fav = favs.contains(id)

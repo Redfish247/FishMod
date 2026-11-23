@@ -28,7 +28,6 @@ object SpeedSignHelper {
             hits.clear()
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
                 if (fishmod.compat.GLFW.btn(click) != 0) return@AllowMouseClick true
-                // Hit boxes outlive the screen that drew them; only the speed sign may use them
                 if (!S.gardenSpeedSign || !Garden.inGarden() || !isSpeedSign(screen)) return@AllowMouseClick true
                 val hit = hits.firstOrNull { click.x() in 4.0..it.x1.toDouble() && click.y() >= it.y0 && click.y() < it.y1 } ?: return@AllowMouseClick true
                 val msgs = (screen as? AbstractSignEditScreenAccessor)?.`fishmod$getMessages`() ?: return@AllowMouseClick true
