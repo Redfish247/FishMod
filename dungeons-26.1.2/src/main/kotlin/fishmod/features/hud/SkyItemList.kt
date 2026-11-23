@@ -312,7 +312,7 @@ object SkyItemList {
         NeuRepo.ensureLoaded()
         if (!NeuRepo.isLoaded()) return false
         if (building.compareAndSet(false, true)) Thread({
-            try { buildIndex() } catch (t: Throwable) { FishDiag.fail("SkyItemList.2", "item list index build failed", t); building.set(false) }
+            try { buildIndex() } catch (t: Throwable) { FishDiag.fail("SkyItemList.3", "item list index build failed", t) }
         }, "FishMod-ItemList").apply { isDaemon = true }.start()
         return false
     }

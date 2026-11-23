@@ -38,6 +38,7 @@ object NeuItems {
     @Volatile var loading = false; private set
     @Volatile var failed = false; private set
     @Volatile private var started = false
+    @Volatile private var failedAt = 0L
 
     private val stacks = HashMap<String, ItemStack>()
     private val profiles = HashMap<String, java.util.Optional<ResolvableProfile>>()
@@ -47,8 +48,11 @@ object NeuItems {
 
     @JvmStatic
     fun ensureLoaded() {
+        // Retry a failed load after 60 s so reopening the screen can recover
+        if (started && failed && !loading && System.currentTimeMillis() - failedAt > 60_000L) started = false
         if (started) return
         started = true
+        failed = false
         loading = true
         fishmod.utils.IoExecutor.execute {
             try {
@@ -60,6 +64,7 @@ object NeuItems {
                 FishDiag.fail("NeuItems.1", "NEU item repo load failed", e)
                 readCache()?.let { publish(it); failed = false }
             } finally {
+                if (failed) failedAt = System.currentTimeMillis()
                 loading = false
             }
         }
