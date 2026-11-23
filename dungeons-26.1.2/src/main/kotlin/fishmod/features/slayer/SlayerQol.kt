@@ -15,7 +15,7 @@ import net.minecraft.world.entity.player.Player
 
 // Slayer QOL: boss-only stats HUD and Inferno Demonlord attunement highlight (boss + split demons).
 object SlayerQol {
-    private val HP = Regex("([\d,.]+)\s*([kKmMbB])?\s*❤")
+    private val HP = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*❤")
     // attunement word on the boss/demon nametag -> outline colour matching the dagger to use
     private val ATTUNE = listOf("ASHEN" to 0xFF555555.toInt(), "AURIC" to 0xFFFFFF55.toInt(), "SPIRIT" to 0xFFFFFFFF.toInt(), "CRYSTAL" to 0xFF55FFFF.toInt())
 
