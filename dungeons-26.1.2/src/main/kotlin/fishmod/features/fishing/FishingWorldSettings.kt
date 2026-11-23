@@ -10,7 +10,6 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var baitHudY: Int = 100
     @ConfigValue @JvmField var baitHudScale: Double = 1.0
 
-    @ConfigValue @JvmField var instantWaterFog: Boolean = false
 
     @ConfigValue @JvmField var shardTracker: Boolean = false
     @ConfigValue @JvmField var shardTrackerResetOnSwap: Boolean = false

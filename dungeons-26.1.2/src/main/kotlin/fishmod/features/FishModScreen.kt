@@ -4645,7 +4645,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Animations" -> "Change the size and position of your held item"
                 "Etherwarp Helper" -> "Shows where an etherwarp will land"
                 "Lava To Water" -> "Makes lava look like water"
-                "No Fog" -> "Removes fog"
+                "No Fog" -> "Removes fog in the world, nether, underwater and in lava"
                 "Corpse Highlight" -> "Boxes Glacite Mineshaft corpses through walls"
                 "Ghost Box" -> "Boxes ghosts in the Dwarven Mines"
                 "Custom Water Colour" -> "Pick your own water colour"
