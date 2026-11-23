@@ -253,23 +253,31 @@ public abstract class FishScreenMixin<T extends AbstractContainerMenu> extends S
 
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageRelease(MouseButtonEvent click, CallbackInfoReturnable<Boolean> cir) {
-        if (fishmod.features.hud.SkyItemList.onRelease()) {
-            cir.setReturnValue(true);
-            return;
-        }
-        if (fishmod.features.inventory.StorageOverlay.mouseReleased((AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
+        try {
+            if (fishmod.features.hud.SkyItemList.onRelease()) {
+                cir.setReturnValue(true);
+                return;
+            }
+            if (fishmod.features.inventory.StorageOverlay.mouseReleased((AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FishScreenMixin.22", "container mouseReleased hooks failed", t);
         }
     }
 
     @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageDrag(MouseButtonEvent click, double dx, double dy, CallbackInfoReturnable<Boolean> cir) {
-        if (fishmod.features.hud.SkyItemList.onDrag(click.y())) {
-            cir.setReturnValue(true);
-            return;
-        }
-        if (fishmod.features.inventory.StorageOverlay.mouseDragged(click.x(), click.y(), (AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
+        try {
+            if (fishmod.features.hud.SkyItemList.onDrag(click.y())) {
+                cir.setReturnValue(true);
+                return;
+            }
+            if (fishmod.features.inventory.StorageOverlay.mouseDragged(click.x(), click.y(), (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FishScreenMixin.23", "container mouseDragged hooks failed", t);
         }
     }
 
