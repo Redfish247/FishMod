@@ -44,6 +44,7 @@ object FishingWorldSettings {
     @ConfigValue @JvmField var invisibugColor: Int = 0x80FF5555.toInt()
     @ConfigValue @JvmField var lassoAlert: Boolean = false
     @ConfigValue @JvmField var lassoSound: String = "pling"
+    @ConfigValue @JvmField var lassoPopup: Boolean = true
 
     @ConfigValue @JvmField var geyserBox: Boolean = false
     @ConfigValue @JvmField var geyserColor: Int = 0x60FF5555.toInt()
