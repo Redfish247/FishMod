@@ -2,6 +2,7 @@ package fishmod.features.slayer
 
 import fishmod.features.mining.MiningHuds
 import fishmod.features.slayer.EndAlertSettings as S
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
@@ -31,14 +32,14 @@ object SlayerQol {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick % 5 == 0) FishDiag.guard("SlayerQol.1", "slayer qol scan failed") { scan(mc) } }
         MiningHuds.reg("Slayer Boss", "slayer_boss_hud", 120, 40,
             { S.bossHudX }, { S.bossHudX = it }, { S.bossHudY }, { S.bossHudY = it }, { S.bossHudScale }, { S.bossHudScale = it },
-            { S.bossHud && lines.isNotEmpty() }, { S.bossHud },
+            { FishSettings.slayerQolEnabled && S.bossHud && lines.isNotEmpty() }, { FishSettings.slayerQolEnabled && S.bossHud },
             example = { listOf("§bVoidgloom Seraph IV", "§cHP\t§a12.5M§7/§a30M", "§cDPS\t§e850k", "§bTime\t§f24.1s") }, lines = { lines })
     }
 
     @JvmStatic
     fun glowColor(e: Entity): Int {
         val g = glow
-        if (g.isEmpty() || !S.attuneHighlight) return EntityRenderState.NO_OUTLINE
+        if (g.isEmpty() || !FishSettings.slayerQolEnabled || !S.attuneHighlight) return EntityRenderState.NO_OUTLINE
         return g[e.id] ?: EntityRenderState.NO_OUTLINE
     }
 
@@ -52,7 +53,7 @@ object SlayerQol {
 
     private fun scan(mc: Minecraft) {
         val level = mc.level; val me = mc.player; val type = SlayerManager.type
-        if (level == null || me == null || type == null || !(S.bossHud || S.attuneHighlight)) { glow = emptyMap(); lines = emptyList(); return }
+        if (level == null || me == null || type == null || !FishSettings.slayerQolEnabled || !(S.bossHud || S.attuneHighlight)) { glow = emptyMap(); lines = emptyList(); return }
         val boss = SlayerManager.bossEntity
         val stands = ArrayList<ArmorStand>()
         val mobs = ArrayList<LivingEntity>()

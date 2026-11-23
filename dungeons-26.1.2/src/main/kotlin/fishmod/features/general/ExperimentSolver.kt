@@ -41,7 +41,7 @@ object ExperimentSolver {
             FishDiag.guard("ExperimentSolver.1", "experiment solver tick failed") { tick(mc) }
         }
         DrawHooks.INVENTORY_SLOT_AFTER.register { ctx, _, x, y ->
-            if (game == Game.NONE || !FishSettings.experimentSolverEnabled) return@register
+            if (game == Game.NONE || !FishSettings.experimentTableEnabled || !FishSettings.experimentSolverEnabled) return@register
             val slot = DrawHooks.currentSlot ?: return@register
             if (slot.container is Inventory) return@register
             if (game == Game.PAIRS) {
@@ -58,7 +58,7 @@ object ExperimentSolver {
 
     @JvmStatic
     fun tooltipFor(slot: Slot?): ItemStack? {
-        if (game != Game.PAIRS || !FishSettings.experimentSolverEnabled || slot == null || slot.container is Inventory) return null
+        if (game != Game.PAIRS || !FishSettings.experimentTableEnabled || !FishSettings.experimentSolverEnabled || slot == null || slot.container is Inventory) return null
         val seen = pairsSeen[slot.index] ?: return null
         return if (isGlass(slot.item) || isPane(slot.item)) seen else null
     }
@@ -103,7 +103,7 @@ object ExperimentSolver {
             lastTitle = title
             reset()
             game = when {
-                !FishSettings.experimentSolverEnabled -> Game.NONE
+                !FishSettings.experimentTableEnabled || !FishSettings.experimentSolverEnabled -> Game.NONE
                 title.startsWith("Chronomatron (") -> Game.CHRONO
                 title.startsWith("Ultrasequencer (") -> Game.ULTRA
                 title.startsWith("Superpairs (") -> Game.PAIRS

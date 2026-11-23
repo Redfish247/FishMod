@@ -335,10 +335,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         general.features.add(Feature("Arrow Fix (shortbow pullback)", "arrowFixEnabled"))
         run {
-            val f = Feature("Sound Manager", null, null)
+            val f = Feature("Sound Manager", "soundMasterEnabled")
             val SR = fishmod.utils.sound.SoundRules
             f.sub.add(SubcategoryHeader("Global"))
-            f.sub.add(ToggleSetting("Master Volume", "Scale every FishMod feature cue", "soundMasterEnabled"))
             f.sub.add(SliderIntSetting("Master Volume %", "Applied to every FishMod feature cue", "soundMasterVolume", 0, 100))
             f.sub.add(ToggleSetting("Mono Audio", "Plays all game sound equally in both ears", "monoAudioEnabled"))
             f.sub.add(SubcategoryHeader("Edit Any Game Sound"))
@@ -434,7 +433,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             visuals.features.add(f)
         }
         run {
-            val f = Feature("Storage Overlay", null, null)
+            val f = Feature("Storage Overlay", "storageFeatureEnabled")
             val xs = fishmod.features.extras.ExtrasSettings::class.java
             f.sub.add(SubcategoryHeader("Backpack Preview"))
             f.sub.add(ToggleSetting("Backpack Preview", "Storage menu: hover an ender chest page or backpack to see its contents (open each once). Works without the custom overlay", xs, "backpackPreview"))
@@ -461,8 +460,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
-            val f = Feature("Discord Chat Relay", "discordChatEnabled")
-            f.sub.add(SubcategoryHeader("Posts in-game chat to your Discord webhook (pings are blocked)"))
+            val f = Feature("Discord Chat Relay", null, null)
+            f.sub.add(SubcategoryHeader("Always on when a webhook URL is set below — part of FishChat, not a separate switch. Posts in-game chat to your Discord webhook (pings are blocked)"))
             f.sub.add(InputSetting("Webhook URL", "Discord channel > Integrations > Webhooks > Copy URL. Keep it private", "discordWebhookUrl"))
             f.sub.add(ToggleSetting("Guild Chat", "Send Guild > messages", "discordGuild"))
             f.sub.add(ToggleSetting("Officer Chat", "Send Officer > messages", "discordOfficer"))
@@ -537,8 +536,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
-            val f = Feature("Custom Tab", null, null)
-            f.sub.add(ToggleSetting("Custom Tab Layout", "Replace the tab list with the compact FishMod one; off keeps the vanilla tab", "compactTabEnabled"))
+            val f = Feature("Custom Tab", "compactTabEnabled")
             f.sub.add(ToggleSetting("Hide HUDs Under Tab", "Hides any HUD touching the tab list while tab is held", "hideHudsUnderTab"))
             f.sub.add(SliderIntSetting("Opacity %", "", "compactTabOpacity", 0, 100))
             f.sub.add(ToggleSetting("Stat Bar", "SERVER/TPS/FPS/PING strip", "compactTabStatBarEnabled"))
@@ -1031,7 +1029,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonTrackers.features.add(f)
         }
         run {
-            val f = Feature("Simon Says", null, null)
+            val f = Feature("Simon Says", "simonSaysMasterEnabled")
             f.sub.add(SubcategoryHeader("Solver"))
             f.sub.add(ToggleSetting("Simon Says Solver", "F7 P3 Goldor device: boxes the buttons to press, in order", "simonSolverEnabled"))
             f.sub.add(ToggleSetting("Through Walls", "", "simonSolverDepth").gatedBy { FishSettings.simonSolverEnabled })
@@ -1422,7 +1420,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         hud.features.add(Feature("Catacombs Overflow Levels", "catacombsOverflowEnabled"))
         run {
             hud.features.add(Feature("Anita Medal Profit", "anitaProfitEnabled"))
-            val f = Feature("Experience Table", null, null)
+            val f = Feature("Experience Table", "experimentTableEnabled")
             f.sub.add(SubcategoryHeader("Solver"))
             f.sub.add(ToggleSetting("Experiment Solver", "Highlights Chronomatron, Ultrasequencer and Superpairs slots. Never clicks.", "experimentSolverEnabled"))
             f.sub.add(SubcategoryHeader("Profit Tracker"))
@@ -1530,7 +1528,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             visuals.features.add(f)
         }
         run {
-            val f = Feature("Hit Sounds", null, null)
+            val f = Feature("Hit Sounds", "hitSoundsEnabled")
             f.sub.add(SubcategoryHeader("Arrow Hit"))
             f.sub.add(ToggleSetting("Arrow Hit Sound", "Plays a sound when your arrow hits", "arrowHitSoundEnabled"))
             f.sub.add(SoundSearchSetting("Arrow Sound", "Type to search every game sound",
@@ -2288,7 +2286,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             timer.sub.add(SliderDoubleSetting("Scale", "", "slayerTimerHudScale", 0.5, 3.0))
             slayer.features.add(timer)
 
-            val phases = Feature("Slayer QOL", null, null)
+            val phases = Feature("Slayer QOL", "slayerQolEnabled")
             val ea0 = fishmod.features.slayer.EndAlertSettings::class.java
             phases.sub.add(SubcategoryHeader("Voidgloom"))
             phases.sub.add(ToggleSetting("Egg Sac Highlight", "Highlights Broodfather egg sacs", ea0, "eggSacHighlight"))
@@ -2399,7 +2397,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Tracker")
         order(visuals, "No Fog", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
         order(cosmetics, "Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
-        columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin & Legion", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
+        columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin and Legion Hud", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
         columns.firstOrNull { it.name == "Diana" }?.let { order(it, "Burrow Guessing", "Rare Mobs", "Diana Warp", "Diana Tracker", "Mythos Mob HP", "Diana Announcers", "Diana Party Commands") }
         fun groupBy(c: Column, vararg groups: Pair<String, List<String>>) {
             val rest = ArrayList(c.features); val out = ArrayList<Feature>(); var used = 0
@@ -2536,8 +2534,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val a = hover("tab$i", hov)
             if (i != ti && a > 0f) UiRecorder.fillRoundedRect(x.toFloat(), (y + 2).toFloat(), w.toFloat(), (TAB_H - 6).toFloat(), 6f, fa(ROW_HOVER, a))
             if (i == ti) UiRecorder.fillRoundedRectCorners(x.toFloat(), y.toFloat(), w.toFloat(), (top() + 30 - y).toFloat(), 8f, 8f, 0f, 0f, chromeColor())
-            val ts = 0.85f * NVG_BASE_TEXT_SIZE
-            UiRecorder.text(ellipsize(t, w - 26, 0.85f), (x + 10).toFloat(), y + (TAB_H - ts) / 2f + 1f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
+            val ts = 0.95f * NVG_BASE_TEXT_SIZE
+            UiRecorder.text(ellipsize(t, w - 26, 0.95f), (x + 10).toFloat(), y + (TAB_H - ts) / 2f + 1f, ts, if (i == ti) TEXT_COLOR else SUBTEXT_COLOR)
             if (tabs.size > 1) icon("x", x + w - 11f, y + TAB_H / 2f, if (hov && mx >= x + w - 16) TEXT_COLOR else SUBTEXT_COLOR)
         }
         val p = r[tabs.size]
@@ -3243,8 +3241,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
         } finally { UiRecorder.popScissor() }
         if (gridMax(items.size) > gridScroll) { val bg = ScreenTheme.windowBg(); UiRecorder.fillRectVGradient(cx0().toFloat(), (cyBot() - 18).toFloat(), (gx1() - cx0()).toFloat(), 18f, bg and 0xFFFFFF, bg) }
-        if (gridScroll > 0) scrollArrow(true, (gx1() - 14).toFloat(), (cyTop() + 12).toFloat())
-        if (gridScroll < gridMax(items.size)) scrollArrow(false, (gx1() - 14).toFloat(), (cyBot() - 12).toFloat())
+        val gridMidX = (cx0() + gx1()) / 2f
+        if (gridScroll > 0) scrollArrow(true, gridMidX, (cyTop() + 12).toFloat())
+        if (gridScroll < gridMax(items.size)) scrollArrow(false, gridMidX, (cyBot() - 12).toFloat())
         gridThumb(items.size)?.let { t ->
             val bx = (gx1() - 5).toFloat()
             UiRecorder.fillRoundedRect(bx, cyTop().toFloat(), 3f, (cyBot() - cyTop()).toFloat(), 1.5f, ScreenTheme.ink(0x10))
@@ -3283,8 +3282,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             UiRecorder.fillRoundedRect(bx.toFloat(), by.toFloat(), bw.toFloat(), bh.toFloat(), 6f, fa(if (bh2) ACCENT else ScreenTheme.ink(0x1C), sp))
             val bl = "Done"
             UiRecorder.textBold(bl, bx + (bw - UiRecorder.textWidthBold(bl, NVG_BASE_TEXT_SIZE)) / 2f, by + (bh - NVG_BASE_TEXT_SIZE) / 2f, NVG_BASE_TEXT_SIZE, fa(if (bh2) ScreenTheme.textOn(ACCENT) else TEXT_COLOR, sp))
-            if (detScroll > 0) scrollArrow(true, dx1 - 18f, detTop() + 12f)
-            if (detScroll < detMax(f)) scrollArrow(false, dx1 - 18f, detBot() - 12f)
+            val detMidX = (dx0 + dx1) / 2f
+            if (detScroll > 0) scrollArrow(true, detMidX, detTop() + 12f)
+            if (detScroll < detMax(f)) scrollArrow(false, detMidX, detBot() - 12f)
         } finally { UiRecorder.popScissor() }
     }
 
@@ -3685,11 +3685,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val h = getHeight()
             val lines = linesFor(lastW)
             val note = note(); val sz = size()
-            // Section titles: bold, pure white (near-black on light theme) for readability
-            val c = if (note) (if (ScreenTheme.lightBg()) 0xFF3A3A3A.toInt() else 0xFFB4B4B4.toInt()) else (if (ScreenTheme.lightBg()) 0xFF141414.toInt() else 0xFFFFFFFF.toInt())
+            // Section titles: bold, accent-colored (near-black on light theme) for readability; sit near
+            // the top of their row so they hug the setting above instead of floating centered in the gap
+            val c = if (note) (if (ScreenTheme.lightBg()) 0xFF3A3A3A.toInt() else 0xFFB4B4B4.toInt()) else (if (ScreenTheme.lightBg()) 0xFF141414.toInt() else ACCENT)
             fun draw(s: String, y: Float) = if (note) UiRecorder.text(s, (leftX + 2).toFloat(), y, sz, c) else UiRecorder.textBold(s.uppercase(), (leftX + 2).toFloat(), y, sz, c)
             if (lines.size <= 1) {
-                draw(lines.getOrElse(0) { name }, sy + (h - sz) / 2f + 1f)
+                draw(lines.getOrElse(0) { name }, sy + 3f)
             } else {
                 for ((i, l) in lines.withIndex()) draw(l, (sy + 4 + i * 10).toFloat())
             }

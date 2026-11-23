@@ -19,7 +19,7 @@ object StorageAutoLoader {
     @JvmStatic
     fun start() {
         val mc = Minecraft.getInstance()
-        if (!FishSettings.storageOverlayEnabled) {
+        if (!FishSettings.storageFeatureEnabled || !FishSettings.storageOverlayEnabled) {
             msg("§c[Storage] Enable the Storage Overlay feature first."); return
         }
         if (mc.player == null) { msg("§c[Storage] Not in a world."); return }

@@ -69,7 +69,7 @@ object SlayerBossPhases {
 
     private val titleAt = HashMap<String, Long>()
 
-    @JvmStatic fun enabled(): Boolean = FishSettings.slayerPhaseEnabled
+    @JvmStatic fun enabled(): Boolean = FishSettings.slayerQolEnabled && FishSettings.slayerPhaseEnabled
 
     @JvmStatic
     fun init() {

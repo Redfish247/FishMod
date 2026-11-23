@@ -43,11 +43,11 @@ object FishingOverlays {
         ClientTickEvents.END_CLIENT_TICK.register { FishDiag.guard("FishingOverlays.1", "fishing overlay scan failed") { onTick() } }
         MiningHuds.reg("Bobbin Time", "fishing_bobbin", 70, 10,
             { W.bobbinX }, { W.bobbinX = it }, { W.bobbinY }, { W.bobbinY = it }, { W.bobbinScale }, { W.bobbinScale = it },
-            { W.bobbinHud && (!W.overlayNeedArmor || hasBobbin) }, { W.bobbinHud },
+            { W.bobbinLegionEnabled && W.bobbinHud && (!W.overlayNeedArmor || hasBobbin) }, { W.bobbinHud },
             example = { listOf("§bBobbers\t§a5") }, lines = { listOf("§bBobbers\t§a" + bobbers) })
         MiningHuds.reg("Legion", "fishing_legion", 70, 10,
             { W.legionX }, { W.legionX = it }, { W.legionY }, { W.legionY = it }, { W.legionScale }, { W.legionScale = it },
-            { W.legionHud && (!W.overlayNeedArmor || hasLegion) }, { W.legionHud },
+            { W.bobbinLegionEnabled && W.legionHud && (!W.overlayNeedArmor || hasLegion) }, { W.legionHud },
             example = { listOf("§bLegion\t§a12") }, lines = { listOf("§bLegion\t§a" + legion) })
         RenderHooks.NO_DEPTH_LINE.register { ctx, ps, _ ->
             val ls = lilyLabels
@@ -63,7 +63,7 @@ object FishingOverlays {
         val level = mc.level; val me = mc.player
         if (level == null || me == null) { lilies.clear(); lilyLabels = emptyList(); return }
         tick++
-        if (W.bobbinHud || W.legionHud) {
+        if (W.bobbinLegionEnabled && (W.bobbinHud || W.legionHud)) {
             if (tick % 20 == 0) { hasBobbin = armorHas(me, "Bobbin"); hasLegion = armorHas(me, "Legion") }
             if (tick % 5 == 0) {
                 var b = 0; var l = 0
