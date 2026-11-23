@@ -138,14 +138,22 @@ object SkyBlockItemIconCache {
 	@Throws(IOException::class)
 	private fun composeLayers(layers: List<Path>): NativeImage? {
 		var composed: NativeImage? = null
-		for (layer in layers) {
-			val frame = Files.newInputStream(layer).use { firstFrame(NativeImage.read(it)) }
-			val target = composed ?: NativeImage(frame.width, frame.height, true).also {
-				it.fillRect(0, 0, it.width, it.height, 0)
-				composed = it
+		try {
+			for (layer in layers) {
+				val frame = Files.newInputStream(layer).use { firstFrame(NativeImage.read(it)) }
+				try {
+					val target = composed ?: NativeImage(frame.width, frame.height, true).also {
+						it.fillRect(0, 0, it.width, it.height, 0)
+						composed = it
+					}
+					blitLayer(target, frame)
+				} finally {
+					frame.close()
+				}
 			}
-			blitLayer(target, frame)
-			frame.close()
+		} catch (exception: Exception) {
+			composed?.close()
+			throw exception
 		}
 		return composed
 	}
