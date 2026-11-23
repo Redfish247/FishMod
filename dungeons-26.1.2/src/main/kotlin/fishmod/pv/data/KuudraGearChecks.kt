@@ -93,7 +93,7 @@ object KuudraGearChecks {
 	private val BODY_SLOTS = listOf("CHESTPLATE", "LEGGINGS", "BOOTS")
 	private val RARITIES = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "SPECIAL", "VERY SPECIAL")
 	private const val MAX_CUBISM = 6
-	private const val MAX_SMOLDERING = 5
+	private const val MAX_SMOLDERING = 6
 	private const val MAX_POWER = 7
 	private const val MAX_GIANT_KILLER = 7
 	private const val MAX_PROSECUTE = 6
