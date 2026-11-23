@@ -194,7 +194,6 @@ public class FishKeys {
         restoreKeybindBackup();
 
         ClientTickEvents.END_CLIENT_TICK.register(FishKeys::checkInputs);
-        // Flush on exit so a rebind/unbind in the last 2s isn't reverted by the stale backup.
         ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> syncKeybindBackup());
     }
 
@@ -215,7 +214,12 @@ public class FishKeys {
                 KeyMapping kb = TRACKED.get(id);
                 if (kb == null || keyName.isEmpty()) continue;
                 if (!kb.saveString().equals(keyName)) {
-                    kb.setKey(InputConstants.getKey(keyName));
+                    try {
+                        kb.setKey(InputConstants.getKey(keyName));
+                    } catch (RuntimeException ex) {
+                        fishmod.utils.debug.FishDiag.fail("FishKeys.5", "unknown key name in keybind backup: " + keyName);
+                        continue;
+                    }
                     changed = true;
                 }
             }

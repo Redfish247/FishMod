@@ -25,7 +25,6 @@ import java.util.Locale
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Home → Records: dragon fights, race best times, Diana burrows, combat bests, event bests. */
 class RecordsPage {
 	private var snapshot: MiscStatsSnapshot = MiscStatsSnapshot.empty()
 	private val zones = ArrayList<HoverZone>()

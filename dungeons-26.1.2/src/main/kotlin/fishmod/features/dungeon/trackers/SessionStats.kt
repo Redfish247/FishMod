@@ -24,7 +24,6 @@ import fishmod.utils.debug.FishDiag
 
 object SessionStats {
 
-
     private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
 
     private const val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
@@ -72,7 +71,6 @@ object SessionStats {
     private fun autoResume() {
         val now = System.currentTimeMillis()
         if (paused && autoPaused) {
-            // clock stepped back: clamp instead of logging
             if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += maxOf(0L, now - pauseStartedMs)
             pauseStartedMs = 0
             paused = false
@@ -247,7 +245,6 @@ object SessionStats {
         } catch (e: IOException) {
             FishDiag.fail("SessionStats.4", "reading session_stats.json failed", e)
         } catch (e: RuntimeException) {
-            // corrupt file (e.g. NUL bytes after a crash mid-write): move aside and start fresh, no error report
             fishmod.utils.SafeFiles.quarantine(SAVE_FILE, e)
         }
     }

@@ -21,7 +21,6 @@ object StormLbWaypoint {
 
     private class Spot(val x: Double, val y: Double, val z: Double, yaw: Float, pitch: Float) {
         val dir: Vec3 = Vec3.directionFromRotation(pitch, yaw)
-        // Fixed aim point along the recorded look ray from the spot's eye.
         val aim: Vec3 = Vec3(x, y + 1.62, z).add(dir.scale(AIM_DIST))
     }
 
@@ -30,7 +29,6 @@ object StormLbWaypoint {
     private const val AIM_DIST = 12.0
     private const val PAD_RADIUS = 1.0
 
-    // Debug override: forces a class's waypoint on anywhere (/fm stormlb archer|healer|off).
     private var testSpot: Spot? = null
 
     @JvmStatic
@@ -68,7 +66,6 @@ object StormLbWaypoint {
 
         FishDraw.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 0.05, s.z + 0.3), color and 0x40FFFFFF, color, true)
 
-        // Fixed aim point; only shows while standing on the pad.
         val pos = player.getPosition(Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(true))
         if (abs(pos.x - s.x) > PAD_RADIUS || abs(pos.z - s.z) > PAD_RADIUS || abs(pos.y - s.y) > 1.5) return
         val aim = s.aim

@@ -1,9 +1,9 @@
 package fishmod.features.extras
 
+import fishmod.utils.events.chatPlain
 import fishmod.features.FishHudEditor
 import fishmod.features.diana.DianaTracker
 import fishmod.utils.SkyblockLocation
-import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.client.Minecraft
@@ -11,9 +11,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import fishmod.features.extras.ExtrasSettings as S
 
-// Last skill XP action bar popup: progress, XP/h and ETA to next level
 object SkillProgressHud {
-    // Same popup shape ActionBarCleaner hides: "+12.5 Combat (1,234/5,000)"
     private val POPUP = Regex("\\+([\\d,.]+) ([A-Za-z ]+?) \\(([\\d,.]+[kMB]?)/([\\d,.]+[kMB]?)\\)")
     private const val WINDOW_MS = 5 * 60_000L
 
@@ -26,10 +24,13 @@ object SkillProgressHud {
     fun init() {
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (!overlay || !S.skillHud) return@register
-            try { parse(TextStrip.plain(msg.string)) } catch (t: Throwable) { FishDiag.fail("SkillProgressHud.1", "skill popup parse failed", t) }
+            try { parse(msg.chatPlain) } catch (t: Throwable) { FishDiag.fail("SkillProgressHud.1", "skill popup parse failed", t) }
         }
         FishHudEditor.register("Skill Progress", { S.skillHudX }, { S.skillHudX = it }, { S.skillHudY }, { S.skillHudY = it }, 140, 30,
             { S.skillHudScale }, { S.skillHudScale = it })
+        fishmod.features.HudPreview.register("Skill Progress") {
+            fishmod.features.HudPreview.text(listOf("§eCombat §71.2k/5k §f(24.0%)", "§7XP/h: §f180k", "§7ETA: §f21m"), 10, color = S.skillHudColor)
+        }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "skill_progress_hud")) { ctx, _ ->
             try { if (!FishHudEditor.isOpen()) render(ctx) } catch (t: Throwable) { FishDiag.fail("SkillProgressHud.2", "skill hud render failed", t) }
         }

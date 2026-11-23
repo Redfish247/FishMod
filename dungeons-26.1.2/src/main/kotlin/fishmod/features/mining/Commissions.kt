@@ -10,7 +10,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
 import fishmod.features.mining.MiningSettings as S
 
-// Commission HUD from the tab list, completion title, and completed-commission highlight in the Commissions menu
 object Commissions {
 
     class Comm(val name: String, val progress: String) {
@@ -24,7 +23,6 @@ object Commissions {
     private val COMPLETE = Regex("""^(.+?) Commission Complete!""")
 
     fun init() {
-        // e.g. "AQUAMARINE GEMSTONE COLLECTOR Commission Complete! Visit the King..."
         FishEvents.chat.register { text ->
             if ((S.miningCommissions && S.miningCommTitle)) COMPLETE.find(Mining.strip(text.chatRaw).trim())?.let { m ->
                 val name = m.groupValues[1].lowercase().split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }

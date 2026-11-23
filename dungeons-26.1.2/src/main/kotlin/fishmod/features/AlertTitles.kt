@@ -17,7 +17,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import java.io.File
 
-// Every FishUtil.forceTitle alert drawn as its own movable HUD slot (keyed by the calling feature's class) instead of the vanilla title.
 object AlertTitles {
     private class Def(val key: String, val name: String, val exMain: String, val exSub: String = "")
 
@@ -54,6 +53,19 @@ object AlertTitles {
         Def("LoadoutTitle", "Alert: Loadout Equipped", "§fLoadout 1", "§7Loadout equipped"),
         Def("MiscChatAlerts", "Alert: Outbid / Reindrake", "§cOutbid!", "§fItem §7by §61,000"),
         Def("OrderFilledAlert", "Alert: Order Filled", "§6Sell Offer filled", "§a64x §fItem"),
+        Def("BitsWarning", "Alert: Bits", "§bNo Bits Available"),
+        Def("DungeonExtras", "Alert: Party Low HP", "§cPlayer §ais low", "§c40❤"),
+        Def("EndAlerts", "Alert: End", "§5Alert", "§7Example"),
+        Def("EventHelpers", "Alert: Trick or Treat", "§6Trick or Treat!"),
+        Def("StrayRabbitAlert", "Alert: Stray Rabbit", "§6Golden Rabbit!", "§aExample"),
+        Def("MiscReminders", "Alert: Kick Cooldown", "§aKick cooldown over", "§7You can rejoin SkyBlock"),
+        Def("TrevorHelper", "Alert: Trevor", "§bAnimal", "§eLocation"),
+        Def("OwnSeaCreatures", "Alert: Sea Creature Cap", "§c§lSEA CREATURE CAP", "§75/20 alive"),
+        Def("GardenAddons", "Alert: Phantomleaf", "§aFound Phantomleaf"),
+        Def("HuntingHelpers", "Alert: Hunting Reel", "§eREEL"),
+        Def("MiningForagingMisc", "Alert: Honeyhive", "§6Honeyhive Instantly Refilled!"),
+        Def("SlayerExtras", "Alert: Slayer Extras", "§cSlayer", "§7Example"),
+        Def("SlayerMore", "Alert: Slayer Brood / No Quest", "§c§lNO SLAYER QUEST", "§7You're killing slayer mobs with no quest"),
         Def("Other", "Alert: Other", "§eAlert!", "§7Example"),
     )
 
@@ -85,7 +97,7 @@ object AlertTitles {
             st.map { it.className }
                 .filter { !it.startsWith("fishmod.utils.FishUtil") && !it.startsWith("fishmod.features.AlertTitles") && !it.startsWith("kotlin.") && !it.startsWith("java.") }
                 .findFirst().orElse("")
-        }.substringAfterLast('.').substringBefore('$')
+        }.substringAfterLast('.').substringBefore('$').removeSuffix("Kt")
     } catch (t: Throwable) { "" }
 
     private fun alpha(s: Slot, now: Long): Float {
@@ -104,7 +116,6 @@ object AlertTitles {
     private fun sx(s: Slot): Int = if (s.x >= 0) s.x else ((Minecraft.getInstance().window.guiScaledWidth - W * s.scale) / 2).toInt()
     private fun sy(s: Slot): Int = if (s.y >= 0) s.y else Minecraft.getInstance().window.guiScaledHeight / 2 - 60
 
-    // Title block at the origin, shared by the in-game draw and the editor example
     private fun render(ctx: GuiGraphicsExtractor, main: Component, sub: Component, color: Int) {
         val font = Minecraft.getInstance().font
         val pose = ctx.pose()

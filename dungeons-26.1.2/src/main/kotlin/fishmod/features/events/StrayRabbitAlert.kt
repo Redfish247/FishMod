@@ -11,7 +11,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Chocolate Factory: title + sound when a stray rabbit ("CLICK ME!") shows up in the menu
 object StrayRabbitAlert {
     // from SkyHanni (CFDataLoader clickMe patterns)
     private const val CLICK_ME = "CLICK ME!"

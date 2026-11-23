@@ -17,7 +17,6 @@ object GardenTitles {
         if (sound) FishUtil.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
     }
 
-    // Title texts, shared by the callers and the HUD editor example
     fun visitorFull() = Garden.legacy(S.gardenVisitorFullColor) + "Visitor Queue Full!"
     fun visitorArrived(name: String) = S.gardenVisitorArrivalText.replace("{name}", name)
     fun pest(plot: String) = S.gardenPestTitleText.replace("{plot}", plot)

@@ -152,7 +152,6 @@ object F7Huds {
         { false }, fishmod.features.dungeon.DungeonDeathCounter::render, { fishmod.utils.config.values.DungeonSettings.deathCounterHud }
     )
 
-    // Editor examples: each HUD's real render, fed example data while HudPreview.active
     private fun examples() {
         fun ex(name: String, c: HUDComponent, r: HUDComponent.RenderSupplier) = HudPreview.register(name) { HudPreview.component(c, r) }
         fun exText(name: String, c: HUDComponent, r: HUDComponent.RenderSupplier, sample: String) = HudPreview.register(name) {
@@ -195,7 +194,6 @@ object F7Huds {
         GateDisplay.init()
         BloodSolver.init()
         fishmod.features.dungeon.DungeonDeathCounter.init()
-        // Blade Addons ships these, so skip ours to avoid double HUDs/sounds
         if (BladeCompat.active) return
         MaxorTicks.init()
         MaxorCrystalTimer.init()

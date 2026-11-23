@@ -34,7 +34,6 @@ object PetListRules {
         return out
     }
 
-    /** Whether a pet type the player doesn't own should appear as a "missing" slot. */
     @JvmStatic
     fun showAsMissing(type: String?, ownedTypes: Set<String>): Boolean {
         val key = key(type)

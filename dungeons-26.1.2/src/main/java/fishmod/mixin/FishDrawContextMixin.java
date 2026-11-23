@@ -37,7 +37,6 @@ public class FishDrawContextMixin {
     @Shadow
     private Matrix3x2fStack pose;
 
-    private static long fishmod$ttLog;
     private static final int FISHMOD$TOOLTIP_PULL = 6;
     private static final ClientTooltipPositioner FISHMOD$CLOSER = (sw, sh, x, y, w, h) -> {
         Vector2ic p = DefaultTooltipPositioner.INSTANCE.positionTooltip(sw, sh, x, y, w, h);
@@ -58,17 +57,21 @@ public class FishDrawContextMixin {
         float ox = fishmod.features.hud.ScrollableTooltip.offsetX;
         float oy = fishmod.features.hud.ScrollableTooltip.offsetY;
         boolean on = fishmod.features.hud.ScrollableTooltip.isEnabled() && (scale != 1f || ox != 0f || oy != 0f);
-        // taller than the screen: shrink to fit, keeping the top 4px from the edge
         float est = 12f;
         for (ClientTooltipComponent c : lines) est += c.getHeight(font);
         if (lines.size() > 1) est += 2f;
         int shh = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledHeight();
         int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
         boolean fit = est > shh - 8;
-        shifted.set(on || fit);
-        if ((lines.size() >= 12 || est > shh - 40) && System.currentTimeMillis() - fishmod$ttLog > 1000) { fishmod$ttLog = System.currentTimeMillis(); fishmod.utils.debug.FishDiag.fail("FishDrawContextMixin.fit", "tooltip lines=" + lines.size() + " est=" + est + " screenH=" + shh + " fit=" + fit + " on=" + on + " xo=" + xo + " yo=" + yo); }
-        if (!on && !fit) return;
+        int liftY = 0;
+        if (!fit) {
+            int top0 = positioner.positionTooltip(sww, shh, xo, yo, 100, (int) est - 12).y() - 6;
+            if (top0 < 4) liftY = 4 - top0;
+        }
+        shifted.set(on || fit || liftY != 0);
+        if (!on && !fit && liftY == 0) return;
         pose.pushMatrix();
+        if (liftY != 0) pose.translate(0f, (float) liftY);
         if (fit) {
             float s = (shh - 8) / est;
             int topY = positioner.positionTooltip(sww, shh, xo, yo, 100, (int) est - 12).y() - 6;
@@ -120,7 +123,6 @@ public class FishDrawContextMixin {
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("TAIL"))
     private void fishmod$itemScaleDown(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci,
                            @Share("fishmod$headScaled") LocalBooleanRef scaled) {
-        // Pop only what HEAD pushed, so a mid-frame toggle can't unbalance the pose stack.
         if (scaled.get()) {
             pose.popMatrix();
         }

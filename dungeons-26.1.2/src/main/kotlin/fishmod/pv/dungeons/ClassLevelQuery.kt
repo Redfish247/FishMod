@@ -24,7 +24,6 @@ object ClassLevelQuery {
 		}
 	}
 
-	/** Class targets allow overflow levels (e.g. `M55`); CA stays 1–2 digits. */
 	private val CLASS_THEN_LEVEL = Regex("^([a-z]+)\\s*(\\d{1,3})$")
 	private val LEVEL_THEN_CLASS = Regex("^(\\d{1,3})\\s*([a-z]+)$")
 
@@ -86,7 +85,6 @@ object ClassLevelQuery {
 
 	private fun clampAverageLevel(level: Int): Int = max(1, min(CataXpMath.SOFT_CAP, level))
 
-	/** Individual class targets may use overflow levels from the XP table. */
 	private fun clampClassLevel(level: Int): Int = max(1, min(CataXpMath.maxLevel(), level))
 
 	@JvmStatic

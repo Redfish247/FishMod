@@ -66,7 +66,6 @@ class RoomData {
             )
             .create()
 
-        // Example room for the HUD editor preview
         @JvmStatic
         fun example(name: String, type: Room.Type, shape: Room.Shape, secrets: Int): RoomData = RoomData().also {
             it.name = name

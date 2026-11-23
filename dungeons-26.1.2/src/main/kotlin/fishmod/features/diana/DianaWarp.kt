@@ -51,7 +51,6 @@ object DianaWarp {
         lastTitle = w?.name
     }
 
-    // Warp title text (also the HUD editor example)
     fun titleText(warpName: String, rareMob: Boolean) = "${if (rareMob) "§d" else "§b"}Warp §e${warpName.replaceFirstChar { it.uppercase() }}"
 
     internal fun warp(rareMob: Boolean) {
@@ -68,7 +67,6 @@ object DianaWarp {
         Diana.player()?.connection?.sendCommand("warp ${w.name}")
     }
 
-    // Never warp away from a burrow you've dug once (1/2) and still need to finish
     private fun midBurrow(me: Vec3): Boolean = DianaWaypoints.list.any {
         it.type == WpType.BURROW && it.burrowType != BurrowType.START && it.timesDug == 1 && it.distTo(me) <= 30
     }

@@ -19,7 +19,6 @@ import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 
 object PvDraw {
-	const val COLOR_PANEL = 0x8A10162A.toInt()
 	const val COLOR_BORDER = 0x00FFFFFF
 	const val COLOR_TEXT = 0xFFE8E8F0.toInt()
 	const val COLOR_MUTED = 0xFF9A9AAC.toInt()
@@ -386,8 +385,6 @@ object PvDraw {
 		if (filled <= 0) {
 			return
 		}
-		// Always round both ends of the fill, including incomplete bars.
-		// One scheme everywhere: gold when maxed, gray while still filling.
 		val maxed = maxedShiny || clamped >= 0.999f
 		val fw = maxOf(filled, minOf(w, h))
 		if (maxed && ExtrasSettings.pvMaxedRainbow) {

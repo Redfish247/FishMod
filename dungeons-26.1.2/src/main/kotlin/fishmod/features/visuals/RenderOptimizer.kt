@@ -76,19 +76,18 @@ object RenderOptimizer {
 
     private val DAMAGE = Regex("""^(\D{0,2})([\d,]+)(\D{0,2})$""")
     private val formatted = HashMap<Int, Pair<String, Component>>()
-    // Raw tags that are not damage numbers, so the regex is skipped on later frames
     private val notDamage = HashMap<Int, String>()
+    private val notDamageName = HashMap<Int, Component>()
 
-    // Called while building the nametag, so the raw number never gets a frame on screen; null hides it
     @JvmStatic
     fun damageNameTag(e: Entity, name: Component): Component? {
-        // Slayer-owned hide, independent of renderOptimizer (one int compare)
         if (fishmod.features.slayer.SlayerBossPhases.hidesNametag(e.id)) return null
         if (!VisualSettings.renderOptimizer || !(VisualSettings.roRemoveDamageIndicator || VisualSettings.roFormatDamageIndicator)) return name
         if (e !is ArmorStand || !SkyblockLocation.inSkyblock()) return name
+        if (notDamageName[e.id] === name) return name
         val raw = name.string
         if (raw.length > 40) return name
-        if (notDamage[e.id] == raw) return name
+        if (notDamage[e.id] == raw) { if (notDamageName.size > 512) notDamageName.clear(); notDamageName[e.id] = name; return name }
         if (!VisualSettings.roRemoveDamageIndicator) formatted[e.id]?.let { (k, c) -> if (k == raw) return c }
         val m = DAMAGE.matchEntire(raw.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "").trim())
         if (m == null) {
@@ -124,7 +123,6 @@ object RenderOptimizer {
     @JvmStatic fun hideDeathAnimation(): Boolean = VisualSettings.renderOptimizer && VisualSettings.roHideDeathAnimation
     @JvmStatic fun hideDyingArmorStands(): Boolean = VisualSettings.renderOptimizer && VisualSettings.roHideDyingArmorStands
 
-    // Skip the terrain screen on server warps; level != null keeps first join and the title screen untouched
     @JvmStatic
     fun skipLoadingScreen(mc: Minecraft): Boolean {
         if (!VisualSettings.renderOptimizer || !VisualSettings.roNoLoadingScreen || mc.level == null) return false

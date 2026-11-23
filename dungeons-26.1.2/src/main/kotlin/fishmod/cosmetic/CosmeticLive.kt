@@ -78,7 +78,6 @@ object CosmeticLive {
                 retryAt = now + 1_000L
                 return
             }
-            // shared send path: a ping racing a chat send must not throw into the tick guard
             if (now - lastPing >= PING_MS) { lastPing = now; sendText("ping") }
             return
         }
@@ -128,7 +127,7 @@ object CosmeticLive {
         if (type == "msg") { dashboardMessage(root); return }
         if (type == "chat") { FishChat.receive(root); return }
         val full = type == "snap"
-        if (full) { nicks.clear(); items.clear(); scales.clear(); badges.clear(); cleared.clear() }
+        if (full) { ready = false; nicks.clear(); items.clear(); scales.clear(); badges.clear(); cleared.clear() }
         mergeStrings(root, "nicks", nicks)
         mergeStrings(root, "items", items)
         mergeStrings(root, "scales", scales)

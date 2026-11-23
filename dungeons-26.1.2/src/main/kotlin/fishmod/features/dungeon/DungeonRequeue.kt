@@ -41,6 +41,7 @@ object DungeonRequeue {
     @JvmStatic
     fun init() {
         FishEvents.chat.register { text ->
+            if (!DungeonSettings.autoRequeueEnabled) return@register false
             val s = text.chatPlain
             onChatLine(text.chatRaw)
             when {
@@ -51,11 +52,9 @@ object DungeonRequeue {
                     extraStatsHandled = true
                     val skip = dtSkip
                     dtSkip = false
-                    val teamShrank = startTeamCount >= 2 && fishmod.features.dungeon.map.DungeonPlayers.count() < startTeamCount
-                    if (DungeonSettings.autoRequeueEnabled && !BladeCompat.active && !partyChanged && !skip && !teamShrank) {
+                    if (DungeonSettings.autoRequeueEnabled && !BladeCompat.active && !partyChanged && !skip) {
                         val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
                         val cmd = requeueCommand()
-                        // roster only fills with a map feature on; late joins never get a pre-boss count
                         val players = fishmod.features.dungeon.map.DungeonPlayers.count()
                         FishDiag.check(startTeamCount > 0 || players > 0 || !fishmod.features.dungeon.map.DungeonMap.anyFeatureEnabled(), "DungeonRequeue.2") { "extra stats seen but team count never recorded (players=$players)" }
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {

@@ -10,7 +10,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 
-// Clickable chat: hover shows the command the click runs or suggests
 object CommandTooltip {
     fun init() {
         ClientReceiveMessageEvents.MODIFY_GAME.register { msg, overlay ->

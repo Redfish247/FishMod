@@ -14,7 +14,6 @@ object FishingAlertText {
     const val WORMHOLE = "Your Wormhole closed up..."
     const val DOUBLE_HOOK = "It's a Double Hook!"
 
-    // Cheap prefix test before the regex: line is "<symbol> TROPHY ..."
     @JvmStatic fun isTrophyLine(plain: String): Boolean =
         plain.length > 14 && (plain.startsWith("TROPHY ", 2) || plain.startsWith("TROPHY ", 1))
 
@@ -46,7 +45,6 @@ object FishingAlertText {
         return if (any) total else null
     }
 
-    // Timer-in-name deployables: "<prefix> <n>s". Returns (prefix, seconds) or null
     private val TIMER_PREFIXES = listOf(
         "Umberella", "Dwarven Lantern", "Mithril Lantern", "Titanium Lantern", "Glacite Lantern", "Will-o'-wisp",
         "Overflux", "Plasmaflux", "Mana Flux",

@@ -8,10 +8,8 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.network.chat.Component
 import fishmod.features.extras.ExtrasSettings as S
 
-// Tooltip line with progress to the next level of a stacking enchant
 object StackingEnchantTooltip {
     private class Info(val name: String, val field: String, val unit: String, val ladder: IntArray)
-    // from Skyblocker (StackingEnchantProgressTooltip): nbt counters and level thresholds
     private val INFO = mapOf(
         "expertise" to Info("Expertise", "expertise_kills", "kills", intArrayOf(0, 50, 100, 250, 500, 1000, 2500, 5500, 10_000, 15_000)),
         "compact" to Info("Compact", "compact_blocks", "blocks", intArrayOf(0, 100, 500, 1500, 5000, 15_000, 50_000, 150_000, 500_000, 1_000_000)),
@@ -33,10 +31,8 @@ object StackingEnchantTooltip {
                 val level = ench.getIntOr(key, 0)
                 if (level < 1) return@ItemTooltipCallback
                 val have = tag.getLongOr(info.field, 0L)
-                // maxed: no next level, so show the running total only
                 val line = if (level >= info.ladder.size) Component.literal("§7" + info.name + " " + level + ": §6" + "%,d".format(have) + " §7" + info.unit)
                 else Component.literal("§7" + info.name + " " + (level + 1) + ": §c" + "%,d".format(have) + "§7/§c" + "%,d".format(info.ladder[level].toLong()) + " §7" + info.unit)
-                // Bottom of the tooltip, just above the Obtained line when it is already there
                 val ob = lines.indexOfLast { it.string.startsWith("Obtained:") }
                 if (ob >= 1) lines.add(ob, line) else lines.add(line)
             } catch (e: Exception) {

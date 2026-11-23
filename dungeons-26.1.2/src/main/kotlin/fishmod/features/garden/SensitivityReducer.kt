@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import fishmod.features.garden.GardenSettings as S
 
-// Lowers the client mouse-sensitivity option while standing on the ground inside a plot; restores it otherwise. Option change only, no input is sent.
 object SensitivityReducer {
 
     private var reduced = false
@@ -35,7 +34,6 @@ object SensitivityReducer {
     }
 
     fun init() {
-        // A crash while reduced leaves the saved original behind; put it back on the next launch
         ClientLifecycleEvents.CLIENT_STARTED.register { mc -> if (S.gardenSensOriginal >= 0) restore(mc, false) }
         ClientLifecycleEvents.CLIENT_STOPPING.register { mc -> if (reduced) restore(mc, false) }
         FishEvents.worldChange.register { Minecraft.getInstance().let { mc -> if (reduced) restore(mc, false) }; false }

@@ -118,10 +118,6 @@ internal object WardrobeDecoder {
         return pages
     }
 
-    /**
-     * Fill every wardrobe slot (including empty / locked) so page totals stay fixed.
-     * Loadout set ids are 1-based (1..27); legacy flat `wardrobe_contents` uses 0-based ids.
-     */
     @JvmStatic
     fun padWardrobeSets(byId: Map<Int, WardrobeSet>?): List<WardrobeSet> {
         val first = if (byId != null && byId.containsKey(0)) 0 else 1

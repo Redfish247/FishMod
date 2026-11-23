@@ -113,6 +113,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     private lateinit var neuField: EditBox
     private var neuScroll = 0
     private var neuQuery = ""
+    private var neuSearchedReady = false
     private var neuResults: List<NeuItems.Entry> = emptyList()
     private lateinit var trimMatDropdown: Dropdown
     private lateinit var trimPatDropdown: Dropdown
@@ -208,8 +209,9 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
 
     private fun neuList(): List<NeuItems.Entry> {
         val q = neuField.value
-        if (q != neuQuery || (neuResults.isEmpty() && NeuItems.ready())) {
+        if (q != neuQuery || (neuResults.isEmpty() && !neuSearchedReady && NeuItems.ready())) {
             neuQuery = q
+            neuSearchedReady = NeuItems.ready()
             neuResults = NeuItems.search(q, 400)
             neuScroll = 0
         }
@@ -347,7 +349,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
 
     private var focusedField: EditBox? = null
     override fun removed() {
-        if (focusedField === modelField) applyModel()
+        if (::modelField.isInitialized && focusedField === modelField) applyModel()
         super.removed()
     }
 

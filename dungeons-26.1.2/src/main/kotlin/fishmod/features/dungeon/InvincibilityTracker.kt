@@ -232,7 +232,6 @@ object InvincibilityTracker {
         }
     }
 
-    // Example data: states the "Show When" mode would show, filtered by the live visible() check
     private fun exampleState(t: Type): Pair<Int, Int> {
         val mode = FishSettings.invincShowWhen
         return when (t) {

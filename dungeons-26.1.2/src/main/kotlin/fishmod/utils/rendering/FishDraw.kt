@@ -22,12 +22,12 @@ import net.minecraft.gizmos.TextGizmo
 import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import org.joml.Vector3f
 
 object FishDraw {
 
     private const val TEXT_SCALE = 0.025f
-
 
     @JvmStatic
     fun toFloats(argb: Int): FloatArray {
@@ -86,7 +86,6 @@ object FishDraw {
         redirectedQuads.add(r); redirectedQuads.add(g); redirectedQuads.add(b); redirectedQuads.add(a)
     }
 
-    // Branch per vertex instead of a capturing lambda per box (was one allocation per draw call).
     private fun quadVertex(consumer: VertexConsumer, pose: PoseStack.Pose, x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, a: Float) {
         if (quadsToFillLayer) redirectSink.v(pose, x, y, z, r, g, b, a)
         else consumer.addVertex(pose, x, y, z).setColor(r, g, b, a)
@@ -206,6 +205,37 @@ object FishDraw {
 
     @JvmStatic
     fun safeViewDistance(): Double = maxOf(32.0, Minecraft.getInstance().options.getEffectiveRenderDistance() * 16 * 0.8)
+
+    @JvmStatic
+    fun lookDir(): Vec3 {
+        val cam = Minecraft.getInstance().cam
+        return Vec3.directionFromRotation(cam.xRot(), cam.yRot())
+    }
+
+    @JvmStatic
+    fun behindCamera(x: Double, y: Double, z: Double, eye: Vec3, look: Vec3, slack: Double): Boolean =
+        (x - eye.x) * look.x + (y - eye.y) * look.y + (z - eye.z) * look.z < -slack
+
+    @JvmStatic
+    fun boxBehindCamera(b: AABB, eye: Vec3, look: Vec3): Boolean {
+        val hx = (b.maxX - b.minX) / 2; val hy = (b.maxY - b.minY) / 2; val hz = (b.maxZ - b.minZ) / 2
+        return behindCamera((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, (b.minZ + b.maxZ) / 2, eye, look, Math.sqrt(hx * hx + hy * hy + hz * hz) + 1.0)
+    }
+
+    private val distLabels = HashMap<String, Int2ObjectOpenHashMap<Component>>()
+
+    @JvmStatic
+    fun distLabel(label: String, dist: Int): Component {
+        if (distLabels.size > 512) distLabels.clear()
+        val m = distLabels.getOrPut(label) { Int2ObjectOpenHashMap() }
+        var c = m.get(dist)
+        if (c == null) {
+            if (m.size > 1024) m.clear()
+            c = Component.literal("$label §7(${dist}m)")
+            m.put(dist, c)
+        }
+        return c!!
+    }
 
     @JvmStatic
     fun pullIn(p: Vec3, cam: Vec3): Pair<Vec3, Double> {
@@ -532,8 +562,10 @@ object FishDraw {
 
     @JvmStatic
     fun fillBox(matrices: PoseStack, consumer: VertexConsumer, b: AABB, argb: Int) {
-        val c = toFloats(argb)
-        drawFilledBox(matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, c[0], c[1], c[2], c[3])
+        drawFilledBox(
+            matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ,
+            ((argb shr 16) and 0xFF) / 255f, ((argb shr 8) and 0xFF) / 255f, (argb and 0xFF) / 255f, ((argb shr 24) and 0xFF) / 255f
+        )
     }
 
     private fun drawFilledBox(
@@ -578,11 +610,9 @@ object FishDraw {
         return formatNumber(num, Floor7Settings.bossHpCapitalized)
     }
 
-    // Last result, reused because the inventory search bar asks for the same value every frame.
     private class FormatMemo(val num: Float, val caps: Boolean, val out: String)
     @Volatile private var lastFormat: FormatMemo? = null
 
-    // thresholds avoid "1000.0K" rollover
     internal fun formatNumber(num: Float, caps: Boolean): String {
         val memo = lastFormat
         if (memo != null && memo.num == num && memo.caps == caps) return memo.out

@@ -12,7 +12,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
 object CollectionCategoryIcons {
-	// Drawn every frame; shared read-only stacks avoid per-frame allocation.
 	private val FARMING = ItemStack(Items.GOLDEN_HOE)
 	private val MINING = ItemStack(Items.STONE_PICKAXE)
 	private val COMBAT = ItemStack(Items.IRON_SWORD)

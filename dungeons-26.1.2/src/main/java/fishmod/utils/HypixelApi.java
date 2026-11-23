@@ -248,7 +248,6 @@ public class HypixelApi {
             if (Files.exists(file)) {
                 JsonElement parsed;
                 try { parsed = JsonParser.parseString(Files.readString(file)); } catch (Exception bad) { parsed = null; }
-                // Corrupt (e.g. NUL-filled after a crash), blank or non-object file: drop it and rebuild.
                 if (parsed == null || !parsed.isJsonObject()) { Files.deleteIfExists(file); parsed = new JsonObject(); }
                 JsonObject root = parsed.getAsJsonObject();
                 JsonObject entries = root.has("entries") && root.get("entries").isJsonObject() ? root.getAsJsonObject("entries") : new JsonObject();
@@ -294,7 +293,6 @@ public class HypixelApi {
             JsonObject root = new JsonObject();
             root.addProperty("version", 1);
             root.add("entries", entries);
-            // Temp then move: a crash or full disk mid-write keeps the old file.
             var tmp = file.resolveSibling("fishmod_uuid_cache.json.tmp");
             Files.writeString(tmp, root.toString());
             try {
@@ -392,7 +390,6 @@ public class HypixelApi {
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.7", "decodeRawCompound failed", e); return null; }
     }
 
-    // Walks nested keys; null when any step is missing or JSON null (the API sends null toolkits)
     private static JsonObject objAt(JsonObject o, String... keys) {
         JsonElement e = o;
         for (String k : keys) {
@@ -648,7 +645,6 @@ public class HypixelApi {
     public static void getByNameSilent(String ign, DungeonDataCallback rawCallback) { getByNameSilent(ign, rawCallback, true); }
 
     private static void getByNameSilent(String ign, DungeonDataCallback rawCallback, boolean retry) {
-        // proxy 5xx is transient: retry once after 2s before reporting failure
         DungeonDataCallback callback = d -> {
             if (retry && isServerError(d)) CompletableFuture.delayedExecutor(2, java.util.concurrent.TimeUnit.SECONDS).execute(() -> getByNameSilent(ign, rawCallback, false));
             else Minecraft.getInstance().execute(() -> rawCallback.onData(d));
@@ -672,7 +668,6 @@ public class HypixelApi {
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
                     if (!root.get("success").getAsBoolean()) { callback.onData(failedData("api success=false")); return; }
-                    // "profiles" is null for players who never joined SkyBlock
                     if (!root.has("profiles") || !root.get("profiles").isJsonArray()) { callback.onData(new DungeonData()); return; }
                     for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
                         JsonObject profile = profileEl.getAsJsonObject();
@@ -691,31 +686,6 @@ public class HypixelApi {
                 callback.onData(new DungeonData());
             })
             .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.26", "fetchProfilesSilent request future failed", e); callback.onData(failedData()); return null; });
-    }
-
-    public static void fetchSelectedMember(String uuidStr, java.util.function.Consumer<JsonObject> cb) {
-        HttpRequest req;
-        try {
-            req = proxyGet("/skyblock/profiles?uuid=" + uuidStr, 10);
-        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach1", "fetchSelectedMember build failed", e); cb.accept(null); return; }
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-            .thenAccept(resp -> {
-                if (friendlyProxyError(resp) != null) { cb.accept(null); return; }
-                try {
-                    JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    if (!root.has("success") || !root.get("success").getAsBoolean() || !root.has("profiles") || !root.get("profiles").isJsonArray()) { cb.accept(null); return; }
-                    for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
-                        JsonObject profile = profileEl.getAsJsonObject();
-                        if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
-                        JsonObject members = profile.getAsJsonObject("members");
-                        if (members == null || !members.has(uuidStr)) continue;
-                        cb.accept(members.getAsJsonObject(uuidStr));
-                        return;
-                    }
-                    cb.accept(null);
-                } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach2", "fetchSelectedMember parse failed", e); cb.accept(null); }
-            })
-            .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach3", "fetchSelectedMember request failed", e); cb.accept(null); return null; });
     }
 
     public static void fetchSelectedProfile(String uuidStr, java.util.function.Consumer<JsonObject> cb) {
@@ -807,7 +777,6 @@ public class HypixelApi {
                 .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.28", "resolveUuid request future failed", e); resolveUuid(ign, next, cb); return null; });
     }
 
-    // A throwing callback would hit exceptionally() and retry the lookup, calling cb a second time.
     private static void acceptOnce(java.util.function.Consumer<String> cb, String uuid) {
         try { cb.accept(uuid); }
         catch (Throwable t) { fishmod.utils.debug.FishDiag.fail("HypixelApi.28b", "resolveUuid callback threw", t); }
@@ -1136,7 +1105,6 @@ public class HypixelApi {
 
     public interface NetworthCallback { void onData(double networth, String profileName); }
 
-
     private static final String[] NW_STORAGES = {
         "inv_contents","inv_armor","ender_chest_contents","equipment_contents",
         "personal_vault_contents","talisman_bag","wardrobe_contents","fishing_bag","potion_bag","quiver","candy_inventory_contents"
@@ -1156,7 +1124,6 @@ public class HypixelApi {
             networthInFlight.put(key, new java.util.concurrent.CopyOnWriteArrayList<>(java.util.List.of(marshaled)));
         }
         java.util.concurrent.CompletableFuture.runAsync(() -> {
-            // Remove under the same lock getNetworth adds waiters with, or a late waiter is never called.
             NetworthCallback broadcast = (networth, profileName) -> {
                 java.util.List<NetworthCallback> waiters;
                 synchronized (networthInFlight) { waiters = networthInFlight.remove(key); }
@@ -2071,7 +2038,6 @@ public class HypixelApi {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = proxyGet("/nicks?uuids=" + q, 10);
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
-                // Proxy error page (HTML, non-200) is an outage, not a bug: retry once, log locally.
                 String body = r.body();
                 if (r.statusCode() != 200 || body == null || !body.stripLeading().startsWith("{")) {
                     if (mayRetry) {
@@ -2174,7 +2140,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                             JsonObject o = el.getAsJsonObject();
                             String color = o.has("color") ? o.get("color").getAsString() : "#FFFFFF";
                             int rgb;
-                            try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.110", "fetchBadgeDefs failed", e); rgb = 0xFFFFFF; }
+                            try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.133", "fetchBadgeDefs failed", e); rgb = 0xFFFFFF; }
                             String symbol = o.has("symbol") ? o.get("symbol").getAsString() : "";
                             symbol = symbol.replaceAll("[\\uFE00-\\uFE0F\\u200D]", "");
                             out.add(new fishmod.cosmetic.badge.BadgeDef(
@@ -2229,7 +2195,7 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
         HttpRequest req;
         try {
             req = proxyGet("/skyblock/profiles?uuid=" + uuid, 10);
-        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.114", "getLocalMember failed", e);
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.134", "getLocalMember failed", e);
             finishLocalMemberFetch(null, false);
             cb.accept(null);
             return;
@@ -2237,7 +2203,6 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
             JsonObject member = null;
             String body = r.body();
-            // Proxy/Cloudflare error pages aren't JSON; skip quietly (fishmod.dev #623).
             if (body == null || !body.stripLeading().startsWith("{")) {
                 fishmod.utils.debug.FishDebug.LOGGER.debug("[HypixelApi] getLocalMember non-JSON HTTP {}", r.statusCode());
             } else try {
@@ -2246,7 +2211,6 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                     member = findSelectedMember(root, uuid);
             } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.115", "getLocalMember failed", ignored);}
             JsonObject fm = member;
-            // finally: a throwing cb must not leave the fetch flagged in progress, or every later caller waits forever.
             mc.execute(() -> { try { cb.accept(fm); } finally { finishLocalMemberFetch(fm, true); } });
         }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.116", "getLocalMember request future failed", t); mc.execute(() -> { try { cb.accept(null); } finally { finishLocalMemberFetch(null, false); } }); return null; });
     }

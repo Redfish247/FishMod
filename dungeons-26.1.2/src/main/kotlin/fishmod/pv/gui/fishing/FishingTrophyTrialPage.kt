@@ -54,7 +54,6 @@ class FishingTrophyTrialPage {
 
 		val headerH = font.lineHeight + 3
 		val avail = y + h - PAD - top - headerH
-		// Two columns when one can't fit every row, else the last frog (Puddle Jumper) was clipped
 		val blocks = if (innerW >= 330 || (innerW >= 240 && avail < rows.size * ROW_H_MIN)) 2 else 1
 		val perBlock = (rows.size + blocks - 1) / blocks
 		val blockW = (innerW - BLOCK_GAP * (blocks - 1)) / blocks

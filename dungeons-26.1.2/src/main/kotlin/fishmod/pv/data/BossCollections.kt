@@ -11,10 +11,6 @@ import com.google.gson.JsonObject
 import fishmod.pv.price.HypixelCollectionsCache
 import java.util.Locale
 
-/**
- * Catacombs / Kuudra boss collections (not in Hypixel's collections resource).
- * Amounts mirror SkyCrypt: floor completions + 2× master, Kuudra weighted by tier.
- */
 object BossCollections {
 	@JvmRecord
 	data class BossDef(val id: String, val name: String, val iconId: String, val thresholds: LongArray) {
@@ -47,7 +43,6 @@ object BossCollections {
 	@JvmStatic
 	fun bosses(): List<BossDef> = BOSSES
 
-	/** Floor / Kuudra completion amounts keyed by {@code BOSS_*} ids. */
 	@JvmStatic
 	fun amountsFromMember(member: JsonObject?): MutableMap<String, Long> {
 		val out = LinkedHashMap<String, Long>()

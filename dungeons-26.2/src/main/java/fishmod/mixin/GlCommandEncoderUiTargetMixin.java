@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// Remembers the last full-size colour target so the UI layer draws where the GUI went (OpenGL and Vulkan)
 @Mixin(CommandEncoder.class)
 public class GlCommandEncoderUiTargetMixin {
 

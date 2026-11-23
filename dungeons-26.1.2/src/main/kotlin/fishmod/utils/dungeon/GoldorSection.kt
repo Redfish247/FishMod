@@ -124,7 +124,6 @@ object GoldorSection {
 
     private fun stamp(): String = " §8[§7${getSectionTime()}s §8/ §7${BossPhase.getPhaseTime(P3_PHASE)}s§8]"
 
-    // returns true when the original chat line should be hidden (replaced by a timestamped copy)
     private fun onProgress(message: Component, m: MatchResult): Boolean {
         val (who, verb, kind, nowRaw, ofRaw) = m.destructured
         val now = nowRaw.toInt()
@@ -212,7 +211,6 @@ object GoldorSection {
     fun shouldIncrement(latest: Int): Boolean =
         (gateBlownUp && latest == total) || (completed >= total && latest < completed)
 
-    // HUD editor example: S1-S3 done, S4 running
     private val EXAMPLE_SPLITS: Array<RunSplit> by lazy {
         val times = doubleArrayOf(12.34, 13.10, 11.92, 6.40)
         Array(4) { i -> RunSplit("S${i + 1}", "", "", SPLIT_GOLD, 0.0).also { it.setExample(times[i], i == 3) } }

@@ -33,7 +33,6 @@ object ExtrasSettings {
     @ConfigValue @JvmField var partyJoinVolume: Int = 100
     @ConfigValue @JvmField var partyJoinTitle: Boolean = false
 
-    // Patcher waypoints
     @ConfigValue @JvmField var patcherWaypoints: Boolean = false
     @ConfigValue @JvmField var patcherWaypointColor: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var patcherWaypointSeconds: Int = 60
@@ -73,7 +72,6 @@ object ExtrasSettings {
 
     @ConfigValue @JvmField var cookieWarning: Boolean = false
     @ConfigValue @JvmField var bitsWarning: Boolean = false
-    @ConfigValue @JvmField var bazaarSearch: Boolean = false
     @ConfigValue @JvmField var ahPriceCheck: Boolean = false
     @ConfigValue @JvmField var ahPriceCheckWarnPct: Int = 20
     @ConfigValue @JvmField var kickTimer: Boolean = false

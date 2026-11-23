@@ -7,6 +7,7 @@ import fishmod.utils.config.values.DungeonSettings
 import fishmod.utils.data.EntityTools
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
+import fishmod.utils.events.chatRaw
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.player.Player
@@ -24,7 +25,6 @@ enum class DungeonRole(val letter: String, private val colorSetting: () -> Int) 
 
     companion object {
         private const val ROLES = "(Archer|Berserk|Healer|Mage|Tank)"
-        // own class from chat: picked in the lobby, solo-class buff, or the "[Mage]" style prefix
         private val OWN_ROLE_LINES = listOf(
             Regex("You have selected the $ROLES Dungeon Class!"),
             Regex("Your $ROLES stats are doubled because you are the only player using this class!")
@@ -41,8 +41,10 @@ enum class DungeonRole(val letter: String, private val colorSetting: () -> Int) 
         fun init() {
             FishEvents.worldChange.register { reset(); false }
             FishEvents.runEnd.register { reset(); false }
-            ClientReceiveMessageEvents.GAME.register { message, _ ->
-                FishDiag.guard("DungeonRole.1", "class detection chat handler") { readOwnRole(message.string) }
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> reset() }
+            ClientReceiveMessageEvents.GAME.register { message, overlay ->
+                if (overlay) return@register
+                FishDiag.guard("DungeonRole.1", "class detection chat handler") { readOwnRole(message.chatRaw) }
             }
             FishEvents.tabEntry.register { entry ->
                 if (entry != null && SkyblockLocation.inDungeon()) entry.displayName()?.let { readTabRow(it.string) }
@@ -60,10 +62,10 @@ enum class DungeonRole(val letter: String, private val colorSetting: () -> Int) 
         }
 
         private fun readOwnRole(line: String) {
+            if (!line.startsWith("[") && !line.contains("Class!") && !line.contains("doubled")) return
             for (r in OWN_ROLE_LINES) {
                 r.find(line)?.let { currentClass = parse(it.groupValues[1]); return }
             }
-            // the chat prefix only fills a gap, it never overrides mid-run
             if (currentClass == null) CHAT_PREFIX.find(line)?.let { currentClass = parse(it.groupValues[1]) }
         }
 
@@ -75,14 +77,14 @@ enum class DungeonRole(val letter: String, private val colorSetting: () -> Int) 
         fun getClass(playerName: String?): DungeonRole? = playerName?.let { byPlayer[it] }
 
         @JvmStatic
-        fun getClass(player: Player?): DungeonRole? = player?.let { getClass(it.name.string) }
+        fun getClass(player: Player?): DungeonRole? = player?.let { getClass(it.gameProfile.name()) }
 
         @JvmStatic
         fun getAll(): Map<String, DungeonRole> = Collections.unmodifiableMap(byPlayer)
 
         @JvmStatic
         fun isTeammate(player: Player?): Boolean =
-            player != null && !EntityTools.isClientPlayer(player) && byPlayer.containsKey(player.name.string)
+            player != null && !EntityTools.isClientPlayer(player) && byPlayer.containsKey(player.gameProfile.name())
 
         @JvmStatic
         fun getColor(dungeonClass: DungeonRole?): Int = dungeonClass?.color ?: -0x1

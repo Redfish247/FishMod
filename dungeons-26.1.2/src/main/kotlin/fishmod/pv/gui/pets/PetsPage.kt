@@ -203,7 +203,6 @@ class PetsPage {
 				}
 			}
 		}
-		// Fixed top-left origin - never shift up / left / right when slot size changes.
 		val gridX = x + PAD
 		gridY = if (showSummary) summaryY + font.lineHeight + 4 else y + 6 + font.lineHeight + 6
 		val gridW = w - PAD * 2
@@ -467,7 +466,6 @@ class PetsPage {
 	companion object {
 		private const val GAP = 8
 		private const val PAD = 8
-		/** Fixed Minecraft-inventory-style cell; 16px icons fill this without upscaling. */
 		private const val SLOT_SIZE = 22
 		private const val SLOT_GAP = 2
 		private const val ITEM_ICON = 16

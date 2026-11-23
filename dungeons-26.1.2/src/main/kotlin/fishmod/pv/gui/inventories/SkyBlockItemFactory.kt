@@ -500,7 +500,6 @@ object SkyBlockItemFactory {
 		return try {
 			resolveBaseStack(skyblockId)
 		} catch (exception: RuntimeException) {
-			// Bad repo / API data must not crash a GUI frame; icons are rebuilt every frame, so warn once per id.
 			if (FAILED_ICON_IDS.add(skyblockId)) {
 				ProfileViewer.LOGGER.warn("[FishPV] Icon fallback for {}: {}", skyblockId, exception.toString())
 			}

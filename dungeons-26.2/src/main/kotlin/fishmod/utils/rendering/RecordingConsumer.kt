@@ -2,7 +2,6 @@ package fishmod.utils.rendering
 
 import com.mojang.blaze3d.vertex.VertexConsumer
 
-// Records position+colour vertices so world layers can be built at collect time and replayed when the dispatcher draws them.
 class RecordingConsumer : VertexConsumer {
     private var xyz = FloatArray(3 * 512)
     private var col = IntArray(512)

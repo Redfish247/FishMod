@@ -126,7 +126,6 @@ class PlayerStatus private constructor(
         @JvmOverloads
         fun offline(lastOnlineMs: Long = 0L): PlayerStatus = PlayerStatus(State.OFFLINE, "", "", "", "", lastOnlineMs, false)
 
-        /** Hypixel reports offline because the player hid their online status, so they may be online. */
         @JvmStatic
         fun offlineHidden(): PlayerStatus = PlayerStatus(State.OFFLINE, "", "", "", "", 0L, true)
 
@@ -139,12 +138,6 @@ class PlayerStatus private constructor(
         @JvmStatic
         fun error(message: String?): PlayerStatus = PlayerStatus(State.ERROR, "", "", "", message, 0L, false)
 
-        /**
-         * Latest time the player is known to have been on Hypixel, for a player `/status` reports offline.
-         * Usually `lastLogout`, but Hypixel sometimes never writes the logout, leaving `lastLogin`
-         * newer while the player is offline; the later of the two is still a real time they were online.
-         * Returns 0 when both are missing (hidden by the player, staff, very old accounts) or implausible.
-         */
         @JvmStatic
         fun lastOnlineFromPlayer(player: JsonObject?, nowMs: Long): Long {
             if (player == null) return 0L
@@ -153,7 +146,6 @@ class PlayerStatus private constructor(
             return maxOf(login, logout)
         }
 
-        /** `settings.apiSession == false`: the player hid their online status, so offline may be wrong. */
         @JvmStatic
         fun sessionHidden(player: JsonObject?): Boolean {
             val settings = player?.get("settings") as? JsonObject ?: return false

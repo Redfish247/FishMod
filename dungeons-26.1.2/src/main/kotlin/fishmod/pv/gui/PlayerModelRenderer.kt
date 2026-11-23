@@ -33,6 +33,10 @@ import org.joml.Vector3f
 class PlayerModelRenderer {
 	private var mannequin: GuiPlayer? = null
 	private var boundUuid: UUID? = null
+
+	init { live.put(this, true) }
+
+	private fun release() { mannequin = null; boundUuid = null }
 	private val equipped = Array<ItemStack>(4) { ItemStack.EMPTY }
 
 	fun draw(
@@ -95,8 +99,6 @@ class PlayerModelRenderer {
 			return
 		}
 
-		// Entity extraction uses screen coordinates. Reset the GUI pose so the
-		// manually transformed model bounds and scissor are not transformed twice.
 		graphics.pose().pushMatrix()
 		graphics.pose().identity()
 		graphics.enableScissor(sx0, sy0, sx1, sy1)
@@ -217,9 +219,6 @@ class PlayerModelRenderer {
 				} catch (_: Throwable) {
 				}
 			}
-			// A bare GameProfile has no textures property, so SkinManager alone only ever gives the
-			// default skin, and ClientMannequin applies its own lookup in tick(), which GUI entities
-			// never get. The render cache fetches the textured profile off-thread and is shared.
 			skinLookup = Minecraft.getInstance().playerSkinRenderCache().createLookup(resolvable)
 		}
 
@@ -239,13 +238,15 @@ class PlayerModelRenderer {
 	}
 
 	private companion object {
+		val live = java.util.WeakHashMap<PlayerModelRenderer, Boolean>()
+
+		init { fishmod.utils.events.FishEvents.worldChange.register { live.keys.toList().forEach { it.release() }; false } }
+
 		const val SPIN_PERIOD_MS = 4_000L
 		const val OFFSET_Y = 0.0625f
-		// Spinning model and Dinnerbone mode are switched off, as in BetterPV.
 		const val SPIN = false
 		const val DINNERBONE = false
 
-		/** Client-only mannequins are never added to the level; still need a non-zero ID for item rendering. */
 		var nextGuiEntityId = -1
 
 		fun scaleBox(box: FloatArray, pivotX: Float, pivotY: Float, scaleX: Float, scaleY: Float) {

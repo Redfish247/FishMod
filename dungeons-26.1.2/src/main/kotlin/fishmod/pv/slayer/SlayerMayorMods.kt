@@ -99,7 +99,6 @@ data class SlayerMayorMods(
 			return SlayerMayorMods(aatroxXp, aatroxPrice, cityProject, auraXp, auraPrice)
 		}
 
-		/** True when `n%` appears as its own number, so `5%` does not match `25%` / `50%`. */
 		private fun hasBarePercent(blob: String?, n: Int): Boolean {
 			if (blob.isNullOrBlank()) return false
 			val token = "$n%"

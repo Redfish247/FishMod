@@ -50,7 +50,7 @@ object WormholeFinder {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
         FishEvents.worldChange.register { reset(); false }
-        FishEvents.sound.register { snd, _, pitch -> onSound(snd.location.toString(), pitch); false }
+        FishEvents.sound.register { snd, _, pitch -> if (W.wormholeFinder && W.wormholeDeparture) onSound(snd.location.toString(), pitch); false }
         RenderHooks.GIZMO.register { _ ->
             val ts = targets
             if (ts.isEmpty()) return@register

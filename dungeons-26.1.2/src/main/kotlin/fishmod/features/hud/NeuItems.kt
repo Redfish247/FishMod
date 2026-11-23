@@ -38,6 +38,7 @@ object NeuItems {
     @Volatile var loading = false; private set
     @Volatile var failed = false; private set
     @Volatile private var started = false
+    @Volatile private var failedAt = 0L
 
     private val stacks = HashMap<String, ItemStack>()
     private val profiles = HashMap<String, java.util.Optional<ResolvableProfile>>()
@@ -47,8 +48,10 @@ object NeuItems {
 
     @JvmStatic
     fun ensureLoaded() {
+        if (started && failed && !loading && System.currentTimeMillis() - failedAt > 60_000L) started = false
         if (started) return
         started = true
+        failed = false
         loading = true
         fishmod.utils.IoExecutor.execute {
             try {
@@ -60,6 +63,7 @@ object NeuItems {
                 FishDiag.fail("NeuItems.1", "NEU item repo load failed", e)
                 readCache()?.let { publish(it); failed = false }
             } finally {
+                if (failed) failedAt = System.currentTimeMillis()
                 loading = false
             }
         }
@@ -111,7 +115,6 @@ object NeuItems {
         return out.takeIf { it.isNotEmpty() }
     }
 
-    // #588: most helmet/dragon skins (WISE_BABY, PROTECTOR_SHIMMER) lack SKIN in the id; match the lore too
     private fun isSkin(id: String, o: com.google.gson.JsonObject): Boolean {
         if (id.endsWith("BARN_SKIN")) return false
         if (id.contains("SKIN")) return true

@@ -79,6 +79,9 @@ object UpdateManager {
     private val updaterMeta = container?.metadata?.getCustomValue("fishmod:updater")?.asObject
     private val repo: String? = updaterMeta?.get("github")?.asString?.takeIf { Regex("""^[\w.-]{1,64}/[\w.-]{1,100}$""").matches(it) }
     val releasesUrl: String? = repo?.let { "https://github.com/$it/releases" }
+    // Same owner, any repo name: GitHub's rename redirect returns URLs under the new name.
+    private fun isOwnReleaseUrl(u: String, sub: String = ""): Boolean = repo != null &&
+        Regex("""^https://github\.com/${Regex.escape(repo.substringBefore('/'))}/(?!\.\.?/)[\w.-]{1,100}/releases/${Regex.escape(sub)}""", RegexOption.IGNORE_CASE).containsMatchIn(u)
 
     private val gameDir: Path = FabricLoader.getInstance().gameDir
     private val stateFile: Path = FabricLoader.getInstance().configDir.resolve("fishmod").resolve("updater.json")
@@ -148,7 +151,6 @@ object UpdateManager {
         if (SkyblockLocation.inDungeon() || SkyblockLocation.`in`(SkyblockLocation.KUUDRA)) return
         val release = pendingRelease() ?: return
         if (!FishDiag.check(release.version.isNotEmpty(), "UpdateManager.4") { "pending release has empty version tag=${release.tag}" }) return
-        // Once per Hypixel login, never again while connected.
         shownThisLogin = true
         if (!FishSettings.updateNotice) return
         synchronized(lock) { state.lastShownAt = System.currentTimeMillis(); save() }
@@ -267,11 +269,9 @@ object UpdateManager {
             304 -> synchronized(lock) { state.lastCheckAt = now; state.nextCheckAt = 0; save() }
             404 -> synchronized(lock) { state.release = null; state.etag = null; state.lastCheckAt = now; save() }
             403, 429 -> {
-                // Rate limit is the player's IP quota, not a bug: back off silently.
                 synchronized(lock) { state.nextCheckAt = rateLimitResetAt(res, now); save() }
             }
             else -> {
-                // GitHub 5xx is their outage, not a bug: back off without a report.
                 if (res.statusCode() < 500) FishDiag.fail("UpdateManager.10", "GitHub release check HTTP ${res.statusCode()}")
                 synchronized(lock) { state.nextCheckAt = now + FAILURE_BACKOFF_MS; save() }
             }
@@ -293,7 +293,7 @@ object UpdateManager {
         val ver = SemVer.parse(Regex("""-(\d.*)\.jar$""").find(fname)?.groupValues?.get(1), mcVersion)
         if (!FishDiag.check(ver != null, "UpdateManager.11") { "unparseable release jar name '$fname' tag='${o.str("tag_name")}' mc=$mcVersion" }) return null
         val safeName = fname.takeIf { Regex("""^[\w.+-]+\.jar$""").matches(it) }
-        val url = file.str("browser_download_url").takeIf { it.startsWith("https://github.com/$repo/releases/download/") }
+        val url = file.str("browser_download_url").takeIf { isOwnReleaseUrl(it, "download/") }
         if (safeName == null) FishDiag.fail("UpdateManager.12", "release asset has unsafe name '$fname'")
         if (url == null) FishDiag.fail("UpdateManager.13", "release asset url not on github.com/$repo: ${file.str("browser_download_url").take(120)}")
         val version = ver.toString()
@@ -302,7 +302,7 @@ object UpdateManager {
             tag = o.str("tag_name"),
             name = o.str("name").ifBlank { "FishModDungeons $version" },
             body = o.str("body").take(8000),
-            htmlUrl = o.str("html_url").takeIf { it.startsWith("https://github.com/$repo/releases/") } ?: "",
+            htmlUrl = o.str("html_url").takeIf { isOwnReleaseUrl(it) } ?: "",
             publishedAt = o.str("published_at"),
             assetName = if (url != null) safeName ?: "" else "",
             assetUrl = if (safeName != null) url ?: "" else "",
@@ -424,7 +424,6 @@ object UpdateManager {
         return path.takeIf { Files.isRegularFile(it) && it.fileName.toString().endsWith(".jar") }
     }
 
-    // #614: ProcessHandle command is empty on some launchers/sandboxes; fall back to java.home
     private fun javaExecutable(): String? {
         ProcessHandle.current().info().command().orElse(null)?.takeIf { it.isNotBlank() }?.let { return it }
         val bin = Path.of(System.getProperty("java.home") ?: return null, "bin")

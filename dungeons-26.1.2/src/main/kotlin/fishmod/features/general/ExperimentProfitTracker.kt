@@ -57,7 +57,6 @@ object ExperimentProfitTracker {
     private var nearTable = false
     private var scanTick = 0
 
-    // HUD only shows within 5 blocks of an enchanting (experimentation) table
     private fun scanTable(mc: Minecraft): Boolean {
         val level = mc.level ?: return false
         val c = mc.player?.blockPosition() ?: return false
@@ -200,7 +199,6 @@ object ExperimentProfitTracker {
         FishUtil.addChatMessage(Component.literal("§b[FM] §fExperiment profit tracker reset"))
     }
 
-
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.expProfitEnabled) return
@@ -278,7 +276,6 @@ object ExperimentProfitTracker {
     }
 
     private fun short(v: Double): String = fishmod.features.slayer.SlayerStatsTracker.short(v)
-
 
     private fun load() {
         if (!FILE.exists()) return

@@ -78,7 +78,7 @@ object DungeonScore {
 
     @JvmStatic
     fun reset() {
-        parsedTabVersion = TabListCache.version // skip the previous run's stale tab so old score can't re-fire messages
+        parsedTabVersion = TabListCache.version
         secretsFound = 0
         secretsPercent = 0.0f
         crypts = 0
@@ -107,7 +107,6 @@ object DungeonScore {
         if (lower.contains("prince killed")) princeKilled = true
         if (lower.contains("mimic dead") || lower.contains("mimic killed")) mimicKilled = true
     }
-
 
     private var parsedTabVersion = -1
 
@@ -190,7 +189,6 @@ object DungeonScore {
 
     @JvmStatic
     fun isBloodDone(): Boolean {
-        // Boss entered means blood is done; map check may be white (CLEARED) or never turn green
         if (DungeonState.isInBoss()) return true
         val b = Scan.blood
         return b != null && (b.state == Room.State.GREEN || b.state == Room.State.CLEARED)

@@ -27,7 +27,6 @@ object RiftMobs {
         "Shy" -> S.riftCruxShy; "Shadow" -> S.riftCruxShadow; "Volt" -> S.riftCruxVolt
         "Scribe" -> S.riftCruxScribe; "Frozille" -> S.riftCruxFrozille; else -> S.riftCruxSplatter
     }
-    // Last scan results for /fm rift debug
     @Volatile var lastCruxNames: List<String> = emptyList(); private set
     private val CRUX_TAG = Regex("^(?:Shy|Shadow|Volt|Scribe|Frozille|Splatter)(?: Crux)? [0-9,.]+[kKmM]?/[0-9,.]+[kKmM]?")
     private val SHY_LINES = setOf("I'm ugly! :(", "Eek!", "Don't look at me!", "Look away!")
@@ -131,7 +130,6 @@ object RiftMobs {
                 FishUtil.forceTitle(Component.literal("§eLook away!"), Component.empty(), 300)
         }
         marks = out; lastCruxNames = names; fleespook = flee
-        // Outside a Bacte fight only look for its spawn about once a second
         val fight = System.currentTimeMillis() < bacteUntil || bacte.isNotEmpty()
         if (S.riftBacte && (fight || ++bacteIdle % 4 == 0)) findBacte(me, System.currentTimeMillis() < bacteUntil)
         else if (!S.riftBacte) { bacte = emptyList(); bacteSlimes = emptyList() }

@@ -121,7 +121,6 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    // Years as a sidebar, same style as the loot tracker floors
     private fun renderYears(x: Int, y: Int, h: Int) {
         val evs = events()
         selected.retainAll(evs.map { it.idx }.toSet())
@@ -243,7 +242,6 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
     private fun tile(x: Int, y: Int, w: Int, h: Int, label: String, value: String, color: Int, side: String?) {
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 8f, 1f, PANEL2, LINE)
         UiRecorder.textBold(label, (x + 10).toFloat(), (y + 7).toFloat(), S_XS, ScreenTheme.SUBTEXT_COLOR)
-        // side text shares the label row only if both fit; else bottom-right (overlapped "TOTAL PROFIT" on narrow tiles)
         val sw = if (side != null) tw(side, S_XS) else 0
         val sideTop = side != null && 10 + tw(label, S_XS) * 1.1f + 8 + sw <= w - 10
         var valW = w - 20

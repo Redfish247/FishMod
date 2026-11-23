@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
 
-// Light-gray argument key after a typed .cmd in the chat input (fishmod.dev #536); render-only
 object PartyCommandHint {
     private const val COLOR = 0xFFAAAAAA.toInt()
 
@@ -25,7 +24,7 @@ object PartyCommandHint {
         val value = input.value
         if (input.cursorPosition != value.length) return
         val acc = input as EditBoxAccessor
-        if (acc.fishmodSuggestion() != null) return // vanilla ghost text wins
+        if (acc.fishmodSuggestion() != null) return
         val ghost = ghostFor(value) ?: return
         val font = Minecraft.getInstance().font
         val textX = acc.fishmodTextX()
@@ -52,7 +51,6 @@ object PartyCommandHint {
         val usage = PartyCommandHandler.USAGE[cmd]
         if (sp < 0) {
             if (usage != null) return join(usage, 0, " ")
-            // Command-name completion: first known name starting with what's typed
             val hit = PartyCommandHandler.USAGE.entries.firstOrNull { it.key.startsWith(cmd) } ?: return null
             return hit.key.substring(cmd.length) + (join(hit.value, 0, " ") ?: "")
         }

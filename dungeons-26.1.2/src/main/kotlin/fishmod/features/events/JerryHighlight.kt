@@ -12,7 +12,6 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 import fishmod.features.extras.ExtrasSettings as S
 
-// Outlines your own Hidden Jerries (Mayor Jerry) in their colour
 object JerryHighlight {
     // from SkyHanni (HighlightJerries / MobFilter): "[Lv1] <player>'s Green Jerry 7 Hits"
     private val JERRY = Regex("""(\w+)'s (Green|Blue|Purple|Golden) Jerry""")

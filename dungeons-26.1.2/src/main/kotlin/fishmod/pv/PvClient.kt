@@ -39,7 +39,6 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
 
 object PvClient {
-	/** Runs after [Event.DEFAULT_PHASE] so we replace Skyblocker's `/pv`. */
 	private val PV_COMMAND_PHASE: Identifier = ProfileViewer.id("override_pv")
 	private val PV_OVERRIDE_FAILED = AtomicBoolean(false)
 	private val PV_SHADOW_CHAT_SENT = AtomicBoolean(false)
@@ -65,7 +64,6 @@ object PvClient {
 			dispatcher.register(buildPvCommand(ClientCommands.literal("pv")))
 		}
 
-		// a rejected listener (duplicate id, late registration) must not abort the rest of PV init
 		runCatching { ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
 			object : SimpleSynchronousResourceReloadListener {
 				override fun getFabricId(): Identifier = Identifier.fromNamespaceAndPath("fishmod", "pv_icon_probe_cache")
@@ -76,10 +74,7 @@ object PvClient {
 			}
 		) }
 
-		PlayerInteractPvOpener.register()
 		HypixelProfileSpyButton.register()
-		// Inject /pv clicks on party / friends-list lines that Hypixel left non-clickable.
-		// Does not remap existing SocialOptions (avoids chat color bleach).
 		ClientReceiveMessageEvents.MODIFY_GAME.register { message, overlay ->
 			if (overlay) message else ChatClickProcessor.process(message) ?: message
 		}
@@ -88,7 +83,6 @@ object PvClient {
 		ProfileViewer.LOGGER.info("Profile viewer ready - /pv")
 	}
 
-	/** PV stays off while BetterPV is installed; tell the player once. */
 	@JvmStatic
 	fun registerStandaloneNote() {
 		ClientTickEvents.END_CLIENT_TICK.register { client ->
@@ -150,16 +144,6 @@ object PvClient {
 		return builder.buildFuture()
 	}
 
-	/**
-	 * Removes an already-registered root literal from the client command dispatcher.
-	 *
-	 * Necessary before re-registering `/pv`: Brigadier merges duplicate literals
-	 * into the existing node, so a late `dispatcher.register` would not override
-	 * Skyblocker's handler. Fabric documents reflection as the only unregister path.
-	 *
-	 * If Brigadier field names change, this fails closed: we still register
-	 * `/pv` and log that bare `/pv` may stay owned by another mod.
-	 */
 	@Suppress("UNCHECKED_CAST")
 	private fun removeLiteral(dispatcher: CommandDispatcher<FabricClientCommandSource>, name: String) {
 		try {
@@ -174,7 +158,6 @@ object PvClient {
 			val literals = literalsField.get(root) as MutableMap<String, LiteralCommandNode<FabricClientCommandSource>>
 			literals.remove(name)
 		} catch (exception: Exception) {
-			// warn (not error): chat name clicks still open PV; loud only so mapping breaks are noticed.
 			PV_OVERRIDE_FAILED.set(true)
 			ProfileViewer.LOGGER.warn(
 				"Could not strip existing /{} via Brigadier reflection (children/literals). " +

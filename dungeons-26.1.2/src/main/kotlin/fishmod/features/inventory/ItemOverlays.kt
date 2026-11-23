@@ -16,10 +16,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Skyblocker-style slot text (book level, pet level, minion tier, cake year) + obtained date tooltip
 object ItemOverlays {
     private val PET_LVL = Regex("\\[Lvl (\\d+)]")
     private val MINION_TIER = Regex("_GENERATOR_(\\d+)$")
+    private class PetInfo(val nameC: Component, val lvl: String?, val max: Int)
+    private val petCache = java.util.WeakHashMap<ItemStack, PetInfo>()
     private val OLD_STAMP = SimpleDateFormat("M/d/yy h:mm a", Locale.US)
     private val OUT_DATE = SimpleDateFormat("MMM d, yyyy", Locale.US)
 
@@ -49,10 +50,15 @@ object ItemOverlays {
             return lvl.toString()
         }
         if (lv && S.overlayPetLevel && id == "PET") {
-            val name = stack.hoverName.string
-            val lvl = PET_LVL.find(name)?.groupValues?.get(1) ?: return null
-            val max = if (name.contains("Dragon")) 200 else 100
-            if (S.overlayPetHideMax && lvl.toInt() >= max) return null
+            val nameC = stack.hoverName
+            var info = petCache[stack]
+            if (info == null || info.nameC !== nameC) {
+                val name = nameC.string
+                info = PetInfo(nameC, PET_LVL.find(name)?.groupValues?.get(1), if (name.contains("Dragon")) 200 else 100)
+                petCache[stack] = info
+            }
+            val lvl = info.lvl ?: return null
+            if (S.overlayPetHideMax && lvl.toInt() >= info.max) return null
             return lvl
         }
         if (S.overlayItemStars) {

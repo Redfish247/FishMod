@@ -26,7 +26,6 @@ object Scan {
     @JvmField
     val rooms: MutableSet<Room> = Collections.synchronizedSet(LinkedHashSet())
 
-    // Synchronized collections need their lock held while copying, or a scan mid-copy throws CME
     @JvmStatic fun roomsSnapshot(): List<Room> = synchronized(rooms) { ArrayList(rooms) }
     @JvmStatic fun doorsSnapshot(): List<Door> = synchronized(doors) { ArrayList(doors) }
 
@@ -47,9 +46,6 @@ object Scan {
 
     @JvmField
     var allSecrets: Int = 0
-
-    @JvmField
-    var puzzles: MutableList<Room> = ArrayList()
 
     @JvmField
     var chest: BlockPos? = null
@@ -106,7 +102,6 @@ object Scan {
         loadedAllRooms = false
         blood = null
         allSecrets = 0
-        puzzles = ArrayList()
         chest = null
         shouldScan = false
         lastScanMs = 0L
@@ -129,12 +124,6 @@ object Scan {
             recomputeSecrets()
         } else {
             scanRooms(world)
-            val puz = ArrayList<Room>()
-            for (r in ArrayList(rooms)) {
-                if (r.type == Room.Type.PUZZLE) puz.add(r)
-            }
-            puzzles = puz
-
             scanRoomRotations(world)
             scanWorldDoors(world)
 
@@ -265,7 +254,6 @@ object Scan {
                     val stable = pendingCores[idx] == coreHash
                     pendingCores[idx] = coreHash
                     if (!stable || !missedCores.add(coreHash)) continue
-                    // unknown core: log once per game session, plain log (not a bug report)
                     if (loggedMissingCores.add(coreHash)) fishmod.utils.debug.FishDebug.LOGGER.debug("[Scan] no room data for core hash={} cell=({},{}) height={} roomsLoaded={}", coreHash, x, z, height, RoomData.isLoaded())
                     continue
                 }

@@ -37,7 +37,6 @@ object CroesusRewardParser {
         ITEM_REPLACEMENTS["Livid Dye"] = "DYE_LIVID"
     }
 
-    private fun strip(s: String): String = fishmod.utils.TextStrip.plain(s)
 
     private val LEGACY_RGB = listOf(
         0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
@@ -60,7 +59,7 @@ object CroesusRewardParser {
     private fun tryParseBook(line: String): Array<String>? {
         val m = BOOK_PATTERN.matcher(line)
         if (!m.find()) return null
-        val bookName = strip(m.group(1).trim()).trim()
+        val bookName = fishmod.utils.TextStrip.plain(m.group(1).trim()).trim()
         val tierStr = m.group(2).trim()
         val isUltimate = ULTIMATE_ENCHANTS.contains(bookName)
 
@@ -87,7 +86,7 @@ object CroesusRewardParser {
         val m = PET_PATTERN.matcher(line)
         if (!m.find()) return null
         val rarity = when (m.group(1)) { "f" -> 0; "a" -> 1; "9" -> 2; "5" -> 3; "6" -> 4; "d" -> 5; null -> 4; else -> return null }
-        val name = strip(m.group(2)).trim().uppercase().replace(" ", "_")
+        val name = fishmod.utils.TextStrip.plain(m.group(2)).trim().uppercase().replace(" ", "_")
         return arrayOf("$name;$rarity", "1")
     }
 
@@ -98,7 +97,7 @@ object CroesusRewardParser {
         val pet = tryParsePet(line)
         if (pet != null) return pet
 
-        val clean = strip(line).trim()
+        val clean = fishmod.utils.TextStrip.plain(line).trim()
         val essence = tryParseEssence(clean)
         if (essence != null) return essence
         if (ITEM_REPLACEMENTS.containsKey(clean)) return arrayOf(ITEM_REPLACEMENTS[clean]!!, "1")
@@ -118,7 +117,7 @@ object CroesusRewardParser {
     fun parseRewards(fullTooltip: List<String>, errorOut: Array<String?>?): ChestInfo? {
         var costIdx = -1
         for (i in fullTooltip.indices) {
-            if (strip(fullTooltip[i]).contains("Cost")) {
+            if (fishmod.utils.TextStrip.plain(fullTooltip[i]).contains("Cost")) {
                 costIdx = i
                 break
             }
@@ -133,7 +132,7 @@ object CroesusRewardParser {
         if (lootEnd > fullTooltip.size) FishDiag.fail("CroesusRewardParser.5", "loot end $lootEnd beyond tooltip size ${fullTooltip.size}")
         for (ix in 2 until lootEnd) {
             val line = fullTooltip[ix]
-            val clean = strip(line).trim()
+            val clean = fishmod.utils.TextStrip.plain(line).trim()
             if (clean.isEmpty()) continue
 
             val result = parseLine(line)

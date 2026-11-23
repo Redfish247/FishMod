@@ -56,7 +56,6 @@ object M7Relics {
     private val pickers = HashMap<Relic, String>()
     private val placed = LinkedHashMap<Relic, Double>()
 
-    // P5 relic phase: Necron end line seen and not all 5 placed yet.
     @JvmStatic
     fun inRelicPhase(): Boolean = p5StartMs != 0L && placed.size < 5 && BossPhase.getFloor() == "M7"
 
@@ -80,7 +79,6 @@ object M7Relics {
 
         FishEvents.chat.register { text ->
             val msg = COLOR.replace(text.chatRaw, "")
-            // Old or alpha Necron line; first one wins so a later line can't restart it.
             if (DialogueCompat.isNecronEnd(msg) && System.currentTimeMillis() - p5StartMs > RESTART_GUARD_MS) {
                 p5StartMs = System.currentTimeMillis()
                 myRelic = null
@@ -168,7 +166,6 @@ object M7Relics {
         if (placed.size < Relic.entries.size) return
         for ((relic, secs) in placed) {
             val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
-            // #587: pickup line can be missed (late join, chat lag); show "?" and log, don't auto-report
             val who = pickers[relic] ?: run { fishmod.utils.debug.FishDebug.LOGGER.debug("[M7Relics] no picker recorded for {} relic (pickers={})", relic.name, pickers.keys); "?" }
             val time = PbMessages.fmt(secs)
             if (Floor7Settings.relicTimesParty) ChatQueue.enqueue("pc $color Relic: $time ($who)")

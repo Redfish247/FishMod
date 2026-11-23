@@ -5,7 +5,6 @@ import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import fishmod.features.fishing.FishingWorldSettings as W
 
-// Golden Fish HUD: time fishing, spawn window and despawn countdown
 object GoldenFishTimer {
     // from SkyHanni (GoldenFishTimer patterns, colours stripped)
     private const val SPAWN = "You spot a Golden Fish surface from beneath the lava!"
@@ -41,7 +40,6 @@ object GoldenFishTimer {
         return since != 0L
     }
 
-    // starts only on the first catch (sea creature or trophy fish) made from lava
     private fun caught() { val now = System.currentTimeMillis(); if (since == 0L && W.goldenFishTimer && lavaAt != 0L && now - lavaAt < 5_000L) since = now }
 
     private fun onChat(s: String) {

@@ -112,6 +112,8 @@ object DungeonState {
     private var inDungeonCacheLevel: Level? = null
     private var inDungeonCacheStamp = 0L
     private var inDungeonCacheValue = false
+
+    init { fishmod.utils.events.FishEvents.worldChange.register { inDungeonCacheLevel = null; false } }
     private const val IN_DUNGEON_TTL_MS = 1000L
 
     @JvmStatic
@@ -152,6 +154,8 @@ object DungeonState {
     }
 
     private var sidebarLevel: Any? = null
+
+    init { fishmod.utils.events.FishEvents.worldChange.register { sidebarLevel = null; false } }
     private var sidebarAt = 0L
     private var sidebarFloor = -1
     private var sidebarMaster = false

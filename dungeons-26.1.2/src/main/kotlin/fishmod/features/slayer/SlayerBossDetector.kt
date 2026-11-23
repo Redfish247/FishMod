@@ -27,7 +27,7 @@ object SlayerBossDetector {
     }
 
     private fun tick(mc: Minecraft) {
-        if (!FishSettings.slayerAnyEnabled() || !SlayerManager.isActiveSlayer()) {
+        if (!SlayerManager.anyEnabled() || !SlayerManager.isActiveSlayer()) {
             if (SlayerManager.bossEntity != null) SlayerManager.bossEntity = null
             scanCounter = 0
             return

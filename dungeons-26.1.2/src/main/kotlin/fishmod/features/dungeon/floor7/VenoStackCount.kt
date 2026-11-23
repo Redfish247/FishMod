@@ -79,7 +79,6 @@ object VenoStackCount {
             if (BossPhase.stormDead() || !SkyblockLocation.inDungeon()) stacks = 0
             return
         }
-        // Storm box only matters while holding a veno item; it barely moves, so 4 rescans a second is enough
         if (!holdingVeno) { stormBox = null; return }
         if (tick % 5 != 0 && stormBox != null) return
         var best: WitherBoss? = null
