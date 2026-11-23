@@ -654,6 +654,7 @@ class FishModInit : ClientModInitializer {
                             FishConstants.SUCCESS
                         }
                         .then(ClientCommands.literal("report").executes { debugReport(); FishConstants.SUCCESS })
+                        .then(ClientCommands.literal("room").executes { debugRoom(); FishConstants.SUCCESS })
                         .then(ClientCommands.literal("clear").executes {
                             fishmod.utils.debug.FishDiag.clear()
                             fishmod.utils.FishUtil.addChatMessage(Component.literal("§a[FishMod] Debug codes cleared."))
@@ -1556,6 +1557,18 @@ class FishModInit : ClientModInitializer {
         safeInit("ChatQueue") { fishmod.utils.ChatQueue.init() }
         safeInit("NametagCullingCompat") { fishmod.cosmetic.NametagCullingCompat.init() }
     }
+}
+
+private fun debugRoom() {
+    val tile = fishmod.features.dungeon.map.DungeonMap.roomPlayerIn()
+    val owner = tile?.owner
+    val s = fishmod.utils.config.values.FishSettings
+    listOf(
+        "inDungeon=${SkyblockLocation.inDungeon()} inBoss=${BossPhase.inBoss()} mode='${SkyblockLocation.currentMode}'",
+        "mapTile=${tile != null} mapRoom='${owner?.data?.name}' rotation=${owner?.rotation}",
+        "scanRoom='${fishmod.features.dungeon.solvers.odin.OdinScan.currentRoomName}'",
+        "puzzleSolvers=${s.puzzleSolversEnabled} blaze=${s.blazeSolver} iceFill=${s.iceFillSolver}"
+    ).forEach { fishmod.utils.FishUtil.addChatMessage(Component.literal("§b[FishMod room] §7$it")) }
 }
 
 private fun debugReport() {
