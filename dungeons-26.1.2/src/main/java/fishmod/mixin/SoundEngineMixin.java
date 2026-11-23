@@ -30,7 +30,7 @@ public class SoundEngineMixin {
         at = @At("HEAD"), cancellable = true)
     private void fishmod$arrowHitCue(SoundInstance instance, CallbackInfoReturnable<SoundEngine.PlayResult> cir) {
         try {
-            if (fishmod.features.general.ArrowHitSound.onLocalSound(instance) || fishmod.features.general.MeleeHitSound.onLocalSound(instance) || fishmod.features.garden.GardenLevels.muteSound(instance)) {
+            if (fishmod.features.general.ArrowHitSound.onLocalSound(instance) || fishmod.features.general.MeleeHitSound.onLocalSound(instance) || fishmod.features.garden.GardenLevels.muteSound(instance) || fishmod.utils.sound.SoundRules.muted(instance)) {
                 cir.setReturnValue(SoundEngine.PlayResult.NOT_STARTED);
             }
         } catch (Throwable t) {
@@ -44,12 +44,14 @@ public class SoundEngineMixin {
     private float fishmod$loudInitialVolume(SoundEngine self, float volume, SoundSource source, Operation<Float> original,
                                             @Local(argsOnly = true) SoundInstance instance) {
         float v = original.call(self, volume, source);
-        return instance instanceof FishLoudSound loud ? v * loud.fishmod$boost() : v;
+        float r = v * fishmod.utils.sound.SoundRules.multiplier(instance);
+        return instance instanceof FishLoudSound loud ? r * loud.fishmod$boost() : r;
     }
 
     @ModifyReturnValue(method = "calculateVolume(Lnet/minecraft/client/resources/sounds/SoundInstance;)F", at = @At("RETURN"))
     private float fishmod$loudTickVolume(float original, SoundInstance instance) {
-        return instance instanceof FishLoudSound loud ? original * loud.fishmod$boost() : original;
+        float r = original * fishmod.utils.sound.SoundRules.multiplier(instance);
+        return instance instanceof FishLoudSound loud ? r * loud.fishmod$boost() : r;
     }
 
     @Inject(method = "updateSource", at = @At("TAIL"))

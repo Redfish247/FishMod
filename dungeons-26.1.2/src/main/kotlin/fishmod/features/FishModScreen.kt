@@ -334,7 +334,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         general.features.add(Feature("Arrow Fix (shortbow pullback)", "arrowFixEnabled"))
-        general.features.add(Feature("Mono Audio", "monoAudioEnabled"))
+        run {
+            val f = Feature("Sound Manager", null, null)
+            val SR = fishmod.utils.sound.SoundRules
+            f.sub.add(SubcategoryHeader("Global"))
+            f.sub.add(ToggleSetting("Mono Audio", "Plays all game sound equally in both ears", "monoAudioEnabled"))
+            f.sub.add(SubcategoryHeader("Edit Any Game Sound"))
+            f.sub.add(SoundSearchSetting("Sound To Edit", "Search any game sound, then set its volume below",
+                { SR.editing }, { v -> SR.editing = v }))
+            f.sub.add(LabelSetting("Editing", "x").also { l -> l.dynamic = { SR.editing.ifEmpty { "none selected" } } })
+            f.sub.add(SliderIntSetting("Volume %", "0 = mute this sound, 100 = unchanged, up to 500 = louder",
+                { SR.volumeFor(SR.editing) ?: 100 }, { v -> if (SR.editing.isNotEmpty()) SR.set(SR.editing, v) }, 0, 500, 5))
+            f.sub.add(ButtonSetting("Remove Rule", "Put the selected sound back to normal", "Remove", Runnable { SR.set(SR.editing, null) }))
+            f.sub.add(ButtonSetting("Reset All Rules", "Remove every sound rule", "Reset", Runnable { FishSettings.soundRules = "" }))
+            f.sub.add(LabelSetting("Active Rules", "x").also { l -> l.dynamic = { SR.rules().entries.joinToString(", ") { "${it.key.removePrefix("minecraft:")} ${it.value}%" }.ifEmpty { "none" } } })
+            general.features.add(f)
+        }
         general.features.add(Feature("Disable Front-Facing Camera", "disableFrontFacingCamera"))
         run {
             val f = Feature("Ragnarock", "ragnarockEnabled")
@@ -4433,12 +4448,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     class LabelSetting(name: String, desc: String) : Setting(name, desc) {
         private var lastW = DET_W - 20
-        override fun getHeight(): Int = if (description.isEmpty()) ITEM_HEIGHT else 16 + wrapText(description, lastW, DESC_SIZE).size * WRAP_LINE_H + 4
+        var dynamic: (() -> String)? = null
+        private fun d(): String = dynamic?.invoke() ?: description
+        override fun getHeight(): Int = if (d().isEmpty()) ITEM_HEIGHT else 16 + wrapText(d(), lastW, DESC_SIZE).size * WRAP_LINE_H + 4
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val w = rightX - leftX - 4
             lastW = w
             st(ctx, tr, fit(name, w), leftX + 2, sy + 2, TEXT_COLOR)
-            if (description.isNotEmpty()) for ((i, l) in wrapText(description, w, DESC_SIZE).withIndex()) UiRecorder.text(l, (leftX + 2).toFloat(), (sy + 15 + i * WRAP_LINE_H).toFloat(), DESC_SIZE, SUBTEXT_COLOR)
+            if (d().isNotEmpty()) for ((i, l) in wrapText(d(), w, DESC_SIZE).withIndex()) UiRecorder.text(l, (leftX + 2).toFloat(), (sy + 15 + i * WRAP_LINE_H).toFloat(), DESC_SIZE, SUBTEXT_COLOR)
         }
     }
 
@@ -4678,7 +4695,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Zoom" -> "Hold a key to zoom in"
                 "No Cursor Reset" -> "Keeps the mouse where it was when a new GUI opens"
                 "Arrow Fix (shortbow pullback)" -> "Stops the bow pullback animation on shortbows"
-                "Mono Audio" -> "Plays all game sound equally in both ears"
+                "Sound Manager" -> "Mono audio, plus edit or mute any game sound"
                 "Sword Blocking" -> "Old-style sword blocking animation"
                 "Disable Front-Facing Camera" -> "Skips the front-facing view when cycling camera modes"
                 "Animations" -> "Change the size and position of your held item"
