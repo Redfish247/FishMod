@@ -57,8 +57,9 @@ object FishChat {
         if (!FishSettings.fishChatEnabled) return
         var name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() } ?: return
         if (root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "discord") name = name.replace(Regex("^\\s*\\(D\\)\\s*"), "").ifBlank { "Discord" }
-        val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
         val fromDiscord = root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "discord"
+        // Discord messages can carry long signed attachment URLs after the text; don't cut them off.
+        val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(if (fromDiscord) 1000 else MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
         val clean = ProfanityFilter.censor(text) ?: text
         Minecraft.getInstance().execute {
             if (!FishSettings.fishChatNoticeShown) {
@@ -86,8 +87,42 @@ object FishChat {
             var msg = Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
             if (fromDiscord) msg = msg.append(Component.literal("(Discord) ").withStyle(ChatFormatting.LIGHT_PURPLE))
             msg = msg.append(Component.literal("$name: ").withStyle(ChatFormatting.GOLD))
-                .append(Component.literal(clean).withStyle(ChatFormatting.WHITE))
+                .append(linkify(clean))
             FishUtil.addChatMessage(msg)
         }
+    }
+
+    private val URL_RE = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE)
+    private val IMAGE_EXT_RE = Regex("(?i)^https?://[^\\s?#]+\\.(png|jpe?g|gif|webp)([?#].*)?$")
+    private val IMAGE_HOSTS = arrayOf("cdn.discordapp.com", "media.discordapp.net", "media.tenor.com", "media.giphy.com", "i.imgur.com")
+
+    private fun isImageUrl(url: String): Boolean {
+        if (IMAGE_EXT_RE.matches(url)) return true
+        val uri = try { java.net.URI.create(url) } catch (_: Throwable) { return false }
+        val host = uri.host?.lowercase() ?: return false
+        val path = uri.path ?: ""
+        return host in IMAGE_HOSTS || (host.endsWith("tenor.com") && path.startsWith("/view/")) || (host.endsWith("giphy.com") && path.startsWith("/gifs/"))
+    }
+
+    /** Message text with every http(s) link made clickable; image/GIF links show as [Image] with the URL on hover. */
+    private fun linkify(text: String): Component {
+        val out = Component.empty()
+        var last = 0
+        for (m in URL_RE.findAll(text)) {
+            val url = m.value.trimEnd('.', ',', ')', '!', '?', ';', ':', '\'', '"')
+            if (url.length <= "https://".length) continue
+            val uri = try { java.net.URI.create(url) } catch (_: Throwable) { continue }
+            if (m.range.first > last) out.append(Component.literal(text.substring(last, m.range.first)).withStyle(ChatFormatting.WHITE))
+            val image = isImageUrl(url)
+            val label = if (image) "[Image]" else url
+            out.append(Component.literal(label).withStyle {
+                it.withColor(if (image) ChatFormatting.GREEN else ChatFormatting.AQUA).withUnderlined(true)
+                    .withClickEvent(net.minecraft.network.chat.ClickEvent.OpenUrl(uri))
+                    .withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal("§7Click to open\n§f$url")))
+            })
+            last = m.range.first + url.length
+        }
+        if (last < text.length) out.append(Component.literal(text.substring(last)).withStyle(ChatFormatting.WHITE))
+        return out
     }
 }
