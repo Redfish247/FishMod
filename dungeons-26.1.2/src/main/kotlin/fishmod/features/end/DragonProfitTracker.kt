@@ -1,6 +1,7 @@
 package fishmod.features.end
 
 import fishmod.compat.curScreen
+import fishmod.features.ProfitTrackerKit
 import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.features.mining.MiningHuds
 import fishmod.features.slayer.EndAlertSettings as S
@@ -32,8 +33,17 @@ object DragonProfitTracker {
     private var lootUntil = 0L
     private var lastInv: Map<String, Int>? = null
     private var tick = 0
+    private var activeMs = 0L
+    private var lastGainMs = 0L
 
-    fun reset() { kills.clear(); loot.clear(); eyesPlaced = 0; pendingEyes = 0; lootUntil = 0L; lastInv = null }
+    fun reset() { kills.clear(); loot.clear(); eyesPlaced = 0; pendingEyes = 0; lootUntil = 0L; lastInv = null; activeMs = 0L; lastGainMs = 0L }
+
+    // active time between dragon events, gaps capped so AFK doesn't count
+    private fun active() {
+        val now = System.currentTimeMillis()
+        if (lastGainMs != 0L) activeMs += minOf(now - lastGainMs, 300_000L)
+        lastGainMs = now
+    }
 
     private fun inEnd() = SkyblockLocation.`in`(SkyblockLocation.THE_END)
 
@@ -52,8 +62,8 @@ object DragonProfitTracker {
             { S.dragonTrackerX }, { S.dragonTrackerX = it }, { S.dragonTrackerY }, { S.dragonTrackerY = it },
             { S.dragonTrackerScale }, { S.dragonTrackerScale = it },
             { S.dragonTracker && inEnd() }, { S.dragonTracker },
-            example = { listOf("§5§lDragon Profit", "§7Kills: §f4 §8(Young 2, Wise 1, Old 1)", "§7Eyes placed: §f3 §c-3.3M",
-                "§f12x §5Young Dragon Fragment §6+1.1M", "§f20x §dDragon Essence §6+40k", "§7Profit: §6-2.1M") },
+            example = { listOf("§5§lDragon Profit", "§61.1M §7(1.6M/h)\t§7| §5Young Dragon Fragment §f12", "§640k §7(60k/h)\t§7| §dDragon Essence §f20",
+                "§7Kills §f4 §8(Young 2, Wise 1, Old 1)", "§7Summoning Eyes §f3 §7(§c-3.3M§7)", "§7Playtime §f40m 0s", "§eProfit §c-2.1M §7(§c-3.2M§7/h)") },
             lines = ::lines)
     }
 
@@ -62,15 +72,16 @@ object DragonProfitTracker {
             s.startsWith(EYE_PLACED) -> pendingEyes++
             s == EYE_RECOVERED -> if (pendingEyes > 0) pendingEyes--
             else -> {
-                SPAWN.matchEntire(s)?.let { eyesPlaced += pendingEyes; pendingEyes = 0; return }
+                SPAWN.matchEntire(s)?.let { eyesPlaced += pendingEyes; pendingEyes = 0; active(); return }
                 DOWN.matchEntire(s)?.let { m ->
                     val type = m.groupValues[1].lowercase().replaceFirstChar { it.uppercase() }
                     kills.merge(type, 1, Int::plus)
+                    active()
                     lootUntil = System.currentTimeMillis() + LOOT_WINDOW_MS
                     lastInv = Minecraft.getInstance().player?.let { inventoryCounts(it) }
                     return
                 }
-                ESSENCE.matchEntire(s)?.let { m -> if (System.currentTimeMillis() < lootUntil) add("ESSENCE_DRAGON", "§dDragon Essence", m.groupValues[1].toLong()) }
+                ESSENCE.matchEntire(s)?.let { m -> if (System.currentTimeMillis() < lootUntil) add("ESSENCE_DRAGON", "Dragon Essence", m.groupValues[1].toLong()) }
             }
         }
     }
@@ -114,10 +125,17 @@ object DragonProfitTracker {
         val profit = rows.sumOf { it.third } - eyeCost
         val out = ArrayList<String>()
         out.add("§5§lDragon Profit")
-        out.add("§7Kills: §f$total" + if (kills.isEmpty()) "" else " §8(" + kills.entries.joinToString(", ") { "${it.key} ${it.value}" } + ")")
-        out.add("§7Eyes placed: §f$eyesPlaced" + if (eyeCost > 0) " §c-${sh(eyeCost)}" else "")
-        for ((l, _, v) in rows.take(8)) out.add("§f${l.count}x ${l.name} §6+${sh(v)}")
-        out.add("§7Profit: " + (if (profit >= 0) "§6+" else "§c-") + sh(Math.abs(profit)))
+        for ((l, id, v) in rows.take(8)) {
+            val value = if (v > 0) "§6${sh(v)}" + (if (activeMs < 60_000) "" else " §7(${sh(rate(v))}/h)") else ""
+            out.add(value + "\t§7| " + (ProfitTrackerKit.rarityColor(id) ?: "§f") + TextStrip.plain(l.name) + " §f" + "%,d".format(l.count))
+        }
+        out.add("§7Kills §f$total" + if (kills.isEmpty()) "" else " §8(" + kills.entries.joinToString(", ") { "${it.key} ${it.value}" } + ")")
+        out.add("§7Summoning Eyes §f$eyesPlaced" + if (eyeCost > 0) " §7(§c-${sh(eyeCost)}§7)" else "")
+        out.add("§7Playtime §f" + fishmod.features.diana.DianaTracker.fmtTime(activeMs))
+        val pc = if (profit < 0) "§c" else "§6"
+        out.add("§eProfit $pc${sh(profit)} §7($pc${sh(rate(profit))}§7/h)")
         return out
     }
+
+    private fun rate(v: Double) = ProfitTrackerKit.perHour(v, activeMs)
 }

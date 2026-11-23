@@ -59,8 +59,15 @@ object AchStore {
         if (playerUuid == lastBoundUuid) return
         val uuid = playerUuid.toString().replace("-", "").lowercase()
         if (data.owner == uuid) { lastBoundUuid = playerUuid; return }
+        if (System.currentTimeMillis() < retryAt) return
         saveNow()
-        data = read(uuid)
+        val loaded = try { read(uuid) } catch (e: java.io.IOException) {
+            // Transient read error (file locked etc.): stay unbound so nothing overwrites the file, retry soon
+            FishDiag.fail("AchStore.4", "achievements read failed for $uuid, retrying", e)
+            data = Data(); dirty = false; retryAt = System.currentTimeMillis() + 5_000
+            return
+        }
+        data = loaded
         dirty = false
         if (data.since == 0L) data.since = System.currentTimeMillis()
         changed()
@@ -69,23 +76,39 @@ object AchStore {
         lastBoundUuid = playerUuid
     }
 
+    private var retryAt = 0L
+
+    // Throws IOException on a transient read error; garbage files fall back to the .bak copy
     private fun read(uuid: String): Data {
         val file = DIR.resolve("$uuid.json")
-        try {
-            if (Files.exists(file)) {
-                val d = GSON.fromJson(Files.readString(file), Data::class.java) ?: return fresh(uuid)
-                if (d.owner.isNotEmpty() && d.owner != uuid) { FishDiag.fail("AchStore.3", "achievements file owner ${d.owner} != $uuid, starting fresh", null); return fresh(uuid) }
-                d.owner = uuid
-                return d
-            }
-            if (Files.exists(LEGACY)) return claimLegacy(uuid)
-        } catch (e: Exception) {
-            // corrupt or garbage file (bad JSON, wrong shape, bad encoding): keep a backup and start fresh
-            val bad = if (Files.exists(file)) file else LEGACY
-            runCatching { Files.move(bad, bad.resolveSibling("${bad.fileName}.corrupt"), StandardCopyOption.REPLACE_EXISTING) }
-            if (e !is com.google.gson.JsonParseException && e !is IllegalStateException) FishDiag.fail("AchStore.1", "achievements load failed", e)
+        val bak = DIR.resolve("$uuid.json.bak")
+        if (Files.exists(file)) {
+            parse(file, uuid)?.let { return it }
+            quarantine(file)
+            parse(bak, uuid)?.let { FishDiag.fail("AchStore.3", "achievements file for $uuid unreadable, restored from backup", null); return it }
+            FishDiag.fail("AchStore.1", "achievements file for $uuid unreadable and no backup, starting fresh", null)
+            return fresh(uuid)
+        }
+        parse(bak, uuid)?.let { return it }
+        if (Files.exists(LEGACY)) {
+            try { return claimLegacy(uuid) } catch (e: java.io.IOException) { if (e !is java.nio.charset.CharacterCodingException) throw e } catch (_: Exception) {}
+            quarantine(LEGACY)
         }
         return fresh(uuid)
+    }
+
+    // Null when missing or not a valid save for this uuid
+    private fun parse(f: Path, uuid: String): Data? {
+        if (!Files.exists(f)) return null
+        val text = try { Files.readString(f) } catch (e: java.nio.charset.CharacterCodingException) { return null }
+        val d = try { GSON.fromJson(text, Data::class.java) } catch (_: Exception) { return null } ?: return null
+        if (d.owner.isNotEmpty() && d.owner != uuid) return null
+        d.owner = uuid
+        return d
+    }
+
+    private fun quarantine(f: Path) {
+        runCatching { Files.move(f, f.resolveSibling("${f.fileName}.corrupt-${System.currentTimeMillis()}"), StandardCopyOption.REPLACE_EXISTING) }
     }
 
     private fun claimLegacy(uuid: String): Data {
@@ -129,6 +152,7 @@ object AchStore {
             val file = DIR.resolve("$owner.json")
             val tmp = DIR.resolve("$owner.json.tmp")
             Files.writeString(tmp, json)
+            if (Files.exists(file)) runCatching { Files.copy(file, DIR.resolve("$owner.json.bak"), StandardCopyOption.REPLACE_EXISTING) }
             Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         }
     }
