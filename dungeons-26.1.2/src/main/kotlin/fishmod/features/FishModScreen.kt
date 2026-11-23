@@ -4875,6 +4875,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Loadout Title" -> "Title when you switch loadout"
                 "Time Changer" -> "Set your own time of day"
                 "Hit Sounds" -> "Custom sounds when your arrow or melee hit lands, with volume, pitch and vanilla muting"
+                "Experience Table" -> "Experimentation Table helpers: highlights solver slots and tracks drops, value and XP"
                 "Arrow Hit Sound" -> "Plays a sound when your arrow hits"
                 "Mob Hit Sound (Melee)" -> "Plays a sound when your melee hit lands"
                 "Block Overlay" -> "Outline or fill the block you look at"
