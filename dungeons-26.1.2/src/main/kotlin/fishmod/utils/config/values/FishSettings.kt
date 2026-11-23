@@ -641,6 +641,8 @@ object FishSettings {
     @ConfigValue @JvmField var classicItemModels: Boolean = true
     @ConfigValue @JvmField var classicItemHeads: Boolean = true
     @ConfigValue @JvmField var classicTooltips: Boolean = true
+    @ConfigValue @JvmField var classicLocalPack: Boolean = true
+    @ConfigValue @JvmField var classicOgColors: Boolean = false
     @ConfigValue @JvmField var customWaterEnabled: Boolean = false
     @ConfigValue @JvmField var customWaterColor: Int = 0xFF3F76E4.toInt()
     @ConfigValue @JvmField var forceOthersSizeEnabled: Boolean = false
