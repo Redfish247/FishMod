@@ -417,8 +417,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             visuals.features.add(f)
         }
         run {
-            val f = Feature("Storage Overlay", "storageOverlayEnabled")
-            f.sub.add(SubcategoryHeader("All pages + search over /storage; also /storageview"))
+            val f = Feature("Storage Overlay", null, null)
+            val xs = fishmod.features.extras.ExtrasSettings::class.java
+            f.sub.add(SubcategoryHeader("Backpack Preview"))
+            f.sub.add(ToggleSetting("Backpack Preview", "Storage menu: hover an ender chest page or backpack to see its contents (open each once). Works without the custom overlay", xs, "backpackPreview"))
+            f.sub.add(ColorPickerSetting("Panel Tint", "Tints the chest-style panel; white = vanilla", xs, "backpackPreviewTint"))
+            f.sub.add(SubcategoryHeader("Custom Overlay"))
+            f.sub.add(ToggleSetting("Custom Storage Overlay", "All pages + search over /storage; also /storageview. Independent of Backpack Preview", "storageOverlayEnabled"))
             f.sub.add(SliderIntSetting("Columns (width)", "", "storageViewerColumns", 1, 10))
             f.sub.add(SliderIntSetting("Max Height", "", "storageMaxHeight", 80, 900))
             f.sub.add(SliderDoubleSetting("Scale", "Overlay size", "storageOverlayScale", 0.5, 2.0))
@@ -2295,7 +2300,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val petsCol = Column("Pets")
         fun take(to: Column, names: Set<String>, vararg from: Column) { for (c in from) { val m = c.features.filter { it.name in names }; c.features.removeAll(m); to.features.addAll(m) } }
         take(chatCol, setOf("Chat","Chat Filter","FishMod Chat (/fc)","Mod Prefix","Guild Bridge Bot","Twitch Bridge","Chat Coord Waypoints","Command Tooltip in Chat","Compact Bestiary","SkyBlock XP in Chat","Command Tab Complete","Wiki Lookup"), general, extrasCol)
-        take(invStorage, setOf("Inventory Buttons","Inventory Equipment","Hide Inventory Potion Effects","Wardrobe/Loadout Hotkeys","Pet Keybinds","Slot Binds","Slot Locking","Inventory Search","Backpack Preview","Fix Double Clicks","Middle Click Fix","Stacking Enchant Progress","Item Level Overlay"), general, extrasCol)
+        take(invStorage, setOf("Inventory Buttons","Inventory Equipment","Hide Inventory Potion Effects","Wardrobe/Loadout Hotkeys","Pet Keybinds","Slot Binds","Slot Locking","Inventory Search","Fix Double Clicks","Middle Click Fix","Stacking Enchant Progress","Item Level Overlay"), general, extrasCol)
         take(eventsCol, setOf("Calendar Real Times","SkyBlock Date HUD","Hoppity Hunt Summary","Hoppity Egg Waypoints","Stray Rabbit Alert","Trick or Treat Chest Alert","Gift Tracker HUD","Hidden Jerry Highlight","Reindrake Alert + Warp Link","Carnival Zombie Shootout Outlines","Fairy Soul Waypoints"), extrasCol)
         take(alertsCol, setOf("Limbo Alert","Server Restart Alert","Booster Cookie Warning","No Bits Available Warning","Kick Cooldown Timer","Order Filled Alert","Auction Outbid Alert","Party Join Sound","Vanquisher Party Share","Quiver Warning"), extrasCol)
         take(visitorsCol, setOf("Visitor Timer","Visitor Arrival Alert","Visitor Shopping List","Visitor Menu Info","Visitor Rare Reward Warning","Visitor Stats","Help Carrolyn","Pest Spawn Title","Pest Finder","Pest Timer HUD"), farmCol)
