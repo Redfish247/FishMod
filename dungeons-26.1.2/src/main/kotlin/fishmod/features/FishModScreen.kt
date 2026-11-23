@@ -1103,7 +1103,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Name Color",
+            val f = Feature("Custom Name Color",
                 { NickState.isActive() },
                 { v -> if (!v) NickState.reset() else NickState.applyFromSettings() })
             val name = LimitedInputSetting("Custom Name", "", 18,
@@ -1129,6 +1129,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { FishSettings.nickColorEnd },
                 { v -> FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings() },
                 ColorDefaults.of(FishSettings::class.java, "nickColorEnd")))
+            // scrolls the gradient colours over time (local render only, not chat history)
+            f.sub.add(ToggleSetting("Animate Colors", "Cycle the gradient colors over time instead of keeping them still", "nickColorAnimated"))
             f.sub.add(SubcategoryHeader("Modes"))
             f.sub.add(SubcategoryHeader("SOLID: 1 color"))
             f.sub.add(SubcategoryHeader("GRADIENT: start → end"))
@@ -2394,7 +2396,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
         order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Tracker")
         order(visuals, "No Fog", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
-        order(cosmetics, "Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
+        order(cosmetics, "Custom Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
         columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin and Legion Hud", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
         columns.firstOrNull { it.name == "Diana" }?.let { order(it, "Burrow Guessing", "Rare Mobs", "Diana Warp", "Diana Tracker", "Mythos Mob HP", "Diana Announcers", "Diana Party Commands") }
         fun groupBy(c: Column, vararg groups: Pair<String, List<String>>) {
@@ -4835,7 +4837,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Crystal Respawn" -> "Crystal spawn countdown + reminder"
                 "Section Count" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
-                "Name Color" -> "Recolor your username gradient"
+                "Custom Name Color" -> "Recolor your username gradient, optionally animated"
                 "Nametag" -> "Show your own above-head nametag"
                 "Player Size" -> "Resize your model (render only)"
                 "Party Commands" -> "Dot-commands usable in party chat"
