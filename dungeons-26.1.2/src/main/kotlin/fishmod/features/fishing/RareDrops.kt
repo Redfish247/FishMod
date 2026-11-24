@@ -56,6 +56,11 @@ object RareDrops {
     @JvmStatic fun alertKey(d: RareDrop): String =
         (ITEMS + BOOKS + DYES).firstOrNull { d.itemId != null && it.id == d.itemId }?.name ?: d.itemName
 
+    private val ALERT_SET = ALERT_NAMES.toSet()
+
+    /** True only for drops in the menu's fishing list; any other rare drop (dungeons, mobs, etc.) is ignored. */
+    @JvmStatic fun isFishingDrop(d: RareDrop): Boolean = alertKey(d) in ALERT_SET
+
     private const val RARE = "RARE DROP! "
     private const val PET = "PET DROP! "
 

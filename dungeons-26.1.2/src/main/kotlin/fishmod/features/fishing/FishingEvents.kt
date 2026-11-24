@@ -54,6 +54,10 @@ object FishingEvents {
             return
         }
         val drop = RareDrops.parse(plain, ownName ?: Fishing.ownName())
+        if (drop != null && !RareDrops.isFishingDrop(drop)) {
+            debug("Ignored non-fishing rare drop ${drop.itemName}")
+            return
+        }
         if (drop != null) {
             debug("Rare drop ${drop.kind} ${drop.itemName} price=${drop.price.toLong()} mf=${drop.magicFind}")
             rareDrop.invoke { it.onDrop(drop); false }
