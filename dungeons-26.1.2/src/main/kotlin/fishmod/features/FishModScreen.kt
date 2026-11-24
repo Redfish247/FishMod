@@ -159,7 +159,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.updateNoticeStyle = v }))
             general.features.add(f)
         }
-        general.features.add(Feature("FishMod Chat (/fc)", "fishChatEnabled"))
+        run {
+            val f = Feature("FishMod Chat (/fc)", "fishChatEnabled")
+            f.sub.add(ToggleSetting("Share Rare Drops", "Broadcast your rare drops to FishMod chat with a clickable gg button, and show other players' drops", "fishChatShareDrops"))
+            general.features.add(f)
+        }
         run {
             val f = Feature("Rare Drop Animation", "rareDropAnim")
             for ((cat, drops) in fishmod.features.general.RareDropAnimation.CATEGORIES) {
@@ -293,6 +297,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("  Guild Tab", "", "chatTabGuild").gatedBy { FishSettings.chatTabs })
             f.sub.add(ToggleSetting("  Officer Tab", "", "chatTabOfficer").gatedBy { FishSettings.chatTabs })
             f.sub.add(ToggleSetting("  Co-op Tab", "", "chatTabCoop").gatedBy { FishSettings.chatTabs })
+            f.sub.add(ToggleSetting("  FishMod Tab", "Shows FishMod chat (/fc) messages; typing in this tab sends to /fc", "chatTabFishMod").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Tab Background", "", FishSettings::class.java, "chatTabsBgColor").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Tab Hover", "", FishSettings::class.java, "chatTabsHoverColor").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Selected Tab", "", FishSettings::class.java, "chatTabsSelectedColor").gatedBy { FishSettings.chatTabs })
