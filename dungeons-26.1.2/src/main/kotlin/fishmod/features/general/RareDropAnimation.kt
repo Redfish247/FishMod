@@ -75,12 +75,14 @@ object RareDropAnimation {
         val noMf = raw.replace(MF, "").trim()
         val name = BOOK.matchEntire(noMf)?.groupValues?.get(1)
             ?: if (COUNT.containsMatchIn(noMf)) noMf.replace(COUNT, "").removeSuffix(")").trim() else noMf
-        return name.takeIf { it.isNotEmpty() }
+        return name.trim().let { if (it.length > 2 && it.startsWith("(") && it.endsWith(")") && it.indexOf('(', 1) < 0) it.substring(1, it.length - 1).trim() else it }
+            .takeIf { it.isNotEmpty() }
     }
 
     private fun onChat(plain: String) {
         val name = dropName(plain, Minecraft.getInstance().user.name) ?: return
-        val listed = BY_NORM[norm(name)] ?: return
+        val listed = BY_NORM[norm(name)]
+        if (listed == null) { fishmod.utils.debug.FishTrace.log("raredrop") { "no animation: '$name' not in list (line: $plain)" }; return }
         if (listed.none { isOn(it) }) return
         play(name, plain.startsWith("PET DROP!"))
     }
