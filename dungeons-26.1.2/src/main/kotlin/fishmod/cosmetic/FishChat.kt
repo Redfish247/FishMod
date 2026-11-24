@@ -49,9 +49,30 @@ object FishChat {
 
     private fun note(s: String) = FishUtil.addChatMessage(Component.literal("§7[FishChat] $s"))
 
+    // Only the really rare stuff gets shared: scrolls, Necron's Handle, M6/M7 master stars, top-tier slayer drops, all dyes.
+    private val SHARE_EXACT = setOf(
+        "necron's handle", "fourth master star", "fifth master star",
+        // Revenant T5, Tarantula T4, Sven T4, Voidgloom T4, Inferno T4
+        "scythe blade", "shard of the shredded", "warden heart",
+        "digested mosquito", "fly swatter", "overflux capacitor",
+        "judgement core", "etherwarp merger", "pocket black hole",
+        // Fishing (Lord Jawbus / Thunder) and a few other big ones
+        "radioactive vial", "burnt texts", "titanoboa shed", "tiki mask", "divan alloy", "shimmering wool", "tier boost core", "ender dragon", "quick claw", "dark claymore",
+        "kelvin inverter", "scorpion foil", "hellion shard", "blaze rod distillate", "glowstone gauntlet",
+    )
+
+    /** True for drops worth broadcasting. [item] is the name from RareDropAnimation.dropName. */
+    private fun isVeryRare(item: String): Boolean {
+        val n = item.trim().lowercase()
+        // every tier-7 enchant book (Smite VII, Sharpness VII ...) except serums
+        if (!n.contains("serum") && n.endsWith(" vii")) return true
+        return n in SHARE_EXACT || n.endsWith(" dye") || n.endsWith(" scroll") || n.endsWith("locket") || n.startsWith("scatha") || n.contains("fatal tempo") || n.contains("fetal tempo") || n.contains("master star")
+    }
+
     private fun shareDrop(plain: String) {
         val own = Minecraft.getInstance().user.name
         val item = fishmod.features.general.RareDropAnimation.dropName(plain, own)?.take(48) ?: return
+        if (!isVeryRare(item)) return
         val now = System.currentTimeMillis()
         if (item == lastDropItem && now - lastDropAt < 10_000) return
         lastDropItem = item; lastDropAt = now
@@ -61,6 +82,23 @@ object FishChat {
             addProperty("item", item)
         }
         CosmeticLive.sendText(json.toString())
+    }
+
+    /** Dev test (/fmdev fcdrop): runs a fake drop line through the real parse + send path, bypassing the 10s dedup. */
+    fun testDrop(line: String) {
+        val own = Minecraft.getInstance().user.name
+        val item = fishmod.features.general.RareDropAnimation.dropName(line, own)?.take(48)
+        if (item == null) { note("Dev: line did not parse as a drop: $line"); return }
+        if (!isVeryRare(item)) { note("Dev: '$item' parsed but is NOT on the very-rare list, real drop would not send."); return }
+        if (!FishSettings.fishChatEnabled || !FishSettings.fishChatShareDrops) note("Dev: FishChat or share-drops setting is OFF, real drops would not send.")
+        lastDropItem = ""; lastDropAt = 0L
+        val json = JsonObject().apply {
+            addProperty("t", "drop")
+            addProperty("name", own)
+            addProperty("item", item)
+        }
+        val ok = CosmeticLive.sendText(json.toString())
+        note("Dev: parsed '$item', send ${if (ok) "OK" else "FAILED (not connected)"}")
     }
 
     /** A {t:drop} frame: big highlighted line with a clickable gg that sends a gold "gg" through /fc. */
@@ -135,9 +173,10 @@ object FishChat {
             }
             var msg = Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
             if (fromDiscord) msg = msg.append(Component.literal("(Discord) ").withStyle(ChatFormatting.LIGHT_PURPLE))
-            if (fromBridge) msg = msg.append(Component.literal("(Bridge) ").withStyle(ChatFormatting.LIGHT_PURPLE))
-            msg = msg.append(Component.literal("$name: ").withStyle(ChatFormatting.GOLD))
-                .append(if (clean.trim().equals("gg", true)) Component.literal(clean).withStyle(ChatFormatting.GOLD) else linkify(clean))
+            // Bridge bot lines read "[FC] (Bridge): message" (no FishBridge name).
+            if (fromBridge) msg = msg.append(Component.literal("(Bridge): ").withStyle(ChatFormatting.LIGHT_PURPLE))
+            else msg = msg.append(Component.literal("$name: ").withStyle(ChatFormatting.GOLD))
+            msg = msg.append(if (clean.trim().equals("gg", true)) Component.literal(clean).withStyle(ChatFormatting.GOLD) else linkify(clean))
             FishUtil.addChatMessage(msg)
         }
     }
