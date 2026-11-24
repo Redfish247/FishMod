@@ -235,7 +235,18 @@ object SlayerHuds {
                     FishDiag.fail("SlayerHuds.9", "slayer profit inventory render failed", e)
                 }
             }
+            net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseScroll(screen).register(
+                net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.AllowMouseScroll { _, mx, my, _, v ->
+                    !profitScrollAt(mx, my, v)
+                })
         }
+    }
+
+    private fun profitScrollAt(mx: Double, my: Double, v: Double): Boolean {
+        if (!FishSettings.slayerProfitEnabled || System.currentTimeMillis() - profitFrameMs > 500) return false
+        if (profitRowTop.isEmpty() || mx < profitLeft || mx > profitRight || my < profitRowTop.first() || my > profitRowBot.last()) return false
+        SlayerProfitTracker.scrollBy(if (v > 0) -1 else 1)
+        return true
     }
 
     private fun renderProfitInner(ctx: GuiGraphicsExtractor, inInv: Boolean): Boolean {
@@ -251,7 +262,7 @@ object SlayerHuds {
 
         val interactive = mc.curScreen is net.minecraft.client.gui.screens.ChatScreen
         val rows = SlayerProfitTracker.display(type, tier, interactive)
-        val lh = FishConstants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT
         val panelW = profitWidth(rows)
 
         val x = FishSettings.slayerProfitHudX
@@ -290,11 +301,11 @@ object SlayerHuds {
         return panelW
     }
 
-    private fun profitHeight(rows: List<SlayerProfitTracker.DisplayRow>) = HudPreview.textHeight(rows.size, FishConstants.TEXT_HEIGHT + 2)
+    private fun profitHeight(rows: List<SlayerProfitTracker.DisplayRow>) = HudPreview.textHeight(rows.size, FishConstants.TEXT_HEIGHT)
 
     private fun drawProfit(ctx: GuiGraphicsExtractor, rows: List<SlayerProfitTracker.DisplayRow>) {
         val f = Minecraft.getInstance().font
-        val lh = FishConstants.TEXT_HEIGHT + 2
+        val lh = FishConstants.TEXT_HEIGHT
         val colX = profitColX(rows)
         for (i in rows.indices) {
             val r = rows[i]

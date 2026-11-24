@@ -376,6 +376,8 @@ object SlayerProfitTracker {
     private fun sh(v: Double): String = SlayerStatsTracker.short(v)
     private fun sep(v: Long): String = String.format("%,d", v)
 
+    private var scroll = 0
+    fun scrollBy(d: Int) { scroll = (scroll + d).coerceAtLeast(0); displayCacheAt = 0L }
     private var displayCache: List<DisplayRow>? = null
     private var displayCacheKey: String? = null
     private var displayCacheAt = 0L
@@ -423,18 +425,26 @@ object SlayerProfitTracker {
         val minVal = FishSettings.slayerProfitMinValue.coerceAtLeast(0).toDouble()
         val revealHidden = interactive || FishSettings.slayerProfitShowHidden
 
-        var visibleShown = 0
+        // rows under the min value collapse into one line; the rest scroll (same behaviour as the other profit trackers)
         var collapsedValue = 0.0
         var collapsedCount = 0
+        val shownRows = ArrayList<Row>()
         for (r in allRows) {
             val hiddenRow = isHid(r.name)
             if (hiddenRow && !revealHidden) continue
-            if (!hiddenRow && (visibleShown >= cap || (minVal > 0 && r.value < minVal && !r.coins))) {
+            if (!hiddenRow && minVal > 0 && r.value < minVal && !r.coins) {
                 collapsedValue += r.value
                 collapsedCount++
                 continue
             }
-            if (!hiddenRow) visibleShown++
+            shownRows.add(r)
+        }
+        val live = !example
+        val maxScroll = (shownRows.size - cap).coerceAtLeast(0)
+        val from = if (live) scroll.coerceIn(0, maxScroll).also { scroll = it } else 0
+        if (from > 0) out.add(DisplayRow("§8  ▲ $from more", "", "up"))
+        for (r in shownRows.drop(from).take(cap)) {
+            val hiddenRow = isHid(r.name)
             val label = when {
                 hiddenRow -> "§7| §8§m${r.name} ${sep(r.count)}"
                 r.coins -> "§7| §6Mob Kill Coins"
@@ -447,6 +457,8 @@ object SlayerProfitTracker {
             }
             out.add(DisplayRow(label, value, if (r.coins) "coins" else "item:${r.name}"))
         }
+        val below = shownRows.size - from - cap
+        if (below > 0) out.add(DisplayRow("§8  ▼ $below more §7(scroll in inventory)", "", "down"))
         if (collapsedCount > 0) {
             val noun = if (collapsedCount == 1) "item" else "items"
             out.add(DisplayRow("§7| §8$collapsedCount more $noun", "§6${sh(collapsedValue)}", "collapsed"))
