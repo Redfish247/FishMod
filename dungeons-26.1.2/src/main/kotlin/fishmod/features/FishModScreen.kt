@@ -5078,6 +5078,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Coloured Class Level In Tab" -> "Class levels coloured in the tab list"
                 "Kismet Count On Reroll" -> "Shows your Kismet Feather count when rerolling"
                 "Miniboss Highlight" -> "Outlines slayer minibosses"
+                "Boss Box" -> "Box on your slayer boss through walls, plus where it spawns"
                 "Items On Ground Names" -> "Name and count above dropped items"
                 "Dungeon Milestone HUD" -> "Your current dungeon milestone"
                 "RNG Meter HUD" -> "Your slayer RNG meter progress"

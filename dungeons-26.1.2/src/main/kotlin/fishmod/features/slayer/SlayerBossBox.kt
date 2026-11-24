@@ -15,37 +15,29 @@ object SlayerBossBox {
     private var spawnBoundMs = 0L
     private var lastBoss: Int = -1
     private const val SPAWN_MARK_MS = 8000L
-    private const val PRE_SPAWN_MS = 8000L
-    private var prevState: SlayerManager.State = SlayerManager.State.NONE
     private var preSpawnPos: Vec3? = null
-    private var preSpawnAt = 0L
+    private var preSpawnScanAt = 0L
 
     fun init() {
         RenderHooks.GIZMO.register { _ ->
             try { render() } catch (t: Throwable) { FishDiag.fail("SlayerBossBox.1", "boss box render failed", t) }
         }
-        FishEvents.worldChange.register { spawnPos = null; lastBoss = -1; preSpawnPos = null; prevState = SlayerManager.State.NONE; false }
+        FishEvents.worldChange.register { spawnPos = null; lastBoss = -1; preSpawnPos = null; false }
     }
 
     private fun render() {
         if (!S.slayerBossBox) return
         val boss = SlayerManager.bossEntity
         val st = SlayerManager.state
-        if (st != prevState) {
-            // Boss spawns on the player when the quest bar fills, so the player spot at that moment is the pre-spawn spot.
-            if (st == SlayerManager.State.BOSS_SPAWNED && prevState == SlayerManager.State.GRINDING) {
-                preSpawnPos = net.minecraft.client.Minecraft.getInstance().player?.position()
-                preSpawnAt = System.currentTimeMillis()
-            }
-            prevState = st
-        }
         if (boss == null || !boss.isAlive || boss.isRemoved) {
             spawnPos = null; lastBoss = -1
-            val pp = preSpawnPos
-            if (pp != null && S.slayerBossBoxSpawnMark && st == SlayerManager.State.BOSS_SPAWNED && System.currentTimeMillis() - preSpawnAt < PRE_SPAWN_MS) {
-                val c = S.slayerBossBoxColor
-                FishDraw.gizmoBox(AABB(pp.x - 0.6, pp.y, pp.z - 0.6, pp.x + 0.6, pp.y + 2.2, pp.z + 0.6), (0x20 shl 24) or (c and 0xFFFFFF), c or 0xFF000000.toInt(), true)
-            } else if (pp != null) preSpawnPos = null
+            if (!S.slayerBossBoxSpawnMark || st != SlayerManager.State.BOSS_SPAWNED) { preSpawnPos = null; return }
+            // Mark the boss nametag (where the boss is spawning), not the player's own position.
+            val now = System.currentTimeMillis()
+            if (now - preSpawnScanAt >= 250L) { preSpawnScanAt = now; preSpawnPos = findBossTag() ?: preSpawnPos }
+            val pp = preSpawnPos ?: return
+            val c = S.slayerBossBoxColor
+            FishDraw.gizmoBox(AABB(pp.x - 0.6, pp.y - 2.2, pp.z - 0.6, pp.x + 0.6, pp.y, pp.z + 0.6), (0x20 shl 24) or (c and 0xFFFFFF), c or 0xFF000000.toInt(), true)
             return
         }
         preSpawnPos = null
@@ -64,5 +56,23 @@ object SlayerBossBox {
             val box = AABB(sp.x - w / 2, sp.y, sp.z - w / 2, sp.x + w / 2, sp.y + boss.bbHeight.toDouble().coerceAtLeast(1.0), sp.z + w / 2)
             FishDraw.gizmoBox(box, (0x20 shl 24) or (c and 0xFFFFFF), 0xFFFFFFFF.toInt(), true)
         }
+    }
+
+    // Boss nametag stand (skull mark + boss name) nearest the player, before the mob itself is bound.
+    private fun findBossTag(): Vec3? {
+        val type = SlayerManager.type ?: return null
+        val mc = net.minecraft.client.Minecraft.getInstance()
+        val level = mc.level ?: return null
+        val me = mc.player ?: return null
+        var best: Vec3? = null
+        var bestD = 48.0 * 48.0
+        for (e in level.entitiesForRendering()) {
+            if (e !is net.minecraft.world.entity.decoration.ArmorStand || !e.hasCustomName()) continue
+            val n = e.customName?.string ?: continue
+            if (!n.contains("☠") || type.bossNames.none { n.contains(it) }) continue
+            val d = e.distanceToSqr(me)
+            if (d < bestD) { bestD = d; best = e.position() }
+        }
+        return best
     }
 }
