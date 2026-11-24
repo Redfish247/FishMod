@@ -153,7 +153,8 @@ object CompactTab {
         val sortedRest = ArrayList<PlayerInfo>(rest.size)
         val seg = ArrayList<PlayerInfo>()
         for (e in rest) {
-            if (blank(e) || hasBold(e.tabListDisplayName)) { sortedRest.addAll(sortSeg(seg)); seg.clear(); sortedRest.add(e) } else seg.add(e)
+            // Only bold rows without a [level] are section headers; a bold player line (Rift) must not split the sort
+            if (blank(e) || (hasBold(e.tabListDisplayName) && level(e) == 0)) { sortedRest.addAll(sortSeg(seg)); seg.clear(); sortedRest.add(e) } else seg.add(e)
         }
         sortedRest.addAll(sortSeg(seg))
         val out = ArrayList<PlayerInfo>(entries.size)
@@ -233,7 +234,7 @@ object CompactTab {
             val x0 = (screenW - w) / 2
             val y0 = 4
             roundRect(ctx, x0, y0, x0 + w, y0 + tabH, bgPanel())
-            drawColumns(ctx, tr, columns, colWidths, x0 + pad, y0 + topPad, rows, gap, lh, mdl.playersFirst, mdl.decorated)
+            drawColumns(ctx, tr, columns, colWidths, x0 + pad, y0 + topPad, rows, gap, lh, mdl.playersIdx, mdl.decorated)
             if (footer != null) ctx.centeredText(tr, footer, x0 + w / 2, y0 + tabH - footH + 2, GOLD)
             return
         }
@@ -254,7 +255,7 @@ object CompactTab {
             val statX0 = if (pos == "LEFT") x0 else x0 + tabW + boxGap
 
             roundRect(ctx, tabX0, y0, tabX0 + tabW, y0 + tabH, bgPanel())
-            drawColumns(ctx, tr, columns, colWidths, tabX0 + pad, y0 + topPad, rows, gap, lh, mdl.playersFirst, mdl.decorated)
+            drawColumns(ctx, tr, columns, colWidths, tabX0 + pad, y0 + topPad, rows, gap, lh, mdl.playersIdx, mdl.decorated)
             if (footer != null) ctx.centeredText(tr, footer, tabX0 + tabW / 2, y0 + tabH - footH + 2, GOLD)
 
             roundRect(ctx, statX0, y0, statX0 + statW, y0 + statH, bgPanel())
@@ -278,7 +279,7 @@ object CompactTab {
             val statY0 = if (bottom) tabY0 + tabH + gapTB else y0
 
             roundRect(ctx, x0, tabY0, x0 + w, tabY0 + tabH, bgPanel())
-            drawColumns(ctx, tr, columns, colWidths, x0 + pad, tabY0 + topPad, rows, gap, lh, mdl.playersFirst, mdl.decorated)
+            drawColumns(ctx, tr, columns, colWidths, x0 + pad, tabY0 + topPad, rows, gap, lh, mdl.playersIdx, mdl.decorated)
             if (footer != null) ctx.centeredText(tr, footer, x0 + w / 2, tabY0 + tabH - footH + 2, GOLD)
 
             roundRect(ctx, x0, statY0, x0 + w, statY0 + statBarH, bgPanel())
@@ -300,7 +301,7 @@ object CompactTab {
         val server: String,
         val footer: String,
         val stats: FooterStats,
-        val playersFirst: Boolean,
+        val playersIdx: Int,
         val decorated: MutableMap<PlayerInfo, net.minecraft.network.chat.Component> = java.util.IdentityHashMap(),
     )
 
@@ -341,7 +342,11 @@ object CompactTab {
         val colWidths = ArrayList<Int>()
         var rows = 0
         var first = true
-        var playersFirst = false
+        var playersIdx = -1
+        // Find the Players list by its header; in the Rift it is not always the first column
+        val playersGroup = grouped.values.firstOrNull { col ->
+            col.firstOrNull { !blank(it) }?.let { BLANK_COLOR.matcher(it.tabListDisplayName?.string ?: "").replaceAll("").trimStart().startsWith("Players") } == true
+        }
         for (col in grouped.values) {
             var last = -1
             var nonBlank = 0
@@ -353,8 +358,8 @@ object CompactTab {
                 first = false
                 continue
             }
-            val playersCol = first
-            if (playersCol) playersFirst = true
+            val playersCol = if (playersGroup != null) col === playersGroup else first
+            if (playersCol) playersIdx = columns.size
             first = false
             val trimmed = if (playersCol) sortPlayersColumn(col.subList(0, last + 1))
                           else ArrayList(col.subList(0, last + 1))
@@ -372,20 +377,20 @@ object CompactTab {
         if (columns.isEmpty()) return null
         rows = min(rows, 22)
 
-        return Model(columns, colWidths, rows, findServer(mc, tabFooter, tabHeader), footerLine(tabFooter), parseStats(tabFooter), playersFirst)
+        return Model(columns, colWidths, rows, findServer(mc, tabFooter, tabHeader), footerLine(tabFooter), parseStats(tabFooter), playersIdx)
     }
 
     private fun drawColumns(
         ctx: GuiGraphicsExtractor, tr: Font,
         columns: List<List<PlayerInfo>>, colWidths: List<Int>,
-        startX: Int, cy: Int, rows: Int, gap: Int, lh: Int, playersFirst: Boolean,
+        startX: Int, cy: Int, rows: Int, gap: Int, lh: Int, playersIdx: Int,
         decorated: MutableMap<PlayerInfo, net.minecraft.network.chat.Component>
     ) {
         var colX = startX
         for (c in columns.indices) {
             val w = colWidths[c]
             if (c > 0) ctx.fill(colX - gap / 2, cy, colX - gap / 2 + 1, cy + rows * lh, DIVIDER)
-            val playersCol = c == 0 && playersFirst
+            val playersCol = c == playersIdx
             val entries = columns[c]
             var r = 0
             while (r < entries.size && r < rows) {
