@@ -82,7 +82,7 @@ object RareDropAnimation {
     private fun onChat(plain: String) {
         val name = dropName(plain, Minecraft.getInstance().user.name) ?: return
         val listed = BY_NORM[norm(name)]
-        if (listed == null) { fishmod.utils.debug.FishTrace.log("raredrop") { "no animation: '$name' not in list (line: $plain)" }; return }
+        if (listed == null) { fishmod.utils.debug.FishTrace.log("fishing") { "no animation: '$name' not in list (line: $plain)" }; return }
         if (listed.none { isOn(it) }) return
         play(name, plain.startsWith("PET DROP!"))
     }

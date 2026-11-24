@@ -1,5 +1,6 @@
 package fishmod.features.mining
 
+import fishmod.compat.hudHidden
 import fishmod.features.FishHudEditor
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
