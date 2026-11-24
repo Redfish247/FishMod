@@ -30,7 +30,6 @@ object EndTrackers {
             { S.protectorHudX }, { S.protectorHudX = it }, { S.protectorHudY }, { S.protectorHudY = it }, { S.protectorHudScale }, { S.protectorHudScale = it },
             { S.protectorHud && protectorLines().isNotEmpty() }, { S.protectorHud },
             example = { listOf("§5Stage\t§eRising Tier 2/5", "§5Kills Left\t§a149") }, lines = { protectorLines() })
-        EndNodeFinder.init()
     }
 
     private fun readRow() {

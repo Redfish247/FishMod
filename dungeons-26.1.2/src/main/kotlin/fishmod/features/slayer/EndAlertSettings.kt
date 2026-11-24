@@ -20,8 +20,6 @@ object EndAlertSettings {
     @ConfigValue @JvmField var protectorHudX: Int = 5
     @ConfigValue @JvmField var protectorHudY: Int = 90
     @ConfigValue @JvmField var protectorHudScale: Double = 1.0
-    @ConfigValue @JvmField var endNodeFinder: Boolean = false
-    @ConfigValue @JvmField var endNodeFinderColor: Int = 0xFFAA00FF.toInt()
     @ConfigValue @JvmField var bossHud: Boolean = false
     @ConfigValue @JvmField var bossHudX: Int = 5
     @ConfigValue @JvmField var bossHudY: Int = 60
