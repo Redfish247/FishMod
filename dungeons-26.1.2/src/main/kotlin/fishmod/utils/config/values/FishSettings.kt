@@ -66,6 +66,7 @@ object FishSettings {
     @ConfigValue @JvmField var updateNoticeStyle: String = "Chat Message"
     @ConfigValue @JvmField var dashboardMessagesEnabled: Boolean = true
     @ConfigValue @JvmField var fishChatEnabled: Boolean = true
+    @ConfigValue @JvmField var profanityFilter: Boolean = true
     @ConfigValue @JvmField var rareDropAnim: Boolean = false
     @ConfigValue @JvmField var rareDropAnimOff: String = ""
     @ConfigValue @JvmField var fishChatNoticeShown: Boolean = false

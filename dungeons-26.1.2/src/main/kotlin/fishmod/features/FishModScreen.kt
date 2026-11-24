@@ -162,6 +162,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         general.features.add(Feature("FishMod Chat (/fc)", "fishChatEnabled"))
+        general.features.add(Feature("Profanity Filter", "profanityFilter"))
         run {
             val f = Feature("Rare Drop Animation", "rareDropAnim")
             for ((cat, drops) in fishmod.features.general.RareDropAnimation.CATEGORIES) {
