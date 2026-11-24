@@ -164,6 +164,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         general.features.add(Feature("FishMod Chat (/fc)", "fishChatEnabled"))
         run {
             val f = Feature("Rare Drop Animation", "rareDropAnim")
+            f.sub.add(ToggleSetting("Show Title", "Also show a title with the dropped item's name", "rareDropAnimTitle"))
             for ((cat, drops) in fishmod.features.general.RareDropAnimation.CATEGORIES) {
                 f.sub.add(SubcategoryHeader(cat, true))
                 for (n in drops)
