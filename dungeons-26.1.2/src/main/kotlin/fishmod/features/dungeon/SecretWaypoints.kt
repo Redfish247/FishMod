@@ -64,7 +64,7 @@ object SecretWaypoints {
 
     @JvmStatic
     fun init() {
-        fishmod.utils.events.FishEvents.worldChange.register { collected.clear(); entries = emptyList() }
+        fishmod.utils.events.FishEvents.worldChange.register { collected.clear(); entries = emptyList(); false }
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
             try { onTick(mc) } catch (e: Exception) { FishDiag.fail("SecretWaypoints.1", "secret waypoint rebuild failed", e) }
         })
