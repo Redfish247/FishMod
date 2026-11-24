@@ -42,7 +42,7 @@ When you're done:
 - Do NOT write BUGFIX_REPORT.md. The report goes in the "Run notes" part of today's CHANGELOG.txt entry (see Changelog below).
 
 Roadmap board (fishmod.dev):
-- After the fixes are committed, update the board. List cards with `GET https://fishmod.dev/dashboard/api/roadmap`, then for every card matching a bug you fixed, `POST https://fishmod.dev/dashboard/api/roadmap-status` with body `{"updates":[{"id":"<card id>","status":"testing"}]}` and header `Authorization: Bearer $env:ROADMAP_SECRET`.
+- After the fixes are committed, update the board. List cards with `GET https://fishmod.dev/dashboard/api/roadmap`, then for every card matching a bug you fixed, `POST https://fishmod.dev/dashboard/api/roadmap-status` with body `{"updates":[{"id":<card id as a JSON integer, NOT a string>,"status":"testing"}]}` and header `Authorization: Bearer $env:ROADMAP_SECRET`.
 - Move cards to `testing` ONLY. NEVER `done` (only Eli sets Done). Do not touch the tester board (board.fishmod.dev, C:\FishMod\worker-board). If ROADMAP_SECRET is unset or the API fails, skip and say so in the Run notes. Never print the secret.
 
 Changelog:
