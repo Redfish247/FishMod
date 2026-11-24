@@ -66,6 +66,8 @@ object FishSettings {
     @ConfigValue @JvmField var updateNoticeStyle: String = "Chat Message"
     @ConfigValue @JvmField var dashboardMessagesEnabled: Boolean = true
     @ConfigValue @JvmField var fishChatEnabled: Boolean = true
+    @ConfigValue @JvmField var rareDropAnim: Boolean = false
+    @ConfigValue @JvmField var rareDropAnimOff: String = ""
     @ConfigValue @JvmField var fishChatNoticeShown: Boolean = false
     @ConfigValue @JvmField var fishChatDiscordNoticeShown: Boolean = false
     @ConfigValue @JvmField var boardReports: Boolean = true
@@ -638,6 +640,12 @@ object FishSettings {
     @ConfigValue @JvmField var lavaToWaterHideFog: Boolean = true
 
     @ConfigValue @JvmField var noFogEnabled: Boolean = false
+    @ConfigValue @JvmField var classicItemsEnabled: Boolean = false
+    @ConfigValue @JvmField var classicItemModels: Boolean = true
+    @ConfigValue @JvmField var classicItemHeads: Boolean = true
+    @ConfigValue @JvmField var classicTooltips: Boolean = true
+    @ConfigValue @JvmField var classicLocalPack: Boolean = true
+    @ConfigValue @JvmField var classicOgColors: Boolean = false
     @ConfigValue @JvmField var customWaterEnabled: Boolean = false
     @ConfigValue @JvmField var customWaterColor: Int = 0xFF3F76E4.toInt()
     @ConfigValue @JvmField var forceOthersSizeEnabled: Boolean = false
