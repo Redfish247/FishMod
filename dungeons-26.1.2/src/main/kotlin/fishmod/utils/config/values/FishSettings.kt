@@ -1032,6 +1032,23 @@ object FishSettings {
     @ConfigValue @JvmField var routeColorItem: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var routeColorBat: Int = 0xFFFF55FF.toInt()
 
+    @ConfigValue @JvmField var secretWaypointsEnabled: Boolean = false
+    @ConfigValue @JvmField var secretWpChest: Boolean = true
+    @ConfigValue @JvmField var secretWpItem: Boolean = true
+    @ConfigValue @JvmField var secretWpBat: Boolean = true
+    @ConfigValue @JvmField var secretWpEssence: Boolean = true
+    @ConfigValue @JvmField var secretWpRedstoneKey: Boolean = true
+    @ConfigValue @JvmField var secretWpColorChest: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var secretWpColorItem: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var secretWpColorBat: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var secretWpColorEssence: Int = 0xFFAA55FF.toInt()
+    @ConfigValue @JvmField var secretWpColorRedstoneKey: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var secretWpLabels: Boolean = true
+    @ConfigValue @JvmField var secretWpHideCleared: Boolean = true
+    @ConfigValue @JvmField var secretWpStyle: String = "Filled Outline"
+    @ConfigValue @JvmField var secretWpLineWidth: Double = 3.0
+    @ConfigValue @JvmField var secretWpMaxDistance: Int = 0
+
     @ConfigValue @JvmField var secretClickedEnabled: Boolean = false
     @ConfigValue @JvmField var secretClickedBoxes: Boolean = true
     @ConfigValue @JvmField var secretClickedBats: Boolean = true

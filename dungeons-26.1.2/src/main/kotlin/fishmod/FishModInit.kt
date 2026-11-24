@@ -525,6 +525,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.80", "fishmod.features.hud.PerformanceHud.init() failed") { fishmod.features.hud.PerformanceHud.init() }
         FishDiag.guard("FishModInit.80s", "fishmod.features.hud.SpotifyLyricsHud.init() failed") { fishmod.features.hud.SpotifyLyricsHud.init() }
         FishDiag.guard("FishModInit.81", "fishmod.features.dungeon.InvincibilityTracker.init() failed") { fishmod.features.dungeon.InvincibilityTracker.init() }
+        FishDiag.guard("FishModInit.82b", "fishmod.features.dungeon.SecretWaypoints.init() failed") { fishmod.features.dungeon.SecretWaypoints.init() }
         FishDiag.guard("FishModInit.82", "fishmod.features.dungeon.SecretClicked.init() failed") { fishmod.features.dungeon.SecretClicked.init() }
         FishDiag.guard("FishModInit.83", "fishmod.features.dungeon.RouteRecorder.init() failed") { fishmod.features.dungeon.RouteRecorder.init() }
         FishDiag.guard("FishModInit.84", "fishmod.features.dungeon.floor7.terminal.TerminalSolver.init() failed") { fishmod.features.dungeon.floor7.terminal.TerminalSolver.init() }

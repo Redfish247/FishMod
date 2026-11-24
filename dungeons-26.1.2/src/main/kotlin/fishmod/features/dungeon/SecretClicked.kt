@@ -216,6 +216,7 @@ object SecretClicked {
     }
 
     private fun markClicked(pos: BlockPos) {
+        SecretWaypoints.markCollected(pos)
         chime()
         if (!FishSettings.secretClickedBoxes || clicked.any { it.blockPos == pos }) return
         val box = AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0).move(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())
