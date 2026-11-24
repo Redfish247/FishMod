@@ -27,6 +27,21 @@ object MiningMenu {
         nuc.sub.add(ColorPickerSetting("Sapphire", "", S::class.java, "miningNucleusSapphire"))
         col.features.add(nuc)
 
+        val hwp = Feature("Crystal Hollows Waypoints", S::class.java, "hollowsWaypoints")
+        hwp.sub.add(SubcategoryHeader("Structures are learned as you walk into them (Hollows layouts are random per lobby)"))
+        hwp.sub.add(ToggleSetting("Structures", "Precursor City, Mines of Divan, Khazad-dum, Jungle Temple, Goblin Queen's Den, Dragon's Lair, Nucleus", S::class.java, "hollowsWpStructures"))
+        hwp.sub.add(ToggleSetting("Fairy Grotto", "", S::class.java, "hollowsWpFairy"))
+        hwp.sub.add(ToggleSetting("Zone Labels", "Jungle, Mithril Deposits, Goblin Holdout, Precursor Remnants labels in the world", S::class.java, "hollowsWpZones"))
+        hwp.sub.add(ToggleSetting("Show Distance", "", S::class.java, "hollowsWpDistance"))
+        hwp.sub.add(SliderIntSetting("Label Size %", "", S::class.java, "hollowsWpScale", 50, 250, 10))
+        col.features.add(hwp)
+
+        val hmap = Feature("Crystal Hollows Map", S::class.java, "hollowsMap")
+        hmap.sub.add(SubcategoryHeader("Minimap HUD of the whole Hollows (drag with Edit HUD)"))
+        hmap.sub.add(ToggleSetting("Show Zones", "Tint the four regional zones", S::class.java, "hollowsMapZones"))
+        hmap.sub.add(SliderIntSetting("Background Opacity %", "", S::class.java, "hollowsMapOpacity", 0, 100, 5))
+        col.features.add(hmap)
+
         val pity = Feature("Mineshaft Pity Display", S::class.java, "miningPity")
         pity.sub.add(SliderIntSetting("Grace After Shaft (s)", "Don't count blocks this long after entering a shaft", S::class.java, "miningPityGraceSec", 0, 120, 5))
         pity.sub.add(ToggleSetting("Show Chance", "", S::class.java, "miningPityShowChance"))
@@ -135,7 +150,9 @@ object MiningMenu {
     }
 
     fun describe(name: String): String? = when (name) {
-        "Crystal Nucleus Highlights" -> "Boxes where each crystal is placed in the Nucleus"
+        "Crystal Hollows Waypoints" -> "Waypoints for key Hollows structures and zone labels"
+        "Crystal Hollows Map" -> "Minimap HUD of the Hollows zones and structures"
+        "Crystal Nucleus Highlights" ->"Boxes where each crystal is placed in the Nucleus"
         "Mineshaft Pity Display" -> "Pity counter HUD in the Glacite Tunnels"
         "Commission Gemstone Lines" -> "Lines to gemstones your commissions want"
         "Fossil Excavator Solver" -> "Highlights the best slot to excavate"
