@@ -15,18 +15,40 @@ object SlayerBossBox {
     private var spawnBoundMs = 0L
     private var lastBoss: Int = -1
     private const val SPAWN_MARK_MS = 8000L
+    private const val PRE_SPAWN_MS = 8000L
+    private var prevState: SlayerManager.State = SlayerManager.State.NONE
+    private var preSpawnPos: Vec3? = null
+    private var preSpawnAt = 0L
 
     fun init() {
         RenderHooks.GIZMO.register { _ ->
             try { render() } catch (t: Throwable) { FishDiag.fail("SlayerBossBox.1", "boss box render failed", t) }
         }
-        FishEvents.worldChange.register { spawnPos = null; lastBoss = -1; false }
+        FishEvents.worldChange.register { spawnPos = null; lastBoss = -1; preSpawnPos = null; prevState = SlayerManager.State.NONE; false }
     }
 
     private fun render() {
         if (!S.slayerBossBox) return
         val boss = SlayerManager.bossEntity
-        if (boss == null || !boss.isAlive || boss.isRemoved) { spawnPos = null; lastBoss = -1; return }
+        val st = SlayerManager.state
+        if (st != prevState) {
+            // Boss spawns on the player when the quest bar fills, so the player spot at that moment is the pre-spawn spot.
+            if (st == SlayerManager.State.BOSS_SPAWNED && prevState == SlayerManager.State.GRINDING) {
+                preSpawnPos = net.minecraft.client.Minecraft.getInstance().player?.position()
+                preSpawnAt = System.currentTimeMillis()
+            }
+            prevState = st
+        }
+        if (boss == null || !boss.isAlive || boss.isRemoved) {
+            spawnPos = null; lastBoss = -1
+            val pp = preSpawnPos
+            if (pp != null && S.slayerBossBoxSpawnMark && st == SlayerManager.State.BOSS_SPAWNED && System.currentTimeMillis() - preSpawnAt < PRE_SPAWN_MS) {
+                val c = S.slayerBossBoxColor
+                FishDraw.gizmoBox(AABB(pp.x - 0.6, pp.y, pp.z - 0.6, pp.x + 0.6, pp.y + 2.2, pp.z + 0.6), (0x20 shl 24) or (c and 0xFFFFFF), c or 0xFF000000.toInt(), true)
+            } else if (pp != null) preSpawnPos = null
+            return
+        }
+        preSpawnPos = null
         if (boss.id != lastBoss) {
             lastBoss = boss.id
             spawnPos = boss.position()

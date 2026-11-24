@@ -568,8 +568,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Corner Radius", "", "customScoreboardRadius", 0, 10))
             val sbImages = fishmod.features.dungeon.map.MapImageLoader.getImageNames().toTypedArray()
             f.sub.add(DropdownSetting("Background Image", "PNGs from the map images folder", sbImages,
-                { if (FishSettings.customScoreboardImage in sbImages) FishSettings.customScoreboardImage else fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE },
-                { v -> FishSettings.customScoreboardImage = if (v == fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) "" else v }))
+                { if (FishSettings.customScoreboardImage in fishmod.features.dungeon.map.MapImageLoader.getImageNames()) FishSettings.customScoreboardImage else fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE },
+                { v -> FishSettings.customScoreboardImage = if (v == fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) "" else v },
+                refreshValues = { fishmod.features.dungeon.map.MapImageLoader.getImageNames().toTypedArray() }))
             f.sub.add(SliderIntSetting("Image Alpha", "", "customScoreboardImageAlpha", 0, 255)
                 .gatedBy { FishSettings.customScoreboardImage.isNotEmpty() })
             f.sub.add(ButtonSetting("Open Images Folder", "") {
@@ -1600,6 +1601,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Hypixel Colors", "Brighter, accurate per-rarity colours", VisualSettings::class.java, "itemRarityHypixelColors"))
             f.sub.add(ToggleSetting("Skyblocker Colors", "Use Skyblocker's rarity palette (vanilla chat colours); overrides Hypixel Colors", VisualSettings::class.java, "rarityBgSkyblocker"))
             f.sub.add(ToggleSetting("Circular", "", VisualSettings::class.java, "rarityBgCircle"))
+            f.sub.add(ToggleSetting("Rounded Gradient", "Skyblocker-style rounded slot fade; overrides Circular", VisualSettings::class.java, "rarityBgGradient"))
             visuals.features.add(f)
         }
         run {
@@ -3926,8 +3928,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
     }
 
-    class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: () -> T, val setter: (T) -> Unit,
-                             val label: (T) -> String = { it.toString() }, val swatch: ((T) -> Int)? = null) : Setting(name, desc) {
+    class DropdownSetting<T>(name: String, desc: String, initialValues: Array<T>, val getter: () -> T, val setter: (T) -> Unit,
+                             val label: (T) -> String = { it.toString() }, val swatch: ((T) -> Int)? = null,
+                             val refreshValues: (() -> Array<T>)? = null) : Setting(name, desc) {
+        var values: Array<T> = initialValues
+            private set
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
         private var pillX = 0
@@ -3988,6 +3993,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     setter(values[(indexOfCurrent() + 1) % values.size])
                 } else {
                     expanded = !expanded
+                    if (expanded) refreshValues?.let { r -> try { val v = r(); if (v.isNotEmpty()) values = v } catch (_: Throwable) {} }
                     expandAnim.setTarget(expanded)
                 }
                 return true

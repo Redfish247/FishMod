@@ -63,6 +63,7 @@ object VisualSettings {
 
     @ConfigValue @JvmField var rarityBgSkyblocker: Boolean = false
     @ConfigValue @JvmField var rarityBgCircle: Boolean = false
+    @ConfigValue @JvmField var rarityBgGradient: Boolean = false
 
     @ConfigValue @JvmField var darkModeEnabled: Boolean = false
     @ConfigValue @JvmField var darkModeOpacity: Int = 25
