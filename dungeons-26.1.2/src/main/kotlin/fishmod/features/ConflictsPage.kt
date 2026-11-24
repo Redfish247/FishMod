@@ -26,7 +26,9 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     @Volatile private var scanning = false
     private var scanStarted = false
     private val collapsed = HashSet<String>()
-    private var dupesOnly = false
+    // 0 = unresolved (default), 1 = all duplicates, 2 = everything
+    private var view = 0
+    private val viewNames = arrayOf("Unresolved only", "All duplicates", "Show everything")
 
     var scroll = 0
     private var contentH = 0
@@ -39,7 +41,19 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     /** Duplicates still active (not yet queued for disable). -1 until the first scan finishes. */
     fun dupCount(): Int {
         val r = result ?: return -1
-        return r.mods.sumOf { g -> g.entries.count { it.fish != null && !ModConflicts.isQueued(it.setting) } }
+        // one conflict per (other mod, FishMod feature) pair, however many settings or files matched it
+        val seen = HashSet<String>()
+        for (g in r.mods) {
+            if (ModConflicts.isModIgnored(g.id)) continue
+            for (e in g.entries) if (unresolved(e)) seen.add(g.id + "|" + e.fish!!.name)
+        }
+        return seen.size
+    }
+
+    private fun unresolved(e: ConflictEntry) = e.fish != null && !ModConflicts.isQueued(e.setting) && !ModConflicts.isIgnored(e.setting)
+
+    private fun ignoredCount(r: ScanResult): Int = r.mods.sumOf { g ->
+        if (ModConflicts.isModIgnored(g.id)) g.entries.count { it.fish != null } else g.entries.count { it.fish != null && ModConflicts.isIgnored(it.setting) }
     }
 
     fun ensureScanned() { if (!scanStarted) rescan() }
@@ -68,8 +82,13 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     private fun buildRows(r: ScanResult): List<Row> {
         val rows = ArrayList<Row>()
         for (g in r.mods) {
-            val list = if (dupesOnly) g.entries.filter { it.fish != null } else g.entries
-            if (dupesOnly && list.isEmpty()) continue
+            val modIgn = ModConflicts.isModIgnored(g.id)
+            val list = when (view) {
+                0 -> if (modIgn) emptyList() else g.entries.filter { unresolved(it) }
+                1 -> g.entries.filter { it.fish != null }
+                else -> g.entries
+            }
+            if (view < 2 && list.isEmpty()) continue
             rows.add(Row.Head(g, list.size))
             if (g.id in collapsed) continue
             if (list.isEmpty()) g.note?.let { rows.add(Row.Note(it)) }
@@ -96,6 +115,14 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         hits.add(Hit(x, y, w, h, false, act))
     }
 
+    private fun small(x: Int, y: Int, w: Int, h: Int, label: String, mx: Int, my: Int, act: () -> Unit) {
+        val hov = ScreenTheme.inside(mx, my, x, y, w, h)
+        ScreenTheme.nRoundedRect(x, y, w, h, 5, ScreenTheme.ink(if (hov) 0x26 else 0x14))
+        val s = 8.5f
+        UiRecorder.text(label, x + (w - UiRecorder.textWidth(label, s)) / 2f, y + (h - s) / 2f, s, ScreenTheme.SUBTEXT_COLOR)
+        hits.add(Hit(x, y, w, h, true, act))
+    }
+
     fun render(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, mx: Int, my: Int) {
         ensureScanned()
         hits.clear()
@@ -106,13 +133,16 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         val summary = when {
             r == null -> "Scanning your other Skyblock mods…"
             r.mods.isEmpty() -> "No other Skyblock mods detected"
-            else -> "${r.mods.size} Skyblock mod${if (r.mods.size == 1) "" else "s"} found · ${dupCount()} duplicate${if (dupCount() == 1) "" else "s"} with FishMod"
+            else -> {
+                val ic = ignoredCount(r)
+                "${r.mods.size} Skyblock mod${if (r.mods.size == 1) "" else "s"} found · ${dupCount()} unresolved conflict${if (dupCount() == 1) "" else "s"}" + if (ic > 0) " · $ic ignored" else ""
+            }
         }
         UiRecorder.textBold(summary, x.toFloat(), y.toFloat() + 2f, 10.5f, ScreenTheme.TEXT_COLOR)
         UiRecorder.text("Changes to other mods apply on the next game launch. FishMod toggles apply instantly.", x.toFloat(), y + 18f, 8.5f, ScreenTheme.SUBTEXT_COLOR)
         var tx = x + w
         tx -= 58; button(tx, y, 58, 17, "Rescan", mx, my, ScreenTheme.TEXT_COLOR) { scanStarted = false; rescan() }
-        tx -= 6 + 104; button(tx, y, 104, 17, if (dupesOnly) "Duplicates only ✓" else "Duplicates only", mx, my, if (dupesOnly) ScreenTheme.ACCENT else ScreenTheme.TEXT_COLOR) { dupesOnly = !dupesOnly; scroll = 0 }
+        tx -= 6 + 104; button(tx, y, 104, 17, viewNames[view], mx, my, if (view == 0) ScreenTheme.ACCENT else ScreenTheme.TEXT_COLOR) { view = (view + 1) % viewNames.size; scroll = 0 }
         if (r != null && dupCount() > 0) {
             tx -= 6 + 138
             button(tx, y, 138, 17, "Use FishMod for all", mx, my, RED) { useFishForAll(r) }
@@ -124,7 +154,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         contentH = rows.sumOf { rowH(it) + GAP }
         scroll = scroll.coerceIn(0, maxScroll())
         if (rows.isEmpty()) {
-            UiRecorder.text(if (dupesOnly) "No duplicate features found." else "Nothing to show.", bx.toFloat(), by + 8f, 10f, ScreenTheme.SUBTEXT_COLOR)
+            UiRecorder.text(if (view == 0) "No unresolved conflicts. Ignored ones are hidden." else if (view == 1) "No duplicate features found." else "Nothing to show.", bx.toFloat(), by + 8f, 10f, ScreenTheme.SUBTEXT_COLOR)
             return
         }
         UiRecorder.pushScissor(bx.toFloat(), by.toFloat(), w.toFloat(), bodyH.toFloat())
@@ -154,11 +184,15 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         val open = row.g.id !in collapsed
         UiRecorder.text(if (open) "▾" else "▸", x + 9f, y + (HEAD_H - 10f) / 2f, 10f, ScreenTheme.SUBTEXT_COLOR)
         UiRecorder.textBold(row.g.name, x + 24f, y + (HEAD_H - 11f) / 2f, 11f, ScreenTheme.TEXT_COLOR)
-        val dup = row.g.entries.count { it.fish != null }
-        val info = "${row.shown} enabled" + if (dup > 0) " · $dup duplicate${if (dup == 1) "" else "s"}" else ""
+        val modIgn = ModConflicts.isModIgnored(row.g.id)
+        val dup = row.g.entries.count { it.fish != null && !modIgn && unresolved(it) }
+        val info = "${row.shown} shown" + if (modIgn) " · mod ignored" else if (dup > 0) " · $dup unresolved" else ""
         val iw = UiRecorder.textWidth(info, 9f)
         UiRecorder.text(info, x + w - 10 - iw, y + (HEAD_H - 9f) / 2f, 9f, if (dup > 0) RED else ScreenTheme.SUBTEXT_COLOR)
         hits.add(Hit(x, y, w, HEAD_H, true) { if (!collapsed.add(row.g.id)) collapsed.remove(row.g.id) })
+        val bw = 78
+        val bx = x + w - 10 - iw.toInt() - 10 - bw
+        small(bx, y + (HEAD_H - 15) / 2, bw, 15, if (modIgn) "Stop ignoring" else "Ignore mod", mx, my) { ModConflicts.setModIgnored(row.g.id, !modIgn) }
     }
 
     private fun drawItem(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, row: Row.Item, mx: Int, my: Int) {
@@ -166,12 +200,15 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         val s = e.setting
         val fish = e.fish
         val queued = ModConflicts.isQueued(s)
+        val ign = ModConflicts.isIgnored(s) || ModConflicts.isModIgnored(row.g.id)
         UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), ITEM_H.toFloat(), 6f, ScreenTheme.ink(0x0A))
-        if (fish != null && !queued) ScreenTheme.nRoundedRectRing(x, y, w, ITEM_H, 6, 1, 0, (0x55 shl 24) or (RED and 0xFFFFFF))
+        if (fish != null && !queued && !ign) ScreenTheme.nRoundedRectRing(x, y, w, ITEM_H, 6, 1, 0, (0x55 shl 24) or (RED and 0xFFFFFF))
         else ScreenTheme.nRoundedRectRing(x, y, w, ITEM_H, 6, 1, 0, ScreenTheme.ink(0x14))
 
         val pillW = 26; val pillH = 14
-        val theirsX = x + w - 10 - pillW
+        val ignW = 46
+        val ignX = x + w - 8 - ignW
+        val theirsX = (if (fish != null) ignX - 8 else x + w - 10) - pillW
         val fishX = theirsX - 96
         val pillY = y + (ITEM_H - pillH) / 2
         val labelRight = (if (fish != null) fishX - 62 else theirsX - 62).toFloat()
@@ -179,6 +216,10 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         UiRecorder.text(ellipsize(s.label, labelRight - (x + 12), 10f), x + 12f, y + 5f, 10f, ScreenTheme.TEXT_COLOR)
         val sub = if (fish != null) "≈ FishMod: ${fish.name}" else s.group.ifEmpty { s.file.substringAfterLast('/') }
         UiRecorder.text(ellipsize(sub, labelRight - (x + 12), 8.5f), x + 12f, y + 18f, 8.5f, if (fish != null) ScreenTheme.ACCENT else ScreenTheme.SUBTEXT_COLOR)
+
+        if (fish != null) small(ignX, y + (ITEM_H - 15) / 2, ignW, 15, if (ModConflicts.isIgnored(s)) "Restore" else "Ignore", mx, my) {
+            ModConflicts.setIgnored(s, !ModConflicts.isIgnored(s))
+        }
 
         // FishMod toggle (instant)
         if (fish != null) {
@@ -200,6 +241,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     private fun useFishForAll(r: ScanResult) {
         for (g in r.mods) for (e in g.entries) {
             val f = e.fish ?: continue
+            if (ModConflicts.isIgnored(e.setting) || ModConflicts.isModIgnored(g.id)) continue
             try { f.set(true) } catch (t: Throwable) { FishDiag.fail("ConflictsPage.4", "fishmod enable failed ${f.name}", t) }
             if (e.setting.writable) ModConflicts.queueDisable(e.setting, g.name)
         }

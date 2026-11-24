@@ -270,6 +270,52 @@ object ModConflicts {
         savePending()
     }
 
+    // ---------- ignored (user cannot or will not resolve) ----------
+
+    private const val IGNORED_FILE = "fishmod/conflict-ignored.json"
+    private var ignored: MutableSet<String>? = null
+
+    private fun ignoredPath(): Path = FabricLoader.getInstance().configDir.resolve(IGNORED_FILE)
+
+    @Synchronized
+    private fun loadIgnored(): MutableSet<String> {
+        ignored?.let { return it }
+        val set = LinkedHashSet<String>()
+        try {
+            val p = ignoredPath()
+            if (Files.exists(p)) for (e in JsonParser.parseString(Files.readString(p)).asJsonArray) set.add(e.asString)
+        } catch (t: Throwable) {
+            FishDiag.fail("ModConflicts.6", "could not read ignored conflicts", t)
+        }
+        ignored = set
+        return set
+    }
+
+    @Synchronized
+    private fun saveIgnored() {
+        val set = loadIgnored()
+        try {
+            val p = ignoredPath()
+            if (set.isEmpty()) { Files.deleteIfExists(p); return }
+            Files.createDirectories(p.parent)
+            val arr = JsonArray(); set.forEach { arr.add(it) }
+            Files.writeString(p, GSON.toJson(arr))
+        } catch (t: Throwable) {
+            FishDiag.fail("ModConflicts.7", "could not save ignored conflicts", t)
+        }
+    }
+
+    private fun modKey(modId: String) = "mod:$modId"
+
+    @JvmStatic @Synchronized fun isIgnored(s: OtherSetting): Boolean = loadIgnored().contains(s.key)
+    @JvmStatic @Synchronized fun isModIgnored(modId: String): Boolean = loadIgnored().contains(modKey(modId))
+
+    @JvmStatic @Synchronized
+    fun setIgnored(s: OtherSetting, on: Boolean) { if (if (on) loadIgnored().add(s.key) else loadIgnored().remove(s.key)) saveIgnored() }
+
+    @JvmStatic @Synchronized
+    fun setModIgnored(modId: String, on: Boolean) { if (if (on) loadIgnored().add(modKey(modId)) else loadIgnored().remove(modKey(modId))) saveIgnored() }
+
     /** Runs from the preLaunch entrypoint, before other mods load their config. */
     @JvmStatic
     fun applyPending() {
