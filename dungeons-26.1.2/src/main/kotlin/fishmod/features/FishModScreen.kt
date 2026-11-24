@@ -914,6 +914,26 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
+            val f = Feature("Secret Waypoints", "secretWaypointsEnabled")
+            f.sub.add(ToggleSetting("Chests", "", "secretWpChest"))
+            f.sub.add(ColorPickerSetting("Chest Color", "", "secretWpColorChest").gatedBy { FishSettings.secretWpChest })
+            f.sub.add(ToggleSetting("Items", "", "secretWpItem"))
+            f.sub.add(ColorPickerSetting("Item Color", "", "secretWpColorItem").gatedBy { FishSettings.secretWpItem })
+            f.sub.add(ToggleSetting("Bats", "", "secretWpBat"))
+            f.sub.add(ColorPickerSetting("Bat Color", "", "secretWpColorBat").gatedBy { FishSettings.secretWpBat })
+            f.sub.add(ToggleSetting("Wither Essence", "", "secretWpEssence"))
+            f.sub.add(ColorPickerSetting("Essence Color", "", "secretWpColorEssence").gatedBy { FishSettings.secretWpEssence })
+            f.sub.add(ToggleSetting("Redstone Keys", "", "secretWpRedstoneKey"))
+            f.sub.add(ColorPickerSetting("Redstone Key Color", "", "secretWpColorRedstoneKey").gatedBy { FishSettings.secretWpRedstoneKey })
+            f.sub.add(ToggleSetting("Labels", "Name above each secret", "secretWpLabels"))
+            f.sub.add(ToggleSetting("Hide In Cleared Rooms", "", "secretWpHideCleared"))
+            f.sub.add(DropdownSetting("Box Style", "", arrayOf("Filled", "Outline", "Filled Outline"),
+                { FishSettings.secretWpStyle }, { v -> FishSettings.secretWpStyle = v }))
+            f.sub.add(SliderDoubleSetting("Line Width", "", "secretWpLineWidth", 0.5, 10.0).gatedBy { FishSettings.secretWpStyle != "Filled" })
+            f.sub.add(SliderIntSetting("Max Distance", "0 = unlimited", "secretWpMaxDistance", 0, 200, 5))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Secret Clicked", "secretClickedEnabled")
             f.sub.add(ToggleSetting("Boxes", "", "secretClickedBoxes"))
             f.sub.add(ToggleSetting("Bat Secrets", "Count a killed secret bat you were next to", "secretClickedBats"))
