@@ -32,6 +32,20 @@ object ItemRarityHotbar {
         RarityTier.ADMIN to 0xD13228,
     )
 
+    private val SKYBLOCKER: Map<RarityTier, Int> = mapOf(
+        RarityTier.COMMON to 0xFFFFFF,
+        RarityTier.UNCOMMON to 0x55FF55,
+        RarityTier.RARE to 0x5555FF,
+        RarityTier.EPIC to 0xAA00AA,
+        RarityTier.LEGENDARY to 0xFFAA00,
+        RarityTier.MYTHIC to 0xFF55FF,
+        RarityTier.DIVINE to 0x55FFFF,
+        RarityTier.SPECIAL to 0xFF5555,
+        RarityTier.VERY_SPECIAL to 0xAA0000,
+        RarityTier.ULTIMATE to 0xAA0000,
+        RarityTier.ADMIN to 0xAA0000,
+    )
+
     @JvmStatic
     fun init() {
         DrawHooks.INVENTORY_SLOT_BEFORE.register(::drawRarity)
@@ -75,7 +89,8 @@ object ItemRarityHotbar {
     }
 
     private fun getTintColor(rarity: RarityTier): Int {
-        val rgb = if (VisualSettings.itemRarityHypixelColors) HYPIXEL[rarity] ?: (rarity.color and 0xFFFFFF)
+        val rgb = if (VisualSettings.rarityBgSkyblocker) SKYBLOCKER[rarity] ?: (rarity.color and 0xFFFFFF)
+                  else if (VisualSettings.itemRarityHypixelColors) HYPIXEL[rarity] ?: (rarity.color and 0xFFFFFF)
                   else rarity.color and 0xFFFFFF
         val hotbar = VisualSettings.itemRaritySeparateHotbar && net.minecraft.client.Minecraft.getInstance().curScreen == null
         val pct = if (hotbar) VisualSettings.itemRarityHotbarOpacity else VisualSettings.itemRarityOpacity
