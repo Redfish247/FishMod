@@ -340,6 +340,8 @@ class DungeonPage {
 			PvDraw.textRight(g, font, FormatUtil.commas(data.journalsUnlocked.toLong()), cx + barW, extraY, PvDraw.COLOR_GOLD)
 			extraY += font.lineHeight + 2
 		}
+		extraY = drawCalcRow(g, font, cataRow, "Cata", cataLevelText, "50", focus == FieldFocus.CATA, cx, extraY + 2, barW)
+		extraY = drawCalcRow(g, font, classRow, "Class", classLevelText, "Mage 50 / CA50", focus == FieldFocus.CLASS, cx, extraY, barW)
 
 		val classes = data.classes
 		if (classes.isEmpty()) {
@@ -394,6 +396,32 @@ class DungeonPage {
 			PvDraw.progressBar(g, cx, barY, barW, PvDraw.BAR_HEIGHT, clazz.progress, PvDraw.COLOR_BAR_FILL, clazz.level >= 50 || clazz.maxed)
 			zones.add(HoverZone(cx, cy, barW, labeledH, classTip(clazz)))
 		}
+	}
+
+	// Draws a label, input field and Calc button (same calcs as /cata and /rtca), stores hit boxes, returns next y.
+	private fun drawCalcRow(
+		g: GuiGraphicsExtractor, font: Font, row: CalcRow, label: String, text: String, hint: String, focused: Boolean, x: Int, y: Int, w: Int,
+	): Int {
+		val labelW = font.width("Class") + 6
+		val btnW = font.width("Calc") + 8
+		row.fieldX = x + labelW
+		row.fieldY = y
+		row.fieldW = maxOf(20, w - labelW - btnW - 4)
+		row.fieldH = CALC_ROW_H
+		row.btnX = x + w - btnW
+		row.btnY = y
+		row.btnW = btnW
+		row.btnH = CALC_ROW_H
+		val textY = y + (CALC_ROW_H - font.lineHeight) / 2 + 1
+		PvDraw.text(g, font, label, x, textY, PvDraw.COLOR_MUTED)
+		PvDraw.fill(g, row.fieldX, y, row.fieldW, CALC_ROW_H, 0xFF101018.toInt())
+		g.outline(row.fieldX, y, row.fieldW, CALC_ROW_H, if (focused) PvDraw.COLOR_ACCENT else PvDraw.COLOR_BORDER)
+		val showHint = text.isEmpty() && !focused
+		val shown = if (showHint) hint else if (focused && !replaceOnType) text + "_" else text
+		PvDraw.text(g, font, trimToWidth(font, shown, row.fieldW - 6), row.fieldX + 3, textY, if (showHint) PvDraw.COLOR_MUTED else COLOR_STAT)
+		PvDraw.roundedFill(g, row.btnX, y, btnW, CALC_ROW_H, 2, PvDraw.COLOR_ACCENT)
+		PvDraw.textCentered(g, font, "Calc", row.btnX + btnW / 2, textY, 0xFFFFFFFF.toInt())
+		return y + CALC_ROW_H + 3
 	}
 
 	private fun drawWitherUndeadEssenceFace(
@@ -579,6 +607,7 @@ class DungeonPage {
 		private const val PB_H = 8
 		private const val PB_SCALE = 0.75f
 
+		private const val CALC_ROW_H = 14
 		private const val CATA_MAX_LEN = 6
 		private const val CLASS_MAX_LEN = 32
 		private const val FLIP_MS = 480
