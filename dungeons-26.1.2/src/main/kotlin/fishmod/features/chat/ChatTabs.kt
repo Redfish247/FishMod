@@ -18,7 +18,8 @@ object ChatTabs {
         PARTY("Party", "Party >"),
         GUILD("Guild", "Guild >"),
         OFFICER("Officer", "Officer >"),
-        COOP("Co-op", "Co-op >");
+        COOP("Co-op", "Co-op >"),
+        FISHMOD("FishMod", "[FC]");
 
         fun enabled(): Boolean = when (this) {
             ALL -> true
@@ -26,6 +27,7 @@ object ChatTabs {
             GUILD -> FishSettings.chatTabGuild
             OFFICER -> FishSettings.chatTabOfficer
             COOP -> FishSettings.chatTabCoop
+            FISHMOD -> FishSettings.fishChatEnabled && FishSettings.chatTabFishMod
         }
     }
 
@@ -44,6 +46,10 @@ object ChatTabs {
     @JvmStatic
     val active: Boolean
         get() = on && selected != Tab.ALL && selected.enabled()
+
+    /** True when a typed chat message should go to FishChat (/fc) because the FishMod tab is selected. */
+    @JvmStatic
+    fun fishModTabSend(): Boolean = active && selected == Tab.FISHMOD
 
     @JvmStatic
     fun matches(line: Component): Boolean {

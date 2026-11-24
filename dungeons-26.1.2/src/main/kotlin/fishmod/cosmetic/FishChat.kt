@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import com.mojang.brigadier.arguments.StringArgumentType
 import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.events.chatPlain
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.minecraft.ChatFormatting
@@ -11,12 +12,23 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
 object FishChat {
+    private var lastDropAt = 0L
+    private var lastDropItem = ""
     private const val MAX_LEN = 200
     private const val DISCORD_URL = "https://discord.gg/3mSuQUB8kk"
     private const val MIN_GAP_MS = 1500L
     private var lastSent = 0L
 
     fun init() {
+        // Chat Tabs: a message typed while the FishMod tab is selected goes to /fc instead of public chat.
+        net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.ALLOW_CHAT.register { msg ->
+            if (fishmod.features.chat.ChatTabs.fishModTabSend() && msg.isNotBlank()) { send(msg); false } else true
+        }
+        // Share own rare drops to everyone on FishChat (big message with a gg button).
+        fishmod.utils.events.FishEvents.chat.register { c ->
+            if (FishSettings.fishChatEnabled && FishSettings.fishChatShareDrops) shareDrop(c.chatPlain)
+            false
+        }
         ClientCommandRegistrationCallback.EVENT.register { d, _ ->
             d.register(ClientCommands.literal("fcoff").executes {
                 FishSettings.fishChatEnabled = false
@@ -37,6 +49,42 @@ object FishChat {
 
     private fun note(s: String) = FishUtil.addChatMessage(Component.literal("§7[FishChat] $s"))
 
+    private fun shareDrop(plain: String) {
+        val own = Minecraft.getInstance().user.name
+        val item = fishmod.features.general.RareDropAnimation.dropName(plain, own)?.take(48) ?: return
+        val now = System.currentTimeMillis()
+        if (item == lastDropItem && now - lastDropAt < 10_000) return
+        lastDropItem = item; lastDropAt = now
+        val json = JsonObject().apply {
+            addProperty("t", "drop")
+            addProperty("name", own)
+            addProperty("item", item)
+        }
+        CosmeticLive.sendText(json.toString())
+    }
+
+    /** A {t:drop} frame: big highlighted line with a clickable gg that sends a gold "gg" through /fc. */
+    fun receiveDrop(root: JsonObject) {
+        if (!FishSettings.fishChatEnabled || !FishSettings.fishChatShareDrops) return
+        val name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() } ?: return
+        val item = root.get("item")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(48)?.takeIf { it.isNotBlank() } ?: return
+        val clean = ProfanityFilter.censor(item) ?: item
+        Minecraft.getInstance().execute {
+            val msg = Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal("★ RARE DROP! ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
+                .append(Component.literal("$name ").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                .append(Component.literal("got ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(clean).withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
+                .append(Component.literal("  "))
+                .append(Component.literal("[gg]").withStyle {
+                    it.withColor(ChatFormatting.GOLD).withBold(true).withUnderlined(true)
+                        .withClickEvent(net.minecraft.network.chat.ClickEvent.RunCommand("/fc gg"))
+                        .withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal("§6Click to send gg")))
+                })
+            FishUtil.addChatMessage(msg)
+        }
+    }
+
     private fun send(raw: String) {
         if (!FishSettings.fishChatEnabled) { note("FishMod Chat is off in the General tab."); return }
         val text = raw.replace('§', ' ').trim().take(MAX_LEN)
@@ -56,6 +104,7 @@ object FishChat {
     fun receive(root: JsonObject) {
         if (!FishSettings.fishChatEnabled) return
         var name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() } ?: return
+        val fromBridge = root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "bridge"
         if (root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "discord") name = name.replace(Regex("^\\s*\\(D\\)\\s*"), "").ifBlank { "Discord" }
         val fromDiscord = root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "discord"
         // Discord messages can carry long signed attachment URLs after the text; don't cut them off.
@@ -86,8 +135,9 @@ object FishChat {
             }
             var msg = Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
             if (fromDiscord) msg = msg.append(Component.literal("(Discord) ").withStyle(ChatFormatting.LIGHT_PURPLE))
+            if (fromBridge) msg = msg.append(Component.literal("(Bridge) ").withStyle(ChatFormatting.LIGHT_PURPLE))
             msg = msg.append(Component.literal("$name: ").withStyle(ChatFormatting.GOLD))
-                .append(linkify(clean))
+                .append(if (clean.trim().equals("gg", true)) Component.literal(clean).withStyle(ChatFormatting.GOLD) else linkify(clean))
             FishUtil.addChatMessage(msg)
         }
     }

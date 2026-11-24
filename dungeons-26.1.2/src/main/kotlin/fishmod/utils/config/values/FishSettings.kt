@@ -198,6 +198,8 @@ object FishSettings {
     @ConfigValue @JvmField var chatTabGuild: Boolean = true
     @ConfigValue @JvmField var chatTabOfficer: Boolean = false
     @ConfigValue @JvmField var chatTabCoop: Boolean = true
+    @ConfigValue @JvmField var chatTabFishMod: Boolean = true
+    @ConfigValue @JvmField var fishChatShareDrops: Boolean = true
     @ConfigValue @JvmField var chatTabsBgColor: Int = 0xC014181D.toInt()
     @ConfigValue @JvmField var chatTabsHoverColor: Int = 0xE0283038.toInt()
     @ConfigValue @JvmField var chatTabsSelectedColor: Int = 0xFF24B6B0.toInt()

@@ -143,6 +143,7 @@ object CosmeticLive {
         val type = root.get("t")?.asString
         if (type == "msg") { dashboardMessage(root); return }
         if (type == "chat") { FishChat.receive(root); return }
+        if (type == "drop") { FishChat.receiveDrop(root); return }
         val full = type == "snap"
         if (full) { ready = false; nicks.clear(); items.clear(); scales.clear(); badges.clear(); cleared.clear() }
         mergeStrings(root, "nicks", nicks)
