@@ -26,6 +26,13 @@ object FishSettings {
     @ConfigValue @JvmField var soulflowMissingNotifier: Boolean = false
     @ConfigValue @JvmField var soulflowHudX: Int = 10
     @ConfigValue @JvmField var soulflowHudY: Int = 60
+    @ConfigValue @JvmField var deployablesHudEnabled: Boolean = false
+    @ConfigValue @JvmField var deployablesHudX: Int = 10
+    @ConfigValue @JvmField var deployablesHudY: Int = 90
+    @ConfigValue @JvmField var deployablesShowFlares: Boolean = true
+    @ConfigValue @JvmField var deployablesShowOrbs: Boolean = true
+    @ConfigValue @JvmField var deployablesShowDistance: Boolean = true
+    @ConfigValue @JvmField var deployablesHudRange: Int = 40
 
     @ConfigValue @JvmField var fmColumnOrder: String = ""
     @ConfigValue @JvmField var fmColumnOrderV: Int = 0
@@ -373,6 +380,7 @@ object FishSettings {
     @ConfigValue @JvmField var sessionStatsScale: Double = 1.0
     @ConfigValue @JvmField var petHudScale: Double = 1.0
     @ConfigValue @JvmField var soulflowHudScale: Double = 1.0
+    @ConfigValue @JvmField var deployablesHudScale: Double = 1.0
     @ConfigValue @JvmField var textShadowEnabled: Boolean = false
     @ConfigValue @JvmField var textShadowNametags: Boolean = true
     @ConfigValue @JvmField var textShadowWorldText: Boolean = true

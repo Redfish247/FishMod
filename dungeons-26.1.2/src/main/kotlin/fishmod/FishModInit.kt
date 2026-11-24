@@ -11,6 +11,7 @@ import fishmod.features.FishHudEditor
 import fishmod.features.visuals.ItemRarityHotbar
 import fishmod.features.hud.PetHud
 import fishmod.features.hud.SoulflowHud
+import fishmod.features.hud.DeployablesHud
 import fishmod.features.dungeon.DungeonDeathMessage
 import fishmod.features.dungeon.FishEstTotal
 import fishmod.features.dungeon.solvers.FishPuzzleDisplay
@@ -444,6 +445,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.17", "fishmod.features.dungeon.trackers.CritTracker.init() failed") { fishmod.features.dungeon.trackers.CritTracker.init() }
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
+        FishDiag.guard("FishModInit.19b", "DeployablesHud.init() failed") { DeployablesHud.init() }
         FishDiag.guard("FishModInit.CalTimes", "CalendarTimes.init() failed") { fishmod.features.events.CalendarTimes.init() }
         FishDiag.guard("FishModInit.Extras", "Extras.init() failed") { fishmod.features.extras.Extras.init() }
         FishDiag.guard("FishModInit.20", "PetHud.init() failed") { PetHud.init() }
@@ -1416,6 +1418,7 @@ class FishModInit : ClientModInitializer {
             fishmod.utils.TickScheduler.scheduleTask({ fishmod.compat.BladeCompat.tellOnce() }, 60)
         })
 
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "deployables_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) DeployablesHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.113b", "deployables_hud render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) SoulflowHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.113", "soulflow_hud render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_breaker_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.DungeonBreaker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.114", "dungeon_breaker_hud render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) PetHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.115", "pet_hud render failed", t) } }

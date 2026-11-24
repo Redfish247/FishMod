@@ -1534,6 +1534,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Deployables HUD", "deployablesHudEnabled")
+            f.sub.add(ToggleSetting("Flares", "Warning, Alert and SOS flares", "deployablesShowFlares"))
+            f.sub.add(ToggleSetting("Orbs", "Radiant, Mana Flux, Overflux and Plasmaflux orbs", "deployablesShowOrbs"))
+            f.sub.add(ToggleSetting("Distance", "Show how far away each deployable is", "deployablesShowDistance"))
+            f.sub.add(InputIntSetting("Range", "Blocks (8-128)", "deployablesHudRange"))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Text Shadow", "textShadowEnabled")
             f.sub.add(SubcategoryHeader("Drop shadow on in-world text (chat already has one)"))
             f.sub.add(ToggleSetting("Nametags", "Player, mob and armor stand names", "textShadowNametags"))
@@ -2407,7 +2415,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         order(chatCol, "Chat", "FishMod Chat (/fc)", "Chat Filter", "Mod Prefix", "Command Tooltip in Chat", "Chat Coord Waypoints", "Command Tab Complete")
         order(invStorage, "Storage Overlay", "Inventory Search", "Slot Locking", "Slot Binds", "Inventory Buttons", "Wardrobe/Loadout Hotkeys", "Pet Keybinds", "Container Value", "Inventory Equipment", "Hide Inventory Potion Effects")
-        order(hud, "Performance HUD", "Action Bar", "Cooldown Overlay", "Stopwatch", "Spotify", "Soulflow HUD", "Text Shadow", "Tac Timer", "Spring Boots", "Loadout Title")
+        order(hud, "Performance HUD", "Action Bar", "Cooldown Overlay", "Stopwatch", "Spotify", "Soulflow HUD", "Deployables HUD", "Text Shadow", "Tac Timer", "Spring Boots", "Loadout Title")
         order(itemsCol, "Item Tooltip", "Item List", "Auto BIN Price", "Recipe Viewer", "AH Buy Price Check", "Bazaar Search + Price Graph", "Sign Calculator")
         order(petsCol, "Pet HUD", "Pet Swap Title", "Pet Keybinds", "Hide Pet Nametag Level")
         order(party, "Party Commands", "Command Access List", "Chat Channels", "Kick List", "Party Finder Menu", "Party Finder Join Stats", "Party Finder List", "Party Finder Auto Kick")
@@ -4901,6 +4909,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Cooldown Overlay" -> "Ability cooldowns on item slots"
                 "Pet HUD" -> "Show your active pet & level"
                 "Soulflow HUD" -> "Track your soulflow count"
+                "Deployables HUD" -> "Nearby flares and orbs with time left"
                 "Fire Freeze Timer" -> "Fire Freeze staff cooldown timer"
                 "Party Finder Join Stats" -> "Whisper or PF-join prints their MP/PB/Cata/Gear to chat — also /pfs [name]"
                 "Party Finder Menu" -> "Level req + missing classes on heads, stats in party-member tooltips"
