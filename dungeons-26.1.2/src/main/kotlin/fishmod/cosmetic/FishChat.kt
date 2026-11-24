@@ -35,6 +35,14 @@ object FishChat {
                 try { fishmod.utils.config.FishConfig.manager.save() } catch (_: Throwable) {}
                 note("FishMod chat disabled. Re-enable it in Chat settings."); 1
             })
+            // /fcr <name> <message>: reply to that person's latest FishChat line (name click in chat fills this in).
+            d.register(
+                ClientCommands.literal("fcr").executes { note("Usage: /fcr <name> <message>"); 1 }
+                    .then(ClientCommands.argument("name", StringArgumentType.word())
+                        .then(ClientCommands.argument("message", StringArgumentType.greedyString()).executes { ctx ->
+                            sendReply(StringArgumentType.getString(ctx, "name"), StringArgumentType.getString(ctx, "message")); 1
+                        }))
+            )
             for (name in arrayOf("fc", "fmchat")) {
                 d.register(
                     ClientCommands.literal(name)
@@ -128,10 +136,20 @@ object FishChat {
         }
     }
 
-    private fun send(raw: String) {
+    /** Latest line per sender (lowercase name -> display name to text), so /fcr can quote what is being replied to. */
+    private val lastLines = java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+
+    private fun sendReply(name: String, raw: String) {
+        val last = lastLines[name.lowercase()]
+        if (last == null) { note("No recent FishChat message from $name to reply to."); return }
+        send(raw, last.first, last.second)
+    }
+
+    private fun send(raw: String, replyName: String? = null, replyText: String? = null) {
         if (!FishSettings.fishChatEnabled) { note("FishMod Chat is off in the General tab."); return }
         val text = raw.replace('§', ' ').trim().take(MAX_LEN)
         if (text.isEmpty()) return
+        if (text.equals(".fotd", true)) { factOfTheDay(); return }
         val now = System.currentTimeMillis()
         if (now - lastSent < MIN_GAP_MS) { note("Slow down a little."); return }
         val player = Minecraft.getInstance().player ?: return
@@ -139,9 +157,48 @@ object FishChat {
             addProperty("t", "chat")
             addProperty("name", player.name.string)
             addProperty("text", text)
+            if (replyName != null) add("reply", JsonObject().apply { addProperty("name", replyName); addProperty("text", (replyText ?: "").take(60)) })
         }
         if (!CosmeticLive.sendText(json.toString())) { note("Not connected to FishMod live yet, try again in a moment."); return }
         lastSent = now
+    }
+
+    private val fotdHttp: java.net.http.HttpClient = java.net.http.HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(8)).build()
+    @Volatile private var fotdBusy = false
+    @Volatile private var fotdCache: Pair<String, String>? = null // utc day -> fact
+
+    /** .fotd in FishChat: shows today's fact (worker caches one api-ninjas call per UTC day) to the sender only. */
+    private fun factOfTheDay() {
+        val day = java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString()
+        fotdCache?.takeIf { it.first == day }?.let { showFact(it.second); return }
+        if (fotdBusy) return
+        fotdBusy = true
+        Thread({
+            try {
+                val req = java.net.http.HttpRequest.newBuilder(java.net.URI.create("https://fishmod.dev/fotd"))
+                    .header("X-FishMod-Token", fishmod.utils.HypixelApi.MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .timeout(java.time.Duration.ofSeconds(10)).GET().build()
+                val res = fotdHttp.send(req, java.net.http.HttpResponse.BodyHandlers.ofString())
+                val root = com.google.gson.JsonParser.parseString(res.body()).asJsonObject
+                val fact = root.get("fact")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.trim()
+                if (res.statusCode() != 200 || fact.isNullOrBlank()) throw java.io.IOException("HTTP ${res.statusCode()}")
+                fotdCache = day to fact
+                showFact(fact)
+            } catch (_: Throwable) {
+                Minecraft.getInstance().execute { note("Could not get the fact of the day right now, try again later.") }
+            } finally { fotdBusy = false }
+        }, "FishMod-fotd").apply { isDaemon = true }.start()
+    }
+
+    private fun showFact(fact: String) {
+        val clean = ProfanityFilter.censor(fact) ?: fact
+        Minecraft.getInstance().execute {
+            FishUtil.addChatMessage(
+                Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
+                    .append(Component.literal("Fact of the day: ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
+                    .append(Component.literal(clean).withStyle(ChatFormatting.WHITE))
+            )
+        }
     }
 
     fun receive(root: JsonObject) {
@@ -153,6 +210,16 @@ object FishChat {
         // Discord messages can carry long signed attachment URLs after the text; don't cut them off.
         val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(if (fromDiscord) 1000 else MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
         val clean = ProfanityFilter.censorIncoming(text) ?: text
+        if (!fromBridge) lastLines[name.lowercase()] = name to text.take(60)
+        val badgeParts = (root.get("badges")?.takeIf { it.isJsonArray }?.asJsonArray ?: com.google.gson.JsonArray()).mapNotNull { el ->
+            val o = el.takeIf { it.isJsonObject }?.asJsonObject ?: return@mapNotNull null
+            val sym = o.get("s")?.takeIf { !it.isJsonNull }?.asString?.replace(Regex("[\\uFE0E\\uFE0F\\u200D]"), "")?.take(4)?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val rgb = o.get("c")?.takeIf { !it.isJsonNull }?.asString?.removePrefix("#")?.toIntOrNull(16) ?: 0xFFFFFF
+            Component.literal(sym).withStyle { it.withColor(net.minecraft.network.chat.TextColor.fromRgb(rgb)) }
+        }
+        val replyObj = root.get("reply")?.takeIf { it.isJsonObject }?.asJsonObject
+        val replyName = replyObj?.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() }
+        val replyText = (replyObj?.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(60) ?: "").let { ProfanityFilter.censorIncoming(it) ?: it }
         Minecraft.getInstance().execute {
             if (!FishSettings.fishChatNoticeShown) {
                 FishSettings.fishChatNoticeShown = true
@@ -180,8 +247,21 @@ object FishChat {
             if (fromDiscord) msg = msg.append(Component.literal("(Discord) ").withStyle(ChatFormatting.LIGHT_PURPLE))
             // Bridge bot lines read "[FC] (Bridge): message" (no FishBridge name).
             if (fromBridge) msg = msg.append(Component.literal("(Bridge): ").withStyle(ChatFormatting.LIGHT_PURPLE))
-            else msg = msg.append(Component.literal("$name: ").withStyle(ChatFormatting.GOLD))
+            else {
+                for (b in badgeParts) msg = msg.append(b)
+                if (badgeParts.isNotEmpty()) msg = msg.append(Component.literal(" "))
+                msg = msg.append(Component.literal(name).withStyle(ChatFormatting.GOLD))
+                // Reply line reads "[FC] person1 -> person2: response".
+                if (replyName != null) msg = msg.append(Component.literal(" -> ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(replyName).withStyle(ChatFormatting.GOLD))
+                msg = msg.append(Component.literal(": ").withStyle(ChatFormatting.GOLD))
+            }
             msg = msg.append(if (clean.trim().equals("gg", true)) Component.literal(clean).withStyle(ChatFormatting.GOLD) else linkify(clean))
+            // Click anywhere on the line to reply to its sender (links and image previews keep their own click/hover).
+            if (!fromBridge) msg.withStyle {
+                it.withClickEvent(net.minecraft.network.chat.ClickEvent.SuggestCommand("/fcr $name "))
+                    .withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal("§7Click to reply to $name")))
+            }
             FishUtil.addChatMessage(msg)
         }
     }

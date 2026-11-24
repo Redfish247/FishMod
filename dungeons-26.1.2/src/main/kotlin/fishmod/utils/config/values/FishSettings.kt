@@ -624,6 +624,7 @@ object FishSettings {
     @ConfigValue @JvmField var auctionAutofillPercent: Int = 5
     @ConfigValue @JvmField var signCalculator: Boolean = false
 
+    @ConfigValue @JvmField var tooltipAutoFit: Boolean = false
     @ConfigValue @JvmField var tooltipScrollEnabled: Boolean = false
     @ConfigValue @JvmField var tooltipScrollScale: Int = 100
     @ConfigValue @JvmField var tooltipScrollSpeed: Int = 3
@@ -1172,8 +1173,6 @@ object FishSettings {
     @ConfigValue @JvmField var slayerPhaseTextScale: Int = 60
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
-    @ConfigValue @JvmField var slayerPhaseHpLabel: Boolean = false
-    @ConfigValue @JvmField var slayerPhaseTimeLabel: Boolean = false
     @ConfigValue @JvmField var slayerPhaseHideNametag: Boolean = false
 
     @JvmStatic

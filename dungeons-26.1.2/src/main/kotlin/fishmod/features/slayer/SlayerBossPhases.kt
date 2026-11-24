@@ -45,13 +45,9 @@ object SlayerBossPhases {
     @Volatile private var ax = 0.0
     @Volatile private var ay = 0.0
     @Volatile private var az = 0.0
-    @Volatile private var hpLine = ""
-    @Volatile private var timeLine = ""
     @Volatile private var hiddenStandId = -1
     @Volatile private var anchor: LivingEntity? = null
     @Volatile private var maniaEndNanos = 0L
-    private var bossSeenId = 0
-    private var bossSeenNanos = 0L
 
     private var hatchlingsActive = false
     private var hatchlingsAnchor: Vec3? = null
@@ -107,7 +103,7 @@ object SlayerBossPhases {
         lastHpFrac = 1.0
         steakTitleFired = false
         hpBossId = 0; hpMaxSeen = 0.0
-        hpLine = ""; timeLine = ""; hiddenStandId = -1; bossSeenId = 0; bossSeenNanos = 0L
+        hiddenStandId = -1
         anchor = null; maniaEndNanos = 0L
         titleAt.clear()
         scanCounter = 0
@@ -121,10 +117,10 @@ object SlayerBossPhases {
     }
 
     private fun tick() {
-        if (!enabled()) { show = false; line1 = ""; line2 = ""; hpLine = ""; timeLine = ""; hiddenStandId = -1; return }
+        if (!enabled()) { show = false; line1 = ""; line2 = ""; hiddenStandId = -1; return }
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.level == null || mc.hudHidden || !SkyblockLocation.inSkyblock()) {
-            show = false; line1 = ""; line2 = ""; hpLine = ""; timeLine = ""; hiddenStandId = -1; return
+            show = false; line1 = ""; line2 = ""; hiddenStandId = -1; return
         }
 
         if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return
@@ -150,9 +146,9 @@ object SlayerBossPhases {
             }
         }
 
-        hpLine = ""; timeLine = ""; hiddenStandId = -1
-        if (boss != null) buildLabels(mc, boss)
-        if (boss != null && (l1.isNotEmpty() || l2.isNotEmpty() || hpLine.isNotEmpty() || timeLine.isNotEmpty())) {
+        hiddenStandId = -1
+        if (boss != null) hideNametag(mc, boss)
+        if (boss != null && (l1.isNotEmpty() || l2.isNotEmpty())) {
             val bb = boss.boundingBox
             ax = (bb.minX + bb.maxX) / 2.0
             ay = bb.maxY + 0.5
@@ -293,35 +289,13 @@ object SlayerBossPhases {
 
     @JvmStatic fun hidesNametag(id: Int): Boolean = id >= 0 && id == hiddenStandId
 
-    private fun buildLabels(mc: Minecraft, boss: LivingEntity) {
-        if (boss.id != bossSeenId) { bossSeenId = boss.id; bossSeenNanos = System.nanoTime() }
-        val hp = if (hpBossId == boss.id) lastHp else 0.0
-        val maxHp = hpMaxSeen
-        if (FishSettings.slayerPhaseHpLabel && hp > 0.0 && maxHp > 0.0) {
-            val f = hp / maxHp
-            val c = when { f > 0.75 -> "§a"; f > 0.5 -> "§e"; f > 0.25 -> "§6"; else -> "§c" }
-            hpLine = "$c${short(hp)}§7/§a${short(maxHp)} §c❤"
-            if (FishSettings.slayerPhaseHideNametag) {
-                val level = mc.level
-                if (level != null) {
-                    val box = boss.boundingBox.inflate(3.0, 4.0, 3.0)
-                    hiddenStandId = level.getEntitiesOfClass(ArmorStand::class.java, box) { it.hasCustomName() }
-                        .firstOrNull { st -> NAMETAG_HP.containsMatchIn(st.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "") ?: "") }?.id ?: -1
-                }
-            }
-        }
-        if (FishSettings.slayerPhaseTimeLabel) {
-            val secs = if (SlayerManager.bossEntity === boss && SlayerTimer.running()) SlayerTimer.elapsedSeconds()
-                else (System.nanoTime() - bossSeenNanos) / 1_000_000_000.0
-            timeLine = "§7⏱ §f${fmt(secs)}s"
-        }
-    }
-
-    private fun short(v: Double): String = when {
-        v >= 1e9 -> "%.2fB".format(v / 1e9)
-        v >= 1e6 -> "%.2fM".format(v / 1e6)
-        v >= 1e4 -> "%.1fk".format(v / 1e3)
-        else -> v.toLong().toString()
+    // Finds the vanilla HP nametag stand over the boss so the entity renderer can skip it.
+    private fun hideNametag(mc: Minecraft, boss: LivingEntity) {
+        if (!FishSettings.slayerPhaseHideNametag) return
+        val level = mc.level ?: return
+        val box = boss.boundingBox.inflate(3.0, 4.0, 3.0)
+        hiddenStandId = level.getEntitiesOfClass(ArmorStand::class.java, box) { it.hasCustomName() }
+            .firstOrNull { st -> NAMETAG_HP.containsMatchIn(st.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "") ?: "") }?.id ?: -1
     }
 
     private fun nearbyStandNames(e: LivingEntity, radius: Double, up: Double): List<String> {
@@ -392,8 +366,6 @@ object SlayerBossPhases {
         }
         var y = by + 0.36 * k
         if (line2.isNotEmpty() || line1.isNotEmpty()) y += 0.4 * k
-        if (hpLine.isNotEmpty()) { FishDraw.gizmoText(Component.literal(hpLine), Vec3(bx, y, bz), 1.6f * k, -0x1, walls); y += 0.45 * k }
-        if (timeLine.isNotEmpty()) FishDraw.gizmoText(Component.literal(timeLine), Vec3(bx, y, bz), 0.9f * k, -0x1, walls)
         if (!FishSettings.slayerPhaseWorldText) return
         val me = maniaEndNanos
         val l1 = if (me != 0L) { val r = (me - System.nanoTime()) / 1e9; if (r > 0.0) "§bMANIA §f${fmt(r)}s" else "" } else line1

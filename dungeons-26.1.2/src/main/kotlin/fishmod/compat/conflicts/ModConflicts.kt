@@ -27,7 +27,8 @@ class OtherSetting(
     val key: String get() = file + "|" + path.joinToString("/")
 }
 
-class ConflictEntry(val setting: OtherSetting, val fish: FishFeatureRef?)
+/** [exact]: the names match fully (not just similar), so a bulk action may touch the FishMod feature. */
+class ConflictEntry(val setting: OtherSetting, val fish: FishFeatureRef?, val exact: Boolean = false)
 class ModGroup(val id: String, val name: String, val entries: List<ConflictEntry>, val note: String?)
 class ScanResult(val mods: List<ModGroup>)
 
@@ -78,7 +79,8 @@ object ModConflicts {
                     for (r in readSettings(f)) {
                         if (!r.enabled) continue
                         val s = OtherSetting(rel, r.path, r.label, r.group, true, writable)
-                        entries.add(ConflictEntry(s, bestMatch(tokens(r.label), fishTokens)))
+                        val m = bestMatch(tokens(r.label), fishTokens)
+                        entries.add(ConflictEntry(s, m?.first, (m?.second ?: 0f) >= 0.99f))
                     }
                     if (entries.size > 1500) break
                 }
@@ -191,7 +193,7 @@ object ModConflicts {
             .map { t -> val x = SYNONYM[t] ?: t; if (x.length > 3 && x.endsWith("s") && !x.endsWith("ss")) x.dropLast(1) else x }
             .toSet()
 
-    private fun bestMatch(t: Set<String>, fish: List<Pair<FishFeatureRef, Set<String>>>): FishFeatureRef? {
+    private fun bestMatch(t: Set<String>, fish: List<Pair<FishFeatureRef, Set<String>>>): Pair<FishFeatureRef, Float>? {
         if (t.isEmpty()) return null
         var best: FishFeatureRef? = null
         var bestScore = 0f
@@ -203,7 +205,7 @@ object ModConflicts {
             val ok = jac >= 0.5f || (inter >= 2 && inter == minOf(t.size, ft.size))
             if (ok && jac > bestScore) { bestScore = jac; best = f }
         }
-        return best
+        return best?.let { it to bestScore }
     }
 
     // ---------- pending edits ----------

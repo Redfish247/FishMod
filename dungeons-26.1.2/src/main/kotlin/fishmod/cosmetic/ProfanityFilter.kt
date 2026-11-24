@@ -56,8 +56,9 @@ object ProfanityFilter {
             while (true) {
                 idx = c.text.indexOf(w, from)
                 if (idx < 0) break
-                val startVis = c.runStartVis[idx]
-                val endVis = c.runEndVis[idx + w.length - 1]
+                // Range trimmed at gaps: "of fuck" merges the f's, but only the word itself is starred.
+                val startVis = c.runSegStart[idx]
+                val endVis = c.runSegEnd[idx + w.length - 1]
                 for (i in startVis..endVis) censorVis[i] = true
                 any = true
                 from = idx + 1
@@ -104,6 +105,8 @@ object ProfanityFilter {
         lateinit var text: String
         lateinit var runStartVis: IntArray
         lateinit var runEndVis: IntArray
+        lateinit var runSegStart: IntArray // start of the run's last contiguous stretch
+        lateinit var runSegEnd: IntArray   // end of the run's first contiguous stretch
     }
 
     private fun visible(raw: String): Visible {
@@ -136,16 +139,22 @@ object ProfanityFilter {
         val sb = StringBuilder(v.chars.size)
         val start = IntArray(v.chars.size)
         val end = IntArray(v.chars.size)
+        val segStart = IntArray(v.chars.size)
+        val segEnd = IntArray(v.chars.size)
+        val gapped = BooleanArray(v.chars.size)
         var len = 0
         for (i in v.chars.indices) {
             val nc = normalize(v.chars[i])
             if (nc.code == 0) continue
             if (len > 0 && sb[len - 1] == nc) {
+                if (i != end[len - 1] + 1) { gapped[len - 1] = true; segStart[len - 1] = i } else if (!gapped[len - 1]) segEnd[len - 1] = i
                 end[len - 1] = i
             } else {
                 sb.append(nc)
                 start[len] = i
                 end[len] = i
+                segStart[len] = i
+                segEnd[len] = i
                 len++
             }
         }
@@ -155,6 +164,10 @@ object ProfanityFilter {
         c.runEndVis = IntArray(len)
         System.arraycopy(start, 0, c.runStartVis, 0, len)
         System.arraycopy(end, 0, c.runEndVis, 0, len)
+        c.runSegStart = IntArray(len)
+        c.runSegEnd = IntArray(len)
+        System.arraycopy(segStart, 0, c.runSegStart, 0, len)
+        System.arraycopy(segEnd, 0, c.runSegEnd, 0, len)
         return c
     }
 

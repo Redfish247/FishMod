@@ -1,7 +1,46 @@
-{"date":"2026-11-18","version":"1.7.109","summary":"Daily bugfix run: no new bugs found, 1.7.109 builds clean (26.1.2 + 26.2), jar not copied (Modrinth folder missing), untested.",
-"fixed":[],
-"already":[{"id":601,"title":"EntityCulling Cullable not found","detail":"Logged at info since 9b215215; report from 1.7.18."},{"id":611,"title":"Dragon spawn particle at unknown spot","detail":"Same as #602, silenced in `ea74da40`."},{"id":613,"title":"Live socket silent, reconnecting","detail":"Handled in `652d5913`; report from 1.7.18."},{"id":617,"title":"No picker recorded for RED relic","detail":"Log-only since the #587 fix; report from 1.7.18."}],
-"open":[],
-"tests":["Check Testing cards #612 #614 #616 in game","Open FishMod menus on Vulkan and OpenGL: draw, clip, no UI disabled message"],
-"facts":[["Commits","start 654513d0, changelog only"],["Build","26.1.2 + 26.2 SUCCESSFUL"],["Board","all 20 bug cards already testing, no changes"],["Sweep","reviewed changes since 2bb37c48, nothing found"]],
-"notes":["Modrinth profile folder Skyblock 1.21.8 does not exist; install via /ship"]}
+{
+    "summary":  "Daily bugfix run: flare detection hardened in Deployables HUD, builds clean (26.1.2 + 26.2), jar not copied (Modrinth folder missing), untested.",
+    "version":  "1.8.55",
+    "notes":  [
+                  "Modrinth folder Skyblock 1.21.8 does not exist, jar not copied"
+              ],
+    "already":  [
+
+                ],
+    "date":  "2026-11-24",
+    "open":  [
+                 {
+                     "detail":  "Only Warning Flare texture is known; others rely on name match.",
+                     "title":  "Alert and SOS flare textures",
+                     "status":  "Needs a report"
+                 }
+             ],
+    "fixed":  [
+                  {
+                      "detail":  "Flares are now also detected by head texture (Warning Flare) and by case-insensitive name.",
+                      "title":  "Deployables HUD missed flares",
+                      "files":  [
+                                    "features/hud/DeployablesHud.kt"
+                                ],
+                      "id":  711
+                  }
+              ],
+    "facts":  [
+                  [
+                      "Commits",
+                      "start 038f4592, fix c91abbf0"
+                  ],
+                  [
+                      "Build",
+                      "26.1.2 + 26.2 SUCCESSFUL"
+                  ],
+                  [
+                      "Board",
+                      "all 13 cards already testing"
+                  ]
+              ],
+    "tests":  [
+                  "Stand next to a Warning Flare with Deployables HUD on: it shows with a countdown",
+                  "Repeat with Alert and SOS flares"
+              ]
+}

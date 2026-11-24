@@ -1649,6 +1649,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(InputSetting("Original Name Text", "", "originalNameLabel").gatedBy { FishSettings.originalNameTooltip })
             f.sub.add(ColorPickerSetting("Original Name Color", "", "originalNameColor").gatedBy { FishSettings.originalNameTooltip })
             f.sub.add(ToggleSetting("Obtained Date", "When the item was obtained", fishmod.features.extras.ExtrasSettings::class.java, "obtainedDateTooltip"))
+            f.sub.add(ToggleSetting("Shrink Tall Tooltips", "Auto-scale tooltips that are taller than the screen so they fit (off = vanilla size)", "tooltipAutoFit"))
             f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", "tooltipScrollEnabled"))
             f.sub.add(SliderIntSetting("Tooltip Scale %", "", "tooltipScrollScale", 30, 150, 5).gatedBy { FishSettings.tooltipScrollEnabled })
@@ -2372,9 +2373,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(SliderIntSetting("Text Scale %", "Size of the boss text", "slayerPhaseTextScale", 20, 150, 5))
             phases.sub.add(ToggleSetting("Title Warnings", "Big title for BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON", "slayerPhaseTitles"))
             phases.sub.add(ToggleSetting("Health Phase Split", "Show the 1/3 · 2/3 phase fraction (Voidgloom / Inferno)", "slayerPhaseHealthSplit"))
-            phases.sub.add(ToggleSetting("HP Label", "Big current/max HP over the boss, coloured by %", "slayerPhaseHpLabel"))
-            phases.sub.add(ToggleSetting("Time Label", "Time since the boss spawned, under the HP label", "slayerPhaseTimeLabel"))
-            phases.sub.add(ToggleSetting("Hide Boss Nametag", "Hide the vanilla HP nametag while the HP label shows", "slayerPhaseHideNametag"))
+            phases.sub.add(ToggleSetting("Hide Boss Nametag", "Hide the vanilla HP nametag over slayer bosses", "slayerPhaseHideNametag"))
             val ea = fishmod.features.slayer.EndAlertSettings::class.java
             phases.sub.add(ToggleSetting("Broodfather Egg Hits", "Egg sac hits left while the Broodfather shields", ea, "phaseEggHits"))
             phases.sub.add(ToggleSetting("Blaze Fire Pillar Alert", "Fire pillar countdown text + title (Inferno Demonlord)", ea, "phaseFirePillar"))

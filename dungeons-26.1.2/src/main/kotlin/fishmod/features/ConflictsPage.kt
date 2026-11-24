@@ -28,6 +28,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     private val collapsed = HashSet<String>()
     // 0 = unresolved (default), 1 = all duplicates, 2 = everything
     private var view = 0
+    private var bulkArmed = false
     private val viewNames = arrayOf("Unresolved only", "All duplicates", "Show everything")
 
     var scroll = 0
@@ -75,7 +76,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
 
     private sealed class Row {
         class Head(val g: ModGroup, val shown: Int) : Row()
-        class Item(val g: ModGroup, val e: ConflictEntry) : Row()
+        class Item(val g: ModGroup, val e: ConflictEntry, val sib: List<ConflictEntry>) : Row()
         class Note(val text: String) : Row()
     }
 
@@ -89,10 +90,16 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
                 else -> g.entries
             }
             if (view < 2 && list.isEmpty()) continue
-            rows.add(Row.Head(g, list.size))
+            // Many settings of one mod can match the same FishMod feature: show one row per feature, acting on the whole group.
+            val clusters: List<List<ConflictEntry>> = if (view < 2) {
+                val by = LinkedHashMap<String, MutableList<ConflictEntry>>()
+                for (e in list) by.getOrPut(e.fish!!.name) { ArrayList() }.add(e)
+                by.values.map { c -> c.sortedBy { it.setting.label.length } }
+            } else list.map { listOf(it) }
+            rows.add(Row.Head(g, clusters.size))
             if (g.id in collapsed) continue
-            if (list.isEmpty()) g.note?.let { rows.add(Row.Note(it)) }
-            for (e in list) rows.add(Row.Item(g, e))
+            if (clusters.isEmpty()) g.note?.let { rows.add(Row.Note(it)) }
+            for (c in clusters) rows.add(Row.Item(g, c[0], c))
         }
         return rows
     }
@@ -141,11 +148,14 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         UiRecorder.textBold(summary, x.toFloat(), y.toFloat() + 2f, 10.5f, ScreenTheme.TEXT_COLOR)
         UiRecorder.text("Changes to other mods apply on the next game launch. FishMod toggles apply instantly.", x.toFloat(), y + 18f, 8.5f, ScreenTheme.SUBTEXT_COLOR)
         var tx = x + w
-        tx -= 58; button(tx, y, 58, 17, "Rescan", mx, my, ScreenTheme.TEXT_COLOR) { scanStarted = false; rescan() }
-        tx -= 6 + 104; button(tx, y, 104, 17, viewNames[view], mx, my, if (view == 0) ScreenTheme.ACCENT else ScreenTheme.TEXT_COLOR) { view = (view + 1) % viewNames.size; scroll = 0 }
+        tx -= 58; button(tx, y, 58, 17, "Rescan", mx, my, ScreenTheme.TEXT_COLOR) { scanStarted = false; bulkArmed = false; rescan() }
+        tx -= 6 + 104; button(tx, y, 104, 17, viewNames[view], mx, my, if (view == 0) ScreenTheme.ACCENT else ScreenTheme.TEXT_COLOR) { view = (view + 1) % viewNames.size; scroll = 0; bulkArmed = false }
         if (r != null && dupCount() > 0) {
             tx -= 6 + 138
-            button(tx, y, 138, 17, "Use FishMod for all", mx, my, RED) { useFishForAll(r) }
+            val n = bulkTargets(r).size
+            button(tx, y, 138, 17, if (bulkArmed) "Confirm: $n exact?" else "Use FishMod for all", mx, my, RED) {
+                if (!bulkArmed) bulkArmed = true else { bulkArmed = false; useFishForAll(r) }
+            }
         }
         ScreenTheme.nRect(x, y + TOOL_H - 5, w, 1, ScreenTheme.ink(0x1F))
 
@@ -185,7 +195,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         UiRecorder.text(if (open) "▾" else "▸", x + 9f, y + (HEAD_H - 10f) / 2f, 10f, ScreenTheme.SUBTEXT_COLOR)
         UiRecorder.textBold(row.g.name, x + 24f, y + (HEAD_H - 11f) / 2f, 11f, ScreenTheme.TEXT_COLOR)
         val modIgn = ModConflicts.isModIgnored(row.g.id)
-        val dup = row.g.entries.count { it.fish != null && !modIgn && unresolved(it) }
+        val dup = if (modIgn) 0 else row.g.entries.filter { unresolved(it) }.map { it.fish!!.name }.toSet().size
         val info = "${row.shown} shown" + if (modIgn) " · mod ignored" else if (dup > 0) " · $dup unresolved" else ""
         val iw = UiRecorder.textWidth(info, 9f)
         UiRecorder.text(info, x + w - 10 - iw, y + (HEAD_H - 9f) / 2f, 9f, if (dup > 0) RED else ScreenTheme.SUBTEXT_COLOR)
@@ -199,8 +209,12 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         val e = row.e
         val s = e.setting
         val fish = e.fish
-        val queued = ModConflicts.isQueued(s)
-        val ign = ModConflicts.isIgnored(s) || ModConflicts.isModIgnored(row.g.id)
+        val sib = row.sib
+        val writableSib = sib.filter { it.setting.writable }
+        val writable = writableSib.isNotEmpty()
+        val queued = writable && writableSib.all { ModConflicts.isQueued(it.setting) }
+        val allIgnored = sib.all { ModConflicts.isIgnored(it.setting) }
+        val ign = allIgnored || ModConflicts.isModIgnored(row.g.id)
         UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), ITEM_H.toFloat(), 6f, ScreenTheme.ink(0x0A))
         if (fish != null && !queued && !ign) ScreenTheme.nRoundedRectRing(x, y, w, ITEM_H, 6, 1, 0, (0x55 shl 24) or (RED and 0xFFFFFF))
         else ScreenTheme.nRoundedRectRing(x, y, w, ITEM_H, 6, 1, 0, ScreenTheme.ink(0x14))
@@ -214,11 +228,11 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         val labelRight = (if (fish != null) fishX - 62 else theirsX - 62).toFloat()
 
         UiRecorder.text(ellipsize(s.label, labelRight - (x + 12), 10f), x + 12f, y + 5f, 10f, ScreenTheme.TEXT_COLOR)
-        val sub = if (fish != null) "≈ FishMod: ${fish.name}" else s.group.ifEmpty { s.file.substringAfterLast('/') }
+        val sub = if (fish != null) "≈ FishMod: ${fish.name}" + (if (sib.size > 1) " · ${sib.size} settings" else "") else s.group.ifEmpty { s.file.substringAfterLast('/') }
         UiRecorder.text(ellipsize(sub, labelRight - (x + 12), 8.5f), x + 12f, y + 18f, 8.5f, if (fish != null) ScreenTheme.ACCENT else ScreenTheme.SUBTEXT_COLOR)
 
-        if (fish != null) small(ignX, y + (ITEM_H - 15) / 2, ignW, 15, if (ModConflicts.isIgnored(s)) "Restore" else "Ignore", mx, my) {
-            ModConflicts.setIgnored(s, !ModConflicts.isIgnored(s))
+        if (fish != null) small(ignX, y + (ITEM_H - 15) / 2, ignW, 15, if (allIgnored) "Restore" else "Ignore", mx, my) {
+            for (x in sib) ModConflicts.setIgnored(x.setting, !allIgnored)
         }
 
         // FishMod toggle (instant)
@@ -230,18 +244,27 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         }
 
         // their toggle (applies next launch)
-        val cap = if (queued) "off on restart" else if (!s.writable) "edit in mod" else row.g.name
+        val cap = if (queued) "off on restart" else if (!writable) "edit in mod" else row.g.name
         val capColor = if (queued) AMBER else ScreenTheme.SUBTEXT_COLOR
         val capText = ellipsize(cap, 56f, 8.5f)
         UiRecorder.text(capText, theirsX - 6f - UiRecorder.textWidth(capText, 8.5f), pillY + (pillH - 8.5f) / 2f, 8.5f, capColor)
-        FishModScreen.drawTogglePill(ctx, theirsX, pillY, pillW, pillH, !queued, if (queued) 0f else 1f, s.writable && ScreenTheme.inside(mx, my, theirsX, pillY, pillW, pillH), if (s.writable) 1f else 0.4f)
-        if (s.writable) hits.add(Hit(theirsX, pillY, pillW, pillH, true) { if (queued) ModConflicts.unqueue(s) else ModConflicts.queueDisable(s, row.g.name) })
+        FishModScreen.drawTogglePill(ctx, theirsX, pillY, pillW, pillH, !queued, if (queued) 0f else 1f, writable && ScreenTheme.inside(mx, my, theirsX, pillY, pillW, pillH), if (writable) 1f else 0.4f)
+        if (writable) hits.add(Hit(theirsX, pillY, pillW, pillH, true) { if (queued) writableSib.forEach { ModConflicts.unqueue(it.setting) } else writableSib.forEach { ModConflicts.queueDisable(it.setting, row.g.name) } })
+    }
+
+    // Bulk action only touches exact name matches: loose matches turned on unrelated FishMod features (item rarity, soul waypoints).
+    private fun bulkTargets(r: ScanResult): List<Pair<ModGroup, ConflictEntry>> {
+        val out = ArrayList<Pair<ModGroup, ConflictEntry>>()
+        for (g in r.mods) for (e in g.entries) {
+            if (e.fish == null || !e.exact || !unresolved(e) || ModConflicts.isModIgnored(g.id)) continue
+            out.add(g to e)
+        }
+        return out
     }
 
     private fun useFishForAll(r: ScanResult) {
-        for (g in r.mods) for (e in g.entries) {
+        for ((g, e) in bulkTargets(r)) {
             val f = e.fish ?: continue
-            if (ModConflicts.isIgnored(e.setting) || ModConflicts.isModIgnored(g.id)) continue
             try { f.set(true) } catch (t: Throwable) { FishDiag.fail("ConflictsPage.4", "fishmod enable failed ${f.name}", t) }
             if (e.setting.writable) ModConflicts.queueDisable(e.setting, g.name)
         }
