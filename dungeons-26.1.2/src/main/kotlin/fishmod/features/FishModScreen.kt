@@ -1598,6 +1598,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Separate Hotbar Opacity", "Use a different opacity on the hotbar outside menus", VisualSettings::class.java, "itemRaritySeparateHotbar"))
             f.sub.add(SliderIntSetting("Hotbar Opacity %", "", VisualSettings::class.java, "itemRarityHotbarOpacity", 0, 100))
             f.sub.add(ToggleSetting("Hypixel Colors", "Brighter, accurate per-rarity colours", VisualSettings::class.java, "itemRarityHypixelColors"))
+            f.sub.add(ToggleSetting("Skyblocker Colors", "Use Skyblocker's rarity palette (vanilla chat colours); overrides Hypixel Colors", VisualSettings::class.java, "rarityBgSkyblocker"))
             f.sub.add(ToggleSetting("Circular", "", VisualSettings::class.java, "rarityBgCircle"))
             visuals.features.add(f)
         }
