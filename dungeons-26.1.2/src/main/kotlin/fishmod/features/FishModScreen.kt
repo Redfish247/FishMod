@@ -161,6 +161,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         general.features.add(Feature("FishMod Chat (/fc)", "fishChatEnabled"))
         run {
+            val f = Feature("Rare Drop Animation", "rareDropAnim")
+            for ((cat, drops) in fishmod.features.general.RareDropAnimation.CATEGORIES) {
+                f.sub.add(SubcategoryHeader(cat, true))
+                for (n in drops)
+                    f.sub.add(ToggleSetting(n, "", { fishmod.features.general.RareDropAnimation.isOn(n) }, { v -> fishmod.features.general.RareDropAnimation.setOn(n, v) }))
+            }
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Debug Reports", "debugReports")
             f.sub.add(ToggleSetting("Chat Notice", "Short chat line with a copy button when something breaks (max once a minute)", "debugChatNotices"))
             general.features.add(f)
@@ -412,6 +421,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             visuals.features.add(f)
         }
         visuals.features.add(Feature("No Fog", "noFogEnabled"))
+        run {
+            val f = Feature("Classic Skyblock Items", "classicItemsEnabled")
+            f.sub.add(ToggleSetting("Vanilla Item Models", "Swap Hypixel custom item models for the plain vanilla model of that SkyBlock item", "classicItemModels"))
+            f.sub.add(ToggleSetting("Classic Head Textures", "Use the old head texture for SkyBlock items the pack turns into heads", "classicItemHeads"))
+            f.sub.add(ToggleSetting("Vanilla Tooltips", "Remove the custom SkyBlock tooltip frame and background", "classicTooltips"))
+            f.sub.add(ToggleSetting("Load Pack Locally", "Download the SkyBlock pack once and keep it cached instead of applying the server pack on every join", { FishSettings.classicLocalPack }, { v -> FishSettings.classicLocalPack = v; fishmod.features.visuals.ClassicPack.reload() }))
+            f.sub.add(ToggleSetting("OG Text Colors", "Use the normal Minecraft text colours instead of the SkyBlock pack colour shaders", { FishSettings.classicOgColors }, { v -> FishSettings.classicOgColors = v; fishmod.features.visuals.ClassicPack.reload() }))
+            visuals.features.add(f)
+        }
         run {
             val f = Feature("Corpse Highlight", "corpseHighlightEnabled")
             f.sub.add(SubcategoryHeader("Boxes Glacite Mineshaft corpses through walls"))
@@ -2399,7 +2417,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
         order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
         order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Finder")
-        order(visuals, "No Fog", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
+        order(visuals, "No Fog", "Classic Skyblock Items", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
         order(cosmetics, "Custom Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
         columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin and Legion Hud", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
         columns.firstOrNull { it.name == "Diana" }?.let { order(it, "Burrow Guessing", "Rare Mobs", "Diana Warp", "Diana Tracker", "Mythos Mob HP", "Diana Announcers", "Diana Party Commands") }
@@ -2408,10 +2426,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             for ((label, keys) in groups) {
                 val m = rest.filter { f -> keys.any { f.name.contains(it, true) } }
                 if (m.isEmpty()) continue
-                used++; rest.removeAll(m.toSet()); m.forEach { it.group = label }; out.addAll(m)
+                used++; rest.removeAll(m.toSet()); out.addAll(m)
             }
             if (used < 1 || out.isEmpty()) return
-            if (rest.isNotEmpty()) rest.forEach { it.group = "Other" }
             c.features.clear(); c.features.addAll(out + rest)
         }
         groupBy(chatCol, "FishMod Chat" to listOf("fishmod", "(/fc)", "prefix"), "History & Search" to listOf("infini", "history", "search", "peek", "tab"),
@@ -2868,7 +2885,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cmdButtons(): List<Btn> {
         val out = ArrayList<Btn>()
         var x = left() + 10
-        for ((id, label) in listOf("hud" to "Edit HUD", "|" to "", "report" to "Report", "credits" to "Credits", "reset" to (if (resetArmed) "Confirm?" else "Reset"), "|" to "", "look" to "Appearance")) {
+        for ((id, label) in listOf("hud" to "Edit HUD", "|" to "", "report" to "Report", "credits" to "Credits", "reset" to (if (resetArmed) "Confirm?" else "Reset"), "|" to "", "look" to "Appearance", "conflicts" to conflictsLabel())) {
             if (id == "|") { x += 9; continue }
             val w = sw(this.font, label, 0.85f) + 18
             out.add(Btn(id, label, x, CMD_Y, w, 22)); x += w + 2
@@ -2913,7 +2930,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 drawChevron(ctx, b.x + b.w - 11, b.y + b.h / 2, viewOpen, ScreenTheme.subtextOn(segBg))
                 continue
             } else if (a > 0f || (b.id == page)) UiRecorder.fillRoundedRect(b.x.toFloat(), b.y.toFloat(), b.w.toFloat(), b.h.toFloat(), 6f, fa(ROW_HOVER, if (b.id == page) 1f else a))
-            val c = if (b.id == "reset" && resetArmed) 0xFFE05A5A.toInt() else TEXT_COLOR
+            val c = if (b.id == "conflicts" && conflictsPage.dupCount() > 0) 0xFFFF5555.toInt() else if (b.id == "reset" && resetArmed) 0xFFE05A5A.toInt() else TEXT_COLOR
             ctext(b.label, b.x, b.y, b.w, b.h, 0.85f, c)
         }
         var sx = left() + 10 + sw(this.font, "Edit HUD", 0.85f) + 22
@@ -2996,6 +3013,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "hud" -> Minecraft.getInstance().showScreen(FishHudEditor(this))
                 "report" -> openPage("report")
                 "credits" -> openPage("credits")
+                "conflicts" -> openPage("conflicts")
                 "reset" -> if (resetArmed) { resetAllColumns(); resetArmed = false } else { resetArmed = true; resetArmedAt = System.currentTimeMillis() }
                 "look" -> columns.firstOrNull { c -> c.features.any { it.name == "UI Customization" } }?.let { c -> toggleFold(c); selected = c.features.first { it.name == "UI Customization" }; selAt = System.currentTimeMillis() }
                 "view" -> viewOpen = !wasViewOpen
@@ -3017,9 +3035,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var page: String? = null
     private val creditsPage by lazy { CreditsPage() }
     private val reportPage by lazy { ReportPage(this.font) }
+    private val conflictsPage by lazy {
+        ConflictsPage {
+            columns.flatMap { c -> c.features }.filter { it.get != null && it.set != null }
+                .map { f -> fishmod.compat.conflicts.FishFeatureRef(f.name, f.get!!, f.set!!) }.distinctBy { it.name }
+        }
+    }
+    // Always shown so the check can be verified after a reload: "(…)" = scan running, "(0)" = scanned, none found
+    private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n < 0) "Conflicts (…)" else "Conflicts ($n)" }
     private fun openPage(p: String) { page = p; selected = null; openedAt = System.currentTimeMillis() }
     private fun goHome() { page = null; allMode = true; selected = null; gridScroll = 0; if (searchText.isNotEmpty()) { searchField?.value = ""; searchText = "" }; openedAt = System.currentTimeMillis() }
-    private fun pageTitle(): String = if (page == "report") "Report to RedFish" else "Credits"
+    private fun pageTitle(): String = when (page) { "report" -> "Report to RedFish"; "conflicts" -> "Mod Conflicts"; else -> "Credits" }
 
     private fun crumbs(): List<Pair<String, (() -> Unit)?>> {
         val out = ArrayList<Pair<String, (() -> Unit)?>>()
@@ -3200,6 +3226,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val DONE_H = 32
     private fun detBot(): Int = cyBot() - DONE_H
     private fun detMax(f: Feature): Int = Math.max(0, descH(f) + f.naturalSubHeight() - (detBot() - detTop()))
+    // Settings (detail panel) scrollbar: thumb as [y, h]; null when the settings fit
+    private var detBarGrab = -1
+    private fun detThumb(f: Feature): IntArray? {
+        val max = detMax(f); if (max <= 0) return null
+        val track = detBot() - detTop(); val h = Mth.clamp(track * track / (track + max), 16, track)
+        return intArrayOf(detTop() + ((track - h).toLong() * Mth.clamp(detScroll, 0, max) / max).toInt(), h)
+    }
+    private fun detBarHit(mx: Int, my: Int): Boolean { val f = selected ?: return false; return page == null && mx in cx1() - 8..cx1() - 1 && my in detTop()..detBot() && detMax(f) > 0 }
+    private fun dragDetBar(my: Int) {
+        val f = selected ?: return; val t = detThumb(f) ?: return; val max = detMax(f)
+        detScroll = Mth.clamp(((my - detBarGrab - detTop()).toLong() * max / Math.max(1, detBot() - detTop() - t[1])).toInt(), 0, max)
+    }
     private fun scrollArrow(up: Boolean, cx: Float, cy: Float) {
         UiRecorder.fillRoundedRect(cx - 7f, cy - 7f, 14f, 14f, 7f, ScreenTheme.ink(0x30))
         UiRecorder.roundedRectRing(cx - 7f, cy - 7f, 14f, 14f, 7f, 1f, 0, ACCENT)
@@ -3219,6 +3257,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val pp = anim(openedAt, 0, 220); val oy = Math.round((1f - pp) * 10f)
             UiRecorder.textBold(pageTitle(), cx0().toFloat(), (pt + 5 + oy).toFloat(), 1.25f * NVG_BASE_TEXT_SIZE, fa(TEXT_COLOR, pp))
             if (page == "credits") creditsPage.render(cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
+            else if (page == "conflicts") conflictsPage.render(ctx, cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
             else reportPage.render(cx0(), pt + 32 + oy, cx1() - cx0(), cyBot() - pt - 32, mouseX, mouseY)
             return
         }
@@ -3316,6 +3355,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val detMidX = (dx0 + dx1) / 2f
             if (detScroll > 0) scrollArrow(true, detMidX, detTop() + 12f)
             if (detScroll < detMax(f)) scrollArrow(false, detMidX, detBot() - 12f)
+            detThumb(f)?.let { t ->
+                val bx = (dx1 - 6).toFloat()
+                UiRecorder.fillRoundedRect(bx, detTop().toFloat(), 3f, (detBot() - detTop()).toFloat(), 1.5f, ScreenTheme.ink(0x10))
+                UiRecorder.fillRoundedRect(bx, t[0].toFloat(), 3f, t[1].toFloat(), 1.5f, ScreenTheme.ink(if (detBarGrab >= 0 || detBarHit(mouseX, mouseY)) 0x70 else 0x40))
+            }
         } finally { UiRecorder.popScissor() }
     }
 
@@ -3465,11 +3509,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             gridBarGrab = if (my in t[0]..t[0] + t[1]) my - t[0] else t[1] / 2
             dragGridBar(my); return true
         }
+        if (btn == 0 && detBarHit(mx, my)) {
+            val t = detThumb(selected!!)!!
+            detBarGrab = if (my in t[0]..t[0] + t[1]) my - t[0] else t[1] / 2
+            dragDetBar(my); return true
+        }
         if (btn == 0 && detDividerHit(mx, my)) { detDrag = true; return true }
         if (navClick(mx, my, btn)) return true
 
         if (page != null) {
-            if (page == "report") { if (!reportPage.click(mx, my)) reportPage.focused = -1 } else creditsPage.click(mx, my)
+            if (page == "report") { if (!reportPage.click(mx, my)) reportPage.focused = -1 } else if (page == "conflicts") conflictsPage.click(mx, my) else creditsPage.click(mx, my)
             return true
         }
         if (my >= headerTop && my <= cyBot()) return exClick(mx, my, btn)
@@ -3487,6 +3536,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         if (resizeMask != 0) { applyResize(vx(click.x()), vx(click.y())); return true }
         if (gridBarGrab >= 0) { dragGridBar(vx(click.y())); return true }
+        if (detBarGrab >= 0) { dragDetBar(vx(click.y())); return true }
         if (detDrag) { FishSettings.fmDetailW = (cx1() - vx(click.x()) - 2).coerceIn(DET_W_MIN, Math.max(DET_W_MIN, (winW() * 0.6f).toInt())); return true }
         if (sbDrag) { FishSettings.fmSidebarW = (vx(click.x()) - stackX0() - 6).coerceIn(STACK_W_MIN, STACK_W_MAX); return true }
         if (navPress != null) {
@@ -3513,6 +3563,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (resizeMask != 0) { resizeMask = 0; resizeFrom = null; return true }
         if (sbDrag) { sbDrag = false; return true }
         if (gridBarGrab >= 0) { gridBarGrab = -1; return true }
+        if (detBarGrab >= 0) { detBarGrab = -1; return true }
         if (detDrag) { detDrag = false; return true }
         if (winDrag != null) { winDrag = null; return true }
         navPress?.let { c ->
@@ -3543,6 +3594,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return true
         }
         if (page == "credits") { creditsPage.scrollBy(verticalAmount); return true }
+        if (page == "conflicts") { conflictsPage.scrollBy(verticalAmount); return true }
         val f = selected
         val dir = if (verticalAmount > 0) -1 else 1
         if (f != null && mouseX >= cx1() - detW()) {
@@ -3752,7 +3804,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private var lastValue: Boolean? = null
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val on = getter()
-            if (lastValue == null) { lastValue = on; knobAnim.setTarget(on) }
+            if (lastValue == null) { lastValue = on; knobAnim.snap(on) }
             else if (lastValue != on) { lastValue = on; knobAnim.setTarget(on) }
             val tx = rightX - W - 2
             val ty = sy + (ITEM_HEIGHT - H) / 2
@@ -4877,6 +4929,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Etherwarp Helper" -> "Shows where an etherwarp will land"
                 "Lava To Water" -> "Makes lava look like water"
                 "No Fog" -> "Removes fog in the world, nether, underwater and in lava"
+                "Classic Skyblock Items" -> "Shows SkyBlock items with vanilla models and heads instead of the Hypixel resource pack ones"
                 "Corpse Highlight" -> "Boxes Glacite Mineshaft corpses through walls"
                 "Ghost Box" -> "Boxes ghosts in the Dwarven Mines"
                 "Custom Water Colour" -> "Pick your own water colour"

@@ -43,11 +43,11 @@ import javax.imageio.ImageIO
 object ChatImagePreview {
     private const val MAX_BYTES = 8 * 1024 * 1024
     private const val MAX_PIXELS = 16_000_000L
-    private const val TEX_MAX_DIM = 320
+    private const val TEX_MAX_DIM = 720
     private const val MAX_FRAMES = 40
     private const val MAX_CACHED = 8
-    private const val SHOW_MAX_W = 260
-    private const val SHOW_MAX_H = 200
+    private const val SHOW_MAX_W = 340
+    private const val SHOW_MAX_H = 280
 
     private val TRUSTED_HOSTS = arrayOf("discordapp.com", "discordapp.net", "imgur.com", "tenor.com", "giphy.com", "klipy.com")
     private val IMAGE_EXT = Regex("(?i)\\.(png|jpe?g|gif)$")
@@ -238,9 +238,27 @@ object ChatImagePreview {
         return root.get("url")?.takeIf { !it.isJsonNull }?.asString ?: throw IOException("no gif found")
     }
 
+    /** Forwarded Discord attachments arrive without the signed query and 404; the worker asks Discord to sign them. */
+    private fun needsDiscordSign(uri: URI): Boolean {
+        val h = uri.host?.lowercase() ?: return false
+        return (h == "cdn.discordapp.com" || h == "media.discordapp.net" || h == "cdn.discordapp.net") &&
+            (uri.path ?: "").startsWith("/attachments/") && uri.rawQuery == null
+    }
+
+    private fun signDiscord(url: String, caller: String): String {
+        val req = HttpRequest.newBuilder(URI.create("https://fishmod.dev/discord-sign?u=" + java.net.URLEncoder.encode(url, Charsets.UTF_8)))
+            .header("X-FishMod-Token", HypixelApi.MOD_TOKEN).header("X-FishMod-Caller", caller)
+            .header("User-Agent", "Mozilla/5.0").timeout(Duration.ofSeconds(10)).GET().build()
+        val res = http.send(req, HttpResponse.BodyHandlers.ofString())
+        val root = try { JsonParser.parseString(res.body()).asJsonObject } catch (_: Throwable) { throw IOException("HTTP ${res.statusCode()}") }
+        if (res.statusCode() != 200) throw IOException(root.get("cause")?.takeIf { !it.isJsonNull }?.asString ?: "HTTP ${res.statusCode()}")
+        return root.get("url")?.takeIf { !it.isJsonNull }?.asString ?: throw IOException("could not sign link")
+    }
+
     private fun load(url: String, e: Entry, caller: String) {
         var imageUrl = url
         val pageUri = URI.create(url)
+        if (needsDiscordSign(pageUri)) imageUrl = signDiscord(url, caller)
         if (isKlipyPage(pageUri)) {
             imageUrl = resolveKlipy(pageUri, caller)
             if (!isPreviewable(imageUrl)) throw IOException("unsupported image")
