@@ -52,13 +52,10 @@ object FishChat {
     // Only the really rare stuff gets shared: scrolls, Necron's Handle, M6/M7 master stars, top-tier slayer drops, all dyes.
     private val SHARE_EXACT = setOf(
         "necron's handle", "fourth master star", "fifth master star",
-        // Revenant T5, Tarantula T4, Sven T4, Voidgloom T4, Inferno T4
-        "scythe blade", "shard of the shredded", "warden heart",
-        "digested mosquito", "fly swatter", "overflux capacitor",
-        "judgement core", "etherwarp merger", "pocket black hole",
+        // Slayer drops
+        "warden heart", "overflux capacitor", "judgement core", "primordial eye", "high class archfiend dice",
         // Fishing (Lord Jawbus / Thunder) and a few other big ones
         "radioactive vial", "burnt texts", "titanoboa shed", "tiki mask", "divan alloy", "shimmering wool", "tier boost core", "ender dragon", "quick claw", "dark claymore",
-        "kelvin inverter", "scorpion foil", "hellion shard", "blaze rod distillate", "glowstone gauntlet",
     )
 
     /** True for drops worth broadcasting. [item] is the name from RareDropAnimation.dropName. */
