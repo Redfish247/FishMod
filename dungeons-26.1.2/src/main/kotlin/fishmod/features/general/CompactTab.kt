@@ -462,7 +462,7 @@ object CompactTab {
         if (live > 0) return live
         try {
             val self = mc.connection?.getPlayerInfo(mc.player!!.uuid)
-            if (self != null && self.latency > 0) return self.latency
+            if (self != null && self.latency > 1) return self.latency
         } catch (ex: Exception) {
             FishDiag.fail("CompactTab.4", "own tab latency lookup failed", ex)
         }
