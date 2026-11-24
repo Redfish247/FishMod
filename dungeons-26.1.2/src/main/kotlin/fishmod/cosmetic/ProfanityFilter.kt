@@ -35,6 +35,10 @@ object ProfanityFilter {
         WORDS = ws.toTypedArray()
     }
 
+    // censors text from other players unless the viewer turned the filter off; own nick upload always uses censor()
+    @JvmStatic
+    fun censorIncoming(raw: String?): String? = if (fishmod.utils.config.values.FishSettings.profanityFilter) censor(raw) else raw
+
     @JvmStatic
     fun censor(raw: String?): String? {
         if (raw == null || raw.isEmpty()) return raw
