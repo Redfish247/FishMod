@@ -11,6 +11,10 @@ object EndAlertSettings {
     @ConfigValue @JvmField var slayerMiniHighlight: Boolean = false
     @ConfigValue @JvmField var slayerMiniHighlightColor: Int = 0xFFFF5555.toInt()
 
+    @ConfigValue @JvmField var slayerBossBox: Boolean = false
+    @ConfigValue @JvmField var slayerBossBoxSpawnMark: Boolean = true
+    @ConfigValue @JvmField var slayerBossBoxColor: Int = 0xFFFF3333.toInt()
+
     @ConfigValue @JvmField var cocoonTimer: Boolean = false
     @ConfigValue @JvmField var protectorHud: Boolean = false
     @ConfigValue @JvmField var protectorHudX: Int = 5
