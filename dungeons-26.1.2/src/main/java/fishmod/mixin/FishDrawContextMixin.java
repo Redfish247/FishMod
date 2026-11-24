@@ -138,6 +138,19 @@ public class FishDrawContextMixin {
         return fishmod$swap(text);
     }
 
+    // Vanilla tab names carry static level colours; animate them at draw time like CompactTab and chat
+    @ModifyVariable(method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;IIIZ)V", at = @At("HEAD"), argsOnly = true, require = 0)
+    private net.minecraft.util.FormattedCharSequence fishmod$tabLevelAnim(net.minecraft.util.FormattedCharSequence seq) {
+        if (!fishmod.utils.rendering.FishHudLayer.inTab || !fishmod.utils.config.values.FishSettings.prestigeColorsTab) return seq;
+        try {
+            net.minecraft.util.FormattedCharSequence out = fishmod.cosmetic.prestige.PrestigeLevelColors.animateLine(seq);
+            return out == null ? seq : out;
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FishDrawContextMixin.tabAnim", "tab level animate failed", t);
+            return seq;
+        }
+    }
+
     @ModifyVariable(method = "textWithBackdrop(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIII)V", at = @At("HEAD"), argsOnly = true)
     private Component fishmod$ds3(Component text) {
         return fishmod$swap(text);
