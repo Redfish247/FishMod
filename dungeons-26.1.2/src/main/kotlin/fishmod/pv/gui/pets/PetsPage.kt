@@ -49,6 +49,22 @@ class PetsPage {
 	private var hoverPetTip: List<Component>? = null
 	private var hoverMissingName: String? = null
 	private var autopetTip: List<PvTooltip.Line>? = null
+	private val tipCache = HashMap<PetSnapshot.Entry, TipEntry>()
+	private val iconCache = HashMap<Any, IconEntry>()
+
+	private class TipEntry(val lines: List<Component>, val at: Long)
+	private class IconEntry(val stack: ItemStack, val at: Long)
+
+	// Icon stacks are rebuilt (copy + NBT update) on every iconStack call, so cache them; items still loading
+	// from the NEU repo show as paper, so those are retried after a short delay.
+	private fun cachedIcon(key: Any, make: () -> ItemStack): ItemStack {
+		val now = System.currentTimeMillis()
+		val c = iconCache[key]
+		if (c != null && (now - c.at < ICON_RETRY_MS || (!c.stack.isEmpty && !c.stack.`is`(Items.PAPER)))) return c.stack
+		val st = make()
+		iconCache[key] = IconEntry(st, now)
+		return st
+	}
 
 	private enum class SortMode(val label: String) {
 		XP("XP"),
@@ -70,6 +86,8 @@ class PetsPage {
 	fun apply(snapshot: PetSnapshot?) {
 		this.snapshot = snapshot ?: PetSnapshot.empty()
 		scroll = 0
+		tipCache.clear()
+		iconCache.clear()
 		SkyBlockItemFactory.prefetchPets(this.snapshot)
 		val owned = HashSet<String>()
 		for (pet in this.snapshot.pets) {
@@ -305,7 +323,7 @@ class PetsPage {
 		PvDraw.roundedFill(g, sx, sy, slot, slot, 3, bg)
 		PvDraw.roundedRing(g, sx, sy, slot, slot, 3, border, PvDraw.C_ALL)
 
-		val icon = petIcon(pet)
+		val icon = cachedIcon(pet) { petIcon(pet) }
 		val draw = ITEM_ICON
 		val ix = sx + (slot - draw) / 2
 		val iy = sy + maxOf(1, (slot - draw) / 2 - 1)
@@ -324,17 +342,25 @@ class PetsPage {
 			hits.add(SlotHit(sx, hitTop, slot, hitBottom - hitTop, index))
 		}
 		if (hovered) {
-			val petSlot = InventorySnapshot.Slot(
-				pet.neuId,
-				1,
-				PetLoreResolver.loreFor(pet),
-				PetLoreResolver.displayNameFor(pet),
-				null,
-				null,
-				null
-			)
-			val petStack = SkyBlockItemFactory.toStack(petSlot)
-			hoverPetTip = SkyBlockItemFactory.tooltipLines(petSlot, petStack)
+			val now = System.currentTimeMillis()
+			val cached = tipCache[pet]
+			if (cached != null && now - cached.at < TIP_TTL_MS) {
+				hoverPetTip = cached.lines
+			} else {
+				val petSlot = InventorySnapshot.Slot(
+					pet.neuId,
+					1,
+					PetLoreResolver.loreFor(pet),
+					PetLoreResolver.displayNameFor(pet),
+					null,
+					null,
+					null
+				)
+				val petStack = SkyBlockItemFactory.toStack(petSlot)
+				val lines = SkyBlockItemFactory.tooltipLines(petSlot, petStack)
+				tipCache[pet] = TipEntry(lines, now)
+				hoverPetTip = lines
+			}
 		}
 	}
 
@@ -346,7 +372,7 @@ class PetsPage {
 		PvDraw.roundedRing(g, sx, sy, slot, slot, 3, MISSING_BORDER, PvDraw.C_ALL)
 		val ix = sx + (slot - ITEM_ICON) / 2
 		val iy = sy + (slot - ITEM_ICON) / 2
-		SkyBlockIconRenderer.draw(g, SkyBlockItemFactory.iconStack(pet.neuId), pet.neuId, ix, iy, ITEM_ICON)
+		SkyBlockIconRenderer.draw(g, cachedIcon(pet.neuId) { SkyBlockItemFactory.iconStack(pet.neuId) }, pet.neuId, ix, iy, ITEM_ICON)
 		if (hovered) {
 			hoverMissingName = pet.name
 			val rarity = SkyBlockItemFactory.tierArgb(pet.tier) and 0xFFFFFF
@@ -370,7 +396,7 @@ class PetsPage {
 		}
 		val pet = sorted[selected]
 
-		val icon = petIcon(pet)
+		val icon = cachedIcon(pet) { petIcon(pet) }
 		SkyBlockIconRenderer.draw(g, icon, pet.neuId, cx, cy, ITEM_ICON)
 		PvDraw.text(
 			g,
@@ -427,7 +453,7 @@ class PetsPage {
 		PvDraw.text(g, font, "Held item", cx, cy, PvDraw.COLOR_MUTED)
 		cy += font.lineHeight + 2
 		if (pet.hasHeldItem()) {
-			val held = SkyBlockItemFactory.iconStack(pet.heldItem)
+			val held = cachedIcon("held:" + pet.heldItem) { SkyBlockItemFactory.iconStack(pet.heldItem) }
 			SkyBlockIconRenderer.draw(g, held, pet.heldItem, cx, cy, ITEM_ICON)
 			val heldName = SkyBlockItemFactory.plainDisplayName(pet.heldItem)
 			val heldColor = SkyBlockItemFactory.tierArgb(SkyBlockItemFactory.resolveTier(pet.heldItem))
@@ -465,6 +491,8 @@ class PetsPage {
 
 	companion object {
 		private const val GAP = 8
+		private const val TIP_TTL_MS = 1500L
+		private const val ICON_RETRY_MS = 400L
 		private const val PAD = 8
 		private const val SLOT_SIZE = 22
 		private const val SLOT_GAP = 2
