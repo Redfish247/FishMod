@@ -10,6 +10,7 @@ import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
@@ -93,6 +94,8 @@ object RareDropAnimation {
             mc.execute {
                 FishDiag.guard("RareDropAnimation.1", "rare drop animation failed for $name") {
                     mc.showItemActivation(stack)
+                    // optional title naming the drop (#279)
+                    if (FishSettings.rareDropAnimTitle) fishmod.features.AlertTitles.show(Component.literal(if (pet) "§d§lPET DROP!" else "§6§lRARE DROP!"), Component.literal("§f$name"), 2500)
                 }
             }
         }
