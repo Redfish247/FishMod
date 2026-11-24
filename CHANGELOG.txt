@@ -1,0 +1,17 @@
+﻿FishMod Changelog - 2026-11-24
+==================================
+Fixed:
+- Deployables HUD now also recognises flares by their head texture (Warning Flare) and matches the flare name ignoring case, so a flare you stand next to is picked up.
+Reported bugs fixed (from fishmod.dev):
+- #711 / GitHub issue #262: deployables HUD never picks up a flare (detection hardened, untested in game)
+Known issues (not fixed yet):
+- Alert Flare and SOS Flare head textures are not known yet; they are only detected by stand name. If still missed, send a report while standing next to one.
+Test in game:
+1. Turn on Deployables HUD with Flares enabled, place a Warning Flare, stand next to it: it should appear with a countdown.
+2. Repeat with Alert and SOS flares and report if they do not show.
+Run notes:
+- Start commit 038f4592 (tree was clean), fix commit c91abbf0. Build :dungeons-26.1.2 + :dungeons-26.2 SUCCESSFUL. Jar NOT copied: the Modrinth folder "Skyblock 1.21.8\mods" does not exist.
+- features/hud/DeployablesHud.kt: added scanFlareHeads (unnamed stands wearing the Warning Flare skull texture) and case-insensitive FLARE_RE. Card 711 / issue 262.
+- Roadmap API: 13 cards, all already testing (6 Bug, 7 other); nothing to move. Only open GitHub issue was #262. No project CLAUDE.md found in repo; vault read (Known Bugs, Architecture Decisions).
+- Skipped: broad file-by-file source sweep, since no further reports were open and the repo has had many audits.
+- Notes for Obsidian: Flares on Hypixel are likely unnamed skull stands; Warning Flare texture hash 9d2bf986...3f6b; Alert and SOS hashes still needed.
