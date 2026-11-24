@@ -11,6 +11,8 @@ import fishmod.utils.events.FishEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.decoration.ArmorStand
 
 /**
@@ -24,6 +26,12 @@ object DeployablesHud {
     private const val FLARE_SECS = 180
     private val ORB_RE = Regex("""^(Radiant|Mana Flux|Overflux|Plasmaflux)(?: Orb)? (\d+[ms\d ]*)$""")
     private val FLARE_RE = Regex("""(Warning|Alert|SOS) Flare""")
+    // Flares are stands (unnamed or blank-named) wearing a skull; match the skin hash (SkyHanni-REPO Skulls.json).
+    private val FLARE_SKINS = mapOf(
+        "22e2bf6c1ec330247927ba63479e5872ac66b06903c86c82b52dac9f1c971458" to "Warning Flare",
+        "9d2bf9864720d87fd06b84efa80b795c48ed539b16523c3b1f1990b40c003f6b" to "Alert Flare",
+        "c0062cc98ebda72a6a4b89783adcef2815b483a01d73ea87b3df76072a89d13b" to "SOS Flare",
+    )
 
     private class Entry(val key: Int, val name: String, val color: String, var expireAt: Long, var dist: Double, val fromName: Boolean)
 
@@ -98,6 +106,19 @@ object DeployablesHud {
             }
         }
 
+        if (FishSettings.deployablesShowFlares) {
+            for (e in level.entitiesForRendering()) {
+                if (e !is ArmorStand || e.id in seen) continue
+                val d = e.position().distanceTo(pos)
+                if (d > range) continue
+                val flareName = flareBySkin(e) ?: continue
+                val left = FLARE_SECS - e.tickCount / 20
+                if (left <= 0) continue
+                put(e.id, flareName, entries[e.id]?.expireAt ?: (now + left * 1000L), d, false)
+                seen.add(e.id)
+            }
+        }
+
         entries.keys.retainAll(seen)
         entries.values.removeAll { it.expireAt <= now }
     }
@@ -106,6 +127,12 @@ object DeployablesHud {
         val e = entries[id]
         if (e == null) entries[id] = Entry(id, name, colorOf(name), expireAt, dist, fromName)
         else { e.expireAt = expireAt; e.dist = dist }
+    }
+
+    private fun flareBySkin(s: ArmorStand): String? {
+        val tex = s.getItemBySlot(EquipmentSlot.HEAD).get(DataComponents.PROFILE)?.partialProfile()?.properties()?.get("textures")?.firstOrNull()?.value() ?: return null
+        val json = runCatching { String(java.util.Base64.getDecoder().decode(tex)) }.getOrNull() ?: return null
+        return FLARE_SKINS.entries.firstOrNull { json.contains(it.key) }?.value
     }
 
     private fun neighbourTimer(s: ArmorStand, level: net.minecraft.client.multiplayer.ClientLevel): Int? {
