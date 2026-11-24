@@ -55,6 +55,13 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
 
         fun scale(): Double = if (getScaleVal != null) getScaleVal.asDouble else 1.0
         fun isVisible(): Boolean = visibleVal == null || visibleVal.asBoolean
+        /** A mod HUD actually drew over this entry's rect within the last half second (on screen now, not just enabled). */
+        fun isDrawnNow(): Boolean {
+            val s = scale()
+            return fishmod.utils.rendering.FishHudLayer.drawnRecently(
+                getXVal.asInt, getYVal.asInt, Math.max(1, Math.round(wVal * s).toInt()), Math.max(1, Math.round(hVal * s).toInt())
+            )
+        }
         fun isEnabledInList(): Boolean =
             enabledVal?.asBoolean ?: FeatureMasters.map[nameVal]?.invoke() ?: isVisible()
     }
@@ -402,7 +409,7 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
     init {
         picked.retainAll(ENTRIES.map { it.name() }.toSet())
         // Optional: start with the HUDs that are showing on screen right now (enabled AND currently visible), not every enabled one
-        if (FishSettings.hudEditorPickEnabled) { picked.clear(); listed().filter { it.isEnabledInList() && it.isVisible() }.forEach { picked += it.name() } }
+        if (FishSettings.hudEditorPickEnabled) { picked.clear(); listed().filter { it.isEnabledInList() && it.isDrawnNow() }.forEach { picked += it.name() } }
     }
 
     override fun isPauseScreen(): Boolean = false
