@@ -24,14 +24,18 @@ object ProfanityFilter {
         "faggot", "fagot", "faggit",
         "retard", "retarted",
         "cunt",
-        "kike", "spic", "chink", "gook", "wetback", "beaner", "coon", "wop",
-        "tranny", "dyke",
+        "chink", "wetback", "beaner",
+        "tranny",
         "whore", "slut",
-        "rape", "rapist", "pedo", "pedophile",
+        "rapist", "pedophile",
         "bitch",
         "asshole",
         "pussy",
     )
+
+    // Short words that sit inside normal words (con/icon, spic/spice, rape/grape, wop/swop):
+    // only censored when a whole token matches, optionally plural. No repeat-letter collapsing.
+    private val STRICT_WORDS = setOf("kike", "spic", "gook", "coon", "wop", "dyke", "rape", "pedo")
 
     /** Collapsed/normalized banned words (built once). */
     private val WORDS: Array<String>
@@ -54,10 +58,7 @@ object ProfanityFilter {
     @JvmStatic
     fun isProfane(raw: String?): Boolean {
         if (raw == null || raw.isEmpty()) return false
-        val v = visible(raw)
-        val c = compact(v)
-        for (w in WORDS) if (c.text.contains(w)) return true
-        return false
+        return censor(raw) != raw
     }
 
     /**
@@ -83,6 +84,21 @@ object ProfanityFilter {
                 any = true
                 from = idx + 1
             }
+        }
+        // Whole-token pass for the short, collision-prone words.
+        var ts = 0
+        val vn = v.chars.size
+        while (ts < vn) {
+            if (normalize(v.chars[ts]).code == 0) { ts++; continue }
+            var te = ts
+            val tok = StringBuilder()
+            while (te < vn && normalize(v.chars[te]).code != 0) { tok.append(normalize(v.chars[te])); te++ }
+            val t = tok.toString()
+            if (t in STRICT_WORDS || (t.endsWith("s") && t.dropLast(1) in STRICT_WORDS)) {
+                for (i in ts until te) censorVis[i] = true
+                any = true
+            }
+            ts = te
         }
         if (!any) return raw
 
