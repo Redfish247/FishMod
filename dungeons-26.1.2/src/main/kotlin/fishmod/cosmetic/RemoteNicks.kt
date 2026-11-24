@@ -72,7 +72,7 @@ object RemoteNicks {
         for ((uuid, name) in uuidToName) {
             val raw = nicks[uuid]
             if (raw != null && raw.isNotEmpty()) {
-                val styled = FishDiag.guard("RemoteNicks.2", "remote nick parse failed for $name") { NickState.parse(ProfanityFilter.censor(raw)) } ?: continue
+                val styled = FishDiag.guard("RemoteNicks.2", "remote nick parse failed for $name") { NickState.parse(ProfanityFilter.censorIncoming(raw)) } ?: continue
                 val prev = styledByName.put(name, styled)
                 version++
                 negativeCache.remove(name)
@@ -152,7 +152,7 @@ object RemoteNicks {
             inFlight.remove(name)
             val raw = nicks[uuid]
             if (raw != null && raw.isNotEmpty()) {
-                val styled = FishDiag.guard("RemoteNicks.3", "remote nick parse failed for $name") { NickState.parse(ProfanityFilter.censor(raw)) } ?: return@fetchNicks
+                val styled = FishDiag.guard("RemoteNicks.3", "remote nick parse failed for $name") { NickState.parse(ProfanityFilter.censorIncoming(raw)) } ?: return@fetchNicks
                 val prev = styledByName.put(name, styled)
                 version++
                 negativeCache.remove(name)

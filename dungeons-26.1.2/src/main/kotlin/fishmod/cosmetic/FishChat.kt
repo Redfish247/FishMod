@@ -152,7 +152,7 @@ object FishChat {
         val fromDiscord = root.get("uuid")?.takeIf { !it.isJsonNull }?.asString == "discord"
         // Discord messages can carry long signed attachment URLs after the text; don't cut them off.
         val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(if (fromDiscord) 1000 else MAX_LEN)?.takeIf { it.isNotBlank() } ?: return
-        val clean = ProfanityFilter.censor(text) ?: text
+        val clean = ProfanityFilter.censorIncoming(text) ?: text
         Minecraft.getInstance().execute {
             if (!FishSettings.fishChatNoticeShown) {
                 FishSettings.fishChatNoticeShown = true
