@@ -27,7 +27,7 @@ import java.util.function.DoubleSupplier
 import java.util.function.IntConsumer
 import java.util.function.IntSupplier
 
-class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit HUD")), HasUiOverlay {
+class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edit HUD")), HasUiOverlay {
 
     class HudEntry @JvmOverloads constructor(
         private val nameVal: String,
@@ -401,6 +401,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     init {
         picked.retainAll(ENTRIES.map { it.name() }.toSet())
+        // Optional: start with every enabled HUD picked
+        if (FishSettings.hudEditorPickEnabled) { picked.clear(); listed().filter { it.isEnabledInList() }.forEach { picked += it.name() } }
     }
 
     override fun isPauseScreen(): Boolean = false

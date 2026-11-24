@@ -370,6 +370,7 @@ class FishModInit : ClientModInitializer {
             line.accept("")
             line.accept("§3§lScreens & Misc")
             line.accept("§e/fm §7— config GUI  §8·§7  §e/fmloot §7— Croesus loot")
+            line.accept("§e/fm hud §7— open the HUD editor")
             line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands")
             line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)")
             line.accept("§e/nick §8<name>|reset")
@@ -606,6 +607,10 @@ class FishModInit : ClientModInitializer {
                 ClientCommands.literal("fm")
                     .then(ClientCommands.literal("stats").executes {
                         Minecraft.getInstance().execute { fishmod.features.dungeon.trackers.SessionStats.printToChat() }
+                        FishConstants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("hud").executes {
+                        Minecraft.getInstance().schedule { Minecraft.getInstance().showScreen(fishmod.features.FishHudEditor(null)) }
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("commandkeys").executes {
