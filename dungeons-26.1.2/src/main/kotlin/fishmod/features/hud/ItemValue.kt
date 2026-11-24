@@ -71,17 +71,26 @@ object ItemValue {
 
             val dynamic = CroesusPrices.dynamicBinPrice(id, cacheKey, stack.hoverName.string, enchantments, extra)
             FishDiag.check(!dynamic.isNaN(), "ItemValue.3") { "dynamicBinPrice NaN for $cacheKey" }
-            if (dynamic > 0.0) return dynamic
+            val cap = sanityCap(id, mods, boost)
+            if (dynamic > 0.0 && dynamic <= cap) return dynamic
 
             val live = CroesusPrices.qualityBinPrice(id, boost)
             FishDiag.check(!live.isNaN(), "ItemValue.4") { "qualityBinPrice NaN for $id boost=$boost" }
-            if (live > 0.0) return live + mods
+            if (live > 0.0 && live + mods <= cap) return live + mods
+            if (dynamic > cap || live + mods > cap) fishmod.utils.debug.FishDebug.LOGGER.debug("[ItemValue] {} BIN outlier dyn={} live={} cap={}", id, dynamic, live, cap)
         }
 
         val base = CroesusPrices.price(id)
         FishDiag.check(!base.isNaN(), "ItemValue.5") { "CroesusPrices.price NaN for $id" }
         if (base <= 0.0) return 0.0
         return (base + mods) * qualityFallbackMultiplier(boost)
+    }
+
+    // Rare exact-match BINs can be wildly overpriced; reject anything far above clean lowest BIN + upgrades.
+    private fun sanityCap(id: String, mods: Double, boost: Int): Double {
+        val base = CroesusPrices.cachedPrice(id)
+        if (base <= 0.0) return Double.MAX_VALUE
+        return (base + mods) * qualityFallbackMultiplier(boost) * 2.0
     }
 
     private fun qualityFallbackMultiplier(boost: Int): Double {
