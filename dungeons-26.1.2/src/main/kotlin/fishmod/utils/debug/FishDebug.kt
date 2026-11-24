@@ -125,6 +125,13 @@ object FishDebug {
                     FishConstants.SUCCESS
                 })
 
+                .then(ClientCommands.literal("fcdrop")
+                    .executes { fishmod.cosmetic.FishChat.testDrop("RARE DROP! Necron Dye (+50% Magic Find)"); FishConstants.SUCCESS }
+                    .then(ClientCommands.argument("line", StringArgumentType.greedyString()).executes { ctx ->
+                        fishmod.cosmetic.FishChat.testDrop(StringArgumentType.getString(ctx, "line")); FishConstants.SUCCESS
+                    })
+                )
+
                 .then(ClientCommands.literal("welcome").executes { _ ->
                     fishmod.utils.InstallHeartbeat.testWelcome()
                     FishConstants.SUCCESS

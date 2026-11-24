@@ -38,7 +38,8 @@ object ModifierValue {
             if (hpb > 10) v += CroesusPrices.cachedPrice("FUMING_POTATO_BOOK") * (hpb - 10) * NwConstants.FUMING_POTATO_BOOK
         }
 
-        if (tag.getIntOr("rarity_upgrades", 0) >= 1) v += CroesusPrices.cachedPrice("RECOMBOBULATOR_3000") * NwConstants.RECOMBOBULATOR
+        // A recomb on an accessory doesn't raise its market price (a 1k Spider Talisman showed 5.7M), so skip it there.
+        if (tag.getIntOr("rarity_upgrades", 0) >= 1 && !fishmod.utils.data.ItemTools.containsLore(stack, "ACCESSORY")) v +=CroesusPrices.cachedPrice("RECOMBOBULATOR_3000") * NwConstants.RECOMBOBULATOR
 
         val stars = maxOf(tag.getIntOr("upgrade_level", 0), tag.getIntOr("dungeon_item_level", 0))
         for (i in 6..stars) {
