@@ -1,4 +1,5 @@
 package fishmod.features.general
+import fishmod.compat.showItemActivation
 
 import com.google.gson.JsonParser
 import fishmod.pv.gui.inventories.NeuItemResolver
@@ -91,7 +92,7 @@ object RareDropAnimation {
             val mc = Minecraft.getInstance()
             mc.execute {
                 FishDiag.guard("RareDropAnimation.1", "rare drop animation failed for $name") {
-                    mc.gameRenderer.displayItemActivation(stack)
+                    mc.showItemActivation(stack)
                 }
             }
         }
