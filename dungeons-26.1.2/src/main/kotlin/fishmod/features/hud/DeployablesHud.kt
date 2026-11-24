@@ -23,7 +23,8 @@ object DeployablesHud {
     private const val SCAN_EVERY = 5
     private const val FLARE_SECS = 180
     private val ORB_RE = Regex("""^(Radiant|Mana Flux|Overflux|Plasmaflux)(?: Orb)? (\d+[ms\d ]*)$""")
-    private val FLARE_RE = Regex("""(Warning|Alert|SOS) Flare""")
+    private val FLARE_RE = Regex("""(Warning|Alert|SOS) Flare""", RegexOption.IGNORE_CASE)
+    private val FLARE_TEXTURES = mapOf("9d2bf9864720d87fd06b84efa80b795c48ed539b16523c3b1f1990b40c003f6b" to "Warning Flare")
 
     private class Entry(val key: Int, val name: String, val color: String, var expireAt: Long, var dist: Double, val fromName: Boolean)
 
@@ -98,8 +99,30 @@ object DeployablesHud {
             }
         }
 
+        if (FishSettings.deployablesShowFlares) scanFlareHeads(level, pos, range, now, seen)
         entries.keys.retainAll(seen)
         entries.values.removeAll { it.expireAt <= now }
+    }
+
+    private fun scanFlareHeads(level: net.minecraft.client.multiplayer.ClientLevel, pos: net.minecraft.world.phys.Vec3, range: Double, now: Long, seen: HashSet<Int>) {
+        for (e in level.entitiesForRendering()) {
+            if (e !is ArmorStand || e.id in seen) continue
+            val d = e.position().distanceTo(pos)
+            if (d > range) continue
+            val tex = e.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD)
+                .get(net.minecraft.core.component.DataComponents.PROFILE)?.partialProfile()?.properties()?.get("textures")?.firstOrNull()?.value() ?: continue
+            val json = runCatching { String(java.util.Base64.getDecoder().decode(tex)) }.getOrNull() ?: continue
+            val flare = FLARE_TEXTURES.entries.firstOrNull { json.contains(it.key) }?.value ?: continue
+            val prev = entries[e.id]
+            val secs = neighbourTimer(e, level)
+            val expire = when {
+                secs != null -> now + secs * 1000L
+                prev != null -> prev.expireAt
+                else -> now + FLARE_SECS * 1000L
+            }
+            put(e.id, flare, expire, d, secs != null)
+            seen.add(e.id)
+        }
     }
 
     private fun put(id: Int, name: String, expireAt: Long, dist: Double, fromName: Boolean) {
