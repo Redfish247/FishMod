@@ -57,6 +57,11 @@ object FishHudLayer {
     // Every wrapped mod HUD element's last drawn box; used to tell which HUDs are actually on screen right now.
     private val liveBoxes = java.util.concurrent.CopyOnWriteArrayList<Box>()
 
+    // For HUDs that draw outside the wrapped HUD layer (e.g. the custom scoreboard via a mixin): they mark themselves by editor name.
+    private val namedDrawn = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    @JvmStatic fun markDrawn(name: String) { namedDrawn[name] = System.currentTimeMillis() }
+    @JvmStatic fun drawnNamed(name: String): Boolean = System.currentTimeMillis() - (namedDrawn[name] ?: 0L) < 500
+
     /** True if some mod HUD drew something overlapping this screen rect within the last half second. */
     @JvmStatic fun drawnRecently(x: Int, y: Int, w: Int, h: Int): Boolean {
         val now = System.currentTimeMillis()

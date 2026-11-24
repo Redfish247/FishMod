@@ -81,6 +81,14 @@ object FishChat {
         CosmeticLive.sendText(json.toString())
     }
 
+    /** Dev info (/fmdev fcinfo): settings state plus every rule and exact name the very-rare share filter matches. */
+    fun shareInfo() {
+        note("Dev: FishChat ${if (FishSettings.fishChatEnabled) "§aON" else "§cOFF"}§7, share drops ${if (FishSettings.fishChatShareDrops) "§aON" else "§cOFF"}§7, live connected: see send result of /fmdev fcdrop")
+        note("Dev: rules: any '... Dye', '... Scroll', '...Locket', 'Scatha...', 'master star', 'Fatal Tempo', '... VII' book (not serum)")
+        note("Dev: exact (${SHARE_EXACT.size}): " + SHARE_EXACT.sorted().joinToString(", "))
+        note("Dev: test one with /fmdev fcdrop <chat line>, e.g. /fmdev fcdrop RARE DROP! Smite VII")
+    }
+
     /** Dev test (/fmdev fcdrop): runs a fake drop line through the real parse + send path, bypassing the 10s dedup. */
     fun testDrop(line: String) {
         val own = Minecraft.getInstance().user.name

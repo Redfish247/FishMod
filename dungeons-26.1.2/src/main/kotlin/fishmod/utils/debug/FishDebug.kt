@@ -125,12 +125,29 @@ object FishDebug {
                     FishConstants.SUCCESS
                 })
 
+                .then(ClientCommands.literal("raredrop")
+                    .executes { FishUtil.addChatMessage(Component.literal(fishmod.features.general.RareDropAnimation.test(null))); FishConstants.SUCCESS }
+                    .then(ClientCommands.literal("list").executes {
+                        fishmod.features.general.RareDropAnimation.listInfo().forEach { FishUtil.addChatMessage(Component.literal(it)) }; FishConstants.SUCCESS
+                    })
+                    .then(ClientCommands.argument("name", StringArgumentType.greedyString())
+                        .suggests { _, b -> fishmod.features.general.RareDropAnimation.CATEGORIES.flatMap { it.second }.distinct().filter { it.startsWith(b.remaining, true) }.forEach { b.suggest(it) }; b.buildFuture() }
+                        .executes { ctx ->
+                            FishUtil.addChatMessage(Component.literal(fishmod.features.general.RareDropAnimation.test(StringArgumentType.getString(ctx, "name")))); FishConstants.SUCCESS
+                        })
+                )
+                .then(ClientCommands.literal("fcinfo").executes { fishmod.cosmetic.FishChat.shareInfo(); FishConstants.SUCCESS })
                 .then(ClientCommands.literal("fcdrop")
                     .executes { fishmod.cosmetic.FishChat.testDrop("RARE DROP! Necron Dye (+50% Magic Find)"); FishConstants.SUCCESS }
                     .then(ClientCommands.argument("line", StringArgumentType.greedyString()).executes { ctx ->
                         fishmod.cosmetic.FishChat.testDrop(StringArgumentType.getString(ctx, "line")); FishConstants.SUCCESS
                     })
                 )
+
+                .then(ClientCommands.literal("hudinfo").executes { _ ->
+                    fishmod.features.FishHudEditor.debugInfo().forEach { FishUtil.addChatMessage(Component.literal(it)) }
+                    FishConstants.SUCCESS
+                })
 
                 .then(ClientCommands.literal("welcome").executes { _ ->
                     fishmod.utils.InstallHeartbeat.testWelcome()

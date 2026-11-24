@@ -110,6 +110,17 @@ object RareDropAnimation {
         return "§a[RareDrop] playing '$name'$master"
     }
 
+    /** Dev info (/fmdev raredrop list): master switch, then per category how many drops are ticked and which are not. */
+    @JvmStatic fun listInfo(): List<String> {
+        val out = ArrayList<String>()
+        out += "§3[RareDrop] master switch ${if (FishSettings.rareDropAnim) "§aON" else "§cOFF"}§7, ${CATEGORIES.size} categories, ${BY_NORM.size} drops"
+        for ((cat, drops) in CATEGORIES) {
+            val off = drops.filter { !isOn(it) }
+            out += "§f$cat §7${drops.size - off.size}/${drops.size} ticked" + if (off.isEmpty()) "" else " §8off: ${off.joinToString(", ")}"
+        }
+        return out
+    }
+
     private val PET_NAMES = setOf("ender dragon", "golem", "enderman", "slug")
 
     private fun snake(n: String) = n.uppercase().replace("'", "").replace(Regex("[^A-Z0-9]+"), "_").trim('_')

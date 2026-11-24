@@ -58,6 +58,7 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         /** A mod HUD actually drew over this entry's rect within the last half second (on screen now, not just enabled). */
         fun isDrawnNow(): Boolean {
             val s = scale()
+            if (fishmod.utils.rendering.FishHudLayer.drawnNamed(nameVal)) return true
             return fishmod.utils.rendering.FishHudLayer.drawnRecently(
                 getXVal.asInt, getYVal.asInt, Math.max(1, Math.round(wVal * s).toInt()), Math.max(1, Math.round(hVal * s).toInt())
             )
@@ -71,6 +72,21 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         private val FROZEN: MutableSet<String> = HashSet()
         private const val EYE_W = 11
         private const val EYE_H = 9
+
+        /** Dev info (/fmdev hudinfo): one chat line per HUD with enabled / visible / drawn state, drawn ones first. */
+        @JvmStatic
+        fun debugInfo(): List<String> {
+            fun flag(b: Boolean) = if (b) "§aY" else "§8n"
+            val rows = ENTRIES.map { e ->
+                val en = try { e.isEnabledInList() } catch (_: Throwable) { false }
+                val vis = try { e.isVisible() } catch (_: Throwable) { false }
+                val drawn = try { e.isDrawnNow() } catch (_: Throwable) { false }
+                Triple(e, Triple(en, vis, drawn), "§f${e.name()} §7en:${flag(en)} §7vis:${flag(vis)} §7drawn:${flag(drawn)} §8@${e.getX().asInt},${e.getY().asInt} ${e.w()}x${e.h()} x${"%.2f".format(e.scale())}")
+            }.sortedByDescending { it.second.third }
+            val drawnCount = rows.count { it.second.third }
+            val picked = rows.count { it.second.first && it.second.third }
+            return listOf("§3[HUD] ${rows.size} HUDs, $drawnCount drawn now, $picked would be picked (enabled+drawn)") + rows.map { it.third }
+        }
 
         private fun addEntry(e: HudEntry) {
             if (ENTRIES.any { it.name() == e.name() }) FishDiag.fail("FishHudEditor.1", "HUD '${e.name()}' registered twice (entries=${ENTRIES.size})")
