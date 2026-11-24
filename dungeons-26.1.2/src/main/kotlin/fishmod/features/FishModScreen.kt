@@ -2236,7 +2236,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayer.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayer.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
             end.features.add(endAlerts)
             end.features.add(Feature("Endstone Protector Stage", fishmod.features.slayer.EndAlertSettings::class.java, "protectorHud"))
-            end.features.add(Feature("End Node Finder", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeFinder").also { it.sub.add(ColorPickerSetting("Color", "", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeFinderColor")) })
             end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayer.EndAlertSettings::class.java, "endstoneProtectorAlert"))
             end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayer.EndAlertSettings::class.java, "zealotHud"))
             slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
