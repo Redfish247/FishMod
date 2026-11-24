@@ -14,9 +14,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-// Skyblocker-style rare drop effect: the totem-of-undying pop-up shows the dropped item when a
-// "RARE DROP!" / "PET DROP!" line arrives in chat and the drop is ticked in the menu.
-// The set list lives in resources/data/rareDropAnimation.json (category -> drop names).
 object RareDropAnimation {
     private val DROP = Regex("^(?:(?:VERY |CRAZY )?RARE|INSANE|PRAY TO RNGESUS|RNGESUS INCARNATE|PRAY RNGESUS) DROP! +(.+)$")
     private val PET = Regex("^PET DROP! +(?:(?:LEGENDARY|EPIC|RARE|UNCOMMON|COMMON) )?(.+)$")
@@ -27,13 +24,11 @@ object RareDropAnimation {
     private val TRAIL_NUM = Regex("""\s(I{1,3}|IV|V|VI{0,3}|IX|X)$""")
     private val ROMAN = mapOf("I" to 1, "II" to 2, "III" to 3, "IV" to 4, "V" to 5, "VI" to 6, "VII" to 7, "VIII" to 8, "IX" to 9, "X" to 10)
 
-    /** Lower-case name with a trailing Roman numeral turned into digits, so "Smite VII" == "Smite 7". */
     @JvmStatic fun norm(n: String): String {
         val m = TRAIL_NUM.find(n.trim())
         return (if (m != null) n.trim().substring(0, m.range.first) + " " + ROMAN[m.groupValues[1]] else n.trim()).lowercase()
     }
 
-    /** Category name to drop names, in file order. */
     @JvmField val CATEGORIES: List<Pair<String, List<String>>> = load()
 
     private val BY_NORM: Map<String, List<String>> = CATEGORIES.flatMap { it.second }.distinct().groupBy { norm(it) }
@@ -63,7 +58,6 @@ object RareDropAnimation {
         FishSettings.rareDropAnimOff = st.joinToString(",")
     }
 
-    /** Drop name from a chat line, or null when it is not a drop line. */
     @JvmStatic fun dropName(plain: String, own: String? = null): String? {
         val c = plain.firstOrNull() ?: return null
         if (plain.length < 12 || c == '[') return null
@@ -94,14 +88,12 @@ object RareDropAnimation {
             mc.execute {
                 FishDiag.guard("RareDropAnimation.1", "rare drop animation failed for $name") {
                     mc.showItemActivation(stack)
-                    // optional title naming the drop (#279)
                     if (FishSettings.rareDropAnimTitle) fishmod.features.AlertTitles.show(Component.literal(if (pet) "§d§lPET DROP!" else "§6§lRARE DROP!"), Component.literal("§f$name"), 2500)
                 }
             }
         }
     }
 
-    /** /fmraredrop: runs a fake drop through the same list and toggle checks, ignoring only the master switch. Returns a chat report. */
     @JvmStatic fun test(arg: String?): String {
         val name = arg?.trim()?.takeIf { it.isNotEmpty() } ?: CATEGORIES.firstOrNull()?.second?.firstOrNull() ?: return "§c[RareDrop] drop list is empty"
         val listed = BY_NORM[norm(name)] ?: return "§c[RareDrop] '$name' is not in the list, so it would not animate"
@@ -117,7 +109,6 @@ object RareDropAnimation {
 
     private fun fallback(name: String) = ItemStack(if (TRAIL_NUM.containsMatchIn(name) || name.matches(Regex(""".*\s\d+$"""))) Items.ENCHANTED_BOOK else Items.NETHER_STAR)
 
-    /** SkyBlock ids to try for a drop name, best first: NEU display name, then derived ids (dye, book, pet, plain). */
     private fun candidates(name: String, pet: Boolean): List<String> {
         val out = LinkedHashSet<String>()
         if (pet) out.add("PET_" + snake(name))
@@ -137,7 +128,6 @@ object RareDropAnimation {
     private fun stackFor(name: String, pet: Boolean): ItemStack {
         NeuRepoCache.ensureLoadedBlocking()
         for (id in candidates(name, pet)) {
-            // fetch synchronously (we are off the render thread) so iconStack finds it already cached; PET_x expands to x;0..5
             if (NeuItemResolver.candidates(id).none { NeuRepoCache.getOrFetch(it) != null }) continue
             val st = SkyBlockItemFactory.iconStack(id)
             if (!st.isEmpty && !st.`is`(Items.PAPER)) return st
