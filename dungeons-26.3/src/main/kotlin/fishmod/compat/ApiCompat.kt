@@ -33,3 +33,6 @@ fun signUpdatePacket(sign: SignBlockEntity, lines: List<String>): ServerboundSig
     ServerboundSignUpdatePacket(sign.blockPos, lines, SignTextSlot.FRONT)
 
 fun com.mojang.blaze3d.vertex.PoseStack.rotate(q: org.joml.Quaternionf) { mulPose(org.joml.Matrix4f().rotation(q)) }
+
+/** Totem-style item pop-up. 26.3: moved from GameRenderer to LocalPlayer. */
+fun net.minecraft.client.Minecraft.showItemActivation(stack: ItemStack) { player?.displayItemActivation(stack) }

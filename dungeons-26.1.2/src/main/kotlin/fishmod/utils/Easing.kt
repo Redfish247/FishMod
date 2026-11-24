@@ -19,6 +19,13 @@ object Easing {
             startTime = System.currentTimeMillis()
         }
 
+        /** Jump straight to the end state with no animation (use for a row's first render). */
+        fun snap(expand: Boolean) {
+            target = expand
+            startValue = if (expand) 1f else 0f
+            startTime = 0L
+        }
+
         fun target(): Boolean = target
 
         fun progress(): Float {

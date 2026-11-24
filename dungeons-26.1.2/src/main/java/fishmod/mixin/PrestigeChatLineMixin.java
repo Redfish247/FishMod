@@ -12,11 +12,17 @@ public abstract class PrestigeChatLineMixin {
 
     @ModifyReturnValue(method = "content", at = @At("RETURN"), require = 0)
     private FormattedCharSequence fishmod$animatePrestige(FormattedCharSequence original) {
+        FormattedCharSequence out = original;
         try {
-            return PrestigeLevelColors.animateLine(original);
+            out = PrestigeLevelColors.animateLine(out);
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("PrestigeChatLineMixin.1", "chat level animate failed", t);
-            return original;
         }
+        try {
+            out = fishmod.cosmetic.NickState.animateChatLine(out);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("PrestigeChatLineMixin.2", "chat nick animate failed", t);
+        }
+        return out;
     }
 }

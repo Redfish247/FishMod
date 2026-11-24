@@ -43,6 +43,7 @@ object Fishing {
     fun init() {
         FishingEvents.init()
         FishingAlerts.init()
+        fishmod.features.general.RareDropAnimation.init()
         FishingTrackers.init()
         FishingWorld.init()
         BaitHud.init()

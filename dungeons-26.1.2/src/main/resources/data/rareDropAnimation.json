@@ -1,0 +1,284 @@
+{
+  "_note": "Set list for the Rare Drop Animation: specific RNG items only, grouped by category. Names as they appear in chat after 'RARE DROP!' / 'PET DROP!' or in 'WOW! <you> found a <Dye>!' lines; trailing Roman numerals match Arabic ones (Smite VII = Smite 7). Edit here to add or remove. Names came from Eli's list and are UNVERIFIED in game.",
+  "categories": [
+    {
+      "name": "Zombie Slayer",
+      "drops": [
+        "Warden Heart",
+        "Scythe Blade",
+        "Shredded Sinew",
+        "Severed Hand",
+        "Smite VII",
+        "Beheaded Horror"
+      ]
+    },
+    {
+      "name": "Spider Slayer",
+      "drops": [
+        "Digested Mosquito",
+        "Primordial Eye",
+        "Shriveled Wasp",
+        "Ensnared Snail",
+        "Bane of Arthropods VII",
+        "Tarantula Talisman",
+        "Fly Swatter"
+      ]
+    },
+    {
+      "name": "Wolf Slayer",
+      "drops": [
+        "Overflux Capacitor",
+        "Grizzly Bait",
+        "Red Claw Egg"
+      ]
+    },
+    {
+      "name": "Enderman Slayer",
+      "drops": [
+        "Judgement Core",
+        "End Stone Idol",
+        "Ender Slayer VII",
+        "Exceedingly Rare Ender Artifact Upgrader",
+        "Etherwarp Merger",
+        "Void Conqueror Enderman Skin",
+        "Handy Blood Chalice",
+        "Sinful Dice",
+        "Pocket Espresso Machine",
+        "Smarty Pants I"
+      ]
+    },
+    {
+      "name": "Blaze Slayer",
+      "drops": [
+        "High Class Archfiend Dice",
+        "Archfiend Dice",
+        "Wilson's Engineering Plans",
+        "Subzero Inverter",
+        "Duplex I",
+        "Scorched Power Crystal",
+        "Fire Aspect III"
+      ]
+    },
+    {
+      "name": "Vampire Slayer",
+      "drops": [
+        "Unfanged Vampire Part",
+        "The One IV",
+        "McGrubber's Burger",
+        "Guardian Lucky Block"
+      ]
+    },
+    {
+      "name": "Dungeons",
+      "drops": [
+        "Bonzo's Staff",
+        "First Master Star",
+        "Spirit Wing",
+        "Spirit Bone",
+        "Second Master Star",
+        "Shadow Fury",
+        "Shadow Assassin Chestplate",
+        "Last Breath",
+        "Livid Dagger",
+        "Third Master Star",
+        "Giant's Sword",
+        "Precursor Eye",
+        "Summoning Ring",
+        "Necromancer Sword",
+        "Giant's Tooth",
+        "Fourth Master Star",
+        "Necron's Handle",
+        "Implosion Scroll",
+        "Shadow Warp Scroll",
+        "Wither Shield Scroll",
+        "Dark Claymore",
+        "Fifth Master Star",
+        "Master Skull - Tier 5",
+        "Auto Recombobulator",
+        "Thunderlord VII",
+        "Storm the Fish",
+        "Maxor the Fish",
+        "Goldor the Fish"
+      ]
+    },
+    {
+      "name": "Crystal Nucleus",
+      "drops": [
+        "Divan's Alloy",
+        "Quick Claw",
+        "Jaderald",
+        "Claw Fossil"
+      ]
+    },
+    {
+      "name": "Mineshafts & Excavation",
+      "drops": [
+        "Shattered Locket",
+        "Skeleton Key",
+        "Caged Wisp"
+      ]
+    },
+    {
+      "name": "Mining Pets",
+      "drops": [
+        "Scatha",
+        "Bal"
+      ]
+    },
+    {
+      "name": "Kuudra & Crimson Isle",
+      "drops": [
+        "Fatal Tempo I",
+        "Inferno I",
+        "Torment I",
+        "Burning Kuudra Core",
+        "Ananke Feather",
+        "Enrager",
+        "Flaming Fist",
+        "Subzero Wisp Upgrade",
+        "Magma Core"
+      ]
+    },
+    {
+      "name": "Diana",
+      "drops": [
+        "Chimera I",
+        "Minos Relic",
+        "Daedalus Stick",
+        "Dwarf Turtle Shelmet",
+        "Washed-up Souvenir",
+        "Antique Remedies",
+        "Crochet Tiger Plushie"
+      ]
+    },
+    {
+      "name": "The End",
+      "drops": [
+        "Ender Dragon",
+        "Dragon Horn",
+        "Dragon Scale",
+        "Tier Boost Core",
+        "Golem",
+        "Enderman",
+        "Summoning Eye"
+      ]
+    },
+    {
+      "name": "Experimentation Table",
+      "drops": [
+        "Sharpness VII",
+        "Giant Killer VII",
+        "Ender Slayer VII",
+        "Looting V",
+        "Power VII",
+        "Critical VII",
+        "Metaphysical Serum",
+        "Golden Bounty",
+        "Severed Pincer"
+      ]
+    },
+    {
+      "name": "Fishing",
+      "drops": [
+        "Radioactive Vial",
+        "Flash I",
+        "Lucky Clover Core",
+        "Deep Sea Orb",
+        "Flying Fish",
+        "Megalodon",
+        "Baby Yeti",
+        "Squid",
+        "Diamond Trophy Fish"
+      ]
+    },
+    {
+      "name": "Garden",
+      "drops": [
+        "Overgrown Grass",
+        "Green Bandana",
+        "Dedication IV",
+        "Space Helmet",
+        "Squeaky Mousemat",
+        "Chirping Stereo",
+        "Atmospheric Filter",
+        "Slug"
+      ]
+    },
+    {
+      "name": "Dyes: Slayer",
+      "drops": [
+        "Matcha Dye",
+        "Brick Red Dye",
+        "Celeste Dye",
+        "Byzantium Dye",
+        "Flame Dye",
+        "Sangria Dye"
+      ]
+    },
+    {
+      "name": "Dyes: Dungeons & Kuudra",
+      "drops": [
+        "Livid Dye",
+        "Necron Dye",
+        "Secret Dye",
+        "Tentacle Dye"
+      ]
+    },
+    {
+      "name": "Dyes: Mining",
+      "drops": [
+        "Jade Dye",
+        "Frostbitten Dye",
+        "Fossil Dye",
+        "Emerald Dye",
+        "Nyanza Dye"
+      ]
+    },
+    {
+      "name": "Dyes: Fishing",
+      "drops": [
+        "Aquamarine Dye",
+        "Carmine Dye",
+        "Iceberg Dye",
+        "Treasure Dye"
+      ]
+    },
+    {
+      "name": "Dyes: Farming & Trapper",
+      "drops": [
+        "Wild Strawberry Dye",
+        "Copper Dye",
+        "Dung Dye",
+        "Pelt Dye"
+      ]
+    },
+    {
+      "name": "Dyes: Combat & Rift",
+      "drops": [
+        "Bone Dye",
+        "Cyclamen Dye",
+        "Pearlescent Dye",
+        "Celadon Dye",
+        "Mythological Dye"
+      ]
+    },
+    {
+      "name": "Dyes: Skills & Gambling",
+      "drops": [
+        "Archfiend Dye",
+        "Mango Dye",
+        "Mocha Dye",
+        "Nadeshiko Dye",
+        "Periwinkle Dye"
+      ]
+    },
+    {
+      "name": "Dyes: Events",
+      "drops": [
+        "Holly Dye",
+        "Midnight Dye",
+        "Dark Purple Dye"
+      ]
+    }
+  ]
+}

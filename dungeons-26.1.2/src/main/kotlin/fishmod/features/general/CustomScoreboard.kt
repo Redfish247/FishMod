@@ -36,6 +36,8 @@ object CustomScoreboard {
     private val MOTES = Regex("""^Motes:\s*([\d,.]+)""")
     private val POWDER = Regex("""^\s*(Mithril|Gemstone|Glacite)(?: Powder)?:\s*([\d,]+)""")
     private val GUESTS = Regex("""\(\d+/\d+\)\s*$""")
+    private val PLOT = Regex("""^Plot\s*-""")
+    private val PEST_COUNT = Regex("""^\S{0,3}\s*\(\d+/\d+\)\s*$""")
     private val PARTY = Regex("""^Party \((\d+)\)""")
     private val IRL = DateTimeFormatter.ofPattern("h:mm a")
     private val MINING = setOf(SkyblockLocation.DWARVEN_MINES, SkyblockLocation.CRYSTAL_HOLLOWS, SkyblockLocation.MINESHAFT)
@@ -328,6 +330,19 @@ object CustomScoreboard {
             if (guestIdx < raw.size && !used[guestIdx] && (GUESTS.containsMatchIn(raw[guestIdx].s) || raw[guestIdx].s.startsWith("Nearby Players"))) {
                 used[guestIdx] = true
                 if (FishSettings.sbSectionLocation) world.add(raw[guestIdx].c)
+            }
+            // Garden: "Plot - N" (and the pest count under it) sits right under the location row instead of at the bottom
+            if (FishSettings.sbSectionLocation) {
+                val plotIdx = raw.indices.firstOrNull { !used[it] && PLOT.containsMatchIn(core(raw[it].s)) }
+                if (plotIdx != null) {
+                    used[plotIdx] = true
+                    world.add(raw[plotIdx].c)
+                    val pestIdx = plotIdx + 1
+                    if (pestIdx < raw.size && !used[pestIdx] && PEST_COUNT.containsMatchIn(raw[pestIdx].s.trim())) {
+                        used[pestIdx] = true
+                        world.add(raw[pestIdx].c)
+                    }
+                }
             }
         }
         groups.add(world)
