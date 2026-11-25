@@ -14,17 +14,23 @@ object RemoteScales {
     @JvmStatic
     fun clearAll() {
         byUuid.clear()
+        PlayerModel.clearRemote()
     }
 
     @JvmStatic
     fun acceptScales(queried: Set<String>, scales: Map<String, String>) {
         if (!FishSettings.playerSizeShared) {
             byUuid.clear()
+            PlayerModel.clearRemote()
             return
         }
         byUuid.keys.retainAll(queried)
+        PlayerModel.retainRemote(queried)
         for (u in queried) {
-            val xyz = parse(scales[u])
+            val raw = scales[u]
+            val parts = raw?.split(",")
+            PlayerModel.acceptRemote(u, if (parts != null && parts.size == 4) parts[3].trim().uppercase() else null)
+            val xyz = parse(if (parts != null && parts.size == 4) parts.take(3).joinToString(",") else raw)
             if (xyz == null) byUuid.remove(u) else byUuid[u] = xyz
         }
     }

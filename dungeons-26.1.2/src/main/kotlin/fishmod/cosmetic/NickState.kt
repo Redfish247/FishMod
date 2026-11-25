@@ -40,7 +40,9 @@ object NickState {
     @JvmStatic
     fun applyFromSettings() {
         val custom = fishmod.utils.config.values.FishSettings.nickCustomName
-        val base = if (custom != null && custom.isNotEmpty()) custom else realName()
+        val fs = fishmod.utils.config.values.FishSettings
+        val fmt = (if (fs.nickBold) "&l" else "") + (if (fs.nickItalic) "&o" else "") + (if (fs.nickUnderline) "&n" else "") + (if (fs.nickStrike) "&m" else "") + (if (fs.nickMagic) "&k" else "")
+        val base = fmt + (if (custom != null && custom.isNotEmpty()) custom else realName())
         val stripped = base.replace(HEX_COLOR_CODE, "").replace(FORMAT_CODE, "")
         val visibleOnly = stripped.replace(LEGACY_FORMAT_CODE, "")
         if (visibleOnly.isEmpty()) {
