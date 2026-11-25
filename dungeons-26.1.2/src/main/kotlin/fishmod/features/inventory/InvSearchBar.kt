@@ -56,6 +56,9 @@ object InvSearchBar {
             SEARCH_WIDTH, SEARCH_HEIGHT,
             { on() },
         )
+        fishmod.features.HudPreview.register("Inventory Search") {
+            fishmod.features.HudExample(SEARCH_WIDTH, SEARCH_HEIGHT) { ctx -> drawFrame(ctx, 0, 0, false, true) }
+        }
         DrawHooks.INVENTORY_SLOT_AFTER.register { context, item, x, y ->
             if (!on() || !shouldDisplay() || searchTerm.isEmpty() || !parsedValue.isNaN()) return@register
             val matched = try {
@@ -97,7 +100,7 @@ object InvSearchBar {
         val bar = searchBar!!
         val ox = posX(); val oy = posY()
         bar.x = ox + 20; bar.y = oy; bar.width = SEARCH_WIDTH - 26
-        drawFrame(context, ox, oy, bar)
+        drawFrame(context, ox, oy, bar.isFocused, bar.value.isEmpty())
         val textRenderer: Font = Minecraft.getInstance().font ?: return
         val endX = try { drawValue(context, textRenderer, bar) } catch (e: Exception) {
             FishDiag.fail("InvSearchBar.4", "search bar render failed", e)
@@ -127,16 +130,16 @@ object InvSearchBar {
         return tx + font.width(shown)
     }
 
-    private fun drawFrame(ctx: GuiGraphicsExtractor, x: Int, y: Int, bar: EditBox) {
+    private fun drawFrame(ctx: GuiGraphicsExtractor, x: Int, y: Int, focused: Boolean, empty: Boolean) {
         val fill = (0xCC shl 24) or (ScreenTheme.surface(0x0C) and 0xFFFFFF)
-        val ring = if (bar.isFocused) ScreenTheme.over((0x90 shl 24) or (ScreenTheme.ACCENT and 0xFFFFFF), ScreenTheme.surface(0x2E)) else ScreenTheme.surface(0x2E)
+        val ring = if (focused) ScreenTheme.over((0x90 shl 24) or (ScreenTheme.ACCENT and 0xFFFFFF), ScreenTheme.surface(0x2E)) else ScreenTheme.surface(0x2E)
         ScreenTheme.roundedRectRing(ctx, x, y, SEARCH_WIDTH, SEARCH_HEIGHT, 5, 1, fill, ring)
         val ic = ScreenTheme.SUBTEXT_COLOR
         val ix = x + 7; val iy = y + (SEARCH_HEIGHT - 9) / 2
         ctx.fill(ix + 1, iy, ix + 5, iy + 1, ic); ctx.fill(ix + 1, iy + 5, ix + 5, iy + 6, ic)
         ctx.fill(ix, iy + 1, ix + 1, iy + 5, ic); ctx.fill(ix + 5, iy + 1, ix + 6, iy + 5, ic)
         ctx.fill(ix + 5, iy + 6, ix + 6, iy + 7, ic); ctx.fill(ix + 6, iy + 7, ix + 7, iy + 8, ic); ctx.fill(ix + 7, iy + 8, ix + 8, iy + 9, ic)
-        if (bar.value.isEmpty() && !bar.isFocused) {
+        if (empty && !focused) {
             val font = Minecraft.getInstance().font
             ctx.text(font, "Search...", ix + 13, y + (SEARCH_HEIGHT - 8) / 2, ic, false)
         }

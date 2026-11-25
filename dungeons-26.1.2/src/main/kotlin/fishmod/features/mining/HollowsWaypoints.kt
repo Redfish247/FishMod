@@ -112,6 +112,7 @@ object HollowsWaypoints {
             { S.hollowsMapX }, { S.hollowsMapX = it }, { S.hollowsMapY }, { S.hollowsMapY = it },
             SIZE, SIZE, { S.hollowsMapScale }, { S.hollowsMapScale = it },
             { S.hollowsMap && Mining.inHollows() }, java.util.function.BooleanSupplier { S.hollowsMap })
+        fishmod.features.HudPreview.register("Hollows Map") { fishmod.features.HudExample(SIZE, SIZE) { ctx -> drawMapExample(ctx) } }
         FishHudLayer.addLast(id) { ctx, _ ->
             if (!FishHudEditor.isOpen() && S.hollowsMap && Mining.inHollows()) {
                 try { drawMap(ctx) } catch (t: Throwable) { FishDiag.fail("HollowsWaypoints.3", "hollows map draw failed", t) }
@@ -193,5 +194,22 @@ object HollowsWaypoints {
         ctx.fill(px - 1, py - 1, px + 2, py + 2, 0xFFFF0000.toInt())
         if (curZone.isNotEmpty()) ctx.text(font, curZone, 2, SIZE + 3, -1, true)
         pose.popMatrix()
+    }
+
+    private fun drawMapExample(ctx: GuiGraphicsExtractor) {
+        val font = Minecraft.getInstance().font
+        val span = (MAX - MIN).toDouble()
+        fun mx(x: Double) = ((x - MIN) / span * SIZE).toInt().coerceIn(0, SIZE)
+        fun mz(z: Double) = ((z - MIN) / span * SIZE).toInt().coerceIn(0, SIZE)
+        ctx.fill(0, 0, SIZE, SIZE, Mining.alpha(0x000000, S.hollowsMapOpacity))
+        for (z in ZONES) {
+            ctx.fill(mx(z.minX.toDouble()), mz(z.minZ.toDouble()), mx(z.maxX.toDouble()), mz(z.maxZ.toDouble()), Mining.alpha(z.rgb, 28))
+            val short = z.name.substringBefore(' ')
+            ctx.text(font, short, (mx(z.minX.toDouble()) + mx(z.maxX.toDouble())) / 2 - font.width(short) / 2,
+                (mz(z.minZ.toDouble()) + mz(z.maxZ.toDouble())) / 2 - 4, z.rgb or 0xFF000000.toInt(), true)
+        }
+        ctx.fill(0, 0, SIZE, 1, -0x1); ctx.fill(0, SIZE - 1, SIZE, SIZE, -0x1)
+        ctx.fill(0, 0, 1, SIZE, -0x1); ctx.fill(SIZE - 1, 0, SIZE, SIZE, -0x1)
+        ctx.fill(SIZE / 2 - 1, SIZE / 2 - 1, SIZE / 2 + 2, SIZE / 2 + 2, 0xFFFF0000.toInt())
     }
 }
