@@ -6,6 +6,23 @@ object PingTracker {
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> reset() }
     }
 
+    private var tickCounter = 0
+
+    // Sends a ping request every 2s so the pong RTT keeps the tab ping live (vanilla only does this with F3 open)
+    @JvmStatic
+    fun init() {
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            if (++tickCounter < 40) return@register
+            tickCounter = 0
+            if (mc.player == null) return@register
+            try {
+                mc.connection?.send(net.minecraft.network.protocol.ping.ServerboundPingRequestPacket(net.minecraft.util.Util.getMillis()))
+            } catch (t: Throwable) {
+                fishmod.utils.debug.FishDiag.fail("PingTracker.1", "ping request send failed", t)
+            }
+        }
+    }
+
     @Volatile
     private var latestMs: Int = -1
     @Volatile
