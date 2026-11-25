@@ -135,7 +135,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
             f.sub.add(SubcategoryHeader("HUD Editor"))
-            f.sub.add(ToggleSetting("Pick Enabled HUDs", "Opening the HUD editor picks the HUDs currently showing on your screen (not every enabled one)", "hudEditorPickEnabled"))
+            f.sub.add(ToggleSetting("Pick Enabled HUDs", "Opening the HUD editor picks the HUDs currently showing on your screen (not every enabled one)", "hudEditorPickLive"))
             f.sub.add(SubcategoryHeader("GUI Scale"))
             f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", "guiScaleMain", 50, 150, 5).deferred())
             f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", "guiScaleChatCommands", 50, 150, 5).deferred())
@@ -3128,22 +3128,28 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val sx0 = Math.round((x0 + 4) * f); val sx1 = Math.round((x1 - 4) * f)
         val sy0 = Math.round((y0 + 28) * f); val sy1 = Math.round((y1 - 4) * f)
         if (sx1 - sx0 < 8 || sy1 - sy0 < 8) return
-        ctx.pose().pushMatrix()
-        ctx.pose().identity()
-        ctx.enableScissor(sx0, sy0, sx1, sy1)
+        val nx = Math.round((x0 + x1) / 2f * f); val ny = Math.round((y1 + 10) * f)
+        previewLate = PreviewLate(sx0, sy0, sx1, sy1, mouseX * f, mouseY * f, nx, ny)
+    }
+
+    private class PreviewLate(val sx0: Int, val sy0: Int, val sx1: Int, val sy1: Int, val mx: Float, val my: Float, val nx: Int, val ny: Int)
+    private var previewLate: PreviewLate? = null
+
+    fun extractLateLayer(state: net.minecraft.client.renderer.state.gui.GuiRenderState): Boolean {
+        val l = previewLate ?: return false
+        previewLate = null
+        val mc = Minecraft.getInstance()
+        val player = mc.player ?: return false
+        val ctx = GuiGraphicsExtractor(mc, state, 0, 0)
+        ctx.enableScissor(l.sx0, l.sy0, l.sx1, l.sy1)
         try {
-            val scale = maxOf(8, Math.round(minOf((sy1 - sy0) / 2.3f, (sx1 - sx0) / 1.4f)))
-            net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(ctx, sx0, sy0, sx1, sy1, scale, 0.0625f, mouseX * f, mouseY * f, player)
-        } finally {
-            ctx.disableScissor()
-            ctx.pose().popMatrix()
-        }
+            val scale = maxOf(8, Math.round(minOf((l.sy1 - l.sy0) / 2.3f, (l.sx1 - l.sx0) / 1.4f)))
+            net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(ctx, l.sx0, l.sy0, l.sx1, l.sy1, scale, 0.0625f, l.mx, l.my, player)
+        } finally { ctx.disableScissor() }
         val font = mc.font
         val name = fishmod.cosmetic.NickState.asComponent().let { if (it.string.isEmpty()) player.name else it }
-        val w = font.width(name)
-        ctx.pose().pushMatrix()
-        ctx.pose().identity()
-        try { ctx.text(font, name, Math.round((x0 + x1) / 2f * f) - w / 2, Math.round((y1 + 10) * f), -1, true) } finally { ctx.pose().popMatrix() }
+        ctx.text(font, name, l.nx - font.width(name) / 2, l.ny, -1, true)
+        return true
     }
 
     private fun pageFeature(): Feature? = columns.firstNotNullOfOrNull { c -> c.features.firstOrNull { it.pageId == page } }

@@ -440,7 +440,7 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
     init {
         picked.retainAll(ENTRIES.map { it.name() }.toSet())
         // Optional: start with the HUDs that are showing on screen right now (enabled AND currently visible), not every enabled one
-        if (FishSettings.hudEditorPickEnabled) { picked.clear(); listed().filter { it.isEnabledInList() && it.isStablyDrawn() }.forEach { picked += it.name() } }
+        if (FishSettings.hudEditorPickLive) { picked.clear(); listed().filter { it.isEnabledInList() && it.isStablyDrawn() }.forEach { picked += it.name() } }
     }
 
     override fun isPauseScreen(): Boolean = false
