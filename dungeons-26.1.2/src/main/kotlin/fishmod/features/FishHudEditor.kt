@@ -95,6 +95,14 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
             return listOf("§3[HUD] ${rows.size} HUDs, $drawnCount drawn now, $picked would be picked (enabled+drawn)") + rows.map { it.third }
         }
 
+        @JvmStatic
+        fun findEntry(featureName: String): HudEntry? {
+            fun n(s: String) = s.lowercase().filter { it.isLetterOrDigit() }.removeSuffix("hud")
+            val want = n(featureName)
+            if (want.length < 4) return null
+            return ENTRIES.firstOrNull { n(it.name()) == want }
+        }
+
         private fun addEntry(e: HudEntry) {
             if (ENTRIES.any { it.name() == e.name() }) FishDiag.fail("FishHudEditor.1", "HUD '${e.name()}' registered twice (entries=${ENTRIES.size})")
             ENTRIES.add(e)

@@ -231,7 +231,12 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         val theirsX = (if (fish != null) ignX - 8 else x + w - 10) - pillW
         val fishX = theirsX - 96
         val pillY = y + (ITEM_H - pillH) / 2
-        val labelRight = (if (fish != null) fishX - 62 else theirsX - 62).toFloat()
+        val hudE = fish?.let { FishHudEditor.findEntry(it.name) }
+        val pos = sib.firstNotNullOfOrNull { it.setting.pos }
+        val canCopy = hudE != null && pos != null
+        val copyW = 58
+        val copyX = fishX - 46 - copyW
+        val labelRight = (if (fish != null) (if (canCopy) copyX - 8 else fishX - 62) else theirsX - 62).toFloat()
 
         UiRecorder.text(ellipsize(s.label, labelRight - (x + 12), 10f), x + 12f, y + 5f, 10f, ScreenTheme.TEXT_COLOR)
         val sub = if (fish != null) "≈ FishMod: ${fish.name}" + (if (sib.size > 1) " · ${sib.size} settings" else "") else s.group.ifEmpty { s.file.substringAfterLast('/') }
@@ -239,6 +244,14 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
 
         if (fish != null) small(ignX, y + (ITEM_H - 15) / 2, ignW, 15, if (allIgnored) "Restore" else "Ignore", mx, my) {
             for (x in sib) ModConflicts.setIgnored(x.setting, !allIgnored)
+        }
+
+        if (canCopy && hudE != null && pos != null) small(copyX, y + (ITEM_H - 15) / 2, copyW, 15, "Copy HUD pos", mx, my) {
+            hudE.setX().accept(pos.x.toInt().coerceAtLeast(0))
+            hudE.setY().accept(pos.y.toInt().coerceAtLeast(0))
+            val sc = pos.scale
+            if (sc != null && sc > 0.0) hudE.setScale()?.accept(sc.coerceIn(0.3, 5.0))
+            status = "Copied ${row.g.name} HUD position to FishMod ${hudE.name()} (${pos.x.toInt()}, ${pos.y.toInt()}). Fine-tune it in Edit HUD."
         }
 
         // FishMod toggle (instant)
