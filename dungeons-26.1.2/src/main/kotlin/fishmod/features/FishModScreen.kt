@@ -2268,7 +2268,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             end.features.add(Feature("Endstone Protector Stage", fishmod.features.slayer.EndAlertSettings::class.java, "protectorHud"))
             end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayer.EndAlertSettings::class.java, "endstoneProtectorAlert"))
             end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayer.EndAlertSettings::class.java, "zealotHud"))
-            slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
+            slayer.features.add(Feature("Cocoon Overlay", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
             slayer.features.add(Feature("Summons Recall Alert", fishmod.features.slayer.EndAlertSettings::class.java, "summonsRecallAlert"))
             slayer.features.add(Feature("Broodmother Countdown", fishmod.features.slayer.EndAlertSettings::class.java, "broodmotherHud"))
             slayer.features.add(Feature("No Slayer Quest Warning", fishmod.features.slayer.EndAlertSettings::class.java, "noQuestWarning"))
@@ -2288,9 +2288,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val mini = Feature("Miniboss Highlight", fishmod.features.slayer.EndAlertSettings::class.java, "slayerMiniHighlight")
             mini.sub.add(ColorPickerSetting("Outline Colour", "", { fishmod.features.slayer.EndAlertSettings.slayerMiniHighlightColor }, { v -> fishmod.features.slayer.EndAlertSettings.slayerMiniHighlightColor = v }))
             slayer.features.add(mini)
-            val bbox = Feature("Boss Box", fishmod.features.slayer.EndAlertSettings::class.java, "slayerBossBox")
-            bbox.sub.add(SubcategoryHeader("Box on your slayer boss through walls"))
-            bbox.sub.add(ToggleSetting("Mark Spawn Point", "Keep a white box where the boss first appeared for 8 seconds", fishmod.features.slayer.EndAlertSettings::class.java, "slayerBossBoxSpawnMark"))
+            val bbox = Feature("Slayer Boss Box", fishmod.features.slayer.EndAlertSettings::class.java, "slayerBossBox")
+            bbox.sub.add(SubcategoryHeader("Box on your slayer boss and where it will spawn"))
+            bbox.sub.add(ToggleSetting("Mark Spawn Point", "Box where the boss is about to spawn (on the mob you just killed); gone as soon as it spawns", fishmod.features.slayer.EndAlertSettings::class.java, "slayerBossBoxSpawnMark"))
             bbox.sub.add(ColorPickerSetting("Box Colour", "", { fishmod.features.slayer.EndAlertSettings.slayerBossBoxColor }, { v -> fishmod.features.slayer.EndAlertSettings.slayerBossBoxColor = v }))
             slayer.features.add(bbox)
             val gi = Feature("Items On Ground Names", fishmod.features.slayer.EndAlertSettings::class.java, "groundItemNames")
@@ -2363,7 +2363,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(SubcategoryHeader("Boss Stats"))
             phases.sub.add(ToggleSetting("Boss Stats HUD", "HUD with only your boss: name, health, DPS and time (drag with Edit HUD)", ea0, "bossHud"))
             phases.sub.add(SubcategoryHeader("Inferno Demonlord"))
-            phases.sub.add(ToggleSetting("Dagger Attunement Highlight", "Outline the boss and its split demons in the color of the dagger you need (Ashen, Auric, Spirit, Crystal)", ea0, "attuneHighlight"))
+            phases.sub.add(ToggleSetting("Dagger Attunement Box", "Box on the boss and its split demons in the color of the dagger you need (Ashen = gray, Auric = yellow, Spirit = white, Crystal = cyan). Only shows while an attunement is active", ea0, "attuneHighlight"))
+            phases.sub.add(ToggleSetting("Hide Boss Model", "Hides the Inferno Demonlord blaze itself (only your boss, not other blazes). Attunement boxes and text stay", ea0, "hideInfernoBoss"))
             phases.sub.add(SubcategoryHeader("Boss Phases"))
             phases.sub.add(ToggleSetting("Boss Phases", "Attack and phase cues on slayer bosses", "slayerPhaseEnabled"))
                         phases.sub.add(SubcategoryHeader("SkyHanni-style attack/phase cues on the boss — all 6 slayers"))
@@ -2373,9 +2374,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(SliderIntSetting("Text Scale %", "Size of the boss text", "slayerPhaseTextScale", 20, 150, 5))
             phases.sub.add(ToggleSetting("Title Warnings", "Big title for BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON", "slayerPhaseTitles"))
             phases.sub.add(ToggleSetting("Health Phase Split", "Show the 1/3 · 2/3 phase fraction (Voidgloom / Inferno)", "slayerPhaseHealthSplit"))
+            phases.sub.add(ToggleSetting("Bosses You Hit", "Also show phase/HP labels on slayer bosses you damage", "slayerPhaseHitBosses").gatedBy { FishSettings.slayerPhaseHealthSplit })
             phases.sub.add(ToggleSetting("Hide Boss Nametag", "Hide the vanilla HP nametag over slayer bosses", "slayerPhaseHideNametag"))
             val ea = fishmod.features.slayer.EndAlertSettings::class.java
             phases.sub.add(ToggleSetting("Broodfather Egg Hits", "Egg sac hits left while the Broodfather shields", ea, "phaseEggHits"))
+            phases.sub.add(ToggleSetting("Fire Pits Sound", "Play a sound when the Inferno Demonlord fire pits start (the title already shows)", ea, "phaseFirePitSound"))
+            phases.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+                { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundName }, { v -> fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundName = v },
+                { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundVolume }, { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundPitch }).gatedBy { fishmod.features.slayer.EndAlertSettings.phaseFirePitSound })
+            phases.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundVolume }, { v -> fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundVolume = v }, 0, 500, 10).gatedBy { fishmod.features.slayer.EndAlertSettings.phaseFirePitSound })
+            phases.sub.add(SliderDoubleSetting("Pitch", "", { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundPitch }, { v -> fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundPitch = v }, 0.0, 2.0).gatedBy { fishmod.features.slayer.EndAlertSettings.phaseFirePitSound })
             phases.sub.add(ToggleSetting("Blaze Fire Pillar Alert", "Fire pillar countdown text + title (Inferno Demonlord)", ea, "phaseFirePillar"))
             slayer.features.add(phases)
             slayer.features.add(Feature("Summonings Display", ea, "summonsHud"))
@@ -2458,7 +2466,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(dungeonTrackers, "Session Stats", "Loot Tracker", "Croesus Profit", "PB Pace", "Croesus Highlights")
         order(dungeonMap, "Dungeon Map", "Info HUD", "Door Highlight", "Score Messages")
         order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
-        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Box", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
+        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Overlay", "Miniboss Highlight", "Slayer Boss Box", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
         order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert")
         order(visuals, "No Fog", "Classic Skyblock Items", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
         order(cosmetics, "Custom Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
@@ -5066,7 +5074,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Superior Dragon Alert" -> "Title when a Superior Dragon spawns"
                 "Endstone Protector Alert" -> "Alert when the Endstone Protector spawns"
                 "Zealot / Dragon Counter" -> "Counts Zealots killed and dragons spawned"
-                "Cocoon Timer" -> "Countdown until a cocooned boss hatches"
+                "Cocoon Overlay" -> "Shows the mob name and a countdown over any cocooned mob (slayer boss or caught sea creature)"
                 "Summons Recall Alert" -> "Alert when your summons are recalled"
                 "Egg Sac Highlight" -> "Highlights Broodfather egg sacs"
                 "Yang Glyph Tracer" -> "Line to Voidgloom Yang Glyphs"
@@ -5091,6 +5099,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Endstone Protector Stage" -> "HUD with the Protector stage and kills left, from the tab list"
                 "End Node Finder" -> "Highlight Ender Node blocks in The End"
                 "Boss Phases" -> "Attack and phase cues on slayer bosses"
+                "Slayer Boss Box" -> "Box on your slayer boss, plus where it is about to spawn"
+                "Profanity Filter" -> "Replaces slurs and swear words in incoming chat with asterisks"
+                "Secret Waypoints" -> "Labelled through-wall boxes on every known dungeon secret (chests, items, bats, wither essence, keys)"
                 "Boss Damage Indicator" -> "HP label on non-slayer bosses"
                 "Dragon Profit Tracker" -> "Dragon kills, your eyes, essence and loot picked up after each dragon, with profit"
                 "Summonings Display" -> "Lists your summons and their HP"

@@ -7,6 +7,7 @@ import fishmod.utils.SkyblockLocation
 import fishmod.utils.FishUtil
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.EntityTools
+import fishmod.utils.data.Roman
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
@@ -17,6 +18,8 @@ import net.minecraft.client.player.AbstractClientPlayer
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.LivingEntity
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback
+import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
 
@@ -32,7 +35,9 @@ object SlayerBossPhases {
     private val FIRE_PILLAR = Regex("([\\d.]+)s\\b.*?hits?", RegexOption.IGNORE_CASE)
     private val EGG_SAC = Regex("^\\d+s \\d+/\\d+$")
     private val TWINCLAWS = Regex("TWINCLAWS.*?([\\d.]+)s", RegexOption.IGNORE_CASE)
+    private val NAMETAG_CUR_MAX = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*/\\s*([\\d,.]+)\\s*([kKmMbB])?\\s*❤")
     private val NAMETAG_HP = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*❤")
+    private val TIER_BEFORE_HP = Regex("\\s([IVX]+)\\s+[\\d,.]+\\s*[kKmMbB]?\\s*/")
     private val HELLION_HITS = Regex("\\u2668\\s*(\\d+)")
     private const val HATCHLINGS_LINE = "You need to kill the Broodfather's hatchlings before it can be damaged again!"
 
@@ -45,7 +50,12 @@ object SlayerBossPhases {
     @Volatile private var ax = 0.0
     @Volatile private var ay = 0.0
     @Volatile private var az = 0.0
-    @Volatile private var hiddenStandId = -1
+    @Volatile private var hiddenStands: Set<Int> = emptySet()
+    // boss entity id -> time of my last hit, for the "Bosses You Hit" labels
+    private val hitAt = HashMap<Int, Long>()
+    private class HitLabel(val e: LivingEntity, val text: String)
+    @Volatile private var hitLabels: List<HitLabel> = emptyList()
+    private const val HIT_FORGET_MS = 30_000L
     @Volatile private var anchor: LivingEntity? = null
     @Volatile private var maniaEndNanos = 0L
 
@@ -87,6 +97,13 @@ object SlayerBossPhases {
             false
         }
         FishEvents.worldChange.register { hardReset(); false }
+        AttackEntityCallback.EVENT.register { _, _, _, entity, _ ->
+            if (enabled() && FishSettings.slayerPhaseHitBosses && entity is LivingEntity && entity !is ArmorStand) {
+                hitAt[entity.id] = System.currentTimeMillis()
+                if (hitAt.size > 32) hitAt.entries.minByOrNull { it.value }?.let { hitAt.remove(it.key) }
+            }
+            InteractionResult.PASS
+        }
         RenderHooks.GIZMO.register { _ ->
             try {
                 render()
@@ -103,7 +120,7 @@ object SlayerBossPhases {
         lastHpFrac = 1.0
         steakTitleFired = false
         hpBossId = 0; hpMaxSeen = 0.0
-        hiddenStandId = -1
+        hiddenStands = emptySet(); hitLabels = emptyList(); hitAt.clear()
         anchor = null; maniaEndNanos = 0L
         titleAt.clear()
         scanCounter = 0
@@ -117,10 +134,10 @@ object SlayerBossPhases {
     }
 
     private fun tick() {
-        if (!enabled()) { show = false; line1 = ""; line2 = ""; hiddenStandId = -1; return }
+        if (!enabled()) { show = false; line1 = ""; line2 = ""; hiddenStands = emptySet(); hitLabels = emptyList(); return }
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.level == null || mc.hudHidden || !SkyblockLocation.inSkyblock()) {
-            show = false; line1 = ""; line2 = ""; hiddenStandId = -1; return
+            show = false; line1 = ""; line2 = ""; hiddenStands = emptySet(); hitLabels = emptyList(); return
         }
 
         if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return
@@ -146,12 +163,14 @@ object SlayerBossPhases {
             }
         }
 
-        hiddenStandId = -1
-        if (boss != null) hideNametag(mc, boss)
+        val hide = HashSet<Int>()
+        if (boss != null) hideNametag(mc, boss, hide)
+        scanHitBosses(mc, boss, hide)
+        hiddenStands = hide
         if (boss != null && (l1.isNotEmpty() || l2.isNotEmpty())) {
             val bb = boss.boundingBox
             ax = (bb.minX + bb.maxX) / 2.0
-            ay = bb.maxY + 0.5
+            ay = bb.maxY - 0.7
             az = (bb.minZ + bb.maxZ) / 2.0
             line1 = l1; line2 = l2
             anchor = boss
@@ -216,6 +235,7 @@ object SlayerBossPhases {
             }
 
             SlayerType.INFERNO -> {
+                blazeDiag(mc, boss)
                 val pillar = stands.firstNotNullOfOrNull { FIRE_PILLAR.find(it)?.groupValues?.get(1) }
                 if (EndAlertSettings.phaseFirePillar && pillar != null) { l1 = "§cFIRE PILLAR §f${pillar}s"; title("pillar", "§c§lFIRE PILLAR") }
 
@@ -225,19 +245,43 @@ object SlayerBossPhases {
                         val stand = stands.first { it.contains(shield.tag, true) }
                         val hits = HELLION_HITS.find(stand)?.groupValues?.get(1)
                         l1 = "${shield.color}§l${shield.tag.uppercase()}" + (hits?.let { " §7♨$it" } ?: "")
-                        l2 = "§7→ §f${shield.dagger} Dagger"
                     }
                 }
 
                 if (maxHp > 0.0 && hp > 0.0 && tier >= 3) {
                     val frac = hp / maxHp
-                    if (lastHpFrac > 0.33 && frac <= 0.33) title("firepits", "§cFIRE PITS!")
+                    if (lastHpFrac > 0.33 && frac <= 0.33) {
+                        title("firepits", "§cFIRE PITS!")
+                        if (EndAlertSettings.phaseFirePitSound) fishmod.utils.debug.FishDiag.guard("SlayerBossPhases.firePitSound", "fire pit sound '${EndAlertSettings.phaseFirePitSoundName}' failed") {
+                            fishmod.utils.sound.SoundManager.play2D(
+                                fishmod.utils.sound.SoundManager.preset(EndAlertSettings.phaseFirePitSoundName),
+                                EndAlertSettings.phaseFirePitSoundVolume.coerceIn(0, 500) / 100f,
+                                EndAlertSettings.phaseFirePitSoundPitch.toFloat().coerceIn(0f, 2f),
+                                "firePitSound", 30,
+                            )
+                        }
+                    }
                     lastHpFrac = frac
                 }
-                if (l2.isEmpty()) l2 = healthSplit(hp, maxHp, if (tier >= 3) 3 else 2)
+                l2 = hpText(hp, maxHp)
             }
         }
         return l1 to l2
+    }
+
+    private var blazeDiagAt = 0L
+    // TEMP diagnostics (2026-11-24): Blaze slayer cues reported not working; logs every nametag near the boss so the real format can be matched.
+    private fun blazeDiag(mc: Minecraft, boss: LivingEntity) {
+        val now = System.currentTimeMillis()
+        if (now - blazeDiagAt < 2000L) return
+        blazeDiagAt = now
+        val level = mc.level ?: return
+        val sb = StringBuilder("[BlazeDiag] boss=${boss.type.descriptionId} id=${boss.id} y=${"%.1f".format(boss.y)} stands:")
+        for (st in level.getEntitiesOfClass(ArmorStand::class.java, boss.boundingBox.inflate(12.0, 8.0, 12.0)) { it.hasCustomName() }) {
+            val n = st.customName?.string ?: continue
+            sb.append(" | '").append(n.replace(FishConstants.STRIP_COLOR_REGEX, "")).append("' d=").append("%.1f".format(Math.sqrt(st.distanceToSqr(boss)))).append(" dy=").append("%.1f".format(st.y - boss.y))
+        }
+        fishmod.utils.debug.FishDebug.LOGGER.info(sb.toString())
     }
 
     private enum class HELLION(val tag: String, val color: String, val dagger: String) {
@@ -287,15 +331,45 @@ object SlayerBossPhases {
         return l1 to l2
     }
 
-    @JvmStatic fun hidesNametag(id: Int): Boolean = id >= 0 && id == hiddenStandId
+    @JvmStatic fun hidesNametag(id: Int): Boolean = id >= 0 && id in hiddenStands
 
     // Finds the vanilla HP nametag stand over the boss so the entity renderer can skip it.
-    private fun hideNametag(mc: Minecraft, boss: LivingEntity) {
+    private fun hideNametag(mc: Minecraft, boss: LivingEntity, into: MutableSet<Int>) {
         if (!FishSettings.slayerPhaseHideNametag) return
         val level = mc.level ?: return
         val box = boss.boundingBox.inflate(3.0, 4.0, 3.0)
-        hiddenStandId = level.getEntitiesOfClass(ArmorStand::class.java, box) { it.hasCustomName() }
-            .firstOrNull { st -> NAMETAG_HP.containsMatchIn(st.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "") ?: "") }?.id ?: -1
+        // the HP stand and the "<name>'s SLAYER BOSS" stand are one vanilla nametag
+        for (st in level.getEntitiesOfClass(ArmorStand::class.java, box) { it.hasCustomName() }) {
+            val n = st.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "") ?: continue
+            if (NAMETAG_HP.containsMatchIn(n) || n.endsWith("SLAYER BOSS")) into.add(st.id)
+        }
+    }
+
+    // "Bosses You Hit": phase label (and hidden nametag) for slayer bosses I attacked, not just my own
+    private fun scanHitBosses(mc: Minecraft, own: LivingEntity?, hide: MutableSet<Int>) {
+        if (!FishSettings.slayerPhaseHitBosses || hitAt.isEmpty()) { hitLabels = emptyList(); return }
+        val level = mc.level ?: return
+        val now = System.currentTimeMillis()
+        val out = ArrayList<HitLabel>()
+        val iter = hitAt.entries.iterator()
+        while (iter.hasNext()) {
+            val ent = iter.next()
+            val e = level.getEntity(ent.key) as? LivingEntity
+            if (e == null || !e.isAlive || now - ent.value > HIT_FORGET_MS) { iter.remove(); continue }
+            if (e === own) continue
+            val stands = nearbyStandNames(e, 2.0, 4.0)
+            val type = SlayerType.entries.firstOrNull { t -> stands.any { s -> t.bossNames.any { s.contains(it) } } } ?: continue
+            hideNametag(mc, e, hide)
+            val m = stands.firstNotNullOfOrNull { NAMETAG_CUR_MAX.find(it) } ?: continue
+            val hp = hpNum(m.groupValues[1], m.groupValues[2]) ?: continue
+            val maxHp = hpNum(m.groupValues[3], m.groupValues[4]) ?: continue
+            if (maxHp <= 0.0) continue
+            val tier = stands.firstNotNullOfOrNull { TIER_BEFORE_HP.find(it) }?.let { Roman.toInt(it.groupValues[1]) } ?: 0
+            val steps = when (type) { SlayerType.VOIDGLOOM -> if (tier >= 4) 6 else 3; SlayerType.INFERNO -> if (tier >= 3) 3 else 2; else -> 0 }
+            val text = if (steps > 1) healthSplit(hp, maxHp, steps) else "§7${(hp / maxHp * 100.0).toInt()}%"
+            if (text.isNotEmpty()) out.add(HitLabel(e, text))
+        }
+        hitLabels = out
     }
 
     private fun nearbyStandNames(e: LivingEntity, radius: Double, up: Double): List<String> {
@@ -305,6 +379,21 @@ object SlayerBossPhases {
             .mapNotNull { it.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "")?.trim() }
     }
 
+    // "6.6M/10M" in HP colours; used as the Inferno health line
+    private fun hpText(hp: Double, maxHp: Double): String {
+        if (hp <= 0.0 || maxHp <= 0.0) return ""
+        val f = hp / maxHp
+        val c = when { f > 0.75 -> "§a"; f > 0.5 -> "§e"; f > 0.25 -> "§6"; else -> "§c" }
+        return "$c${compactHp(hp)}§7/§a${compactHp(maxHp)}"
+    }
+
+    private fun compactHp(v: Double): String = when {
+        v >= 1e9 -> "%.2fB".format(v / 1e9)
+        v >= 1e6 -> "%.1fM".format(v / 1e6)
+        v >= 1e4 -> "%.1fk".format(v / 1e3)
+        else -> v.toLong().toString()
+    }
+
     private fun healthSplit(hp: Double, maxHp: Double, steps: Int): String {
         if (!FishSettings.slayerPhaseHealthSplit || hp <= 0.0 || maxHp <= 0.0 || steps <= 1) return ""
         val step = maxHp / steps
@@ -312,8 +401,21 @@ object SlayerBossPhases {
         return "§7Phase §e$phase/$steps"
     }
 
+    private fun hpNum(n: String, suffix: String): Double? =
+        n.replace(",", "").toDoubleOrNull()?.times(when (suffix.lowercase()) { "k" -> 1_000.0; "m" -> 1_000_000.0; "b" -> 1_000_000_000.0; else -> 1.0 })
+
     private fun trackHp(bossId: Int, stands: List<String>): Double {
         if (bossId != hpBossId) { hpBossId = bossId; hpMaxSeen = 0.0; lastHpFrac = 1.0; steakTitleFired = false }
+        // Current nametags read "147M/150M❤" (current/max); older ones just "150M❤".
+        val cm = stands.firstNotNullOfOrNull { NAMETAG_CUR_MAX.find(it) }
+        if (cm != null) {
+            val c = hpNum(cm.groupValues[1], cm.groupValues[2]); val mx = hpNum(cm.groupValues[3], cm.groupValues[4])
+            if (c != null && mx != null) {
+                if (mx > hpMaxSeen) hpMaxSeen = mx
+                lastHp = c
+                return c
+            }
+        }
         val cur = stands.firstNotNullOfOrNull { name ->
             NAMETAG_HP.find(name)?.let { m ->
                 val n = FishDiag.notNull(m.groupValues[1].replace(",", "").toDoubleOrNull(), "SlayerBossPhases.4") { "boss nametag hp not numeric: '$name'" } ?: return@let null
@@ -354,15 +456,28 @@ object SlayerBossPhases {
 
     private fun fmt(v: Double): String = String.format("%.1f", v)
 
+    private fun renderHitLabels() {
+        if (!enabled() || !FishSettings.slayerPhaseWorldText) return
+        val k = FishSettings.slayerPhaseTextScale.coerceIn(20, 150) / 100f
+        val walls = FishSettings.slayerPhaseThroughWalls
+        for (hl in hitLabels) {
+            if (!hl.e.isAlive) continue
+            val p = EntityTools.getLerpedPos(hl.e)
+            FishDraw.gizmoText(Component.literal(hl.text), Vec3(p.x, p.y + hl.e.bbHeight - 0.7 + 0.36 * k, p.z), 0.95f * k, -0x1, walls)
+        }
+    }
+
     private fun render() {
+        renderHitLabels()
         if (!show || !enabled()) return
         val k = FishSettings.slayerPhaseTextScale.coerceIn(20, 150) / 100f
         val walls = FishSettings.slayerPhaseThroughWalls
         // Follow the boss every frame instead of the 5-tick scan position
         var bx = ax; var by = ay; var bz = az
         anchor?.takeIf { it.isAlive }?.let { e ->
+            // anchor on the boss's interpolated position every frame (the scan position is up to 5 ticks old)
             val p = EntityTools.getLerpedPos(e)
-            bx += p.x - e.x; by += p.y - e.y; bz += p.z - e.z
+            bx = p.x; by = p.y + e.bbHeight - 0.7; bz = p.z
         }
         var y = by + 0.36 * k
         if (line2.isNotEmpty() || line1.isNotEmpty()) y += 0.4 * k

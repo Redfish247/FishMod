@@ -25,6 +25,7 @@ object EndAlertSettings {
     @ConfigValue @JvmField var bossHudY: Int = 60
     @ConfigValue @JvmField var bossHudScale: Double = 1.0
     @ConfigValue @JvmField var attuneHighlight: Boolean = false
+    @ConfigValue @JvmField var hideInfernoBoss: Boolean = false
     @ConfigValue @JvmField var summonsRecallAlert: Boolean = false
     @ConfigValue @JvmField var summonsHud: Boolean = false
     @ConfigValue @JvmField var summonsHudX: Int = 5
@@ -38,6 +39,10 @@ object EndAlertSettings {
 
     @ConfigValue @JvmField var phaseEggHits: Boolean = true
     @ConfigValue @JvmField var phaseFirePillar: Boolean = true
+    @ConfigValue @JvmField var phaseFirePitSound: Boolean = true
+    @ConfigValue @JvmField var phaseFirePitSoundName: String = "Note: Pling"
+    @ConfigValue @JvmField var phaseFirePitSoundVolume: Int = 150
+    @ConfigValue @JvmField var phaseFirePitSoundPitch: Double = 0.6
 
     @ConfigValue @JvmField var eggSacHighlight: Boolean = false
     @ConfigValue @JvmField var eggSacColor: Int = 0xFFFFFF55.toInt()

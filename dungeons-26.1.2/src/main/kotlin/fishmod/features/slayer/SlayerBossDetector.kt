@@ -13,7 +13,11 @@ object SlayerBossDetector {
 
     private const val SCAN_INTERVAL_TICKS = 5
     private const val MARK = "☠"
+    // Hypixel dropped the skull: boss stands now read "[Lv825]  Inferno Demonlord IV 147M/150M❤" and a sibling stand "<name>'s SLAYER BOSS".
+    private val LEVEL_TAG = Regex("\\[Lv\\d+\\]")
     private var scanCounter = 0
+    // last time my boss stand was seen, so the spawn-spot box can vanish the moment the boss appears (before the entity is bound)
+    @Volatile @JvmField var bossStandSeenAt = 0L
 
     @JvmStatic
     fun init() {
@@ -45,11 +49,26 @@ object SlayerBossDetector {
             SlayerManager.state == SlayerManager.State.GRINDING
         if (!canHaveBoss) return
 
+        val myName = mc.player?.name?.string ?: ""
+        // owner stands ("<name>'s SLAYER BOSS" / "Spawned by: <name>") and whether each one is mine
+        val owners = ArrayList<Pair<ArmorStand, Boolean>>()
+        for (e in level.entitiesForRendering()) {
+            if (e !is ArmorStand || !e.hasCustomName()) continue
+            val n = e.customName?.string ?: continue
+            if (n.endsWith("SLAYER BOSS") || n.startsWith("Spawned by")) owners.add(e to n.contains(myName, true))
+        }
+
         for (e in level.entitiesForRendering()) {
             if (e !is ArmorStand || !e.hasCustomName()) continue
             val name = e.customName?.string ?: continue
 
-            if (name.contains(MARK) && type.bossNames.any { name.contains(it) }) {
+            val bossStand = type.bossNames.any { name.contains(it) } && (name.contains(MARK) || (LEVEL_TAG.containsMatchIn(name) && name.contains("❤")))
+            // Only the boss whose nearest owner stand is mine; with no owner stands at all (older formats) accept it.
+            val nearOwner = owners.filter { (o, _) -> val dx = o.x - e.x; val dz = o.z - e.z; dx * dx + dz * dz < 12.25 && Math.abs(o.y - e.y) < 5.0 }
+                .minByOrNull { (o, _) -> o.distanceToSqr(e) }
+            val mine = if (nearOwner != null) nearOwner.second else owners.isEmpty()
+            if (bossStand && mine) {
+                bossStandSeenAt = System.currentTimeMillis()
                 SlayerAlerts.bossSpawned(type)
                 if (SlayerManager.bossEntity == null) {
                     val mob = nearestMob(level, e, type.mobClass)

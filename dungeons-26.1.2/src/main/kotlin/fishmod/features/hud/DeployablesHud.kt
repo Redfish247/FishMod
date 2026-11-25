@@ -24,7 +24,12 @@ object DeployablesHud {
     private const val FLARE_SECS = 180
     private val ORB_RE = Regex("""^(Radiant|Mana Flux|Overflux|Plasmaflux)(?: Orb)? (\d+[ms\d ]*)$""")
     private val FLARE_RE = Regex("""(Warning|Alert|SOS) Flare""", RegexOption.IGNORE_CASE)
-    private val FLARE_TEXTURES = mapOf("9d2bf9864720d87fd06b84efa80b795c48ed539b16523c3b1f1990b40c003f6b" to "Warning Flare")
+    private val FLARE_TEXTURES = mapOf(
+        "9d2bf9864720d87fd06b84efa80b795c48ed539b16523c3b1f1990b40c003f6b" to "Warning Flare",
+        // SOS Flare (purple cube head): seen at ~10 blocks in both boss fights while Eli's flare was down (2026-11-24, unconfirmed).
+        // 4ceb0ed8... was a wrong guess: that head is a pale stacked block, not a flare.
+        "c0062cc98ebda72a6a4b89783adcef2815b483a01d73ea87b3df76072a89d13b" to "SOS Flare",
+    )
 
     private class Entry(val key: Int, val name: String, val color: String, var expireAt: Long, var dist: Double, val fromName: Boolean)
 
@@ -112,7 +117,8 @@ object DeployablesHud {
             val tex = e.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD)
                 .get(net.minecraft.core.component.DataComponents.PROFILE)?.partialProfile()?.properties()?.get("textures")?.firstOrNull()?.value() ?: continue
             val json = runCatching { String(java.util.Base64.getDecoder().decode(tex)) }.getOrNull() ?: continue
-            val flare = FLARE_TEXTURES.entries.firstOrNull { json.contains(it.key) }?.value ?: continue
+            val flare = FLARE_TEXTURES.entries.firstOrNull { json.contains(it.key) }?.value
+            if (flare == null) { if (d < 12.0) headDiag(e, json, d); continue }
             val prev = entries[e.id]
             val secs = neighbourTimer(e, level)
             val expire = when {
@@ -123,6 +129,13 @@ object DeployablesHud {
             put(e.id, flare, expire, d, secs != null)
             seen.add(e.id)
         }
+    }
+
+    private val loggedHeads = HashSet<String>()
+    // TEMP (2026-11-24): SOS flare not detected; log head textures of nearby stands so its texture can be added to FLARE_TEXTURES
+    private fun headDiag(e: ArmorStand, json: String, d: Double) {
+        val hash = Regex("texture/([0-9a-f]+)").find(json)?.groupValues?.get(1) ?: return
+        if (loggedHeads.size < 60 && loggedHeads.add(hash)) fishmod.utils.debug.FishDebug.LOGGER.info("[FlareDiag] head texture=$hash stand='${e.customName?.string}' d=${"%.1f".format(d)}")
     }
 
     private fun put(id: Int, name: String, expireAt: Long, dist: Double, fromName: Boolean) {

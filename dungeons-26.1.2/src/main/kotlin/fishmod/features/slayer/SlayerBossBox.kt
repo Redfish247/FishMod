@@ -1,68 +1,100 @@
 package fishmod.features.slayer
 
 import fishmod.features.slayer.EndAlertSettings as S
+import fishmod.utils.data.EntityTools
 import fishmod.utils.debug.FishDiag
-import fishmod.utils.events.FishEvents
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
+import net.minecraft.client.Minecraft
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.entity.player.Player
+import fishmod.utils.events.FishEvents
 import net.minecraft.world.phys.AABB
-import net.minecraft.world.phys.Vec3
 
-/** Box on the slayer boss (issue #249): live box on the boss mob plus a marker where it first appeared. */
+/** Box on the slayer boss (issue #249): live box on the boss mob, plus a box on the spot where the last slayer-type mob died (the kill that starts the boss spawn), gone once the boss exists. */
 object SlayerBossBox {
 
-    private var spawnPos: Vec3? = null
-    private var spawnBoundMs = 0L
-    private var lastBoss: Int = -1
-    private const val SPAWN_MARK_MS = 8000L
-    private const val PRE_SPAWN_MS = 8000L
+    private class Seen(val mob: LivingEntity, var box: AABB)
+
+    private val seen = HashMap<Int, Seen>()
+    private var killBox: AABB? = null
+    private var killAt = 0L
+    private var spawnBox: AABB? = null
     private var prevState: SlayerManager.State = SlayerManager.State.NONE
-    private var preSpawnPos: Vec3? = null
-    private var preSpawnAt = 0L
+    private var windowAt = 0L
+    private var lastScanAt = 0L
+    private const val SPAWN_WINDOW_MS = 15_000L
+    private const val KILL_MAX_AGE_MS = 5_000L
+    private const val SCAN_RANGE = 24.0
+    private const val SCAN_MS = 100L
 
     fun init() {
         RenderHooks.GIZMO.register { _ ->
             try { render() } catch (t: Throwable) { FishDiag.fail("SlayerBossBox.1", "boss box render failed", t) }
         }
-        FishEvents.worldChange.register { spawnPos = null; lastBoss = -1; preSpawnPos = null; prevState = SlayerManager.State.NONE; false }
+        FishEvents.worldChange.register { seen.clear(); killBox = null; spawnBox = null; prevState = SlayerManager.State.NONE; windowAt = 0L; false }
+    }
+
+    private fun windowOpen(): Boolean {
+        if (!S.slayerBossBox || !S.slayerBossBoxSpawnMark || SlayerManager.state != SlayerManager.State.BOSS_SPAWNED) return false
+        val boss = SlayerManager.bossEntity
+        if (boss != null && boss.isAlive && !boss.isRemoved) return false
+        if (SlayerBossDetector.bossStandSeenAt >= windowAt) return false
+        return System.currentTimeMillis() - windowAt < SPAWN_WINDOW_MS
+    }
+
+    private fun trackMobs() {
+        val now = System.currentTimeMillis()
+        if (now - lastScanAt < SCAN_MS) return
+        lastScanAt = now
+        val mc = Minecraft.getInstance()
+        val level = mc.level ?: return
+        val me = mc.player ?: return
+        val type = SlayerManager.type ?: return
+        val it = seen.entries.iterator()
+        while (it.hasNext()) {
+            val s = it.next().value
+            if (!s.mob.isAlive || s.mob.isRemoved) {
+                if (!s.mob.isAlive) { killBox = s.box; killAt = now }
+                it.remove()
+            } else s.box = s.mob.boundingBox
+        }
+        for (e in level.entitiesForRendering()) {
+            if (e !is LivingEntity || e is ArmorStand || e is Player || !e.isAlive) continue
+            if (!type.mobClass.isInstance(e) || e.distanceToSqr(me) > SCAN_RANGE * SCAN_RANGE) continue
+            val s = seen[e.id]
+            if (s == null) seen[e.id] = Seen(e, e.boundingBox)
+        }
+    }
+
+    private fun playerBox(k: AABB): AABB {
+        val cx = (k.minX + k.maxX) / 2; val cz = (k.minZ + k.maxZ) / 2
+        return AABB(cx - 0.3, k.minY, cz - 0.3, cx + 0.3, k.minY + 1.8, cz + 0.3)
     }
 
     private fun render() {
         if (!S.slayerBossBox) return
+        if (SlayerManager.isActiveSlayer()) trackMobs() else if (seen.isNotEmpty()) seen.clear()
         val boss = SlayerManager.bossEntity
         val st = SlayerManager.state
         if (st != prevState) {
-            // Boss spawns on the player when the quest bar fills, so the player spot at that moment is the pre-spawn spot.
-            if (st == SlayerManager.State.BOSS_SPAWNED && prevState == SlayerManager.State.GRINDING) {
-                preSpawnPos = net.minecraft.client.Minecraft.getInstance().player?.position()
-                preSpawnAt = System.currentTimeMillis()
+            if (st == SlayerManager.State.BOSS_SPAWNED) {
+                windowAt = System.currentTimeMillis()
+                spawnBox = killBox?.takeIf { windowAt - killAt <= KILL_MAX_AGE_MS }?.let { playerBox(it) }
             }
             prevState = st
         }
+        val c = S.slayerBossBoxColor
         if (boss == null || !boss.isAlive || boss.isRemoved) {
-            spawnPos = null; lastBoss = -1
-            val pp = preSpawnPos
-            if (pp != null && S.slayerBossBoxSpawnMark && st == SlayerManager.State.BOSS_SPAWNED && System.currentTimeMillis() - preSpawnAt < PRE_SPAWN_MS) {
-                val c = S.slayerBossBoxColor
-                FishDraw.gizmoBox(AABB(pp.x - 0.6, pp.y, pp.z - 0.6, pp.x + 0.6, pp.y + 2.2, pp.z + 0.6), (0x20 shl 24) or (c and 0xFFFFFF), c or 0xFF000000.toInt(), true)
-            } else if (pp != null) preSpawnPos = null
+            if (!windowOpen()) return
+            spawnBox?.let { FishDraw.gizmoBox(it, (0x20 shl 24) or (c and 0xFFFFFF), c or 0xFF000000.toInt(), false) }
             return
         }
-        preSpawnPos = null
-        if (boss.id != lastBoss) {
-            lastBoss = boss.id
-            spawnPos = boss.position()
-            spawnBoundMs = System.currentTimeMillis()
-        }
-        val c = S.slayerBossBoxColor
+        if (SlayerManager.type == SlayerType.INFERNO) return
         val fill = (0x30 shl 24) or (c and 0xFFFFFF)
-        val live = boss.boundingBox.inflate(0.1)
-        FishDraw.gizmoBox(live, fill, c or 0xFF000000.toInt(), true)
-        val sp = spawnPos
-        if (S.slayerBossBoxSpawnMark && sp != null && System.currentTimeMillis() - spawnBoundMs < SPAWN_MARK_MS) {
-            val w = boss.bbWidth.toDouble().coerceAtLeast(1.0)
-            val box = AABB(sp.x - w / 2, sp.y, sp.z - w / 2, sp.x + w / 2, sp.y + boss.bbHeight.toDouble().coerceAtLeast(1.0), sp.z + w / 2)
-            FishDraw.gizmoBox(box, (0x20 shl 24) or (c and 0xFFFFFF), 0xFFFFFFFF.toInt(), true)
-        }
+        val lp = EntityTools.getLerpedPos(boss)
+        val live = boss.boundingBox.move(lp.x - boss.x, lp.y - boss.y, lp.z - boss.z).inflate(0.1)
+        FishDraw.gizmoBox(live, fill, c or 0xFF000000.toInt(), false)
     }
 }
