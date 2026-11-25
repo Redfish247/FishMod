@@ -282,20 +282,48 @@ object ModConflicts {
             try {
                 val target = cfg.resolve(file)
                 if (!Files.exists(target)) continue
-                val root = parse(Files.readString(target))
-                var changed = false
-                for (e in edits) if (setAt(root, e.path, e.value)) { changed = true; applied++ }
-                if (changed) {
-                    val bak = target.resolveSibling(target.fileName.toString() + ".fishmod-bak")
-                    if (!Files.exists(bak)) Files.copy(target, bak)
-                    Files.writeString(target, GSON.toJson(root))
+                val original = Files.readString(target)
+                val root = parse(original)
+                var text = original
+                var n = 0
+                for (e in edits) {
+                    val steps = concretePath(root, e.path) ?: continue
+                    val patched = TextPatch.setBoolean(text, steps, e.value) ?: continue
+                    if (setAt(root, e.path, e.value)) { text = patched; n++ }
                 }
+                if (n == 0 || text == original) continue
+                if (parse(text) != root) {
+                    FishDiag.fail("ModConflicts.8", "patched $file differs from expected, left untouched", IllegalStateException("verify failed"))
+                    continue
+                }
+                val bak = target.resolveSibling(target.fileName.toString() + ".fishmod-bak")
+                Files.copy(target, bak, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                Files.writeString(target, text)
+                applied += n
             } catch (t: Throwable) {
                 FishDiag.fail("ModConflicts.5", "could not apply conflict edit to $file", t)
             }
         }
         synchronized(this) { loadPending().clear(); savePending() }
         if (applied > 0) System.out.println("[FishMod] Applied $applied queued setting change(s) to other mods' configs")
+    }
+
+    private fun concretePath(root: JsonElement, path: List<String>): List<Any>? {
+        val steps = ArrayList<Any>()
+        var cur: JsonElement = root
+        for (tok in path) {
+            if (tok.startsWith("@")) {
+                val arr = cur as? JsonArray ?: return null
+                val eq = tok.indexOf('=')
+                val f = tok.substring(1, eq); val want = tok.substring(eq + 1)
+                val idx = arr.indexOfFirst { e -> e.isJsonObject && e.asJsonObject.get(f)?.let { x -> x.isJsonPrimitive && x.asString == want } == true }
+                if (idx < 0) return null
+                steps.add(idx); cur = arr[idx]
+            } else {
+                steps.add(tok); cur = (cur as? JsonObject)?.get(tok) ?: return null
+            }
+        }
+        return steps
     }
 
     private fun setAt(root: JsonElement, path: List<String>, v: Boolean): Boolean {
