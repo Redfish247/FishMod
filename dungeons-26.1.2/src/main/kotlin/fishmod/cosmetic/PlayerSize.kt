@@ -73,14 +73,14 @@ object PlayerSize {
 
     @JvmStatic
     fun clearOwnShare() {
-        upload(IDENTITY)
+        upload(IDENTITY, "PLAYER")
     }
 
-    private fun upload(xyz: FloatArray) {
+    private fun upload(xyz: FloatArray, model: String = PlayerModel.ownKey()) {
         val mc = Minecraft.getInstance()
         if (mc.user == null) return
         val id: UUID = mc.user.profileId ?: return
-        HypixelApi.uploadScale(id.toString().replace("-", ""), xyz[0], xyz[1], xyz[2])
+        HypixelApi.uploadScale(id.toString().replace("-", ""), xyz[0], xyz[1], xyz[2], model)
     }
 
     @JvmStatic

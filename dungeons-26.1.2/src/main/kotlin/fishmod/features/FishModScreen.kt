@@ -114,6 +114,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         run {
             val f = Feature("UI Customization", null, null)
+            f.pageId = "ui"
             f.sub.add(SubcategoryHeader("Background"))
             f.sub.add(DropdownSetting("Background Preset", "", arrayOf("Graphite", "Charcoal", "Obsidian", "Moss", "Wine", "Deep Sea", "Custom"),
                 { FishSettings.fmBgPreset },
@@ -1125,14 +1126,24 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Custom Name Color",
-                { NickState.isActive() },
-                { v -> if (!v) NickState.reset() else NickState.applyFromSettings() })
+            val f = Feature("Player Customizer",
+                { NickState.isActive() || FishSettings.playerSizeEnabled },
+                { v ->
+                    if (!v) NickState.reset() else NickState.applyFromSettings()
+                    FishSettings.playerSizeEnabled = v
+                    fishmod.cosmetic.PlayerSize.uploadOwn()
+                })
+            f.pageId = "player"
+            f.sub.add(SubcategoryHeader("Name"))
             val name = LimitedInputSetting("Custom Name", "", 18,
                 { FishSettings.nickCustomName },
                 { v -> FishSettings.nickCustomName = v ?: ""; if (NickState.isActive()) NickState.applyFromSettings() })
-            name.hint = "blank = your IGN; &l/&o/&m/&n/&k/&r formats, &* star"
+            name.hint = "blank = your IGN"
             f.sub.add(name)
+            for ((label, key) in listOf("Bold" to "nickBold", "Italic" to "nickItalic", "Underline" to "nickUnderline", "Strikethrough" to "nickStrike", "Obfuscated" to "nickMagic")) {
+                f.sub.add(ToggleSetting(label, "", { FishSettings::class.java.getField(key).getBoolean(null) },
+                    { v -> FishSettings::class.java.getField(key).setBoolean(null, v); if (NickState.isActive()) NickState.applyFromSettings() }))
+            }
             f.sub.add(DropdownSetting("Color Mode", "", arrayOf("SOLID", "GRADIENT", "GRADIENT3", "RAINBOW"),
                 { FishSettings.nickColorMode },
                 { v -> FishSettings.nickColorMode = v; if (NickState.isActive()) NickState.applyFromSettings() }))
@@ -1154,16 +1165,32 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             // scrolls the gradient colours over time (local render only, not chat history)
             f.sub.add(ToggleSetting("Animate Colors", "Cycle the gradient colors over time instead of keeping them still", "nickColorAnimated"))
             f.sub.add(SliderIntSetting("Animation Speed %", "100% = default speed", "nickColorSpeed", 25, 300, 25))
-            f.sub.add(SubcategoryHeader("Modes"))
-            f.sub.add(SubcategoryHeader("SOLID: 1 color"))
-            f.sub.add(SubcategoryHeader("GRADIENT: start → end"))
-            f.sub.add(SubcategoryHeader("GRADIENT3: start → mid → end"))
-            f.sub.add(SubcategoryHeader("RAINBOW: fixed 6 colors"))
-            f.sub.add(SubcategoryHeader("Codes"))
-            f.sub.add(SubcategoryHeader("&l bold   &o italic"))
-            f.sub.add(SubcategoryHeader("&m strike   &n underline"))
-            f.sub.add(SubcategoryHeader("&k magic   &r reset"))
-            f.sub.add(SubcategoryHeader("&* star   &#rrggbb hex"))
+            f.sub.add(SubcategoryHeader("Size"))
+            f.sub.add(SliderDoubleSetting("Width (X)", "",
+                { FishSettings.playerSizeScaleX },
+                { v -> FishSettings.playerSizeScaleX = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
+                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
+            f.sub.add(SliderDoubleSetting("Height (Y)", "",
+                { FishSettings.playerSizeScaleY },
+                { v -> FishSettings.playerSizeScaleY = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
+                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
+            f.sub.add(SliderDoubleSetting("Depth (Z)", "",
+                { FishSettings.playerSizeScaleZ },
+                { v -> FishSettings.playerSizeScaleZ = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
+                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
+            f.sub.add(ToggleSetting("Share w/ All", "",
+                { FishSettings.playerSizeShared },
+                { v ->
+                    FishSettings.playerSizeShared = v
+                    if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync() }
+                    else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll() }
+                }))
+            f.sub.add(SubcategoryHeader("Model"))
+            f.sub.add(DropdownSetting("Model", "Show yourself as a Minecraft mob", fishmod.cosmetic.PlayerModel.KEYS,
+                { FishSettings.playerModel },
+                { v -> FishSettings.playerModel = v; fishmod.cosmetic.PlayerModel.uploadOwn() },
+                { fishmod.cosmetic.PlayerModel.label(it) }))
+            f.sub.add(SubcategoryHeader("Others"))
             f.sub.add(ToggleSetting("See Others", "", "remoteNicksEnabled"))
             f.sub.add(ButtonSetting("Refresh Now", "", Runnable { fishmod.cosmetic.RemoteNicks.forceRefresh() }))
             cosmetics.features.add(f)
@@ -1255,31 +1282,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Color", "Tint applied to the crosshair", "crosshairColor").gatedBy { FishSettings.crosshairMode != "Custom" })
             f.sub.add(SliderDoubleSetting("Scale", "", "crosshairScale", 0.25, 4.0))
             f.sub.add(ToggleSetting("Hide in F3", "", "crosshairHideInF3"))
-            cosmetics.features.add(f)
-        }
-        run {
-            val f = Feature("Player Size",
-                { FishSettings.playerSizeEnabled },
-                { v -> FishSettings.playerSizeEnabled = v; fishmod.cosmetic.PlayerSize.uploadOwn() })
-            f.sub.add(SliderDoubleSetting("Width (X)", "",
-                { FishSettings.playerSizeScaleX },
-                { v -> FishSettings.playerSizeScaleX = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
-                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
-            f.sub.add(SliderDoubleSetting("Height (Y)", "",
-                { FishSettings.playerSizeScaleY },
-                { v -> FishSettings.playerSizeScaleY = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
-                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
-            f.sub.add(SliderDoubleSetting("Depth (Z)", "",
-                { FishSettings.playerSizeScaleZ },
-                { v -> FishSettings.playerSizeScaleZ = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
-                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
-            f.sub.add(ToggleSetting("Share w/ All", "",
-                { FishSettings.playerSizeShared },
-                { v ->
-                    FishSettings.playerSizeShared = v
-                    if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync() }
-                    else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll() }
-                }))
             cosmetics.features.add(f)
         }
         run {
@@ -2426,7 +2428,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
         order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Finder")
         order(visuals, "No Fog", "Classic Skyblock Items", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
-        order(cosmetics, "Custom Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
+        order(cosmetics, "Player Customizer", "Nametag", "Badges", "Custom Crosshair", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
         columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin and Legion Hud", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
         columns.firstOrNull { it.name == "Diana" }?.let { order(it, "Burrow Guessing", "Rare Mobs", "Diana Warp", "Diana Tracker", "Mythos Mob HP", "Diana Announcers", "Diana Party Commands") }
         fun groupBy(c: Column, vararg groups: Pair<String, List<String>>) {
@@ -3023,7 +3025,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "credits" -> openPage("credits")
                 "conflicts" -> openPage("conflicts")
                 "reset" -> if (resetArmed) { resetAllColumns(); resetArmed = false } else { resetArmed = true; resetArmedAt = System.currentTimeMillis() }
-                "look" -> columns.firstOrNull { c -> c.features.any { it.name == "UI Customization" } }?.let { c -> toggleFold(c); selected = c.features.first { it.name == "UI Customization" }; selAt = System.currentTimeMillis() }
+                "look" -> openPage("ui")
                 "view" -> viewOpen = !wasViewOpen
             }
             return true
@@ -3051,9 +3053,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
     // Always shown so the check can be verified after a reload: "(…)" = scan running, "(0)" = scanned, none found
     private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n < 0) "Conflicts (…)" else "Conflicts ($n)" }
-    private fun openPage(p: String) { page = p; selected = null; openedAt = System.currentTimeMillis() }
+    private var pgScroll = 0
+    private fun pageFeature(): Feature? = columns.firstNotNullOfOrNull { c -> c.features.firstOrNull { it.pageId == page } }
+    private fun openPage(p: String) { pgScroll = 0; page = p; selected = null; openedAt = System.currentTimeMillis() }
     private fun goHome() { page = null; allMode = true; selected = null; gridScroll = 0; if (searchText.isNotEmpty()) { searchField?.value = ""; searchText = "" }; openedAt = System.currentTimeMillis() }
-    private fun pageTitle(): String = when (page) { "report" -> "Report to RedFish"; "conflicts" -> "Mod Conflicts"; else -> "Credits" }
+    private fun pageTitle(): String = when (page) { "report" -> "Report to RedFish"; "conflicts" -> "Mod Conflicts"; "player" -> "Player Customizer"; "ui" -> "UI Customization"; else -> "Credits" }
 
     private fun crumbs(): List<Pair<String, (() -> Unit)?>> {
         val out = ArrayList<Pair<String, (() -> Unit)?>>()
@@ -3264,7 +3268,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val pt = cyTop() - HEADER_H
             val pp = anim(openedAt, 0, 220); val oy = Math.round((1f - pp) * 10f)
             UiRecorder.textBold(pageTitle(), cx0().toFloat(), (pt + 5 + oy).toFloat(), 1.25f * NVG_BASE_TEXT_SIZE, fa(TEXT_COLOR, pp))
-            if (page == "credits") creditsPage.render(cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
+            if (pageFeature() != null) {
+                val pf = pageFeature()
+                if (pf != null) {
+                    val top = pt + 34 + oy
+                    pgScroll = Mth.clamp(pgScroll, 0, Math.max(0, pf.naturalSubHeight() - (cyBot() - top)))
+                    UiRecorder.pushScissor(cx0().toFloat(), top.toFloat(), (cx1() - cx0()).toFloat(), (cyBot() - top).toFloat())
+                    try { renderSubPanel(ctx, pf, cx0(), cx1(), top - pgScroll, pf.naturalSubHeight(), mouseX, if (mouseY >= top && mouseY < cyBot()) mouseY else -10000, top, cyBot()) } finally { UiRecorder.popScissor() }
+                }
+            } else if (page == "credits") creditsPage.render(cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
             else if (page == "conflicts") conflictsPage.render(ctx, cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
             else reportPage.render(cx0(), pt + 32 + oy, cx1() - cx0(), cyBot() - pt - 32, mouseX, mouseY)
             return
@@ -3414,6 +3426,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (mx !in x..x + cw || my !in y..y + cardH()) continue
             val onSwitch = ft.hasMaster() && mx >= x + cw - 38 && my <= y + (if (listView) cardH() else 22)
             if (btn == 1 || (btn == 0 && onSwitch)) { if (ft.hasMaster()) try { ft.set!!(!ft.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${ft.name}' failed", t) } }
+            else if (btn == 0 && ft.pageId != null) openPage(ft.pageId!!)
             else if (btn == 0) { if (selected === ft) selected = null else { if (selected == null) selAt = System.currentTimeMillis(); selected = ft; detScroll = 0 } }
             return true
         }
@@ -3526,7 +3539,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (navClick(mx, my, btn)) return true
 
         if (page != null) {
-            if (page == "report") { if (!reportPage.click(mx, my)) reportPage.focused = -1 } else if (page == "conflicts") conflictsPage.click(mx, my) else creditsPage.click(mx, my)
+            if (pageFeature() != null) { val pf = pageFeature(); if (pf != null) subClick(pf, cx0(), cx1(), cyTop() - HEADER_H + 34 - pgScroll, mx, my, btn) }
+            else if (page == "report") { if (!reportPage.click(mx, my)) reportPage.focused = -1 } else if (page == "conflicts") conflictsPage.click(mx, my) else creditsPage.click(mx, my)
             return true
         }
         if (my >= headerTop && my <= cyBot()) return exClick(mx, my, btn)
@@ -3600,6 +3614,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (mouseX <= stackX0() + stackW() && mouseY >= navTop()) {
             navScroll = Mth.clamp((navScroll - verticalAmount * NAV_ROW).toInt(), 0, navMax())
             return true
+        }
+        pageFeature()?.let { pf ->
+            var ssy = cyTop() - HEADER_H + 34 - pgScroll
+            val dirP = if (verticalAmount > 0) -1 else 1
+            for (s in pf.sub) {
+                if (s.hiddenByGate()) continue
+                val sh = s.getHeight()
+                if (mouseY >= ssy && mouseY <= ssy + sh && s.onScroll(mouseX.toInt(), mouseY.toInt(), cx0(), cx1(), ssy, dirP)) return true
+                ssy += sh
+            }
+            pgScroll -= (verticalAmount * 24).toInt(); return true
         }
         if (page == "credits") { creditsPage.scrollBy(verticalAmount); return true }
         if (page == "conflicts") { conflictsPage.scrollBy(verticalAmount); return true }
@@ -3723,6 +3748,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         constructor(name: String, r: SettingRef<Boolean>) : this(name, { r.get() }, { r.set(it) })
 
         var group: String? = null
+        var pageId: String? = null
         val sub: MutableList<Setting> = ArrayList()
         val expandAnim = Easing.Anim(250)
         init { if (get != null) FeatureMasters.map.putIfAbsent(name, get) }
@@ -4899,9 +4925,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Crystal Respawn" -> "Crystal spawn countdown + reminder"
                 "Section Count" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
-                "Custom Name Color" -> "Recolor your username gradient, optionally animated"
+                "Player Customizer" -> "Name colour, size and model in one menu"
                 "Nametag" -> "Show your own above-head nametag"
-                "Player Size" -> "Resize your model (render only)"
                 "Party Commands" -> "Dot-commands usable in party chat"
                 "Chat Channels" -> "Where dot-commands are allowed"
                 "Cooldown Overlay" -> "Ability cooldowns on item slots"
