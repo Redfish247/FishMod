@@ -21,7 +21,6 @@ object RareDropAnimation {
     private val MF = Regex("""\s*\(\+.*$""")
     private val BOOK = Regex("""^Enchanted Book \((.+)\)$""")
     private val COUNT = Regex("""^\(?[\d,]+x """)
-    // book drops can show as "(Smoldering VI)" without the Enchanted Book prefix
     private val PAREN = Regex("""^\(([^()]+)\)$""")
     private val WOW = Regex("""^WOW! (.+?) found (?:a|an) (.+?)(?: #\d+)?!.*$""")
     private val TRAIL_NUM = Regex("""\s(I{1,3}|IV|V|VI{0,3}|IX|X)$""")
@@ -84,7 +83,6 @@ object RareDropAnimation {
     }
 
     private fun play(name: String, pet: Boolean) {
-        // item lookup may fetch from the NEU repo, so resolve off the render thread first
         fishmod.utils.IoExecutor.execute {
             val (stack, tier) = FishDiag.guard("RareDropAnimation.3", "rare drop icon lookup failed for $name") { stackFor(name, pet) } ?: (fallback(name) to null)
             val mc = Minecraft.getInstance()
@@ -93,7 +91,7 @@ object RareDropAnimation {
                     mc.showItemActivation(stack)
                     if (FishSettings.rareDropAnimTitle) {
                         val color = TIER_STYLE[tier] ?: "§6"
-                        val sub = if (tier == null) "§f$name" else "$color§l${tier.replace('_', ' ')} §f$name"
+                        val sub = if (tier == null) "§f$name" else "$color$name"
                         fishmod.features.AlertTitles.show(Component.empty(), Component.literal(sub), 2500)
                     }
                 }
@@ -137,10 +135,14 @@ object RareDropAnimation {
         for (id in candidates(name, pet)) {
             if (NeuItemResolver.candidates(id).none { NeuRepoCache.getOrFetch(it) != null }) continue
             val st = SkyBlockItemFactory.iconStack(id)
-            if (!st.isEmpty && !st.`is`(Items.PAPER)) return st to ItemsDb.get(id)?.get("tier")?.asString
+            if (!st.isEmpty && !st.`is`(Items.PAPER)) return st to tierOf(id)
         }
         return fallback(name) to null
     }
+
+    private fun tierOf(id: String): String? =
+        (if (id.startsWith("ENCHANTMENT_")) SkyBlockItemFactory.neuTier(id).takeIf { it.isNotBlank() } else null)
+            ?: ItemsDb.get(id)?.get("tier")?.asString
 
     private val TIER_STYLE = mapOf(
         "COMMON" to "§f", "UNCOMMON" to "§a", "RARE" to "§9", "EPIC" to "§5", "LEGENDARY" to "§6",
