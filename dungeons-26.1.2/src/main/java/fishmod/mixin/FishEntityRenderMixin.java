@@ -43,6 +43,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
     public void fishmod$noMenuPreviewTag(T entity, S state, float tickProgress, CallbackInfo ci) {
         if (fishmod.cosmetic.PlayerModel.menuPreview) {
             state.nameTag = null;
+            state.scoreText = null;
             ((NametagStatsHolder) state).fishmod$setNametagStats(null);
         }
     }

@@ -3155,7 +3155,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         ctx.pose().pushMatrix()
         ctx.pose().translate(l.nx.toFloat(), (l.sy0 + 6).toFloat())
         ctx.pose().scale(fit, fit)
-        ctx.text(font, name, -nameW / 2, 0, -1, true)
+        ctx.fill(-nameW / 2 - 1, -1, -nameW / 2 + nameW + 1, 9, 0x40000000)
+        ctx.text(font, name, -nameW / 2, 0, -1, false)
         ctx.pose().popMatrix()
         return true
     }
