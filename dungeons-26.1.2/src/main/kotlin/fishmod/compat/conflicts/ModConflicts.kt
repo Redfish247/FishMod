@@ -13,7 +13,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 /** A FishMod feature master toggle the conflicts page can read and flip. */
-class FishFeatureRef(val name: String, val get: () -> Boolean, val set: (Boolean) -> Unit)
+class FishFeatureRef(val name: String, val get: () -> Boolean, val set: (Boolean) -> Unit, val subs: List<FishSub> = emptyList())
+
+/** A FishMod sub-setting of a feature. [kind]: 0 on/off, 1 whole number, 2 decimal, 3 colour (ARGB int). */
+class FishSub(val name: String, val kind: Int, val get: () -> Any, val set: (Any) -> Unit, val min: Double = 0.0, val max: Double = 0.0)
+
+/** A non-toggle value another mod stores next to a toggle: [value] is Boolean, Double or String. */
+class OtherOpt(val label: String, val key: String, val value: Any)
 
 /** Position another mod stores for a HUD: raw x/y (and scale when it has one). */
 class OtherPos(val x: Double, val y: Double, val scale: Double?)
@@ -27,6 +33,7 @@ class OtherSetting(
     val enabled: Boolean,
     val writable: Boolean,
     val pos: OtherPos? = null,
+    val opts: List<OtherOpt> = emptyList(),
 ) {
     val key: String get() = file + "|" + path.joinToString("/")
 }
@@ -58,7 +65,7 @@ object ModConflicts {
     private val STOP = setOf("show", "display", "enable", "enabled", "toggle", "the", "a", "an", "of", "to", "in", "on", "for", "and", "mod", "feature", "render")
     private val SYNONYM = mapOf("esp" to "highlight", "glow" to "highlight")
 
-    private class Raw(val path: List<String>, val label: String, val group: String, val enabled: Boolean)
+    private class Raw(val path: List<String>, val label: String, val group: String, val enabled: Boolean, val opts: List<OtherOpt> = emptyList())
     private class PosRaw(val path: List<String>, val pos: OtherPos)
 
     // ---------- scanning ----------
@@ -84,7 +91,7 @@ object ModConflicts {
                     val read = readSettings(f)
                     for (r in read.first) {
                         if (!r.enabled) continue
-                        val s = OtherSetting(rel, r.path, r.label, r.group, true, writable, posFor(r.path, read.second))
+                        val s = OtherSetting(rel, r.path, r.label, r.group, true, writable, posFor(r.path, read.second), r.opts)
                         val m = bestMatch(tokens(r.label), fishTokens)
                         entries.add(ConflictEntry(s, m?.first, (m?.second ?: 0f) >= 0.99f))
                     }
@@ -164,6 +171,36 @@ object ModConflicts {
         return best?.pos
     }
 
+    private val OPT_SKIP = setOf("enabled", "enable", "x", "y", "scale", "name", "id", "option", "key", "version")
+
+    private fun optsFor(o: JsonObject, toggleKey: String): List<OtherOpt> {
+        val out = ArrayList<OtherOpt>()
+        val prefix = if (toggleKey.contains('$')) toggleKey.substringBefore('$') + "$" else null
+        fun walk(obj: JsonObject, depth: Int, label: String) {
+            for ((k, v) in obj.entrySet()) {
+                if (out.size >= 40) return
+                if (depth == 0 && k == toggleKey) continue
+                if (depth == 0 && prefix != null && !k.startsWith(prefix)) continue
+                val shown = if (depth == 0 && prefix != null) k.removePrefix(prefix) else k
+                if (shown.lowercase() in OPT_SKIP || NOISE.containsMatchIn(shown.lowercase())) continue
+                val text = if (label.isEmpty()) pretty(shown) else label + " " + pretty(shown)
+                if (v.isJsonPrimitive) {
+                    val p = v.asJsonPrimitive
+                    val value: Any = when {
+                        p.isBoolean -> p.asBoolean
+                        p.isNumber -> p.asDouble
+                        else -> p.asString
+                    }
+                    out.add(OtherOpt(text, k, value))
+                } else if (v.isJsonObject && depth < 2 && !(depth == 0 && prefix != null)) {
+                    walk(v.asJsonObject, depth + 1, if (depth == 0 && shown.lowercase() == "settings") "" else text)
+                }
+            }
+        }
+        walk(o, 0, "")
+        return out
+    }
+
     private fun identOf(o: JsonObject): Pair<String, String>? {
         for (f in IDENT_FIELDS) {
             val v = o.get(f)
@@ -185,7 +222,7 @@ object ModConflicts {
                     val base = if (generic && names.isNotEmpty()) names else names + pretty(k)
                     val label = base.last()
                     if (NOISE.containsMatchIn(label.lowercase()) || NOISE.containsMatchIn(k.lowercase())) continue
-                    out.add(Raw(path + k, label, base.dropLast(1).takeLast(2).joinToString(" › "), v.asBoolean))
+                    out.add(Raw(path + k, label, base.dropLast(1).takeLast(2).joinToString(" › "), v.asBoolean, if (v.asBoolean) optsFor(o, k) else emptyList()))
                 } else if (v.isJsonObject || v.isJsonArray) {
                     flatten(v, path + k, names + pretty(k), out, pos, depth + 1)
                 }
@@ -228,6 +265,94 @@ object ModConflicts {
             if (ok && jac > bestScore) { bestScore = jac; best = f }
         }
         return best?.let { it to bestScore }
+    }
+
+    // ---------- importing sub-options ----------
+
+    private val SKYHANNI_COLOR = Regex("^\\d+:(\\d+):(\\d+):(\\d+):(\\d+)$")
+    private val HEX6 = Regex("^[0-9a-fA-F]{6}$")
+    private val HEX8 = Regex("^[0-9a-fA-F]{8}$")
+
+    private fun parseColor(v: Any, label: String): Int? {
+        if (v is String) {
+            val t = v.trim()
+            val sh = SKYHANNI_COLOR.find(t)
+            if (sh != null) {
+                val (a, r, g, b) = sh.destructured
+                return (a.toInt().coerceIn(0, 255) shl 24) or (r.toInt().coerceIn(0, 255) shl 16) or (g.toInt().coerceIn(0, 255) shl 8) or b.toInt().coerceIn(0, 255)
+            }
+            val hex = t.removePrefix("#")
+            if (HEX6.matches(hex)) return (0xFF shl 24) or hex.toInt(16)
+            if (HEX8.matches(hex)) {
+                val n = hex.toLong(16)
+                return (((n and 0xFF) shl 24) or (n ushr 8)).toInt()
+            }
+            return null
+        }
+        if (v is Double && label.lowercase().contains("colo") && v == Math.rint(v) && Math.abs(v) >= 256.0) return v.toLong().toInt()
+        return null
+    }
+
+    private fun subTokens(s: String): Set<String> = tokens(s).filter { it != "color" && it != "colour" }.toSet().ifEmpty { tokens(s) }
+
+    private fun convert(o: OtherOpt, f: FishSub): Any? {
+        val label = o.label.lowercase()
+        return when (f.kind) {
+            0 -> o.value as? Boolean
+            1, 2 -> {
+                val d = o.value as? Double ?: return null
+                if (label.contains("colo")) return null
+                var x = d
+                if (f.max >= 50.0 && x in 0.0..1.0 && (label.contains("opacity") || label.contains("alpha"))) x *= 100.0
+                x = x.coerceIn(f.min, f.max)
+                if (f.kind == 1) Math.round(x).toInt() else x
+            }
+            3 -> parseColor(o.value, label)
+            else -> null
+        }
+    }
+
+    private fun sameKind(o: OtherOpt, f: FishSub): Boolean = when (f.kind) {
+        0 -> o.value is Boolean
+        1, 2 -> o.value is Double && !o.label.lowercase().contains("colo")
+        else -> parseColor(o.value, o.label) != null
+    }
+
+    class ImportPair(val other: OtherOpt, val fish: FishSub, val value: Any)
+
+    @JvmStatic
+    fun matchOptions(s: OtherSetting, f: FishFeatureRef): List<ImportPair> {
+        if (s.opts.isEmpty() || f.subs.isEmpty()) return emptyList()
+        val out = ArrayList<ImportPair>()
+        val used = HashSet<OtherOpt>()
+        for (sub in f.subs) {
+            val st = subTokens(sub.name)
+            if (st.isEmpty()) continue
+            var best: OtherOpt? = null
+            var bestScore = 0f
+            for (o in s.opts) {
+                if (o in used || !sameKind(o, sub)) continue
+                val ot = subTokens(o.label)
+                val inter = ot.count { it in st }
+                if (inter == 0) continue
+                val jac = inter.toFloat() / (ot.size + st.size - inter)
+                if (jac >= 0.66f && jac > bestScore) { bestScore = jac; best = o }
+            }
+            if (best == null) continue
+            val v = convert(best, sub) ?: continue
+            used.add(best)
+            out.add(ImportPair(best, sub, v))
+        }
+        return out
+    }
+
+    @JvmStatic
+    fun importOptions(pairs: List<ImportPair>): Int {
+        var n = 0
+        for (p in pairs) {
+            try { p.fish.set(p.value); n++ } catch (t: Throwable) { FishDiag.fail("ModConflicts.4", "import failed ${p.fish.name}", t) }
+        }
+        return n
     }
 
     // ---------- pending edits ----------
