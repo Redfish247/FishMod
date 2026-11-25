@@ -31,10 +31,18 @@ object StonksAuctionTooltip {
                 val screen = Minecraft.getInstance().curScreen ?: return@ItemTooltipCallback
                 if (!ScreenTitle.plain(screen).contains("Stonks Auction", ignoreCase = true)) return@ItemTooltipCallback
                 val plain = lines.map { FishConstants.STRIP_COLOR_REGEX.replace(it.string, "") }
-                val bid = plain.firstNotNullOfOrNull { BID.find(it) }?.let { parse(it.groupValues[1], it.groupValues[2]) } ?: return@ItemTooltipCallback
-                val amount = plain.firstNotNullOfOrNull { l -> AMOUNT.firstNotNullOfOrNull { it.find(l) } }?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: stack.count.toLong()
-                if (bid <= 0.0 || amount <= 0L) return@ItemTooltipCallback
-                lines.add(Component.literal("§ePrice per Stonk: §6${abbr(bid / amount)} §7(${amount}x)"))
+                var amount = 0L
+                for (i in plain.indices) {
+                    val l = plain[i]
+                    val m = BID.find(l)
+                    if (m == null) {
+                        AMOUNT.firstNotNullOfOrNull { it.find(l) }?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()?.let { amount = it }
+                        continue
+                    }
+                    val bid = parse(m.groupValues[1], m.groupValues[2]) ?: continue
+                    if (bid <= 0.0 || amount <= 0L) continue
+                    lines[i] = lines[i].copy().append(Component.literal(" §7(§6${abbr(bid / amount)} §7per Stonk)"))
+                }
             } catch (e: Exception) {
                 FishDiag.fail("StonksAuctionTooltip.1", "stonks auction tooltip failed", e)
             }

@@ -97,7 +97,7 @@ object ExtrasMenu {
 
         col.features.add(Feature("Vanquisher Party Share", S::class.java, "vanquisherShare"))
         col.features.add(Feature("Fix Double Clicks", S::class.java, "fixDoubleClicks"))
-        col.features.add(Feature("Middle Click Fix", S::class.java, "middleClickFix"))
+        col.features.add(Feature("Middle Click GUI", S::class.java, "middleClickFix"))
         col.features.add(Feature("Command Tab Complete", S::class.java, "tabComplete"))
         col.features.add(Feature("Wiki Lookup", S::class.java, "wikiCommand"))
         val ufps = Feature("Unfocused FPS Saver", S::class.java, "unfocusedFps")
@@ -183,7 +183,7 @@ object ExtrasMenu {
         "SkyBlock Date HUD" -> "Current SkyBlock date and hour, optionally with real time; move in the HUD editor"
         "Vanquisher Party Share" -> "Sends your coords to party chat when a Vanquisher spawns nearby"
         "Fix Double Clicks" -> "SkyBlock menus: a double click counts as a normal click, not collect-all"
-        "Middle Click Fix" -> "SkyBlock menus: middle click on a menu item acts as a left click"
+        "Middle Click GUI" -> "SkyBlock menus: every click on a menu item is sent as a middle click"
         "Item Level Overlay" -> "Book level, pet level, minion tier, cake year and dungeon stars in the slot corner"
         "Fairy Soul Waypoints" -> "Boxes uncollected fairy souls on this island"
         "Hoppity Hunt Summary" -> "Chat tally of eggs, new rabbits and duplicates this session"
