@@ -4,9 +4,12 @@ import fishmod.compat.conflicts.ConflictEntry
 import fishmod.compat.conflicts.FishFeatureRef
 import fishmod.compat.conflicts.ModConflicts
 import fishmod.compat.conflicts.ModGroup
+import fishmod.compat.conflicts.ModLinks
+import fishmod.compat.curScreen
 import fishmod.compat.conflicts.ScanResult
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import kotlin.math.max
 
@@ -29,6 +32,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     // 0 = unresolved (default), 1 = all duplicates, 2 = everything
     private var view = 0
     private var bulkArmed = false
+    private var restartArmed = false
     private var status: String? = null
     private val viewNames = arrayOf("Unresolved only", "All duplicates", "Show everything")
 
@@ -150,10 +154,15 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         }
         UiRecorder.textBold(summary, x.toFloat(), y.toFloat() + 2f, 10.5f, ScreenTheme.TEXT_COLOR)
         val st = status
-        if (st != null) UiRecorder.text(ellipsize(st, w - 250f, 8.5f), x.toFloat(), y + 18f, 8.5f, AMBER)
+        if (st != null) UiRecorder.text(ellipsize(st, w - 360f, 8.5f), x.toFloat(), y + 18f, 8.5f, AMBER)
         else UiRecorder.text("Changes to other mods apply on the next game launch. FishMod toggles apply instantly.", x.toFloat(), y + 18f, 8.5f, ScreenTheme.SUBTEXT_COLOR)
         var tx = x + w
         tx -= 58; button(tx, y, 58, 17, "Rescan", mx, my, ScreenTheme.TEXT_COLOR) { scanStarted = false; bulkArmed = false; rescan() }
+        tx -= 6 + 100
+        button(tx, y, 100, 17, if (restartArmed) "Confirm restart?" else "Restart game", mx, my, if (restartArmed) RED else AMBER) {
+            if (!restartArmed) restartArmed = true
+            else { restartArmed = false; if (!ModLinks.restartGame()) status = "Could not restart automatically here. Close and reopen the game." }
+        }
         tx -= 6 + 104; button(tx, y, 104, 17, viewNames[view], mx, my, if (view == 0) ScreenTheme.ACCENT else ScreenTheme.TEXT_COLOR) { view = (view + 1) % viewNames.size; scroll = 0; bulkArmed = false }
         if (r != null && dupCount() > 0) {
             tx -= 6 + 138
@@ -281,10 +290,16 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         }
 
         // their toggle (applies next launch)
-        val cap = if (queued) "off on restart" else if (!writable) "edit in mod" else row.g.name
+        val canOpen = !writable && ModLinks.hasConfigScreen(row.g.id)
+        val cap = if (queued) "off on restart" else if (!writable) (if (canOpen) "" else "edit in mod") else row.g.name
         val capColor = if (queued) AMBER else ScreenTheme.SUBTEXT_COLOR
         val capText = ellipsize(cap, 56f, 8.5f)
         UiRecorder.text(capText, theirsX - 6f - UiRecorder.textWidth(capText, 8.5f), pillY + (pillH - 8.5f) / 2f, 8.5f, capColor)
+        if (canOpen) small(theirsX - 6 - 56, y + (ITEM_H - 15) / 2, 56, 15, "Open mod", mx, my) {
+            val parent = Minecraft.getInstance().curScreen
+            if (parent == null || !ModLinks.openConfig(row.g.id, parent)) status = "${row.g.name} has no config screen FishMod can open. Edit ${s.label} in the mod itself."
+            else status = null
+        }
         FishModScreen.drawTogglePill(ctx, theirsX, pillY, pillW, pillH, !queued, if (queued) 0f else 1f, writable && ScreenTheme.inside(mx, my, theirsX, pillY, pillW, pillH), if (writable) 1f else 0.4f)
         if (writable) hits.add(Hit(theirsX, pillY, pillW, pillH, true) { if (queued) writableSib.forEach { ModConflicts.unqueue(it.setting) } else writableSib.forEach { ModConflicts.queueDisable(it.setting, row.g.name) } })
     }
