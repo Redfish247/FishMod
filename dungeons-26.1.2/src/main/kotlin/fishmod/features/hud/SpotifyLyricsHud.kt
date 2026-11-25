@@ -368,6 +368,7 @@ object SpotifyLyricsHud {
             if (FishSettings.spotifyLyricsLyrics && fetchedKey != t) { fetchedKey = t; fetchLyrics(t) }
         }
         val useCard = detailed() && m != null && m.song.isNotEmpty()
+        val titleCard = detailed() && !useCard && playing
         if (useCard) syncArt(m!!.artVer)
         val shown = if (playing) t else if (FishSettings.spotifyLyricsShowPaused) "Paused" else ""
         if (shown.isEmpty()) return
@@ -379,6 +380,12 @@ object SpotifyLyricsHud {
         pose.scale(sc, sc)
         val lyric = if (playing && FishSettings.spotifyLyricsLyrics) currentLyric() else ""
         if (useCard) card(ctx, mc, titleMarq, artistMarq, lyricMarq, m!!.song, m.artist, timeText(m, playing, nowNs), lyric, playing, artId)
+        else if (titleCard) {
+            val i = t.indexOf(" - ")
+            val artist = if (i > 0) t.substring(0, i).trim() else ""
+            val song = if (i > 0) t.substring(i + 3).trim() else t
+            card(ctx, mc, titleMarq, artistMarq, lyricMarq, song, artist, "", lyric, playing, null)
+        }
         else body(ctx, mc, titleMarq, lyricMarq, shown, lyric, playing)
         pose.popMatrix()
     }
