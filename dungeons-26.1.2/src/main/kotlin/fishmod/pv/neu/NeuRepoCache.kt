@@ -1,10 +1,4 @@
-/*
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- *
- * Derived from BetterPV by Vyriv (https://github.com/Vyriv/BetterPV).
- */
+// Derived from BetterPV by Vyriv (https://github.com/Vyriv/BetterPV).
 package fishmod.pv.neu
 
 import fishmod.utils.TextStrip
@@ -96,7 +90,6 @@ object NeuRepoCache {
 	@JvmStatic
 	fun isReady(): Boolean = ITEMS.isNotEmpty()
 
-	// True once the full repo zip load finished (success or failure), not just one on-demand fetch
 	@JvmStatic
 	fun isFullyLoaded(): Boolean = fullLoadDone
 
