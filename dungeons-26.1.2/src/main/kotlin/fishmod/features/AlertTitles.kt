@@ -66,7 +66,7 @@ object AlertTitles {
         Def("MiningForagingMisc", "Alert: Honeyhive", "§6Honeyhive Instantly Refilled!"),
         Def("SlayerExtras", "Alert: Slayer Extras", "§cSlayer", "§7Example"),
         Def("SlayerMore", "Alert: Slayer Brood / No Quest", "§c§lNO SLAYER QUEST", "§7You're killing slayer mobs with no quest"),
-        Def("RareDropAnimation", "Alert: Rare Drop Animation", "§6§lDROP", "§6§lLEGENDARY §fExample Item"),
+        Def("RareDropAnimation", "Alert: Rare Drop Animation", "", "§6§lLEGENDARY §fExample Item"),
         Def("Other", "Alert: Other", "§eAlert!", "§7Example"),
     )
 
@@ -127,7 +127,8 @@ object AlertTitles {
         }
         val y = 9 * MAIN_SCALE + 4
         if (sub.string.isNotEmpty()) {
-            pose.pushMatrix(); pose.translate(W / 2f, if (main.string.isEmpty()) 0f else y); pose.scale(SUB_SCALE, SUB_SCALE)
+            pose.pushMatrix(); val sc = if (main.string.isEmpty()) MAIN_SCALE else SUB_SCALE
+            pose.translate(W / 2f, if (main.string.isEmpty()) 0f else y); pose.scale(sc, sc)
             ctx.text(font, sub, -font.width(sub) / 2, 0, color, true)
             pose.popMatrix()
         }
