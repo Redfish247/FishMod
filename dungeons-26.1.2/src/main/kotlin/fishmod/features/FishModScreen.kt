@@ -3142,16 +3142,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val player = mc.player ?: return false
         val ctx = GuiGraphicsExtractor(mc, state, 0, 0)
         ctx.enableScissor(l.sx0, l.sy0, l.sx1, l.sy1)
+        fishmod.cosmetic.PlayerModel.menuPreview = true
         try {
             val scale = maxOf(8, Math.round(minOf((l.sy1 - l.sy0) / 2.3f, (l.sx1 - l.sx0) / 1.4f)))
             net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(ctx, l.sx0, l.sy0, l.sx1, l.sy1, scale, 0.0625f, l.mx, l.my, player)
-        } finally { ctx.disableScissor() }
+        } finally { ctx.disableScissor(); fishmod.cosmetic.PlayerModel.menuPreview = false }
         val font = mc.font
         val name = fishmod.cosmetic.NickState.asComponent().let { if (it.string.isEmpty()) player.name else it }
         val nameW = font.width(name).coerceAtLeast(1)
-        val fit = minOf(1f, (l.sx1 - l.sx0 - 8) / nameW.toFloat())
+        val uiF = fishmod.utils.rendering.UiScale.factor()
+        val fit = minOf(uiF, (l.sx1 - l.sx0 - 12) / nameW.toFloat())
         ctx.pose().pushMatrix()
-        ctx.pose().translate(l.nx.toFloat(), l.ny.toFloat())
+        ctx.pose().translate(l.nx.toFloat(), (l.sy0 + 6).toFloat())
         ctx.pose().scale(fit, fit)
         ctx.text(font, name, -nameW / 2, 0, -1, true)
         ctx.pose().popMatrix()

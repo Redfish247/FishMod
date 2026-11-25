@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 object PlayerModel {
 
+    @JvmField @Volatile var menuPreview = false
+
     private val EXCLUDED = setOf(
         "ender_dragon", "wither", "giant", "ghast", "happy_ghast", "warden", "player", "armor_stand", "mannequin",
     )
