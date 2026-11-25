@@ -33,6 +33,7 @@ object SlayerBossPhases {
     private val EGG_SAC = Regex("^\\d+s \\d+/\\d+$")
     private val TWINCLAWS = Regex("TWINCLAWS.*?([\\d.]+)s", RegexOption.IGNORE_CASE)
     private val NAMETAG_HP = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*❤")
+    private val RIFT_NAMES = setOf("Bloodfiend")
     private val HELLION_HITS = Regex("\\u2668\\s*(\\d+)")
     private const val HATCHLINGS_LINE = "You need to kill the Broodfather's hatchlings before it can be damaged again!"
 
@@ -168,7 +169,7 @@ object SlayerBossPhases {
     private fun computeCombat(type: SlayerType, boss: LivingEntity, tier: Int): Pair<String, String> {
         val mc = Minecraft.getInstance()
         val stands = nearbyStandNames(boss, 2.0, 4.0)
-        val hp = trackHp(boss.id, stands)
+        val hp = trackHp(boss.id, stands, type.bossNames)
         val maxHp = hpMaxSeen
         var l1 = ""
         var l2 = ""
@@ -266,7 +267,7 @@ object SlayerBossPhases {
 
     private fun computeRift(bf: LivingEntity): Pair<String, String> {
         val stands = nearbyStandNames(bf, 3.0, 4.0)
-        val hp = trackHp(bf.id, stands)
+        val hp = trackHp(bf.id, stands, RIFT_NAMES)
         val maxHp = hpMaxSeen
         var l1 = ""
         var l2 = ""
@@ -297,6 +298,7 @@ object SlayerBossPhases {
         if (boss.id != bossSeenId) { bossSeenId = boss.id; bossSeenNanos = System.nanoTime() }
         val hp = if (hpBossId == boss.id) lastHp else 0.0
         val maxHp = hpMaxSeen
+        val hpNames = SlayerManager.type?.takeIf { SlayerManager.bossEntity === boss }?.bossNames ?: RIFT_NAMES
         if (FishSettings.slayerPhaseHpLabel && hp > 0.0 && maxHp > 0.0) {
             val f = hp / maxHp
             val c = when { f > 0.75 -> "§a"; f > 0.5 -> "§e"; f > 0.25 -> "§6"; else -> "§c" }
@@ -306,7 +308,7 @@ object SlayerBossPhases {
                 if (level != null) {
                     val box = boss.boundingBox.inflate(3.0, 4.0, 3.0)
                     hiddenStandId = level.getEntitiesOfClass(ArmorStand::class.java, box) { it.hasCustomName() }
-                        .firstOrNull { st -> NAMETAG_HP.containsMatchIn(st.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "") ?: "") }?.id ?: -1
+                        .firstOrNull { st -> (st.customName?.string?.replace(FishConstants.STRIP_COLOR_REGEX, "") ?: "").let { n -> NAMETAG_HP.containsMatchIn(n) && hpNames.any { n.contains(it) } } }?.id ?: -1
                 }
             }
         }
@@ -338,9 +340,10 @@ object SlayerBossPhases {
         return "§7Phase §e$phase/$steps"
     }
 
-    private fun trackHp(bossId: Int, stands: List<String>): Double {
+    private fun trackHp(bossId: Int, stands: List<String>, bossNames: Set<String>): Double {
         if (bossId != hpBossId) { hpBossId = bossId; hpMaxSeen = 0.0; lastHpFrac = 1.0; steakTitleFired = false }
-        val cur = stands.firstNotNullOfOrNull { name ->
+        // Only the boss's own nametag, not nearby demons/minions/mobs (#290)
+        val cur = stands.filter { st -> bossNames.any { st.contains(it) } }.firstNotNullOfOrNull { name ->
             NAMETAG_HP.find(name)?.let { m ->
                 val n = FishDiag.notNull(m.groupValues[1].replace(",", "").toDoubleOrNull(), "SlayerBossPhases.4") { "boss nametag hp not numeric: '$name'" } ?: return@let null
                 n * when (m.groupValues[2].lowercase()) { "k" -> 1_000.0; "m" -> 1_000_000.0; "b" -> 1_000_000_000.0; else -> 1.0 }
