@@ -1,21 +1,22 @@
-name: Monthly Modrinth stats
+name: Weekly Modrinth stats
 
-# On the 1st of each month, saves last month's FishMod views, downloads,
-# playtime and revenue from Modrinth to stats/modrinth/YYYY-MM.json (+ .md).
+# Every Monday, saves last week's (Monday to Sunday, Central time) FishMod views,
+# downloads, playtime and revenue from Modrinth to stats/modrinth/YYYY-MM-DD.json
+# (+ .md), where the date is the Monday the week started.
 #
 # Needs repo secret MODRINTH_TOKEN: a Modrinth personal access token with only
 # "Read analytics" (views, downloads, playtime) and "Read payouts" (revenue).
 # Without "Read payouts" everything still works and revenue is left blank.
 #
-# Run it by hand from the Actions tab; the month box takes YYYY-MM (blank = last month).
+# Run it by hand from the Actions tab; the box takes the Monday of the week as YYYY-MM-DD (blank = last week).
 
 on:
   schedule:
-    - cron: "0 23 1 * *" # 5 PM Central (6 PM during daylight time) on the 1st
+    - cron: "0 23 * * 1" # Mondays, 5 PM Central (6 PM during daylight time)
   workflow_dispatch:
     inputs:
-      month:
-        description: "Month to fetch as YYYY-MM (blank = last month)"
+      week_start:
+        description: "Monday of the week to fetch as YYYY-MM-DD (blank = last week)"
         required: false
         default: ""
 
@@ -31,23 +32,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch last month's stats from Modrinth
+      - name: Fetch last week's stats from Modrinth
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          MONTH_INPUT: ${{ inputs.month }}
+          WEEK_INPUT: ${{ inputs.week_start }}
         run: |
           set -euo pipefail
           if [ -z "${MODRINTH_TOKEN:-}" ]; then echo "::error::MODRINTH_TOKEN secret is missing"; exit 1; fi
-          UA="Redfish247/FishModDungeons monthly-stats"
+          UA="Redfish247/FishModDungeons weekly-stats"
 
-          # Month boundaries at midnight Central time
-          if [ -n "${MONTH_INPUT:-}" ]; then MONTH="$MONTH_INPUT"; else MONTH=$(TZ=America/Chicago date -d "$(TZ=America/Chicago date +%Y-%m-01) -1 month" +%Y-%m); fi
-          [[ "$MONTH" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]] || { echo "::error::Month must look like 2026-10"; exit 1; }
-          NEXT=$(date -u -d "${MONTH}-01 +1 month" +%Y-%m)
-          START=$(date -u -d "@$(TZ=America/Chicago date -d "${MONTH}-01 00:00" +%s)" +%Y-%m-%dT%H:%M:%SZ)
-          END=$(date -u -d "@$(TZ=America/Chicago date -d "${NEXT}-01 00:00" +%s)" +%Y-%m-%dT%H:%M:%SZ)
+          # Week boundaries (Monday 00:00 to next Monday 00:00) in Central time
+          if [ -n "${WEEK_INPUT:-}" ]; then PERIOD="$WEEK_INPUT"; else
+            TODAY=$(TZ=America/Chicago date +%Y-%m-%d); DOW=$(TZ=America/Chicago date +%u)
+            PERIOD=$(date -u -d "$TODAY -$((DOW - 1 + 7)) days" +%Y-%m-%d)
+          fi
+          [[ "$PERIOD" =~ ^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$ ]] || { echo "::error::Week start must look like 2026-11-16"; exit 1; }
+          [ "$(date -u -d "$PERIOD" +%u)" = "1" ] || { echo "::error::$PERIOD is not a Monday"; exit 1; }
+          NEXT=$(date -u -d "$PERIOD +7 days" +%Y-%m-%d)
+          START=$(date -u -d "@$(TZ=America/Chicago date -d "$PERIOD 00:00" +%s)" +%Y-%m-%dT%H:%M:%SZ)
+          END=$(date -u -d "@$(TZ=America/Chicago date -d "$NEXT 00:00" +%s)" +%Y-%m-%dT%H:%M:%SZ)
           DAYS=$(( ( $(date -d "$END" +%s) - $(date -d "$START" +%s) + 43200 ) / 86400 ))
-          echo "Fetching $MONTH ($START to $END, $DAYS days)"
+          echo "Fetching week of $PERIOD ($START to $END, $DAYS days)"
 
           PROJECT_ID=$(curl -fsS -A "$UA" https://api.modrinth.com/v2/project/fishmod | jq -r .id)
 
@@ -69,7 +74,7 @@ jobs:
           echo "Modrinth sent $(jq '.metrics | length' main.json) slices, $(jq '[.metrics[][]] | length' main.json) entries; kinds: $(jq -c '[.metrics[][] | .metric_kind] | unique' main.json); projects: $(jq -c '[.metrics[][] | .source_project] | unique' main.json) (asked for $PROJECT_ID)"
           MATCHED=$(jq --arg p "$PROJECT_ID" '[.metrics[][] | select(.source_project == $p or .source_project == "")] | length' main.json)
           if [ "$MATCHED" = "0" ]; then
-            echo "::error::Modrinth returned no FishMod data for $MONTH, so nothing was saved. Check the token can read FishMod's analytics."
+            echo "::error::Modrinth returned no FishMod data for the week of $PERIOD, so nothing was saved. Check the token can read FishMod's analytics."
             exit 1
           fi
 
@@ -82,7 +87,7 @@ jobs:
             REV_OK=true
           fi
 
-          # Releases published this month (public data, so no token needed)
+          # Releases published this week (public data, so no token needed)
           if curl -fsS -A "$UA" https://api.modrinth.com/v2/project/fishmod/version -o all-versions.json \
              && jq --arg s "$START" --arg e "$END" '[.[] | select(.date_published >= $s and .date_published < $e)
                   | {version: .version_number, type: .version_type, published: .date_published, downloads: .downloads}]
@@ -95,9 +100,9 @@ jobs:
           fi
 
           mkdir -p stats/modrinth
-          OUT="stats/modrinth/${MONTH}.json"
+          OUT="stats/modrinth/${PERIOD}.json"
           jq -n --slurpfile a main.json --slurpfile r rev.json --slurpfile rel releases.json --argjson relok "$REL_OK" \
-            --arg month "$MONTH" --arg start "$START" --arg end "$END" --arg p "$PROJECT_ID" --argjson revok "$REV_OK" '
+            --arg week "$PERIOD" --arg start "$START" --arg end "$END" --arg p "$PROJECT_ID" --argjson revok "$REV_OK" '
             def pick($slice; $kind; $field):
               [$slice[]? | select((.source_project == $p or .source_project == "") and .metric_kind == $kind) | .[$field] | tonumber] | add // 0;
             ($start | fromdateiso8601) as $t0 |
@@ -108,7 +113,7 @@ jobs:
                 playtime_hours: ((pick($a[0].metrics[$i]; "playtime"; "seconds") / 3600 * 10 | round) / 10),
                 revenue_usd: (if $revok then ((pick($r[0].metrics[$i]; "revenue"; "revenue") * 100 | round) / 100) else null end) }
             ] as $daily |
-            { project: "fishmod", project_id: $p, month: $month,
+            { project: "fishmod", project_id: $p, week_start: $week,
               range: {start: $start, end: $end, timezone: "America/Chicago"},
               totals: {
                 views: ($daily | map(.views) | add // 0),
@@ -122,7 +127,7 @@ jobs:
               fetched_at: (now | todate) }' > "$OUT"
 
           jq -r '
-            "# FishMod on Modrinth, \(.month)\n",
+            "# FishMod on Modrinth, week of \(.week_start)\n",
             "| Views | Downloads | Playtime (hours) | Revenue (USD) |",
             "| --- | --- | --- | --- |",
             "| \(.totals.views) | \(.totals.downloads) | \(.totals.playtime_hours) | \(.totals.revenue_usd // "n/a") |",
@@ -130,16 +135,16 @@ jobs:
             "Best day for downloads: \(.daily | max_by(.downloads) | "\(.date) (\(.downloads))")",
             "",
             (if .releases_ok | not then "Releases: could not read them this run."
-             elif (.releases | length) == 0 then "Releases: none this month."
+             elif (.releases | length) == 0 then "Releases: none this week."
              else "Releases (downloads so far):\n" + (.releases | map("- \(.version), \(.published[0:10]), \(.downloads)") | join("\n")) end),
             "",
             "Range: \(.range.start) to \(.range.end) (midnight Central). Fetched \(.fetched_at)."
-          ' "$OUT" > "stats/modrinth/${MONTH}.md"
-          cat "stats/modrinth/${MONTH}.md"
+          ' "$OUT" > "stats/modrinth/${PERIOD}.md"
+          cat "stats/modrinth/${PERIOD}.md"
 
       - name: Save to the repo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f stats/modrinth
-          git diff --cached --quiet || (git commit -m "Modrinth stats for last month [skip ci]" && git pull --rebase -X theirs origin main && git push origin HEAD:main)
+          git diff --cached --quiet || (git commit -m "Modrinth stats for last week [skip ci]" && git pull --rebase -X theirs origin main && git push origin HEAD:main)
