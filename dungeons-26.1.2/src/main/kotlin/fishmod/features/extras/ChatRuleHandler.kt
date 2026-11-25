@@ -96,7 +96,8 @@ object ChatRuleHandler {
             activeTitles.add(ActiveTitle(rule.titleMessage, System.currentTimeMillis() + maxOf(200L, rule.titleDurationMs)))
         }
         if (rule.soundEnabled) {
-            mc.player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 0.7f, 1.6f)
+            // 2D on the main thread via SoundManager; positional player.playSound was inaudible
+            fishmod.utils.sound.SoundManager.play2D(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.6f, "chatRule", 100L)
         }
     }
 
