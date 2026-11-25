@@ -50,3 +50,8 @@ FishModNew/
 tools/daily-bugfix/logs/
 /dungeons-1.21.11/
 docs/ui-mockups/
+
+# Dev tooling and scratch: local only, the repo holds source code
+/tools/
+/scripts/
+/dungeons-26.1.2/testing/
