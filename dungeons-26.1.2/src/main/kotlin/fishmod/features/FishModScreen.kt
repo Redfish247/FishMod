@@ -2288,11 +2288,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val mini = Feature("Miniboss Highlight", fishmod.features.slayer.EndAlertSettings::class.java, "slayerMiniHighlight")
             mini.sub.add(ColorPickerSetting("Outline Colour", "", { fishmod.features.slayer.EndAlertSettings.slayerMiniHighlightColor }, { v -> fishmod.features.slayer.EndAlertSettings.slayerMiniHighlightColor = v }))
             slayer.features.add(mini)
-            val bbox = Feature("Slayer Boss Box", fishmod.features.slayer.EndAlertSettings::class.java, "slayerBossBox")
-            bbox.sub.add(SubcategoryHeader("Box on your slayer boss and where it will spawn"))
-            bbox.sub.add(ToggleSetting("Mark Spawn Point", "Box where the boss is about to spawn (on the mob you just killed); gone as soon as it spawns", fishmod.features.slayer.EndAlertSettings::class.java, "slayerBossBoxSpawnMark"))
-            bbox.sub.add(ColorPickerSetting("Box Colour", "", { fishmod.features.slayer.EndAlertSettings.slayerBossBoxColor }, { v -> fishmod.features.slayer.EndAlertSettings.slayerBossBoxColor = v }))
-            slayer.features.add(bbox)
             val gi = Feature("Items On Ground Names", fishmod.features.slayer.EndAlertSettings::class.java, "groundItemNames")
             gi.sub.add(SubcategoryHeader("Name and count above dropped items"))
             gi.sub.add(SliderIntSetting("Range (blocks)", "", { fishmod.features.slayer.EndAlertSettings.groundItemRange }, { v -> fishmod.features.slayer.EndAlertSettings.groundItemRange = v }, 4, 64, 1))
@@ -2362,6 +2357,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(ColorPickerSetting("Yang Glyph Colour", "", { fishmod.features.slayer.EndAlertSettings.yangGlyphColor }, { v -> fishmod.features.slayer.EndAlertSettings.yangGlyphColor = v }).gatedBy { fishmod.features.slayer.EndAlertSettings.yangGlyphTracer })
             phases.sub.add(SubcategoryHeader("Boss Stats"))
             phases.sub.add(ToggleSetting("Boss Stats HUD", "HUD with only your boss: name, health, DPS and time (drag with Edit HUD)", ea0, "bossHud"))
+            phases.sub.add(SubcategoryHeader("Slayer Spawn Box"))
+            phases.sub.add(ToggleSetting("Slayer Spawn Box", "Box on your slayer boss while it lives, and on the spot where it is about to spawn (where the last slayer mob died). Only your own boss", ea0, "slayerBossBox"))
+            phases.sub.add(ToggleSetting("Mark Spawn Point", "Box where the boss is about to spawn (on the mob you just killed); gone as soon as it spawns", ea0, "slayerBossBoxSpawnMark").gatedBy { fishmod.features.slayer.EndAlertSettings.slayerBossBox })
+            phases.sub.add(ColorPickerSetting("Box Colour", "", { fishmod.features.slayer.EndAlertSettings.slayerBossBoxColor }, { v -> fishmod.features.slayer.EndAlertSettings.slayerBossBoxColor = v }).gatedBy { fishmod.features.slayer.EndAlertSettings.slayerBossBox })
             phases.sub.add(SubcategoryHeader("Inferno Demonlord"))
             phases.sub.add(ToggleSetting("Dagger Attunement Box", "Box on the boss and its split demons in the color of the dagger you need (Ashen = gray, Auric = yellow, Spirit = white, Crystal = cyan). Only shows while an attunement is active", ea0, "attuneHighlight"))
             phases.sub.add(ToggleSetting("Hide Boss Model", "Hides the Inferno Demonlord blaze itself (only your boss, not other blazes). Attunement boxes and text stay", ea0, "hideInfernoBoss"))
@@ -2466,7 +2465,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(dungeonTrackers, "Session Stats", "Loot Tracker", "Croesus Profit", "PB Pace", "Croesus Highlights")
         order(dungeonMap, "Dungeon Map", "Info HUD", "Door Highlight", "Score Messages")
         order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
-        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Overlay", "Miniboss Highlight", "Slayer Boss Box", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
+        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Overlay", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
         order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert")
         order(visuals, "No Fog", "Classic Skyblock Items", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
         order(cosmetics, "Custom Name Color", "Nametag", "Badges", "Custom Crosshair", "Player Size", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
@@ -5099,7 +5098,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Endstone Protector Stage" -> "HUD with the Protector stage and kills left, from the tab list"
                 "End Node Finder" -> "Highlight Ender Node blocks in The End"
                 "Boss Phases" -> "Attack and phase cues on slayer bosses"
-                "Slayer Boss Box" -> "Box on your slayer boss, plus where it is about to spawn"
                 "Profanity Filter" -> "Replaces slurs and swear words in incoming chat with asterisks"
                 "Secret Waypoints" -> "Labelled through-wall boxes on every known dungeon secret (chests, items, bats, wither essence, keys)"
                 "Boss Damage Indicator" -> "HP label on non-slayer bosses"

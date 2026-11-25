@@ -13,6 +13,8 @@ object PingTracker {
                 val now = System.currentTimeMillis()
                 if (now - lastSent < 2_000) return@register
                 lastSent = now
+                sent++
+                if (sent == 6 && pongs == 0) fishmod.utils.debug.FishDebug.LOGGER.info("[PingTracker] 6 ping requests sent, no pong response: server ignores play-state pings")
                 conn.send(net.minecraft.network.protocol.ping.ServerboundPingRequestPacket(net.minecraft.util.Util.getMillis()))
             } catch (t: Throwable) {
                 fishmod.utils.debug.FishDiag.fail("PingTracker.1", "ping request send failed", t)
@@ -23,6 +25,12 @@ object PingTracker {
     @Volatile
     private var latestMs: Int = -1
     private var lastSent: Long = 0
+    private var sent = 0
+    @Volatile
+    private var pongs = 0
+
+    @JvmStatic
+    fun start() {}
 
     @Volatile
     private var updatedAt: Long = 0
@@ -30,6 +38,7 @@ object PingTracker {
     @JvmStatic
     fun pushRtt(rttMs: Long) {
         if (rttMs < 0 || rttMs > 5_000) return
+        pongs++
         val rtt = rttMs.toInt()
         val prev = latestMs
         latestMs = if (prev > 0) (rtt + prev) / 2 else rtt
@@ -47,5 +56,7 @@ object PingTracker {
     fun reset() {
         latestMs = -1
         updatedAt = 0
+        sent = 0
+        pongs = 0
     }
 }

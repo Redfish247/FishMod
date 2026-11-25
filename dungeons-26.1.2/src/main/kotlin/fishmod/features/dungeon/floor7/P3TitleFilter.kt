@@ -29,6 +29,16 @@ object P3TitleFilter {
     }
 
     @JvmStatic
+    fun shouldHideMainTitle(title: Component): Boolean {
+        val hide = shouldHideTitle(title)
+        if (hide && title.string.isNotBlank()) {
+            val mc = net.minecraft.client.Minecraft.getInstance()
+            mc.gui.clearTitles()
+        }
+        return hide
+    }
+
+    @JvmStatic
     fun shouldHideTitle(title: Component): Boolean {
         if (!Floor7Settings.muteTerminalTitles || !SkyblockLocation.inDungeon() || !(inP3 || BossPhase.inP3())) return false
         val s = title.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")

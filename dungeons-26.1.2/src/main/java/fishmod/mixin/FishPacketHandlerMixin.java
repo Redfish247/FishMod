@@ -148,7 +148,7 @@ public class FishPacketHandlerMixin {
             if (text != null) {
                 fishmod.features.dungeon.solvers.SimonSaysTracker.onTitle(text.getString());
 
-                if (fishmod.features.dungeon.floor7.P3TitleFilter.shouldHideTitle(text) || fishmod.features.dungeon.floor7.DeviceDoneAlert.disableTitles(text)
+                if (fishmod.features.dungeon.floor7.P3TitleFilter.shouldHideMainTitle(text) || fishmod.features.dungeon.floor7.DeviceDoneAlert.disableTitles(text)
                         || fishmod.features.dungeon.floor7.StormOverAlert.shouldHideServerCountdown(text)) {
                     ci.cancel();
                 }

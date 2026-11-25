@@ -557,6 +557,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.R1", "fishmod.features.rift.Rift.init() failed") { fishmod.features.rift.Rift.init() }
         FishDiag.guard("FishModInit.garden", "fishmod.features.garden.Garden.init() failed") { fishmod.features.garden.Garden.init() }
         FishDiag.guard("FishModInit.ach", "AchEngine.init() failed") { fishmod.features.achievements.AchEngine.init() }
+        FishDiag.guard("FishModInit.ping", "PingTracker.start() failed") { fishmod.utils.PingTracker.start() }
         FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.floor7.F7Huds.init() failed") { fishmod.features.dungeon.floor7.F7Huds.init() }
         FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.InvButtonSettings.init() failed") { fishmod.utils.config.values.InvButtonSettings.init() }
         FishDiag.guard("FishModInit.104b", "EquipmentDisplay.init() failed") { fishmod.features.general.EquipmentDisplay.init() }
