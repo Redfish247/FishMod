@@ -1,5 +1,6 @@
 package fishmod.utils.rendering
 
+import fishmod.compat.curScreen
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -97,7 +98,7 @@ object FishHudLayer {
                 if (!box.empty()) {
                     val now = System.currentTimeMillis()
                     box.drawnMs = now
-                    if (net.minecraft.client.Minecraft.getInstance().screen == null) {
+                    if (net.minecraft.client.Minecraft.getInstance().curScreen == null) {
                         if (now - box.worldMs > 400L) box.runStartMs = now
                         box.worldMs = now
                     }
