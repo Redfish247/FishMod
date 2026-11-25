@@ -10,7 +10,7 @@ object NeuRepo {
     @JvmStatic val fairySouls: JsonObject?
         get() = fairySoulsCache ?: NeuRepoCache.fairySoulsJson()?.also { fairySoulsCache = it }
 
-    @JvmStatic fun isLoaded(): Boolean = NeuRepoCache.isReady()
+    @JvmStatic fun isLoaded(): Boolean = NeuRepoCache.isFullyLoaded()
 
     @JvmStatic fun get(id: String?): JsonObject? = NeuRepoCache.get(id)
 

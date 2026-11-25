@@ -61,6 +61,16 @@ object ModifierValue {
 
         if (tag.getIntOr("art_of_war_count", 0) > 0) v += CroesusPrices.cachedPrice("THE_ART_OF_WAR") * NwConstants.ART_OF_WAR
 
+        for (key in listOf("drill_part_upgrade_module", "drill_part_fuel_tank", "drill_part_engine")) {
+            val part = tag.getStringOr(key, "")
+            if (part.isNotBlank()) v += CroesusPrices.cachedPrice(part.uppercase()) * NwConstants.DRILL_PART
+        }
+        if (tag.getIntOr("wood_singularity_count", 0) > 0) v += CroesusPrices.cachedPrice("WOOD_SINGULARITY") * NwConstants.WOOD_SINGULARITY
+        if (tag.getIntOr("tuned_transmission", 0) > 0) v += CroesusPrices.cachedPrice("TRANSMISSION_TUNER") * tag.getIntOr("tuned_transmission", 0) * NwConstants.TUNED_TRANSMISSION
+        if (tag.getIntOr("jalapeno_count", 0) > 0) v += CroesusPrices.cachedPrice("JALAPENO_BOOK") * NwConstants.JALAPENO_BOOK
+        if (tag.getIntOr("farming_for_dummies_count", 0) > 0) v += CroesusPrices.cachedPrice("FARMING_FOR_DUMMIES") * tag.getIntOr("farming_for_dummies_count", 0) * NwConstants.FARMING_FOR_DUMMIES
+        tag.getStringOr("talisman_enrichment", "").takeIf { it.isNotBlank() }?.let { v += CroesusPrices.cachedPrice("TALISMAN_ENRICHMENT_${it.uppercase()}") * NwConstants.ENRICHMENT }
+
         FishDiag.check(!v.isNaN(), "ModifierValue.3") { "modifier sum NaN" }
         return v
     }
