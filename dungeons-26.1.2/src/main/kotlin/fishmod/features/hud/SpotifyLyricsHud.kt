@@ -185,7 +185,42 @@ object SpotifyLyricsHud {
         if (r.statusCode() == 200) r.body() else null
     } catch (_: Throwable) { null }
 
-    private val SYNCED_LINE = Regex("""\[(\d+):(\d+(?:\.\d+)?)]\s*(.*)""")
+    private var titleArtKey = ""
+
+    private fun fetchTitleArt(key: String) {
+        if (key == titleArtKey) return
+        titleArtKey = key
+        val old = artId
+        artId = null
+        artVer = -1
+        if (old != null) Minecraft.getInstance().execute { try { Minecraft.getInstance().textureManager.release(old) } catch (_: Throwable) {} }
+        val i = key.indexOf(" - ")
+        if (i <= 0) return
+        artPool.execute {
+            if (titleArtKey != key) return@execute
+            val img = try {
+                val body = httpGet("https://itunes.apple.com/search?media=music&entity=song&limit=1&term=${enc(key.substring(0, i) + " " + key.substring(i + 3))}") ?: return@execute
+                val url = JsonParser.parseString(body).asJsonObject.getAsJsonArray("results").firstOrNull()?.asJsonObject?.get("artworkUrl100")?.asString ?: return@execute
+                val req = HttpRequest.newBuilder().uri(URI.create(url.replace("100x100", "200x200"))).timeout(Duration.ofSeconds(10)).header("User-Agent", "FishModDungeons").GET().build()
+                val bytes = http.send(req, HttpResponse.BodyHandlers.ofByteArray()).body()
+                val bi = javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(bytes)) ?: return@execute
+                val out = java.io.ByteArrayOutputStream()
+                javax.imageio.ImageIO.write(bi, "png", out)
+                NativeImage.read(java.io.ByteArrayInputStream(out.toByteArray()))
+            } catch (_: Throwable) { null } ?: return@execute
+            val mc = Minecraft.getInstance()
+            mc.execute {
+                if (titleArtKey != key) { img.close(); return@execute }
+                try {
+                    val id = Identifier.fromNamespaceAndPath("fishmod", "spotify_titleart_${key.hashCode().toUInt()}")
+                    mc.textureManager.register(id, DynamicTexture({ id.toString() }, img))
+                    artId = id
+                } catch (_: Throwable) { img.close() }
+            }
+        }
+    }
+
+    private val SYNCED_LINE =Regex("""\[(\d+):(\d+(?:\.\d+)?)]\s*(.*)""")
     private val lyricsPool = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "fishmod-lyrics").apply { isDaemon = true } }
 
     private fun parseSynced(s: String): List<Line> {
@@ -370,6 +405,7 @@ object SpotifyLyricsHud {
         val useCard = detailed() && m != null && m.song.isNotEmpty()
         val titleCard = detailed() && !useCard && playing
         if (useCard) syncArt(m!!.artVer)
+        if (titleCard) fetchTitleArt(t)
         val shown = if (playing) t else if (FishSettings.spotifyLyricsShowPaused) "Paused" else ""
         if (shown.isEmpty()) return
 
@@ -384,7 +420,7 @@ object SpotifyLyricsHud {
             val i = t.indexOf(" - ")
             val artist = if (i > 0) t.substring(0, i).trim() else ""
             val song = if (i > 0) t.substring(i + 3).trim() else t
-            card(ctx, mc, titleMarq, artistMarq, lyricMarq, song, artist, "", lyric, playing, null)
+            card(ctx, mc, titleMarq, artistMarq, lyricMarq, song, artist, "", lyric, playing, artId)
         }
         else body(ctx, mc, titleMarq, lyricMarq, shown, lyric, playing)
         pose.popMatrix()
