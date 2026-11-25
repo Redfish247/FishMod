@@ -58,6 +58,8 @@ object PlayerModel {
         return remote[p.uuid.toString().replace("-", "")] ?: "PLAYER"
     }
 
+    private var nextFakeId = -1000
+
     @JvmStatic
     fun fakeFor(p: Player, key: String): LivingEntity? {
         if (key == "PLAYER" || failed.contains(key)) return null
@@ -68,6 +70,7 @@ object PlayerModel {
             val type = BuiltInRegistries.ENTITY_TYPE.getOptional(Identifier.withDefaultNamespace(key.lowercase())).orElse(null)
             val e = type?.create(level, EntitySpawnReason.LOAD)
             if (e !is LivingEntity) { failed.add(key); return null }
+            e.setId(nextFakeId--)
             fakes[p.uuid] = key to e
             return e
         } catch (t: Throwable) {
