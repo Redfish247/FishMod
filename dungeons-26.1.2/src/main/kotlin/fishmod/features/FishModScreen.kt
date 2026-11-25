@@ -3114,7 +3114,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     // Always shown so the check can be verified after a reload: "(…)" = scan running, "(0)" = scanned, none found
     private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n < 0) "Conflicts (…)" else "Conflicts ($n)" }
     private var pgScroll = 0
-    private fun playerPreviewW(): Int = minOf(240, ((cx1() - cx0()) * 0.38f).toInt())
+    private fun playerPreviewW(): Int = minOf(340, ((cx1() - cx0()) * 0.46f).toInt())
     private fun pageX1(pf: Feature): Int = if (pf.pageId == "player") cx1() - playerPreviewW() - 14 else cx1()
 
     private fun renderPlayerPreview(ctx: GuiGraphicsExtractor, top: Int, mouseX: Int, mouseY: Int) {
@@ -3141,17 +3141,26 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return false
         val ctx = GuiGraphicsExtractor(mc, state, 0, 0)
-        ctx.enableScissor(l.sx0, l.sy0, l.sx1, l.sy1)
-        fishmod.cosmetic.PlayerModel.menuPreview = true
-        try {
-            val scale = maxOf(8, Math.round(minOf((l.sy1 - l.sy0) / 2.3f, (l.sx1 - l.sx0) / 1.4f)))
-            net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(ctx, l.sx0, l.sy0, l.sx1, l.sy1, scale, 0.0625f, l.mx, l.my, player)
-        } finally { ctx.disableScissor(); fishmod.cosmetic.PlayerModel.menuPreview = false }
         val font = mc.font
         val name = fishmod.cosmetic.NickState.asComponent().let { if (it.string.isEmpty()) player.name else it }
         val nameW = font.width(name).coerceAtLeast(1)
         val uiF = fishmod.utils.rendering.UiScale.factor()
-        val fit = minOf(uiF, (l.sx1 - l.sx0 - 12) / nameW.toFloat())
+        val fit = minOf(uiF * 2.2f, (l.sx1 - l.sx0 - 12) / nameW.toFloat())
+        val tagH = Math.round(11 * fit)
+        val ey0 = l.sy0 + tagH + 8
+        if (l.sy1 - ey0 < 8) return true
+        val key = fishmod.cosmetic.PlayerModel.ownKey()
+        val fake = if (key != "PLAYER") fishmod.cosmetic.PlayerModel.fakeFor(player, key) else null
+        val target: net.minecraft.world.entity.LivingEntity = fake ?: player
+        if (fake != null) fishmod.cosmetic.PlayerModel.syncFake(fake, player)
+        val ref = if (fake != null) maxOf(fake.bbHeight, fake.bbWidth * 0.9f, 0.4f) else 1.8f
+        ctx.enableScissor(l.sx0, ey0, l.sx1, l.sy1)
+        fishmod.cosmetic.PlayerModel.menuPreview = true
+        try {
+            val base = minOf((l.sy1 - ey0) / 2.3f, (l.sx1 - l.sx0) / 1.4f)
+            val scale = maxOf(8, Math.round(base * 1.8f / ref))
+            net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(ctx, l.sx0, ey0, l.sx1, l.sy1, scale, 0.0625f, l.mx, l.my, target)
+        } finally { ctx.disableScissor(); fishmod.cosmetic.PlayerModel.menuPreview = false }
         ctx.pose().pushMatrix()
         ctx.pose().translate(l.nx.toFloat(), (l.sy0 + 6).toFloat())
         ctx.pose().scale(fit, fit)
