@@ -1651,6 +1651,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Original Name", "On items with a custom name, shows the original name", "originalNameTooltip"))
             f.sub.add(InputSetting("Original Name Text", "", "originalNameLabel").gatedBy { FishSettings.originalNameTooltip })
             f.sub.add(ColorPickerSetting("Original Name Color", "", "originalNameColor").gatedBy { FishSettings.originalNameTooltip })
+            f.sub.add(ToggleSetting("Stonks Auction Price Per", "In Richard's Stonks Auction, shows minimum bid ÷ stonks amount", "stonksAuctionPricePer"))
             f.sub.add(ToggleSetting("Obtained Date", "When the item was obtained", fishmod.features.extras.ExtrasSettings::class.java, "obtainedDateTooltip"))
             f.sub.add(ToggleSetting("Shrink Tall Tooltips", "Auto-scale tooltips that are taller than the screen so they fit (off = vanilla size)", "tooltipAutoFit"))
             f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))

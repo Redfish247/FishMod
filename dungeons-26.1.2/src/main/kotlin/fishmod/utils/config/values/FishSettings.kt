@@ -697,6 +697,7 @@ object FishSettings {
     @ConfigValue @JvmField var exoticTooltip: Boolean = true
     @ConfigValue @JvmField var originalNameTooltip: Boolean = true
     @ConfigValue @JvmField var originalNameLabel: String = "Original: "
+    @ConfigValue @JvmField var stonksAuctionPricePer: Boolean = false
     @ConfigValue @JvmField var originalNameColor: Int = 0xFFAAAAAA.toInt()
 
     @ConfigValue @JvmField var gyroHelperEnabled: Boolean = false
