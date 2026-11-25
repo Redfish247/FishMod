@@ -63,6 +63,13 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
                 getXVal.asInt, getYVal.asInt, Math.max(1, Math.round(wVal * s).toInt()), Math.max(1, Math.round(hVal * s).toInt())
             )
         }
+        fun isStablyDrawn(): Boolean {
+            val s = scale()
+            if (fishmod.utils.rendering.FishHudLayer.drawnNamed(nameVal)) return true
+            return fishmod.utils.rendering.FishHudLayer.drawnStable(
+                getXVal.asInt, getYVal.asInt, Math.max(1, Math.round(wVal * s).toInt()), Math.max(1, Math.round(hVal * s).toInt())
+            )
+        }
         fun isEnabledInList(): Boolean =
             enabledVal?.asBoolean ?: FeatureMasters.map[nameVal]?.invoke() ?: isVisible()
     }
@@ -425,7 +432,7 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
     init {
         picked.retainAll(ENTRIES.map { it.name() }.toSet())
         // Optional: start with the HUDs that are showing on screen right now (enabled AND currently visible), not every enabled one
-        if (FishSettings.hudEditorPickEnabled) { picked.clear(); listed().filter { it.isEnabledInList() && it.isDrawnNow() }.forEach { picked += it.name() } }
+        if (FishSettings.hudEditorPickEnabled) { picked.clear(); listed().filter { it.isEnabledInList() && it.isStablyDrawn() }.forEach { picked += it.name() } }
     }
 
     override fun isPauseScreen(): Boolean = false

@@ -14,6 +14,8 @@ object FishHudLayer {
 
     private class Box { var x0 = Int.MAX_VALUE; var y0 = Int.MAX_VALUE; var x1 = Int.MIN_VALUE; var y1 = Int.MIN_VALUE
         var drawnMs = 0L
+        var worldMs = 0L
+        var runStartMs = 0L
         fun reset() { x0 = Int.MAX_VALUE; y0 = Int.MAX_VALUE; x1 = Int.MIN_VALUE; y1 = Int.MIN_VALUE }
         fun add(r: ScreenRectangle) { x0 = minOf(x0, r.left()); y0 = minOf(y0, r.top()); x1 = maxOf(x1, r.right()); y1 = maxOf(y1, r.bottom()) }
         fun empty() = x1 <= x0 || y1 <= y0
@@ -69,6 +71,12 @@ object FishHudLayer {
         return liveBoxes.any { it.drawnMs != 0L && now - it.drawnMs < 500 && it.hits(o) }
     }
 
+    @JvmStatic fun drawnStable(x: Int, y: Int, w: Int, h: Int): Boolean {
+        val now = System.currentTimeMillis()
+        val o = Box().also { it.x0 = x; it.y0 = y; it.x1 = x + w; it.y1 = y + h }
+        return liveBoxes.any { it.worldMs != 0L && now - it.worldMs < 2000 && it.worldMs - it.runStartMs >= 1500 && it.hits(o) }
+    }
+
     private fun wrap(id: Identifier, el: HudElement): HudElement {
         val exempt = id.path in TAB_EXEMPT
         val box = Box()
@@ -86,7 +94,14 @@ object FishHudLayer {
                 inModHud = prev
                 cur = prevBox
                 box.copy(frame)
-                if (!box.empty()) box.drawnMs = System.currentTimeMillis()
+                if (!box.empty()) {
+                    val now = System.currentTimeMillis()
+                    box.drawnMs = now
+                    if (net.minecraft.client.Minecraft.getInstance().screen == null) {
+                        if (now - box.worldMs > 400L) box.runStartMs = now
+                        box.worldMs = now
+                    }
+                }
             }
         }
     }
