@@ -99,6 +99,10 @@ object PlayerModel {
     fun syncFake(f: LivingEntity, p: Player) {
         f.snapTo(p.x, p.y, p.z, p.yRot, p.xRot)
         f.xo = p.xo; f.yo = p.yo; f.zo = p.zo
+        f.xOld = p.xOld; f.yOld = p.yOld; f.zOld = p.zOld
+        f.customName = p.displayName
+        f.isCustomNameVisible = true
+        f.isShiftKeyDown = p.isShiftKeyDown
         f.yRotO = p.yRotO; f.xRotO = p.xRotO
         f.yBodyRot = p.yBodyRot; f.yBodyRotO = p.yBodyRotO
         f.yHeadRot = p.yHeadRot; f.yHeadRotO = p.yHeadRotO
