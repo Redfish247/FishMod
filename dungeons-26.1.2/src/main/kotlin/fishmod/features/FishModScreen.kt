@@ -2460,7 +2460,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (c === cheats) continue
             for (f in c.features) {
                 val toggles = f.sub.filterIsInstance<ToggleSetting>()
-                if (toggles.size < 8) continue
+                if (toggles.size < 8 || f.pageId != null) continue
                 f.sub.add(0, ButtonSetting("All Toggles", "Turn every toggle in this feature on or off", "All On", Runnable { toggles.forEach { t -> try { t.setter(true) } catch (_: Throwable) {} } }))
                 f.sub.add(1, ButtonSetting("All Toggles Off", "", "All Off", Runnable { toggles.forEach { t -> try { t.setter(false) } catch (_: Throwable) {} } }))
             }
@@ -3054,6 +3054,38 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     // Always shown so the check can be verified after a reload: "(…)" = scan running, "(0)" = scanned, none found
     private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n < 0) "Conflicts (…)" else "Conflicts ($n)" }
     private var pgScroll = 0
+    private fun playerPreviewW(): Int = minOf(240, ((cx1() - cx0()) * 0.38f).toInt())
+    private fun pageX1(pf: Feature): Int = if (pf.pageId == "player") cx1() - playerPreviewW() - 14 else cx1()
+
+    private fun renderPlayerPreview(ctx: GuiGraphicsExtractor, top: Int, mouseX: Int, mouseY: Int) {
+        val mc = Minecraft.getInstance()
+        val player = mc.player ?: return
+        val f = fishmod.utils.rendering.UiScale.factor()
+        val x0 = cx1() - playerPreviewW(); val x1 = cx1()
+        val y0 = top; val y1 = cyBot() - 34
+        UiRecorder.roundedRectRing(x0.toFloat(), y0.toFloat(), (x1 - x0).toFloat(), (y1 - y0).toFloat(), 8f, 1f, 0x00000000, ScreenTheme.ink(0x1F))
+        UiRecorder.textBold("Preview", (x0 + 10).toFloat(), (y0 + 8).toFloat(), 1.0f * NVG_BASE_TEXT_SIZE, TEXT_COLOR)
+        val sx0 = Math.round((x0 + 4) * f); val sx1 = Math.round((x1 - 4) * f)
+        val sy0 = Math.round((y0 + 28) * f); val sy1 = Math.round((y1 - 4) * f)
+        if (sx1 - sx0 < 8 || sy1 - sy0 < 8) return
+        ctx.pose().pushMatrix()
+        ctx.pose().identity()
+        ctx.enableScissor(sx0, sy0, sx1, sy1)
+        try {
+            val scale = maxOf(8, Math.round(minOf((sy1 - sy0) / 2.3f, (sx1 - sx0) / 1.4f)))
+            net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(ctx, sx0, sy0, sx1, sy1, scale, 0.0625f, mouseX * f, mouseY * f, player)
+        } finally {
+            ctx.disableScissor()
+            ctx.pose().popMatrix()
+        }
+        val font = mc.font
+        val name = fishmod.cosmetic.NickState.asComponent().let { if (it.string.isEmpty()) player.name else it }
+        val w = font.width(name)
+        ctx.pose().pushMatrix()
+        ctx.pose().identity()
+        try { ctx.text(font, name, Math.round((x0 + x1) / 2f * f) - w / 2, Math.round((y1 + 10) * f), -1, true) } finally { ctx.pose().popMatrix() }
+    }
+
     private fun pageFeature(): Feature? = columns.firstNotNullOfOrNull { c -> c.features.firstOrNull { it.pageId == page } }
     private fun openPage(p: String) { pgScroll = 0; page = p; selected = null; openedAt = System.currentTimeMillis() }
     private fun goHome() { page = null; allMode = true; selected = null; gridScroll = 0; if (searchText.isNotEmpty()) { searchField?.value = ""; searchText = "" }; openedAt = System.currentTimeMillis() }
@@ -3273,8 +3305,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (pf != null) {
                     val top = pt + 34 + oy
                     pgScroll = Mth.clamp(pgScroll, 0, Math.max(0, pf.naturalSubHeight() - (cyBot() - top)))
-                    UiRecorder.pushScissor(cx0().toFloat(), top.toFloat(), (cx1() - cx0()).toFloat(), (cyBot() - top).toFloat())
-                    try { renderSubPanel(ctx, pf, cx0(), cx1(), top - pgScroll, pf.naturalSubHeight(), mouseX, if (mouseY >= top && mouseY < cyBot()) mouseY else -10000, top, cyBot()) } finally { UiRecorder.popScissor() }
+                    val px1 = pageX1(pf)
+                    UiRecorder.pushScissor(cx0().toFloat(), top.toFloat(), (px1 - cx0()).toFloat(), (cyBot() - top).toFloat())
+                    try { renderSubPanel(ctx, pf, cx0(), px1, top - pgScroll, pf.naturalSubHeight(), mouseX, if (mouseY >= top && mouseY < cyBot()) mouseY else -10000, top, cyBot()) } finally { UiRecorder.popScissor() }
+                    if (pf.pageId == "player") renderPlayerPreview(ctx, top, mouseX, mouseY)
                 }
             } else if (page == "credits") creditsPage.render(cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
             else if (page == "conflicts") conflictsPage.render(ctx, cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
@@ -3467,7 +3501,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (animating) UiRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), animatedH.toFloat())
 
         val subH = f.naturalSubHeight()
-        if (selected !== f) UiRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
+        if (selected !== f && f.pageId == null) UiRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
         val leftX = x0 + 8
         val rightX = x1 - 8
         var sy = top + 6
@@ -3539,7 +3573,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (navClick(mx, my, btn)) return true
 
         if (page != null) {
-            if (pageFeature() != null) { val pf = pageFeature(); if (pf != null) subClick(pf, cx0(), cx1(), cyTop() - HEADER_H + 34 - pgScroll, mx, my, btn) }
+            if (pageFeature() != null) { val pf = pageFeature(); if (pf != null) subClick(pf, cx0(), pageX1(pf), cyTop() - HEADER_H + 34 - pgScroll, mx, my, btn) }
             else if (page == "report") { if (!reportPage.click(mx, my)) reportPage.focused = -1 } else if (page == "conflicts") conflictsPage.click(mx, my) else creditsPage.click(mx, my)
             return true
         }
@@ -3621,7 +3655,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             for (s in pf.sub) {
                 if (s.hiddenByGate()) continue
                 val sh = s.getHeight()
-                if (mouseY >= ssy && mouseY <= ssy + sh && s.onScroll(mouseX.toInt(), mouseY.toInt(), cx0(), cx1(), ssy, dirP)) return true
+                if (mouseY >= ssy && mouseY <= ssy + sh && s.onScroll(mouseX.toInt(), mouseY.toInt(), cx0(), pageX1(pf), ssy, dirP)) return true
                 ssy += sh
             }
             pgScroll -= (verticalAmount * 24).toInt(); return true
