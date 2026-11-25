@@ -94,7 +94,7 @@ object RareDropAnimation {
                     if (FishSettings.rareDropAnimTitle) {
                         val color = TIER_STYLE[tier] ?: "§6"
                         val sub = if (tier == null) "§f$name" else "$color§l${tier.replace('_', ' ')} §f$name"
-                        fishmod.features.AlertTitles.show(Component.literal("$color§lDROP"), Component.literal(sub), 2500)
+                        fishmod.features.AlertTitles.show(Component.empty(), Component.literal(sub), 2500)
                     }
                 }
             }
