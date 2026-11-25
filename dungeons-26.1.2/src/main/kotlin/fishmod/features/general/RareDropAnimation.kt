@@ -9,6 +9,7 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
+import fishmod.utils.networth.ItemsDb
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
@@ -85,12 +86,16 @@ object RareDropAnimation {
     private fun play(name: String, pet: Boolean) {
         // item lookup may fetch from the NEU repo, so resolve off the render thread first
         fishmod.utils.IoExecutor.execute {
-            val stack = FishDiag.guard("RareDropAnimation.3", "rare drop icon lookup failed for $name") { stackFor(name, pet) } ?: fallback(name)
+            val (stack, tier) = FishDiag.guard("RareDropAnimation.3", "rare drop icon lookup failed for $name") { stackFor(name, pet) } ?: (fallback(name) to null)
             val mc = Minecraft.getInstance()
             mc.execute {
                 FishDiag.guard("RareDropAnimation.1", "rare drop animation failed for $name") {
                     mc.showItemActivation(stack)
-                    if (FishSettings.rareDropAnimTitle) fishmod.features.AlertTitles.show(Component.literal(if (pet) "§d§lPET DROP!" else "§6§lRARE DROP!"), Component.literal("§f$name"), 2500)
+                    if (FishSettings.rareDropAnimTitle) {
+                        val color = TIER_STYLE[tier] ?: "§6"
+                        val sub = if (tier == null) "§f$name" else "$color§l${tier.replace('_', ' ')} §f$name"
+                        fishmod.features.AlertTitles.show(Component.literal("$color§lDROP"), Component.literal(sub), 2500)
+                    }
                 }
             }
         }
@@ -127,13 +132,18 @@ object RareDropAnimation {
         return out.toList()
     }
 
-    private fun stackFor(name: String, pet: Boolean): ItemStack {
+    private fun stackFor(name: String, pet: Boolean): Pair<ItemStack, String?> {
         NeuRepoCache.ensureLoadedBlocking()
         for (id in candidates(name, pet)) {
             if (NeuItemResolver.candidates(id).none { NeuRepoCache.getOrFetch(it) != null }) continue
             val st = SkyBlockItemFactory.iconStack(id)
-            if (!st.isEmpty && !st.`is`(Items.PAPER)) return st
+            if (!st.isEmpty && !st.`is`(Items.PAPER)) return st to ItemsDb.get(id)?.get("tier")?.asString
         }
-        return fallback(name)
+        return fallback(name) to null
     }
+
+    private val TIER_STYLE = mapOf(
+        "COMMON" to "§f", "UNCOMMON" to "§a", "RARE" to "§9", "EPIC" to "§5", "LEGENDARY" to "§6",
+        "MYTHIC" to "§d", "DIVINE" to "§b", "SPECIAL" to "§c", "VERY_SPECIAL" to "§c",
+    )
 }
