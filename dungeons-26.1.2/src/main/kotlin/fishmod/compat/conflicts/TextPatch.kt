@@ -21,7 +21,7 @@ object TextPatch {
             val q = t[i++]
             val sb = StringBuilder()
             while (i < t.length && t[i] != q) {
-                if (t[i] == '\' && i + 1 < t.length) {
+                if (t[i] == '\\' && i + 1 < t.length) {
                     i++
                     when (val e = t[i]) {
                         'n' -> sb.append('\n'); 't' -> sb.append('\t'); 'r' -> sb.append('\r')
