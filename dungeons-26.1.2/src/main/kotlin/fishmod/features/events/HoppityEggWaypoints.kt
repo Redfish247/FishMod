@@ -12,6 +12,9 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.level.ClipContext
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import fishmod.features.extras.ExtrasSettings as S
@@ -24,18 +27,28 @@ object HoppityEggWaypoints {
     )
     @Volatile private var found: List<Pair<Vec3, String>> = emptyList()
     private var tick = 0
+    // eggs the player has actually had on screen with line of sight
+    private val seen = HashSet<java.util.UUID>()
+    private var seenLevel: Level? = null
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (++tick % 10 != 0) return@register
             val level = mc.level
             if (!S.hoppityEggWaypoints || level == null || !SkyblockLocation.inSkyblock()) { found = emptyList(); return@register }
+            if (seenLevel !== level) { seen.clear(); seenLevel = level }
+            val p = mc.player ?: return@register
             try {
                 val out = ArrayList<Pair<Vec3, String>>()
+                val eye = p.eyePosition
+                val look = p.getViewVector(1f)
                 for (e in level.entitiesForRendering()) {
                     if (e !is ArmorStand || !e.isInvisible || e.hasCustomName()) continue
                     val label = label(e) ?: continue
-                    out += e.position().add(0.0, 1.5, 0.0) to label
+                    val pos = e.position().add(0.0, 1.5, 0.0)
+                    if (e.uuid !in seen && !visible(level, p, eye, look, pos)) continue
+                    seen += e.uuid
+                    out += pos to label
                 }
                 found = out
             } catch (t: Throwable) {
@@ -43,6 +56,15 @@ object HoppityEggWaypoints {
             }
         }
         RenderHooks.NO_DEPTH_FILLED.register { ctx, ps, vc -> if (S.hoppityEggWaypoints && found.isNotEmpty()) render(ctx, ps, vc) }
+    }
+
+    // on screen (inside a ~60 degree cone) and no block between the eye and the egg
+    private fun visible(level: Level, p: net.minecraft.world.entity.player.Player, eye: Vec3, look: Vec3, pos: Vec3): Boolean {
+        val to = pos.subtract(eye)
+        val dist = to.length()
+        if (dist > 64.0 || (dist > 1.5 && to.normalize().dot(look) < 0.5)) return false
+        val hit = level.clip(ClipContext(eye, pos, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
+        return hit.type != HitResult.Type.BLOCK || hit.location.distanceToSqr(eye) >= pos.distanceToSqr(eye) - 1.0
     }
 
     private fun label(e: ArmorStand): String? {
