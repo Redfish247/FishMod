@@ -8,7 +8,6 @@ object PingTracker {
 
     private var tickCounter = 0
 
-    // Sends a ping request every 2s so the pong RTT keeps the tab ping live (vanilla only does this with F3 open)
     @JvmStatic
     fun init() {
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
