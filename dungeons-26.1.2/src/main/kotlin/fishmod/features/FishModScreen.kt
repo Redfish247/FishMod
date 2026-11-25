@@ -3415,8 +3415,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
             for (i in first until last) {
                 val f = items[i]
-                val p = if (searchText.isEmpty()) anim(openedAt, Math.min(i, 40) * 12) else 1f
-                val x = cardX(i); val y = cardY(i) + Math.round((1f - p) * 10f)
+                val cx = cardX(i); val cyy = cardY(i)
+                val p = if (searchText.isEmpty()) anim(openedAt, ((cyy - cyTop()).coerceIn(0, 700) / 2 + (cx - cx0()).coerceIn(0, 600) / 12)) else 1f
+                val x = cx; val y = cyy + Math.round((1f - p) * 10f)
                 if (y + cardH() < cyTop() || y > cyBot()) continue
                 val on = f.hasMaster() && f.get!!()
                 val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + cardH()
