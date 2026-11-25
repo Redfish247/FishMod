@@ -1,46 +1,102 @@
-{
-    "summary":  "Daily bugfix run: flare detection hardened in Deployables HUD, builds clean (26.1.2 + 26.2), jar not copied (Modrinth folder missing), untested.",
-    "version":  "1.8.55",
-    "notes":  [
-                  "Modrinth folder Skyblock 1.21.8 does not exist, jar not copied"
-              ],
-    "already":  [
-
-                ],
-    "date":  "2026-11-24",
-    "open":  [
-                 {
-                     "detail":  "Only Warning Flare texture is known; others rely on name match.",
-                     "title":  "Alert and SOS flare textures",
-                     "status":  "Needs a report"
-                 }
-             ],
+﻿{
+    "version":  "1.8.75",
     "fixed":  [
                   {
-                      "detail":  "Flares are now also detected by head texture (Warning Flare) and by case-insensitive name.",
-                      "title":  "Deployables HUD missed flares",
+                      "detail":  "Standalone Slayer Boss Box removed; now a Slayer Spawn Box subcategory (also #717, #306).",
+                      "title":  "Slayer Spawn Box moved into Slayer QOL",
                       "files":  [
-                                    "features/hud/DeployablesHud.kt"
+                                    "features/FishModScreen.kt"
                                 ],
-                      "id":  711
+                      "id":  731
+                  },
+                  {
+                      "detail":  "Plays via `SoundManager`.",
+                      "title":  "Chat rule sound plays",
+                      "files":  [
+                                    "features/extras/ChatRuleHandler.kt"
+                                ],
+                      "id":  729
+                  },
+                  {
+                      "detail":  "Clears the stale title when a title is hidden.",
+                      "title":  "Hide titles clears a shown title",
+                      "files":  [
+                                    "features/dungeon/floor7/P3TitleFilter.kt",
+                                    "compat/McCompat.kt"
+                                ],
+                      "id":  730
+                  },
+                  {
+                      "detail":  "Eager start plus a debug log; unknown whether Hypixel answers the pings.",
+                      "title":  "Ping tracker starts at init",
+                      "files":  [
+                                    "utils/PingTracker.kt"
+                                ],
+                      "id":  727
+                  },
+                  {
+                      "detail":  "Drill parts, wood singularity, tuner, jalapeno, farming books, enrichment.",
+                      "title":  "Item price tooltip counts more modifiers",
+                      "files":  [
+                                    "features/hud/ModifierValue.kt"
+                                ],
+                      "id":  726
+                  },
+                  {
+                      "detail":  "`isLoaded` needs the full load.",
+                      "title":  "Item list index waits for full NEU load",
+                      "files":  [
+                                    "utils/data/NeuRepo.kt",
+                                    "pv/neu/NeuRepoCache.kt"
+                                ],
+                      "id":  728
+                  },
+                  {
+                      "detail":  "Added to Kuudra \u0026 Crimson Isle list.",
+                      "title":  "Smoldering VI rare drop animation",
+                      "files":  [
+                                    "resources/data/rareDropAnimation.json"
+                                ],
+                      "id":  724
                   }
               ],
+    "tests":  [
+                  "Slayer QOL Spawn Box works",
+                  "Tooltip price includes drill parts",
+                  "Smoldering VI drop plays animation"
+              ],
+    "open":  [
+                 {
+                     "status":  "Needs a report",
+                     "title":  "Boss health shows 500k instead of 50m",
+                     "detail":  "No data on which entity or text is read.",
+                     "id":  725
+                 },
+                 {
+                     "status":  "Needs a report",
+                     "title":  "Fire pillar announcement",
+                     "detail":  "Need the exact armour stand text.",
+                     "id":  723
+                 },
+                 {
+                     "status":  "Needs a report",
+                     "title":  "Tab sort in Rift",
+                     "detail":  "Need the Rift tab list layout.",
+                     "id":  719
+                 },
+                 {
+                     "status":  "Needs a report",
+                     "title":  "Deployables HUD flare",
+                     "detail":  "Flare stand data not available.",
+                     "id":  718
+                 }
+             ],
+    "date":  "2026-11-25",
+    "summary":  "Daily bugfix: 7 cards fixed, built green on 26.1.2 and 26.2, jar copied over 1.8.75, untested in game.",
     "facts":  [
                   [
-                      "Commits",
-                      "start 038f4592, fix c91abbf0"
-                  ],
-                  [
                       "Build",
-                      "26.1.2 + 26.2 SUCCESSFUL"
-                  ],
-                  [
-                      "Board",
-                      "all 13 cards already testing"
+                      "SUCCESSFUL both modules"
                   ]
-              ],
-    "tests":  [
-                  "Stand next to a Warning Flare with Deployables HUD on: it shows with a countdown",
-                  "Repeat with Alert and SOS flares"
               ]
 }
