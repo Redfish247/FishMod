@@ -220,7 +220,8 @@ object SlayerBossPhases {
             }
 
             SlayerType.INFERNO -> {
-                val pillar = stands.firstNotNullOfOrNull { FIRE_PILLAR.find(it)?.groupValues?.get(1) }
+                // Pillar stand spawns where the pillar lands, away from the boss, so scan wider
+                val pillar = nearbyStandNames(boss, 25.0, 12.0).firstNotNullOfOrNull { FIRE_PILLAR.find(it)?.groupValues?.get(1) }
                 if (EndAlertSettings.phaseFirePillar && pillar != null) { l1 = "§cFIRE PILLAR §f${pillar}s"; title("pillar", "§c§lFIRE PILLAR") }
 
                 if (l1.isEmpty()) {
