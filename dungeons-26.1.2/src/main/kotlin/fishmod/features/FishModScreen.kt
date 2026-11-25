@@ -1615,12 +1615,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Original Name", "On items with a custom name, shows the original name", "originalNameTooltip"))
             f.sub.add(InputSetting("Original Name Text", "", "originalNameLabel").gatedBy { FishSettings.originalNameTooltip })
             f.sub.add(ColorPickerSetting("Original Name Color", "", "originalNameColor").gatedBy { FishSettings.originalNameTooltip })
-            f.sub.add(ToggleSetting("Stonks Auction Price Per", "In Richard's Stonks Auction, shows minimum bid ÷ stonks amount", "stonksAuctionPricePer"))
             f.sub.add(ToggleSetting("Obtained Date", "When the item was obtained", fishmod.features.extras.ExtrasSettings::class.java, "obtainedDateTooltip"))
             f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", "tooltipScrollEnabled"))
             f.sub.add(SliderIntSetting("Tooltip Scale %", "", "tooltipScrollScale", 30, 150, 5).gatedBy { FishSettings.tooltipScrollEnabled })
             f.sub.add(SliderIntSetting("Scroll Speed", "", "tooltipScrollSpeed", 1, 10).gatedBy { FishSettings.tooltipScrollEnabled })
+            hud.features.add(f)
+        }
+        run {
+            val f = Feature("Stonks Auction", "stonksAuctionPricePer")
+            f.sub.add(SubcategoryHeader("Richard's Stonks Auction: price per Stonk next to each Minimum Bid"))
+            f.sub.add(ToggleSetting("Enabled", "", "stonksAuctionPricePer"))
             hud.features.add(f)
         }
         run {
@@ -2367,7 +2372,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val petsCol = Column("Pets")
         fun take(to: Column, names: Set<String>, vararg from: Column) { for (c in from) { val m = c.features.filter { it.name in names }; c.features.removeAll(m); to.features.addAll(m) } }
         take(chatCol, setOf("Chat","Chat Filter","FishMod Chat (/fc)","Mod Prefix","Guild Bridge Bot","Twitch Bridge","Chat Coord Waypoints","Command Tooltip in Chat","Compact Bestiary","SkyBlock XP in Chat","Command Tab Complete","Wiki Lookup"), general, extrasCol)
-        take(invStorage, setOf("Inventory Buttons","Inventory Equipment","Hide Inventory Potion Effects","Wardrobe/Loadout Hotkeys","Pet Keybinds","Slot Binds","Slot Locking","Inventory Search","Fix Double Clicks","Middle Click Fix","Stacking Enchant Progress","Item Level Overlay"), general, extrasCol)
+        take(invStorage, setOf("Inventory Buttons","Inventory Equipment","Hide Inventory Potion Effects","Wardrobe/Loadout Hotkeys","Pet Keybinds","Slot Binds","Slot Locking","Inventory Search","Fix Double Clicks","Middle Click GUI","Stacking Enchant Progress","Item Level Overlay"), general, extrasCol)
         take(eventsCol, setOf("Calendar Real Times","SkyBlock Date HUD","Hoppity Hunt Summary","Hoppity Egg Waypoints","Stray Rabbit Alert","Trick or Treat Chest Alert","Gift Tracker HUD","Hidden Jerry Highlight","Reindrake Alert + Warp Link","Carnival Zombie Shootout Outlines","Fairy Soul Waypoints"), extrasCol)
         take(alertsCol, setOf("Limbo Alert","Server Restart Alert","Booster Cookie Warning","No Bits Available Warning","Kick Cooldown Timer","Order Filled Alert","Auction Outbid Alert","Party Join Sound","Vanquisher Party Share","Quiver Warning"), extrasCol)
         take(visitorsCol, setOf("Visitor Timer","Visitor Arrival Alert","Visitor Shopping List","Visitor Menu Info","Visitor Rare Reward Warning","Visitor Stats","Help Carrolyn","Pest Spawn Title","Pest Finder","Pest Timer HUD"), farmCol)

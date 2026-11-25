@@ -23,12 +23,15 @@ public abstract class MenuClickFixMixin {
         if (fishmod$reissue || slot == null || slot.container instanceof Inventory) return;
         try {
             boolean dbl = ExtrasSettings.fixDoubleClicks && input == ContainerInput.PICKUP_ALL;
-            boolean mid = ExtrasSettings.middleClickFix && input == ContainerInput.CLONE && slot.hasItem();
+            boolean mid = ExtrasSettings.middleClickFix && (input == ContainerInput.PICKUP || input == ContainerInput.QUICK_MOVE) && slot.hasItem();
             if (!dbl && !mid) return;
             if (!fishmod.utils.SkyblockLocation.inSkyblock()) return;
             ci.cancel();
             fishmod$reissue = true;
-            try { slotClicked(slot, slotId, 0, ContainerInput.PICKUP); } finally { fishmod$reissue = false; }
+            try {
+                if (mid) slotClicked(slot, slotId, 2, ContainerInput.CLONE);
+                else slotClicked(slot, slotId, 0, ContainerInput.PICKUP);
+            } finally { fishmod$reissue = false; }
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("MenuClickFixMixin.1", "menu click fix failed slotId=" + slotId, t);
         }
