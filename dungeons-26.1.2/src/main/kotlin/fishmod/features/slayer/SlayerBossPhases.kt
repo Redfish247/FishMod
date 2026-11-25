@@ -36,6 +36,7 @@ object SlayerBossPhases {
     private val EGG_SAC = Regex("^\\d+s \\d+/\\d+$")
     private val TWINCLAWS = Regex("TWINCLAWS.*?([\\d.]+)s", RegexOption.IGNORE_CASE)
     private val NAMETAG_CUR_MAX = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*/\\s*([\\d,.]+)\\s*([kKmMbB])?\\s*❤")
+    private val RIFT_NAMES = setOf("Bloodfiend")
     private val NAMETAG_HP = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*❤")
     private val TIER_BEFORE_HP = Regex("\\s([IVX]+)\\s+[\\d,.]+\\s*[kKmMbB]?\\s*/")
     private val HELLION_HITS = Regex("\\u2668\\s*(\\d+)")
@@ -183,7 +184,7 @@ object SlayerBossPhases {
     private fun computeCombat(type: SlayerType, boss: LivingEntity, tier: Int): Pair<String, String> {
         val mc = Minecraft.getInstance()
         val stands = nearbyStandNames(boss, 2.0, 4.0)
-        val hp = trackHp(boss.id, stands)
+        val hp = trackHp(boss.id, stands, type.bossNames)
         val maxHp = hpMaxSeen
         var l1 = ""
         var l2 = ""
@@ -236,7 +237,7 @@ object SlayerBossPhases {
 
             SlayerType.INFERNO -> {
                 blazeDiag(mc, boss)
-                val pillar = stands.firstNotNullOfOrNull { FIRE_PILLAR.find(it)?.groupValues?.get(1) }
+                val pillar = nearbyStandNames(boss, 25.0, 12.0).firstNotNullOfOrNull { FIRE_PILLAR.find(it)?.groupValues?.get(1) }
                 if (EndAlertSettings.phaseFirePillar && pillar != null) { l1 = "§cFIRE PILLAR §f${pillar}s"; title("pillar", "§c§lFIRE PILLAR") }
 
                 if (l1.isEmpty()) {
@@ -306,7 +307,7 @@ object SlayerBossPhases {
 
     private fun computeRift(bf: LivingEntity): Pair<String, String> {
         val stands = nearbyStandNames(bf, 3.0, 4.0)
-        val hp = trackHp(bf.id, stands)
+        val hp = trackHp(bf.id, stands, RIFT_NAMES)
         val maxHp = hpMaxSeen
         var l1 = ""
         var l2 = ""
@@ -404,8 +405,9 @@ object SlayerBossPhases {
     private fun hpNum(n: String, suffix: String): Double? =
         n.replace(",", "").toDoubleOrNull()?.times(when (suffix.lowercase()) { "k" -> 1_000.0; "m" -> 1_000_000.0; "b" -> 1_000_000_000.0; else -> 1.0 })
 
-    private fun trackHp(bossId: Int, stands: List<String>): Double {
+    private fun trackHp(bossId: Int, allStands: List<String>, bossNames: Set<String>): Double {
         if (bossId != hpBossId) { hpBossId = bossId; hpMaxSeen = 0.0; lastHpFrac = 1.0; steakTitleFired = false }
+        val stands = allStands.filter { st -> bossNames.any { st.contains(it) } }
         // Current nametags read "147M/150M❤" (current/max); older ones just "150M❤".
         val cm = stands.firstNotNullOfOrNull { NAMETAG_CUR_MAX.find(it) }
         if (cm != null) {
