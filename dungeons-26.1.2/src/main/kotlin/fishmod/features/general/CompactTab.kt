@@ -301,7 +301,7 @@ object CompactTab {
         val server: String,
         val footer: String,
         val stats: FooterStats,
-        val playersIdx: Int,
+        val playersIdx: Set<Int>,
         val decorated: MutableMap<PlayerInfo, net.minecraft.network.chat.Component> = java.util.IdentityHashMap(),
     )
 
@@ -338,13 +338,13 @@ object CompactTab {
         }
         if (grouped.isEmpty()) return null
 
-        val columns = ArrayList<List<PlayerInfo>>()
+        val columns = ArrayList<MutableList<PlayerInfo>>()
         val colWidths = ArrayList<Int>()
         var rows = 0
         var first = true
-        var playersIdx = -1
-        // Find the Players list by its header; in the Rift it is not always the first column
-        val playersGroup = grouped.values.firstOrNull { col ->
+        val playersIdx = LinkedHashSet<Int>()
+        // Find every Players list by its header; big lobbies split players over two columns and in the Rift it is not always the first
+        val playersGroups = grouped.values.filter { col ->
             col.firstOrNull { !blank(it) }?.let { BLANK_COLOR.matcher(it.tabListDisplayName?.string ?: "").replaceAll("").trimStart().startsWith("Players") } == true
         }
         for (col in grouped.values) {
@@ -358,55 +358,73 @@ object CompactTab {
                 first = false
                 continue
             }
-            val playersCol = if (playersGroup != null) col === playersGroup else first
-            if (playersCol) playersIdx = columns.size
+            val playersCol = if (playersGroups.isNotEmpty()) playersGroups.any { it === col } else first
+            if (playersCol) playersIdx.add(columns.size)
             first = false
-            val trimmed = if (playersCol) sortPlayersColumn(col.subList(0, last + 1))
-                          else ArrayList(col.subList(0, last + 1))
-            var maxW = 0
-            for (e in trimmed) {
-                val dn = e.tabListDisplayName
-                if (dn != null) maxW = max(maxW, tr.width(dn))
-            }
-            val extra = if (playersCol) 26 else 8
-            val w = max(if (playersCol) 116 else 60, min(maxW + extra, 230))
-            columns.add(trimmed)
-            colWidths.add(w)
-            rows = max(rows, trimmed.size)
+            columns.add(ArrayList(col.subList(0, last + 1)))
+            rows = max(rows, last + 1)
         }
         if (columns.isEmpty()) return null
+        // Sort all Players lists as one so the second list is ordered together with the first, then split back by size
+        if (playersIdx.isNotEmpty()) {
+            val merged = ArrayList<PlayerInfo>()
+            merged.add(columns[playersIdx.first()][0])
+            for (i in playersIdx) merged.addAll(columns[i].subList(1, columns[i].size))
+            val sorted = sortPlayersColumn(merged)
+            var at = 1
+            for (i in playersIdx) {
+                val n = columns[i].size - 1
+                val head = columns[i][0]
+                columns[i] = ArrayList<PlayerInfo>(n + 1).apply { add(head); addAll(sorted.subList(at, at + n)) }
+                at += n
+            }
+        }
+        val decorated: MutableMap<PlayerInfo, net.minecraft.network.chat.Component> = java.util.IdentityHashMap()
+        for (c in columns.indices) {
+            val playersCol = c in playersIdx
+            var maxW = 0
+            for (e in columns[c]) {
+                val dn = decorate(e, decorated) ?: continue
+                maxW = max(maxW, tr.width(fishmod.cosmetic.NameRewriter.swapNick(dn) ?: dn))
+            }
+            val extra = if (playersCol) 26 else 8
+            // Players columns grow to the longest shown (nicked) name so it does not run into the next column
+            colWidths.add(if (playersCol) max(116, maxW + extra) else max(60, min(maxW + extra, 230)))
+        }
         rows = min(rows, 22)
 
-        return Model(columns, colWidths, rows, findServer(mc, tabFooter, tabHeader), footerLine(tabFooter), parseStats(tabFooter), playersIdx)
+        return Model(columns, colWidths, rows, findServer(mc, tabFooter, tabHeader), footerLine(tabFooter), parseStats(tabFooter), playersIdx, decorated)
+    }
+
+    private fun decorate(e: PlayerInfo, decorated: MutableMap<PlayerInfo, net.minecraft.network.chat.Component>): net.minecraft.network.chat.Component? {
+        decorated[e]?.let { return it }
+        var dn = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeLevelPrefixStatic(e.tabListDisplayName) ?: return null
+        if (FishSettings.badgesEnabled && FishSettings.badgesOnTab && e.profile != null && e.profile.id != null) {
+            dn = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(dn, e.profile.id.toString().replace("-", "")) ?: dn
+        }
+        decorated[e] = dn
+        return dn
     }
 
     private fun drawColumns(
         ctx: GuiGraphicsExtractor, tr: Font,
         columns: List<List<PlayerInfo>>, colWidths: List<Int>,
-        startX: Int, cy: Int, rows: Int, gap: Int, lh: Int, playersIdx: Int,
+        startX: Int, cy: Int, rows: Int, gap: Int, lh: Int, playersIdx: Set<Int>,
         decorated: MutableMap<PlayerInfo, net.minecraft.network.chat.Component>
     ) {
         var colX = startX
         for (c in columns.indices) {
             val w = colWidths[c]
             if (c > 0) ctx.fill(colX - gap / 2, cy, colX - gap / 2 + 1, cy + rows * lh, DIVIDER)
-            val playersCol = c == playersIdx
+            val playersCol = c in playersIdx
             val entries = columns[c]
             var r = 0
             while (r < entries.size && r < rows) {
                 val e = entries[r]
-                var dn = decorated[e]
+                val dn = decorate(e, decorated)
                 if (dn == null) {
-                    dn = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeLevelPrefixStatic(e.tabListDisplayName)
-                    if (dn == null) {
-                        r++
-                        continue
-                    }
-                    if (fishmod.utils.config.values.FishSettings.badgesEnabled && fishmod.utils.config.values.FishSettings.badgesOnTab
-                            && e.profile != null && e.profile.id != null) {
-                        dn = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(dn, e.profile.id.toString().replace("-", "")) ?: dn
-                    }
-                    decorated[e] = dn
+                    r++
+                    continue
                 }
                 val ry = cy + r * lh
                 var tx = colX
