@@ -20,7 +20,8 @@ public abstract class MenuClickFixMixin {
 
     @Inject(method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V", at = @At("HEAD"), cancellable = true)
     private void fishmod$fixClick(Slot slot, int slotId, int button, ContainerInput input, CallbackInfo ci) {
-        if (fishmod$reissue || slot == null || slot.container instanceof Inventory) return;
+        if (fishmod$reissue || slot == null) return;
+        if (slot.container instanceof Inventory && !(((Object) this) instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen)) return;
         try {
             boolean dbl = ExtrasSettings.fixDoubleClicks && input == ContainerInput.PICKUP_ALL;
             boolean mid = ExtrasSettings.middleClickFix && (input == ContainerInput.PICKUP || input == ContainerInput.QUICK_MOVE || input == ContainerInput.PICKUP_ALL) && slot.hasItem();
