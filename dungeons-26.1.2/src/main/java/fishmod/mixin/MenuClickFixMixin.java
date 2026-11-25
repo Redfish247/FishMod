@@ -23,9 +23,13 @@ public abstract class MenuClickFixMixin {
         if (fishmod$reissue || slot == null || slot.container instanceof Inventory) return;
         try {
             boolean dbl = ExtrasSettings.fixDoubleClicks && input == ContainerInput.PICKUP_ALL;
-            boolean mid = ExtrasSettings.middleClickFix && (input == ContainerInput.PICKUP || input == ContainerInput.QUICK_MOVE) && slot.hasItem();
+            boolean mid = ExtrasSettings.middleClickFix && (input == ContainerInput.PICKUP || input == ContainerInput.QUICK_MOVE || input == ContainerInput.PICKUP_ALL) && slot.hasItem();
             if (!dbl && !mid) return;
             if (!fishmod.utils.SkyblockLocation.inSkyblock()) return;
+            if (mid && ((AbstractContainerScreen<?>) (Object) this).getTitle().getString().toLowerCase().contains("loadout")) {
+                if (!dbl) return;
+                mid = false;
+            }
             ci.cancel();
             fishmod$reissue = true;
             try {
