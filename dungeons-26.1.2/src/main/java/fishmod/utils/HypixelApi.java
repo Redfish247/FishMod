@@ -2077,11 +2077,11 @@ public class HypixelApi {
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.110", "uploadItems failed", ignored);}
     }
 
-    public static void uploadScale(String uuidNoDashes, float x, float y, float z) {
+    public static void uploadScale(String uuidNoDashes, float x, float y, float z, String model) {
         try {
             JsonObject o = new JsonObject();
             o.addProperty("uuid", uuidNoDashes);
-            o.addProperty("scale", x + "," + y + "," + z);
+            o.addProperty("scale", x + "," + y + "," + z + (model == null || model.equals("PLAYER") ? "" : "," + model));
             HttpRequest req = proxy("/scale", 10)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(o.toString()))

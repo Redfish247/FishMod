@@ -60,6 +60,8 @@
     "ItemTrimMixin",
     "FishEntityRenderMixin",
     "EntityRenderStateMixin",
+    "PlayerModelRenderMixin",
+    "MobModelScaleMixin",
     "ItemInHandRendererMixin",
     "FluidStateModelSetMixin",
     "LavaFogEnvironmentMixin",

@@ -323,6 +323,12 @@ object FishSettings {
     @ConfigValue @JvmField var nickColorMode: String = "GRADIENT"
     @ConfigValue @JvmField var nickColorAnimated: Boolean = false
     @ConfigValue @JvmField var nickColorSpeed: Int = 100
+    @ConfigValue @JvmField var nickBold: Boolean = false
+    @ConfigValue @JvmField var nickItalic: Boolean = false
+    @ConfigValue @JvmField var nickUnderline: Boolean = false
+    @ConfigValue @JvmField var nickStrike: Boolean = false
+    @ConfigValue @JvmField var nickMagic: Boolean = false
+    @ConfigValue @JvmField var playerModel: String = "PLAYER"
 
     @ConfigValue @JvmField var nickPreviewEnabled: Boolean = false
     @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
