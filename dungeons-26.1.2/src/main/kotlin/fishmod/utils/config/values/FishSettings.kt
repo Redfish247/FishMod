@@ -903,6 +903,7 @@ object FishSettings {
     @ConfigValue @JvmField var clockHudScale: Double = 1.0
     @ConfigValue @JvmField var spotifyLyricsEnabled: Boolean = false
     @ConfigValue @JvmField var spotifyLyricsShowPaused: Boolean = false
+    @ConfigValue @JvmField var spotifyLyricsStyle: String = "Compact"
     @ConfigValue @JvmField var spotifyLyricsIcon: Boolean = true
     @ConfigValue @JvmField var spotifyLyricsLyrics: Boolean = true
     @ConfigValue @JvmField var spotifyLyricsConnected: Boolean = true
