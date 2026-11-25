@@ -13,10 +13,15 @@ import net.minecraft.network.chat.Component
 
 object StonksAuctionTooltip {
 
-    // "TOP 100 - Stock of Stonks x25"
-    private val TIER = Regex("""Stock of Stonks x(\d[\d,]*)\s*$""", RegexOption.IGNORE_CASE)
-    // "Minimum Bid: 55,000,000 Coins"
-    private val MIN_BID = Regex("""Minimum Bid:\s*(\d[\d,]*)""", RegexOption.IGNORE_CASE)
+    // number with optional commas/decimals and k/m/b suffix
+    private const val NUM = """(\d[\d,]*(?:\.\d+)?)\s*([kKmMbB])?"""
+    private val BID = Regex("""bid[^\d]*$NUM""", RegexOption.IGNORE_CASE)
+    private val AMOUNT = listOf(
+        Regex("""(?:^|\s)x\s*(\d[\d,]*)\b""", RegexOption.IGNORE_CASE),
+        Regex("""\b(\d[\d,]*)\s*x\b""", RegexOption.IGNORE_CASE),
+        Regex("""\b(\d[\d,]*)\s+stonks\b""", RegexOption.IGNORE_CASE),
+        Regex("""amount[^\d]*(\d[\d,]*)""", RegexOption.IGNORE_CASE),
+    )
 
     @JvmStatic
     fun init() {
@@ -25,18 +30,20 @@ object StonksAuctionTooltip {
             try {
                 val screen = Minecraft.getInstance().curScreen ?: return@ItemTooltipCallback
                 if (!ScreenTitle.plain(screen).contains("Stonks Auction", ignoreCase = true)) return@ItemTooltipCallback
-                var amount = 0L
-                for (i in lines.indices) {
-                    val plain = FishConstants.STRIP_COLOR_REGEX.replace(lines[i].string, "").trim()
-                    TIER.find(plain)?.let { amount = it.groupValues[1].replace(",", "").toLongOrNull() ?: 0L; continue }
-                    val bid = MIN_BID.find(plain)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull() ?: continue
-                    if (amount <= 0L || bid <= 0.0) continue
-                    lines[i] = lines[i].copy().append(Component.literal(" §7(§6${abbr(bid / amount)}§7 each)"))
-                    amount = 0L
-                }
+                val plain = lines.map { FishConstants.STRIP_COLOR_REGEX.replace(it.string, "") }
+                val bid = plain.firstNotNullOfOrNull { BID.find(it) }?.let { parse(it.groupValues[1], it.groupValues[2]) } ?: return@ItemTooltipCallback
+                val amount = plain.firstNotNullOfOrNull { l -> AMOUNT.firstNotNullOfOrNull { it.find(l) } }?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: stack.count.toLong()
+                if (bid <= 0.0 || amount <= 0L) return@ItemTooltipCallback
+                lines.add(Component.literal("§ePrice per Stonk: §6${abbr(bid / amount)} §7(${amount}x)"))
             } catch (e: Exception) {
                 FishDiag.fail("StonksAuctionTooltip.1", "stonks auction tooltip failed", e)
             }
         })
+    }
+
+    // "1.5" + "m" -> 1500000
+    private fun parse(n: String, suffix: String): Double? {
+        val v = n.replace(",", "").toDoubleOrNull() ?: return null
+        return v * when (suffix.lowercase()) { "k" -> 1e3; "m" -> 1e6; "b" -> 1e9; else -> 1.0 }
     }
 }
