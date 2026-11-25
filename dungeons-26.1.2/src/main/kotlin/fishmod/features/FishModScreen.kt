@@ -1212,10 +1212,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll() }
                 }))
             f.sub.add(SubcategoryHeader("Model"))
-            f.sub.add(DropdownSetting("Model", "Show yourself as a Minecraft mob", fishmod.cosmetic.PlayerModel.KEYS,
-                { FishSettings.playerModel },
-                { v -> FishSettings.playerModel = v; fishmod.cosmetic.PlayerModel.uploadOwn() },
-                { fishmod.cosmetic.PlayerModel.label(it) }))
+            f.sub.add(SoundSearchSetting("Model", "Type to search every mob (big bosses excluded); \"player\" turns it off",
+                { FishSettings.playerModel.lowercase() },
+                { v -> FishSettings.playerModel = v.removePrefix("minecraft:").uppercase(); fishmod.cosmetic.PlayerModel.uploadOwn() },
+                ids = { fishmod.cosmetic.PlayerModel.keys.map { it.lowercase() } }, soundPreview = false))
             f.sub.add(SubcategoryHeader("Others"))
             f.sub.add(ToggleSetting("See Others", "", "remoteNicksEnabled"))
             f.sub.add(ButtonSetting("Refresh Now", "", Runnable { fishmod.cosmetic.RemoteNicks.forceRefresh() }))
@@ -4226,6 +4226,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val valueSetter: (String) -> Unit,
         private val volumePct: (() -> Int)? = null,
         private val pitchGetter: (() -> Double)? = null,
+        private val ids: () -> Collection<String> = { fishmod.utils.sound.SoundManager.allSoundIds },
+        private val soundPreview: Boolean = true,
     ) : InputSetting(name, desc, { "" }, { }) {
 
         private var query = ""
@@ -4262,7 +4264,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val out = if (q.isEmpty()) {
                 emptyList()
             } else {
-                fishmod.utils.sound.SoundManager.allSoundIds.asSequence()
+                ids().asSequence()
                     .filter { it.contains(q) }
                     .sortedWith(compareBy({ !it.substringAfter(':').startsWith(q) }, { it.length }, { it }))
                     .take(10).toList()
@@ -4273,7 +4275,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private fun browseList(): List<String> {
             val q = query.trim().lowercase().replace(' ', '_')
-            val all = fishmod.utils.sound.SoundManager.allSoundIds
+            val all = ids()
             return if (q.isEmpty()) all.sorted()
             else all.filter { it.contains(q) }
                 .sortedWith(compareBy({ !it.substringAfter(':').startsWith(q) }, { it.length }, { it }))
@@ -4288,7 +4290,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val next = if (idx < 0) (if (dir > 0) 0 else list.size - 1)
             else ((idx + dir) % list.size + list.size) % list.size
             valueSetter(list[next])
-            fishmod.utils.sound.SoundManager.play(fishmod.utils.sound.SoundManager.preset(list[next]), 1f, 1f)
+            if (soundPreview) fishmod.utils.sound.SoundManager.play(fishmod.utils.sound.SoundManager.preset(list[next]), 1f, 1f)
             cacheKey = null
             return true
         }
@@ -4298,13 +4300,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             initField(tr)
             st(ctx, tr, name, leftX + 2, sy + 1, TEXT_COLOR)
-            val btnW = stw(tr, "Test") + 14
+            val btnW = if (soundPreview) stw(tr, "Test") + 14 else 0
             val btnH = 11
             val btnX = rightX - btnW - 2
-            val btnHov = mx >= btnX && mx <= btnX + btnW && my >= sy && my <= sy + btnH
-            roundedRect(ctx, btnX, sy, btnW, btnH + 2, (btnH + 2) / 2, if (btnHov) ACCENT else TRACK_OFF)
-            st(ctx, tr, "Test", btnX + 7, sy + 2, if (btnHov) ScreenTheme.textOn(ACCENT) else TEXT_COLOR)
-            testRect = intArrayOf(btnX, sy, btnX + btnW, sy + btnH)
+            if (soundPreview) {
+                val btnHov = mx >= btnX && mx <= btnX + btnW && my >= sy && my <= sy + btnH
+                roundedRect(ctx, btnX, sy, btnW, btnH + 2, (btnH + 2) / 2, if (btnHov) ACCENT else TRACK_OFF)
+                st(ctx, tr, "Test", btnX + 7, sy + 2, if (btnHov) ScreenTheme.textOn(ACCENT) else TEXT_COLOR)
+                testRect = intArrayOf(btnX, sy, btnX + btnW, sy + btnH)
+            }
             val cur = valueGetter()
             if (cur.isNotBlank()) {
                 val nameEnd = leftX + 2 + stw(tr, name) + 8
@@ -4348,7 +4352,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             for ((r, id) in rowRects) {
                 if (mx >= r[0] && mx <= r[2] && my >= r[1] && my <= r[3]) {
                     valueSetter(id)
-                    fishmod.utils.sound.SoundManager.play(fishmod.utils.sound.SoundManager.preset(id), 1f, 1f)
+                    if (soundPreview) fishmod.utils.sound.SoundManager.play(fishmod.utils.sound.SoundManager.preset(id), 1f, 1f)
                     cacheKey = null
                     return true
                 }
