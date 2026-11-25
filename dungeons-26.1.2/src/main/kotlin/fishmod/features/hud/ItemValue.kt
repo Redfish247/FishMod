@@ -2,14 +2,18 @@ package fishmod.features.hud
 
 import fishmod.features.dungeon.trackers.CroesusPrices
 import fishmod.utils.data.ItemTools
+import fishmod.pv.networth.InventoryDecoder
+import fishmod.pv.networth.ItemWorth
+import fishmod.pv.price.ItemPricer
 import fishmod.utils.debug.FishDiag
+import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 
 object ItemValue {
 
     @JvmStatic
     fun estimate(stack: ItemStack): Double = try {
-        estimateInner(stack)
+        maxOf(estimateInner(stack), fullWorth(stack))
     } catch (e: Exception) {
         FishDiag.fail("ItemValue.1", "value estimate failed for ${stack.hoverName.string}", e)
         0.0
@@ -20,6 +24,18 @@ object ItemValue {
         if (raw.isEmpty()) return 0.0
         val o = com.google.gson.JsonParser.parseString(raw).asJsonObject
         return fishmod.pv.networth.PetWorth.value(o, true)
+    }
+
+    // Full networth calc as a floor: covers drill parts, gem slots, coatings etc. the quick path misses.
+    private fun fullWorth(stack: ItemStack): Double {
+        if (stack.isEmpty || !ItemPricer.isReady()) return 0.0
+        val id = ItemTools.getId(stack) ?: return 0.0
+        if (id == "PET" || id == "ENCHANTED_BOOK") return 0.0
+        val tag = stack.fishmodCustomDataTag() ?: return 0.0
+        val lore = stack.get(DataComponents.LORE)?.lines()?.map { it.string } ?: emptyList()
+        val v = ItemWorth.value(InventoryDecoder.Stack(id, 1, tag, lore, false, stack.hoverName.string))
+        FishDiag.check(!v.isNaN() && !v.isInfinite(), "ItemValue.6") { "ItemWorth.value returned $v for $id" }
+        return if (v.isNaN() || v.isInfinite()) 0.0 else v
     }
 
     // Single-enchant books price as ENCHANTMENT_<NAME>_<LVL>; everything else uses its SkyBlock id.
