@@ -80,6 +80,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         try { buildCategories() } catch (t: Throwable) { FishDiag.fail("FishModScreen.2", "buildCategories failed after ${columns.size} columns", t) }
         try { applySavedColumnOrder() } catch (t: Throwable) { FishDiag.fail("FishModScreen.3", "applySavedColumnOrder failed for '${FishSettings.fmColumnOrder}'", t) }
         loadFoldedColumns()
+        try { addEditHudButtons() } catch (t: Throwable) { FishDiag.fail("FishModScreen.12", "addEditHudButtons failed", t) }
         fishmod.utils.TickScheduler.scheduleTask({
             if (paintCount == 0 && Minecraft.getInstance().curScreen === this) {
                 FishDiag.fail("FishModScreen.1", "paintUiOverlay never invoked 40 ticks after open (GameRendererUiMixin hook did not fire)")
@@ -89,6 +90,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 ))
             }
         }, 40)
+    }
+
+    private fun addEditHudButtons() {
+        for (c in columns) for (f in c.features) {
+            val e = FishHudEditor.findEntry(f.name) ?: continue
+            if (f.sub.any { it is ButtonSetting && it.name == "Edit HUD" }) continue
+            f.sub.add(0, ButtonSetting("Edit HUD", "Move and resize this HUD on screen", "Edit HUD", Runnable {
+                Minecraft.getInstance().showScreen(FishHudEditor(this, e.name()))
+            }))
+        }
     }
 
     private fun saveTwitchConfig() {
@@ -135,7 +146,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
             f.sub.add(SubcategoryHeader("HUD Editor"))
-            f.sub.add(ToggleSetting("Pick Enabled HUDs", "Opening the HUD editor picks the HUDs currently showing on your screen (not every enabled one)", "hudEditorPickLive"))
             f.sub.add(SubcategoryHeader("GUI Scale"))
             f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", "guiScaleMain", 50, 150, 5).deferred())
             f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", "guiScaleChatCommands", 50, 150, 5).deferred())

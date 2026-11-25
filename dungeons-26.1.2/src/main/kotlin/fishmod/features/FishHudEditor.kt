@@ -14,9 +14,7 @@ import fishmod.utils.rendering.UiRenderer
 import fishmod.utils.rendering.UiScale
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
@@ -27,7 +25,7 @@ import java.util.function.DoubleSupplier
 import java.util.function.IntConsumer
 import java.util.function.IntSupplier
 
-class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edit HUD")), HasUiOverlay {
+class FishHudEditor(private val parent: Screen?, private val focus: String? = null) : Screen(Component.literal("Edit HUD")), HasUiOverlay {
 
     class HudEntry @JvmOverloads constructor(
         private val nameVal: String,
@@ -271,46 +269,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
             "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
         )
 
-        private val GROUPS: List<Pair<String, List<String>>> = listOf(
-            "HUD & Overlays" to listOf(
-                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Alerts", "Party Warp Timer", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
-                "Spotify", "Stopwatch", "Achievement Popup", "Arrow HUD",
-            ),
-            "Party & Social" to listOf("Party Finder List"),
-            "Dungeons" to listOf(
-                "Run Splits", "Est. Total (follows Splits)", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
-                "Spirit Bear", "Mask & Phoenix Timer", "Dungeon Breaker", "Secret Overlay", "Quiz Timer",
-            ),
-            "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
-            "Floor 7" to listOf(
-                "Boss Tick Clock", "Wither Dragon Timer", "Crystal Respawn", "Crystal Not Placed",
-                "Storm Kill Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crush Banner", "Pillar Blast Timer", "Terminals Open In",
-                "Section Count", "Goldor Splits", "Terminal Tracker", "P3 Section", "Device Done",
-                "Melody Callout", "Section Cleared", "Storm Over Alert", "Veno Stack Count", "Players Leaped",
-                "Relic Countdown", "Necron Drag Timer", "Necron Drop Lava/Platform",
-            ),
-            "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries", "Slayer RNG Meter", "Broodmother", "Summonings", "Zealot Counter"),
-            "The End" to listOf("Dragon Profit"),
-            "Hunting & Foraging" to listOf("Foraging Tracker", "Treecapitator Cooldown", "Shard Tracker", "Fusion: Cancel", "Fusion: Confirm", "Fusion: Repeat"),
-            "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title", "Crown of Avarice"),
-            "Fishing" to listOf("Fishing Sea Creatures", "Fishing Profit", "Fishing Efficiency", "Barn Fishing Timer", "Fishing Festival", "Fishing Area Tracker",
-                "Fishing Creature Alert", "Fishing Rare Drop Alert", "Fishing Hotspot Alert", "Fishing Wormhole Alert", "Fishing Trophy Alert", "Fishing Deployable Alert", "Fishing Bait Alert",
-                "Current Bait", "Golden Fish Timer", "Sea Creature Count", "Totem of Corruption", "Trophy Fish HUD"),
-            "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions", "Ghost Counter", "Mineshaft Timer"),
-            "Farming" to listOf(
-                "Visitor Timer", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
-                "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
-                "Log Book", "Sensitivity", "Mooshroom Cow Perk", "Farming Speed", "Mantid Bonus", "Wheat", "Yaw / Pitch",
-            ),
-            "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
-            "Rift" to listOf("Rift Guide", "Rift Timer", "Vermin Tracker", "Agaricus Cap Timer", "Bacte Helper", "Berberis Highlighter", "Blood Effigy Spots", "Burger Warning",
-                "Caducous Stem Highlighter", "Colosseum Kill Zone Warning", "Crux Helper", "Fleespook Tracker", "Half-Eaten Cave Hay Warning", "Leech Supreme Helper",
-                "Mirrorverse Parkour", "Punchcard Marker", "Rift Nametag Stats", "Snake Helper", "Sun Gecko Helper", "Vampire Slayer Helper"),
-            "Events" to listOf("SkyBlock Date", "Gift Tracker"),
-            "Alerts & Reminders" to AlertTitles.NAMES,
-            "Extras" to listOf("Item Pickup Log", "Skill Progress", "Todos"),
-        )
-
         const val SCOREBOARD_W = 118
         const val SCORE_TITLE_W = 200
 
@@ -328,22 +286,12 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         private const val BTN_H = 18
         private const val BTN_GAP = 6
 
-        private const val SIDE_W_MIN = 110
-        private const val SIDE_W_MAX = 200
-        private const val SIDE_ROW = 14
-        private const val SIDE_TOP = 58
-        private const val SEARCH_Y = 20
-        private const val SEARCH_H = 14
-        private const val HANDLE_W = 10
-        private const val HANDLE_H = 44
-
         private val ACCENT get() = ScreenTheme.ACCENT
         private val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         private val TEXT get() = ScreenTheme.TEXT_COLOR
         private val SUBTEXT get() = ScreenTheme.SUBTEXT_COLOR
         private val GUIDE = 0xFFFF4FB0.toInt()
         private val GRID_LINE = 0x14FFFFFF
-        private val SIDE_BG get() = ScreenTheme.SOLID_PANEL
         private val ROW_HOV = 0x1AFFFFFF
         private val ROW_PICKED = 0x26D6D6D6
         private val HOVER_OUTLINE = 0xB3FFFFFF.toInt()
@@ -356,8 +304,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         private val CAP_BORDER = 0xFF3F3F3F.toInt()
 
         private val CONTROLS = listOf(
-            "Hover left edge" to "Pick HUDs",
-            "Shift/Ctrl+click" to "Add/remove HUDs",
             "Drag" to "Move",
             "Scroll / corner" to "Resize",
             "Tab" to "Swap selected",
@@ -376,15 +322,20 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         private var showControls = true
         private var showGrid = false
         private val picked = LinkedHashSet<String>()
+        @Volatile private var liveNames: Set<String> = emptySet()
+        private var sampleTick = 0
+
+        init {
+            net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
+                if (mc.level == null || mc.screen != null || ++sampleTick % 10 != 0) return@register
+                FishDiag.guard("FishHudEditor.11", "live HUD sample failed") {
+                    liveNames = ENTRIES.filter { !it.locked() && it.isEnabledInList() && it.isStablyDrawn() }.mapTo(HashSet()) { it.name() }
+                }
+            }
+        }
     }
 
     private data class Pos(val x: Int, val y: Int, val scale: Double)
-
-    private sealed class Row {
-        class Header(val text: String, val items: List<HudEntry>) : Row()
-        class Action(val text: String, val run: () -> Unit) : Row()
-        class Hud(val e: HudEntry) : Row()
-    }
 
     private var selected: HudEntry? = null
     private var dragging: HudEntry? = null
@@ -395,9 +346,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
     private var guideX: Int? = null
     private var guideY: Int? = null
     private var resetArmed = false
-    private var sideOpen = false
-    private var sideScroll = 0
-    private val expandedGroups = HashSet<String>()
 
     private var k = 1f
     private fun refreshK() { k = UiScale.userScale(this) }
@@ -405,119 +353,22 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
     private fun cW() = (this.width / k).toInt()
     private fun cH() = (this.height / k).toInt()
 
-    private var sideWFor = -1
-    private var sideWCache = SIDE_W_MIN
-
-    private val sideW: Int
-        get() {
-            if (sideWFor == ENTRIES.size) return sideWCache
-            val offW = UiRecorder.textWidth("off", 5.5f) + 6f
-            val pickW = UiRecorder.textWidth("pick all", 5.5f)
-            var w = 8f + UiRecorder.textWidth("Pick HUDs to move", 7.5f) + 1f
-            w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to fold, \"pick all\" to pick it", 6f))
-            w = Math.max(w, 8f + UiRecorder.textWidth("Shift/Ctrl-click to add more", 6f))
-            for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 7.5f))
-            for (g in GROUPS.map { it.first } + listOf("Other", "No HUDs match")) {
-                w = Math.max(w, 8f + UiRecorder.textWidth(g, 7f) + 10f + 6f + pickW)
-            }
-            for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 7.5f) + 4f + offW)
-            sideWCache = Math.max(SIDE_W_MIN, Math.min(SIDE_W_MAX, Math.ceil(w + 10.0).toInt()))
-            sideWFor = ENTRIES.size
-            return sideWCache
-        }
-
-    private val search = EditBox(Minecraft.getInstance().font, 0, 0, 0, 0, Component.empty()).apply { setMaxLength(32) }
-    private var searchFocused = false
-
-    private fun focusSearch(on: Boolean) {
-        searchFocused = on
-        search.isFocused = on
-    }
-
     private val undoStack = ArrayDeque<List<Pos>>()
     private val redoStack = ArrayDeque<List<Pos>>()
 
     init {
-        picked.retainAll(ENTRIES.map { it.name() }.toSet())
-        // Optional: start with the HUDs that are showing on screen right now (enabled AND currently visible), not every enabled one
-        if (FishSettings.hudEditorPickLive) { picked.clear(); listed().filter { it.isEnabledInList() && it.isStablyDrawn() }.forEach { picked += it.name() } }
+        picked.clear()
+        picked += liveNames
+        focus?.let { f -> ENTRIES.firstOrNull { it.name() == f }?.let { picked += it.name(); selected = it } }
     }
 
     override fun isPauseScreen(): Boolean = false
 
     private fun available(): List<HudEntry> = ENTRIES
 
-    private fun listed(): List<HudEntry> {
-        val avail = available().filter { !it.locked() }
-        val seen = HashSet<HudEntry>()
-        val out = ArrayList<HudEntry>()
-        for ((_, names) in GROUPS) for (n in names) avail.firstOrNull { it.name() == n }?.let { if (seen.add(it)) out += it }
-        avail.filter { it !in seen }.sortedBy { it.name() }.forEach { out += it }
-        return out
-    }
-
     private fun shown(): List<HudEntry> = available().filter { e ->
         if (e.locked()) FOLLOWS.find(e.name())?.groupValues?.get(1)?.let { it in picked } == true
         else e.name() in picked
-    }
-
-    private var cachedRows: List<Row> = emptyList()
-    private var cachedRowsQuery: String? = null
-    private var cachedRowsAt = 0L
-
-    private fun sideQ(): String = search.value.trim()
-
-    private fun sidebarRows(): List<Row> {
-        val q = search.value.trim().lowercase()
-        val now = System.currentTimeMillis()
-        if (q == cachedRowsQuery && now - cachedRowsAt < 100L) return cachedRows
-        return buildSidebarRows(q).also {
-            cachedRows = it
-            cachedRowsQuery = q
-            cachedRowsAt = now
-        }
-    }
-
-    private fun buildSidebarRows(q: String): List<Row> {
-        val body = ArrayList<Row>()
-        val avail = listed()
-        val grouped = HashSet<HudEntry>()
-        fun addGroup(g: String, items: List<HudEntry>) {
-            val hit = if (q.isEmpty() || g.lowercase().contains(q)) items else items.filter { it.name().lowercase().contains(q) }
-            if (hit.isEmpty()) return
-            body += Row.Header(g, hit)
-            if (q.isNotEmpty() || g in expandedGroups) hit.forEach { body += Row.Hud(it) }
-        }
-        for ((g, names) in GROUPS) {
-            val items = names.mapNotNull { n -> avail.firstOrNull { it.name() == n && it !in grouped } }
-            grouped += items
-            addGroup(g, items)
-        }
-        addGroup("Other", avail.filter { it !in grouped })
-
-        val matches = body.filterIsInstance<Row.Header>().flatMap { it.items }
-        val rows = ArrayList<Row>()
-        if (matches.isNotEmpty()) {
-            rows += Row.Action(if (q.isEmpty()) "Show all" else "Show all matches") {
-                picked.clear(); matches.forEach { picked += it.name() }
-            }
-        }
-        rows += Row.Action("Hide all") { picked.clear(); selected = null }
-        if (matches.isEmpty()) rows += Row.Header("No HUDs match", emptyList())
-        return rows + body
-    }
-
-    private fun pickGroup(items: List<HudEntry>, add: Boolean) {
-        if (items.isEmpty()) return
-        if (!add) picked.clear()
-        items.forEach { picked += it.name() }
-        selected = items.first()
-    }
-
-    private fun shiftDown(): Boolean {
-        val w = Minecraft.getInstance().window
-        return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT) ||
-            fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_CONTROL) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_CONTROL)
     }
 
     private class CachedExample(val at: Long, val ex: HudExample?)
@@ -579,12 +430,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         e.setY().accept(d[1].toInt())
     }
 
-    private fun pickOnly(e: HudEntry) {
-        picked.clear()
-        picked += e.name()
-        selected = e
-    }
-
     private fun altDown(): Boolean {
         val w = Minecraft.getInstance().window
         return fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_LEFT_ALT) || fishmod.compat.GLFW.keyDown(w, GLFW.GLFW_KEY_RIGHT_ALT)
@@ -621,27 +466,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
     private fun btnY() = cH() - 28
 
     private fun inRect(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx in x..(x + w) && my in y..(y + h)
-
-    private fun handleY(): Int {
-        val rows = if (showControls) CONTROLS.size else 1
-        val cardTop = cH() - 6 - (10 + rows * 10 - 2)
-        return Math.min((cH() - HANDLE_H) / 2, cardTop - HANDLE_H - 6)
-    }
-
-    private fun sideMaxScroll(): Int = Math.max(0, sidebarRows().size * SIDE_ROW - (cH() - SIDE_TOP - 6))
-
-    private fun updateSide(mx: Int, my: Int) {
-        if (dragging != null || resizing != null) { sideOpen = false; return }
-        if (searchFocused) { sideOpen = true; return }
-        sideOpen = if (sideOpen) mx <= sideW else mx <= HANDLE_W && my in handleY()..(handleY() + HANDLE_H)
-    }
-
-    private fun onSearch(mx: Int, my: Int) = mx in 6..(sideW - 7) && my in SEARCH_Y..(SEARCH_Y + SEARCH_H)
-
-    private fun rowAt(my: Int): Row? {
-        if (my < SIDE_TOP) return null
-        return sidebarRows().getOrNull((my - SIDE_TOP + sideScroll) / SIDE_ROW)
-    }
 
     private fun onGrip(e: HudEntry, mx: Int, my: Int): Boolean {
         if (e.locked() || e.setScale() == null) return false
@@ -718,12 +542,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         }
     }
 
-    private fun ellipsize(s: String, maxW: Float, size: Float): String {
-        if (UiRecorder.textWidth(s, size) <= maxW) return s
-        val n = fishmod.utils.rendering.TextFit.prefixLength(s, "…", maxW, 0) { UiRecorder.textWidth(it, size) }
-        return s.substring(0, n) + "…"
-    }
-
     private fun centerText(s: String, cx: Float, y: Float, size: Float, color: Int) {
         UiRecorder.textBold(s, cx - UiRecorder.textWidthBold(s, size) / 2f, y, size, color)
     }
@@ -740,7 +558,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         refreshK()
         val cmx = toC(mouseX)
         val cmy = toC(mouseY)
-        updateSide(cmx, cmy)
         UiRecorder.clear()
         ctx.fill(0, 0, this.width, this.height, 0x60000000)
 
@@ -752,7 +569,7 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         }
 
         val sel = selected
-        val hover = if (dragging == null && resizing == null && !sideOpen) boxUnder(mouseX, mouseY) else null
+        val hover = if (dragging == null && resizing == null) boxUnder(mouseX, mouseY) else null
         for (e in shown()) {
             val x = e.getX().asInt
             val y = e.getY().asInt
@@ -782,7 +599,7 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         }
 
         if (dragging == null && resizing == null) {
-            val eh = if (sideOpen) null else hoverEntry(mouseX, mouseY)
+            val eh = hoverEntry(mouseX, mouseY)
             for (e in shown()) if (eyeShown(e, eh)) drawEye(ctx, e, mouseX, mouseY)
         }
 
@@ -790,9 +607,8 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         guideY?.let { ctx.fill(0, it, this.width, it + 1, GUIDE) }
 
         drawReadout(sel)
-        if (!sideOpen) drawControls()
+        drawControls()
         drawButtons(cmx, cmy)
-        renderSidebar(cmx, cmy)
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
@@ -864,82 +680,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         }
     }
 
-    private fun rowBg(y: Float, color: Int) = UiRecorder.fillRoundedRect(3f, y + 0.5f, sideW - 8f, SIDE_ROW - 1f, 3f, color)
-
-    private fun renderSidebar(mouseX: Int, mouseY: Int) {
-        if (!sideOpen) {
-            val hy = handleY().toFloat()
-            UiRecorder.dropShadow(-6f, hy, HANDLE_W + 6f, HANDLE_H.toFloat(), 5f, 6f, 0x50000000)
-            UiRecorder.roundedRectRing(-6f, hy, HANDLE_W + 6f, HANDLE_H.toFloat(), 5f, 1f, SIDE_BG, ACCENT)
-            UiRecorder.chevron(2.5f, hy + HANDLE_H / 2f, false, ACCENT_HOVER)
-            return
-        }
-        sideScroll = Math.max(0, Math.min(sideMaxScroll(), sideScroll))
-        val sh = cH().toFloat()
-        UiRecorder.dropShadow(-10f, 4f, sideW + 10f, sh - 8f, 8f, 18f, 0x73000000)
-        UiRecorder.roundedRectRing(-10f, 4f, sideW + 10f, sh - 8f, 8f, 1f, SIDE_BG, ACCENT)
-        UiRecorder.textBold("Pick HUDs to move", 8f, 9f, 7.5f, TEXT)
-
-        val sw = sideW - 13
-        val sHov = onSearch(mouseX, mouseY)
-        val border = if (searchFocused) ACCENT else if (sHov) 0xFF5F5F5F.toInt() else CAP_BORDER
-        UiRecorder.roundedRectRing(6f, SEARCH_Y.toFloat(), sw.toFloat(), SEARCH_H.toFloat(), 4f, 1f, 0xFF0E0E0E.toInt(), border)
-        if (search.value.isEmpty() && !searchFocused) {
-            UiRecorder.text("Search HUDs…", 9f, SEARCH_Y + (SEARCH_H - 6.5f) / 2f, 6.5f, FAINT)
-        } else {
-            ScreenTheme.nTextFieldContent(search, searchFocused, 6, SEARCH_Y, sw, SEARCH_H, 6.5f)
-        }
-        UiRecorder.text("Click a category to fold, \"pick all\" to pick it", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
-        UiRecorder.text("Shift/Ctrl-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
-
-        UiRecorder.pushScissor(0f, SIDE_TOP.toFloat(), sideW - 1f, sh - SIDE_TOP - 5f)
-        val hovRow = if (mouseX < sideW) rowAt(mouseY) else null
-        var y = SIDE_TOP - sideScroll
-        for (row in sidebarRows()) {
-            if (y + SIDE_ROW >= SIDE_TOP && y < cH()) {
-                val yf = y.toFloat()
-                val ty = yf + (SIDE_ROW - 7.5f) / 2f
-                val hov = row === hovRow
-                when (row) {
-                    is Row.Header -> {
-                        val clickable = row.items.isNotEmpty()
-                        if (clickable && hov) {
-                            rowBg(yf, ROW_HOV)
-                            val tag = "pick all"
-                            UiRecorder.text(tag, sideW - 9f - UiRecorder.textWidth(tag, 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
-                        }
-                        val all = clickable && row.items.all { it.name() in picked }
-                        val c = if (!clickable) 0xFF7C828A.toInt() else if (all) TEXT else LABEL
-                        if (clickable) UiRecorder.chevron(7f, yf + SIDE_ROW / 2f, sideQ().isNotEmpty() || row.text in expandedGroups, c)
-                        else UiRecorder.text("no HUDs", sideW - 9f - UiRecorder.textWidth("no HUDs", 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, 0xFF5F656C.toInt())
-                        UiRecorder.textBold(row.text, 17f, yf + (SIDE_ROW - 7f) / 2f, 7f, c)
-                    }
-                    is Row.Action -> {
-                        if (hov) rowBg(yf, ROW_HOV)
-                        UiRecorder.text(row.text, 8f, ty, 7.5f, if (hov) TEXT else SUBTEXT)
-                    }
-                    is Row.Hud -> {
-                        val on = row.e.name() in picked
-                        if (on) rowBg(yf, ROW_PICKED)
-                        if (hov) rowBg(yf, ROW_HOV)
-                        if (on) UiRecorder.fillRoundedRect(4f, yf + 2.5f, 2f, SIDE_ROW - 5f, 1f, ACCENT)
-                        val off = !row.e.isEnabledInList()
-                        val col = if (off) SUBTEXT else if (on) TEXT else LABEL
-                        val tw = UiRecorder.textWidth("off", 5.5f)
-                        val ox = sideW - 10f - tw - 6f
-                        UiRecorder.text(ellipsize(row.e.name(), ox - 4f - 12f, 7.5f), 12f, ty, 7.5f, col)
-                        if (off) {
-                            UiRecorder.fillRoundedRect(ox, yf + 2.5f, tw + 6f, SIDE_ROW - 5f, 2.5f, ScreenTheme.ink(0x26))
-                            UiRecorder.text("off", ox + 3f, yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
-                        }
-                    }
-                }
-            }
-            y += SIDE_ROW
-        }
-        UiRecorder.popScissor()
-    }
-
     override fun paintUiOverlay() {
         try {
             UiRenderer.paint(this.width, this.height, k)
@@ -962,29 +702,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         val my = click.y().toInt()
         val cmx = toC(click.x())
         val cmy = toC(click.y())
-
-        if (sideOpen && cmx <= sideW) {
-            if (onSearch(cmx, cmy)) { focusSearch(true); return true }
-            focusSearch(false)
-            when (val row = rowAt(cmy)) {
-                is Row.Action -> row.run()
-                is Row.Header -> {
-                    if (cmx >= sideW - 9f - UiRecorder.textWidth("pick all", 5.5f) - 4f) pickGroup(row.items, shiftDown())
-                    else if (row.items.isNotEmpty() && !expandedGroups.remove(row.text)) expandedGroups += row.text
-                    cachedRowsQuery = null
-                }
-                is Row.Hud -> {
-                    if (shiftDown()) {
-                        if (!picked.remove(row.e.name())) { picked += row.e.name(); selected = row.e }
-                        else if (selected === row.e) selected = null
-                    } else pickOnly(row.e)
-                }
-                else -> {}
-            }
-            return true
-        }
-
-        if (searchFocused) { focusSearch(false); return true }
 
         val by = btnY()
         if (inRect(cmx, cmy, doneX(), by, BTN_W, BTN_H)) { this.onClose(); return true }
@@ -1074,10 +791,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
 
     private fun scrollInner(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
         refreshK()
-        if (sideOpen && mouseX / k <= sideW) {
-            sideScroll = Math.max(0, Math.min(sideMaxScroll(), sideScroll - (vertical * SIDE_ROW * 2).toInt()))
-            return true
-        }
         val e = boxUnder(mouseX.toInt(), mouseY.toInt())
         val setScale = e?.setScale()
         if (e == null || e.locked() || setScale == null) {
@@ -1108,24 +821,6 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
         val shift = mods and GLFW.GLFW_MOD_SHIFT != 0
         val key = input.key()
 
-        if (searchFocused) {
-            when (key) {
-                GLFW.GLFW_KEY_ESCAPE -> { if (search.value.isNotEmpty()) search.value = "" else focusSearch(false); return true }
-                GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
-                    sidebarRows().firstNotNullOfOrNull { (it as? Row.Hud)?.e }?.let { pickOnly(it) }
-                    focusSearch(false)
-                    return true
-                }
-            }
-            search.keyPressed(input)
-            sideScroll = 0
-            return true
-        }
-        if (sideOpen && !ctrl && (key in GLFW.GLFW_KEY_A..GLFW.GLFW_KEY_Z || key in GLFW.GLFW_KEY_0..GLFW.GLFW_KEY_9)) {
-            focusSearch(true)
-            return true
-        }
-
         when (input.key()) {
             GLFW.GLFW_KEY_ESCAPE, GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> { this.onClose(); return true }
             GLFW.GLFW_KEY_F1 -> { showControls = !showControls; return true }
@@ -1155,22 +850,9 @@ class FishHudEditor(private val parent: Screen?) : Screen(Component.literal("Edi
 
     private fun swap(dir: Int) {
         val movable = shown().filter { !it.locked() }
-        if (movable.size > 1) {
-            val i = movable.indexOf(selected)
-            selected = movable[if (i < 0) 0 else Math.floorMod(i + dir, movable.size)]
-            return
-        }
-        val all = listed()
-        if (all.isEmpty()) return
-        val i = all.indexOfFirst { it.name() in picked }
-        pickOnly(all[if (i < 0) 0 else Math.floorMod(i + dir, all.size)])
-    }
-
-    override fun charTyped(input: CharacterEvent): Boolean {
-        if (!searchFocused) return super.charTyped(input)
-        search.charTyped(input)
-        sideScroll = 0
-        return true
+        if (movable.isEmpty()) return
+        val i = movable.indexOf(selected)
+        selected = movable[if (i < 0) 0 else Math.floorMod(i + dir, movable.size)]
     }
 
     private fun undo() {

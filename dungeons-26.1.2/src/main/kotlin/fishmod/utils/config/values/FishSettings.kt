@@ -86,7 +86,6 @@ object FishSettings {
     @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
     @ConfigValue @JvmField var guiScalePartyLoot: Int = 100
     @ConfigValue @JvmField var guiScaleHudEditor: Int = 100
-    @ConfigValue @JvmField var hudEditorPickLive: Boolean = true
     @ConfigValue @JvmField var guiScaleItemCustomize: Int = 100
     @ConfigValue @JvmField var guiScaleStorage: Int = 100
     @ConfigValue @JvmField var guiScaleAuction: Int = 100
