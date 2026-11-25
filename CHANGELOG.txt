@@ -1,17 +1,18 @@
-﻿FishMod Changelog - 2026-11-24
+FishMod Changelog - 2026-11-25
 ==================================
 Fixed:
-- Deployables HUD now also recognises flares by their head texture (Warning Flare) and matches the flare name ignoring case, so a flare you stand next to is picked up.
-Reported bugs fixed (from fishmod.dev):
-- #711 / GitHub issue #262: deployables HUD never picks up a flare (detection hardened, untested in game)
-Known issues (not fixed yet):
-- Alert Flare and SOS Flare head textures are not known yet; they are only detected by stand name. If still missed, send a report while standing next to one.
+- Slayer Spawn Box moved into Slayer QOL as its own subcategory (#731 #717 #306).
+- Chat rule sound now plays through the mod sound manager (#729).
+- Hide titles also clears a title that is already on screen (#730).
+- Ping tracker starts when the mod loads (#727).
+- Item price tooltip now counts drill parts, wood singularity, transmission tuner, jalapeno, farming books and talisman enrichment (#726).
+- Item list no longer builds its index from a single loaded item (#728).
+- Smoldering VI now triggers the rare drop animation (#724).
+Not fixed (needs Hypixel data, not guessed): #725 boss health 500k vs 50m, #723 fire pillar announcement, #719 tab sort in Rift, #718 flare in deployables HUD.
 Test in game:
-1. Turn on Deployables HUD with Flares enabled, place a Warning Flare, stand next to it: it should appear with a countdown.
-2. Repeat with Alert and SOS flares and report if they do not show.
+1. Slayer QOL: Slayer Spawn Box shows the box and the spawn mark.
+2. Hover a drill or farming tool with parts: price includes them.
+3. Kill a Smoldering VI drop source on Crimson Isle: animation plays.
 Run notes:
-- Start commit 038f4592 (tree was clean), fix commit c91abbf0. Build :dungeons-26.1.2 + :dungeons-26.2 SUCCESSFUL. Jar NOT copied: the Modrinth folder "Skyblock 1.21.8\mods" does not exist.
-- features/hud/DeployablesHud.kt: added scanFlareHeads (unnamed stands wearing the Warning Flare skull texture) and case-insensitive FLARE_RE. Card 711 / issue 262.
-- Roadmap API: 13 cards, all already testing (6 Bug, 7 other); nothing to move. Only open GitHub issue was #262. No project CLAUDE.md found in repo; vault read (Known Bugs, Architecture Decisions).
-- Skipped: broad file-by-file source sweep, since no further reports were open and the repo has had many audits.
-- Notes for Obsidian: Flares on Hypixel are likely unnamed skull stands; Warning Flare texture hash 9d2bf986...3f6b; Alert and SOS hashes still needed.
+- Build :dungeons-26.1.2 + :dungeons-26.2 SUCCESSFUL. Jar 1.8.75-26.2 copied over the Skyblock mods one (same version). Everything untested in game.
+- For #723 send the exact armour stand text shown for the pillar; for #725 /fm debug output while the boss shows low health.
