@@ -114,13 +114,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         run {
             val f = Feature("UI Customization", null, null)
-            f.sub.add(SubcategoryHeader("Background", true))
+            f.sub.add(SubcategoryHeader("Background"))
             f.sub.add(DropdownSetting("Background Preset", "", arrayOf("Graphite", "Charcoal", "Obsidian", "Moss", "Wine", "Deep Sea", "Custom"),
                 { FishSettings.fmBgPreset },
                 { v -> FishSettings.fmBgPreset = v }))
             f.sub.add(ColorPickerSetting("Custom Color", "", "fmBgCustomColor").gatedBy { FishSettings.fmBgPreset == "Custom" })
             f.sub.add(SliderIntSetting("Background Alpha %", "20% see-through - 100% solid", "fmBgAlpha", 20, 100))
-            f.sub.add(SubcategoryHeader("Accent", true))
+            f.sub.add(SubcategoryHeader("Accent"))
             f.sub.add(ColorPickerSetting("Accent Color", "", "fmButtonColor"))
             f.sub.add(SliderIntSetting("Accent Opacity %", "0% invisible - 100% solid", "fmButtonAlpha", 0, 100))
             f.sub.add(DropdownSetting("Switch Colors", "Accent = on switches use the accent colour, off is a theme grey. Custom = pick your own on and off colours", arrayOf("Accent", "Custom"),
@@ -128,14 +128,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.fmSwitchColorMode = v }))
             f.sub.add(ColorPickerSetting("Switch On Color", "", "fmSwitchOnColor").gatedBy { FishSettings.fmSwitchColorMode == "Custom" })
             f.sub.add(ColorPickerSetting("Switch Off Color", "", "fmSwitchOffColor").gatedBy { FishSettings.fmSwitchColorMode == "Custom" })
-            f.sub.add(SubcategoryHeader("Features", true))
+            f.sub.add(SubcategoryHeader("Features"))
             f.sub.add(ColorPickerSetting("Feature Background", "Colour behind each feature card", "fmCardColor"))
             f.sub.add(SliderIntSetting("Feature Opacity %", "0% invisible - 100% solid", "fmCardAlpha", 0, 100))
-            f.sub.add(SubcategoryHeader("Animation", true))
+            f.sub.add(SubcategoryHeader("Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
-            f.sub.add(SubcategoryHeader("HUD Editor", true))
+            f.sub.add(SubcategoryHeader("HUD Editor"))
             f.sub.add(ToggleSetting("Pick Enabled HUDs", "Opening the HUD editor picks every enabled HUD so they show right away", "hudEditorPickEnabled"))
-            f.sub.add(SubcategoryHeader("GUI Scale", true))
+            f.sub.add(SubcategoryHeader("GUI Scale"))
             f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", "guiScaleMain", 50, 150, 5).deferred())
             f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", "guiScaleChatCommands", 50, 150, 5).deferred())
             f.sub.add(SliderIntSetting("Party & Loot Scale %", "100% = default size", "guiScalePartyLoot", 50, 150, 5).deferred())
@@ -167,7 +167,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Rare Drop Animation", "rareDropAnim")
             f.sub.add(ToggleSetting("Show Title", "Also show a title with the dropped item's name", "rareDropAnimTitle"))
             for ((cat, drops) in fishmod.features.general.RareDropAnimation.CATEGORIES) {
-                f.sub.add(SubcategoryHeader(cat, true))
+                f.sub.add(SubcategoryHeader(cat))
                 for (n in drops)
                     f.sub.add(ToggleSetting(n, "", { fishmod.features.general.RareDropAnimation.isOn(n) }, { v -> fishmod.features.general.RareDropAnimation.setOn(n, v) }))
             }
@@ -3753,7 +3753,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
     }
 
-    class SubcategoryHeader(name: String, private val showTitle: Boolean = false) : Setting(name, "") {
+    class SubcategoryHeader(name: String) : Setting(name, "") {
         private fun w(t: String) = Math.ceil((if (note()) UiRecorder.textWidth(t, size()) else UiRecorder.textWidthBold(t.uppercase(), size())).toDouble()).toInt()
 
         private var lastW = DET_W - 20
@@ -3764,14 +3764,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private fun size() = if (note()) 8.4f else 11.5f
 
         override fun getHeight(): Int {
-            if (!note() && !showTitle) return 0 // short title headers hidden unless opted in; long notes stay
             val n = linesFor(lastW).size
             return if (n <= 1) SUBCAT_HEIGHT else SUBCAT_HEIGHT_2 + (n - 2) * 10
         }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             lastW = rightX - leftX - 4
-            if (!note() && !showTitle) return
             val h = getHeight()
             val lines = linesFor(lastW)
             val note = note(); val sz = size()
