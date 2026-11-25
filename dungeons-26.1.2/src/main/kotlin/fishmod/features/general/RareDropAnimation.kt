@@ -20,6 +20,8 @@ object RareDropAnimation {
     private val MF = Regex("""\s*\(\+.*$""")
     private val BOOK = Regex("""^Enchanted Book \((.+)\)$""")
     private val COUNT = Regex("""^\(?[\d,]+x """)
+    // book drops can show as "(Smoldering VI)" without the Enchanted Book prefix
+    private val PAREN = Regex("""^\(([^()]+)\)$""")
     private val WOW = Regex("""^WOW! (.+?) found (?:a|an) (.+?)(?: #\d+)?!.*$""")
     private val TRAIL_NUM = Regex("""\s(I{1,3}|IV|V|VI{0,3}|IX|X)$""")
     private val ROMAN = mapOf("I" to 1, "II" to 2, "III" to 3, "IV" to 4, "V" to 5, "VI" to 6, "VII" to 7, "VIII" to 8, "IX" to 9, "X" to 10)
@@ -67,7 +69,7 @@ object RareDropAnimation {
             return w.groupValues[2].trim()
         }
         val raw = (DROP.matchEntire(plain) ?: PET.matchEntire(plain))?.groupValues?.get(1) ?: return null
-        val noMf = raw.replace(MF, "").trim()
+        val noMf = raw.replace(MF, "").trim().let { PAREN.matchEntire(it)?.groupValues?.get(1)?.trim() ?: it }
         val name = BOOK.matchEntire(noMf)?.groupValues?.get(1)
             ?: if (COUNT.containsMatchIn(noMf)) noMf.replace(COUNT, "").removeSuffix(")").trim() else noMf
         return name.takeIf { it.isNotEmpty() }

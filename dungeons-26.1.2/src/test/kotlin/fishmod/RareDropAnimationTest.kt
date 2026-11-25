@@ -12,6 +12,7 @@ class RareDropAnimationTest {
         assertEquals("Flash 1", RareDropAnimation.dropName("RARE DROP! Enchanted Book (Flash 1) (+392 ✯ Magic Find)"))
         assertEquals("Megalodon", RareDropAnimation.dropName("PET DROP! LEGENDARY Megalodon"))
         assertEquals("Baby Yeti", RareDropAnimation.dropName("PET DROP! Baby Yeti"))
+        assertEquals("Smoldering VI", RareDropAnimation.dropName("CRAZY RARE DROP! (Smoldering VI) (+175 ✯ Magic Find)"))
         assertNull(RareDropAnimation.dropName("[MVP+] Foo: RARE DROP! Magma Core"))
         assertNull(RareDropAnimation.dropName("You found a thing"))
     }
