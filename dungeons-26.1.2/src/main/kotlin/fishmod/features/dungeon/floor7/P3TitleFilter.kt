@@ -18,12 +18,13 @@ object P3TitleFilter {
     fun init() {
         FishEvents.chat.register { msg ->
             when (msg.chatPlain.trim()) {
-                "[BOSS] Goldor: Who dares trespass into my domain?" -> inP3 = true
+                "[BOSS] Goldor: Who dares trespass into my domain?" -> if (SkyblockLocation.inDungeon()) inP3 = true
                 "[BOSS] Necron: You went further than any human before, congratulations." -> inP3 = false
             }
             false
         }
-        FishEvents.locationChange.register { _ ->
+        // world change only: a mid-run location resend used to clear P3 and let later titles through
+        FishEvents.worldChange.register {
             inP3 = false
             false
         }
@@ -41,7 +42,7 @@ object P3TitleFilter {
 
     @JvmStatic
     fun shouldHideTitle(title: Component): Boolean {
-        if (!Floor7Settings.muteTerminalTitles || !SkyblockLocation.inDungeon() || !(inP3 || BossPhase.inP3())) return false
+        if (!Floor7Settings.muteTerminalTitles || !(inP3 || BossPhase.inP3())) return false
         val s = title.string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "")
         return KEEP.none { s.contains(it) }
     }
