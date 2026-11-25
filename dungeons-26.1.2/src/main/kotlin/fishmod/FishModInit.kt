@@ -464,6 +464,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.31", "fishmod.features.hud.ItemQualityTooltip.init() failed") { fishmod.features.hud.ItemQualityTooltip.init() }
         FishDiag.guard("FishModInit.31b", "fishmod.features.hud.ExoticTooltip.init() failed") { fishmod.features.hud.ExoticTooltip.init() }
         FishDiag.guard("FishModInit.31c", "fishmod.features.hud.OriginalNameTooltip.init() failed") { fishmod.features.hud.OriginalNameTooltip.init() }
+        FishDiag.guard("FishModInit.31e", "fishmod.features.hud.StonksAuctionTooltip.init() failed") { fishmod.features.hud.StonksAuctionTooltip.init() }
         FishDiag.guard("FishModInit.31d", "fishmod.features.inventory.ItemOverlays.init() failed") { fishmod.features.inventory.ItemOverlays.init() }
         FishDiag.guard("FishModInit.32", "fishmod.features.hud.ItemPriceTooltip.init() failed") { fishmod.features.hud.ItemPriceTooltip.init() }
         FishDiag.guard("FishModInit.32b", "fishmod.features.hud.RecipeViewer.init() failed") { fishmod.features.hud.RecipeViewer.init() }
