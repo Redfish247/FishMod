@@ -145,24 +145,31 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Feature Opacity %", "0% invisible - 100% solid", "fmCardAlpha", 0, 100))
             f.sub.add(SubcategoryHeader("Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
-            f.sub.add(SubcategoryHeader("HUD Editor"))
             f.sub.add(SubcategoryHeader("GUI Scale"))
-            f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", "guiScaleMain", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", "guiScaleChatCommands", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Party & Loot Scale %", "100% = default size", "guiScalePartyLoot", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("HUD Editor Scale %", "100% = default size", "guiScaleHudEditor", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Item Customize Scale %", "100% = default size", "guiScaleItemCustomize", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Storage Viewer Scale %", "100% = default size", "guiScaleStorage", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", "guiScaleAuction", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", "guiScaleWaypoint", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Profile Viewer Scale %", "100% = default size", "guiScaleProfileViewer", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Diana Profit Scale %", "100% = default size", "guiScaleDianaProfit", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Diana Messages Scale %", "100% = default size", "guiScaleDianaMessages", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Achievements Scale %", "100% = default size", "guiScaleAchievements", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Inventory Button Editor Scale %", "100% = default size", "guiScaleInvButtons", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Market Scale %", "100% = default size", "guiScaleMarket", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Recipe Viewer Scale %", "100% = default size", "guiScaleRecipe", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Update Window Scale %", "100% = default size", "guiScaleUpdate", 50, 150, 5).deferred())
+            val scaleTargets = listOf(
+                "Main GUI" to "guiScaleMain",
+                "Chat & Commands" to "guiScaleChatCommands",
+                "Party & Loot" to "guiScalePartyLoot",
+                "HUD Editor" to "guiScaleHudEditor",
+                "Item Customize" to "guiScaleItemCustomize",
+                "Storage Viewer" to "guiScaleStorage",
+                "Auction Price" to "guiScaleAuction",
+                "Waypoint Title" to "guiScaleWaypoint",
+                "Profile Viewer" to "guiScaleProfileViewer",
+                "Diana Profit" to "guiScaleDianaProfit",
+                "Diana Messages" to "guiScaleDianaMessages",
+                "Achievements" to "guiScaleAchievements",
+                "Inventory Button Editor" to "guiScaleInvButtons",
+                "Market" to "guiScaleMarket",
+                "Recipe Viewer" to "guiScaleRecipe",
+                "Update Window" to "guiScaleUpdate"
+            )
+            var scaleSel = 0
+            val scaleRefs = scaleTargets.map { SettingRef<Int>(FishSettings::class.java, it.second, 100) }
+            f.sub.add(DropdownSetting("Window", "Pick which window to resize", scaleTargets.map { it.first }.toTypedArray(),
+                { scaleTargets[scaleSel].first },
+                { v -> scaleSel = scaleTargets.indexOfFirst { it.first == v }.coerceAtLeast(0) }))
+            f.sub.add(SliderIntSetting("Scale %", "100% = default size", { scaleRefs[scaleSel].get() }, { scaleRefs[scaleSel].set(it) }, 50, 150, 5).deferred())
             general.features.add(f)
         }
         run {
@@ -3125,7 +3132,45 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n < 0) "Conflicts (…)" else "Conflicts ($n)" }
     private var pgScroll = 0
     private fun playerPreviewW(): Int = minOf(340, ((cx1() - cx0()) * 0.46f).toInt())
-    private fun pageX1(pf: Feature): Int = if (pf.pageId == "player") cx1() - playerPreviewW() - 14 else cx1()
+    private fun uiPreviewW(): Int = minOf(400, ((cx1() - cx0()) * 0.48f).toInt())
+    private fun pageX1(pf: Feature): Int = when (pf.pageId) {
+        "player" -> cx1() - playerPreviewW() - 14
+        "ui" -> cx1() - uiPreviewW() - 14
+        else -> cx1()
+    }
+
+    private fun renderUiPreview(ctx: GuiGraphicsExtractor, top: Int) {
+        val w = uiPreviewW()
+        val x = cx1() - w
+        val h = minOf(cyBot() - top, 330)
+        if (h < 140) return
+        val b = NVG_BASE_TEXT_SIZE
+        UiRecorder.fillRoundedRect(x.toFloat(), top.toFloat(), w.toFloat(), h.toFloat(), 8f, ScreenTheme.windowBg())
+        UiRecorder.roundedRectRing(x.toFloat(), top.toFloat(), w.toFloat(), h.toFloat(), 8f, 1f, 0x00000000, ScreenTheme.ink(0x1F))
+        UiRecorder.textBold("Preview", x + 14f, top + 11f, 1.1f * b, TEXT_COLOR)
+        UiRecorder.fillRoundedRect(x + 14f, top + 28f, 34f, 2f, 1f, ScreenTheme.ACCENT)
+        val cw = w - 28
+        var y = top + 42
+        val cards = listOf("Example Feature" to true, "Another Feature" to false)
+        for ((name, on) in cards) {
+            UiRecorder.fillRoundedRect((x + 14).toFloat(), y.toFloat(), cw.toFloat(), 42f, 6f, cardFill())
+            UiRecorder.text(name, x + 26f, y + 9f, 1.05f * b, TEXT_COLOR)
+            UiRecorder.text(if (on) "Switched on" else "Switched off", x + 26f, y + 25f, 0.9f * b, SUBTEXT_COLOR)
+            drawTogglePill(ctx, x + 14 + cw - 42, y + 13, 28, 15, on, if (on) 1f else 0f, false)
+            y += 48
+        }
+        UiRecorder.fillRoundedRect((x + 14).toFloat(), y.toFloat(), cw.toFloat(), 52f, 6f, cardFill())
+        UiRecorder.text("Example Slider", x + 26f, y + 9f, 1.05f * b, TEXT_COLOR)
+        val sw = cw - 80
+        UiRecorder.fillRoundedRect(x + 26f, y + 32f, sw.toFloat(), 6f, 3f, ScreenTheme.ink(0x26))
+        UiRecorder.fillRoundedRect(x + 26f, y + 32f, sw * 0.6f, 6f, 3f, ScreenTheme.ACCENT)
+        UiRecorder.text("60", x + 26f + sw + 12f, y + 29f, 0.95f * b, SUBTEXT_COLOR)
+        y += 62
+        val bw = 96
+        UiRecorder.fillRoundedRect((x + 14).toFloat(), y.toFloat(), bw.toFloat(), 24f, 6f, ScreenTheme.ACCENT)
+        val bl = "Button"
+        UiRecorder.text(bl, x + 14 + (bw - UiRecorder.textWidth(bl, 1.0f * b)) / 2f, y + 7f, 1.0f * b, ScreenTheme.accentFg())
+    }
 
     private fun renderPlayerPreview(ctx: GuiGraphicsExtractor, top: Int, mouseX: Int, mouseY: Int) {
         val mc = Minecraft.getInstance()
@@ -3403,6 +3448,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     UiRecorder.pushScissor(cx0().toFloat(), top.toFloat(), (px1 - cx0()).toFloat(), (cyBot() - top).toFloat())
                     try { renderSubPanel(ctx, pf, cx0(), px1, top - pgScroll, pf.naturalSubHeight(), mouseX, if (mouseY >= top && mouseY < cyBot()) mouseY else -10000, top, cyBot()) } finally { UiRecorder.popScissor() }
                     if (pf.pageId == "player") renderPlayerPreview(ctx, top, mouseX, mouseY)
+                    else if (pf.pageId == "ui") renderUiPreview(ctx, top)
                 }
             } else if (page == "credits") creditsPage.render(cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
             else if (page == "conflicts") conflictsPage.render(ctx, cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
