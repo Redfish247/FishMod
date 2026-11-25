@@ -63,7 +63,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     fun ensureScanned() { if (!scanStarted) rescan() }
 
     private fun rescan() {
-        scanStarted = true
+        scanStarted = true; importCache.clear()
         if (scanning) return
         scanning = true
         val fish = try { fishProvider() } catch (t: Throwable) { FishDiag.fail("ConflictsPage.1", "feature list failed", t); emptyList() }
@@ -211,6 +211,15 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         small(bx, y + (HEAD_H - 15) / 2, bw, 15, if (modIgn) "Stop ignoring" else "Ignore mod", mx, my) { ModConflicts.setModIgnored(row.g.id, !modIgn) }
     }
 
+    private val importCache = HashMap<ConflictEntry, List<ModConflicts.ImportPair>>()
+
+    private fun importPairs(row: Row.Item): List<ModConflicts.ImportPair> {
+        val fish = row.e.fish ?: return emptyList()
+        return importCache.getOrPut(row.e) {
+            try { ModConflicts.matchOptions(row.e.setting, fish) } catch (t: Throwable) { FishDiag.fail("ConflictsPage.4", "import match failed ${fish.name}", t); emptyList() }
+        }
+    }
+
     private fun drawItem(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, row: Row.Item, mx: Int, my: Int) {
         val e = row.e
         val s = e.setting
@@ -236,7 +245,11 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         val canCopy = hudE != null && pos != null
         val copyW = 58
         val copyX = fishX - 46 - copyW
-        val labelRight = (if (fish != null) (if (canCopy) copyX - 8 else fishX - 62) else theirsX - 62).toFloat()
+        val pairs = if (fish != null) importPairs(row) else emptyList()
+        val canImport = pairs.isNotEmpty()
+        val impW = 50
+        val impX = (if (canCopy) copyX else fishX - 46) - 4 - impW
+        val labelRight = (if (fish != null) (if (canImport) impX - 8 else if (canCopy) copyX - 8 else fishX - 62) else theirsX - 62).toFloat()
 
         UiRecorder.text(ellipsize(s.label, labelRight - (x + 12), 10f), x + 12f, y + 5f, 10f, ScreenTheme.TEXT_COLOR)
         val sub = if (fish != null) "≈ FishMod: ${fish.name}" + (if (sib.size > 1) " · ${sib.size} settings" else "") else s.group.ifEmpty { s.file.substringAfterLast('/') }
@@ -244,6 +257,11 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
 
         if (fish != null) small(ignX, y + (ITEM_H - 15) / 2, ignW, 15, if (allIgnored) "Restore" else "Ignore", mx, my) {
             for (x in sib) ModConflicts.setIgnored(x.setting, !allIgnored)
+        }
+
+        if (canImport && fish != null) small(impX, y + (ITEM_H - 15) / 2, impW, 15, "Import (${pairs.size})", mx, my) {
+            val n = ModConflicts.importOptions(pairs)
+            status = "Imported $n ${row.g.name} settings into FishMod ${fish.name}: " + pairs.take(4).joinToString(", ") { it.fish.name } + (if (pairs.size > 4) ", ..." else "") + ". Check them in the FishMod menu."
         }
 
         if (canCopy && hudE != null && pos != null) small(copyX, y + (ITEM_H - 15) / 2, copyW, 15, "Copy HUD pos", mx, my) {
