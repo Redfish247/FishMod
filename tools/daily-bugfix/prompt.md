@@ -3,7 +3,7 @@ Find and fix every bug you can in this project. Work on it until there's nothing
 EXPLICIT AUTHORIZATION FROM ELI (overrides CLAUDE.md and memory rules for THIS run only): you MAY and MUST run `.\gradlew build` (use `:dungeons-26.1.2:build :dungeons-26.2:build`), copy the jar to the Prism Skyblock mods folder below, write and commit CHANGELOG.txt (use `git add -f` if ignored; do NOT create BUGFIX_REPORT.md or any other report file, everything goes in CHANGELOG.txt), update the roadmap board (Testing only), and run the open-changelog script. These are the whole point of this run; do not skip them. Do NOT launch Minecraft, do NOT touch the tester board, do NOT edit D:\Brain except appending to D:\Brain\FishModDungeons\Code-Notes.md. No code comments unless one credits a mod (explanations go in Code-Notes.md as `path:line (symbol): note`), never copy code from other mods, never add Claude to commits.
 
 Setup:
-- Stay on main. Do NOT create any branches. All commits go directly to main.
+- Commit on local main, never push `main` to `origin`. Do not create local branches. At the end, open ONE PR with this run's commits (see "Pull request" below) for Eli to review.
 - Before changing anything, run `git status` and commit any uncommitted changes first so the bugfix work starts clean.
 - Read CLAUDE.md and look over the project structure.
 - Read D:\Brain\README.md, then D:\Brain\FishModDungeons\Open.md, D:\Brain\Gotchas.md and D:\Brain\Lessons.md before you start: known bugs, past fixes, decisions, conventions, TODOs. Don't re-break anything a note says was fixed on purpose, and don't "fix" anything a note says is intentional.
@@ -83,5 +83,8 @@ Claude Changelog page (fishmod.dev, hidden owner page):
     "notes":   ["side notes and Notes for Obsidian"]
   }
   Use `id` only for fishmod.dev card numbers (omit it for bugs you found yourself).
+
+Pull request (Eli reviews before anything reaches origin/main):
+- After the changelog is committed, run `git worktree add "$env:TEMP\pr-bugfix-<YYYY-MM-DD>" -b feat/daily-bugfix-<YYYY-MM-DD> origin/main`, `git cherry-pick` this run's commits there (not other sessions' commits, and not the start-of-run cleanup commit), `git push origin feat/daily-bugfix-<YYYY-MM-DD>`, then `gh pr create --head feat/daily-bugfix-<YYYY-MM-DD> --base main --title "Daily bugfix <YYYY-MM-DD>"` with the changelog entry as the body. Remove the temporary worktree afterwards. Never merge, never push main. Put the PR link in the Run notes and the JSON report `summary`.
 
 Last step: run `powershell -NoProfile -ExecutionPolicy Bypass -File D:\fishmoddungeons\tools\daily-bugfix\open-changelog.ps1` (opens CHANGELOG.txt in VS Code on Display 1). If it prints "Couldn't find the VS Code window", wait a few seconds and run it again once.
