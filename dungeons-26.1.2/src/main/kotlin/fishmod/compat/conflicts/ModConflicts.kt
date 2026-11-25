@@ -15,6 +15,9 @@ import java.nio.file.Path
 /** A FishMod feature master toggle the conflicts page can read and flip. */
 class FishFeatureRef(val name: String, val get: () -> Boolean, val set: (Boolean) -> Unit)
 
+/** Position another mod stores for a HUD: raw x/y (and scale when it has one). */
+class OtherPos(val x: Double, val y: Double, val scale: Double?)
+
 /** One boolean setting found in another mod's config file. */
 class OtherSetting(
     val file: String,
@@ -23,11 +26,13 @@ class OtherSetting(
     val group: String,
     val enabled: Boolean,
     val writable: Boolean,
+    val pos: OtherPos? = null,
 ) {
     val key: String get() = file + "|" + path.joinToString("/")
 }
 
-class ConflictEntry(val setting: OtherSetting, val fish: FishFeatureRef?)
+/** [exact]: the names match fully (not just similar), so a bulk action may touch the FishMod feature. */
+class ConflictEntry(val setting: OtherSetting, val fish: FishFeatureRef?, val exact: Boolean = false)
 class ModGroup(val id: String, val name: String, val entries: List<ConflictEntry>, val note: String?)
 class ScanResult(val mods: List<ModGroup>)
 
@@ -54,6 +59,7 @@ object ModConflicts {
     private val SYNONYM = mapOf("esp" to "highlight", "glow" to "highlight")
 
     private class Raw(val path: List<String>, val label: String, val group: String, val enabled: Boolean)
+    private class PosRaw(val path: List<String>, val pos: OtherPos)
 
     // ---------- scanning ----------
 
@@ -75,10 +81,12 @@ object ModConflicts {
                 for (f in files) {
                     val rel = cfg.relativize(f).toString().replace('\\', '/')
                     val writable = rel.endsWith(".json", true)
-                    for (r in readSettings(f)) {
+                    val read = readSettings(f)
+                    for (r in read.first) {
                         if (!r.enabled) continue
-                        val s = OtherSetting(rel, r.path, r.label, r.group, true, writable)
-                        entries.add(ConflictEntry(s, bestMatch(tokens(r.label), fishTokens)))
+                        val s = OtherSetting(rel, r.path, r.label, r.group, true, writable, posFor(r.path, read.second))
+                        val m = bestMatch(tokens(r.label), fishTokens)
+                        entries.add(ConflictEntry(s, m?.first, (m?.second ?: 0f) >= 0.99f))
                     }
                     if (entries.size > 1500) break
                 }
@@ -132,14 +140,28 @@ object ModConflicts {
         return JsonParser.parseReader(r)
     }
 
-    private fun readSettings(f: Path): List<Raw> {
+    private fun readSettings(f: Path): Pair<List<Raw>, List<PosRaw>> {
         val out = ArrayList<Raw>()
+        val pos = ArrayList<PosRaw>()
         try {
-            flatten(parse(Files.readString(f)), emptyList(), emptyList(), out, 0)
+            flatten(parse(Files.readString(f)), emptyList(), emptyList(), out, pos, 0)
         } catch (t: Throwable) {
             FishDiag.fail("ModConflicts.2", "could not read ${f.fileName}", t)
         }
-        return out
+        return out to pos
+    }
+
+    private fun num(o: JsonObject, k: String): Double? = o.get(k)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asDouble
+
+    // A HUD position belongs to a toggle when it sits in the same feature object (up to two levels below the toggle's parent).
+    private fun posFor(path: List<String>, all: List<PosRaw>): OtherPos? {
+        val parent = path.dropLast(1)
+        var best: PosRaw? = null
+        for (p in all) {
+            if (p.path.size < parent.size || p.path.size > parent.size + 3 || p.path.subList(0, parent.size) != parent) continue
+            if (best == null || p.path.size < best.path.size) best = p
+        }
+        return best?.pos
     }
 
     private fun identOf(o: JsonObject): Pair<String, String>? {
@@ -150,11 +172,13 @@ object ModConflicts {
         return null
     }
 
-    private fun flatten(el: JsonElement, path: List<String>, names: List<String>, out: MutableList<Raw>, depth: Int) {
+    private fun flatten(el: JsonElement, path: List<String>, names: List<String>, out: MutableList<Raw>, pos: MutableList<PosRaw>, depth: Int) {
         if (depth > 10 || out.size > 4000) return
         if (el.isJsonObject) {
             val o = el.asJsonObject
             val ident = identOf(o)
+            val px = num(o, "x"); val py = num(o, "y")
+            if (px != null && py != null && pos.size < 2000) pos.add(PosRaw(path, OtherPos(px, py, num(o, "scale"))))
             for ((k, v) in o.entrySet()) {
                 if (v.isJsonPrimitive && v.asJsonPrimitive.isBoolean) {
                     val generic = k.lowercase() in GENERIC_KEYS
@@ -163,7 +187,7 @@ object ModConflicts {
                     if (NOISE.containsMatchIn(label.lowercase()) || NOISE.containsMatchIn(k.lowercase())) continue
                     out.add(Raw(path + k, label, base.dropLast(1).takeLast(2).joinToString(" › "), v.asBoolean))
                 } else if (v.isJsonObject || v.isJsonArray) {
-                    flatten(v, path + k, names + pretty(k), out, depth + 1)
+                    flatten(v, path + k, names + pretty(k), out, pos, depth + 1)
                 }
             }
             if (ident == null) return
@@ -173,7 +197,7 @@ object ModConflicts {
             for (e in a) {
                 if (!e.isJsonObject) continue
                 val (field, value) = identOf(e.asJsonObject) ?: continue
-                flatten(e, path + "@$field=$value", names + value, out, depth + 1)
+                flatten(e, path + "@$field=$value", names + value, out, pos, depth + 1)
             }
         }
     }
@@ -191,7 +215,7 @@ object ModConflicts {
             .map { t -> val x = SYNONYM[t] ?: t; if (x.length > 3 && x.endsWith("s") && !x.endsWith("ss")) x.dropLast(1) else x }
             .toSet()
 
-    private fun bestMatch(t: Set<String>, fish: List<Pair<FishFeatureRef, Set<String>>>): FishFeatureRef? {
+    private fun bestMatch(t: Set<String>, fish: List<Pair<FishFeatureRef, Set<String>>>): Pair<FishFeatureRef, Float>? {
         if (t.isEmpty()) return null
         var best: FishFeatureRef? = null
         var bestScore = 0f
@@ -203,7 +227,7 @@ object ModConflicts {
             val ok = jac >= 0.5f || (inter >= 2 && inter == minOf(t.size, ft.size))
             if (ok && jac > bestScore) { bestScore = jac; best = f }
         }
-        return best
+        return best?.let { it to bestScore }
     }
 
     // ---------- pending edits ----------
@@ -269,6 +293,52 @@ object ModConflicts {
         loadPending().remove(s.key)
         savePending()
     }
+
+    // ---------- ignored (user cannot or will not resolve) ----------
+
+    private const val IGNORED_FILE = "fishmod/conflict-ignored.json"
+    private var ignored: MutableSet<String>? = null
+
+    private fun ignoredPath(): Path = FabricLoader.getInstance().configDir.resolve(IGNORED_FILE)
+
+    @Synchronized
+    private fun loadIgnored(): MutableSet<String> {
+        ignored?.let { return it }
+        val set = LinkedHashSet<String>()
+        try {
+            val p = ignoredPath()
+            if (Files.exists(p)) for (e in JsonParser.parseString(Files.readString(p)).asJsonArray) set.add(e.asString)
+        } catch (t: Throwable) {
+            FishDiag.fail("ModConflicts.6", "could not read ignored conflicts", t)
+        }
+        ignored = set
+        return set
+    }
+
+    @Synchronized
+    private fun saveIgnored() {
+        val set = loadIgnored()
+        try {
+            val p = ignoredPath()
+            if (set.isEmpty()) { Files.deleteIfExists(p); return }
+            Files.createDirectories(p.parent)
+            val arr = JsonArray(); set.forEach { arr.add(it) }
+            Files.writeString(p, GSON.toJson(arr))
+        } catch (t: Throwable) {
+            FishDiag.fail("ModConflicts.7", "could not save ignored conflicts", t)
+        }
+    }
+
+    private fun modKey(modId: String) = "mod:$modId"
+
+    @JvmStatic @Synchronized fun isIgnored(s: OtherSetting): Boolean = loadIgnored().contains(s.key)
+    @JvmStatic @Synchronized fun isModIgnored(modId: String): Boolean = loadIgnored().contains(modKey(modId))
+
+    @JvmStatic @Synchronized
+    fun setIgnored(s: OtherSetting, on: Boolean) { if (if (on) loadIgnored().add(s.key) else loadIgnored().remove(s.key)) saveIgnored() }
+
+    @JvmStatic @Synchronized
+    fun setModIgnored(modId: String, on: Boolean) { if (if (on) loadIgnored().add(modKey(modId)) else loadIgnored().remove(modKey(modId))) saveIgnored() }
 
     /** Runs from the preLaunch entrypoint, before other mods load their config. */
     @JvmStatic
