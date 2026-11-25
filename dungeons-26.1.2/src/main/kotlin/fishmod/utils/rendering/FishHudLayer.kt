@@ -17,11 +17,17 @@ object FishHudLayer {
         var drawnMs = 0L
         var worldMs = 0L
         var runStartMs = 0L
-        fun reset() { x0 = Int.MAX_VALUE; y0 = Int.MAX_VALUE; x1 = Int.MIN_VALUE; y1 = Int.MIN_VALUE }
-        fun add(r: ScreenRectangle) { x0 = minOf(x0, r.left()); y0 = minOf(y0, r.top()); x1 = maxOf(x1, r.right()); y1 = maxOf(y1, r.bottom()) }
+        @Volatile var rects: List<IntArray> = emptyList()
+        private var building = ArrayList<IntArray>()
+        fun reset() { x0 = Int.MAX_VALUE; y0 = Int.MAX_VALUE; x1 = Int.MIN_VALUE; y1 = Int.MIN_VALUE; building = ArrayList() }
+        fun add(r: ScreenRectangle) {
+            x0 = minOf(x0, r.left()); y0 = minOf(y0, r.top()); x1 = maxOf(x1, r.right()); y1 = maxOf(y1, r.bottom())
+            if (building.size < 96) building.add(intArrayOf(r.left(), r.top(), r.right(), r.bottom()))
+        }
+        fun hitsRect(o: Box) = !o.empty() && rects.any { it[0] < o.x1 && o.x0 < it[2] && it[1] < o.y1 && o.y0 < it[3] }
         fun empty() = x1 <= x0 || y1 <= y0
         fun hits(o: Box) = !empty() && !o.empty() && x0 < o.x1 && o.x0 < x1 && y0 < o.y1 && o.y0 < y1
-        fun copy(o: Box) { x0 = o.x0; y0 = o.y0; x1 = o.x1; y1 = o.y1 }
+        fun copy(o: Box) { x0 = o.x0; y0 = o.y0; x1 = o.x1; y1 = o.y1; rects = o.building }
     }
 
     private var cur: Box? = null
@@ -69,13 +75,13 @@ object FishHudLayer {
     @JvmStatic fun drawnRecently(x: Int, y: Int, w: Int, h: Int): Boolean {
         val now = System.currentTimeMillis()
         val o = Box().also { it.x0 = x; it.y0 = y; it.x1 = x + w; it.y1 = y + h }
-        return liveBoxes.any { it.drawnMs != 0L && now - it.drawnMs < 500 && it.hits(o) }
+        return liveBoxes.any { it.drawnMs != 0L && now - it.drawnMs < 500 && it.hitsRect(o) }
     }
 
     @JvmStatic fun drawnStable(x: Int, y: Int, w: Int, h: Int): Boolean {
         val now = System.currentTimeMillis()
         val o = Box().also { it.x0 = x; it.y0 = y; it.x1 = x + w; it.y1 = y + h }
-        return liveBoxes.any { it.worldMs != 0L && now - it.worldMs < 2000 && it.worldMs - it.runStartMs >= 1500 && it.hits(o) }
+        return liveBoxes.any { it.worldMs != 0L && now - it.worldMs < 2000 && it.worldMs - it.runStartMs >= 1500 && it.hitsRect(o) }
     }
 
     private fun wrap(id: Identifier, el: HudElement): HudElement {
