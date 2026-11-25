@@ -1506,6 +1506,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Spotify", "spotifyLyricsEnabled")
             f.sub.add(SubcategoryHeader("Windows only, reads the Spotify desktop window title (no login). Move it in the HUD editor"))
+            f.sub.add(DropdownSetting("Style", "Compact = one line pill, Detailed = album art, title, artist and play time", arrayOf("Compact", "Detailed"),
+                { FishSettings.spotifyLyricsStyle },
+                { v -> FishSettings.spotifyLyricsStyle = v }))
             f.sub.add(ToggleSetting("Show Icon", "Animated bars before the title", "spotifyLyricsIcon"))
             f.sub.add(ToggleSetting("Lyrics", "Current lyric line under the pill (artist and song are sent to lrclib.net)", "spotifyLyricsLyrics"))
             f.sub.add(ToggleSetting("Connected Lyrics", "Lyric line inside the same box as the title (off = separate pill)", "spotifyLyricsConnected").gatedBy { FishSettings.spotifyLyricsLyrics })
