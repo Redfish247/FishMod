@@ -3096,10 +3096,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var page: String? = null
     private val creditsPage by lazy { CreditsPage() }
     private val reportPage by lazy { ReportPage(this.font) }
+    private fun conflictSubs(f: Feature): List<fishmod.compat.conflicts.FishSub> = f.sub.mapNotNull { st ->
+        when (st) {
+            is ToggleSetting -> fishmod.compat.conflicts.FishSub(st.name, 0, { st.getter() }, { st.setter(it as Boolean) })
+            is SliderIntSetting -> fishmod.compat.conflicts.FishSub(st.name, 1, { st.getter() }, { st.setter(it as Int) }, st.min.toDouble(), st.max.toDouble())
+            is SliderDoubleSetting -> fishmod.compat.conflicts.FishSub(st.name, 2, { st.getter() }, { st.setter(it as Double) }, st.min, st.max)
+            is ColorPickerSetting -> fishmod.compat.conflicts.FishSub(st.name, 3, { st.getter() }, { st.setter(it as Int) })
+            else -> null
+        }
+    }
     private val conflictsPage by lazy {
         ConflictsPage {
             columns.flatMap { c -> c.features }.filter { it.get != null && it.set != null }
-                .map { f -> fishmod.compat.conflicts.FishFeatureRef(f.name, f.get!!, f.set!!) }.distinctBy { it.name }
+                .map { f -> fishmod.compat.conflicts.FishFeatureRef(f.name, f.get!!, f.set!!, conflictSubs(f)) }.distinctBy { it.name }
         }
     }
     // Always shown so the check can be verified after a reload: "(…)" = scan running, "(0)" = scanned, none found
