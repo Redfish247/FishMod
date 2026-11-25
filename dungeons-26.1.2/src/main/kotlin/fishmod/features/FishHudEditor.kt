@@ -57,6 +57,7 @@ class FishHudEditor(private val parent: Screen?, private val focus: String? = nu
         fun isDrawnNow(): Boolean {
             val s = scale()
             if (fishmod.utils.rendering.FishHudLayer.drawnNamed(nameVal)) return true
+            if (!isVisible()) return false
             return fishmod.utils.rendering.FishHudLayer.drawnRecently(
                 getXVal.asInt, getYVal.asInt, Math.max(1, Math.round(wVal * s).toInt()), Math.max(1, Math.round(hVal * s).toInt())
             )
@@ -64,6 +65,7 @@ class FishHudEditor(private val parent: Screen?, private val focus: String? = nu
         fun isStablyDrawn(): Boolean {
             val s = scale()
             if (fishmod.utils.rendering.FishHudLayer.drawnNamed(nameVal)) return true
+            if (!isVisible()) return false
             return fishmod.utils.rendering.FishHudLayer.drawnStable(
                 getXVal.asInt, getYVal.asInt, Math.max(1, Math.round(wVal * s).toInt()), Math.max(1, Math.round(hVal * s).toInt())
             )
