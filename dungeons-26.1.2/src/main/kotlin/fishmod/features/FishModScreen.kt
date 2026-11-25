@@ -3148,7 +3148,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         } finally { ctx.disableScissor() }
         val font = mc.font
         val name = fishmod.cosmetic.NickState.asComponent().let { if (it.string.isEmpty()) player.name else it }
-        ctx.text(font, name, l.nx - font.width(name) / 2, l.ny, -1, true)
+        val nameW = font.width(name).coerceAtLeast(1)
+        val fit = minOf(1f, (l.sx1 - l.sx0 - 8) / nameW.toFloat())
+        ctx.pose().pushMatrix()
+        ctx.pose().translate(l.nx.toFloat(), l.ny.toFloat())
+        ctx.pose().scale(fit, fit)
+        ctx.text(font, name, -nameW / 2, 0, -1, true)
+        ctx.pose().popMatrix()
         return true
     }
 
