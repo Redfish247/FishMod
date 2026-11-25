@@ -301,7 +301,8 @@ object SkyItemList {
         if (built) return true
         CroesusPrices.refreshIfStale()
         NeuRepo.ensureLoaded()
-        if (!NeuRepo.isLoaded()) return false
+        // Wait for the full repo: one on-demand item fetch alone made the list index a single item (#297)
+        if (!NeuRepo.isFullyLoaded()) return false
         if (building.compareAndSet(false, true)) Thread({
             try { buildIndex() } catch (t: Throwable) { FishDiag.fail("SkyItemList.3", "item list index build failed", t) }
         }, "FishMod-ItemList").apply { isDaemon = true }.start()
@@ -387,7 +388,7 @@ object SkyItemList {
         val accent = FishSettings.skyItemListAccentColor or 0xFF000000.toInt()
         if (bgOn) ctx.fill(px, py, px + pw, py + ph, bg)
         if (!built && !ensureBuilt()) {
-            drawLoading(ctx, font, if (NeuRepo.isLoaded()) "Building item list" else "Loading item data")
+            drawLoading(ctx, font, if (NeuRepo.isFullyLoaded()) "Building item list" else "Loading item data")
             return
         }
         val bq = fishmod.features.inventory.InvSearchBar.term()

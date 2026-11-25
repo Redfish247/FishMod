@@ -96,6 +96,10 @@ object NeuRepoCache {
 	@JvmStatic
 	fun isReady(): Boolean = ITEMS.isNotEmpty()
 
+	// True once the full repo zip load finished (success or failure), not just one on-demand fetch
+	@JvmStatic
+	fun isFullyLoaded(): Boolean = fullLoadDone
+
 	@JvmStatic
 	fun size(): Int = ITEMS.size
 
