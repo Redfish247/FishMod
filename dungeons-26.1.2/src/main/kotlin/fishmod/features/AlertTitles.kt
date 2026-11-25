@@ -66,7 +66,7 @@ object AlertTitles {
         Def("MiningForagingMisc", "Alert: Honeyhive", "§6Honeyhive Instantly Refilled!"),
         Def("SlayerExtras", "Alert: Slayer Extras", "§cSlayer", "§7Example"),
         Def("SlayerMore", "Alert: Slayer Brood / No Quest", "§c§lNO SLAYER QUEST", "§7You're killing slayer mobs with no quest"),
-        Def("RareDropAnimation", "Alert: Rare Drop Animation", "§6§lRARE DROP!", "§fExample Item"),
+        Def("RareDropAnimation", "Alert: Rare Drop Animation", "§6§lDROP", "§6§lLEGENDARY §fExample Item"),
         Def("Other", "Alert: Other", "§eAlert!", "§7Example"),
     )
 
