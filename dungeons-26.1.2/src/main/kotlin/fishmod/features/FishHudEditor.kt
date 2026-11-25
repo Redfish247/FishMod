@@ -92,7 +92,8 @@ class FishHudEditor(private val parent: Screen?, private val focus: String? = nu
             }.sortedByDescending { it.second.third }
             val drawnCount = rows.count { it.second.third }
             val picked = rows.count { it.second.first && it.second.third }
-            return listOf("§3[HUD] ${rows.size} HUDs, $drawnCount drawn now, $picked would be picked (enabled+drawn)") + rows.map { it.third }
+            val big = fishmod.utils.rendering.FishHudLayer.bigRects()
+            return listOf("§3[HUD] ${rows.size} HUDs, $drawnCount drawn now, $picked would be picked (enabled+drawn)") + (if (big.isEmpty()) emptyList() else listOf("§c[HUD] ignored huge rects: " + big.joinToString(", "))) + rows.map { it.third }
         }
 
         @JvmStatic

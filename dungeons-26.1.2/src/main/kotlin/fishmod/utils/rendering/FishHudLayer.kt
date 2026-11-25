@@ -13,7 +13,7 @@ object FishHudLayer {
 
     private val TAB_EXEMPT = setOf("custom_crosshair","dungeon_waypoints_overlay", "cooldown_overlay_hotbar")
 
-    private class Box { var x0 = Int.MAX_VALUE; var y0 = Int.MAX_VALUE; var x1 = Int.MIN_VALUE; var y1 = Int.MIN_VALUE
+    private class Box { var id = ""; var x0 = Int.MAX_VALUE; var y0 = Int.MAX_VALUE; var x1 = Int.MIN_VALUE; var y1 = Int.MIN_VALUE
         var drawnMs = 0L
         var worldMs = 0L
         var runStartMs = 0L
@@ -22,6 +22,8 @@ object FishHudLayer {
         fun reset() { x0 = Int.MAX_VALUE; y0 = Int.MAX_VALUE; x1 = Int.MIN_VALUE; y1 = Int.MIN_VALUE; building = ArrayList() }
         fun add(r: ScreenRectangle) {
             x0 = minOf(x0, r.left()); y0 = minOf(y0, r.top()); x1 = maxOf(x1, r.right()); y1 = maxOf(y1, r.bottom())
+            val w = net.minecraft.client.Minecraft.getInstance().window
+            if (r.width().toLong() * r.height() > w.guiScaledWidth.toLong() * w.guiScaledHeight * 35 / 100) { bigSeen[id] = "${r.width()}x${r.height()}"; return }
             if (building.size < 96) building.add(intArrayOf(r.left(), r.top(), r.right(), r.bottom()))
         }
         fun hitsRect(o: Box) = !o.empty() && rects.any { it[0] < o.x1 && o.x0 < it[2] && it[1] < o.y1 && o.y0 < it[3] }
@@ -29,6 +31,9 @@ object FishHudLayer {
         fun hits(o: Box) = !empty() && !o.empty() && x0 < o.x1 && o.x0 < x1 && y0 < o.y1 && o.y0 < y1
         fun copy(o: Box) { x0 = o.x0; y0 = o.y0; x1 = o.x1; y1 = o.y1; rects = o.building }
     }
+
+    private val bigSeen = java.util.concurrent.ConcurrentHashMap<String, String>()
+    @JvmStatic fun bigRects(): List<String> = bigSeen.map { "${it.key} ${it.value}" }
 
     private var cur: Box? = null
     private val tabBuild = Box()
@@ -88,7 +93,7 @@ object FishHudLayer {
         val exempt = id.path in TAB_EXEMPT
         val box = Box()
         liveBoxes.add(box)
-        val frame = Box()
+        val frame = Box().also { it.id = id.toString() }
         return HudElement { ctx, tick ->
             if (!exempt && FishSettings.hideHudsUnderTab && tabOpen() && box.hits(tabBox)) return@HudElement
             if (!exempt && panelSeenMs != 0L && panelOpen() && box.hits(panelBox)) return@HudElement
