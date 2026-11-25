@@ -192,7 +192,7 @@ object ExtrasMenu {
         "Trevor the Trapper Helper" -> "Line to Trevor's hint area, then to where the animal was last seen"
         "Gift Tracker HUD" -> "Winter gifts opened this session: tiers, coins, North Stars"
         "Compact Teleport Pad Names" -> "Private-island teleport pads show only their destination"
-        "Hoppity Egg Waypoints" -> "Boxes visible Hoppity's Hunt chocolate eggs"
+        "Hoppity Egg Waypoints" -> "Boxes Hoppity's Hunt chocolate eggs once you have seen them"
         "Stacking Enchant Progress" -> "Tooltip line with progress to the next level of Expertise, Compact, Cultivating and similar"
         "Hidden Jerry Highlight" -> "Outlines your own Hidden Jerries in their colour"
         "Reindrake Alert + Warp Link" -> "Title and a clickable /warp winter when a Reindrake spawns"
