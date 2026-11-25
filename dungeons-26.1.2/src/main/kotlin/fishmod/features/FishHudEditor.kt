@@ -327,7 +327,7 @@ class FishHudEditor(private val parent: Screen?, private val focus: String? = nu
 
         init {
             net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
-                if (mc.level == null || mc.screen != null || ++sampleTick % 10 != 0) return@register
+                if (mc.level == null || mc.curScreen != null || ++sampleTick % 10 != 0) return@register
                 FishDiag.guard("FishHudEditor.11", "live HUD sample failed") {
                     liveNames = ENTRIES.filter { !it.locked() && it.isEnabledInList() && it.isStablyDrawn() }.mapTo(HashSet()) { it.name() }
                 }
