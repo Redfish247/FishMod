@@ -487,6 +487,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.43", "fishmod.features.general.GyroHelper.init() failed") { fishmod.features.general.GyroHelper.init() }
         FishDiag.guard("FishModInit.44", "fishmod.features.dungeon.MageBeam.init() failed") { fishmod.features.dungeon.MageBeam.init() }
         FishDiag.guard("FishModInit.45", "fishmod.features.hud.SpringBoots.init() failed") { fishmod.features.hud.SpringBoots.init() }
+        FishDiag.guard("FishModInit.45p", "fishmod.utils.PingTracker.init() failed") { fishmod.utils.PingTracker.init() }
         FishDiag.guard("FishModInit.46", "fishmod.features.general.Ragnarock.init() failed") { fishmod.features.general.Ragnarock.init() }
         FishDiag.guard("FishModInit.47", "fishmod.features.visuals.VisualTweaks.init() failed") { fishmod.features.visuals.VisualTweaks.init() }
         FishDiag.guard("FishModInit.48", "fishmod.features.visuals.RenderOptimizer.init() failed") { fishmod.features.visuals.RenderOptimizer.init() }
