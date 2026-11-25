@@ -140,7 +140,6 @@ object RareDropAnimation {
         return fallback(name) to null
     }
 
-    // Hypixel's items list calls every enchanted book COMMON, so books take their rarity from the NEU lore
     private fun tierOf(id: String): String? =
         (if (id.startsWith("ENCHANTMENT_")) SkyBlockItemFactory.neuTier(id).takeIf { it.isNotBlank() } else null)
             ?: ItemsDb.get(id)?.get("tier")?.asString
