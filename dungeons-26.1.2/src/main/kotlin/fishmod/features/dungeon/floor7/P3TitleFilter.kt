@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.floor7
 
+import fishmod.compat.clearHudTitles
 import fishmod.utils.events.chatPlain
 import fishmod.utils.SkyblockLocation
 import fishmod.utils.config.values.Floor7Settings
@@ -33,7 +34,7 @@ object P3TitleFilter {
         val hide = shouldHideTitle(title)
         if (hide && title.string.isNotBlank()) {
             val mc = net.minecraft.client.Minecraft.getInstance()
-            mc.gui.clearTitles()
+            mc.clearHudTitles()
         }
         return hide
     }

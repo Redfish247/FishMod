@@ -27,3 +27,4 @@ val net.minecraft.core.BlockPos.center: net.minecraft.world.phys.Vec3 get() = ne
 fun Minecraft.reloadChunks() { levelRenderer.allChanged() }
 
 val Minecraft.mainTarget: com.mojang.blaze3d.pipeline.RenderTarget get() = mainRenderTarget
+fun Minecraft.clearHudTitles() = gui.clearTitles()
