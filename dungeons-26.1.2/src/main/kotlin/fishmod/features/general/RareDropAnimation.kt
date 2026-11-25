@@ -137,7 +137,8 @@ object RareDropAnimation {
         for (id in candidates(name, pet)) {
             if (NeuItemResolver.candidates(id).none { NeuRepoCache.getOrFetch(it) != null }) continue
             val st = SkyBlockItemFactory.iconStack(id)
-            if (!st.isEmpty && !st.`is`(Items.PAPER)) return st to ItemsDb.get(id)?.get("tier")?.asString
+            // dyes always show as DIVINE (light blue) in the title
+            if (!st.isEmpty && !st.`is`(Items.PAPER)) return st to (if (id.startsWith("DYE_") || name.endsWith(" Dye", true)) "DIVINE" else ItemsDb.get(id)?.get("tier")?.asString)
         }
         return fallback(name) to null
     }
