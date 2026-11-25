@@ -1,6 +1,5 @@
 package fishmod.cosmetic
 
-import fishmod.compat.curScreen
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
@@ -27,7 +26,6 @@ object PlayerSize {
         val mc = Minecraft.getInstance()
         val isSelf = mc.player != null && p.getUUID() == mc.player!!.getUUID()
         if (isSelf) {
-            if (mc.curScreen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return IDENTITY
             return if (FishSettings.playerSizeEnabled) selfScale() else IDENTITY
         }
         if (FishSettings.forceOthersSizeEnabled) {
