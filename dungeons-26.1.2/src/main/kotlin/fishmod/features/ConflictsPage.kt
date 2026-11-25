@@ -29,6 +29,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     // 0 = unresolved (default), 1 = all duplicates, 2 = everything
     private var view = 0
     private var bulkArmed = false
+    private var status: String? = null
     private val viewNames = arrayOf("Unresolved only", "All duplicates", "Show everything")
 
     var scroll = 0
@@ -56,6 +57,8 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     private fun ignoredCount(r: ScanResult): Int = r.mods.sumOf { g ->
         if (ModConflicts.isModIgnored(g.id)) g.entries.count { it.fish != null } else g.entries.count { it.fish != null && ModConflicts.isIgnored(it.setting) }
     }
+
+    private fun queuedCount(r: ScanResult): Int = r.mods.sumOf { g -> g.entries.count { it.fish != null && ModConflicts.isQueued(it.setting) } }
 
     fun ensureScanned() { if (!scanStarted) rescan() }
 
@@ -142,19 +145,22 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
             r.mods.isEmpty() -> "No other Skyblock mods detected"
             else -> {
                 val ic = ignoredCount(r)
-                "${r.mods.size} Skyblock mod${if (r.mods.size == 1) "" else "s"} found · ${dupCount()} unresolved conflict${if (dupCount() == 1) "" else "s"}" + if (ic > 0) " · $ic ignored" else ""
+                "${r.mods.size} Skyblock mod${if (r.mods.size == 1) "" else "s"} found · ${dupCount()} unresolved conflict${if (dupCount() == 1) "" else "s"}" + (queuedCount(r).let { if (it > 0) " · $it off on restart" else "" }) + if (ic > 0) " · $ic ignored" else ""
             }
         }
         UiRecorder.textBold(summary, x.toFloat(), y.toFloat() + 2f, 10.5f, ScreenTheme.TEXT_COLOR)
-        UiRecorder.text("Changes to other mods apply on the next game launch. FishMod toggles apply instantly.", x.toFloat(), y + 18f, 8.5f, ScreenTheme.SUBTEXT_COLOR)
+        val st = status
+        if (st != null) UiRecorder.text(ellipsize(st, w - 250f, 8.5f), x.toFloat(), y + 18f, 8.5f, AMBER)
+        else UiRecorder.text("Changes to other mods apply on the next game launch. FishMod toggles apply instantly.", x.toFloat(), y + 18f, 8.5f, ScreenTheme.SUBTEXT_COLOR)
         var tx = x + w
         tx -= 58; button(tx, y, 58, 17, "Rescan", mx, my, ScreenTheme.TEXT_COLOR) { scanStarted = false; bulkArmed = false; rescan() }
         tx -= 6 + 104; button(tx, y, 104, 17, viewNames[view], mx, my, if (view == 0) ScreenTheme.ACCENT else ScreenTheme.TEXT_COLOR) { view = (view + 1) % viewNames.size; scroll = 0; bulkArmed = false }
         if (r != null && dupCount() > 0) {
             tx -= 6 + 138
             val n = bulkTargets(r).size
-            button(tx, y, 138, 17, if (bulkArmed) "Confirm: $n exact?" else "Use FishMod for all", mx, my, RED) {
-                if (!bulkArmed) bulkArmed = true else { bulkArmed = false; useFishForAll(r) }
+            button(tx, y, 138, 17, if (bulkArmed) "Confirm: $n exact?" else "Use FishMod for all ($n)", mx, my, RED) {
+                if (n == 0) { bulkArmed = false; useFishForAll(r) }
+                else if (!bulkArmed) bulkArmed = true else { bulkArmed = false; useFishForAll(r) }
             }
         }
         ScreenTheme.nRect(x, y + TOOL_H - 5, w, 1, ScreenTheme.ink(0x1F))
@@ -263,11 +269,20 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     }
 
     private fun useFishForAll(r: ScanResult) {
-        for ((g, e) in bulkTargets(r)) {
+        val targets = bulkTargets(r)
+        var queuedN = 0
+        var readOnly = 0
+        for ((g, e) in targets) {
             val f = e.fish ?: continue
             try { f.set(true) } catch (t: Throwable) { FishDiag.fail("ConflictsPage.4", "fishmod enable failed ${f.name}", t) }
-            if (e.setting.writable) ModConflicts.queueDisable(e.setting, g.name)
+            if (e.setting.writable) { ModConflicts.queueDisable(e.setting, g.name); queuedN++ } else readOnly++
         }
+        val loose = r.mods.sumOf { g -> if (ModConflicts.isModIgnored(g.id)) 0 else g.entries.count { it.fish != null && !it.exact && unresolved(it) } }
+        val parts = ArrayList<String>()
+        parts.add(if (targets.isEmpty()) "No exact matches to switch" else "FishMod on for ${targets.size}, $queuedN queued off in other mods")
+        if (readOnly > 0) parts.add("$readOnly in files FishMod cannot edit")
+        if (loose > 0) parts.add("$loose loose matches left, use each row")
+        status = parts.joinToString(" · ")
     }
 
     fun click(mx: Int, my: Int): Boolean {
