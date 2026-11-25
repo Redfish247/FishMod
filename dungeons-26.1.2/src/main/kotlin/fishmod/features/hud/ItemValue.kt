@@ -38,7 +38,6 @@ object ItemValue {
         return if (v.isNaN() || v.isInfinite()) 0.0 else v
     }
 
-    // Single-enchant books price as ENCHANTMENT_<NAME>_<LVL>; everything else uses its SkyBlock id.
     @JvmStatic
     fun priceId(stack: ItemStack): String? {
         val id = ItemTools.getId(stack) ?: return null
@@ -102,7 +101,6 @@ object ItemValue {
         return (base + mods) * qualityFallbackMultiplier(boost)
     }
 
-    // Rare exact-match BINs can be wildly overpriced; reject anything far above clean lowest BIN + upgrades.
     private fun sanityCap(id: String, mods: Double, boost: Int): Double {
         val base = CroesusPrices.cachedPrice(id)
         if (base <= 0.0) return Double.MAX_VALUE
