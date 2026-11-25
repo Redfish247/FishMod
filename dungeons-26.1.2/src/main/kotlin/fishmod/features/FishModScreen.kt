@@ -3356,7 +3356,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val SB_GAP = 4
     private fun selGutter(): Int = Math.max(COLUMN_GUTTER, 3 + 2 * SB_GAP)
     private fun gx1(): Int = if (selected != null) cx1() - detW() - selGutter() else cx1()
-    private fun cardFill(): Int = (Math.round(FishSettings.fmCardAlpha.coerceIn(0, 100) * 2.55f) shl 24) or (FishSettings.fmCardColor and 0xFFFFFF)
+    private fun cardFill(): Int {
+        val ac = FishSettings.fmCardAlpha.coerceIn(0, 100) / 100f
+        val winA = FishSettings.fmBgAlpha.coerceIn(20, 100) / 100f
+        val solid = lerpColor(0xFF000000.toInt() or ScreenTheme.windowBg(), 0xFF000000.toInt() or FishSettings.fmCardColor, ac) and 0xFFFFFF
+        return (Math.round((ac + (1f - ac) * winA) * 255f) shl 24) or solid
+    }
     private fun cardH(): Int = if (viewMode == 4) 22 else if (listView) 26 else CARD_TALL
     private fun gridCols(): Int = if (listView) 1 else Math.max(1, (gx1() - cx0() + CARD_GAP) / (viewMinW[viewMode] + CARD_GAP))
     private fun cardW(): Int { val n = gridCols(); return (gx1() - cx0() - (n - 1) * CARD_GAP) / n }
@@ -3657,6 +3662,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
             try {
                 s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
+                if (s is DropdownSetting<*> && s.following() && clipBot != Int.MAX_VALUE) {
+                    val over = sy + sh + 8 - clipBot
+                    if (over > 0) { if (f.pageId != null) pgScroll += over else detScroll += over }
+                }
             } catch (t: Throwable) {
                 FishDiag.fail("FishModScreen.22", "setting '${s.name}' (${s.javaClass.simpleName}) in '${f.name}' render failed", t)
             }
@@ -4141,6 +4150,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         override fun getHeight(): Int {
             return ITEM_HEIGHT + Math.round(values.size * OPTION_H * expandAnim.progress())
         }
+
+        fun following(): Boolean = expanded && expandAnim.isAnimating()
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val currentValue = values.getOrElse(indexOfCurrent()) { getter() }
