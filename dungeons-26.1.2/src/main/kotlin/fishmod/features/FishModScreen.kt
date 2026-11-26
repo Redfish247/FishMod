@@ -182,9 +182,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("FishMod Chat (/fc)", "fishChatEnabled")
             f.sub.add(ToggleSetting("Share Rare Drops", "Broadcast your rare drops to FishMod chat with a clickable gg button, and show other players' drops", "fishChatShareDrops"))
+            f.sub.add(ToggleSetting("Profanity Filter", "Replaces slurs and swear words in incoming chat with asterisks", "profanityFilter"))
             general.features.add(f)
         }
-        general.features.add(Feature("Profanity Filter", "profanityFilter"))
         run {
             val f = Feature("Rare Drop Animation", "rareDropAnim")
             f.sub.add(ToggleSetting("Show Title", "Also show a title with the dropped item's name", "rareDropAnimTitle"))
@@ -5269,7 +5269,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Endstone Protector Stage" -> "HUD with the Protector stage and kills left, from the tab list"
                 "End Node Finder" -> "Highlight Ender Node blocks in The End"
                 "Boss Phases" -> "Attack and phase cues on slayer bosses"
-                "Profanity Filter" -> "Replaces slurs and swear words in incoming chat with asterisks"
                 "Secret Waypoints" -> "Labelled through-wall boxes on every known dungeon secret (chests, items, bats, wither essence, keys)"
                 "Boss Damage Indicator" -> "HP label on non-slayer bosses"
                 "Dragon Profit Tracker" -> "Dragon kills, your eyes, essence and loot picked up after each dragon, with profit"
