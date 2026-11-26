@@ -24,9 +24,6 @@ class OtherOpt(val label: String, val key: String, val value: Any)
 /** Position another mod stores for a HUD: raw x/y (and scale when it has one). */
 class OtherPos(val x: Double, val y: Double, val scale: Double?)
 
-/** Position another mod stores for a HUD: raw x/y (and scale when it has one). */
-class OtherPos(val x: Double, val y: Double, val scale: Double?)
-
 /** One boolean setting found in another mod's config file. */
 class OtherSetting(
     val file: String,
