@@ -185,6 +185,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Profanity Filter", "Replaces slurs and swear words in incoming chat with asterisks", "profanityFilter"))
             general.features.add(f)
         }
+        general.features.add(Feature("Chat Emotes", "chatEmotes"))
         run {
             val f = Feature("Rare Drop Animation", "rareDropAnim")
             f.sub.add(ToggleSetting("Show Title", "Also show a title with the dropped item's name", "rareDropAnimTitle"))
