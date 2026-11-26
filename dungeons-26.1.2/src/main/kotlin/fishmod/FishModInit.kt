@@ -371,7 +371,7 @@ class FishModInit : ClientModInitializer {
             line.accept("§3§lScreens & Misc")
             line.accept("§e/fm §7— config GUI  §8·§7  §e/fmloot §7— Croesus loot")
             line.accept("§e/fm hud §7— open the HUD editor")
-            line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands")
+            line.accept("§e/fm commandkeys §8(§e/fm ck§8) §7— bind keys/mouse buttons to run slash commands, plus the command wheel (Wheel tab)")
             line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)")
             line.accept("§e/nick §8<name>|reset")
             line.accept("§e/fm debug §8[clear] §7— copy a problem report to send RedFish")
@@ -461,6 +461,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.26", "fishmod.features.general.CollectionsProgress.init() failed") { fishmod.features.general.CollectionsProgress.init() }
         FishDiag.guard("FishModInit.27", "fishmod.features.general.FireSaleInfo.init() failed") { fishmod.features.general.FireSaleInfo.init() }
         FishDiag.guard("FishModInit.28", "fishmod.features.general.CommandKeys.init() failed") { fishmod.features.general.CommandKeys.init() }
+        FishDiag.guard("FishModInit.28w", "fishmod.features.general.CommandWheel.init() failed") { fishmod.features.general.CommandWheel.init() }
         FishDiag.guard("FishModInit.29", "fishmod.features.inventory.WardrobeHotkeys.init() failed") { fishmod.features.inventory.WardrobeHotkeys.init() }
         FishDiag.guard("FishModInit.30", "ItemRarityHotbar.init() failed") { ItemRarityHotbar.init() }
         FishDiag.guard("FishModInit.31", "fishmod.features.hud.ItemQualityTooltip.init() failed") { fishmod.features.hud.ItemQualityTooltip.init() }
@@ -617,6 +618,12 @@ class FishModInit : ClientModInitializer {
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("commandkeys").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().showScreen(fishmod.features.hud.ChatCommandsScreen(fishmod.features.hud.ChatCommandsScreen.Tab.KEYS))
+                        }
+                        FishConstants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("ck").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.hud.ChatCommandsScreen(fishmod.features.hud.ChatCommandsScreen.Tab.KEYS))
                         }
