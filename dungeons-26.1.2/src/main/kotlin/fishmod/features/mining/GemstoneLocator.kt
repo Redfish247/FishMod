@@ -38,7 +38,7 @@ object GemstoneLocator {
                 val d = goal.distanceTo(feet)
                 if (d < 4.0) continue
                 val spot = goal.add(0.0, -1.9, 0.0)
-                val bw = (d * 0.025).coerceAtLeast(0.9)
+                val bw = (d * 0.018).coerceAtLeast(0.65)
                 FishDraw.gizmoBox(AABB(spot.add(-bw, 0.0, -bw), spot.add(bw, bw * 2.5, bw)), Mining.alpha(gem.rgb, 60), Mining.alpha(gem.rgb, 255), true)
                 FishDraw.gizmoText(FishDraw.distLabel(gem.display + " Gemstone", d.toInt()), spot.add(0.0, 1.6, 0.0), (d.toFloat() * 0.05f).coerceAtLeast(1.0f), Mining.alpha(gem.rgb, 255), true)
             }
