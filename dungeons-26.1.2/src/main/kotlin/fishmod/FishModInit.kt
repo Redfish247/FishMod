@@ -445,6 +445,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.16", "fishmod.features.dungeon.ExplosiveShotHud.init() failed") { fishmod.features.dungeon.ExplosiveShotHud.init() }
         FishDiag.guard("FishModInit.17", "fishmod.features.dungeon.trackers.CritTracker.init() failed") { fishmod.features.dungeon.trackers.CritTracker.init() }
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
+        FishDiag.guard("FishModInit.emotes", "ChatEmotes.init() failed") { fishmod.features.chat.ChatEmotes.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
         FishDiag.guard("FishModInit.19b", "DeployablesHud.init() failed") { DeployablesHud.init() }
         FishDiag.guard("FishModInit.CalTimes", "CalendarTimes.init() failed") { fishmod.features.events.CalendarTimes.init() }
