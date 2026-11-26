@@ -42,7 +42,7 @@ object DragonCheck {
                 anyNew = true
             }
         }
-        if (fishmod.utils.debug.FishDebug.dragonDebug && !anyNew && WitherDragon.real.none { (p.x in it.xRange && p.z in it.zRange) || (p.x in it.box.minX..it.box.maxX && p.z in it.box.minZ..it.box.maxZ) }) FishDiag.fail("DragonCheck.1", "dragon spawn particle at unknown spot ${p.x},${p.z}")
+        if (fishmod.utils.debug.FishDebug.dragonDebug && !anyNew && WitherDragon.real.none { (p.x in it.xRange && p.z in it.zRange) || (p.x in it.box.minX..it.box.maxX && p.z in it.box.minZ..it.box.maxZ) }) fishmod.utils.debug.FishDebug.LOGGER.debug("[DragonCheck] spawn particle at unknown spot {},{}", p.x, p.z)
         if (spawning.isNotEmpty()) {
             WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
             WitherDragons.spawnRank = spawning.sortedBy { it.timeToSpawn }

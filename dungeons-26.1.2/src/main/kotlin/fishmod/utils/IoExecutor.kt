@@ -18,7 +18,7 @@ object IoExecutor : Executor {
             executor.shutdown()
             try {
                 val done = executor.awaitTermination(8, TimeUnit.SECONDS)
-                FishDiag.check(done, "IoExecutor.2") { "IO executor did not finish within 8s on shutdown, writes may be lost" }
+                if (!done) fishmod.utils.debug.FishDebug.LOGGER.warn("[IoExecutor] did not finish within 8s on shutdown")
             } catch (e: InterruptedException) {
                 FishDiag.fail("IoExecutor.1", "interrupted while flushing IO on shutdown", e)
             }

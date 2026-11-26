@@ -49,7 +49,7 @@ object FishCrashWatch {
         val level = event.level
         val thrown = event.thrown
         val msg = event.message?.formattedMessage ?: ""
-        if (level.isMoreSpecificThan(Level.ERROR) && thrown != null && fishFrame(thrown) != null) {
+        if (level.isMoreSpecificThan(Level.ERROR) && thrown != null && fishFrame(thrown) != null && thrownByFishMod(event, thrown)) {
             report("Log", "[${event.loggerName}] $msg", thrown)
             if (level == Level.FATAL) FishDiag.flushNow()
             return
@@ -58,6 +58,15 @@ object FishCrashWatch {
             event.loggerName.contains("mixin", ignoreCase = true)) {
             FishDiag.fail("Log.mixin", "[${event.loggerName}] ${msg.take(300)}")
         }
+    }
+
+    private fun thrownByFishMod(event: LogEvent, t: Throwable): Boolean {
+        if (event.loggerName.contains("fishmod", ignoreCase = true)) return true
+        var root: Throwable = t
+        var depth = 0
+        while (root.cause != null && root.cause !== root && depth++ < 8) root = root.cause!!
+        val top = root.stackTrace.firstOrNull { !it.className.startsWith("java.") && !it.className.startsWith("jdk.") && !it.className.startsWith("sun.") } ?: return true
+        return top.className.startsWith("fishmod.") || top.className.startsWith("net.minecraft.")
     }
 
     private fun report(prefix: String, message: String, t: Throwable) {

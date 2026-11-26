@@ -24,10 +24,7 @@ object EventDispatch {
 
     private fun firePartyChat(raw: String) {
         val colon = raw.indexOf(':', PARTY_PREFIX.length)
-        if (colon < 0) {
-            FishDiag.fail("EventDispatch.3", "party message without ':' after prefix: '$raw'")
-            return
-        }
+        if (colon < 0) return
         if (colon + 2 >= raw.length) return
         val sender = raw.substring(PARTY_PREFIX.length, colon).replace(FishConstants.STRIP_COLOR_REGEX, "").trim().replace(RANK_TAG, "")
         val text = raw.substring(colon + 2).trim()

@@ -140,7 +140,7 @@ object CroesusRewardParser {
             if (result[0] == "false") {
                 if (errorOut != null) errorOut[0] = result[1]
                 fishmod.utils.debug.FishDebug.LOGGER.debug("[Loot] unresolved reward line: '{}'", clean)
-                FishDiag.fail("CroesusRewardParser.3", "unresolved croesus reward line: '$clean'")
+                if (!clean.startsWith("[Lvl")) FishDiag.fail("CroesusRewardParser.3", "unresolved croesus reward line: '$clean'")
                 continue
             }
 

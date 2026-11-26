@@ -25,7 +25,7 @@ object TermOpenTimer {
         FishEvents.serverTick.register {
             if (!waiting()) ticksSinceStorm = 0
             else if (++ticksSinceStorm == OVERDUE_TICKS && !fishmod.utils.dungeon.PracticeMode.active) {
-                FishDiag.fail("TermOpenTimer.1", "terminals 10s overdue, P3 never detected (floor=${BossPhase.getFloor()} phase=${BossPhase.getPhase()})")
+                fishmod.utils.debug.FishDebug.LOGGER.debug("[TermOpenTimer] terminals 10s overdue, P3 never detected (floor={} phase={})", BossPhase.getFloor(), BossPhase.getPhase())
             }
             false
         }
