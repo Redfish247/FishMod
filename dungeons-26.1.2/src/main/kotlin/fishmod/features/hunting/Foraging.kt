@@ -118,6 +118,7 @@ object Foraging {
     }
 
     private fun onSacks(text: Component) {
+        if (fishmod.features.ProfitTrackerKit.sackScreenOpen()) return
         if (!onIsland() || System.currentTimeMillis() - lastChopMs > SACK_WINDOW_MS) return
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {

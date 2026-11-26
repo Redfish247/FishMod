@@ -538,6 +538,7 @@ object DianaTracker {
     }
 
     private fun onSacks(text: Component) {
+        if (fishmod.features.ProfitTrackerKit.sackScreenOpen()) return
         if (!mobDiedWithin(SACK_WINDOW_MS)) return
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {

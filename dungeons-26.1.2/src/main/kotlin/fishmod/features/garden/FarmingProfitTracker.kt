@@ -174,6 +174,7 @@ object FarmingProfitTracker {
     private fun idOf(name: String): String? = ItemsDb.idFor(name) ?: ItemsDb.idFor(name.trimStart { !it.isLetterOrDigit() })
 
     private fun onSacks(text: Component, now: Long) {
+        if (ProfitTrackerKit.sackScreenOpen()) return
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
             (c.style.hoverEvent as? HoverEvent.ShowText)?.let { hovers += Garden.strip(it.value().string) }

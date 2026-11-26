@@ -1,6 +1,7 @@
 package fishmod.features
 
 import com.mojang.brigadier.arguments.StringArgumentType
+import fishmod.compat.curScreen
 import fishmod.utils.FishMsg
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
@@ -87,6 +88,11 @@ object ProfitTrackerKit {
     fun <C> rowLine(r: Row<C>, value: String, nameColor: String?, showSources: Boolean): String where C : Enum<C>, C : Cat =
         "$value	§7| ${nameColor ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}" +
             (if (r.split.isEmpty() || !showSources) "" else " §8(" + r.split.entries.joinToString(" ") { "${it.key.color}${it.key.short} §f${"%,d".format(it.value)}" } + "§8)")
+
+    fun sackScreenOpen(): Boolean {
+        val t = net.minecraft.client.Minecraft.getInstance().curScreen?.title?.string ?: return false
+        return t.contains("Sack", ignoreCase = true)
+    }
 
     fun inSacks(id: String?, vararg sacks: String): Boolean {
         id ?: return false

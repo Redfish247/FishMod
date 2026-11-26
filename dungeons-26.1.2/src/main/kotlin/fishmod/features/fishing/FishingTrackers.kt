@@ -92,6 +92,7 @@ object FishingTrackers {
     }
 
     private fun onSacks(c: net.minecraft.network.chat.Component) {
+        if (fishmod.features.ProfitTrackerKit.sackScreenOpen()) return
         val hovers = LinkedHashSet<String>()
         fun walk(x: net.minecraft.network.chat.Component) {
             (x.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string.replace(fishmod.utils.FishConstants.STRIP_COLOR_REGEX, "") }

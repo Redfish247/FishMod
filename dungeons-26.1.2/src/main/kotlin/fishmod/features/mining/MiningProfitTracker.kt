@@ -197,19 +197,25 @@ object MiningProfitTracker {
     }
 
     private fun onSacks(text: Component, now: Long) {
+        if (ProfitTrackerKit.sackScreenOpen()) return
         val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
             (c.style.hoverEvent as? HoverEvent.ShowText)?.let { hovers += Mining.strip(it.value().string) }
             c.siblings.forEach(::walk)
         }
         walk(text)
+        val net = LinkedHashMap<String, Long>()
         for (m in SACK_LINE.findAll(hovers.joinToString("\n"))) {
-            if (m.groupValues[1] != "+") continue
             val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
             val item = m.groupValues[3].trim()
             if (item.endsWith("Powder")) continue
+            net[item] = (net[item] ?: 0L) + if (m.groupValues[1] == "-") -n else n
+        }
+        for ((item, delta) in net) {
             if (!ProfitTrackerKit.inSacks(idOf(item), *MINING_SACKS)) continue
             if (ProfitTrackerKit.isFishingLeak(idOf(item), now, lastBreakMs)) continue
+            if (delta < 0) { add(Cat.MINING, item, delta); continue }
+            val n = delta
             val rest = consumePending(item, n, now)
             if (rest > 0) {
                 add(Cat.MINING, item, rest)
