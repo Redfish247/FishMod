@@ -21,6 +21,7 @@ public abstract class MenuClickFixMixin {
     @Inject(method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V", at = @At("HEAD"), cancellable = true)
     private void fishmod$fixClick(Slot slot, int slotId, int button, ContainerInput input, CallbackInfo ci) {
         if (fishmod$reissue || slot == null) return;
+        if (!((Object) this).getClass().getName().startsWith("net.minecraft.")) return;
         if (slot.container instanceof Inventory && !(((Object) this) instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen)) return;
         try {
             boolean dbl = ExtrasSettings.fixDoubleClicks && input == ContainerInput.PICKUP_ALL;
