@@ -49,7 +49,7 @@ object ItemsDb {
     @JvmStatic
     fun idFor(name: String?): String? {
         if (name == null) return null
-        return nameToId[name]
+        return nameToId[name] ?: if (name.contains("Raw Cod")) nameToId[name.replace("Raw Cod", "Raw Fish")] else null
     }
 
     @JvmStatic
