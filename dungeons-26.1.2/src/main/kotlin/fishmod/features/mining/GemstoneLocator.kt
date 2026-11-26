@@ -12,6 +12,7 @@ import fishmod.features.mining.MiningSettings as S
 object GemstoneLocator {
 
     private var paths: List<PathData> = emptyList()
+    private var spots: List<Pair<Gem, Vec3>> = emptyList()
     private var tick = 0
 
     fun wanted(): Set<Gem> = Commissions.current.filter { !it.done && it.name.contains("Gemstone") }
@@ -21,19 +22,24 @@ object GemstoneLocator {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (tick++ % 5 != 0) return@register
             val p = mc.player
-            if (!S.miningGemLines || (!S.miningGemPaths && !S.miningGemWaypoints) || p == null || !Mining.inTunnels()) { paths = emptyList(); return@register }
+            if (!S.miningGemLines || (!S.miningGemPaths && !S.miningGemWaypoints) || p == null || !Mining.inTunnels()) { paths = emptyList(); spots = emptyList(); return@register }
             val want = wanted()
-            paths = if (want.isEmpty()) emptyList() else findPaths(want, p.position())
+            paths = if (want.isEmpty() || !S.miningGemPaths) emptyList() else findPaths(want, p.position())
+            spots = if (want.isEmpty() || !S.miningGemWaypoints) emptyList() else {
+                TunnelGraph.ensureLoaded()
+                val labels = want.associateBy { it.display + " Gemstone" }
+                TunnelGraph.nodes.mapNotNull { n -> labels[n.name]?.let { it to n.pos } }
+            }
         }
         RenderHooks.GIZMO.register { _ ->
-            if (!S.miningGemLines || paths.isEmpty() || !Mining.inTunnels()) return@register
+            if (!S.miningGemLines || (paths.isEmpty() && spots.isEmpty()) || !Mining.inTunnels()) return@register
             val feet = net.minecraft.client.Minecraft.getInstance().player?.position() ?: return@register
-            if (S.miningGemWaypoints) for (pd in paths) {
-                val d = pd.goal.distanceTo(feet)
+            if (S.miningGemWaypoints) for ((gem, goal) in spots) {
+                val d = goal.distanceTo(feet)
                 if (d < 4.0) continue
-                val spot = pd.goal.add(0.0, -1.9, 0.0)
-                FishDraw.gizmoBox(AABB(spot.add(-0.4, 0.0, -0.4), spot.add(0.4, 1.0, 0.4)), Mining.alpha(pd.gem.rgb, 60), Mining.alpha(pd.gem.rgb, 255), true)
-                FishDraw.gizmoText(FishDraw.distLabel(pd.gem.display, d.toInt()), spot.add(0.0, 1.6, 0.0), 0.04f, Mining.alpha(pd.gem.rgb, 255), true)
+                val spot = goal.add(0.0, -1.9, 0.0)
+                FishDraw.gizmoBox(AABB(spot.add(-0.4, 0.0, -0.4), spot.add(0.4, 1.0, 0.4)), Mining.alpha(gem.rgb, 60), Mining.alpha(gem.rgb, 255), true)
+                FishDraw.gizmoText(FishDraw.distLabel(gem.display + " Gemstone", d.toInt()), spot.add(0.0, 1.6, 0.0), 1.0f, Mining.alpha(gem.rgb, 255), true)
             }
             if (S.miningGemPaths) for (pd in paths) {
                 if (pd.goal.distanceToSqr(feet) < 12.0 * 12.0) continue
