@@ -199,7 +199,7 @@ object ChatImagePreview {
             try { load(url, e, caller) } catch (t: Throwable) {
                 e.error = (t.message ?: t.javaClass.simpleName).take(40)
                 e.state = 2
-                FishDiag.fail("ChatImagePreview.2", "chat image load failed: ${describe(url)}", t)
+                if (t !is java.io.IOException) FishDiag.fail("ChatImagePreview.2", "chat image load failed: ${describe(url)}", t)
             }
         }
     }

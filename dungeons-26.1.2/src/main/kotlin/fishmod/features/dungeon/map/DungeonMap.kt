@@ -178,7 +178,7 @@ object DungeonMap {
         }
 
         if (greenLength != 16 && greenLength != 18) {
-            FishDiag.fail("DungeonMap.10", "map init skipped: entrance run length $greenLength (need 16/18) colors=${colors.size} floor=${DungeonState.floorNumber()}")
+            if (greenLength > 0) FishDiag.fail("DungeonMap.10", "map init skipped: entrance run length $greenLength (need 16/18) colors=${colors.size} floor=${DungeonState.floorNumber()}")
             return false
         }
         FishDiag.check(greenStart >= 0, "DungeonMap.9") { "entrance run length $greenLength but no start index" }

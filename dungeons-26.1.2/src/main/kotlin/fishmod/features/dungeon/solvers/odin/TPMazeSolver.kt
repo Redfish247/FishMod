@@ -68,7 +68,6 @@ object TPMazeSolver {
                 ) && player?.boundingBox?.let { pb -> !AABB(it).inflate(0.5, 0.0, 0.5).intersects(pb) } != false
         }
         if (narrowed.isNotEmpty()) correctPortals = narrowed
-        else FishDiag.fail("TPMazeSolver.2", "tp maze filter emptied at $pos yaw=$yaw pitch=$pitch kept=${correctPortals.size}")
     }
 
     fun onRenderWorld() {

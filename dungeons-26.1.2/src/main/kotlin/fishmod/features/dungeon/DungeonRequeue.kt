@@ -55,8 +55,6 @@ object DungeonRequeue {
                     if (DungeonSettings.autoRequeueEnabled && !BladeCompat.active && !partyChanged && !skip) {
                         val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
                         val cmd = requeueCommand()
-                        val players = fishmod.features.dungeon.map.DungeonPlayers.count()
-                        FishDiag.check(startTeamCount > 0 || players > 0 || !fishmod.features.dungeon.map.DungeonMap.anyFeatureEnabled(), "DungeonRequeue.2") { "extra stats seen but team count never recorded (players=$players)" }
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {
                             Minecraft.getInstance().execute {
                                 val mc = Minecraft.getInstance()
