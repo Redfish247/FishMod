@@ -53,5 +53,10 @@ object CarnivalShootout {
     }
 
     @JvmStatic
-    fun glowColor(e: Entity): Int = glow[e.id] ?: EntityRenderState.NO_OUTLINE
+    fun glowColor(e: Entity): Int {
+        val map = glow
+        if (map.isEmpty()) return EntityRenderState.NO_OUTLINE
+        val id = try { e.id } catch (_: IllegalStateException) { return EntityRenderState.NO_OUTLINE }
+        return map[id] ?: EntityRenderState.NO_OUTLINE
+    }
 }
