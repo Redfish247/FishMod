@@ -28,9 +28,20 @@ public abstract class MenuClickFixMixin {
             if (!dbl && !mid) return;
             if (!fishmod.utils.SkyblockLocation.inSkyblock()) return;
             String title = ((AbstractContainerScreen<?>) (Object) this).getTitle().getString().toLowerCase();
-            if (mid && (title.contains("loadout") || title.contains("tuning") || title.contains("the hex") || title.contains("sack") || title.contains("quiver") || title.contains("accessory bag") || title.contains("chocolate factory") || title.contains("supercraft") || title.contains("super craft") ||title.equals("chest") || title.equals("large chest"))) {
+            if (mid && (title.contains("loadout") || title.contains("tuning") || title.contains("the hex") || title.contains("sack") || title.contains("quiver") || title.contains("accessory bag") || title.contains("chocolate factory") ||title.equals("chest") || title.equals("large chest"))) {
                 if (!dbl) return;
                 mid = false;
+            }
+            if (mid) {
+                for (Slot s : ((AbstractContainerScreen<?>) (Object) this).getMenu().slots) {
+                    if (s.container instanceof Inventory || !s.hasItem()) continue;
+                    String n = s.getItem().getHoverName().getString().toLowerCase();
+                    if (n.contains("supercraft") || n.contains("super craft")) {
+                        if (!dbl) return;
+                        mid = false;
+                        break;
+                    }
+                }
             }
             ci.cancel();
             fishmod$reissue = true;
