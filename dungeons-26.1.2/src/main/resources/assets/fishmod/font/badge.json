@@ -1,0 +1,15 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "fishmod:font/badge_dev.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": ["\uE000"]
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:default"
+    }
+  ]
+}
