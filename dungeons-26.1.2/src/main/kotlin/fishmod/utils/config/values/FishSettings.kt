@@ -328,6 +328,7 @@ object FishSettings {
     @ConfigValue @JvmField var nickStrike: Boolean = false
     @ConfigValue @JvmField var nickMagic: Boolean = false
     @ConfigValue @JvmField var playerModel: String = "PLAYER"
+    @ConfigValue @JvmField var seeOtherModels: Boolean = false
 
     @ConfigValue @JvmField var nickPreviewEnabled: Boolean = false
     @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
