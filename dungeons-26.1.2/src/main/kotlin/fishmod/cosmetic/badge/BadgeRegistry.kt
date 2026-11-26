@@ -25,7 +25,21 @@ object BadgeRegistry {
     }
 
     @JvmStatic
-    fun resolveOrdered(ids: List<String>): List<BadgeDef> =
+    fun resolveOrdered(ids: List<String>): List<BadgeDef> {
+        if (defs.isEmpty() && ids.isNotEmpty()) {
+            val now = System.currentTimeMillis()
+            if (now - lastRetry > 30_000L) {
+                lastRetry = now
+                refresh()
+            }
+        }
+        return resolveIds(ids)
+    }
+
+    @Volatile
+    private var lastRetry = 0L
+
+    private fun resolveIds(ids: List<String>): List<BadgeDef> =
         ids.mapNotNull { id ->
             val d = defs[id]
             if (d == null && defs.isNotEmpty()) FishDiag.fail("BadgeRegistry.3", "unknown badge id '$id'")

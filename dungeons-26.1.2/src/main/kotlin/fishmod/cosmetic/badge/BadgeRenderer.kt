@@ -79,6 +79,13 @@ object BadgeRenderer {
         return FishDiag.guard("BadgeRenderer.1", "nametag badge splice failed at $insertAt/$fullLen") { spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs, leadingSpace = m != null)) } ?: component
     }
 
+    private fun selfUuidForNick(name: String): String? {
+        if (!fishmod.cosmetic.NickState.isActive()) return null
+        val plain = fishmod.cosmetic.NickState.asComponent().string
+        if (plain != name) return null
+        return net.minecraft.client.Minecraft.getInstance().player?.uuid?.toString()?.replace("-", "")
+    }
+
     @JvmStatic
     fun insertForChat(component: Component?): Component? {
         if (component == null) return component
@@ -90,7 +97,7 @@ object BadgeRenderer {
         if (afterBracketClean >= cleanStr.length) return component
         val nameMatch = NAME_AFTER.find(cleanStr.substring(afterBracketClean)) ?: return component
         val candidate = nameMatch.groupValues[1]
-        val uuid = BadgeManager.uuidForName(candidate) ?: return component
+        val uuid = BadgeManager.uuidForName(candidate) ?: selfUuidForNick(candidate) ?: return component
         val defs = BadgeManager.badgesFor(uuid)
         if (defs.isEmpty()) return component
         val nameStartClean = afterBracketClean + nameMatch.range.first
