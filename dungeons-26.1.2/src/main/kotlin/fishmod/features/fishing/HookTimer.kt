@@ -45,11 +45,16 @@ object HookTimer {
         try {
             var found: ArmorStand? = null
             var text: String? = null
-            for (s in level.getEntitiesOfClass(ArmorStand::class.java, hook.boundingBox.inflate(5.0))) {
+            var best = 1.5 * 1.5
+            for (s in level.getEntitiesOfClass(ArmorStand::class.java, hook.boundingBox.inflate(1.5, 3.0, 1.5))) {
                 val c = s.customName ?: continue
                 val p = TextStrip.plain(c.string)
                 if (p.isEmpty()) continue
-                if (p == "!!!" || isSeconds(p)) { found = s; text = p; break }
+                if (p != "!!!" && !isSeconds(p)) continue
+                val dx = s.x - hook.x
+                val dz = s.z - hook.z
+                val d = dx * dx + dz * dz
+                if (d < best) { best = d; found = s; text = p }
             }
             if (found == null || text == null) { clear(); return }
             hiddenStandId = if (W.hookTimerHideStand) found.id else -1
