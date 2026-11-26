@@ -4,9 +4,12 @@ import fishmod.compat.conflicts.ConflictEntry
 import fishmod.compat.conflicts.FishFeatureRef
 import fishmod.compat.conflicts.ModConflicts
 import fishmod.compat.conflicts.ModGroup
+import fishmod.compat.conflicts.ModLinks
+import fishmod.compat.curScreen
 import fishmod.compat.conflicts.ScanResult
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import kotlin.math.max
 
@@ -29,6 +32,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     // 0 = unresolved (default), 1 = all duplicates, 2 = everything
     private var view = 0
     private var bulkArmed = false
+    private var restartArmed = false
     private var status: String? = null
     private val viewNames = arrayOf("Unresolved only", "All duplicates", "Show everything")
 
@@ -63,7 +67,7 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
     fun ensureScanned() { if (!scanStarted) rescan() }
 
     private fun rescan() {
-        scanStarted = true
+        scanStarted = true; importCache.clear()
         if (scanning) return
         scanning = true
         val fish = try { fishProvider() } catch (t: Throwable) { FishDiag.fail("ConflictsPage.1", "feature list failed", t); emptyList() }
@@ -150,10 +154,15 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         }
         UiRecorder.textBold(summary, x.toFloat(), y.toFloat() + 2f, 10.5f, ScreenTheme.TEXT_COLOR)
         val st = status
-        if (st != null) UiRecorder.text(ellipsize(st, w - 250f, 8.5f), x.toFloat(), y + 18f, 8.5f, AMBER)
+        if (st != null) UiRecorder.text(ellipsize(st, w - 360f, 8.5f), x.toFloat(), y + 18f, 8.5f, AMBER)
         else UiRecorder.text("Changes to other mods apply on the next game launch. FishMod toggles apply instantly.", x.toFloat(), y + 18f, 8.5f, ScreenTheme.SUBTEXT_COLOR)
         var tx = x + w
         tx -= 58; button(tx, y, 58, 17, "Rescan", mx, my, ScreenTheme.TEXT_COLOR) { scanStarted = false; bulkArmed = false; rescan() }
+        tx -= 6 + 100
+        button(tx, y, 100, 17, if (restartArmed) "Confirm restart?" else "Restart game", mx, my, if (restartArmed) RED else AMBER) {
+            if (!restartArmed) restartArmed = true
+            else { restartArmed = false; if (!ModLinks.restartGame()) status = "Could not restart automatically here. Close and reopen the game." }
+        }
         tx -= 6 + 104; button(tx, y, 104, 17, viewNames[view], mx, my, if (view == 0) ScreenTheme.ACCENT else ScreenTheme.TEXT_COLOR) { view = (view + 1) % viewNames.size; scroll = 0; bulkArmed = false }
         if (r != null && dupCount() > 0) {
             tx -= 6 + 138
@@ -211,6 +220,15 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         small(bx, y + (HEAD_H - 15) / 2, bw, 15, if (modIgn) "Stop ignoring" else "Ignore mod", mx, my) { ModConflicts.setModIgnored(row.g.id, !modIgn) }
     }
 
+    private val importCache = HashMap<ConflictEntry, List<ModConflicts.ImportPair>>()
+
+    private fun importPairs(row: Row.Item): List<ModConflicts.ImportPair> {
+        val fish = row.e.fish ?: return emptyList()
+        return importCache.getOrPut(row.e) {
+            try { ModConflicts.matchOptions(row.e.setting, fish) } catch (t: Throwable) { FishDiag.fail("ConflictsPage.4", "import match failed ${fish.name}", t); emptyList() }
+        }
+    }
+
     private fun drawItem(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, row: Row.Item, mx: Int, my: Int) {
         val e = row.e
         val s = e.setting
@@ -236,7 +254,11 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         val canCopy = hudE != null && pos != null
         val copyW = 58
         val copyX = fishX - 46 - copyW
-        val labelRight = (if (fish != null) (if (canCopy) copyX - 8 else fishX - 62) else theirsX - 62).toFloat()
+        val pairs = if (fish != null) importPairs(row) else emptyList()
+        val canImport = pairs.isNotEmpty()
+        val impW = 50
+        val impX = (if (canCopy) copyX else fishX - 46) - 4 - impW
+        val labelRight = (if (fish != null) (if (canImport) impX - 8 else if (canCopy) copyX - 8 else fishX - 62) else theirsX - 62).toFloat()
 
         UiRecorder.text(ellipsize(s.label, labelRight - (x + 12), 10f), x + 12f, y + 5f, 10f, ScreenTheme.TEXT_COLOR)
         val sub = if (fish != null) "≈ FishMod: ${fish.name}" + (if (sib.size > 1) " · ${sib.size} settings" else "") else s.group.ifEmpty { s.file.substringAfterLast('/') }
@@ -244,6 +266,11 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
 
         if (fish != null) small(ignX, y + (ITEM_H - 15) / 2, ignW, 15, if (allIgnored) "Restore" else "Ignore", mx, my) {
             for (x in sib) ModConflicts.setIgnored(x.setting, !allIgnored)
+        }
+
+        if (canImport && fish != null) small(impX, y + (ITEM_H - 15) / 2, impW, 15, "Import (${pairs.size})", mx, my) {
+            val n = ModConflicts.importOptions(pairs)
+            status = "Imported $n ${row.g.name} settings into FishMod ${fish.name}: " + pairs.take(4).joinToString(", ") { it.fish.name } + (if (pairs.size > 4) ", ..." else "") + ". Check them in the FishMod menu."
         }
 
         if (canCopy && hudE != null && pos != null) small(copyX, y + (ITEM_H - 15) / 2, copyW, 15, "Copy HUD pos", mx, my) {
@@ -263,10 +290,16 @@ class ConflictsPage(private val fishProvider: () -> List<FishFeatureRef>) {
         }
 
         // their toggle (applies next launch)
-        val cap = if (queued) "off on restart" else if (!writable) "edit in mod" else row.g.name
+        val canOpen = !writable && ModLinks.hasConfigScreen(row.g.id)
+        val cap = if (queued) "off on restart" else if (!writable) (if (canOpen) "" else "edit in mod") else row.g.name
         val capColor = if (queued) AMBER else ScreenTheme.SUBTEXT_COLOR
         val capText = ellipsize(cap, 56f, 8.5f)
         UiRecorder.text(capText, theirsX - 6f - UiRecorder.textWidth(capText, 8.5f), pillY + (pillH - 8.5f) / 2f, 8.5f, capColor)
+        if (canOpen) small(theirsX - 6 - 56, y + (ITEM_H - 15) / 2, 56, 15, "Open mod", mx, my) {
+            val parent = Minecraft.getInstance().curScreen
+            if (parent == null || !ModLinks.openConfig(row.g.id, parent)) status = "${row.g.name} has no config screen FishMod can open. Edit ${s.label} in the mod itself."
+            else status = null
+        }
         FishModScreen.drawTogglePill(ctx, theirsX, pillY, pillW, pillH, !queued, if (queued) 0f else 1f, writable && ScreenTheme.inside(mx, my, theirsX, pillY, pillW, pillH), if (writable) 1f else 0.4f)
         if (writable) hits.add(Hit(theirsX, pillY, pillW, pillH, true) { if (queued) writableSib.forEach { ModConflicts.unqueue(it.setting) } else writableSib.forEach { ModConflicts.queueDisable(it.setting, row.g.name) } })
     }

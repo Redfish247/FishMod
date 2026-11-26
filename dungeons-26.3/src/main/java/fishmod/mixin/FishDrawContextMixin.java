@@ -63,7 +63,7 @@ public class FishDrawContextMixin {
         if (lines.size() > 1) est += 2f;
         int shh = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledHeight();
         int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
-        boolean fit = est > shh - 8;
+        boolean fit = fishmod.utils.config.values.FishSettings.tooltipAutoFit && est > shh - 8;
         // short tooltip whose top would be above the screen (mouse near the top): push it down to 4px
         int liftY = 0;
         if (!fit) {

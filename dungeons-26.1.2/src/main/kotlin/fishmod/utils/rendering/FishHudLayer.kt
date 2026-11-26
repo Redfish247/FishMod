@@ -1,5 +1,6 @@
 package fishmod.utils.rendering
 
+import fishmod.compat.curScreen
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -12,13 +13,27 @@ object FishHudLayer {
 
     private val TAB_EXEMPT = setOf("custom_crosshair","dungeon_waypoints_overlay", "cooldown_overlay_hotbar")
 
-    private class Box { var x0 = Int.MAX_VALUE; var y0 = Int.MAX_VALUE; var x1 = Int.MIN_VALUE; var y1 = Int.MIN_VALUE
-        fun reset() { x0 = Int.MAX_VALUE; y0 = Int.MAX_VALUE; x1 = Int.MIN_VALUE; y1 = Int.MIN_VALUE }
-        fun add(r: ScreenRectangle) { x0 = minOf(x0, r.left()); y0 = minOf(y0, r.top()); x1 = maxOf(x1, r.right()); y1 = maxOf(y1, r.bottom()) }
+    private class Box { var id = ""; var x0 = Int.MAX_VALUE; var y0 = Int.MAX_VALUE; var x1 = Int.MIN_VALUE; var y1 = Int.MIN_VALUE
+        var drawnMs = 0L
+        var worldMs = 0L
+        var runStartMs = 0L
+        @Volatile var rects: List<IntArray> = emptyList()
+        private var building = ArrayList<IntArray>()
+        fun reset() { x0 = Int.MAX_VALUE; y0 = Int.MAX_VALUE; x1 = Int.MIN_VALUE; y1 = Int.MIN_VALUE; building = ArrayList() }
+        fun add(r: ScreenRectangle) {
+            x0 = minOf(x0, r.left()); y0 = minOf(y0, r.top()); x1 = maxOf(x1, r.right()); y1 = maxOf(y1, r.bottom())
+            val w = net.minecraft.client.Minecraft.getInstance().window
+            if (r.width().toLong() * r.height() > w.guiScaledWidth.toLong() * w.guiScaledHeight * 35 / 100) { bigSeen[id] = "${r.width()}x${r.height()}"; return }
+            if (building.size < 96) building.add(intArrayOf(r.left(), r.top(), r.right(), r.bottom()))
+        }
+        fun hitsRect(o: Box) = !o.empty() && rects.any { it[0] < o.x1 && o.x0 < it[2] && it[1] < o.y1 && o.y0 < it[3] }
         fun empty() = x1 <= x0 || y1 <= y0
         fun hits(o: Box) = !empty() && !o.empty() && x0 < o.x1 && o.x0 < x1 && y0 < o.y1 && o.y0 < y1
-        fun copy(o: Box) { x0 = o.x0; y0 = o.y0; x1 = o.x1; y1 = o.y1 }
+        fun copy(o: Box) { x0 = o.x0; y0 = o.y0; x1 = o.x1; y1 = o.y1; rects = o.building }
     }
+
+    private val bigSeen = java.util.concurrent.ConcurrentHashMap<String, String>()
+    @JvmStatic fun bigRects(): List<String> = bigSeen.map { "${it.key} ${it.value}" }
 
     private var cur: Box? = null
     private val tabBuild = Box()
@@ -53,10 +68,32 @@ object FishHudLayer {
 
     private fun panelOpen() = System.currentTimeMillis() - panelSeenMs < 150
 
+    // Every wrapped mod HUD element's last drawn box; used to tell which HUDs are actually on screen right now.
+    private val liveBoxes = java.util.concurrent.CopyOnWriteArrayList<Box>()
+
+    // For HUDs that draw outside the wrapped HUD layer (e.g. the custom scoreboard via a mixin): they mark themselves by editor name.
+    private val namedDrawn = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    @JvmStatic fun markDrawn(name: String) { namedDrawn[name] = System.currentTimeMillis() }
+    @JvmStatic fun drawnNamed(name: String): Boolean = System.currentTimeMillis() - (namedDrawn[name] ?: 0L) < 500
+
+    /** True if some mod HUD drew something overlapping this screen rect within the last half second. */
+    @JvmStatic fun drawnRecently(x: Int, y: Int, w: Int, h: Int): Boolean {
+        val now = System.currentTimeMillis()
+        val o = Box().also { it.x0 = x; it.y0 = y; it.x1 = x + w; it.y1 = y + h }
+        return liveBoxes.any { it.drawnMs != 0L && now - it.drawnMs < 500 && it.hitsRect(o) }
+    }
+
+    @JvmStatic fun drawnStable(x: Int, y: Int, w: Int, h: Int): Boolean {
+        val now = System.currentTimeMillis()
+        val o = Box().also { it.x0 = x; it.y0 = y; it.x1 = x + w; it.y1 = y + h }
+        return liveBoxes.any { it.worldMs != 0L && now - it.worldMs < 2000 && it.worldMs - it.runStartMs >= 1500 && it.hitsRect(o) }
+    }
+
     private fun wrap(id: Identifier, el: HudElement): HudElement {
         val exempt = id.path in TAB_EXEMPT
         val box = Box()
-        val frame = Box()
+        liveBoxes.add(box)
+        val frame = Box().also { it.id = id.toString() }
         return HudElement { ctx, tick ->
             if (!exempt && FishSettings.hideHudsUnderTab && tabOpen() && box.hits(tabBox)) return@HudElement
             if (!exempt && panelSeenMs != 0L && panelOpen() && box.hits(panelBox)) return@HudElement
@@ -69,6 +106,14 @@ object FishHudLayer {
                 inModHud = prev
                 cur = prevBox
                 box.copy(frame)
+                if (!box.empty()) {
+                    val now = System.currentTimeMillis()
+                    box.drawnMs = now
+                    if (net.minecraft.client.Minecraft.getInstance().curScreen == null) {
+                        if (now - box.worldMs > 400L) box.runStartMs = now
+                        box.worldMs = now
+                    }
+                }
             }
         }
     }

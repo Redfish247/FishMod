@@ -14,6 +14,7 @@ import fishmod.features.extras.ChatRuleHandler
 import fishmod.features.extras.ChatRuleStore
 import fishmod.features.general.CommandAliases
 import fishmod.features.general.CommandKeys
+import fishmod.features.general.CommandWheel
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
 import fishmod.utils.rendering.UiScale
@@ -33,7 +34,7 @@ import kotlin.math.sin
 class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val parent: Screen? = null) :
     Screen(Component.literal("Chat & Commands")), HasUiOverlay {
 
-    enum class Tab(val label: String) { NOTIFICATIONS("Notifications"), FILTER("Chat Filter"), ALIASES("Aliases"), KEYS("Keys") }
+    enum class Tab(val label: String) { NOTIFICATIONS("Notifications"), FILTER("Chat Filter"), ALIASES("Aliases"), KEYS("Keys"), WHEEL("Wheel") }
 
     private enum class Out(val label: String) { TITLE("Title"), ACTION_BAR("Action Bar"), SOUND("Sound"), CHAT("Chat Reply") }
 
@@ -68,6 +69,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
         const val LIST_W = 172
         const val RULE_ROW_H = 30
         const val ROW_H = 24
+        val WHEEL_COLORS = intArrayOf(0xFF4DA3FF.toInt(), 0xFF55FFFF.toInt(), 0xFF55FF55.toInt(), 0xFFFFD84D.toInt(), 0xFFFFAA00.toInt(), 0xFFFF5555.toInt(), 0xFFFF77AA.toInt(), 0xFFAA66FF.toInt(), 0xFFFFFFFF.toInt())
 
 
         fun withAlpha(c: Int, a: Double): Int = ((a.coerceIn(0.0, 1.0) * 255).toInt() shl 24) or (c and 0xFFFFFF)
@@ -79,6 +81,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
     private class AliasRow(val alias: EditBox, val cmd: EditBox)
     private class KeyRow(var key: InputConstants.Key, var enabled: Boolean, val cmd: EditBox)
     private class FilterRow(val entry: ChatFilter.Entry, val field: EditBox)
+    private class WheelRow(val label: EditBox, val item: EditBox, val cmd: EditBox, var color: Int)
 
     private var px = 0; private var py = 0; private var pw = 0; private var ph = 0
     private var bx = 0; private var by = 0; private var bw = 0; private var bh = 0
@@ -108,6 +111,8 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
 
     private val aliasRows = ArrayList<AliasRow>()
     private val keyRows = ArrayList<KeyRow>()
+    private val wheelRows = ArrayList<WheelRow>()
+    private var wheelKeyRow: KeyRow? = null
     private var rowsScroll = 0
     private var rowsArea = IntArray(4)
     private var capture: KeyRow? = null
@@ -130,6 +135,8 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
 
             for (e in CommandAliases.all()) aliasRows.add(AliasRow(mkField(32, e.alias()), mkField(256, e.command())))
             for (e in CommandKeys.all()) keyRows.add(KeyRow(e.key(), e.enabled(), mkField(256, e.command())))
+            wheelKeyRow = KeyRow(CommandWheel.key(), true, mkField(1, ""))
+            for (s in CommandWheel.slots()) wheelRows.add(WheelRow(mkField(24, s.label), mkField(64, s.item), mkField(256, s.command), s.color))
             for (e in ChatFilter.parse(fishmod.utils.config.values.FishSettings.cfCustomPatterns)) addFilterRow(e)
             filterTestField = mkField(256, "")
 
@@ -163,6 +170,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
         ChatRuleStore.save()
         CommandAliases.replaceAll(aliasRows.map { CommandAliases.Entry(it.alias.value, it.cmd.value) })
         CommandKeys.replaceAll(keyRows.map { CommandKeys.Entry(it.key, it.cmd.value, it.enabled) })
+        CommandWheel.replaceAll(wheelKeyRow?.key ?: InputConstants.UNKNOWN, wheelRows.map { CommandWheel.Slot(it.label.value, it.item.value, it.cmd.value, it.color) })
         fishmod.utils.config.values.FishSettings.cfCustomPatterns = ChatFilter.encode(filterRows.map { it.entry })
         fishmod.utils.config.FishConfig.manager.save()
     }
@@ -209,6 +217,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
                 Tab.FILTER -> drawFilter()
                 Tab.ALIASES -> drawAliases()
                 Tab.KEYS -> drawKeys()
+                Tab.WHEEL -> drawWheel()
             }
         } catch (t: Throwable) {
             FishDiag.fail("ChatCommandsScreen.2", "chat & commands screen draw failed on tab $tab", t)
@@ -221,6 +230,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
         Tab.FILTER -> filterRows.count { it.entry.enabled && it.entry.text.isNotBlank() }.toString()
         Tab.ALIASES -> aliasRows.count { it.alias.value.isNotBlank() }.toString()
         Tab.KEYS -> keyRows.count { it.key != InputConstants.UNKNOWN }.toString()
+        Tab.WHEEL -> wheelRows.size.toString()
     }
 
     private fun drawFrame() {
@@ -689,6 +699,71 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
             keyRows.add(row)
             rowsScroll = Int.MAX_VALUE
             capture = row
+        }
+    }
+
+    private fun drawWheel() {
+        text("Hold the wheel key in-game, move toward a slot, release to run it. Item is an id like diamond_sword (blank = letter).",
+            bx.toFloat(), by.toFloat(), 7f, SUB)
+        val wk = wheelKeyRow ?: return
+        val chipW = 120
+        label("WHEEL KEY", bx, by + 16)
+        val kx = bx + 62
+        val capturing = capture === wk
+        val bound = wk.key != InputConstants.UNKNOWN
+        val hov = inside(kx, by + 12, chipW, 18)
+        if (capturing) {
+            val a = 0.55 + 0.45 * sin(System.currentTimeMillis() / 160.0)
+            ScreenTheme.nRoundedRectRing(kx, by + 12, chipW, 18, 5, 1, ACCENT_SOFT, withAlpha(ACCENT_HOVER, a))
+            captureChip = intArrayOf(kx, by + 12, chipW, 18)
+        } else {
+            ScreenTheme.nRoundedRectRing(kx, by + 12, chipW, 18, 5, 1, if (bound) ScreenTheme.surface(0x14) else FIELD_BG, if (hov) ACCENT else FIELD_BORDER)
+        }
+        val kt = clipText(if (capturing) "Press a key…" else if (bound) wk.key.displayName.string else "Unbound", chipW - 10, 7.5f)
+        text(kt, kx + (chipW - tw(kt, 7.5f)) / 2f, by + 18f, 7.5f, if (capturing) ACCENT_HOVER else if (bound) TEXT else DIM)
+        hit(kx, by + 12, chipW, 18) { setFocus(null); capture = wk }
+
+        val sw = 18
+        val lx = bx + sw + 6
+        val labW = 96
+        val itemX = lx + labW + 6
+        val itemW = 118
+        val cx = itemX + itemW + 6
+        val xw = 18
+        val cw = bx + bw - xw - 6 - cx
+        val hy = by + 38
+        label("LABEL", lx, hy)
+        label("ITEM", itemX, hy)
+        label("COMMAND", cx, hy)
+
+        val ly = hy + 12
+        val lh = max(ROW_H, min(wheelRows.size * ROW_H, bh - (ly - by) - 30))
+        rowsArea = intArrayOf(bx, ly, bw, lh)
+        rowsScroll = rowsScroll.coerceIn(0, max(0, wheelRows.size * ROW_H - lh))
+
+        pushClip(bx, ly, bw, lh)
+        for ((i, row) in wheelRows.withIndex()) {
+            val ry = ly + i * ROW_H - rowsScroll
+            if (ry + ROW_H < ly || ry > ly + lh) continue
+            val sh = inside(bx, ry + 2, sw, 18)
+            ScreenTheme.nRoundedRectRing(bx, ry + 2, sw, 18, 5, 1, withAlpha(row.color, 0.9), if (sh) ACCENT else FIELD_BORDER)
+            hit(bx, ry + 2, sw, 18) {
+                val at = WHEEL_COLORS.indexOf(row.color)
+                row.color = WHEEL_COLORS[(at + 1) % WHEEL_COLORS.size]
+            }
+            field(row.label, lx, ry + 2, labW, 18, "name")
+            field(row.item, itemX, ry + 2, itemW, 18, "diamond_sword")
+            slashField(row.cmd, cx, ry + 2, cw, 18, "command to run")
+            iconX(bx + bw - xw, ry + 2, xw, 18) { wheelRows.remove(row) }
+        }
+        if (wheelRows.isEmpty()) text("No wheel slots yet.", bx + 4f, ly + 7f, 7.5f, DIM)
+        popClip()
+
+        val y = ly + lh + 6
+        if (wheelRows.size >= CommandWheel.MAX_SLOTS) text("Wheel is full (${CommandWheel.MAX_SLOTS} slots).", bx.toFloat(), y + 6f, 7f, SUB)
+        else addRow("+ Add wheel slot", bx, y, bw, 22) {
+            wheelRows.add(WheelRow(mkField(24, ""), mkField(64, ""), mkField(256, ""), WHEEL_COLORS[wheelRows.size % WHEEL_COLORS.size]))
+            rowsScroll = Int.MAX_VALUE
         }
     }
 

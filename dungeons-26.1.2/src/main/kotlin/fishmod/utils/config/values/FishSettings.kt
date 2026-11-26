@@ -26,6 +26,13 @@ object FishSettings {
     @ConfigValue @JvmField var soulflowMissingNotifier: Boolean = false
     @ConfigValue @JvmField var soulflowHudX: Int = 10
     @ConfigValue @JvmField var soulflowHudY: Int = 60
+    @ConfigValue @JvmField var deployablesHudEnabled: Boolean = false
+    @ConfigValue @JvmField var deployablesHudX: Int = 10
+    @ConfigValue @JvmField var deployablesHudY: Int = 90
+    @ConfigValue @JvmField var deployablesShowFlares: Boolean = true
+    @ConfigValue @JvmField var deployablesShowOrbs: Boolean = true
+    @ConfigValue @JvmField var deployablesShowDistance: Boolean = true
+    @ConfigValue @JvmField var deployablesHudRange: Int = 40
 
     @ConfigValue @JvmField var fmColumnOrder: String = ""
     @ConfigValue @JvmField var fmColumnOrderV: Int = 0
@@ -79,7 +86,6 @@ object FishSettings {
     @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
     @ConfigValue @JvmField var guiScalePartyLoot: Int = 100
     @ConfigValue @JvmField var guiScaleHudEditor: Int = 100
-    @ConfigValue @JvmField var hudEditorPickEnabled: Boolean = false
     @ConfigValue @JvmField var guiScaleItemCustomize: Int = 100
     @ConfigValue @JvmField var guiScaleStorage: Int = 100
     @ConfigValue @JvmField var guiScaleAuction: Int = 100
@@ -193,6 +199,8 @@ object FishSettings {
     @ConfigValue @JvmField var chatTabGuild: Boolean = true
     @ConfigValue @JvmField var chatTabOfficer: Boolean = false
     @ConfigValue @JvmField var chatTabCoop: Boolean = true
+    @ConfigValue @JvmField var chatTabFishMod: Boolean = true
+    @ConfigValue @JvmField var fishChatShareDrops: Boolean = true
     @ConfigValue @JvmField var chatTabsBgColor: Int = 0xC014181D.toInt()
     @ConfigValue @JvmField var chatTabsHoverColor: Int = 0xE0283038.toInt()
     @ConfigValue @JvmField var chatTabsSelectedColor: Int = 0xFF24B6B0.toInt()
@@ -223,7 +231,7 @@ object FishSettings {
     @ConfigValue @JvmField var compactTabSortMode: String = "Rank (Default)"
     @ConfigValue @JvmField var compactTabScale: Int = 100
     @ConfigValue @JvmField var compactTabPinStaff: Boolean = false
-    @ConfigValue @JvmField var compactTabFooterMode: String = "Hypixel"
+    @ConfigValue @JvmField var compactTabFooterMode: String = "Stats"
     @ConfigValue @JvmField var compactTabFooterText: String = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot}"
     @ConfigValue @JvmField var compactTabShowEffects: Boolean = false
 
@@ -320,6 +328,7 @@ object FishSettings {
     @ConfigValue @JvmField var nickStrike: Boolean = false
     @ConfigValue @JvmField var nickMagic: Boolean = false
     @ConfigValue @JvmField var playerModel: String = "PLAYER"
+    @ConfigValue @JvmField var seeOtherModels: Boolean = false
 
     @ConfigValue @JvmField var nickPreviewEnabled: Boolean = false
     @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
@@ -382,6 +391,7 @@ object FishSettings {
     @ConfigValue @JvmField var sessionStatsScale: Double = 1.0
     @ConfigValue @JvmField var petHudScale: Double = 1.0
     @ConfigValue @JvmField var soulflowHudScale: Double = 1.0
+    @ConfigValue @JvmField var deployablesHudScale: Double = 1.0
     @ConfigValue @JvmField var textShadowEnabled: Boolean = false
     @ConfigValue @JvmField var textShadowNametags: Boolean = true
     @ConfigValue @JvmField var textShadowWorldText: Boolean = true
@@ -579,6 +589,7 @@ object FishSettings {
     @ConfigValue @JvmField var storageOverlayScale: Double = 1.0
     @ConfigValue @JvmField var storageScrollSpeed: Int = 10
     @ConfigValue @JvmField var storageRetainScroll: Boolean = true
+    @ConfigValue @JvmField var storageMouseTweaks: Boolean = true
     @ConfigValue @JvmField var storageKeepSearch: Boolean = true
     @ConfigValue @JvmField var storageAutoFocusSearch: Boolean = false
     @ConfigValue @JvmField var containerValueEnabled: Boolean = false
@@ -620,6 +631,7 @@ object FishSettings {
     @ConfigValue @JvmField var auctionAutofillPercent: Int = 5
     @ConfigValue @JvmField var signCalculator: Boolean = false
 
+    @ConfigValue @JvmField var tooltipAutoFit: Boolean = false
     @ConfigValue @JvmField var tooltipScrollEnabled: Boolean = false
     @ConfigValue @JvmField var tooltipScrollScale: Int = 100
     @ConfigValue @JvmField var tooltipScrollSpeed: Int = 3
@@ -1034,6 +1046,23 @@ object FishSettings {
     @ConfigValue @JvmField var routeColorItem: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var routeColorBat: Int = 0xFFFF55FF.toInt()
 
+    @ConfigValue @JvmField var secretWaypointsEnabled: Boolean = false
+    @ConfigValue @JvmField var secretWpChest: Boolean = true
+    @ConfigValue @JvmField var secretWpItem: Boolean = true
+    @ConfigValue @JvmField var secretWpBat: Boolean = true
+    @ConfigValue @JvmField var secretWpEssence: Boolean = true
+    @ConfigValue @JvmField var secretWpRedstoneKey: Boolean = true
+    @ConfigValue @JvmField var secretWpColorChest: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var secretWpColorItem: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var secretWpColorBat: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var secretWpColorEssence: Int = 0xFFAA55FF.toInt()
+    @ConfigValue @JvmField var secretWpColorRedstoneKey: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var secretWpLabels: Boolean = true
+    @ConfigValue @JvmField var secretWpHideCleared: Boolean = true
+    @ConfigValue @JvmField var secretWpStyle: String = "Filled Outline"
+    @ConfigValue @JvmField var secretWpLineWidth: Double = 3.0
+    @ConfigValue @JvmField var secretWpMaxDistance: Int = 0
+
     @ConfigValue @JvmField var secretClickedEnabled: Boolean = false
     @ConfigValue @JvmField var secretClickedBoxes: Boolean = true
     @ConfigValue @JvmField var secretClickedBats: Boolean = true
@@ -1149,12 +1178,11 @@ object FishSettings {
     @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
     @ConfigValue @JvmField var slayerQolEnabled: Boolean = true
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
-    @ConfigValue @JvmField var slayerPhaseThroughWalls: Boolean = true
+    @ConfigValue @JvmField var slayerPhaseThroughWalls: Boolean = false
     @ConfigValue @JvmField var slayerPhaseTextScale: Int = 60
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
-    @ConfigValue @JvmField var slayerPhaseHpLabel: Boolean = false
-    @ConfigValue @JvmField var slayerPhaseTimeLabel: Boolean = false
+    @ConfigValue @JvmField var slayerPhaseHitBosses: Boolean = false
     @ConfigValue @JvmField var slayerPhaseHideNametag: Boolean = false
 
     @JvmStatic

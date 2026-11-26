@@ -485,7 +485,7 @@ object CompactTab {
         if (live > 0) return live
         try {
             val self = mc.connection?.getPlayerInfo(mc.player!!.uuid)
-            if (self != null && self.latency > 0) return self.latency
+            if (self != null && self.latency > 1) return self.latency
         } catch (ex: Exception) {
             FishDiag.fail("CompactTab.4", "own tab latency lookup failed", ex)
         }
@@ -509,7 +509,7 @@ object CompactTab {
         return if (m.find()) m.group(1) else "—"
     }
 
-    const val STATS_TEMPLATE = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot} &8| &aEffects &f{effects}"
+    const val STATS_TEMPLATE = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot}"
 
     private fun footerText(mdl: Model): String? = when (FishSettings.compactTabFooterMode) {
         "Off" -> null

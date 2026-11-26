@@ -80,6 +80,7 @@ object CustomScoreboard {
     fun render(ctx: GuiGraphicsExtractor, screenW: Int) {
         try {
             renderInner(ctx, screenW)
+            fishmod.utils.rendering.FishHudLayer.markDrawn("Custom Scoreboard")
         } catch (e: Exception) {
             FishDiag.fail("CustomScoreboard.1", "custom scoreboard render failed (${cur.lines.size} cached lines)", e)
         }

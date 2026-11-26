@@ -1,0 +1,18 @@
+FishMod Changelog - 2026-11-25
+==================================
+Fixed:
+- Slayer Spawn Box moved into Slayer QOL as its own subcategory (#731 #717 #306).
+- Chat rule sound now plays through the mod sound manager (#729).
+- Hide titles also clears a title that is already on screen (#730).
+- Ping tracker starts when the mod loads (#727).
+- Item price tooltip now counts drill parts, wood singularity, transmission tuner, jalapeno, farming books and talisman enrichment (#726).
+- Item list no longer builds its index from a single loaded item (#728).
+- Smoldering VI now triggers the rare drop animation (#724).
+Not fixed (needs Hypixel data, not guessed): #725 boss health 500k vs 50m, #723 fire pillar announcement, #719 tab sort in Rift, #718 flare in deployables HUD.
+Test in game:
+1. Slayer QOL: Slayer Spawn Box shows the box and the spawn mark.
+2. Hover a drill or farming tool with parts: price includes them.
+3. Kill a Smoldering VI drop source on Crimson Isle: animation plays.
+Run notes:
+- Build :dungeons-26.1.2 + :dungeons-26.2 SUCCESSFUL. Jar 1.8.75-26.2 copied over the Skyblock mods one (same version). Everything untested in game.
+- For #723 send the exact armour stand text shown for the pillar; for #725 /fm debug output while the boss shows low health.

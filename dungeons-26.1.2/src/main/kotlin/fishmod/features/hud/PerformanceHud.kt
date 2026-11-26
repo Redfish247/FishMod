@@ -84,7 +84,7 @@ object PerformanceHud {
         val live = PingTracker.latest()
         if (live > 0) return live
         val self = mc.player?.let { mc.connection?.getPlayerInfo(it.uuid) }
-        return if (self != null && self.latency > 0) self.latency else -1
+        return if (self != null && self.latency > 1) self.latency else -1
     }
 
     @JvmStatic

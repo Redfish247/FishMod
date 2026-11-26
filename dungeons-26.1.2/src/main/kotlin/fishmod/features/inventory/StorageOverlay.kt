@@ -72,6 +72,9 @@ object StorageOverlay {
     private var dragStartSlot: Slot? = null
     private val dragSlots = LinkedHashSet<Int>()
     private var dragPreview: DragPreview? = null
+    private var tweakButton = -1
+    private var tweakShift = false
+    private var tweakLast = -1
     private val dragArmed get() = dragStartSlot != null
     private val dragActive get() = dragSlots.size >= 2
 
@@ -762,7 +765,7 @@ object StorageOverlay {
 
         if (inRect(rx, ry, scrollPanelX, scrollPanelY, scrollPanelW, scrollPanelH)) {
             val data = visibleData(activePage, null)
-            if (activePage != null) activePageSlotAt(rx, ry, activePage, data)?.let { dispatchSlotClick(it, button, modifiers); return true }
+            if (activePage != null) activePageSlotAt(rx, ry, activePage, data)?.let { startTweak(it, button, modifiers); dispatchSlotClick(it, button, modifiers); return true }
             layoutedForEach(data) { x, y, pw, ph, page, _ ->
                 if (inRect(rx, ry, x, y, pw, ph) && activePage != page && button == 0) page.open()
             }
@@ -776,14 +779,38 @@ object StorageOverlay {
             return true
         }
 
-        playerSlotAt(rx.toInt(), ry.toInt())?.let { dispatchSlotClick(it, button, modifiers) }
+        playerSlotAt(rx.toInt(), ry.toInt())?.let { startTweak(it, button, modifiers); dispatchSlotClick(it, button, modifiers) }
         return true
+    }
+
+    private fun startTweak(slot: Slot, button: Int, modifiers: Int) {
+        tweakButton = -1
+        if (!FishSettings.storageMouseTweaks || button != 0 || !slot.hasItem()) return
+        tweakButton = button
+        tweakShift = modifiers and GLFW.GLFW_MOD_SHIFT != 0
+        tweakLast = slot.index
+    }
+
+    private fun tweakDrag(slot: Slot) {
+        if (slot.index == tweakLast) return
+        tweakLast = slot.index
+        if (!slot.hasItem()) return
+        val menu = screenMenu() ?: return
+        if (tweakShift) {
+            dispatchSlotClick(slot, 0, GLFW.GLFW_MOD_SHIFT)
+            return
+        }
+        val carried = menu.carried
+        if (carried.isEmpty || carried.count >= carried.maxStackSize) return
+        if (!ItemStack.isSameItemSameComponents(carried, slot.item)) return
+        dispatchSlotClick(slot, 0, 0, ContainerInput.PICKUP)
     }
 
     @JvmStatic
     fun mouseReleased(screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
         searchSelecting = false
+        tweakButton = -1
         if (dragArmed) {
             if (dragActive) endDrag()
             else dragStartSlot?.let {
@@ -811,6 +838,10 @@ object StorageOverlay {
         }
         if (dragArmed) {
             resolveSlotUnder(rx, ry, activePage(screen))?.let { dragSlots.add(it.index) }
+            return true
+        }
+        if (tweakButton >= 0) {
+            resolveSlotUnder(rx, ry, activePage(screen))?.let { tweakDrag(it) }
             return true
         }
         if (knobGrabbed) {
@@ -875,6 +906,7 @@ object StorageOverlay {
         searchFocused = false
         searchSelecting = false
         knobGrabbed = false
+        tweakButton = -1
         dragStartSlot = null
         dragSlots.clear()
         dragPreview = null

@@ -11,6 +11,7 @@ import fishmod.features.FishHudEditor
 import fishmod.features.visuals.ItemRarityHotbar
 import fishmod.features.hud.PetHud
 import fishmod.features.hud.SoulflowHud
+import fishmod.features.hud.DeployablesHud
 import fishmod.features.dungeon.DungeonDeathMessage
 import fishmod.features.dungeon.FishEstTotal
 import fishmod.features.dungeon.solvers.FishPuzzleDisplay
@@ -370,7 +371,7 @@ class FishModInit : ClientModInitializer {
             line.accept("§3§lScreens & Misc")
             line.accept("§e/fm §7— config GUI  §8·§7  §e/fmloot §7— Croesus loot")
             line.accept("§e/fm hud §7— open the HUD editor")
-            line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands")
+            line.accept("§e/fm commandkeys §8(§e/fm ck§8) §7— bind keys/mouse buttons to run slash commands, plus the command wheel (Wheel tab)")
             line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)")
             line.accept("§e/nick §8<name>|reset")
             line.accept("§e/fm debug §8[clear] §7— copy a problem report to send RedFish")
@@ -445,6 +446,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.17", "fishmod.features.dungeon.trackers.CritTracker.init() failed") { fishmod.features.dungeon.trackers.CritTracker.init() }
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
+        FishDiag.guard("FishModInit.19b", "DeployablesHud.init() failed") { DeployablesHud.init() }
         FishDiag.guard("FishModInit.CalTimes", "CalendarTimes.init() failed") { fishmod.features.events.CalendarTimes.init() }
         FishDiag.guard("FishModInit.Extras", "Extras.init() failed") { fishmod.features.extras.Extras.init() }
         FishDiag.guard("FishModInit.20", "PetHud.init() failed") { PetHud.init() }
@@ -459,6 +461,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.26", "fishmod.features.general.CollectionsProgress.init() failed") { fishmod.features.general.CollectionsProgress.init() }
         FishDiag.guard("FishModInit.27", "fishmod.features.general.FireSaleInfo.init() failed") { fishmod.features.general.FireSaleInfo.init() }
         FishDiag.guard("FishModInit.28", "fishmod.features.general.CommandKeys.init() failed") { fishmod.features.general.CommandKeys.init() }
+        FishDiag.guard("FishModInit.28w", "fishmod.features.general.CommandWheel.init() failed") { fishmod.features.general.CommandWheel.init() }
         FishDiag.guard("FishModInit.29", "fishmod.features.inventory.WardrobeHotkeys.init() failed") { fishmod.features.inventory.WardrobeHotkeys.init() }
         FishDiag.guard("FishModInit.30", "ItemRarityHotbar.init() failed") { ItemRarityHotbar.init() }
         FishDiag.guard("FishModInit.31", "fishmod.features.hud.ItemQualityTooltip.init() failed") { fishmod.features.hud.ItemQualityTooltip.init() }
@@ -525,6 +528,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.80", "fishmod.features.hud.PerformanceHud.init() failed") { fishmod.features.hud.PerformanceHud.init() }
         FishDiag.guard("FishModInit.80s", "fishmod.features.hud.SpotifyLyricsHud.init() failed") { fishmod.features.hud.SpotifyLyricsHud.init() }
         FishDiag.guard("FishModInit.81", "fishmod.features.dungeon.InvincibilityTracker.init() failed") { fishmod.features.dungeon.InvincibilityTracker.init() }
+        FishDiag.guard("FishModInit.82b", "fishmod.features.dungeon.SecretWaypoints.init() failed") { fishmod.features.dungeon.SecretWaypoints.init() }
         FishDiag.guard("FishModInit.82", "fishmod.features.dungeon.SecretClicked.init() failed") { fishmod.features.dungeon.SecretClicked.init() }
         FishDiag.guard("FishModInit.83", "fishmod.features.dungeon.RouteRecorder.init() failed") { fishmod.features.dungeon.RouteRecorder.init() }
         FishDiag.guard("FishModInit.84", "fishmod.features.dungeon.floor7.terminal.TerminalSolver.init() failed") { fishmod.features.dungeon.floor7.terminal.TerminalSolver.init() }
@@ -556,6 +560,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.R1", "fishmod.features.rift.Rift.init() failed") { fishmod.features.rift.Rift.init() }
         FishDiag.guard("FishModInit.garden", "fishmod.features.garden.Garden.init() failed") { fishmod.features.garden.Garden.init() }
         FishDiag.guard("FishModInit.ach", "AchEngine.init() failed") { fishmod.features.achievements.AchEngine.init() }
+        FishDiag.guard("FishModInit.ping", "PingTracker.start() failed") { fishmod.utils.PingTracker.start() }
         FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.floor7.F7Huds.init() failed") { fishmod.features.dungeon.floor7.F7Huds.init() }
         FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.InvButtonSettings.init() failed") { fishmod.utils.config.values.InvButtonSettings.init() }
         FishDiag.guard("FishModInit.104b", "EquipmentDisplay.init() failed") { fishmod.features.general.EquipmentDisplay.init() }
@@ -613,6 +618,12 @@ class FishModInit : ClientModInitializer {
                         FishConstants.SUCCESS
                     })
                     .then(ClientCommands.literal("commandkeys").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().showScreen(fishmod.features.hud.ChatCommandsScreen(fishmod.features.hud.ChatCommandsScreen.Tab.KEYS))
+                        }
+                        FishConstants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("ck").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().showScreen(fishmod.features.hud.ChatCommandsScreen(fishmod.features.hud.ChatCommandsScreen.Tab.KEYS))
                         }
@@ -1423,6 +1434,7 @@ class FishModInit : ClientModInitializer {
             fishmod.utils.TickScheduler.scheduleTask({ fishmod.compat.BladeCompat.tellOnce() }, 60)
         })
 
+        fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "deployables_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) DeployablesHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.113b", "deployables_hud render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) SoulflowHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.113", "soulflow_hud render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_breaker_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.DungeonBreaker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.114", "dungeon_breaker_hud render failed", t) } }
         fishmod.utils.rendering.FishHudLayer.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) PetHud.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.115", "pet_hud render failed", t) } }

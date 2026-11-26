@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 object PlayerModel {
 
+    @JvmField @Volatile var menuPreview = false
+
     private val EXCLUDED = setOf(
         "ender_dragon", "wither", "giant", "ghast", "happy_ghast", "warden", "player", "armor_stand", "mannequin",
     )
@@ -72,9 +74,11 @@ object PlayerModel {
         val mc = Minecraft.getInstance()
         val me = mc.player
         if (me != null && p.uuid == me.uuid) return ownKey()
-        if (!FishSettings.playerSizeShared) return "PLAYER"
+        if (!FishSettings.playerSizeShared || !FishSettings.seeOtherModels) return "PLAYER"
         return remote[p.uuid.toString().replace("-", "")] ?: "PLAYER"
     }
+
+    private var nextFakeId = -1000
 
     @JvmStatic
     fun fakeFor(p: Player, key: String): LivingEntity? {
@@ -86,6 +90,7 @@ object PlayerModel {
             val type = BuiltInRegistries.ENTITY_TYPE.getOptional(Identifier.withDefaultNamespace(key.lowercase())).orElse(null)
             val e = type?.create(level, EntitySpawnReason.LOAD)
             if (e !is LivingEntity) { failed.add(key); return null }
+            e.setId(nextFakeId--)
             fakes[p.uuid] = key to e
             return e
         } catch (t: Throwable) {
@@ -99,6 +104,10 @@ object PlayerModel {
     fun syncFake(f: LivingEntity, p: Player) {
         f.snapTo(p.x, p.y, p.z, p.yRot, p.xRot)
         f.xo = p.xo; f.yo = p.yo; f.zo = p.zo
+        f.xOld = p.xOld; f.yOld = p.yOld; f.zOld = p.zOld
+        f.customName = p.displayName
+        f.isCustomNameVisible = true
+        f.isShiftKeyDown = p.isShiftKeyDown
         f.yRotO = p.yRotO; f.xRotO = p.xRotO
         f.yBodyRot = p.yBodyRot; f.yBodyRotO = p.yBodyRotO
         f.yHeadRot = p.yHeadRot; f.yHeadRotO = p.yHeadRotO

@@ -32,6 +32,20 @@ object ItemRarityHotbar {
         RarityTier.ADMIN to 0xD13228,
     )
 
+    private val SKYBLOCKER: Map<RarityTier, Int> = mapOf(
+        RarityTier.COMMON to 0xFFFFFF,
+        RarityTier.UNCOMMON to 0x55FF55,
+        RarityTier.RARE to 0x5555FF,
+        RarityTier.EPIC to 0xAA00AA,
+        RarityTier.LEGENDARY to 0xFFAA00,
+        RarityTier.MYTHIC to 0xFF55FF,
+        RarityTier.DIVINE to 0x55FFFF,
+        RarityTier.SPECIAL to 0xFF5555,
+        RarityTier.VERY_SPECIAL to 0xAA0000,
+        RarityTier.ULTIMATE to 0xAA0000,
+        RarityTier.ADMIN to 0xAA0000,
+    )
+
     @JvmStatic
     fun init() {
         DrawHooks.INVENTORY_SLOT_BEFORE.register(::drawRarity)
@@ -56,10 +70,29 @@ object ItemRarityHotbar {
             if (!holder.`fishmod$hasScanned`()) holder.`fishmod$setItemRarity`(scanRarity(stack))
             if (!holder.`fishmod$hasItemRarity`()) return
 
+            if (VisualSettings.rarityBgGradient) {
+                drawGradient(ctx, x, y, getTintColor(holder.`fishmod$getItemRarity`()))
+                return
+            }
             val sprite = if (VisualSettings.rarityBgCircle) CIRCLE else SQUARE
             ctx.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.`fishmod$getItemRarity`()))
         } catch (t: Throwable) {
             FishDiag.fail("ItemRarityHotbar.2", "rarity background draw failed at $x,$y", t)
+        }
+    }
+
+    private val GRAD_INSET = intArrayOf(2, 1, 1)
+
+    /** Skyblocker-style slot background: rounded 16x16 square, vertical gradient from full tint (top) to ~35% (bottom). */
+    private fun drawGradient(ctx: GuiGraphicsExtractor, x: Int, y: Int, argb: Int) {
+        val a = argb ushr 24
+        val rgb = argb and 0xFFFFFF
+        for (row in 0 until 16) {
+            val f = 1f - 0.65f * row / 15f
+            val col = ((a * f).toInt().coerceIn(0, 255) shl 24) or rgb
+            val ei = if (row < 3) row else if (row >= 13) 15 - row else 3
+            val inset = if (ei < 3) GRAD_INSET[ei] else 0
+            ctx.fill(x + inset, y + row, x + 16 - inset, y + row + 1, col)
         }
     }
 
@@ -75,7 +108,8 @@ object ItemRarityHotbar {
     }
 
     private fun getTintColor(rarity: RarityTier): Int {
-        val rgb = if (VisualSettings.itemRarityHypixelColors) HYPIXEL[rarity] ?: (rarity.color and 0xFFFFFF)
+        val rgb = if (VisualSettings.rarityBgSkyblocker) SKYBLOCKER[rarity] ?: (rarity.color and 0xFFFFFF)
+                  else if (VisualSettings.itemRarityHypixelColors) HYPIXEL[rarity] ?: (rarity.color and 0xFFFFFF)
                   else rarity.color and 0xFFFFFF
         val hotbar = VisualSettings.itemRaritySeparateHotbar && net.minecraft.client.Minecraft.getInstance().curScreen == null
         val pct = if (hotbar) VisualSettings.itemRarityHotbarOpacity else VisualSettings.itemRarityOpacity

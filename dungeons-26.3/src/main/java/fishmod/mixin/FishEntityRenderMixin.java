@@ -163,6 +163,10 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 cir.setReturnValue(false);
                 return;
             }
+            if (fishmod.features.slayer.SlayerQol.hideBoss(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
             if (entity instanceof Player && fishmod.features.dungeon.LeapAnnounce.hidePlayersNow()
                     && entity != Minecraft.getInstance().player) {
                 cir.setReturnValue(false);

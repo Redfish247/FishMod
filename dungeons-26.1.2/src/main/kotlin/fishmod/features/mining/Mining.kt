@@ -62,6 +62,7 @@ object Mining {
         FishEvents.worldChange.register { recentTargets.clear(); area = ""; false }
 
         NucleusHighlight.init()
+        HollowsWaypoints.init()
         MineshaftPity.init()
         GemstoneLocator.init()
         FossilSolver.init()

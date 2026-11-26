@@ -72,12 +72,14 @@ object RareDropAnimation {
         val noMf = raw.replace(MF, "").trim().let { PAREN.matchEntire(it)?.groupValues?.get(1)?.trim() ?: it }
         val name = BOOK.matchEntire(noMf)?.groupValues?.get(1)
             ?: if (COUNT.containsMatchIn(noMf)) noMf.replace(COUNT, "").removeSuffix(")").trim() else noMf
-        return name.takeIf { it.isNotEmpty() }
+        return name.trim().let { if (it.length > 2 && it.startsWith("(") && it.endsWith(")") && it.indexOf('(', 1) < 0) it.substring(1, it.length - 1).trim() else it }
+            .takeIf { it.isNotEmpty() }
     }
 
     private fun onChat(plain: String) {
         val name = dropName(plain, Minecraft.getInstance().user.name) ?: return
-        val listed = BY_NORM[norm(name)] ?: return
+        val listed = BY_NORM[norm(name)]
+        if (listed == null) { fishmod.utils.debug.FishTrace.log("fishing") { "no animation: '$name' not in list (line: $plain)" }; return }
         if (listed.none { isOn(it) }) return
         play(name, plain.startsWith("PET DROP!"))
     }
@@ -106,6 +108,17 @@ object RareDropAnimation {
         if (listed.none { isOn(it) }) return "§c[RareDrop] '$name' is unticked in the menu, so it would not animate$master"
         play(name, CATEGORIES.any { it.first.contains("Pets") && it.second.any { d -> norm(d) == norm(name) } } || norm(name) in PET_NAMES)
         return "§a[RareDrop] playing '$name'$master"
+    }
+
+    /** Dev info (/fmdev raredrop list): master switch, then per category how many drops are ticked and which are not. */
+    @JvmStatic fun listInfo(): List<String> {
+        val out = ArrayList<String>()
+        out += "§3[RareDrop] master switch ${if (FishSettings.rareDropAnim) "§aON" else "§cOFF"}§7, ${CATEGORIES.size} categories, ${BY_NORM.size} drops"
+        for ((cat, drops) in CATEGORIES) {
+            val off = drops.filter { !isOn(it) }
+            out += "§f$cat §7${drops.size - off.size}/${drops.size} ticked" + if (off.isEmpty()) "" else " §8off: ${off.joinToString(", ")}"
+        }
+        return out
     }
 
     private val PET_NAMES = setOf("ender dragon", "golem", "enderman", "slug")

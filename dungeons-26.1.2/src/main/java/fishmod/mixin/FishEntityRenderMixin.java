@@ -39,6 +39,15 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
     @org.spongepowered.asm.mixin.Unique
     private static final float[] IDENTITY_SCALE = {1.0f, 1.0f, 1.0f};
 
+    @Inject(method = "extractRenderState", at = @At("TAIL"), order = 2000)
+    public void fishmod$noMenuPreviewTag(T entity, S state, float tickProgress, CallbackInfo ci) {
+        if (fishmod.cosmetic.PlayerModel.menuPreview) {
+            state.nameTag = null;
+            state.scoreText = null;
+            ((NametagStatsHolder) state).fishmod$setNametagStats(null);
+        }
+    }
+
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
         if (fishmod.utils.debug.FishDebug.skipExtract) return;
@@ -165,6 +174,10 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
                 return;
             }
             if (fishmod.features.dungeon.solvers.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
+            if (fishmod.features.slayer.SlayerQol.hideBoss(entity)) {
                 cir.setReturnValue(false);
                 return;
             }

@@ -1,0 +1,92 @@
+name: CI
+
+# Compiles every push to main and every pull request, so commits made without a
+# local build ("not built") still get checked in the cloud.
+# 26.1.2 and 26.2 must pass. 26.3 is the port in progress: it is reported but
+# never fails the run. Jars are kept as artifacts for 7 days.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "common/**"
+      - "dungeons-26.1.2/**"
+      - "dungeons-26.2/**"
+      - "dungeons-26.3/**"
+      - "practical-config-relocated/**"
+      - "*.gradle"
+      - "gradle/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "common/**"
+      - "dungeons-26.1.2/**"
+      - "dungeons-26.2/**"
+      - "dungeons-26.3/**"
+      - "practical-config-relocated/**"
+      - "*.gradle"
+      - "gradle/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build 26.1.2 + 26.2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Skip frozen 1.21.11 project (its deps don't resolve on CI)
+        run: sed -i "/include 'dungeons-1.21.11'/d" settings.gradle
+
+      - name: Build
+        run: chmod +x gradlew && ./gradlew :dungeons-26.1.2:build :dungeons-26.2:build --no-daemon
+
+      - name: Collect jars
+        run: |
+          mkdir -p out
+          for d in dungeons-26.1.2 dungeons-26.2; do
+            find "$d/build/libs" -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' ! -name '*-dev.jar' -exec cp {} out/ \;
+          done
+          ls -l out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FishMod-${{ github.sha }}
+          path: out/*.jar
+          retention-days: 7
+          if-no-files-found: error
+
+  port-26-3:
+    name: Build 26.3 (port, may fail)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Skip frozen 1.21.11 project
+        run: sed -i "/include 'dungeons-1.21.11'/d" settings.gradle
+
+      - name: Build
+        run: chmod +x gradlew && ./gradlew -Pwith263 :dungeons-26.3:build --no-daemon

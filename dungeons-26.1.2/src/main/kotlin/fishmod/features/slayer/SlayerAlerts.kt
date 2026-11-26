@@ -23,6 +23,7 @@ object SlayerAlerts {
         SlayerQol.init()
         SlayerExtras.init()
         SlayerMore.init()
+        SlayerBossBox.init()
         GroundItemNames.init()
         SummonsHud.init()
         fishmod.features.end.DragonProfitTracker.init()

@@ -91,7 +91,7 @@ object NeuRepoCache {
 	fun isReady(): Boolean = ITEMS.isNotEmpty()
 
 	@JvmStatic
-	fun isFullyLoaded(): Boolean = fullLoadDone
+	fun isFullyLoaded(): Boolean = fullLoadDone && ITEMS.isNotEmpty()
 
 	@JvmStatic
 	fun size(): Int = ITEMS.size

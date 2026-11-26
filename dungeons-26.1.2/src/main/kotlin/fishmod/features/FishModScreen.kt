@@ -80,6 +80,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         try { buildCategories() } catch (t: Throwable) { FishDiag.fail("FishModScreen.2", "buildCategories failed after ${columns.size} columns", t) }
         try { applySavedColumnOrder() } catch (t: Throwable) { FishDiag.fail("FishModScreen.3", "applySavedColumnOrder failed for '${FishSettings.fmColumnOrder}'", t) }
         loadFoldedColumns()
+        try { addEditHudButtons() } catch (t: Throwable) { FishDiag.fail("FishModScreen.12", "addEditHudButtons failed", t) }
         fishmod.utils.TickScheduler.scheduleTask({
             if (paintCount == 0 && Minecraft.getInstance().curScreen === this) {
                 FishDiag.fail("FishModScreen.1", "paintUiOverlay never invoked 40 ticks after open (GameRendererUiMixin hook did not fire)")
@@ -89,6 +90,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 ))
             }
         }, 40)
+    }
+
+    private fun addEditHudButtons() {
+        for (c in columns) for (f in c.features) {
+            val e = FishHudEditor.findEntry(f.name) ?: continue
+            if (f.sub.any { it is ButtonSetting && it.name == "Edit HUD" }) continue
+            f.sub.add(0, ButtonSetting("Edit HUD", "Move and resize this HUD on screen", "Edit HUD", Runnable {
+                Minecraft.getInstance().showScreen(FishHudEditor(this, e.name()))
+            }))
+        }
     }
 
     private fun saveTwitchConfig() {
@@ -134,25 +145,31 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Feature Opacity %", "0% invisible - 100% solid", "fmCardAlpha", 0, 100))
             f.sub.add(SubcategoryHeader("Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = cards and panels just appear, no fades or slides", "fmUiAnimations"))
-            f.sub.add(SubcategoryHeader("HUD Editor"))
-            f.sub.add(ToggleSetting("Pick Enabled HUDs", "Opening the HUD editor picks every enabled HUD so they show right away", "hudEditorPickEnabled"))
             f.sub.add(SubcategoryHeader("GUI Scale"))
-            f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", "guiScaleMain", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", "guiScaleChatCommands", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Party & Loot Scale %", "100% = default size", "guiScalePartyLoot", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("HUD Editor Scale %", "100% = default size", "guiScaleHudEditor", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Item Customize Scale %", "100% = default size", "guiScaleItemCustomize", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Storage Viewer Scale %", "100% = default size", "guiScaleStorage", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", "guiScaleAuction", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", "guiScaleWaypoint", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Profile Viewer Scale %", "100% = default size", "guiScaleProfileViewer", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Diana Profit Scale %", "100% = default size", "guiScaleDianaProfit", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Diana Messages Scale %", "100% = default size", "guiScaleDianaMessages", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Achievements Scale %", "100% = default size", "guiScaleAchievements", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Inventory Button Editor Scale %", "100% = default size", "guiScaleInvButtons", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Market Scale %", "100% = default size", "guiScaleMarket", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Recipe Viewer Scale %", "100% = default size", "guiScaleRecipe", 50, 150, 5).deferred())
-            f.sub.add(SliderIntSetting("Update Window Scale %", "100% = default size", "guiScaleUpdate", 50, 150, 5).deferred())
+            val scaleTargets = listOf(
+                "Main GUI" to "guiScaleMain",
+                "Chat & Commands" to "guiScaleChatCommands",
+                "Party & Loot" to "guiScalePartyLoot",
+                "HUD Editor" to "guiScaleHudEditor",
+                "Item Customize" to "guiScaleItemCustomize",
+                "Storage Viewer" to "guiScaleStorage",
+                "Auction Price" to "guiScaleAuction",
+                "Waypoint Title" to "guiScaleWaypoint",
+                "Profile Viewer" to "guiScaleProfileViewer",
+                "Diana Profit" to "guiScaleDianaProfit",
+                "Diana Messages" to "guiScaleDianaMessages",
+                "Achievements" to "guiScaleAchievements",
+                "Inventory Button Editor" to "guiScaleInvButtons",
+                "Market" to "guiScaleMarket",
+                "Recipe Viewer" to "guiScaleRecipe",
+                "Update Window" to "guiScaleUpdate"
+            )
+            var scaleSel = 0
+            val scaleRefs = scaleTargets.map { SettingRef<Int>(FishSettings::class.java, it.second, 100) }
+            f.sub.add(DropdownSetting("Window", "Pick which window to resize", scaleTargets.map { it.first }.toTypedArray(),
+                { scaleTargets[scaleSel].first },
+                { v -> scaleSel = scaleTargets.indexOfFirst { it.first == v }.coerceAtLeast(0) }))
+            f.sub.add(SliderIntSetting("Scale %", "100% = default size", { scaleRefs[scaleSel].get() }, { scaleRefs[scaleSel].set(it) }, 50, 150, 5).deferred())
             general.features.add(f)
         }
         run {
@@ -162,8 +179,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.updateNoticeStyle = v }))
             general.features.add(f)
         }
-        general.features.add(Feature("FishMod Chat (/fc)", "fishChatEnabled"))
-        general.features.add(Feature("Profanity Filter", "profanityFilter"))
+        run {
+            val f = Feature("FishMod Chat (/fc)", "fishChatEnabled")
+            f.sub.add(ToggleSetting("Share Rare Drops", "Broadcast your rare drops to FishMod chat with a clickable gg button, and show other players' drops", "fishChatShareDrops"))
+            f.sub.add(ToggleSetting("Profanity Filter", "Replaces slurs and swear words in incoming chat with asterisks", "profanityFilter"))
+            general.features.add(f)
+        }
         run {
             val f = Feature("Rare Drop Animation", "rareDropAnim")
             f.sub.add(ToggleSetting("Show Title", "Also show a title with the dropped item's name", "rareDropAnimTitle"))
@@ -298,6 +319,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("  Guild Tab", "", "chatTabGuild").gatedBy { FishSettings.chatTabs })
             f.sub.add(ToggleSetting("  Officer Tab", "", "chatTabOfficer").gatedBy { FishSettings.chatTabs })
             f.sub.add(ToggleSetting("  Co-op Tab", "", "chatTabCoop").gatedBy { FishSettings.chatTabs })
+            f.sub.add(ToggleSetting("  FishMod Tab", "Shows FishMod chat (/fc) messages; typing in this tab sends to /fc", "chatTabFishMod").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Tab Background", "", FishSettings::class.java, "chatTabsBgColor").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Tab Hover", "", FishSettings::class.java, "chatTabsHoverColor").gatedBy { FishSettings.chatTabs })
             f.sub.add(ColorPickerSetting("Selected Tab", "", FishSettings::class.java, "chatTabsSelectedColor").gatedBy { FishSettings.chatTabs })
@@ -471,7 +493,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderDoubleSetting("Scale", "Overlay size", "storageOverlayScale", 0.5, 2.0))
             f.sub.add(SliderIntSetting("Scroll Speed", "", "storageScrollSpeed", 1, 50))
             f.sub.add(ToggleSetting("Retain Scroll", "Keep scroll offset after closing", "storageRetainScroll"))
-            f.sub.add(ToggleSetting("Keep Search", "Keep the search text when the overlay reopens (off also clears it when switching pages)", "storageKeepSearch"))
+            f.sub.add(ToggleSetting("Click And Drag", "Hold left click and drag over slots: Shift quick-moves each slot, plain drag gathers matching items (like Mouse Tweaks). One slot per mouse move, no scripted clicks", "storageMouseTweaks"))
+            f.sub.add(ToggleSetting("Keep Search","Keep the search text when the overlay reopens (off also clears it when switching pages)", "storageKeepSearch"))
             f.sub.add(ToggleSetting("Autofocus Search", "Focus the search bar when the overlay opens", "storageAutoFocusSearch"))
             f.sub.add(ToggleSetting("Hide Non-Matching Pages","While searching", "storageHideNonMatching"))
             invStorage.features.add(f)
@@ -571,8 +594,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Corner Radius", "", "customScoreboardRadius", 0, 10))
             val sbImages = fishmod.features.dungeon.map.MapImageLoader.getImageNames().toTypedArray()
             f.sub.add(DropdownSetting("Background Image", "PNGs from the map images folder", sbImages,
-                { if (FishSettings.customScoreboardImage in sbImages) FishSettings.customScoreboardImage else fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE },
-                { v -> FishSettings.customScoreboardImage = if (v == fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) "" else v }))
+                { if (FishSettings.customScoreboardImage in fishmod.features.dungeon.map.MapImageLoader.getImageNames()) FishSettings.customScoreboardImage else fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE },
+                { v -> FishSettings.customScoreboardImage = if (v == fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) "" else v },
+                refreshValues = { fishmod.features.dungeon.map.MapImageLoader.getImageNames().toTypedArray() }))
             f.sub.add(SliderIntSetting("Image Alpha", "", "customScoreboardImageAlpha", 0, 255)
                 .gatedBy { FishSettings.customScoreboardImage.isNotEmpty() })
             f.sub.add(ButtonSetting("Open Images Folder", "") {
@@ -918,6 +942,26 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
+            val f = Feature("Secret Waypoints", "secretWaypointsEnabled")
+            f.sub.add(ToggleSetting("Chests", "", "secretWpChest"))
+            f.sub.add(ColorPickerSetting("Chest Color", "", "secretWpColorChest").gatedBy { FishSettings.secretWpChest })
+            f.sub.add(ToggleSetting("Items", "", "secretWpItem"))
+            f.sub.add(ColorPickerSetting("Item Color", "", "secretWpColorItem").gatedBy { FishSettings.secretWpItem })
+            f.sub.add(ToggleSetting("Bats", "", "secretWpBat"))
+            f.sub.add(ColorPickerSetting("Bat Color", "", "secretWpColorBat").gatedBy { FishSettings.secretWpBat })
+            f.sub.add(ToggleSetting("Wither Essence", "", "secretWpEssence"))
+            f.sub.add(ColorPickerSetting("Essence Color", "", "secretWpColorEssence").gatedBy { FishSettings.secretWpEssence })
+            f.sub.add(ToggleSetting("Redstone Keys", "", "secretWpRedstoneKey"))
+            f.sub.add(ColorPickerSetting("Redstone Key Color", "", "secretWpColorRedstoneKey").gatedBy { FishSettings.secretWpRedstoneKey })
+            f.sub.add(ToggleSetting("Labels", "Name above each secret", "secretWpLabels"))
+            f.sub.add(ToggleSetting("Hide In Cleared Rooms", "", "secretWpHideCleared"))
+            f.sub.add(DropdownSetting("Box Style", "", arrayOf("Filled", "Outline", "Filled Outline"),
+                { FishSettings.secretWpStyle }, { v -> FishSettings.secretWpStyle = v }))
+            f.sub.add(SliderDoubleSetting("Line Width", "", "secretWpLineWidth", 0.5, 10.0).gatedBy { FishSettings.secretWpStyle != "Filled" })
+            f.sub.add(SliderIntSetting("Max Distance", "0 = unlimited", "secretWpMaxDistance", 0, 200, 5))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Secret Clicked", "secretClickedEnabled")
             f.sub.add(ToggleSetting("Boxes", "", "secretClickedBoxes"))
             f.sub.add(ToggleSetting("Bat Secrets", "Count a killed secret bat you were next to", "secretClickedBats"))
@@ -1192,6 +1236,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 ids = { fishmod.cosmetic.PlayerModel.keys.map { it.lowercase() } }, soundPreview = false))
             f.sub.add(SubcategoryHeader("Others"))
             f.sub.add(ToggleSetting("See Others", "", "remoteNicksEnabled"))
+            f.sub.add(ToggleSetting("See Others Models", "Show other players as the mob model they picked (cat, etc.). Off by default.", "seeOtherModels"))
             f.sub.add(ButtonSetting("Refresh Now", "", Runnable { fishmod.cosmetic.RemoteNicks.forceRefresh() }))
             cosmetics.features.add(f)
         }
@@ -1543,6 +1588,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Deployables HUD", "deployablesHudEnabled")
+            f.sub.add(ToggleSetting("Flares", "Warning, Alert and SOS flares", "deployablesShowFlares"))
+            f.sub.add(ToggleSetting("Orbs", "Radiant, Mana Flux, Overflux and Plasmaflux orbs", "deployablesShowOrbs"))
+            f.sub.add(ToggleSetting("Distance", "Show how far away each deployable is", "deployablesShowDistance"))
+            f.sub.add(InputIntSetting("Range", "Blocks (8-128)", "deployablesHudRange"))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Text Shadow", "textShadowEnabled")
             f.sub.add(SubcategoryHeader("Drop shadow on in-world text (chat already has one)"))
             f.sub.add(ToggleSetting("Nametags", "Player, mob and armor stand names", "textShadowNametags"))
@@ -1597,7 +1650,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Separate Hotbar Opacity", "Use a different opacity on the hotbar outside menus", VisualSettings::class.java, "itemRaritySeparateHotbar"))
             f.sub.add(SliderIntSetting("Hotbar Opacity %", "", VisualSettings::class.java, "itemRarityHotbarOpacity", 0, 100))
             f.sub.add(ToggleSetting("Hypixel Colors", "Brighter, accurate per-rarity colours", VisualSettings::class.java, "itemRarityHypixelColors"))
+            f.sub.add(ToggleSetting("Skyblocker Colors", "Use Skyblocker's rarity palette (vanilla chat colours); overrides Hypixel Colors", VisualSettings::class.java, "rarityBgSkyblocker"))
             f.sub.add(ToggleSetting("Circular", "", VisualSettings::class.java, "rarityBgCircle"))
+            f.sub.add(ToggleSetting("Rounded Gradient", "Skyblocker-style rounded slot fade; overrides Circular", VisualSettings::class.java, "rarityBgGradient"))
             visuals.features.add(f)
         }
         run {
@@ -1618,6 +1673,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(InputSetting("Original Name Text", "", "originalNameLabel").gatedBy { FishSettings.originalNameTooltip })
             f.sub.add(ColorPickerSetting("Original Name Color", "", "originalNameColor").gatedBy { FishSettings.originalNameTooltip })
             f.sub.add(ToggleSetting("Obtained Date", "When the item was obtained", fishmod.features.extras.ExtrasSettings::class.java, "obtainedDateTooltip"))
+            f.sub.add(ToggleSetting("Shrink Tall Tooltips", "Auto-scale tooltips that are taller than the screen so they fit (off = vanilla size)", "tooltipAutoFit"))
             f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", "tooltipScrollEnabled"))
             f.sub.add(SliderIntSetting("Tooltip Scale %", "", "tooltipScrollScale", 30, 150, 5).gatedBy { FishSettings.tooltipScrollEnabled })
@@ -2240,10 +2296,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             endAlerts.sub.add(SliderIntSetting("Alert Duration (ms)", "", { fishmod.features.slayer.EndAlertSettings.endAlertDurationMs }, { v -> fishmod.features.slayer.EndAlertSettings.endAlertDurationMs = v }, 250, 8000, 250))
             end.features.add(endAlerts)
             end.features.add(Feature("Endstone Protector Stage", fishmod.features.slayer.EndAlertSettings::class.java, "protectorHud"))
-            end.features.add(Feature("End Node Finder", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeFinder").also { it.sub.add(ColorPickerSetting("Color", "", fishmod.features.slayer.EndAlertSettings::class.java, "endNodeFinderColor")) })
             end.features.add(Feature("Endstone Protector Alert", fishmod.features.slayer.EndAlertSettings::class.java, "endstoneProtectorAlert"))
             end.features.add(Feature("Zealot / Dragon Counter", fishmod.features.slayer.EndAlertSettings::class.java, "zealotHud"))
-            slayer.features.add(Feature("Cocoon Timer", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
+            slayer.features.add(Feature("Cocoon Overlay", fishmod.features.slayer.EndAlertSettings::class.java, "cocoonTimer"))
             slayer.features.add(Feature("Summons Recall Alert", fishmod.features.slayer.EndAlertSettings::class.java, "summonsRecallAlert"))
             slayer.features.add(Feature("Broodmother Countdown", fishmod.features.slayer.EndAlertSettings::class.java, "broodmotherHud"))
             slayer.features.add(Feature("No Slayer Quest Warning", fishmod.features.slayer.EndAlertSettings::class.java, "noQuestWarning"))
@@ -2332,8 +2387,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(ColorPickerSetting("Yang Glyph Colour", "", { fishmod.features.slayer.EndAlertSettings.yangGlyphColor }, { v -> fishmod.features.slayer.EndAlertSettings.yangGlyphColor = v }).gatedBy { fishmod.features.slayer.EndAlertSettings.yangGlyphTracer })
             phases.sub.add(SubcategoryHeader("Boss Stats"))
             phases.sub.add(ToggleSetting("Boss Stats HUD", "HUD with only your boss: name, health, DPS and time (drag with Edit HUD)", ea0, "bossHud"))
+            phases.sub.add(SubcategoryHeader("Slayer Spawn Box"))
+            phases.sub.add(ToggleSetting("Slayer Spawn Box", "Box on your slayer boss while it lives, and on the spot where it is about to spawn (where the last slayer mob died). Only your own boss", ea0, "slayerBossBox"))
+            phases.sub.add(ToggleSetting("Mark Spawn Point", "Box where the boss is about to spawn (on the mob you just killed); gone as soon as it spawns", ea0, "slayerBossBoxSpawnMark").gatedBy { fishmod.features.slayer.EndAlertSettings.slayerBossBox })
+            phases.sub.add(ColorPickerSetting("Box Colour", "", { fishmod.features.slayer.EndAlertSettings.slayerBossBoxColor }, { v -> fishmod.features.slayer.EndAlertSettings.slayerBossBoxColor = v }).gatedBy { fishmod.features.slayer.EndAlertSettings.slayerBossBox })
             phases.sub.add(SubcategoryHeader("Inferno Demonlord"))
-            phases.sub.add(ToggleSetting("Dagger Attunement Highlight", "Outline the boss and its split demons in the color of the dagger you need (Ashen, Auric, Spirit, Crystal)", ea0, "attuneHighlight"))
+            phases.sub.add(ToggleSetting("Dagger Attunement Box", "Box on the boss and its split demons in the color of the dagger you need (Ashen = gray, Auric = yellow, Spirit = white, Crystal = cyan). Only shows while an attunement is active", ea0, "attuneHighlight"))
+            phases.sub.add(ToggleSetting("Hide Boss Model", "Hides the Inferno Demonlord blaze itself (only your boss, not other blazes). Attunement boxes and text stay", ea0, "hideInfernoBoss"))
             phases.sub.add(SubcategoryHeader("Boss Phases"))
             phases.sub.add(ToggleSetting("Boss Phases", "Attack and phase cues on slayer bosses", "slayerPhaseEnabled"))
                         phases.sub.add(SubcategoryHeader("SkyHanni-style attack/phase cues on the boss — all 6 slayers"))
@@ -2343,11 +2403,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             phases.sub.add(SliderIntSetting("Text Scale %", "Size of the boss text", "slayerPhaseTextScale", 20, 150, 5))
             phases.sub.add(ToggleSetting("Title Warnings", "Big title for BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON", "slayerPhaseTitles"))
             phases.sub.add(ToggleSetting("Health Phase Split", "Show the 1/3 · 2/3 phase fraction (Voidgloom / Inferno)", "slayerPhaseHealthSplit"))
-            phases.sub.add(ToggleSetting("HP Label", "Big current/max HP over the boss, coloured by %", "slayerPhaseHpLabel"))
-            phases.sub.add(ToggleSetting("Time Label", "Time since the boss spawned, under the HP label", "slayerPhaseTimeLabel"))
-            phases.sub.add(ToggleSetting("Hide Boss Nametag", "Hide the vanilla HP nametag while the HP label shows", "slayerPhaseHideNametag"))
+            phases.sub.add(ToggleSetting("Bosses You Hit", "Also show phase/HP labels on slayer bosses you damage", "slayerPhaseHitBosses").gatedBy { FishSettings.slayerPhaseHealthSplit })
+            phases.sub.add(ToggleSetting("Hide Boss Nametag", "Hide the vanilla HP nametag over slayer bosses", "slayerPhaseHideNametag"))
             val ea = fishmod.features.slayer.EndAlertSettings::class.java
             phases.sub.add(ToggleSetting("Broodfather Egg Hits", "Egg sac hits left while the Broodfather shields", ea, "phaseEggHits"))
+            phases.sub.add(ToggleSetting("Fire Pits Sound", "Play a sound when the Inferno Demonlord fire pits start (the title already shows)", ea, "phaseFirePitSound"))
+            phases.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+                { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundName }, { v -> fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundName = v },
+                { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundVolume }, { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundPitch }).gatedBy { fishmod.features.slayer.EndAlertSettings.phaseFirePitSound })
+            phases.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundVolume }, { v -> fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundVolume = v }, 0, 500, 10).gatedBy { fishmod.features.slayer.EndAlertSettings.phaseFirePitSound })
+            phases.sub.add(SliderDoubleSetting("Pitch", "", { fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundPitch }, { v -> fishmod.features.slayer.EndAlertSettings.phaseFirePitSoundPitch = v }, 0.0, 2.0).gatedBy { fishmod.features.slayer.EndAlertSettings.phaseFirePitSound })
             phases.sub.add(ToggleSetting("Blaze Fire Pillar Alert", "Fire pillar countdown text + title (Inferno Demonlord)", ea, "phaseFirePillar"))
             slayer.features.add(phases)
             slayer.features.add(Feature("Summonings Display", ea, "summonsHud"))
@@ -2422,7 +2487,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         order(chatCol, "Chat", "FishMod Chat (/fc)", "Chat Filter", "Mod Prefix", "Command Tooltip in Chat", "Chat Coord Waypoints", "Command Tab Complete")
         order(invStorage, "Storage Overlay", "Inventory Search", "Slot Locking", "Slot Binds", "Inventory Buttons", "Wardrobe/Loadout Hotkeys", "Pet Keybinds", "Container Value", "Inventory Equipment", "Hide Inventory Potion Effects")
-        order(hud, "Performance HUD", "Action Bar", "Cooldown Overlay", "Stopwatch", "Spotify", "Soulflow HUD", "Text Shadow", "Tac Timer", "Spring Boots", "Loadout Title")
+        order(hud, "Performance HUD", "Action Bar", "Cooldown Overlay", "Stopwatch", "Spotify", "Soulflow HUD", "Deployables HUD", "Text Shadow", "Tac Timer", "Spring Boots", "Loadout Title")
         order(itemsCol, "Item Tooltip", "Item List", "Auto BIN Price", "Recipe Viewer", "AH Buy Price Check", "Bazaar Search + Price Graph", "Sign Calculator")
         order(petsCol, "Pet HUD", "Pet Swap Title", "Pet Keybinds", "Hide Pet Nametag Level")
         order(party, "Party Commands", "Command Access List", "Chat Channels", "Kick List", "Party Finder Menu", "Party Finder Join Stats", "Party Finder List", "Party Finder Auto Kick")
@@ -2430,8 +2495,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(dungeonTrackers, "Session Stats", "Loot Tracker", "Croesus Profit", "PB Pace", "Croesus Highlights")
         order(dungeonMap, "Dungeon Map", "Info HUD", "Door Highlight", "Score Messages")
         order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
-        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Timer", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
-        order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert", "End Node Finder")
+        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Overlay", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
+        order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert")
         order(visuals, "No Fog", "Classic Skyblock Items", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
         order(cosmetics, "Player Customizer", "Nametag", "Badges", "Custom Crosshair", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
         columns.firstOrNull { it.name == "Fishing" }?.let { order(it, "Fishing", "Fishing Alerts", "Fishing Trackers", "Fishing World", "Rod Cast Timer", "Current Bait HUD", "Sea Creature Cap Warning", "Sea Creature Kill Timer", "Trophy Fish HUD", "Bobbin and Legion Hud", "Lilypad Size", "Golden Fish Timer", "Fishing Share") }
@@ -2465,7 +2530,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (c === cheats) continue
             for (f in c.features) {
                 val toggles = f.sub.filterIsInstance<ToggleSetting>()
-                if (toggles.size < 8) continue
+                if (toggles.size < 8 || f.pageId != null) continue
                 f.sub.add(0, ButtonSetting("All Toggles", "Turn every toggle in this feature on or off", "All On", Runnable { toggles.forEach { t -> try { t.setter(true) } catch (_: Throwable) {} } }))
                 f.sub.add(1, ButtonSetting("All Toggles Off", "", "All Off", Runnable { toggles.forEach { t -> try { t.setter(false) } catch (_: Throwable) {} } }))
             }
@@ -3050,16 +3115,119 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var page: String? = null
     private val creditsPage by lazy { CreditsPage() }
     private val reportPage by lazy { ReportPage(this.font) }
+    private fun conflictSubs(f: Feature): List<fishmod.compat.conflicts.FishSub> = f.sub.mapNotNull { st ->
+        when (st) {
+            is ToggleSetting -> fishmod.compat.conflicts.FishSub(st.name, 0, { st.getter() }, { st.setter(it as Boolean) })
+            is SliderIntSetting -> fishmod.compat.conflicts.FishSub(st.name, 1, { st.getter() }, { st.setter(it as Int) }, st.min.toDouble(), st.max.toDouble())
+            is SliderDoubleSetting -> fishmod.compat.conflicts.FishSub(st.name, 2, { st.getter() }, { st.setter(it as Double) }, st.min, st.max)
+            is ColorPickerSetting -> fishmod.compat.conflicts.FishSub(st.name, 3, { st.getter() }, { st.setter(it as Int) })
+            else -> null
+        }
+    }
     private val conflictsPage by lazy {
         ConflictsPage {
             columns.flatMap { c -> c.features }.filter { it.get != null && it.set != null }
-                .map { f -> fishmod.compat.conflicts.FishFeatureRef(f.name, f.get!!, f.set!!) }.distinctBy { it.name }
+                .map { f -> fishmod.compat.conflicts.FishFeatureRef(f.name, f.get!!, f.set!!, conflictSubs(f)) }.distinctBy { it.name }
         }
     }
     // Always shown so the check can be verified after a reload: "(…)" = scan running, "(0)" = scanned, none found
     private fun conflictsLabel(): String { conflictsPage.ensureScanned(); val n = conflictsPage.dupCount(); return if (n < 0) "Conflicts (…)" else "Conflicts ($n)" }
     private var pgScroll = 0
-    private fun pageFeature(): Feature? = columns.firstNotNullOfOrNull { c -> c.features.firstOrNull { it.pageId == page } }
+    private fun playerPreviewW(): Int = minOf(340, ((cx1() - cx0()) * 0.46f).toInt())
+    private fun uiPreviewW(): Int = minOf(400, ((cx1() - cx0()) * 0.48f).toInt())
+    private fun pageX1(pf: Feature): Int = when (pf.pageId) {
+        "player" -> cx1() - playerPreviewW() - 14
+        "ui" -> cx1() - uiPreviewW() - 14
+        else -> cx1()
+    }
+
+    private fun renderUiPreview(ctx: GuiGraphicsExtractor, top: Int) {
+        val w = uiPreviewW()
+        val x = cx1() - w
+        val h = minOf(cyBot() - top, 330)
+        if (h < 140) return
+        val b = NVG_BASE_TEXT_SIZE
+        UiRecorder.fillRoundedRect(x.toFloat(), top.toFloat(), w.toFloat(), h.toFloat(), 8f, ScreenTheme.windowBg())
+        UiRecorder.roundedRectRing(x.toFloat(), top.toFloat(), w.toFloat(), h.toFloat(), 8f, 1f, 0x00000000, ScreenTheme.ink(0x1F))
+        UiRecorder.textBold("Preview", x + 14f, top + 11f, 1.1f * b, TEXT_COLOR)
+        UiRecorder.fillRoundedRect(x + 14f, top + 28f, 34f, 2f, 1f, ScreenTheme.ACCENT)
+        val cw = w - 28
+        var y = top + 42
+        val cards = listOf("Example Feature" to true, "Another Feature" to false)
+        for ((name, on) in cards) {
+            UiRecorder.fillRoundedRect((x + 14).toFloat(), y.toFloat(), cw.toFloat(), 42f, 6f, cardFill())
+            UiRecorder.text(name, x + 26f, y + 9f, 1.05f * b, TEXT_COLOR)
+            UiRecorder.text(if (on) "Switched on" else "Switched off", x + 26f, y + 25f, 0.9f * b, SUBTEXT_COLOR)
+            drawTogglePill(ctx, x + 14 + cw - 42, y + 13, 28, 15, on, if (on) 1f else 0f, false)
+            y += 48
+        }
+        UiRecorder.fillRoundedRect((x + 14).toFloat(), y.toFloat(), cw.toFloat(), 52f, 6f, cardFill())
+        UiRecorder.text("Example Slider", x + 26f, y + 9f, 1.05f * b, TEXT_COLOR)
+        val sw = cw - 80
+        UiRecorder.fillRoundedRect(x + 26f, y + 32f, sw.toFloat(), 6f, 3f, ScreenTheme.ink(0x26))
+        UiRecorder.fillRoundedRect(x + 26f, y + 32f, sw * 0.6f, 6f, 3f, ScreenTheme.ACCENT)
+        UiRecorder.text("60", x + 26f + sw + 12f, y + 29f, 0.95f * b, SUBTEXT_COLOR)
+        y += 62
+        val bw = 96
+        UiRecorder.fillRoundedRect((x + 14).toFloat(), y.toFloat(), bw.toFloat(), 24f, 6f, ScreenTheme.ACCENT)
+        val bl = "Button"
+        UiRecorder.text(bl, x + 14 + (bw - UiRecorder.textWidth(bl, 1.0f * b)) / 2f, y + 7f, 1.0f * b, ScreenTheme.accentFg())
+    }
+
+    private fun renderPlayerPreview(ctx: GuiGraphicsExtractor, top: Int, mouseX: Int, mouseY: Int) {
+        val mc = Minecraft.getInstance()
+        val player = mc.player ?: return
+        val f = fishmod.utils.rendering.UiScale.factor()
+        val x0 = cx1() - playerPreviewW(); val x1 = cx1()
+        val y0 = top; val y1 = cyBot() - 34
+        UiRecorder.roundedRectRing(x0.toFloat(), y0.toFloat(), (x1 - x0).toFloat(), (y1 - y0).toFloat(), 8f, 1f, 0x00000000, ScreenTheme.ink(0x1F))
+        UiRecorder.textBold("Preview", (x0 + 10).toFloat(), (y0 + 8).toFloat(), 1.0f * NVG_BASE_TEXT_SIZE, TEXT_COLOR)
+        val sx0 = Math.round((x0 + 4) * f); val sx1 = Math.round((x1 - 4) * f)
+        val sy0 = Math.round((y0 + 28) * f); val sy1 = Math.round((y1 - 4) * f)
+        if (sx1 - sx0 < 8 || sy1 - sy0 < 8) return
+        val nx = Math.round((x0 + x1) / 2f * f); val ny = Math.round((y1 + 10) * f)
+        previewLate = PreviewLate(sx0, sy0, sx1, sy1, mouseX * f, mouseY * f, nx, ny)
+    }
+
+    private class PreviewLate(val sx0: Int, val sy0: Int, val sx1: Int, val sy1: Int, val mx: Float, val my: Float, val nx: Int, val ny: Int)
+    private var previewLate: PreviewLate? = null
+
+    fun extractLateLayer(state: net.minecraft.client.renderer.state.gui.GuiRenderState): Boolean {
+        val l = previewLate ?: return false
+        previewLate = null
+        val mc = Minecraft.getInstance()
+        val player = mc.player ?: return false
+        val ctx = GuiGraphicsExtractor(mc, state, 0, 0)
+        val font = mc.font
+        val name = fishmod.cosmetic.NickState.asComponent().let { if (it.string.isEmpty()) player.name else it }
+        val nameW = font.width(name).coerceAtLeast(1)
+        val uiF = fishmod.utils.rendering.UiScale.factor()
+        val fit = minOf(uiF * 2.2f, (l.sx1 - l.sx0 - 12) / nameW.toFloat())
+        val tagH = Math.round(11 * fit)
+        val ey0 = l.sy0 + tagH + 8
+        if (l.sy1 - ey0 < 8) return true
+        val key = fishmod.cosmetic.PlayerModel.ownKey()
+        val fake = if (key != "PLAYER") fishmod.cosmetic.PlayerModel.fakeFor(player, key) else null
+        val target: net.minecraft.world.entity.LivingEntity = fake ?: player
+        if (fake != null) fishmod.cosmetic.PlayerModel.syncFake(fake, player)
+        val ref = if (fake != null) maxOf(fake.bbHeight, fake.bbWidth * 0.9f, 0.4f) else 1.8f
+        ctx.enableScissor(l.sx0, ey0, l.sx1, l.sy1)
+        fishmod.cosmetic.PlayerModel.menuPreview = true
+        try {
+            val base = minOf((l.sy1 - ey0) / 2.3f, (l.sx1 - l.sx0) / 1.4f)
+            val scale = maxOf(8, Math.round(base * 1.8f / ref))
+            net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(ctx, l.sx0, ey0, l.sx1, l.sy1, scale, 0.0625f, l.mx, l.my, target)
+        } finally { ctx.disableScissor(); fishmod.cosmetic.PlayerModel.menuPreview = false }
+        ctx.pose().pushMatrix()
+        ctx.pose().translate(l.nx.toFloat(), (l.sy0 + 6).toFloat())
+        ctx.pose().scale(fit, fit)
+        ctx.fill(-nameW / 2 - 1, -1, -nameW / 2 + nameW + 1, 9, 0x40000000)
+        ctx.text(font, name, -nameW / 2, 0, -1, false)
+        ctx.pose().popMatrix()
+        return true
+    }
+
+    private fun pageFeature(): Feature? = page?.let { p -> columns.firstNotNullOfOrNull { c -> c.features.firstOrNull { it.pageId == p } } }
     private fun openPage(p: String) { pgScroll = 0; page = p; selected = null; openedAt = System.currentTimeMillis() }
     private fun goHome() { page = null; allMode = true; selected = null; gridScroll = 0; if (searchText.isNotEmpty()) { searchField?.value = ""; searchText = "" }; openedAt = System.currentTimeMillis() }
     private fun pageTitle(): String = when (page) { "report" -> "Report to RedFish"; "conflicts" -> "Mod Conflicts"; "player" -> "Player Customizer"; "ui" -> "UI Customization"; else -> "Credits" }
@@ -3190,7 +3358,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val SB_GAP = 4
     private fun selGutter(): Int = Math.max(COLUMN_GUTTER, 3 + 2 * SB_GAP)
     private fun gx1(): Int = if (selected != null) cx1() - detW() - selGutter() else cx1()
-    private fun cardFill(): Int = (Math.round(FishSettings.fmCardAlpha.coerceIn(0, 100) * 2.55f) shl 24) or (FishSettings.fmCardColor and 0xFFFFFF)
+    private fun cardFill(): Int {
+        val ac = FishSettings.fmCardAlpha.coerceIn(0, 100) / 100f
+        val winA = FishSettings.fmBgAlpha.coerceIn(20, 100) / 100f
+        val solid = lerpColor(0xFF000000.toInt() or ScreenTheme.windowBg(), 0xFF000000.toInt() or FishSettings.fmCardColor, ac) and 0xFFFFFF
+        return (Math.round((ac + (1f - ac) * winA) * 255f) shl 24) or solid
+    }
     private fun cardH(): Int = if (viewMode == 4) 22 else if (listView) 26 else CARD_TALL
     private fun gridCols(): Int = if (listView) 1 else Math.max(1, (gx1() - cx0() + CARD_GAP) / (viewMinW[viewMode] + CARD_GAP))
     private fun cardW(): Int { val n = gridCols(); return (gx1() - cx0() - (n - 1) * CARD_GAP) / n }
@@ -3278,8 +3451,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (pf != null) {
                     val top = pt + 34 + oy
                     pgScroll = Mth.clamp(pgScroll, 0, Math.max(0, pf.naturalSubHeight() - (cyBot() - top)))
-                    UiRecorder.pushScissor(cx0().toFloat(), top.toFloat(), (cx1() - cx0()).toFloat(), (cyBot() - top).toFloat())
-                    try { renderSubPanel(ctx, pf, cx0(), cx1(), top - pgScroll, pf.naturalSubHeight(), mouseX, if (mouseY >= top && mouseY < cyBot()) mouseY else -10000, top, cyBot()) } finally { UiRecorder.popScissor() }
+                    val px1 = pageX1(pf)
+                    UiRecorder.pushScissor(cx0().toFloat(), top.toFloat(), (px1 - cx0()).toFloat(), (cyBot() - top).toFloat())
+                    try { renderSubPanel(ctx, pf, cx0(), px1, top - pgScroll, pf.naturalSubHeight(), mouseX, if (mouseY >= top && mouseY < cyBot()) mouseY else -10000, top, cyBot()) } finally { UiRecorder.popScissor() }
+                    if (pf.pageId == "player") renderPlayerPreview(ctx, top, mouseX, mouseY)
+                    else if (pf.pageId == "ui") renderUiPreview(ctx, top)
                 }
             } else if (page == "credits") creditsPage.render(cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
             else if (page == "conflicts") conflictsPage.render(ctx, cx0(), pt + 34 + oy, cx1() - cx0(), cyBot() - pt - 34, mouseX, mouseY)
@@ -3311,8 +3487,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
             for (i in first until last) {
                 val f = items[i]
-                val p = if (searchText.isEmpty()) anim(openedAt, Math.min(i, 40) * 12) else 1f
-                val x = cardX(i); val y = cardY(i) + Math.round((1f - p) * 10f)
+                val cx = cardX(i); val cyy = cardY(i)
+                val p = if (searchText.isEmpty()) anim(openedAt, ((cyy - cyTop()).coerceIn(0, 700) / 2 + (cx - cx0()).coerceIn(0, 600) / 12)) else 1f
+                val x = cx; val y = cyy + Math.round((1f - p) * 10f)
                 if (y + cardH() < cyTop() || y > cyBot()) continue
                 val on = f.hasMaster() && f.get!!()
                 val hover = mouseY in cyTop()..cyBot() && mouseX in x..x + cw && mouseY in y..y + cardH()
@@ -3472,7 +3649,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (animating) UiRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), animatedH.toFloat())
 
         val subH = f.naturalSubHeight()
-        if (selected !== f) UiRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
+        if (selected !== f && f.pageId == null) UiRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
         val leftX = x0 + 8
         val rightX = x1 - 8
         var sy = top + 6
@@ -3487,6 +3664,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
             try {
                 s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
+                if (s is DropdownSetting<*> && s.following() && clipBot != Int.MAX_VALUE) {
+                    val over = sy + sh + 8 - clipBot
+                    if (over > 0) { if (f.pageId != null) pgScroll += over else detScroll += over }
+                }
             } catch (t: Throwable) {
                 FishDiag.fail("FishModScreen.22", "setting '${s.name}' (${s.javaClass.simpleName}) in '${f.name}' render failed", t)
             }
@@ -3544,7 +3725,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (navClick(mx, my, btn)) return true
 
         if (page != null) {
-            if (pageFeature() != null) { val pf = pageFeature(); if (pf != null) subClick(pf, cx0(), cx1(), cyTop() - HEADER_H + 34 - pgScroll, mx, my, btn) }
+            if (pageFeature() != null) { val pf = pageFeature(); if (pf != null) subClick(pf, cx0(), pageX1(pf), cyTop() - HEADER_H + 34 - pgScroll, mx, my, btn) }
             else if (page == "report") { if (!reportPage.click(mx, my)) reportPage.focused = -1 } else if (page == "conflicts") conflictsPage.click(mx, my) else creditsPage.click(mx, my)
             return true
         }
@@ -3613,11 +3794,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             true
         }
 
+    private fun scrollStep(amount: Double, per: Int): Int {
+        val v = amount * per
+        if (v == 0.0) return 0
+        val r = Math.round(Math.abs(v)).toInt().coerceAtLeast(1)
+        return if (v > 0) r else -r
+    }
+
     private fun scrollInner(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         val mouseX = vx(mouseX).toDouble()
         val mouseY = vx(mouseY).toDouble()
         if (mouseX <= stackX0() + stackW() && mouseY >= navTop()) {
-            navScroll = Mth.clamp((navScroll - verticalAmount * NAV_ROW).toInt(), 0, navMax())
+            navScroll = Mth.clamp(navScroll - scrollStep(verticalAmount, NAV_ROW), 0, navMax())
             return true
         }
         pageFeature()?.let { pf ->
@@ -3626,20 +3814,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             for (s in pf.sub) {
                 if (s.hiddenByGate()) continue
                 val sh = s.getHeight()
-                if (mouseY >= ssy && mouseY <= ssy + sh && s.onScroll(mouseX.toInt(), mouseY.toInt(), cx0(), cx1(), ssy, dirP)) return true
+                if (mouseY >= ssy && mouseY <= ssy + sh && s.onScroll(mouseX.toInt(), mouseY.toInt(), cx0(), pageX1(pf), ssy, dirP)) return true
                 ssy += sh
             }
-            pgScroll -= (verticalAmount * 24).toInt(); return true
+            pgScroll -= scrollStep(verticalAmount, 24); return true
         }
         if (page == "credits") { creditsPage.scrollBy(verticalAmount); return true }
         if (page == "conflicts") { conflictsPage.scrollBy(verticalAmount); return true }
         val f = selected
         val dir = if (verticalAmount > 0) -1 else 1
         if (f != null && mouseX >= cx1() - detW()) {
-            if (!exScroll(f, mouseX.toInt(), mouseY.toInt(), dir)) detScroll = Mth.clamp((detScroll - verticalAmount * 18).toInt(), 0, detMax(f))
+            if (!exScroll(f, mouseX.toInt(), mouseY.toInt(), dir)) detScroll = Mth.clamp(detScroll - scrollStep(verticalAmount, 18), 0, detMax(f))
             return true
         }
-        gridScroll = Mth.clamp((gridScroll - verticalAmount * 18).toInt(), 0, gridMax(exItems().size))
+        gridScroll = Mth.clamp(gridScroll - scrollStep(verticalAmount, 18), 0, gridMax(exItems().size))
         return true
     }
 
@@ -3948,8 +4136,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
     }
 
-    class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: () -> T, val setter: (T) -> Unit,
-                             val label: (T) -> String = { it.toString() }, val swatch: ((T) -> Int)? = null) : Setting(name, desc) {
+    class DropdownSetting<T>(name: String, desc: String, initialValues: Array<T>, val getter: () -> T, val setter: (T) -> Unit,
+                             val label: (T) -> String = { it.toString() }, val swatch: ((T) -> Int)? = null,
+                             val refreshValues: (() -> Array<T>)? = null) : Setting(name, desc) {
+        var values: Array<T> = initialValues
+            private set
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
         private var pillX = 0
@@ -3968,6 +4159,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         override fun getHeight(): Int {
             return ITEM_HEIGHT + Math.round(values.size * OPTION_H * expandAnim.progress())
         }
+
+        fun following(): Boolean = expanded && expandAnim.isAnimating()
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val currentValue = values.getOrElse(indexOfCurrent()) { getter() }
@@ -4010,6 +4203,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     setter(values[(indexOfCurrent() + 1) % values.size])
                 } else {
                     expanded = !expanded
+                    if (expanded) refreshValues?.let { r -> try { val v = r(); if (v.isNotEmpty()) values = v } catch (_: Throwable) {} }
                     expandAnim.setTarget(expanded)
                 }
                 return true
@@ -4941,6 +5135,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Cooldown Overlay" -> "Ability cooldowns on item slots"
                 "Pet HUD" -> "Show your active pet & level"
                 "Soulflow HUD" -> "Track your soulflow count"
+                "Deployables HUD" -> "Nearby flares and orbs with time left"
                 "Fire Freeze Timer" -> "Fire Freeze staff cooldown timer"
                 "Party Finder Join Stats" -> "Whisper or PF-join prints their MP/PB/Cata/Gear to chat — also /pfs [name]"
                 "Party Finder Menu" -> "Level req + missing classes on heads, stats in party-member tooltips"
@@ -5058,7 +5253,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Superior Dragon Alert" -> "Title when a Superior Dragon spawns"
                 "Endstone Protector Alert" -> "Alert when the Endstone Protector spawns"
                 "Zealot / Dragon Counter" -> "Counts Zealots killed and dragons spawned"
-                "Cocoon Timer" -> "Countdown until a cocooned boss hatches"
+                "Cocoon Overlay" -> "Shows the mob name and a countdown over any cocooned mob (slayer boss or caught sea creature)"
                 "Summons Recall Alert" -> "Alert when your summons are recalled"
                 "Egg Sac Highlight" -> "Highlights Broodfather egg sacs"
                 "Yang Glyph Tracer" -> "Line to Voidgloom Yang Glyphs"
@@ -5083,6 +5278,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Endstone Protector Stage" -> "HUD with the Protector stage and kills left, from the tab list"
                 "End Node Finder" -> "Highlight Ender Node blocks in The End"
                 "Boss Phases" -> "Attack and phase cues on slayer bosses"
+                "Secret Waypoints" -> "Labelled through-wall boxes on every known dungeon secret (chests, items, bats, wither essence, keys)"
                 "Boss Damage Indicator" -> "HP label on non-slayer bosses"
                 "Dragon Profit Tracker" -> "Dragon kills, your eyes, essence and loot picked up after each dragon, with profit"
                 "Summonings Display" -> "Lists your summons and their HP"

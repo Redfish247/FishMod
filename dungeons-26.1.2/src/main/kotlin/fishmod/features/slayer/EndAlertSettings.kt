@@ -11,18 +11,21 @@ object EndAlertSettings {
     @ConfigValue @JvmField var slayerMiniHighlight: Boolean = false
     @ConfigValue @JvmField var slayerMiniHighlightColor: Int = 0xFFFF5555.toInt()
 
+    @ConfigValue @JvmField var slayerBossBox: Boolean = false
+    @ConfigValue @JvmField var slayerBossBoxSpawnMark: Boolean = true
+    @ConfigValue @JvmField var slayerBossBoxColor: Int = 0xFFFF3333.toInt()
+
     @ConfigValue @JvmField var cocoonTimer: Boolean = false
     @ConfigValue @JvmField var protectorHud: Boolean = false
     @ConfigValue @JvmField var protectorHudX: Int = 5
     @ConfigValue @JvmField var protectorHudY: Int = 90
     @ConfigValue @JvmField var protectorHudScale: Double = 1.0
-    @ConfigValue @JvmField var endNodeFinder: Boolean = false
-    @ConfigValue @JvmField var endNodeFinderColor: Int = 0xFFAA00FF.toInt()
     @ConfigValue @JvmField var bossHud: Boolean = false
     @ConfigValue @JvmField var bossHudX: Int = 5
     @ConfigValue @JvmField var bossHudY: Int = 60
     @ConfigValue @JvmField var bossHudScale: Double = 1.0
     @ConfigValue @JvmField var attuneHighlight: Boolean = false
+    @ConfigValue @JvmField var hideInfernoBoss: Boolean = false
     @ConfigValue @JvmField var summonsRecallAlert: Boolean = false
     @ConfigValue @JvmField var summonsHud: Boolean = false
     @ConfigValue @JvmField var summonsHudX: Int = 5
@@ -36,6 +39,10 @@ object EndAlertSettings {
 
     @ConfigValue @JvmField var phaseEggHits: Boolean = true
     @ConfigValue @JvmField var phaseFirePillar: Boolean = true
+    @ConfigValue @JvmField var phaseFirePitSound: Boolean = true
+    @ConfigValue @JvmField var phaseFirePitSoundName: String = "Note: Pling"
+    @ConfigValue @JvmField var phaseFirePitSoundVolume: Int = 150
+    @ConfigValue @JvmField var phaseFirePitSoundPitch: Double = 0.6
 
     @ConfigValue @JvmField var eggSacHighlight: Boolean = false
     @ConfigValue @JvmField var eggSacColor: Int = 0xFFFFFF55.toInt()

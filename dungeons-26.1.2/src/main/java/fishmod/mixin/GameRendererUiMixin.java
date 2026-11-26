@@ -42,6 +42,13 @@ public class GameRendererUiMixin {
             Screen current = fishmod.compat.McCompatKt.getCurScreen(Minecraft.getInstance());
             if (current instanceof HasUiOverlay screen) {
                 screen.paintUiOverlay();
+                if (current instanceof fishmod.features.FishModScreen fm) {
+                    var state = ((GameRenderer) (Object) this).getGameRenderState().guiRenderState;
+                    if (fm.extractLateLayer(state)) guiRenderer.render(fishmod$fogSlice);
+                } else if (current instanceof fishmod.features.general.CommandWheelScreen wheel) {
+                    var state = ((GameRenderer) (Object) this).getGameRenderState().guiRenderState;
+                    if (wheel.extractLateLayer(state)) guiRenderer.render(fishmod$fogSlice);
+                }
             } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {
                 StorageOverlay.paintUiOverlay();
                 var state = ((GameRenderer) (Object) this).getGameRenderState().guiRenderState;
