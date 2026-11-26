@@ -36,16 +36,15 @@ object FishingTrackerLines {
         val out = ArrayList<String>()
         out += title("Fishing Profit", total)
         if (!total) out += timeLine(total, sessionMs)
-        val sorted = b.drops.entries.sortedByDescending { b.dropCoins[it.key] ?: 0.0 }
+        val sorted = b.drops.entries.filter { !it.key.endsWith("Bait", true) }.sortedByDescending { b.dropCoins[it.key] ?: 0.0 }
         for ((i, e) in sorted.withIndex()) {
             if (i >= cap) { out += "§7| §8${sorted.size - cap} more"; break }
             val v = b.dropCoins[e.key] ?: 0.0
-            val rate = FishingTrackerMath.perHour(v, rateMs(b, total, sessionMs))
-            val value = if (v > 0) "§6${FishingTrackerMath.short(v)}" + (if (rate == 0.0) "" else " §7(${FishingTrackerMath.short(rate)}/h)") else ""
+            val value = if (v > 0) "§6${FishingTrackerMath.short(v)}" else ""
             val color = ProfitTrackerKit.rarityColor(fishmod.utils.networth.ItemsDb.idFor(e.key)) ?: "§f"
             out += "$value\t§7| $color${e.key} §f${"%,d".format(e.value)}"
         }
-        val gross = b.dropValue()
+        val gross = b.dropCoins.entries.filter { !it.key.endsWith("Bait", true) }.sumOf { it.value }
         val costs = costPerCatch * b.catches.toDouble()
         val net = gross - costs
         out += "§7Drops §6${FishingTrackerMath.short(gross)}"
