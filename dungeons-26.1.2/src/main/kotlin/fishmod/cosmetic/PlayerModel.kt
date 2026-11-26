@@ -74,7 +74,7 @@ object PlayerModel {
         val mc = Minecraft.getInstance()
         val me = mc.player
         if (me != null && p.uuid == me.uuid) return ownKey()
-        if (!FishSettings.playerSizeShared) return "PLAYER"
+        if (!FishSettings.playerSizeShared || !FishSettings.seeOtherModels) return "PLAYER"
         return remote[p.uuid.toString().replace("-", "")] ?: "PLAYER"
     }
 

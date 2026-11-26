@@ -1236,6 +1236,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 ids = { fishmod.cosmetic.PlayerModel.keys.map { it.lowercase() } }, soundPreview = false))
             f.sub.add(SubcategoryHeader("Others"))
             f.sub.add(ToggleSetting("See Others", "", "remoteNicksEnabled"))
+            f.sub.add(ToggleSetting("See Others Models", "Show other players as the mob model they picked (cat, etc.). Off by default.", "seeOtherModels"))
             f.sub.add(ButtonSetting("Refresh Now", "", Runnable { fishmod.cosmetic.RemoteNicks.forceRefresh() }))
             cosmetics.features.add(f)
         }
