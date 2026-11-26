@@ -170,8 +170,9 @@ object FishDiag {
             if (c is java.net.http.HttpTimeoutException || c is java.net.ConnectException ||
                 c is java.net.SocketTimeoutException || c is java.net.UnknownHostException ||
                 c is java.nio.channels.ClosedChannelException || c is javax.net.ssl.SSLException ||
-                c is java.net.SocketException || c is java.io.EOFException) return true
-            if (c is java.io.IOException && (c.message?.contains("closed", ignoreCase = true) == true ||
+                c is java.net.SocketException || c is java.io.EOFException || c is com.google.gson.stream.MalformedJsonException ||
+                (c is com.google.gson.JsonParseException && c.message?.let { it.contains("End of input") || it.contains("Unterminated") || it.contains("Use JsonReader.setStrictness") } == true)) return true
+            if (c is java.io.IOException && (c.message?.contains("closed", ignoreCase = true) == true || c.message?.contains("GOAWAY") == true || c.message?.contains("no bytes") == true ||
                     c.message?.contains("too many concurrent streams", ignoreCase = true) == true ||
                     c.message?.contains("reset by peer", ignoreCase = true) == true ||
                     c.message?.contains("not processed by peer", ignoreCase = true) == true ||
