@@ -9,10 +9,14 @@ data class BadgeDef(
 ) {
     private fun drawable(): String {
         if (symbol.isEmpty()) return "✦"
-        if (symbol.codePointAt(0) == 0x1F6E0) return "⚒"
+        if (symbol.codePointAt(0) == 0x1F6E0) return ""
         return if (symbol.codePoints().anyMatch { it > 0xFFFF }) "✦" else symbol
     }
 
     fun component(suffix: String = ""): net.minecraft.network.chat.MutableComponent =
-        net.minecraft.network.chat.Component.literal(drawable() + suffix).setStyle(net.minecraft.network.chat.Style.EMPTY.withColor(net.minecraft.network.chat.TextColor.fromRgb(colorRgb)))
+        net.minecraft.network.chat.Component.literal(drawable() + suffix).setStyle(net.minecraft.network.chat.Style.EMPTY.let { if (symbol.isNotEmpty() && symbol.codePointAt(0) == 0x1F6E0) it.withFont(DEV_FONT) else it }.withColor(net.minecraft.network.chat.TextColor.fromRgb(colorRgb)))
+
+    private companion object {
+        val DEV_FONT: net.minecraft.network.chat.FontDescription = net.minecraft.network.chat.FontDescription.Resource(net.minecraft.resources.Identifier.fromNamespaceAndPath("fishmod", "badge"))
+    }
 }
