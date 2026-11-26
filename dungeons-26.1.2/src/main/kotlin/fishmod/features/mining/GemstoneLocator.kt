@@ -3,20 +3,15 @@ package fishmod.features.mining
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.core.BlockPos
-import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import fishmod.features.mining.MiningSettings as S
 
 // Glacite Tunnels: walking paths (SkyHanni tunnel graph) to the nearest spot of each gem your commissions want,
-// plus optional boxes on nearby gem blocks, all in the gem's colour
+// in the gem's colour
 object GemstoneLocator {
 
-    private var targets: List<Pair<Gem, BlockPos>> = emptyList()
     private var paths: List<PathData> = emptyList()
     private var tick = 0
-
-    private fun active() = Mining.inTunnels() || Mining.inShaft()
 
     fun wanted(): Set<Gem> = Commissions.current.filter { !it.done && it.name.contains("Gemstone") }
         .mapNotNull { c -> Gem.entries.firstOrNull { c.name.contains(it.display) } }.toSet()
@@ -24,29 +19,10 @@ object GemstoneLocator {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (tick++ % 5 != 0) return@register
-            val p = mc.player; val level = mc.level
-            if (!S.miningGemLines || p == null || level == null || !active()) { targets = emptyList(); paths = emptyList(); return@register }
+            val p = mc.player
+            if (!S.miningGemLines || !S.miningGemPaths || p == null || !Mining.inTunnels()) { paths = emptyList(); return@register }
             val want = wanted()
-            if (want.isEmpty()) { targets = emptyList(); paths = emptyList(); return@register }
-            val r = S.miningGemRadius.coerceIn(4, 48)
-            val c = p.blockPosition()
-            val found = HashMap<Gem, ArrayList<BlockPos>>()
-            val m = BlockPos.MutableBlockPos()
-            for (dx in -r..r) for (dy in -r / 2..r / 2) for (dz in -r..r) {
-                m.set(c.x + dx, c.y + dy, c.z + dz)
-                val gem = Gem.of(level.getBlockState(m)) ?: continue
-                if (gem in want) found.getOrPut(gem) { ArrayList() }.add(m.immutable())
-            }
-            val eye = p.eyePosition
-            targets = found.flatMap { (g, l) ->
-                l.sortedBy { Vec3.atCenterOf(it).distanceToSqr(eye) }.take(S.miningGemMax.coerceAtLeast(1)).map { g to it }
-            }
-            val here = found.filterValues { l -> l.any { Vec3.atCenterOf(it).distanceToSqr(eye) < 8.0 * 8.0 } }.keys
-            paths = if (S.miningGemPaths && Mining.inTunnels()) findPaths(want - here, p.position()) else emptyList()
-        }
-        RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
-            if (!S.miningGemLines || !S.miningGemBoxes || targets.isEmpty() || !active()) return@register
-            if (S.miningGemBoxes) for ((g, pos) in targets) FishDraw.fillBox(ps, vc, AABB(pos), Mining.alpha(g.rgb, S.miningGemOpacity))
+            paths = if (want.isEmpty()) emptyList() else findPaths(want, p.position())
         }
         RenderHooks.GIZMO.register { _ ->
             if (!S.miningGemLines || !S.miningGemPaths || paths.isEmpty() || !Mining.inTunnels()) return@register

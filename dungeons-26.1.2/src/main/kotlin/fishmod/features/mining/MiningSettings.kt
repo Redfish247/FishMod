@@ -45,12 +45,8 @@ object MiningSettings {
     @ConfigValue @JvmField var miningPityHudScale: Double = 1.0
 
     @ConfigValue @JvmField var miningGemLines: Boolean = false
-    @ConfigValue @JvmField var miningGemBoxes: Boolean = true
     @ConfigValue @JvmField var miningGemPaths: Boolean = true
-    @ConfigValue @JvmField var miningGemRadius: Int = 24
-    @ConfigValue @JvmField var miningGemMax: Int = 3
     @ConfigValue @JvmField var miningGemLineWidth: Int = 3
-    @ConfigValue @JvmField var miningGemOpacity: Int = 60
 
     @ConfigValue @JvmField var miningFossilSolver: Boolean = false
     @ConfigValue @JvmField var miningFossilColor: Int = 0xFF55FF55.toInt()

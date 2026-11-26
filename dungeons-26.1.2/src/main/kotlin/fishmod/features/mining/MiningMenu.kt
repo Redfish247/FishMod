@@ -51,11 +51,7 @@ object MiningMenu {
 
         val gem = Feature("Commission Gemstone Lines", S::class.java, "miningGemLines")
         gem.sub.add(ToggleSetting("Walking Paths", "Lines along the tunnels to the nearest spot for each gem (SkyHanni map)", S::class.java, "miningGemPaths"))
-        gem.sub.add(ToggleSetting("Boxes", "Box the gemstone blocks too", S::class.java, "miningGemBoxes"))
-        gem.sub.add(SliderIntSetting("Scan Radius", "", S::class.java, "miningGemRadius", 8, 48).gatedBy { S.miningGemBoxes })
-        gem.sub.add(SliderIntSetting("Boxes Per Gem", "", S::class.java, "miningGemMax", 1, 10).gatedBy { S.miningGemBoxes })
         gem.sub.add(SliderIntSetting("Line Width", "", S::class.java, "miningGemLineWidth", 1, 10))
-        gem.sub.add(SliderIntSetting("Box Opacity %", "", S::class.java, "miningGemOpacity", 5, 100).gatedBy { S.miningGemBoxes })
         col.features.add(gem)
 
         val fossil = Feature("Fossil Excavator Solver", S::class.java, "miningFossilSolver")
