@@ -3225,7 +3225,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return true
     }
 
-    private fun pageFeature(): Feature? = columns.firstNotNullOfOrNull { c -> c.features.firstOrNull { it.pageId == page } }
+    private fun pageFeature(): Feature? = page?.let { p -> columns.firstNotNullOfOrNull { c -> c.features.firstOrNull { it.pageId == p } } }
     private fun openPage(p: String) { pgScroll = 0; page = p; selected = null; openedAt = System.currentTimeMillis() }
     private fun goHome() { page = null; allMode = true; selected = null; gridScroll = 0; if (searchText.isNotEmpty()) { searchField?.value = ""; searchText = "" }; openedAt = System.currentTimeMillis() }
     private fun pageTitle(): String = when (page) { "report" -> "Report to RedFish"; "conflicts" -> "Mod Conflicts"; "player" -> "Player Customizer"; "ui" -> "UI Customization"; else -> "Credits" }
@@ -3786,10 +3786,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean =
         try {
-            val before = gridScroll
-            val r = scrollInner(mouseX, mouseY, horizontalAmount, verticalAmount)
-            FishDiag.fail("FishModScreen.scrolltrace", "scroll v=$verticalAmount at $mouseX,$mouseY page=$page grid $before->$gridScroll max=${gridMax(exItems().size)} nav=$navScroll vx=${vx(mouseX)},${vx(mouseY)} factor=${fishmod.utils.rendering.UiScale.factor()} stackEnd=${stackX0() + stackW()} navTop=${navTop()} navMax=${navMax()} selected=${selected?.name} detW=${detW()} cx1=${cx1()}")
-            r
+            scrollInner(mouseX, mouseY, horizontalAmount, verticalAmount)
         } catch (t: Throwable) {
             FishDiag.fail("FishModScreen.17", "scroll failed at $mouseX,$mouseY", t)
             true
