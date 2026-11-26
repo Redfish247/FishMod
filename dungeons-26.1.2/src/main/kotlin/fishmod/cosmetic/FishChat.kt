@@ -79,6 +79,7 @@ object FishChat {
         val item = fishmod.features.general.RareDropAnimation.dropName(plain, own)?.take(48) ?: return
         if (!isVeryRare(item)) return
         val now = System.currentTimeMillis()
+        lastRareSeen = now
         if (item == lastDropItem && now - lastDropAt < 10_000) return
         lastDropItem = item; lastDropAt = now
         val json = JsonObject().apply {
@@ -120,6 +121,7 @@ object FishChat {
         val name = root.get("name")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(16)?.takeIf { it.isNotBlank() } ?: return
         val item = root.get("item")?.takeIf { !it.isJsonNull }?.asString?.replace('§', ' ')?.take(48)?.takeIf { it.isNotBlank() } ?: return
         val clean = ProfanityFilter.censor(item) ?: item
+        lastRareSeen = System.currentTimeMillis()
         Minecraft.getInstance().execute {
             val msg = Component.literal("[FC] ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal("★ RARE DROP! ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
@@ -256,7 +258,8 @@ object FishChat {
                     .append(Component.literal(replyName).withStyle(ChatFormatting.GOLD))
                 msg = msg.append(Component.literal(": ").withStyle(ChatFormatting.GOLD))
             }
-            msg = msg.append(if (clean.trim().equals("gg", true)) Component.literal(clean).withStyle(ChatFormatting.GOLD) else linkify(clean))
+            val goldGg = clean.trim().equals("gg", true) && System.currentTimeMillis() - lastRareSeen < 30_000L
+            msg = msg.append(if (goldGg) Component.literal(clean).withStyle(ChatFormatting.GOLD) else linkify(DISCORD_EMOJI_RE.replace(clean) { ":${it.groupValues[1]}:" }))
             // Click anywhere on the line to reply to its sender (links and image previews keep their own click/hover).
             if (!fromBridge) msg.withStyle {
                 it.withClickEvent(net.minecraft.network.chat.ClickEvent.SuggestCommand("/fcr $name "))
@@ -266,7 +269,9 @@ object FishChat {
         }
     }
 
-    private val URL_RE = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE)
+    @Volatile private var lastRareSeen = 0L
+    private val DISCORD_EMOJI_RE = Regex("\\[([^\\]\\s]{1,32})]\\(https?://cdn\\.discordapp\\.com/emojis/[^)\\s]*\\)", RegexOption.IGNORE_CASE)
+    private val URL_RE =Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE)
     /** Message text with every http(s) link made clickable; image/GIF links from trusted hosts show as [Image] and preview on hover. */
     private fun linkify(text: String): Component {
         val out = Component.empty()
