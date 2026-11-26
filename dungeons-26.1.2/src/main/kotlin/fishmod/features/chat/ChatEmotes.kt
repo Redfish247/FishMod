@@ -19,7 +19,7 @@ object ChatEmotes {
         ":snow:" to "☃",
         ":heart:" to "❤",
         ":sun:" to "☀",
-        ":shrug:" to "¯\_(ツ)_/¯",
+        ":shrug:" to "¯\\_(ツ)_/¯",
         ":tableflip:" to "(╯°□°）╯︵ ┻━┻",
         ":totem:" to "☉_☉",
         ":maths:" to "√(π+x)=L",
