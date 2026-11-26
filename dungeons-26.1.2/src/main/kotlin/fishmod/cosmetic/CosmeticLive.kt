@@ -139,7 +139,7 @@ object CosmeticLive {
 
     private fun accept(text: String) {
         if (text == "pong") return
-        val root = JsonParser.parseString(text).asJsonObject
+        val root = JsonParser.parseString(text).takeIf { it.isJsonObject }?.asJsonObject ?: return
         val type = root.get("t")?.asString
         if (type == "msg") { dashboardMessage(root); return }
         if (type == "chat") { FishChat.receive(root); return }
@@ -150,8 +150,8 @@ object CosmeticLive {
         mergeStrings(root, "items", items)
         mergeStrings(root, "scales", scales)
         mergeStrings(root, "badges", badges)
-        root.getAsJsonObject("cleared")?.entrySet()?.forEach { (k, v) -> if (v.isJsonNull) cleared.remove(k) else cleared[k] = v.asLong }
-        root.getAsJsonArray("blocked")?.let { arr -> blocked = arr.mapTo(HashSet()) { it.asString } }
+        root.get("cleared")?.takeIf { it.isJsonObject }?.asJsonObject?.entrySet()?.forEach { (k, v) -> if (v.isJsonNull) cleared.remove(k) else cleared[k] = v.asLong }
+        root.get("blocked")?.takeIf { it.isJsonArray }?.asJsonArray?.let { arr -> blocked = arr.mapTo(HashSet()) { it.asString } }
         if (full) ready = true
         rev++
     }
@@ -175,7 +175,7 @@ object CosmeticLive {
     }
 
     private fun mergeStrings(root: JsonObject, key: String, into: MutableMap<String, String>) {
-        root.getAsJsonObject(key)?.entrySet()?.forEach { (k, v) -> if (v.isJsonNull) into.remove(k) else into[k] = v.asString }
+        root.get(key)?.takeIf { it.isJsonObject }?.asJsonObject?.entrySet()?.forEach { (k, v) -> if (v.isJsonNull) into.remove(k) else into[k] = v.asString }
     }
 
     private class Listener : WebSocket.Listener {
