@@ -28,6 +28,9 @@ object BadgeRegistry {
     fun defCount(): Int = defs.size
 
     @JvmStatic
+    fun describe(ids: List<String>): String = ids.joinToString(";") { id -> val d = defs[id]; if (d == null) "$id=?" else "$id=" + d.symbol.codePoints().toArray().joinToString(",") { Integer.toHexString(it) } + "/" + Integer.toHexString(d.colorRgb) }
+
+    @JvmStatic
     fun resolveOrdered(ids: List<String>): List<BadgeDef> {
         if (defs.isEmpty() && ids.isNotEmpty()) {
             val now = System.currentTimeMillis()

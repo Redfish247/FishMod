@@ -27,7 +27,7 @@ object BadgeManager {
     fun acceptBadges(queried: Set<String>, raw: Map<String, String>) {
         byUuid.keys.retainAll(queried)
         val me = net.minecraft.client.Minecraft.getInstance().player?.uuid?.toString()?.replace("-", "")
-        FishDiag.fail("BadgeManager.2", "badges sync: queried=${queried.size} received=${raw.size} selfInQuery=${me != null && me in queried} selfHasBadge=${me != null && raw.containsKey(me)} defs=${BadgeRegistry.defCount()}")
+        FishDiag.fail("BadgeManager.2", "badges sync: queried=${queried.size} received=${raw.size} selfInQuery=${me != null && me in queried} selfHasBadge=${me != null && raw.containsKey(me)} defs=${BadgeRegistry.defCount()} selfBadges=${if (me != null) BadgeRegistry.describe(raw[me]?.let { j -> try { JsonParser.parseString(j).asJsonArray.map { it.asString } } catch (e: Exception) { emptyList() } } ?: emptyList()) else ""}")
         for (u in queried) {
             val json = raw[u]
             if (json == null) {
