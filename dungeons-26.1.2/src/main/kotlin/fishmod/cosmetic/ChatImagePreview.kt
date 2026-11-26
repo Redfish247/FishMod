@@ -44,7 +44,8 @@ object ChatImagePreview {
     private const val MAX_BYTES = 8 * 1024 * 1024
     private const val MAX_PIXELS = 16_000_000L
     private const val TEX_MAX_DIM = 720
-    private const val MAX_FRAMES = 40
+    private const val MAX_FRAMES = 300
+    private const val GIF_BUDGET_BYTES = 96L * 1024 * 1024
     private const val MAX_CACHED = 8
     private const val SHOW_MAX_W = 340
     private const val SHOW_MAX_H = 280
@@ -314,7 +315,7 @@ object ChatImagePreview {
                 val canvas = BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB)
                 val g = canvas.createGraphics()
                 val out = ArrayList<Pair<BufferedImage, Int>>()
-                val n = minOf(r.getNumImages(true), MAX_FRAMES)
+                val n = minOf(r.getNumImages(true), MAX_FRAMES, (GIF_BUDGET_BYTES / (sw.toLong() * sh * 4).coerceAtLeast(1)).toInt().coerceAtLeast(40))
                 for (i in 0 until n) {
                     val fr = r.read(i)
                     val tree = r.getImageMetadata(i).getAsTree("javax_imageio_gif_image_1.0")
