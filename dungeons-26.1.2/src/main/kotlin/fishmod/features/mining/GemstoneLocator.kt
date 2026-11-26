@@ -16,6 +16,8 @@ object GemstoneLocator {
     private var paths: List<PathData> = emptyList()
     private var tick = 0
 
+    private fun active() = Mining.inTunnels() || Mining.inShaft()
+
     fun wanted(): Set<Gem> = Commissions.current.filter { !it.done && it.name.contains("Gemstone") }
         .mapNotNull { c -> Gem.entries.firstOrNull { c.name.contains(it.display) } }.toSet()
 
@@ -23,7 +25,7 @@ object GemstoneLocator {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (tick++ % 5 != 0) return@register
             val p = mc.player; val level = mc.level
-            if (!S.miningGemLines || p == null || level == null || !Mining.inTunnels()) { targets = emptyList(); paths = emptyList(); return@register }
+            if (!S.miningGemLines || p == null || level == null || !active()) { targets = emptyList(); paths = emptyList(); return@register }
             val want = wanted()
             if (want.isEmpty()) { targets = emptyList(); paths = emptyList(); return@register }
             val r = S.miningGemRadius.coerceIn(4, 48)
@@ -40,10 +42,10 @@ object GemstoneLocator {
                 l.sortedBy { Vec3.atCenterOf(it).distanceToSqr(eye) }.take(S.miningGemMax.coerceAtLeast(1)).map { g to it }
             }
             val here = found.filterValues { l -> l.any { Vec3.atCenterOf(it).distanceToSqr(eye) < 8.0 * 8.0 } }.keys
-            paths = if (S.miningGemPaths) findPaths(want - here, p.position()) else emptyList()
+            paths = if (S.miningGemPaths && Mining.inTunnels()) findPaths(want - here, p.position()) else emptyList()
         }
         RenderHooks.NO_DEPTH_FILLED.register { _, ps, vc ->
-            if (!S.miningGemLines || !S.miningGemBoxes || targets.isEmpty() || !Mining.inTunnels()) return@register
+            if (!S.miningGemLines || !S.miningGemBoxes || targets.isEmpty() || !active()) return@register
             if (S.miningGemBoxes) for ((g, pos) in targets) FishDraw.fillBox(ps, vc, AABB(pos), Mining.alpha(g.rgb, S.miningGemOpacity))
         }
         RenderHooks.GIZMO.register { _ ->
