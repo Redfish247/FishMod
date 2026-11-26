@@ -1541,6 +1541,7 @@ class FishModInit : ClientModInitializer {
             fishmod.features.dungeon.map.MapHud.baseHeight(net.minecraft.client.Minecraft.getInstance()),
             java.util.function.DoubleSupplier { fishmod.utils.config.values.DungeonMapSettings.mapScale.toDouble() },
             java.util.function.DoubleConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapScale = v.toFloat() },
+            java.util.function.BooleanSupplier { fishmod.utils.config.values.DungeonMapSettings.mapEnabled && fishmod.features.dungeon.map.DungeonState.isInDungeon() && !fishmod.features.dungeon.map.DungeonState.isInBoss() },
             java.util.function.BooleanSupplier { fishmod.utils.config.values.DungeonMapSettings.mapEnabled }
         )
         FishHudEditor.register(
