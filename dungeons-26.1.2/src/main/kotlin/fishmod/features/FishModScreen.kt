@@ -3788,7 +3788,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         try {
             val before = gridScroll
             val r = scrollInner(mouseX, mouseY, horizontalAmount, verticalAmount)
-            FishDiag.fail("FishModScreen.scrolltrace", "scroll v=$verticalAmount at $mouseX,$mouseY page=$page grid $before->$gridScroll max=${gridMax(exItems().size)} nav=$navScroll")
+            FishDiag.fail("FishModScreen.scrolltrace", "scroll v=$verticalAmount at $mouseX,$mouseY page=$page grid $before->$gridScroll max=${gridMax(exItems().size)} nav=$navScroll vx=${vx(mouseX)},${vx(mouseY)} factor=${fishmod.utils.rendering.UiScale.factor()} stackEnd=${stackX0() + stackW()} navTop=${navTop()} navMax=${navMax()} selected=${selected?.name} detW=${detW()} cx1=${cx1()}")
             r
         } catch (t: Throwable) {
             FishDiag.fail("FishModScreen.17", "scroll failed at $mouseX,$mouseY", t)
