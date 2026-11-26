@@ -10,6 +10,7 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.AABB
 import fishmod.utils.debug.FishDiag
+import fishmod.utils.debug.FishDebug
 import fishmod.utils.events.FishEvents
 import fishmod.utils.events.chatPlain
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -60,11 +61,13 @@ object SlayerExtras {
             if (slayerCocoon == null) {
                 val name = SlayerManager.type?.displayName ?: "Slayer Boss"
                 val boss = SlayerManager.bossEntity ?: findStand(level, pl.position(), name)
-                if (boss != null) {
-                    val c = if (boss is LivingEntity) Cocoon(name, now, boss.id, boss.position(), boss.bbHeight + 0.6)
-                        else Cocoon(name, now, boss.id, boss.position(), 0.9)
+                val latched = SlayerManager.cocoonLatchedAt.takeIf { it > 0L } ?: now
+                if (boss != null && now - latched <= COCOON_MS) {
+                    val c = if (boss is LivingEntity) Cocoon(name, latched, boss.id, boss.position(), boss.bbHeight + 0.6)
+                        else Cocoon(name, latched, boss.id, boss.position(), 0.9)
                     slayerCocoon = c
                     cocoons.add(c)
+                    FishDebug.LOGGER.debug("[Cocoon] slayer cocoon overlay bound id={} name={}", boss.id, name)
                 }
             }
         } else slayerCocoon = null

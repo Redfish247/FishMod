@@ -57,7 +57,8 @@ object SlayerManager {
 
     private var lastCategoryLine = ""
     private var lastProgressLine = ""
-    private var cocoonLatchedAt = 0L
+    var cocoonLatchedAt = 0L
+        private set
 
     private const val CHAT_DEDUPE_MS = 3_000L
     private var lastQuestCompleteMs = 0L
