@@ -1182,6 +1182,10 @@ public class HypixelApi {
                 if (chosen == null) { cb.onData(-1, null); return; }
                 String pname = chosen.has("cute_name") ? chosen.get("cute_name").getAsString() : null;
                 JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
+                if (member == null) {
+                    fishmod.utils.debug.FishDebug.LOGGER.debug("[Networth] profile {} has no member entry for {}", pname, uuid);
+                    cb.onData(-1, null); return;
+                }
 
                 double total = 0;
                 if (chosen.has("banking") && chosen.getAsJsonObject("banking").has("balance"))
