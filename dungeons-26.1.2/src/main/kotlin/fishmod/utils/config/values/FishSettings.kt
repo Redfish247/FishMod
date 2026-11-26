@@ -588,6 +588,7 @@ object FishSettings {
     @ConfigValue @JvmField var storageOverlayScale: Double = 1.0
     @ConfigValue @JvmField var storageScrollSpeed: Int = 10
     @ConfigValue @JvmField var storageRetainScroll: Boolean = true
+    @ConfigValue @JvmField var storageMouseTweaks: Boolean = true
     @ConfigValue @JvmField var storageKeepSearch: Boolean = true
     @ConfigValue @JvmField var storageAutoFocusSearch: Boolean = false
     @ConfigValue @JvmField var containerValueEnabled: Boolean = false
