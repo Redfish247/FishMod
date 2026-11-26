@@ -122,7 +122,7 @@ object FishingTrackerStore {
 
     @JvmStatic
     fun onDrop(name: String, price: Double) {
-        if (paused) return
+        if (paused || name.endsWith("Bait", true)) return
         both(MAIN) { b ->
             b.drops.merge(name, 1L, Long::plus)
             b.dropCoins.merge(name, price, Double::plus)
@@ -140,7 +140,7 @@ object FishingTrackerStore {
 
     @JvmStatic
     fun onSackItem(name: String, n: Long, coins: Double) {
-        if (paused || n <= 0) return
+        if (paused || n <= 0 || name.endsWith("Bait", true)) return
         both(MAIN) { b ->
             b.drops.merge(name, n, Long::plus)
             b.dropCoins.merge(name, coins, Double::plus)
