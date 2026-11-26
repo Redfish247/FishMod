@@ -37,6 +37,9 @@ public class GameRendererUiMixin {
                 if (current instanceof fishmod.features.FishModScreen fm) {
                     var state = ((GameRenderer) (Object) this).gameRenderState().guiRenderState;
                     if (fm.extractLateLayer(state)) guiRenderer.render();
+                } else if (current instanceof fishmod.features.general.CommandWheelScreen wheel) {
+                    var state = ((GameRenderer) (Object) this).gameRenderState().guiRenderState;
+                    if (wheel.extractLateLayer(state)) guiRenderer.render();
                 }
             } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {
                 StorageOverlay.paintUiOverlay();
