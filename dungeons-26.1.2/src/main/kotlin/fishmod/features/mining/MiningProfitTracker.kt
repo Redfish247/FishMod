@@ -267,7 +267,6 @@ object MiningProfitTracker {
         val id = KEY_ID[name] ?: idOf(name) ?: return 0.0
         CroesusPrices.bazaarPrice(id, S.miningProfitPriceMode != "Insta Sell")?.let { if (it > 0) return it }
         val p = CroesusPrices.price(id)
-        if (name in KEY_ID) FishDiag.check(p > 0, "MiningProfit.key") { "no price for corpse key $id (${CroesusPrices.debugSource(id)})" }
         return p
     }
 
