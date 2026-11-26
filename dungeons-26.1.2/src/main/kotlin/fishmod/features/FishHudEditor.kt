@@ -62,14 +62,6 @@ class FishHudEditor(private val parent: Screen?, private val focus: String? = nu
                 getXVal.asInt, getYVal.asInt, Math.max(1, Math.round(wVal * s).toInt()), Math.max(1, Math.round(hVal * s).toInt())
             )
         }
-        fun isStablyDrawn(): Boolean {
-            val s = scale()
-            if (fishmod.utils.rendering.FishHudLayer.drawnNamed(nameVal)) return true
-            if (!isVisible()) return false
-            return fishmod.utils.rendering.FishHudLayer.drawnStable(
-                getXVal.asInt, getYVal.asInt, Math.max(1, Math.round(wVal * s).toInt()), Math.max(1, Math.round(hVal * s).toInt())
-            )
-        }
         fun isEnabledInList(): Boolean =
             enabledVal?.asBoolean ?: FeatureMasters.map[nameVal]?.invoke() ?: isVisible()
     }
@@ -325,17 +317,6 @@ class FishHudEditor(private val parent: Screen?, private val focus: String? = nu
         private var showControls = true
         private var showGrid = false
         private val picked = LinkedHashSet<String>()
-        @Volatile private var liveNames: Set<String> = emptySet()
-        private var sampleTick = 0
-
-        init {
-            net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
-                if (mc.level == null || mc.curScreen != null || ++sampleTick % 10 != 0) return@register
-                FishDiag.guard("FishHudEditor.11", "live HUD sample failed") {
-                    liveNames = ENTRIES.filter { !it.locked() && it.isEnabledInList() && it.isStablyDrawn() }.mapTo(HashSet()) { it.name() }
-                }
-            }
-        }
     }
 
     private data class Pos(val x: Int, val y: Int, val scale: Double)
@@ -361,8 +342,11 @@ class FishHudEditor(private val parent: Screen?, private val focus: String? = nu
 
     init {
         picked.clear()
-        picked += liveNames
-        focus?.let { f -> ENTRIES.firstOrNull { it.name() == f }?.let { picked += it.name(); selected = it } }
+        if (focus == null) {
+            for (e in ENTRIES) if (!e.locked() && (try { e.isEnabledInList() } catch (_: Throwable) { false })) picked += e.name()
+        } else {
+            ENTRIES.firstOrNull { it.name() == focus }?.let { picked += it.name(); selected = it }
+        }
     }
 
     override fun isPauseScreen(): Boolean = false
@@ -618,7 +602,7 @@ class FishHudEditor(private val parent: Screen?, private val focus: String? = nu
 
     private fun drawReadout(sel: HudEntry?) {
         val ts = 6.5f
-        val lead = sel?.name() ?: if (picked.isEmpty()) "Hover the left edge to pick a HUD to move" else "Click a HUD to select it"
+        val lead = sel?.name() ?: if (picked.isEmpty()) "No HUDs enabled" else "Click a HUD to select it"
         val rest = if (sel != null) "  ·  ${Math.round(sel.scale() * 100)}%  ·  x ${sel.getX().asInt}, y ${sel.getY().asInt}" else ""
         val lw = if (sel != null) UiRecorder.textWidthBold(lead, ts) else UiRecorder.textWidth(lead, ts)
         val pw = lw + UiRecorder.textWidth(rest, ts) + 18f
