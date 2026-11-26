@@ -54,7 +54,7 @@ public class FishKeys {
     private static final Map<String, String> lastKnown = new LinkedHashMap<>();
 
     public static boolean chatPeekActive() {
-        return chatPeek != null && chatPeek.isDown()
+        return chatPeek != null && chatPeek.isDown() && fishmod.compat.McCompatKt.getCurScreen(net.minecraft.client.Minecraft.getInstance()) == null
                 && fishmod.utils.config.values.FishSettings.chatFeatureEnabled
                 && fishmod.utils.config.values.FishSettings.chatPeek;
     }
