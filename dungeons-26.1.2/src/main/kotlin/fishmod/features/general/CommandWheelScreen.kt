@@ -128,9 +128,14 @@ class CommandWheelScreen : Screen(Component.literal("Command Wheel")), HasUiOver
         if (open < 0.6f) return false
         for (i in slots.indices) {
             val st = CommandWheel.stackFor(slots[i].item) ?: continue
-            val gx = Math.round(slotX(i) * f) - 8
-            val gy = Math.round(slotY(i) * f) - 8
-            ctx.item(st, gx, gy)
+            val gx = Math.round(slotX(i) * f)
+            val gy = Math.round(slotY(i) * f)
+            val sc = 1f + grow[i] * 0.45f
+            ctx.pose().pushMatrix()
+            ctx.pose().translate(gx.toFloat(), gy.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.item(st, -8, -8)
+            ctx.pose().popMatrix()
         }
         return true
     }
