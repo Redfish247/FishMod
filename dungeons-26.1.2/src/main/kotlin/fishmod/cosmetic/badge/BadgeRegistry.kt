@@ -25,6 +25,9 @@ object BadgeRegistry {
     }
 
     @JvmStatic
+    fun defCount(): Int = defs.size
+
+    @JvmStatic
     fun resolveOrdered(ids: List<String>): List<BadgeDef> {
         if (defs.isEmpty() && ids.isNotEmpty()) {
             val now = System.currentTimeMillis()
