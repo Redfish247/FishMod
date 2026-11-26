@@ -114,7 +114,7 @@ object SlayerMore {
         val type = SlayerManager.type
         val boss = SlayerManager.bossEntity
 
-        if (FishSettings.slayerQolEnabled && S.eggSacHighlight && type == SlayerType.TARANTULA) {
+        if (FishSettings.slayerQolEnabled && (S.eggSacHighlight || S.eggSacHits) && type == SlayerType.TARANTULA) {
             eggs = level.getEntitiesOfClass(ArmorStand::class.java, player.boundingBox.inflate(32.0)) {
                 it.hasCustomName() && EGG_SAC.matches(TextStrip.plain(it.customName!!.string).trim())
             }
@@ -198,6 +198,12 @@ object SlayerMore {
             val p = e.position()
             val c = S.eggSacColor
             FishDraw.gizmoBox(AABB(p.x - 0.5, p.y, p.z - 0.5, p.x + 0.5, p.y + 1.0, p.z + 0.5), (0x40 shl 24) or (c and 0xFFFFFF), c, true)
+        }
+        if (S.eggSacHits) for (e in eggs) {
+            if (e.isRemoved) continue
+            val hits = TextStrip.plain(e.customName?.string ?: continue).trim().substringAfter(' ')
+            val p = e.position()
+            FishDraw.gizmoText(net.minecraft.network.chat.Component.literal("§e§l$hits"), Vec3(p.x, p.y + 1.3, p.z), 1.6f, -0x1, true)
         }
         val g = glyph
         if (S.yangGlyphTracer && g != null) {

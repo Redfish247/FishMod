@@ -45,6 +45,7 @@ object EndAlertSettings {
     @ConfigValue @JvmField var phaseFirePitSoundPitch: Double = 0.6
 
     @ConfigValue @JvmField var eggSacHighlight: Boolean = false
+    @ConfigValue @JvmField var eggSacHits: Boolean = false
     @ConfigValue @JvmField var eggSacColor: Int = 0xFFFFFF55.toInt()
     @ConfigValue @JvmField var yangGlyphTracer: Boolean = false
     @ConfigValue @JvmField var yangGlyphColor: Int = 0xFF00FFFF.toInt()

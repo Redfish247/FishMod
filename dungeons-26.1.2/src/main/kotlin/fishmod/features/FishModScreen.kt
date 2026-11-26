@@ -2383,6 +2383,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val ea0 = fishmod.features.slayer.EndAlertSettings::class.java
             phases.sub.add(SubcategoryHeader("Voidgloom"))
             phases.sub.add(ToggleSetting("Egg Sac Highlight", "Highlights Broodfather egg sacs", ea0, "eggSacHighlight"))
+            phases.sub.add(ToggleSetting("Egg Sac Hit Count", "Shows the hits/needed text above each Broodfather egg sac", ea0, "eggSacHits"))
             phases.sub.add(ColorPickerSetting("Egg Sac Colour", "", { fishmod.features.slayer.EndAlertSettings.eggSacColor }, { v -> fishmod.features.slayer.EndAlertSettings.eggSacColor = v }).gatedBy { fishmod.features.slayer.EndAlertSettings.eggSacHighlight })
             phases.sub.add(ToggleSetting("Yang Glyph Tracer", "Line to Voidgloom Yang Glyphs", ea0, "yangGlyphTracer"))
             phases.sub.add(ColorPickerSetting("Yang Glyph Colour", "", { fishmod.features.slayer.EndAlertSettings.yangGlyphColor }, { v -> fishmod.features.slayer.EndAlertSettings.yangGlyphColor = v }).gatedBy { fishmod.features.slayer.EndAlertSettings.yangGlyphTracer })
