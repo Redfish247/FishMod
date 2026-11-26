@@ -509,7 +509,7 @@ object CompactTab {
         return if (m.find()) m.group(1) else "—"
     }
 
-    const val STATS_TEMPLATE = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot} &8| &aEffects &f{effects}"
+    const val STATS_TEMPLATE = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot}"
 
     private fun footerText(mdl: Model): String? = when (FishSettings.compactTabFooterMode) {
         "Off" -> null
