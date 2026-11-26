@@ -40,7 +40,10 @@ object FishingTrackerLines {
         for ((i, e) in sorted.withIndex()) {
             if (i >= cap) { out += "§7| §8${sorted.size - cap} more"; break }
             val v = b.dropCoins[e.key] ?: 0.0
-            out += "§7| §f${e.key} x${e.value} §6${if (v > 0) FishingTrackerMath.short(v) else "?"}"
+            val rate = FishingTrackerMath.perHour(v, rateMs(b, total, sessionMs))
+            val value = if (v > 0) "§6${FishingTrackerMath.short(v)}" + (if (rate == 0.0) "" else " §7(${FishingTrackerMath.short(rate)}/h)") else ""
+            val color = ProfitTrackerKit.rarityColor(fishmod.utils.networth.ItemsDb.idFor(e.key)) ?: "§f"
+            out += "$value\t§7| $color${e.key} §f${"%,d".format(e.value)}"
         }
         val gross = b.dropValue()
         val costs = costPerCatch * b.catches.toDouble()
@@ -172,7 +175,7 @@ object FishingTrackerHud {
         pose.pushMatrix()
         pose.translate(hud.gx().toFloat(), hud.gy().toFloat())
         pose.scale(sc, sc)
-        for (i in rows.indices) ctx.text(mc.font, rows[i], 0, i * 10, -1, true)
+        fishmod.features.mining.MiningHuds.drawLines(ctx, rows)
         pose.popMatrix()
     }
 
