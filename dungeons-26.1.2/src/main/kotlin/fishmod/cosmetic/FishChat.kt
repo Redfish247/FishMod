@@ -149,7 +149,7 @@ object FishChat {
 
     private fun send(raw: String, replyName: String? = null, replyText: String? = null) {
         if (!FishSettings.fishChatEnabled) { note("FishMod Chat is off in the General tab."); return }
-        val text = raw.replace('§', ' ').trim().take(MAX_LEN)
+        val text = fishmod.features.chat.ChatEmotes.replace(raw.replace('§', ' ').trim()).take(MAX_LEN)
         if (text.isEmpty()) return
         if (text.equals(".fotd", true)) { factOfTheDay(); return }
         val now = System.currentTimeMillis()
