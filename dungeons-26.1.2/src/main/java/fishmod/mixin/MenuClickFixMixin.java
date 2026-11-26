@@ -28,7 +28,7 @@ public abstract class MenuClickFixMixin {
             if (!dbl && !mid) return;
             if (!fishmod.utils.SkyblockLocation.inSkyblock()) return;
             String title = ((AbstractContainerScreen<?>) (Object) this).getTitle().getString().toLowerCase();
-            if (mid && (title.contains("loadout") || title.contains("tuning") ||title.contains("sack") || title.contains("quiver") || title.contains("accessory bag") || title.contains("chocolate factory") ||title.equals("chest") || title.equals("large chest"))) {
+            if (mid && (title.contains("loadout") || title.contains("tuning") || title.contains("the hex") || title.contains("sack") || title.contains("quiver") || title.contains("accessory bag") || title.contains("chocolate factory") ||title.equals("chest") || title.equals("large chest"))) {
                 if (!dbl) return;
                 mid = false;
             }
