@@ -2322,7 +2322,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val gi = Feature("Items On Ground Names", fishmod.features.slayer.EndAlertSettings::class.java, "groundItemNames")
             gi.sub.add(SubcategoryHeader("Name and count above dropped items"))
             gi.sub.add(SliderIntSetting("Range (blocks)", "", { fishmod.features.slayer.EndAlertSettings.groundItemRange }, { v -> fishmod.features.slayer.EndAlertSettings.groundItemRange = v }, 4, 64, 1))
-            slayer.features.add(gi)
+            general.features.add(gi)
             val ms = Feature("Dungeon Milestone HUD", fishmod.features.dungeon.DungeonMilestoneSettings::class.java, "milestoneHud")
             ms.sub.add(ColorPickerSetting("Label Colour", "", { fishmod.features.dungeon.DungeonMilestoneSettings.milestoneColor }, { v -> fishmod.features.dungeon.DungeonMilestoneSettings.milestoneColor = v }))
             dungeon.features.add(ms)
@@ -2496,7 +2496,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         order(dungeonTrackers, "Session Stats", "Loot Tracker", "Croesus Profit", "PB Pace", "Croesus Highlights")
         order(dungeonMap, "Dungeon Map", "Info HUD", "Door Highlight", "Score Messages")
         order(floor7, "Terminal Solver", "Simon Says", "Arrow Align", "Arrows Device", "Terminal Tracker", "Hide Terminal Titles", "Goldor Splits", "Gate Display", "Section Count", "Storm Over Alert", "Wither Highlight", "M7 Relics", "Relic Times", "Players Leaped", "Boss Tick Clocks", "Crystal Respawn", "Blood Solver", "Storm LB Waypoint", "M7 Lever Waypoints", "Veno Stack Count", "Relic Slot 9 Scroll Lock", "Wither Dragons")
-        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Overlay", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning", "Items On Ground Names")
+        order(slayer, "Slayer QOL", "Boss Timer", "Slayer Stats HUD", "Profit Tracker", "Spawn Progress HUD", "RNG Meter HUD", "Carry Tracker HUD", "Mini/Boss Spawn Alert", "Cocoon Alert", "Cocoon Overlay", "Miniboss Highlight", "Boss Damage Indicator", "Summons Recall Alert", "Summonings Display", "Broodmother Countdown", "No Slayer Quest Warning")
         order(end, "Dragon Profit Tracker", "Zealot / Dragon Counter", "Superior Dragon Alert", "Endstone Protector Stage", "Endstone Protector Alert")
         order(visuals, "No Fog", "Classic Skyblock Items", "Animations", "Render Optimizer", "Block Overlay", "Item Rarity Background", "Time Changer", "Visual Effects", "Dark Mode", "Custom Water Colour", "Lava To Water", "Etherwarp Helper", "Corpse Highlight", "Ghost Box")
         order(cosmetics, "Player Customizer", "Nametag", "Badges", "Custom Crosshair", "Skyblock Level Colors", "Nametag Stats", "See Others' Items", "Force Others' Size")
@@ -2526,7 +2526,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.firstOrNull { it.name == "Fishing" }?.let { groupBy(it, "Alerts" to listOf("alert", "warning"),
             "Trackers & HUDs" to listOf("tracker", "hud", "timer", "count", "overlay", "bobbin", "lilypad"), "World & Creatures" to listOf("world", "hotspot", "wormhole", "creature", "trophy", "box", "totem")) }
         for (c in columns) { if (c === general) continue; val m = c.features.filter { it.name == "Waypoint Routes" }; c.features.removeAll(m); general.features.addAll(m) }
-        order(general, "UI Customization", "Custom Tab", "Custom Scoreboard", "Profile Viewer", "Waypoint Routes", "Zoom", "Auto Sprint", "Sound Manager", "Hit Sounds", "Enchant Colors", "Update Notice", "Ragnarock", "Gyro Helper", "No Cursor Reset", "Disable Front-Facing Camera", "Board Reports", "Debug Reports")
+        order(general, "UI Customization", "Custom Tab", "Custom Scoreboard", "Profile Viewer", "Waypoint Routes", "Zoom", "Auto Sprint", "Sound Manager", "Hit Sounds", "Enchant Colors", "Update Notice", "Ragnarock", "Gyro Helper", "No Cursor Reset", "Disable Front-Facing Camera", "Board Reports", "Debug Reports", "Items On Ground Names")
         for (c in columns) {
             if (c === cheats) continue
             for (f in c.features) {
