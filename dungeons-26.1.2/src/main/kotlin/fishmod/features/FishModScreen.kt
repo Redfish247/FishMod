@@ -3792,11 +3792,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             true
         }
 
+    private fun scrollStep(amount: Double, per: Int): Int {
+        val v = amount * per
+        if (v == 0.0) return 0
+        val r = Math.round(Math.abs(v)).toInt().coerceAtLeast(1)
+        return if (v > 0) r else -r
+    }
+
     private fun scrollInner(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         val mouseX = vx(mouseX).toDouble()
         val mouseY = vx(mouseY).toDouble()
         if (mouseX <= stackX0() + stackW() && mouseY >= navTop()) {
-            navScroll = Mth.clamp((navScroll - verticalAmount * NAV_ROW).toInt(), 0, navMax())
+            navScroll = Mth.clamp(navScroll - scrollStep(verticalAmount, NAV_ROW), 0, navMax())
             return true
         }
         pageFeature()?.let { pf ->
@@ -3808,17 +3815,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 if (mouseY >= ssy && mouseY <= ssy + sh && s.onScroll(mouseX.toInt(), mouseY.toInt(), cx0(), pageX1(pf), ssy, dirP)) return true
                 ssy += sh
             }
-            pgScroll -= (verticalAmount * 24).toInt(); return true
+            pgScroll -= scrollStep(verticalAmount, 24); return true
         }
         if (page == "credits") { creditsPage.scrollBy(verticalAmount); return true }
         if (page == "conflicts") { conflictsPage.scrollBy(verticalAmount); return true }
         val f = selected
         val dir = if (verticalAmount > 0) -1 else 1
         if (f != null && mouseX >= cx1() - detW()) {
-            if (!exScroll(f, mouseX.toInt(), mouseY.toInt(), dir)) detScroll = Mth.clamp((detScroll - verticalAmount * 18).toInt(), 0, detMax(f))
+            if (!exScroll(f, mouseX.toInt(), mouseY.toInt(), dir)) detScroll = Mth.clamp(detScroll - scrollStep(verticalAmount, 18), 0, detMax(f))
             return true
         }
-        gridScroll = Mth.clamp((gridScroll - verticalAmount * 18).toInt(), 0, gridMax(exItems().size))
+        gridScroll = Mth.clamp(gridScroll - scrollStep(verticalAmount, 18), 0, gridMax(exItems().size))
         return true
     }
 
