@@ -285,9 +285,9 @@ object FishChat {
             val label = if (image) "[Image]" else url
             out.append(Component.literal(label).withStyle {
                 var s = it.withColor(if (image) ChatFormatting.GREEN else ChatFormatting.AQUA).withUnderlined(true)
-                    .withClickEvent(net.minecraft.network.chat.ClickEvent.OpenUrl(uri))
-                // Image links show the picture on hover (ChatImagePreview) instead of a text tooltip.
-                if (!image) s = s.withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal("§7Click to open\n§f$url")))
+                if (image) s = s.withInsertion(url).withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.empty()))
+                else s = s.withClickEvent(net.minecraft.network.chat.ClickEvent.OpenUrl(uri))
+                    .withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(Component.literal("§7Click to open\n§f$url")))
                 s
             })
             last = m.range.first + url.length

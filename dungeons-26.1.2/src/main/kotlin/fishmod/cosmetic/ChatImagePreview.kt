@@ -140,8 +140,7 @@ object ChatImagePreview {
         if (!FishSettings.fishChatEnabled) return
         val mc = Minecraft.getInstance()
         val style = styleAt(ctx, mc, mx, my) ?: return
-        val click = style.clickEvent as? ClickEvent.OpenUrl ?: return
-        val url = click.uri().toString()
+        val url = style.insertion ?: (style.clickEvent as? ClickEvent.OpenUrl)?.uri()?.toString() ?: return
         if (!isPreviewable(url)) return
 
         val entry = cache.getOrPut(url) { Entry().also { evictIfNeeded(url); start(url, it) } }
