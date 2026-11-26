@@ -50,6 +50,7 @@ object MiningMenu {
         col.features.add(pity)
 
         val gem = Feature("Commission Gemstone Lines", S::class.java, "miningGemLines")
+        gem.sub.add(ToggleSetting("Waypoints", "A marker with the gem name and distance at the spot, without any line", S::class.java, "miningGemWaypoints"))
         gem.sub.add(ToggleSetting("Walking Paths", "Lines along the tunnels to the nearest spot for each gem (SkyHanni map)", S::class.java, "miningGemPaths"))
         gem.sub.add(SliderIntSetting("Line Width", "", S::class.java, "miningGemLineWidth", 1, 10))
         col.features.add(gem)

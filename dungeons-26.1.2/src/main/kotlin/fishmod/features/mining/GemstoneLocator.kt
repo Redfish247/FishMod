@@ -3,6 +3,7 @@ package fishmod.features.mining
 import fishmod.utils.rendering.FishDraw
 import fishmod.utils.rendering.RenderHooks
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import fishmod.features.mining.MiningSettings as S
 
@@ -20,14 +21,22 @@ object GemstoneLocator {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (tick++ % 5 != 0) return@register
             val p = mc.player
-            if (!S.miningGemLines || !S.miningGemPaths || p == null || !Mining.inTunnels()) { paths = emptyList(); return@register }
+            if (!S.miningGemLines || (!S.miningGemPaths && !S.miningGemWaypoints) || p == null || !Mining.inTunnels()) { paths = emptyList(); return@register }
             val want = wanted()
             paths = if (want.isEmpty()) emptyList() else findPaths(want, p.position())
         }
         RenderHooks.GIZMO.register { _ ->
-            if (!S.miningGemLines || !S.miningGemPaths || paths.isEmpty() || !Mining.inTunnels()) return@register
+            if (!S.miningGemLines || paths.isEmpty() || !Mining.inTunnels()) return@register
             val feet = net.minecraft.client.Minecraft.getInstance().player?.position() ?: return@register
-            for (pd in paths) {
+            if (S.miningGemWaypoints) for (pd in paths) {
+                val d = pd.goal.distanceTo(feet)
+                if (d < 4.0) continue
+                val spot = pd.goal.add(0.0, -1.9, 0.0)
+                FishDraw.gizmoBox(AABB(spot.add(-0.4, 0.0, -0.4), spot.add(0.4, 1.0, 0.4)), Mining.alpha(pd.gem.rgb, 60), Mining.alpha(pd.gem.rgb, 255), true)
+                FishDraw.gizmoText(FishDraw.distLabel(pd.gem.display, d.toInt()), spot.add(0.0, 1.6, 0.0), 0.04f, Mining.alpha(pd.gem.rgb, 255), true)
+            }
+            if (S.miningGemPaths) for (pd in paths) {
+                if (pd.goal.distanceToSqr(feet) < 12.0 * 12.0) continue
                 val argb = Mining.alpha(pd.gem.rgb, 100)
                 val floor = pd.floor
                 val dropped = floor.size > 1 && floor[1].distanceToSqr(feet) < floor[0].distanceToSqr(floor[1])
@@ -38,6 +47,7 @@ object GemstoneLocator {
     }
 
     private class PathData(val gem: Gem, pts: List<Vec3>) {
+        val goal: Vec3 = pts.last()
         val floor: List<Vec3> = pts.map { it.add(0.0, -1.9, 0.0) }
         private val dropFloor: List<Vec3> = floor.drop(1)
         private val tail: List<Vec3> = tailOf(floor)
@@ -83,7 +93,6 @@ object GemstoneLocator {
         for (g in want) {
             val label = g.display + " Gemstone"
             val goal = TunnelGraph.nodes.filter { it.name == label && it in dist }.minByOrNull { dist.getValue(it) } ?: continue
-            if (goal.pos.distanceToSqr(feet) < 12.0 * 12.0) continue
             out += PathData(g, TunnelGraph.path(prev, goal).map { it.pos })
         }
         return out

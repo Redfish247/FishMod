@@ -46,6 +46,7 @@ object MiningSettings {
 
     @ConfigValue @JvmField var miningGemLines: Boolean = false
     @ConfigValue @JvmField var miningGemPaths: Boolean = true
+    @ConfigValue @JvmField var miningGemWaypoints: Boolean = true
     @ConfigValue @JvmField var miningGemLineWidth: Int = 3
 
     @ConfigValue @JvmField var miningFossilSolver: Boolean = false
