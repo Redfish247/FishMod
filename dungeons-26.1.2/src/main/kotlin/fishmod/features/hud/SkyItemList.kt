@@ -159,7 +159,6 @@ object SkyItemList {
 
     private val MOB_RE = Regex("[(](Monster|Boss|Miniboss|Animal|Sea Creature|Pest|Mythological Creature|Mayor|Retired Mayor)[)]$", RegexOption.IGNORE_CASE)
 
-    // NEU "Lava (No Spread)" / "Water (No Spread)"
     private val HIDDEN_IDS = setOf("LAVA", "WATER")
 
     private fun isMob(id: String): Boolean = MOB_RE.containsMatchIn(TextStrip.plain(NeuRepo.get(id)?.get("displayname")?.asString ?: "").trim())
@@ -168,7 +167,6 @@ object SkyItemList {
 
     private val VANILLA_EXTRA = Regex("^(RECORD_[0-9]+|GOLD_RECORD|GREEN_RECORD|GOLDEN_APPLE-1|PRISMARINE-1|WEB)$")
 
-    // Plain Minecraft items: NEU gives them a lore of only a COMMON line (optionally + type), plus a few known odd ones
     private fun isVanilla(id: String, itemId: String?, lore: com.google.gson.JsonArray?): Boolean {
         if (itemId == null || id.contains(';') || id.endsWith("_NPC") || itemId == "minecraft:skull" || itemId == "minecraft:spawn_egg") return false
         if (VANILLA_EXTRA.matches(id)) return true
@@ -301,7 +299,7 @@ object SkyItemList {
         if (built) return true
         CroesusPrices.refreshIfStale()
         NeuRepo.ensureLoaded()
-        if (!NeuRepo.isLoaded()) return false
+        if (!NeuRepo.isFullyLoaded()) return false
         if (building.compareAndSet(false, true)) Thread({
             try { buildIndex() } catch (t: Throwable) { FishDiag.fail("SkyItemList.3", "item list index build failed", t) }
         }, "FishMod-ItemList").apply { isDaemon = true }.start()
@@ -387,7 +385,7 @@ object SkyItemList {
         val accent = FishSettings.skyItemListAccentColor or 0xFF000000.toInt()
         if (bgOn) ctx.fill(px, py, px + pw, py + ph, bg)
         if (!built && !ensureBuilt()) {
-            drawLoading(ctx, font, if (NeuRepo.isLoaded()) "Building item list" else "Loading item data")
+            drawLoading(ctx, font, if (NeuRepo.isFullyLoaded()) "Building item list" else "Loading item data")
             return
         }
         val bq = fishmod.features.inventory.InvSearchBar.term()

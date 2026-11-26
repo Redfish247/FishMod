@@ -12,6 +12,8 @@ object NeuRepo {
 
     @JvmStatic fun isLoaded(): Boolean = NeuRepoCache.isFullyLoaded()
 
+    @JvmStatic fun isFullyLoaded(): Boolean = NeuRepoCache.isFullyLoaded() && NeuRepoCache.isReady()
+
     @JvmStatic fun get(id: String?): JsonObject? = NeuRepoCache.get(id)
 
     @JvmStatic fun ids(): Set<String> = NeuRepoCache.ids()
