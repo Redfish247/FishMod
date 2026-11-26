@@ -110,7 +110,7 @@ object FishingTrackerLines {
             var rows = 0
             for (e in b.scCounts.entries.sortedByDescending { it.value }) { if (rows++ >= cap) break; out += "§7| ${rarityColor(e.key)}${e.key} §f${e.value} §8${FishingTrackerMath.pct(e.value, b.catches)}" }
             for (e in b.drops.entries.sortedByDescending { it.value }) { if (rows++ >= cap) break; out += "§7| §d${e.key} §f${e.value}" }
-            for (e in b.lines.entries.sortedBy { it.key }) { if (rows++ >= cap) break; out += "§7| §f${e.key} §7x${e.value}" }
+            for (e in b.lines.entries.sortedBy { it.key }) { if (rows++ >= cap) break; out += "§7| §f${e.key} §f${e.value}" }
             if (a.pitySc != null && a.pityDrop != null) out += "§7${a.pitySc}s since ${a.pityDrop}: §f${b.pity}"
             if (b.lineCoins != 0.0) out += "§7Net §6${FishingTrackerMath.short(b.lineCoins)}"
         }
