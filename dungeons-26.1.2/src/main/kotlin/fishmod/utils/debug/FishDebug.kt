@@ -115,7 +115,17 @@ object FishDebug {
                 )
         )
 
-        dispatcher.register(ClientCommands.literal("fm").then(BoardReport.command("bug")).then(BoardReport.command("suggest")))
+        dispatcher.register(ClientCommands.literal("fm").then(BoardReport.command("bug")).then(BoardReport.command("suggest")).then(
+            ClientCommands.literal("tests")
+                .requires { fishmod.utils.DevOnly.isDev() }
+                .executes { _ ->
+                    val mc = Minecraft.getInstance()
+                    mc.execute {
+                        net.minecraft.client.gui.screens.ConfirmLinkScreen.confirmLinkNow(mc.screen, java.net.URI("https://fishmod.dev/dashboard/claude-changelog"))
+                    }
+                    FishConstants.SUCCESS
+                }
+        ))
 
         dispatcher.register(
             ClientCommands.literal("fmdev")
