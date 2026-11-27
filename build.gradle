@@ -5,6 +5,11 @@ plugins {
 	id 'com.modrinth.minotaur' version '2.+'
 }
 
+evaluationDependsOn(':common')
+
+def mc = stonecutter.current.version
+def isBase = mc == '26.1.2'
+
 version = project.mod_version
 group = project.maven_group
 
@@ -14,7 +19,7 @@ base {
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(25)
-    withSourcesJar()
+    if (isBase) withSourcesJar()
 }
 
 loom {
@@ -23,9 +28,11 @@ loom {
         vmArg("-Dmixin.debug.export=true")
         vmArg("-Ddevauth.enabled=${project.findProperty('devauth') ?: 'true'}")
         vmArg("-Ddevauth.account=main")
-        vmArg("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005")
-        // -Pworld=<save> joins that singleplayer world on launch (smoke tests)
-        if (project.findProperty('world')) programArgs("--quickPlaySingleplayer", project.findProperty('world').toString())
+        if (isBase) {
+            vmArg("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005")
+            // -Pworld=<save> joins that singleplayer world on launch (smoke tests)
+            if (project.findProperty('world')) programArgs("--quickPlaySingleplayer", project.findProperty('world').toString())
+        }
         if (System.getProperty("java.vendor.version")?.contains("JBR") ||
                 System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
             vmArg("-XX:+AllowEnhancedClassRedefinition")
@@ -79,7 +86,7 @@ dependencies {
 
 processResources {
 	inputs.property "version", project.version
-	inputs.property "minecraftDep", project.findProperty("minecraft_dep") ?: "~26.1.2"
+	inputs.property "minecraftDep", project.findProperty("minecraft_dep") ?: "~${mc}"
 	inputs.property "modrinthSlug", project.findProperty('modrinth_slug') ?: 'fishmod'
 	inputs.property "githubRepo", project.findProperty('github_repo') ?: 'Redfish247/FishMod'
 
@@ -93,22 +100,25 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 test {
+	enabled = isBase
 	useJUnitPlatform()
 	systemProperty "fishmod.test", "true"
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 	compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
-	compilerOptions.freeCompilerArgs.addAll('-Xno-param-assertions', '-Xno-call-assertions', '-Xno-receiver-assertions')
+	if (isBase) compilerOptions.freeCompilerArgs.addAll('-Xno-param-assertions', '-Xno-call-assertions', '-Xno-receiver-assertions')
 }
 
-apply from: rootProject.file('gradle/strip-debug.gradle')
-apply from: rootProject.file('gradle/r8-shrink.gradle')
+if (isBase) {
+	apply from: rootProject.file('gradle/strip-debug.gradle')
+	apply from: rootProject.file('gradle/r8-shrink.gradle')
+}
 
 jar {
 	inputs.property "archivesName", project.base.archivesName
 
-	from("LICENSE") {
+	from(rootProject.file("LICENSE")) {
 		rename { "${it}_${inputs.properties.archivesName}"}
 	}
 

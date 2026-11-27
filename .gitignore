@@ -54,6 +54,10 @@ docs/ui-mockups/
 # Dev tooling and scratch: local only, the repo holds source code
 /tools/
 /scripts/
-/dungeons-26.1.2/testing/
+/testing/
 
 releases/
+
+versions/*/build/
+versions/*/run/
+versions/*/.gradle/
