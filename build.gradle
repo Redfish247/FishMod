@@ -84,6 +84,11 @@ dependencies {
 	runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
 }
 
+def overridesDir = rootProject.file("src/overrides/${mc}")
+if (overridesDir.isDirectory()) {
+	sourceSets.main.resources.exclude { el -> !el.directory && new File(overridesDir, el.relativePath.pathString).exists() }
+}
+
 processResources {
 	inputs.property "version", project.version
 	inputs.property "minecraftDep", project.findProperty("minecraft_dep") ?: "~${mc}"
@@ -92,6 +97,15 @@ processResources {
 
 	filesMatching("fabric.mod.json") {
 		expand inputs.properties
+	}
+	def mixinsOff = mc == '26.3' ? ['ClassicItemModelMixin', 'ClassicHeadMixin', 'ClassicTooltipMixin', 'ClassicPackRepoMixin', 'ClassicPackPushMixin', 'ClassicColorMixin', 'PlayerModelRenderMixin', 'MobModelScaleMixin'] : ['FirstPersonItemsMixin']
+	inputs.property "mixinsOff", mixinsOff
+	def overrides = rootProject.file("src/overrides/${mc}")
+	if (overrides.isDirectory()) {
+		from(overrides)
+	}
+	filesMatching("fishmod.mixins.json") {
+		filter { line -> mixinsOff.any { line.trim() == "\"${it}\"," } ? null : line }
 	}
 }
 

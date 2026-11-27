@@ -29,11 +29,25 @@ public abstract class LavaFogEnvironmentMixin {
     }
 
     @Inject(method = "getBaseColor", at = @At("HEAD"), cancellable = true)
+    //? if <26.3 {
     private void fishmod$baseColor(ClientLevel level, Camera camera, int renderDistance, float partialTicks, CallbackInfoReturnable<Integer> cir) {
+    //?} else {
+    /*private void fishmod$baseColor(ClientLevel level, Camera camera, int renderDistance, float partialTicks, CallbackInfoReturnable<org.joml.Vector3fc> cir) {
+    *///?}
         if (!FishSettings.lavaToWaterEnabled) return;
+        //? if <26.3 {
         int color = FishSettings.lavaToWaterTint
                 ? (FishSettings.lavaToWaterColor & 0xFFFFFF)
                 : fishmod$WATER_FOG.getBaseColor(level, camera, renderDistance, partialTicks);
+        //?} else {
+        /*org.joml.Vector3fc color;
+        if (FishSettings.lavaToWaterTint) {
+            int c = FishSettings.lavaToWaterColor & 0xFFFFFF;
+            color = new org.joml.Vector3f(((c >> 16) & 0xFF) / 255f, ((c >> 8) & 0xFF) / 255f, (c & 0xFF) / 255f);
+        } else {
+            color = fishmod$WATER_FOG.getBaseColor(level, camera, renderDistance, partialTicks);
+        }
+        *///?}
         cir.setReturnValue(color);
     }
 }

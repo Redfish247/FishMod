@@ -10,7 +10,11 @@ import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.config.values.VisualSettings;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Font;
+//? if <26.2 {
 import net.minecraft.client.gui.Gui;
+//?} else {
+/*import net.minecraft.client.gui.Hud;
+*///?}
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
@@ -21,7 +25,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+//? if <26.2 {
 @Mixin(Gui.class)
+//?} else {
+/*@Mixin(Hud.class)
+*///?}
 public class GuiMixin {
 
     @org.spongepowered.asm.mixin.Unique private static boolean fishmod$ab(boolean toggle) {
@@ -68,7 +76,11 @@ public class GuiMixin {
 
     @WrapOperation(method = "extractHotbarAndDecorations",
             at = @At(value = "INVOKE",
+                    //? if <26.2 {
                     target = "Lnet/minecraft/client/gui/contextualbar/ContextualBarRenderer;extractExperienceLevel(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;I)V"))
+                    //?} else {
+                    /*target = "Lnet/minecraft/client/gui/contextualbar/ContextualBar;extractExperienceLevel(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;I)V"))
+                    *///?}
     private void fishmod$hideXpLevel(GuiGraphicsExtractor extractor, Font font, int level, Operation<Void> original) {
         if (!fishmod$ab(FishSettings.abHideXpBar)) original.call(extractor, font, level);
     }

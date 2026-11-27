@@ -44,6 +44,7 @@
     "FishCopyChatMixin",
     "CosmeticChatMixin",
     "WorldTextShadowMixin",
+    "FirstPersonItemsMixin",
     "SignRendererShadowMixin",
     "SubmitTextShadowMixin",
     "FishPacketHandlerMixin",

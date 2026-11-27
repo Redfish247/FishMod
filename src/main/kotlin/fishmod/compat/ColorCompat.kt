@@ -6,6 +6,7 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 
 object CB {
+    //? if <26.2 {
     @JvmField val BLUE_STAINED_GLASS: Block = Blocks.BLUE_STAINED_GLASS
     @JvmField val BLUE_TERRACOTTA: Block = Blocks.BLUE_TERRACOTTA
     @JvmField val BLUE_WOOL: Block = Blocks.BLUE_WOOL
@@ -27,8 +28,32 @@ object CB {
     @JvmField val RED_WOOL: Block = Blocks.RED_WOOL
     @JvmField val WHITE_WOOL: Block = Blocks.WHITE_WOOL
     @JvmField val YELLOW_WOOL: Block = Blocks.YELLOW_WOOL
+    //?} else {
+    /*@JvmField val BLUE_STAINED_GLASS: Block = Blocks.STAINED_GLASS.blue()
+    @JvmField val BLUE_TERRACOTTA: Block = Blocks.DYED_TERRACOTTA.blue()
+    @JvmField val BLUE_WOOL: Block = Blocks.WOOL.blue()
+    @JvmField val BLUE_STAINED_GLASS_PANE: Block = Blocks.STAINED_GLASS_PANE.blue()
+    @JvmField val BROWN_STAINED_GLASS_PANE: Block = Blocks.STAINED_GLASS_PANE.brown()
+    @JvmField val BROWN_TERRACOTTA: Block = Blocks.DYED_TERRACOTTA.brown()
+    @JvmField val CYAN_TERRACOTTA: Block = Blocks.DYED_TERRACOTTA.cyan()
+    @JvmField val GRAY_WOOL: Block = Blocks.WOOL.gray()
+    @JvmField val GREEN_WOOL: Block = Blocks.WOOL.green()
+    @JvmField val LIGHT_BLUE_STAINED_GLASS: Block = Blocks.STAINED_GLASS.lightBlue()
+    @JvmField val LIGHT_BLUE_TERRACOTTA: Block = Blocks.DYED_TERRACOTTA.lightBlue()
+    @JvmField val LIGHT_BLUE_WOOL: Block = Blocks.WOOL.lightBlue()
+    @JvmField val LIGHT_GRAY_CARPET: Block = Blocks.CARPET.lightGray()
+    @JvmField val LIME_WOOL: Block = Blocks.WOOL.lime()
+    @JvmField val MAGENTA_WOOL: Block = Blocks.WOOL.magenta()
+    @JvmField val PURPLE_WOOL: Block = Blocks.WOOL.purple()
+    @JvmField val RED_STAINED_GLASS_PANE: Block = Blocks.STAINED_GLASS_PANE.red()
+    @JvmField val RED_TERRACOTTA: Block = Blocks.DYED_TERRACOTTA.red()
+    @JvmField val RED_WOOL: Block = Blocks.WOOL.red()
+    @JvmField val WHITE_WOOL: Block = Blocks.WOOL.white()
+    @JvmField val YELLOW_WOOL: Block = Blocks.WOOL.yellow()
+    *///?}
 }
 object CI {
+    //? if <26.2 {
     @JvmField val BLACK_STAINED_GLASS_PANE: Item = Items.BLACK_STAINED_GLASS_PANE
     @JvmField val BLUE_STAINED_GLASS_PANE: Item = Items.BLUE_STAINED_GLASS_PANE
     @JvmField val GRAY_DYE: Item = Items.GRAY_DYE
@@ -45,4 +70,22 @@ object CI {
     @JvmField val WHITE_STAINED_GLASS_PANE: Item = Items.WHITE_STAINED_GLASS_PANE
     @JvmField val WHITE_WOOL: Item = Items.WHITE_WOOL
     @JvmField val YELLOW_STAINED_GLASS_PANE: Item = Items.YELLOW_STAINED_GLASS_PANE
+    //?} else {
+    /*@JvmField val BLACK_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.black()
+    @JvmField val BLUE_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.blue()
+    @JvmField val GRAY_DYE: Item = Items.DYE.gray()
+    @JvmField val GREEN_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.green()
+    @JvmField val LIGHT_GRAY_DYE: Item = Items.DYE.lightGray()
+    @JvmField val LIME_DYE: Item = Items.DYE.lime()
+    @JvmField val LIME_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.lime()
+    @JvmField val LIME_TERRACOTTA: Item = Items.DYED_TERRACOTTA.lime()
+    @JvmField val MAGENTA_DYE: Item = Items.DYE.magenta()
+    @JvmField val MAGENTA_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.magenta()
+    @JvmField val ORANGE_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.orange()
+    @JvmField val RED_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.red()
+    @JvmField val RED_TERRACOTTA: Item = Items.DYED_TERRACOTTA.red()
+    @JvmField val WHITE_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.white()
+    @JvmField val WHITE_WOOL: Item = Items.WOOL.white()
+    @JvmField val YELLOW_STAINED_GLASS_PANE: Item = Items.STAINED_GLASS_PANE.yellow()
+    *///?}
 }

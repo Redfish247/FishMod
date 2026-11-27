@@ -10,6 +10,10 @@ public final class NameTagCompat {
     private NameTagCompat() {}
 
     public static void submit(SubmitNodeCollector collector, PoseStack ps, EntityRenderState state, int y, Component line, CameraRenderState camera) {
+        //? if <26.2 {
         collector.submitNameTag(ps, state.nameTagAttachment, y, line, !state.isDiscrete, state.lightCoords, state.distanceToCameraSq, camera);
+        //?} else {
+        /*collector.submitNameTag(ps, state.nameTagAttachment, y, line, !state.isDiscrete, state.lightCoords, camera);
+        *///?}
     }
 }

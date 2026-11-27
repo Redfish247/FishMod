@@ -31,7 +31,11 @@ public abstract class LivingEntityArrowFixMixin {
         }
     }
 
+    //? if <26.3 {
     @ModifyReturnValue(method = "getCurrentSwingDuration", at = @At("RETURN"))
+    //?} else {
+    /*@ModifyReturnValue(method = "getModifiedSwingDuration", at = @At("RETURN"))
+    *///?}
     private int fishmod$swingSpeed(int original) {
         if (!FishSettings.animEnabled) return original;
         if ((Object) this != Minecraft.getInstance().player) return original;

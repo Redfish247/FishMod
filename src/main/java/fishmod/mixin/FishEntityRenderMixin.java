@@ -37,6 +37,7 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState> {
 
     @org.spongepowered.asm.mixin.Unique
+    //? if <26.3 {
     private static final float[] IDENTITY_SCALE = {1.0f, 1.0f, 1.0f};
 
     @Inject(method = "extractRenderState", at = @At("TAIL"), order = 2000)
@@ -47,6 +48,7 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             ((NametagStatsHolder) state).fishmod$setNametagStats(null);
         }
     }
+    //?}
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
@@ -66,8 +68,12 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             }
 
             if (entity instanceof Player sized) {
+                //? if <26.3 {
                 float[] sc = (FishSettings.playerSizeEnabled || FishSettings.forceOthersSizeEnabled || FishSettings.playerSizeShared)
                         ? fishmod.cosmetic.PlayerSize.scaleFor(sized) : IDENTITY_SCALE;
+                //?} else {
+                /*float[] sc = fishmod.cosmetic.PlayerSize.scaleFor(sized);
+                *///?}
                 ((fishmod.cosmetic.ScaleHolder) state).fishmod$setScale(sc[0], sc[1], sc[2]);
                 if (sc[1] != 1.0f && state.nameTagAttachment != null) {
                     state.nameTagAttachment = state.nameTagAttachment.add(0, sized.getBbHeight() * (sc[1] - 1.0), 0);
@@ -89,9 +95,11 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
 
             int miniGlow = fishmod.features.slayer.SlayerMiniHighlight.glowColor(entity);
             if (miniGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = miniGlow;
+            //? if <26.3 {
 
             int attuneGlow = fishmod.features.slayer.SlayerQol.glowColor(entity);
             if (attuneGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = attuneGlow;
+            //?}
 
             int dgGlow = fishmod.features.dungeon.DungeonExtras.glowColor(entity);
             if (dgGlow != EntityRenderState.NO_OUTLINE) state.outlineColor = dgGlow;
@@ -153,7 +161,11 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
     }
 
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
+    //? if <26.3 {
     private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ,
+    //?} else {
+    /*private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ, float unused,
+    *///?}
                                      CallbackInfoReturnable<Boolean> cir) {
         if (fishmod.utils.debug.FishDebug.skipCull) return;
         try {
@@ -219,6 +231,8 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
         }
     }
 
+    //? if >=26.3 {
+    //?}
     @org.spongepowered.asm.mixin.Unique
     private static final java.util.regex.Pattern fishmod$PET_LEVEL = java.util.regex.Pattern.compile("^\\s*\\[(?:Lvl? ?)?\\d+]\\s*(?=[^❤]+$)");
 
@@ -233,6 +247,8 @@ public class FishEntityRenderMixin<T extends Entity, S extends EntityRenderState
             if (dmg != original) return dmg;
         }
         if (FishSettings.petNametagHideLevel && entity instanceof ArmorStand) {
+            //? if >=26.3 {
+            //?}
             Component[] hit = fishmod$PET_CACHE.get(entity.getId());
             if (hit != null && hit[0] == original) return hit[1];
             String plain = ChatFormatting.stripFormatting(original.getString());

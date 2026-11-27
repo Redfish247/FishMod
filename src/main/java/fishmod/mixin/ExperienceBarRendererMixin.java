@@ -4,13 +4,21 @@ import fishmod.utils.SkyblockLocation;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//? if <26.2 {
 import net.minecraft.client.gui.contextualbar.ExperienceBarRenderer;
+//?} else {
+/*import net.minecraft.client.gui.contextualbar.ExperienceBar;
+*///?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+//? if <26.2 {
 @Mixin(ExperienceBarRenderer.class)
+//?} else {
+/*@Mixin(ExperienceBar.class)
+*///?}
 public class ExperienceBarRendererMixin {
 
     @Inject(method = {"extractRenderState", "extractBackground"}, at = @At("HEAD"), cancellable = true)

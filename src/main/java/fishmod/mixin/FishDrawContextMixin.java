@@ -51,18 +51,26 @@ public class FishDrawContextMixin {
 
     @Inject(method = "tooltip", at = @At("HEAD"))
     private void fishmod$tooltipScrollPush(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
+                                          //? if <26.3 {
                                           ClientTooltipPositioner positioner, Identifier style, CallbackInfo ci,
+                                          //?} else {
+                                          /*ClientTooltipPositioner positioner, Identifier style, boolean unused, CallbackInfo ci,
+                                          *///?}
                                           @Share("fishmod$ttShift") LocalBooleanRef shifted) {
         float scale = fishmod.features.hud.ScrollableTooltip.effectiveScale();
         float ox = fishmod.features.hud.ScrollableTooltip.offsetX;
         float oy = fishmod.features.hud.ScrollableTooltip.offsetY;
         boolean on = fishmod.features.hud.ScrollableTooltip.isEnabled() && (scale != 1f || ox != 0f || oy != 0f);
+        //? if >=26.3 {
+        //?}
         float est = 12f;
         for (ClientTooltipComponent c : lines) est += c.getHeight(font);
         if (lines.size() > 1) est += 2f;
         int shh = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledHeight();
         int sww = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth();
         boolean fit = fishmod.utils.config.values.FishSettings.tooltipAutoFit && est > shh - 8;
+        //? if >=26.3 {
+        //?}
         int liftY = 0;
         if (!fit) {
             int top0 = positioner.positionTooltip(sww, shh, xo, yo, 100, (int) est - 12).y() - 6;
@@ -89,7 +97,11 @@ public class FishDrawContextMixin {
 
     @Inject(method = "tooltip", at = @At("RETURN"))
     private void fishmod$tooltipScrollPop(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
+                                          //? if <26.3 {
                                           ClientTooltipPositioner positioner, Identifier style, CallbackInfo ci,
+                                          //?} else {
+                                          /*ClientTooltipPositioner positioner, Identifier style, boolean unused, CallbackInfo ci,
+                                          *///?}
                                           @Share("fishmod$ttShift") LocalBooleanRef shifted) {
         if (shifted.get()) pose.popMatrix();
     }
@@ -123,6 +135,8 @@ public class FishDrawContextMixin {
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("TAIL"))
     private void fishmod$itemScaleDown(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci,
                            @Share("fishmod$headScaled") LocalBooleanRef scaled) {
+        //? if >=26.3 {
+        //?}
         if (scaled.get()) {
             pose.popMatrix();
         }
@@ -136,9 +150,9 @@ public class FishDrawContextMixin {
     @ModifyVariable(method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V", at = @At("HEAD"), argsOnly = true)
     private Component fishmod$ds2(Component text) {
         return fishmod$swap(text);
+    //? if <26.3 {
     }
 
-    // Vanilla tab names carry static level colours; animate them at draw time like CompactTab and chat
     @ModifyVariable(method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;IIIZ)V", at = @At("HEAD"), argsOnly = true, require = 0)
     private net.minecraft.util.FormattedCharSequence fishmod$tabLevelAnim(net.minecraft.util.FormattedCharSequence seq) {
         if (!fishmod.utils.rendering.FishHudLayer.inTab || !fishmod.utils.config.values.FishSettings.prestigeColorsTab) return seq;
@@ -149,6 +163,7 @@ public class FishDrawContextMixin {
             fishmod.utils.debug.FishDiag.fail("FishDrawContextMixin.tabAnim", "tab level animate failed", t);
             return seq;
         }
+    //?}
     }
 
     @ModifyVariable(method = "textWithBackdrop(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIII)V", at = @At("HEAD"), argsOnly = true)

@@ -1,6 +1,7 @@
 package fishmod.utils.debug
 import fishmod.compat.hud
 import fishmod.compat.showScreen
+import fishmod.compat.curScreen
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -121,7 +122,7 @@ object FishDebug {
                 .executes { _ ->
                     val mc = Minecraft.getInstance()
                     mc.execute {
-                        net.minecraft.client.gui.screens.ConfirmLinkScreen.confirmLinkNow(mc.screen, java.net.URI("https://fishmod.dev/dashboard/claude-changelog"))
+                        net.minecraft.client.gui.screens.ConfirmLinkScreen.confirmLinkNow(mc.curScreen, java.net.URI("https://fishmod.dev/dashboard/claude-changelog"))
                     }
                     FishConstants.SUCCESS
                 }
