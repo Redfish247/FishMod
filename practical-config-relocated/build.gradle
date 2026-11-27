@@ -4,7 +4,7 @@
 // (different) practical-config under the identical `config.practical` package — whichever copy the
 // Fabric classloader resolves first "wins" globally, which crashed FishMod's ConfigManager
 // reflecting into blade's incompatible class layout: java.lang.InstantiationError:
-// config.practical.hud.HUDComponent. See dungeons-26.1.2/build.gradle, where this is included as a
+// config.practical.hud.HUDComponent. See the root build.gradle, where this is included as a
 // jar-in-jar project dependency (Loom's `include()` needs a real module/project component — a
 // relocated `files()` artifact alone isn't accepted).
 plugins {

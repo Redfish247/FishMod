@@ -5,7 +5,7 @@ Feesh (https://github.com/Sleepy-Panda/Feesh)
 Copyright Sleepy-Panda, licensed under the Apache License 2.0
 (https://www.apache.org/licenses/LICENSE-2.0).
 
-The fishing features under dungeons-26.1.2/src/main/kotlin/fishmod/features/fishing
+The fishing features under src/main/kotlin/fishmod/features/fishing
 adapt Hypixel SkyBlock chat strings, regular expressions, constants and logic from
 Feesh. The strings and logic were adapted and modified: ported to Kotlin for this
 mod's own settings, event, HUD, price and chat systems, with additions, removals
@@ -15,9 +15,9 @@ formatted text). Feesh itself is not bundled.
 SkyHanni-Repo (https://github.com/hannibal002/SkyHanni-Repo)
 Copyright (c) 2022 hannibal2, licensed under the MIT License.
 
-SkyHanni-Repo (hannibal002), MIT: wormhole coordinate data (dungeons-26.1.2/src/main/resources/fishingWormholes.json,
+SkyHanni-Repo (hannibal002), MIT: wormhole coordinate data (src/main/resources/fishingWormholes.json,
 bundled, extracted from constants/island_graphs/LOTUS_ATOLL.json and CRIMSON_ISLE.json); SkyHanni behaviour studied,
-code not copied. Used by dungeons-26.1.2/src/main/kotlin/fishmod/features/fishing/WormholeFinder*.kt and WormholeMatch.kt.
+code not copied. Used by src/main/kotlin/fishmod/features/fishing/WormholeFinder*.kt and WormholeMatch.kt.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

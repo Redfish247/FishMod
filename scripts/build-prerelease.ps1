@@ -33,8 +33,7 @@ if (-not $WebhookUrl) {
 }
 
 $Modules = @(
-    @{ Name = "1.21.11"; Gradle = ":dungeons-1.21.11" },
-    @{ Name = "26.1.2";  Gradle = ":dungeons-26.1.2" }
+    @{ Name = "26.1.2";  Gradle = ":26.1.2" }
 )
 
 $builtJars = @()
