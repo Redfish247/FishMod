@@ -23,6 +23,7 @@ loom {
         vmArg("-Dmixin.debug.export=true")
         vmArg("-Ddevauth.enabled=${project.findProperty('devauth') ?: 'true'}")
         vmArg("-Ddevauth.account=main")
+        vmArg("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005")
         // -Pworld=<save> joins that singleplayer world on launch (smoke tests)
         if (project.findProperty('world')) programArgs("--quickPlaySingleplayer", project.findProperty('world').toString())
         if (System.getProperty("java.vendor.version")?.contains("JBR") ||
