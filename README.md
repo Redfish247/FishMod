@@ -46,19 +46,17 @@ Type **`/fm`** in game to open the settings. Every feature is off until you turn
 Requires JDK 25.
 
 ```bash
-./gradlew :dungeons-26.1.2:build :dungeons-26.2:build
+./gradlew :26.1.2:build :26.2:build
 ```
 
-Jars land in `dungeons-<version>/build/libs/`.
+Jars land in `versions/<version>/build/libs/`. Add `-Pwith263 :26.3:build` for 26.3.
 
 | Module | Purpose |
 | --- | --- |
-| `dungeons-26.1.2` | Main source (Mojang mappings) |
-| `dungeons-26.2` | Builds the 26.1.2 sources for 26.2, with version-specific overrides |
-| `dungeons-26.3` | 26.3 port in progress (opt in with `-Pwith263`) |
+| `src` | The mod source for every MC version (Stonecutter `//?` markers for differences) |
+| `versions/<mc>` | Per-version properties and build output |
 | `common` | Version-independent shared code |
 | `practical-config-relocated` | Repackaged config library so it never clashes with other mods |
-| `dungeons-1.21.11` | Legacy 1.21.11 build, no longer updated |
 
 ## Bugs & feature requests
 
@@ -70,13 +68,13 @@ FishMod builds on these open-source projects. Thanks to their authors.
 
 | Project | Used for | License |
 | --- | --- | --- |
-| [BetterPV](https://github.com/Vyriv/BetterPV) | Base of the in-game Profile Viewer | MPL-2.0 ([copy](dungeons-26.1.2/LICENSE_betterpv)) |
-| [blade-addons](https://github.com/BladeMasterGabe/blade-addons) | Several features | CC0 ([copy](dungeons-26.1.2/LICENSE_blade-addons)) |
+| [BetterPV](https://github.com/Vyriv/BetterPV) | Base of the in-game Profile Viewer | MPL-2.0 ([copy](LICENSE_betterpv)) |
+| [blade-addons](https://github.com/BladeMasterGabe/blade-addons) | Several features | CC0 ([copy](LICENSE_blade-addons)) |
 | [practical-config](https://github.com/BladeMasterGabe/practical-config) | Config library (bundled, repackaged) | CC0 |
 | [Odin](https://github.com/odtheking/Odin) | Reference for some dungeon solvers and utilities | see project |
 | [SkyHanni](https://github.com/hannibal002/SkyHanni) | Reference for some Rift, garden and mining helpers | see project |
 | [NotEnoughUpdates repo](https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO) | Item data | see project |
-| [Inter](https://github.com/rsms/inter) | UI font | OFL-1.1 ([copy](dungeons-26.1.2/LICENSE_inter-OFL.txt)) |
+| [Inter](https://github.com/rsms/inter) | UI font | OFL-1.1 ([copy](LICENSE_inter-OFL.txt)) |
 
 ## License
 
